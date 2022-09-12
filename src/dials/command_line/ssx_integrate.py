@@ -58,6 +58,7 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
 )
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
+from dials.command_line.combine_experiments import CombineWithReference
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
@@ -428,7 +429,15 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     for i, (int_expt, int_refl, aggregator) in enumerate(
         run_integration(reflections, experiments, params)
     ):
-
+        # combine beam and detector models if not already
+        if len(int_expt.detectors()) > 1 or len(int_expt.beams()) > 1:
+            combine = CombineWithReference(
+                detector=int_expt[0].detector, beam=int_expt[0].beam
+            )
+            elist = ExperimentList()
+            for expt in int_expt:
+                elist.append(combine(expt))
+            int_expt = elist
         reflections_filename = f"integrated_{i+1}.refl"
         experiments_filename = f"integrated_{i+1}.expt"
         logger.info(f"Saving {int_refl.size()} reflections to {reflections_filename}")

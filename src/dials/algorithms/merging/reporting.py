@@ -6,6 +6,8 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from cctbx import uctbx
 
+from dials.algorithms.clustering import plots as cluster_plotter
+from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.algorithms.merging.merge import MergingStatisticsData
 from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.array_family import flex
@@ -36,6 +38,7 @@ class MergeJSONCollector(object):
 def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
     json_data = {}
     for wl, stats in data.items():
+        wl_key = f"{wl:.5f}"
         stats_plots = make_merging_stats_plots(
             stats,
             run_xtriage_analysis=True,
@@ -44,11 +47,19 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
         # remove unneeded items
         for i in ["batch_plots", "anom_plots", "image_range_tables"]:
             del stats_plots[i]
-        json_data[f"{wl:.5f}"] = stats_plots
+        uc_params = uc_params_from_experiments(stats.experiments)
+        stats_plots["unit_cell_plots"] = cluster_plotter.plot_uc_histograms(
+            uc_params, scatter_style="heatmap"
+        )
+        json_data[wl_key] = stats_plots
         if stats.anomalous_amplitudes:
-            json_data[f"{wl:.5f}"]["resolution_plots"].update(
+            json_data[wl_key]["resolution_plots"].update(
                 make_dano_plots({wl: stats.anomalous_amplitudes})["dF"]
             )
+        json_data[wl_key]["merging_stats"] = stats.merging_statistics_result.as_dict()
+        json_data[wl_key][
+            "merging_stats_anom"
+        ] = stats.anom_merging_statistics_result.as_dict()
     if len(json_data) > 1:
         # create an overall summary table
         headers = [""] + ["Wavelength " + f"{wl:.5f}" + " Å" for wl in data.keys()]

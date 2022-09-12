@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import math
 
+import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
+from scipy.stats import norm
 
 from scitbx.array_family import flex
 
@@ -25,6 +27,8 @@ class ScrewAxisObserver(Observer):
             "i_over_sigma": screw_axis.i_over_sigma,
             "intensities": screw_axis.intensities,
             "sigmas": screw_axis.sigmas,
+            "fourier_space_data": screw_axis.fourier_space_data,
+            "axis_repeat": screw_axis.axis_repeat,
         }
 
     def generate_html_report(self, filename):
@@ -57,7 +61,7 @@ class ScrewAxis(Subject):
     name = None
 
     def __init__(self):
-        super().__init__(events=["selected data for scoring"])
+        super().__init__(events=["scored axis"])
         self.equivalent_axes = []
         self.n_refl_used = (0.0, 0.0)
         self.miller_axis_vals = []
@@ -68,6 +72,7 @@ class ScrewAxis(Subject):
         self.mean_I_sigma = 0.0
         self.mean_I_abs = 0.0
         self.mean_I = 0.0
+        self.fourier_space_data = {}
 
     def add_equivalent_axis(self, equivalent):
         """Add a symmetry equivalent axis."""
@@ -84,7 +89,6 @@ class ScrewAxis(Subject):
             selection = (h == 0) & (k == 0)
         return selection
 
-    @Subject.notify_event(event="selected data for scoring")
     def get_all_suitable_reflections(self, reflection_table):
         """Select suitable reflections for testing the screw axis."""
         refl = reflection_table
@@ -108,8 +112,103 @@ class ScrewAxis(Subject):
                 self.intensities.extend(intensities)
                 self.sigmas.extend(sigmas)
 
-    def score_axis(self, reflection_table, significance_level=0.95):
-        """Score the axis give a reflection table of data."""
+    @Subject.notify_event(event="scored axis")
+    def score_axis(self, reflection_table, significance_level=0.95, method="direct"):
+        """Score the axis given a reflection table of data."""
+        if method == "direct":
+            return self.score_axis_direct(reflection_table, significance_level)
+        else:
+            return self.score_axis_fourier(reflection_table, significance_level)
+
+    @staticmethod
+    def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat):
+        """
+        Score screw axis based on selected miller indices and I over SigI values
+
+        Parameters
+        ----------
+        miller_index : np.array
+            Vector of miller indices along the chosen axis.
+        i_over_sigma : np.array
+            Vector of signal to noise ratios with the same shape as miller_indices.
+        axis_repeat : int
+            The expected periodicity of the screw axis. Must be one of {2, 3, 4, 6}.
+        """
+        if axis_repeat not in {2, 3, 4, 6}:
+            raise ValueError(
+                f"Received axis_repeat, {axis_repeat}, but expected an integer in {2, 3, 4, 6}"
+            )
+
+        # We must take care to make sure the length of the fourier transformed vector is divisible by 6
+        miller_index = miller_index - miller_index.min()
+        n = miller_index.max() + 1
+        n = 6 * ((n // 6) + 1)
+        direct_space = np.zeros(n)
+        direct_space[miller_index] = i_over_sigma
+
+        # Fourier transform i over sigma
+        fourier_space = np.abs(np.fft.fft(direct_space))
+
+        # Indices for Fourier frequencies which may correspond to screw periodicities
+        # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
+        screw_idx = [0]
+        if axis_repeat == 2:
+            screw_idx += [n // 2]
+        elif axis_repeat == 3:
+            screw_idx += [n // 3, -n // 3]
+        elif axis_repeat == 4:
+            screw_idx += [n // 4, n // 2, -n // 4]
+        else:
+            screw_idx += [n // 6, n // 3, n // 2, -n // 3, -n // 6]
+
+        null_idx = np.ones_like(fourier_space, dtype=bool)
+        null_idx[screw_idx] = False
+
+        # To determine the probability of a screw axis, use the frequencies which do not
+        # correspond to any screw axis periodicity to form a null model. The ask what
+        # the probability of the candidate frequency is under the null model.
+        # In this case, we will parameterize the null frequencies by a normal distribution.
+
+        mean = fourier_space[null_idx].mean()
+        std = fourier_space[null_idx].std()
+        p_screw = norm.cdf(fourier_space[n // axis_repeat], loc=mean, scale=std)
+        fourier_space_data = {"fourier_space": fourier_space, "n": n}
+        return p_screw, fourier_space_data
+
+    def score_axis_fourier(self, reflection_table, significance_level=0.95):
+        """Estimate the probability of a screw axis using Fourier analysis."""
+
+        self.get_all_suitable_reflections(reflection_table)
+        expected_sel = self.miller_axis_vals.iround() % self.axis_repeat == 0
+
+        expected = self.i_over_sigma.select(expected_sel)
+        expected_abs = self.i_over_sigma.select(~expected_sel)
+        self.n_refl_used = (expected.size(), expected_abs.size())
+
+        if not expected or not expected_abs:
+            return 0.0
+
+        # Log these quantities for reporting.
+        self.mean_I_sigma_abs = flex.mean(expected_abs)
+        self.mean_I_sigma = flex.mean(expected)
+        self.mean_I = flex.mean(self.intensities.select(expected_sel))
+        self.mean_I_abs = flex.mean(self.intensities.select(~expected_sel))
+
+        i_over_sigma = np.array(self.i_over_sigma)
+        miller_index = np.array(self.miller_axis_vals.iround())
+        p_screw, fourier_space_data = self._score_axis_fourier(
+            miller_index, i_over_sigma, self.axis_repeat
+        )
+        # Record the fourier data for reporting.
+        self.fourier_space_data = fourier_space_data
+        # Zero out the probability if it is less than the significance_level
+        if p_screw < significance_level:
+            return 0.0
+
+        return p_screw
+
+    def score_axis_direct(self, reflection_table, significance_level=0.95):
+        """Score the axis given a reflection table of data."""
         assert significance_level in [0.95, 0.975, 0.99]
         self.get_all_suitable_reflections(reflection_table)
 

@@ -104,8 +104,12 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
         d_this = cluster_plotter.plot_uc_histograms(uc_params)
         d_this["uc_scatter"]["layout"]["title"] += f" cluster {n+1}"
         d_this["uc_hist"]["layout"]["title"] += f" cluster {n+1}"
+        if "uc_angle_hist" in d_this:
+            d_this["uc_angle_hist"]["layout"]["title"] += f" cluster {n+1}"
         d_this[f"uc_scatter_{n}"] = d_this.pop("uc_scatter")
         d_this[f"uc_hist_{n}"] = d_this.pop("uc_hist")
+        if "uc_angle_hist" in d_this:
+            d_this[f"uc_angle_hist_{n}"] = d_this.pop("uc_angle_hist")
         cluster_plots.update(d_this)
     return cluster_plots
 
@@ -289,7 +293,7 @@ def generate_plots(summary_data: dict) -> dict:
         mult = int(1 / 0.01)
         start = math.floor(np.min(all_rmsd) * mult) / mult
         stop = math.ceil(np.max(all_rmsd) * mult) / mult
-        nbins = int((stop - start) / step)
+        nbins = max(1, int((stop - start) / step))
         hist, bin_edges = np.histogram(
             all_rmsd,
             bins=nbins,
