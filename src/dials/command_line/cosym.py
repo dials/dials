@@ -309,6 +309,7 @@ class cosym(Subject):
         )
         self.unit_cell_clusters = clustering.clusters
         self.unit_cell_dendrogram = clustering.dendrogram
+        self.unit_cell_linkage_matrix = clustering.linkage_matrix
 
         logger.info(clustering)
         largest_cluster_lattice_ids = None

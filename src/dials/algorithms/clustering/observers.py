@@ -25,6 +25,7 @@ class UnitCellAnalysisObserver(Observer):
         """Update the data in the observer."""
         try:
             self.data["dendrogram"] = script.unit_cell_dendrogram
+            self.data["unit_cell_linkage_matrix"] = script.unit_cell_linkage_matrix
         except AttributeError:
             pass
         self.data["experiments"] = script._experiments
@@ -53,5 +54,9 @@ relatively isomorphous.
             )
 
         graphs = {"unit_cell_graphs": d}
+        if "unit_cell_linkage_matrix" in self.data:
+            graphs["unit_cell_linkage_matrix"] = self.data[
+                "unit_cell_linkage_matrix"
+            ].tolist()
 
         return graphs

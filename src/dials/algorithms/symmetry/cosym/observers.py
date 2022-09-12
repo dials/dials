@@ -98,7 +98,11 @@ class CosymClusterAnalysisObserver(Observer):
         """Generate cosym cluster analysis plot data."""
         d = plot_rij_histogram(self.data["rij_matrix"])
         d.update(plot_coords(self.data["coordinates"]))
-        graphs = {"cosym_graphs": d}
+        graphs = {
+            "cosym_graphs": d,
+            "rij_matrix": self.data["rij_matrix"].tolist(),
+            "coords": self.data["coordinates"].tolist(),
+        }
         return graphs
 
 
