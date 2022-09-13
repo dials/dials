@@ -1015,6 +1015,7 @@ class RefinerData(object):
         panel = experiment.detector[0]
         sbox = reflections["shoebox"]
         xyzobs = reflections["xyzobs.px.value"]
+        failed_indices = flex.size_t()
         for r in range(len(reflections)):
 
             # The vector to the pixel centroid
@@ -1055,32 +1056,48 @@ class RefinerData(object):
                         C[j, i] = c
 
             # Check we have a sensible number of counts
-            assert ctot > 0, "BUG: strong spots should have more than 0 counts!"
+            failed = False
+            if ctot <= 0:
+                logger.warning("Strong spots should have more than 0 counts!")
+                failed = True
+            else:
+                # Compute the mean vector
+                C = np.expand_dims(C, axis=2)
+                xbar = C * X
+                xbar = xbar.reshape(-1, xbar.shape[-1]).sum(axis=0)
+                xbar /= ctot
 
-            # Compute the mean vector
-            C = np.expand_dims(C, axis=2)
-            xbar = C * X
-            xbar = xbar.reshape(-1, xbar.shape[-1]).sum(axis=0)
-            xbar /= ctot
+                xbar = xbar.reshape(2, 1)
 
-            xbar = xbar.reshape(2, 1)
+                # Compute the covariance matrix
+                Sobs = np.array([[0.0, 0.0], [0.0, 0.0]], dtype=np.float64)
+                for j in range(X.shape[0]):
+                    for i in range(X.shape[1]):
+                        x = np.array(X[j, i], dtype=np.float64).reshape(2, 1)
+                        Sobs += np.matmul(x - xbar, (x - xbar).T) * C[j, i, 0]
 
-            # Compute the covariance matrix
-            Sobs = np.array([[0.0, 0.0], [0.0, 0.0]], dtype=np.float64)
-            for j in range(X.shape[0]):
-                for i in range(X.shape[1]):
-                    x = np.array(X[j, i], dtype=np.float64).reshape(2, 1)
-                    Sobs += np.matmul(x - xbar, (x - xbar).T) * C[j, i, 0]
+                Sobs /= ctot
+                if Sobs[0, 0] <= 0 or Sobs[1, 1] <= 0:
+                    failed = True
+            if not failed:
 
-            Sobs /= ctot
-            assert Sobs[0, 0] > 0, "BUG: variance must be > 0"
-            assert Sobs[1, 1] > 0, "BUG: variance must be > 0"
+                # Add to the lists
+                sp_list[:, r] = sp[:, 0]
+                ctot_list[r] = ctot
+                mobs_list[:, r] = xbar[:, 0]
+                Sobs_list[:, :, r] = Sobs
+            else:
+                failed_indices.extend(r)
 
-            # Add to the lists
-            sp_list[:, r] = sp[:, 0]
-            ctot_list[r] = ctot
-            mobs_list[:, r] = xbar[:, 0]
-            Sobs_list[:, :, r] = Sobs
+        if failed_indices:
+            mask = np.full((reflections.size(),), True)
+            for f in failed_indices:
+                mask[f] = False
+            sp_list = sp_list[:, mask]
+            ctot_list = ctot_list[mask]
+            mobs_list = mobs_list[:, mask]
+            Sobs_list = Sobs_list[:, :, mask]
+            h_list = h_list.select(flex.bool(mask))
 
         # Print some information
         logger.info("")
