@@ -390,7 +390,7 @@ def insulin_spotfinding_stills(dials_data, tmp_path_factory):
 def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method):
     experiment, reflections = insulin_spotfinding_stills
     expected_unit_cell = uctbx.unit_cell(
-        (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
+        (78.092, 78.092, 78.092, 90.000, 90.000, 90.000)
     )
     expected_hall_symbol = " I 2 2 3"
     expected_rmsds = (0.05, 0.06, 0.01)

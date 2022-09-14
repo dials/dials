@@ -313,7 +313,7 @@ class BackgroundGradientFilter:
                         and x < (ex2 - buffer_size)
                     ):
                         mask[0, i_y, i_x] = False  # foreground
-                    elif value > trusted_range[0] and value < trusted_range[1]:
+                    elif trusted_range[0] <= value <= trusted_range[1]:
                         mask[0, i_y, i_x] = True  # background
 
             model = modeller.create(data.as_double(), mask)
