@@ -115,8 +115,11 @@ def test_cspad_cbf_in_memory(dials_regression, tmp_path, composite_output):
 
 
 @pytest.mark.xfel
-@pytest.mark.parametrize("use_mpi", [True, False])
-def test_sacla_h5(dials_data, tmp_path, use_mpi, in_memory=False):
+@pytest.mark.parametrize("control_flags", [("use_mpi"), (), ("known_orientations")])
+def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
+    use_mpi = "use_mpi" in control_flags
+    known_orientations = "known_orientations" in control_flags
+
     # Only allow MPI tests if we've got MPI capabilities
     if use_mpi:
         pytest.importorskip("mpi4py")
@@ -132,7 +135,17 @@ def test_sacla_h5(dials_data, tmp_path, use_mpi, in_memory=False):
     assert geometry_path.is_file()
 
     # Write the .phil configuration to a file
-    tmp_path.joinpath("process_sacla.phil").write_text(sacla_phil % geometry_path)
+    phil_path = tmp_path / "process_sacla.phil"
+    with open(phil_path, "w") as f:
+        f.write(sacla_phil % geometry_path)
+
+        if known_orientations:
+            known_orientations_path = os.path.join(
+                sacla_path, "SACLA-MPCCD-run266702-0-subset-known_orientations.expt"
+            )
+            assert os.path.isfile(known_orientations_path)
+            f.write("indexing.stills.known_orientations=%s\n" % known_orientations_path)
+            f.write("indexing.stills.require_known_orientation=True\n")
 
     # Call dials.stills_process
     if use_mpi:
@@ -168,15 +181,26 @@ def test_sacla_h5(dials_data, tmp_path, use_mpi, in_memory=False):
         ],
     )
 
-    test_refl_table(
-        tmp_path / "idx-0000_coset6.refl",
-        [
-            list(range(145, 160)),
-            list(range(545, 570)),
-            list(range(430, 455)),
-            list(range(490, 515)),
-        ],
-    )
+    if known_orientations:
+        test_refl_table(
+            tmp_path / "idx-0000_coset6.refl",
+            [
+                list(range(155, 175)),
+                list(range(545, 570)),
+                list(range(430, 455)),
+                list(range(480, 495)),
+            ],
+        )
+    else:
+        test_refl_table(
+            tmp_path / "idx-0000_coset6.refl",
+            [
+                list(range(145, 160)),
+                list(range(545, 570)),
+                list(range(430, 455)),
+                list(range(490, 515)),
+            ],
+        )
 
 
 @pytest.mark.xfel
