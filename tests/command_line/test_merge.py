@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import procrunner
 import pytest
 
@@ -29,10 +31,13 @@ def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):
 
 
 @pytest.mark.parametrize("anomalous", [True, False])
-@pytest.mark.parametrize("truncate", [True, False])
-def test_merge(dials_data, tmp_path, anomalous, truncate):
+@pytest.mark.parametrize(
+    "truncate,french_wilson_impl", [(True, "dials"), (True, "cctbx"), (False, None)]
+)
+def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     """Test the command line script with LCY data"""
     # Main options: truncate on/off, anomalous on/off
+    # french_wilson.implementation dials/cctbx
 
     mean_labels = ["IMEAN", "SIGIMEAN"]
     anom_labels = ["I(+)", "I(-)", "SIGI(+)", "SIGI(-)"]
@@ -50,20 +55,28 @@ def test_merge(dials_data, tmp_path, anomalous, truncate):
         refls,
         expts,
         f"truncate={truncate}",
+        f"french_wilson.implementation={french_wilson_impl}",
         f"anomalous={anomalous}",
         f"output.mtz={str(mtz_file)}",
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
+        "json=dials.merge.json",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    if truncate and anomalous:
-        assert (tmp_path / "dials.merge.html").is_file()
-    else:
-        assert not (tmp_path / "dials.merge.html").is_file()
+    assert (tmp_path / "dials.merge.html").is_file()
+    merge_json = tmp_path / "dials.merge.json"
+    assert merge_json.is_file()
     expected_labels = mean_labels
     unexpected_labels = []
+
+    with merge_json.open() as fh:
+        json_d = json.load(fh)
+        wl = list(json_d.keys())[0]
+        for k in {"merging_stats", "merging_stats_anom"}:
+            assert k in json_d[wl]
+            assert {"d_star_sq_min", "n_obs", "cc_anom"} <= json_d[wl][k].keys()
 
     if truncate:
         expected_labels += amp_labels
@@ -106,6 +119,7 @@ def test_merge_dmin_dmax(dials_data, tmp_path, best_unit_cell):
         "crystal_name=jam",
         "dataset_name=spam",
         f"best_unit_cell={best_unit_cell}",
+        "output.html=None",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr

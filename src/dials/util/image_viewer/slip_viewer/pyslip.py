@@ -1770,7 +1770,7 @@ class PySlip(_BufferedCanvas):
                 if closed:
                     polygons.append(p_lonlat)
                 else:
-                    lines.append(p_lonlat)
+                    lines.append([int(x) for x in p_lonlat])
         else:
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
@@ -2398,7 +2398,7 @@ class PySlip(_BufferedCanvas):
         ) / self.tile_size_x
         stop_x_tile = int(stop_x_tile)
         col_list = list(range(start_x_tile, stop_x_tile))
-        x_pix = start_x_tile * self.tile_size_y - x_offset
+        x_pix = int(start_x_tile * self.tile_size_y - x_offset)
 
         # NKS No wrapping or hard boundaries
         y_offset = self.view_offset_y + self.move_dy
@@ -2408,7 +2408,7 @@ class PySlip(_BufferedCanvas):
         ) / self.tile_size_y
         stop_y_tile = int(stop_y_tile)
         row_list = list(range(start_y_tile, stop_y_tile))
-        y_pix_start = start_y_tile * self.tile_size_y - y_offset
+        y_pix_start = int(start_y_tile * self.tile_size_y - y_offset)
 
         # start pasting tiles onto the view
         for x in col_list:

@@ -1,1 +1,0 @@
-``dials.combine_experiments``: exit with a helpful error message if experiments have the same identifiers.

@@ -159,7 +159,7 @@ Panel:
   identifier:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
-  trusted_range: {-1,495976}
+  trusted_range: {0,495976}
   thickness: 0.32
   material: Si
   mu: 3.96039
@@ -219,7 +219,7 @@ Panel:
   identifier:
   pixel_size:{0.172,0.172}
   image_size: {2463,195}
-  trusted_range: {-1,1e+06}
+  trusted_range: {0,1e+06}
   thickness: 0.32
   material: Si
   mu: 3.663
@@ -244,7 +244,7 @@ Panel:
   identifier:
   pixel_size:{0.172,0.172}
   image_size: {2463,195}
-  trusted_range: {-1,1e+06}
+  trusted_range: {0,1e+06}
   thickness: 0.32
   material: Si
   mu: 3.663

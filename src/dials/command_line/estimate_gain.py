@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import os
 import pickle
 
 import iotbx.phil
+from dxtbx.imageset import ImageSet
+from libtbx.math_utils import nearest_integer as nint
 from scitbx.array_family import flex
 
+from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments
 
@@ -40,10 +44,13 @@ phil_scope = iotbx.phil.parse(
 )
 
 
-def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_images=1):
+def estimate_gain(
+    imageset: ImageSet,
+    kernel_size: tuple[int, int] = (10, 10),
+    output_gain_map: str | bytes | os.PathLike | None = None,
+    max_images: int = 1,
+) -> float:
     detector = imageset.get_detector()
-
-    from dials.algorithms.image.threshold import DispersionThresholdDebug
 
     gains = flex.double()
 
@@ -84,7 +91,6 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
             dispersion.extend(kabsch.index_of_dispersion().as_1d())
 
         sorted_dispersion = flex.sorted(dispersion)
-        from libtbx.math_utils import nearest_integer as nint
 
         q1 = sorted_dispersion[nint(len(sorted_dispersion) / 4)]
         q2 = sorted_dispersion[nint(len(sorted_dispersion) / 2)]
@@ -119,15 +125,15 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         if len(gains) > 1:
             raw_data = imageset.get_raw_data(0)
         # write the gain map
-        gain_map = flex.double(flex.grid(raw_data[0].all()), gain0)
+        gain_map_flex = flex.double(flex.grid(raw_data[0].all()), gain0)
         with open(output_gain_map, "wb") as fh:
-            pickle.dump(gain_map, fh, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(gain_map_flex, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
     return gain0
 
 
 @show_mail_handle_errors()
-def run(args=None):
+def run(args: list[str] | None = None) -> None:
     usage = "dials.estimate_gain [options] models.expt"
 
     parser = ArgumentParser(
@@ -139,7 +145,7 @@ def run(args=None):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(args, show_diff_phil=False)
+    params, _ = parser.parse_args(args, show_diff_phil=False)
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
@@ -152,8 +158,8 @@ def run(args=None):
     if len(experiments) == 0:
         parser.print_help()
         return
-    elif len(experiments) > 1:
-        raise Sorry("Only one experiment can be processed at a time")
+    elif len(experiments.imagesets()) > 1:
+        raise Sorry("Only one imageset can be processed at a time")
     else:
         imagesets = experiments.imagesets()
 

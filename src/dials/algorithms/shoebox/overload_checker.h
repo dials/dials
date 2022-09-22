@@ -32,10 +32,10 @@ namespace dials { namespace algorithms { namespace shoebox {
       typedef Shoebox<>::float_type float_type;
 
       /**
-       * @param overload - The overload values for each pixel
+       * @param max_trusted_value - The maximum trusted values for each pixel
        */
-      Checker(const af::const_ref<double> &overload)
-          : overload_(overload.begin(), overload.end()) {}
+      Checker(const af::const_ref<double> &max_trusted_value)
+          : max_trusted_value_(max_trusted_value.begin(), max_trusted_value.end()) {}
 
       /**
        * Mark all pixels that are overloaded as invalid
@@ -46,13 +46,13 @@ namespace dials { namespace algorithms { namespace shoebox {
       bool operator()(std::size_t panel,
                       const af::const_ref<float_type, af::c_grid<3> > &data,
                       af::ref<int, af::c_grid<3> > mask) const {
-        DIALS_ASSERT(panel < overload_.size());
+        DIALS_ASSERT(panel < max_trusted_value_.size());
         DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
         DIALS_ASSERT(data.size() == mask.size());
         bool result = false;
-        double overload_value = overload_[panel];
+        double saturation = max_trusted_value_[panel];
         for (std::size_t i = 0; i < data.size(); ++i) {
-          if (data[i] >= overload_value) {
+          if (data[i] > saturation) {
             mask[i] &= ~Valid;
             result = true;
           }
@@ -61,16 +61,16 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
 
     private:
-      af::shared<double> overload_;
+      af::shared<double> max_trusted_value_;
     };
 
   public:
     /**
-     * Add the overload values for this detector
-     * @param overload The overloads for each panel
+     * Add the maximum trusted values for this detector
+     * @param max_trusted_value The maximum trusted value for each panel
      */
-    void add(const af::const_ref<double> &overload) {
-      checker_.push_back(Checker(overload));
+    void add(const af::const_ref<double> &max_trusted_value) {
+      checker_.push_back(Checker(max_trusted_value));
     }
 
     /**

@@ -95,6 +95,7 @@ class RadialProfileThresholdDebug:
         params = find_spots_phil_scope.extract()
         params.spotfinder.threshold.radial_profile.blur = blur
         params.spotfinder.threshold.radial_profile.n_bins = n_bins
+        params.spotfinder.threshold.radial_profile.n_iqr = n_iqr
         self.radial_profile = SpotFinderThreshold.load("radial_profile")(params)
         self._i_panel = 0
 
@@ -155,14 +156,11 @@ class SpotFrame(XrayFrame):
                 assert len(self.experiments) == 1
                 if self.reflections:
                     assert len(self.reflections) == 1
-                    assert len(self.experiments[0]) == len(
-                        set(self.reflections[0]["id"])
-                    )
                 new_experiments = []
                 new_reflections = []
                 for i_expt, expt in enumerate(self.experiments[0]):
                     print(
-                        "Perparing experiments (%d / %d)"
+                        "Preparing experiments (%d / %d)"
                         % (i_expt + 1, len(self.experiments[0]))
                     )
                     exp_list = ExperimentList()

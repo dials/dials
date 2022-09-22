@@ -29,6 +29,32 @@ General Notes
 
 .. |P212121| replace:: P2\ :sub:`1`\ 2\ :sub:`1`\2\ :sub:`1`
 
+Data collection videos
+----------------------
+
+801406_1
+
+    .. image:: https://dials.github.io/images/Biotin_NIS/801406_1.gif
+
+801574_1
+
+    .. image:: https://dials.github.io/images/Biotin_NIS/801574_1.gif
+
+802003_1
+
+    .. image:: https://dials.github.io/images/Biotin_NIS/802003_1.gif
+
+810542_1
+
+    .. image:: https://dials.github.io/images/Biotin_NIS/810542_1.gif
+
+The first panel shows a low magnification image of the crystal target with the
+diffraction beam footprint indicated by the yellow circle. The second panel is a
+picture of the crystal as it would appear during the diffraction experiment with
+the stage tilt angle noted in yellow (note that some images are missing). The
+third panel shows the diffraction patterns generated during tilting. From these
+movies, we can see that crystal 801574_1 was poorly centered and moved out of
+the diffraction beam during collection.
 
 Note about pedestal and offset
 ==============================

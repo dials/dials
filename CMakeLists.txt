@@ -51,7 +51,6 @@ install(
         dials_algorithms_background_ext
         dials_algorithms_background_glm_ext
         dials_algorithms_background_gmodel_ext
-        dials_algorithms_background_median_ext
         dials_algorithms_background_modeller_ext
         dials_algorithms_background_simple_ext
         dials_algorithms_centroid_simple_ext

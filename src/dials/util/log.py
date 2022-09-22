@@ -72,6 +72,8 @@ def config(verbosity=0, logfile=None):
 
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
+    dxtbx_logger = logging.getLogger("dxtbx")
+    dxtbx_logger.addHandler(console)
 
     logging.captureWarnings(True)
     warning_logger = logging.getLogger("py.warnings")
@@ -87,10 +89,11 @@ def config(verbosity=0, logfile=None):
         fh.setLevel(loglevel)
         fh.setFormatter(DialsLogfileFormatter(timed=verbosity))
         dials_logger.addHandler(fh)
+        dxtbx_logger.addHandler(fh)
         warning_logger.addHandler(fh)
 
     dials_logger.setLevel(loglevel)
-    #   logging.getLogger("dxtbx").setLevel(logging.DEBUG)
+    dxtbx_logger.setLevel(loglevel)
     console.setLevel(loglevel)
 
     print_banner(use_logging=True)
