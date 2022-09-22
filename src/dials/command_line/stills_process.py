@@ -397,7 +397,7 @@ class Script:
         from libtbx import easy_mp
 
         try:
-            from libtbx.mpi4py import MPI
+            from mpi4py import MPI
         except ImportError:
             rank = 0
             size = 1
@@ -1169,8 +1169,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     params=params,
                 )
                 idxr.index()
-                if known_crystal_models:
-                    logger.info("indexed from known orientation")
+                logger.info("indexed from known orientation")
                 return idxr.refined_experiments, idxr.refined_reflections
             except Exception:
                 if self.params.indexing.stills.require_known_orientation:
