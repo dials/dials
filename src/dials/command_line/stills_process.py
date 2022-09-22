@@ -1160,6 +1160,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             known_crystal_models = None
 
+        indexing_succeeded = False
         if known_crystal_models:
             try:
                 idxr = Indexer.from_parameters(
@@ -1170,19 +1171,19 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 )
                 idxr.index()
                 logger.info("indexed from known orientation")
-                return idxr.refined_experiments, idxr.refined_reflections
+                indexing_succeeded = True
             except Exception:
                 if self.params.indexing.stills.require_known_orientation:
                     raise
 
-        if params.indexing.stills.method_list is None:
+        if params.indexing.stills.method_list is None and not indexing_succeeded:
             idxr = Indexer.from_parameters(
                 reflections,
                 experiments,
                 params=params,
             )
             idxr.index()
-        else:
+        elif not indexing_succeeded:
             indexing_error = None
             for method in params.indexing.stills.method_list:
                 params.indexing.method = method
