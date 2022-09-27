@@ -1,3 +1,12 @@
+DIALS 3.11.2 (2022-09-27)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.scale``: Fix bug in intensity combination scoring for multi-sweep datasets, affecting midpoint test values. (`#2199 <https://github.com/dials/dials/issues/2199>`_)
+
+
 DIALS 3.11.1 (2022-09-02)
 =========================
 
