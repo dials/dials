@@ -177,7 +177,7 @@ def run(args=None):
             valid_experiments.append(_expt)
 
             # rewrite experiment id on output to match index
-            keep["id"] = flex.int(len(keep), len(valid_experiments))
+            keep["id"] = flex.int(len(keep), len(valid_experiments) - 1)
             valid_reflections.extend(keep)
 
     if params.output.reflections:
