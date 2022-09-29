@@ -111,10 +111,6 @@ def run(args=None):
     valid_reflections = flex.reflection_table()
 
     for expt, refl in zip(experiments, reflections):
-
-        if len(refl) < params.min_total_reflections:
-            continue
-
         imageset = expt.imageset
         scan = imageset.get_scan()
 
@@ -169,6 +165,11 @@ def run(args=None):
                     valid[j] = 0
 
         for j, (start, end) in enumerate(array_to_valid_ranges(valid)):
+            z = refl["xyzobs.px.value"].parts()[2]
+            keep = refl.select((z >= start) & (z < end))
+            if len(keep) < params.min_total_reflections:
+                continue
+
             _expt = copy.deepcopy(expt)
             _expt.scan = _expt.scan[start:end]
             if j:
@@ -176,8 +177,6 @@ def run(args=None):
             valid_experiments.append(_expt)
 
             # rewrite experiment id on output to match index
-            z = refl["xyzobs.px.value"].parts()[2]
-            keep = refl.select((z >= start) & (z < end))
             keep["id"] = flex.int(len(keep), len(valid_experiments))
             valid_reflections.extend(keep)
 
