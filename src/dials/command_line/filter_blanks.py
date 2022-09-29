@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 import sys
 from array import array
@@ -7,6 +8,7 @@ from itertools import groupby
 
 import libtbx.phil
 from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
 from dials.util import detect_blanks, show_mail_handle_errors
@@ -159,21 +161,18 @@ def run(args=None):
                 for j in range(blank_start, blank_end):
                     valid[j] = 0
 
-        valid_ranges = array_to_valid_ranges(valid)
+        for j, (start, end) in enumerate(array_to_valid_ranges(valid)):
+            _expt = copy.deepcopy(expt)
+            _expt.scan = _expt.scan[start:end]
+            if j:
+                _expt.identifier = ersatz_uuid4()
+            valid_experiments.append(_expt)
 
-        if not valid_ranges:
-            continue
-
-        # FIXME find a more graceful way of handling this...
-        if len(valid_ranges) > 1:
-            sys.exit("Currently multiple blank regions unsupported")
-
-        start, end = valid_ranges[0]
-        expt.scan = expt.scan[start:end]
-        valid_experiments.append(expt)
-        z = refl["xyzobs.px.value"].parts()[2]
-        keep = (z >= start) & (z < end)
-        valid_reflections.extend(refl.select(keep))
+            # rewrite experiment id on output to match index
+            z = refl["xyzobs.px.value"].parts()[2]
+            keep = refl.select((z >= start) & (z < end))
+            keep["id"] = flex.int(len(keep), len(valid_experiments))
+            valid_reflections.extend(keep)
 
     if params.output.reflections:
         valid_reflections.as_file(params.output.reflections)
