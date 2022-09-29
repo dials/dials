@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-import json
 import logging
 import sys
+from array import array
+from itertools import groupby
 
 import libtbx.phil
+from dxtbx.model.experiment_list import ExperimentList
 
+from dials.array_family import flex
 from dials.util import detect_blanks, show_mail_handle_errors
 
-logger = logging.getLogger("dials.detect_blanks")
+logger = logging.getLogger("dials.filter_blanks")
 
 phil_scope = libtbx.phil.parse(
     """\
@@ -24,18 +27,32 @@ misigma_fractional_loss = 0.1
   .help = "Fractional loss (relative to the bin with the highest misigma) after "
           "which a bin is flagged as potentially containing blank images."
 output {
-  json = blanks.json
+  experiments = not_blank.expt
     .type = path
-  plot = False
-    .type = bool
+    .help = "Experiments with blank frames removed"
+  reflections = not_blank.refl
+    .type = path
+    .help = "Corresponding non-blank reflection lists"
 }
 """,
     process_includes=True,
 )
 
 
-help_message = """\
-"""
+help_message = "dials.filter_blanks [options] imported.expt strong.refl"
+
+
+def array_to_valid_ranges(a):
+    """Return ranges where a[j] is truthy"""
+    start = 0
+    result = []
+    for k, g in groupby(a):
+        l = list(g)
+        n = len(l)
+        if k:
+            result.append((start, start + n))
+        start += n
+    return result
 
 
 @show_mail_handle_errors()
@@ -46,7 +63,7 @@ def run(args=None):
         reflections_and_experiments_from_files,
     )
 
-    usage = "dials.detect_blanks [options] models.expt observations.refl"
+    usage = help_message
 
     parser = ArgumentParser(
         usage=usage,
@@ -57,7 +74,7 @@ def run(args=None):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(args)
+    params, _ = parser.parse_args(args)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -67,7 +84,7 @@ def run(args=None):
         exit(0)
 
     # Configure the logging
-    log.config(logfile="dials.detect_blanks.log")
+    log.config(logfile="dials.filter_blanks.log")
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
@@ -75,16 +92,24 @@ def run(args=None):
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
+    # TODO make this work gracefully if multiple reflection lists /
+    # experiment files are passed in (rather than just the multi-run
+    # single-file equivalent)
     reflections = reflections[0].split_by_experiment_id()
-    imagesets = experiments.imagesets()
 
-    assert len(reflections) == len(imagesets)
+    assert len(reflections) == len(experiments)
 
     if any(experiment.is_still() for experiment in experiments):
         sys.exit("dials.detect_blanks can only be used with rotation data")
 
-    for imageset, refl in zip(imagesets, reflections):
+    valid_experiments = ExperimentList()
+    valid_reflections = flex.reflection_table()
+
+    for expt, refl in zip(experiments, reflections):
+        imageset = expt.imageset
         scan = imageset.get_scan()
+
+        valid = array("b", [1 for _ in range(*scan.get_array_range())])
 
         integrated_sel = refl.get_flags(refl.flags.integrated)
         indexed_sel = refl.get_flags(refl.flags.indexed)
@@ -101,6 +126,8 @@ def run(args=None):
         )
         for blank_start, blank_end in strong_results["blank_regions"]:
             logger.info(f"Potential blank images: {blank_start + 1} -> {blank_end}")
+            for j in range(blank_start, blank_end):
+                valid[j] = 0
 
         indexed_results = None
         if indexed_sel.count(True) > 0:
@@ -113,6 +140,8 @@ def run(args=None):
             )
             for blank_start, blank_end in indexed_results["blank_regions"]:
                 logger.info(f"Potential blank images: {blank_start + 1} -> {blank_end}")
+                for j in range(blank_start, blank_end):
+                    valid[j] = 0
 
         integrated_results = None
         if integrated_sel.count(True) > 0:
@@ -127,43 +156,29 @@ def run(args=None):
             )
             for blank_start, blank_end in integrated_results["blank_regions"]:
                 logger.info(f"Potential blank images: {blank_start + 1} -> {blank_end}")
+                for j in range(blank_start, blank_end):
+                    valid[j] = 0
 
-    d = {
-        "strong": strong_results,
-        "indexed": indexed_results,
-        "integrated": integrated_results,
-    }
+        valid_ranges = array_to_valid_ranges(valid)
 
-    if params.output.json is not None:
-        with open(params.output.json, "w") as fh:
-            json.dump(d, fh)
+        if not valid_ranges:
+            continue
 
-    if params.output.plot:
-        from matplotlib import pyplot
+        # FIXME find a more graceful way of handling this...
+        if len(valid_ranges) > 1:
+            sys.exit("Currently multiple blank regions unsupported")
 
-        plots = [(strong_results, "-")]
-        if indexed_results:
-            plots.append((indexed_results, "--"))
-        if integrated_results:
-            plots.append((integrated_results, ":"))
+        start, end = valid_ranges[0]
+        expt.scan = expt.scan[start:end]
+        valid_experiments.append(expt)
+        z = refl["xyzobs.px.value"].parts()[2]
+        keep = (z >= start) & (z < end)
+        valid_reflections.extend(refl.select(keep))
 
-        for results, linestyle in plots:
-            xs = results["data"][0]["x"]
-            ys = results["data"][0]["y"]
-            xmax = max(xs)
-            ymax = max(ys)
-            xs = [x / xmax for x in xs]
-            ys = [y / ymax for y in ys]
-            blanks = results["data"][0]["blank"]
-            pyplot.plot(xs, ys, color="blue", linestyle=linestyle)
-            pyplot.plot(
-                *zip(*[(x, y) for x, y, blank in zip(xs, ys, blanks) if blank]),
-                color="red",
-                linestyle=linestyle,
-            )
-        pyplot.ylim(0)
-        pyplot.show()
-        pyplot.clf()
+    if params.output.reflections:
+        valid_reflections.as_file(params.output.reflections)
+    if params.output.experiments:
+        valid_experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":
