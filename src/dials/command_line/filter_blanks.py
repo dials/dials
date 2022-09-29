@@ -28,6 +28,9 @@ misigma_fractional_loss = 0.1
   .type = float(value_min=0, value_max=1)
   .help = "Fractional loss (relative to the bin with the highest misigma) after "
           "which a bin is flagged as potentially containing blank images."
+min_total_reflections = 0
+  .type = int(value_min=0)
+  .help = "Minimal number of reflections per sweep"
 output {
   experiments = not_blank.expt
     .type = path
@@ -108,6 +111,10 @@ def run(args=None):
     valid_reflections = flex.reflection_table()
 
     for expt, refl in zip(experiments, reflections):
+
+        if len(refl) < params.min_total_reflections:
+            continue
+
         imageset = expt.imageset
         scan = imageset.get_scan()
 
