@@ -1087,7 +1087,7 @@ class RefinerData(object):
                 mobs_list[:, r] = xbar[:, 0]
                 Sobs_list[:, :, r] = Sobs
             else:
-                failed_indices.extend(r)
+                failed_indices.append(r)
 
         if failed_indices:
             mask = np.full((reflections.size(),), True)
