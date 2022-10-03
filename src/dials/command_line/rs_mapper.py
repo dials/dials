@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import logging
 import math
 
 import numpy as np
@@ -12,6 +13,7 @@ from scitbx.array_family import flex
 
 import dials.algorithms.rs_mapper as recviewer
 import dials.util
+import dials.util.log
 from dials.util import Sorry
 from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments
@@ -30,16 +32,14 @@ Examples::
   dials.rs_mapper imported.expt
 """
 
+# Define a logger
+logger = logging.getLogger("dials.rs_mapper")
+
 phil_scope = phil.parse(
     """
 rs_mapper
   .short_caption = Reciprocal space mapper
 {
-  map_file = rs_mapper_output.mrc
-    .type = path
-    .optional = False
-    .multiple= False
-    .short_caption = Output map file
   max_resolution = 6
     .type = float
     .optional = True
@@ -59,6 +59,17 @@ rs_mapper
             "Auto, DIALS will choose automatically."
     .type = int(value_min=1)
     .expert_level = 1
+}
+output
+{
+  map_file = rs_mapper_output.mrc
+    .type = path
+    .optional = False
+    .multiple= False
+    .short_caption = Output map file
+
+  log = "dials.rs_mapper.log"
+    .type = str
 }
 """,
     process_includes=True,
@@ -111,16 +122,18 @@ class Script:
         # Parse the command line
         params, options = self.parser.parse_args(args, show_diff_phil=True)
 
-        if not params.rs_mapper.map_file:
+        # Configure the logging.
+        dials.util.log.config(options.verbose, logfile=params.output.log)
+
+        if not params.output.map_file:
             raise RuntimeError("Please specify output map file (map_file=)")
         else:
-            self.map_file = params.rs_mapper.map_file
+            self.map_file = params.output.map_file
 
         # Ensure we have either a data block or an experiment list
         self.experiments = flatten_experiments(params.input.experiments)
         if len(self.experiments) != 1:
             self.parser.print_help()
-            print("Please pass either an experiment list\n")
             return
 
         self.reverse_phi = params.rs_mapper.reverse_phi
@@ -138,7 +151,7 @@ class Script:
         self.nproc = params.rs_mapper.nproc
         if self.nproc is libtbx.Auto:
             self.nproc = available_cores()
-            print("Setting nproc={}".format(self.nproc))
+            logger.info("Setting nproc={}".format(self.nproc))
 
         for experiment in self.experiments:
             grid, counts = self.process_imageset(experiment.imageset)
@@ -154,6 +167,7 @@ class Script:
         # or below 1 and some MX programs would not handle it well.
         box_size = 100 * 2.0 / self.max_resolution
         uc = uctbx.unit_cell((box_size, box_size, box_size, 90, 90, 90))
+        logger.info(f"Saving map to {self.map_file}")
         ccp4_map.write_ccp4_map(
             self.map_file,
             uc,
@@ -187,13 +201,24 @@ class Script:
         # Split imageset into up to nproc blocks of at least 10 images
         nblocks = min(self.nproc, int(math.ceil(len(imageset) / 10)))
         blocks = np.array_split(range(len(imageset)), nblocks)
+        blocks = [block.tolist() for block in blocks]
 
-        print(f"Calculation split over {len(blocks)} blocks.")
+        logger.info(f"Calculation split over {len(blocks)} blocks")
+        header = ["Block", "Oscillation range (°)"]
+        scan = imageset.get_scan()
+        rows = [
+            [
+                f"{i+1}",
+                f"{scan.get_angle_from_array_index(block[0]):.2f} - {scan.get_angle_from_array_index(block[-1] + 1):.2f}",
+            ]
+            for i, block in enumerate(blocks)
+        ]
+        logger.info(dials.util.tabulate(rows, header, numalign="right") + "\n")
 
         if len(blocks) == 1:
             results = [
                 process_block(
-                    blocks[0].tolist(),
+                    blocks[0],
                     imageset,
                     self.grid_size,
                     self.reverse_phi,
@@ -210,7 +235,7 @@ class Script:
                 results = [
                     pool.submit(
                         process_block,
-                        block.tolist(),
+                        block,
                         imageset,
                         self.grid_size,
                         self.reverse_phi,
