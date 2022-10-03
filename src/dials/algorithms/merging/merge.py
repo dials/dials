@@ -25,7 +25,12 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
 )
 from dials.array_family import flex
-from dials.report.analysis import make_merging_statistics_summary, table_1_summary
+from dials.report.analysis import (
+    format_statistics,
+    make_merging_statistics_summary,
+    table_1_stats,
+    table_1_summary,
+)
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.util.filter_reflections import filter_reflection_table
 
@@ -175,9 +180,11 @@ def make_merged_mtz_file(mtz_datasets):
 
 @dataclass
 class MergingStatisticsData:
-    reflections: List[flex.reflection_table]
     experiments: ExperimentList
     scaled_miller_array: miller.array
+    reflections: Optional[
+        List[flex.reflection_table]
+    ] = None  # only needed if using this class like a script when making batch plots
     merging_statistics_result: Optional[dataset_statistics] = None
     anom_merging_statistics_result: Optional[dataset_statistics] = None
     anomalous_amplitudes: Optional[miller.array] = None
@@ -194,8 +201,63 @@ class MergingStatisticsData:
         )
         return stats_summary
 
+    def table_1_stats(self):
+        return format_statistics(
+            table_1_stats(
+                self.merging_statistics_result,
+                self.anom_merging_statistics_result,
+                Wilson_B_iso=self.Wilson_B_iso,
+            )
+        )
+
     def __repr__(self):
         return self.__str__()
+
+
+def merge_scaled_array(
+    experiments,
+    scaled_array,
+    anomalous=True,
+    use_internal_variance=False,
+    assess_space_group=False,
+    n_bins=20,
+):
+    # assumes filtering already done and converted to combined scaled array
+
+    # Note, merge_equivalents does not raise an error if data is unique.
+    merged = scaled_array.merge_equivalents(use_internal_variance=use_internal_variance)
+    merged_anom = None
+
+    if anomalous:
+        anomalous_scaled = scaled_array.as_anomalous_array()
+        merged_anom = anomalous_scaled.merge_equivalents(
+            use_internal_variance=use_internal_variance
+        )
+
+    # Before merge, do assessment of the space_group
+    if assess_space_group:
+        merged_reflections = flex.reflection_table()
+        merged_reflections["intensity"] = merged.array().data()
+        merged_reflections["variance"] = flex.pow2(merged.array().sigmas())
+        merged_reflections["miller_index"] = merged.array().indices()
+        logger.info("Running systematic absences check")
+        run_systematic_absences_checks(experiments, merged_reflections)
+
+    stats_data = MergingStatisticsData(experiments, scaled_array)
+
+    try:
+        stats, anom_stats = merging_stats_from_scaled_array(
+            scaled_array,
+            n_bins,
+            use_internal_variance,
+        )
+    except DialsMergingStatisticsError as e:
+        logger.error(e, exc_info=True)
+    else:
+        stats_data.merging_statistics_result = stats
+        stats_data.anom_merging_statistics_result = anom_stats
+
+    return merged, merged_anom, stats_data
 
 
 def merge(
@@ -237,40 +299,14 @@ def merge(
     scaled_array = scaled_data_as_miller_array(
         [reflections], experiments, best_unit_cell
     )
-    # Note, merge_equivalents does not raise an error if data is unique.
-    merged = scaled_array.merge_equivalents(use_internal_variance=use_internal_variance)
-    merged_anom = None
-
-    if anomalous:
-        anomalous_scaled = scaled_array.as_anomalous_array()
-        merged_anom = anomalous_scaled.merge_equivalents(
-            use_internal_variance=use_internal_variance
-        )
-
-    # Before merge, do assessment of the space_group
-    if assess_space_group:
-        merged_reflections = flex.reflection_table()
-        merged_reflections["intensity"] = merged.array().data()
-        merged_reflections["variance"] = flex.pow2(merged.array().sigmas())
-        merged_reflections["miller_index"] = merged.array().indices()
-        logger.info("Running systematic absences check")
-        run_systematic_absences_checks(experiments, merged_reflections)
-
-    stats_data = MergingStatisticsData([reflections], experiments, scaled_array)
-
-    try:
-        stats, anom_stats = merging_stats_from_scaled_array(
-            scaled_array,
-            n_bins,
-            use_internal_variance,
-        )
-    except DialsMergingStatisticsError as e:
-        logger.error(e, exc_info=True)
-    else:
-        stats_data.merging_statistics_result = stats
-        stats_data.anom_merging_statistics_result = anom_stats
-
-    return merged, merged_anom, stats_data
+    return merge_scaled_array(
+        experiments,
+        scaled_array,
+        anomalous,
+        use_internal_variance,
+        assess_space_group,
+        n_bins,
+    )
 
 
 def show_wilson_scaling_analysis(merged_intensities, n_residues=200):

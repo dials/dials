@@ -57,6 +57,7 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
                 make_dano_plots({wl: stats.anomalous_amplitudes})["dF"]
             )
         json_data[wl_key]["merging_stats"] = stats.merging_statistics_result.as_dict()
+        json_data[wl_key]["table_1_stats"] = stats.table_1_stats()
         json_data[wl_key][
             "merging_stats_anom"
         ] = stats.anom_merging_statistics_result.as_dict()
