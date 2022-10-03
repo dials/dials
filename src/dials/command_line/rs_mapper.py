@@ -111,7 +111,10 @@ class Script:
             print("Setting nproc={}".format(params.rs_mapper.nproc))
 
         for experiment in self.experiments:
-            self.process_imageset(experiment.imageset)
+            grid, counts = self.process_imageset(experiment.imageset)
+
+            self.grid += grid
+            self.counts += counts
 
         recviewer.normalize_voxels(self.grid, self.counts)
 
@@ -151,6 +154,9 @@ class Script:
         s1 = s1 / s1.norms() * (1 / beam.get_wavelength())
         S = s1 - s0
 
+        grid = flex.double(flex.grid(self.grid_size, self.grid_size, self.grid_size), 0)
+        counts = flex.int(flex.grid(self.grid_size, self.grid_size, self.grid_size), 0)
+
         for i in range(len(imageset)):
             axis = imageset.get_goniometer().get_rotation_axis()
             osc_range = imageset.get_scan(i).get_oscillation_range()
@@ -166,9 +172,9 @@ class Script:
                 mask = imageset.get_mask(i)[0]
                 data.set_selected(~mask, 0)
 
-            recviewer.fill_voxels(
-                data, self.grid, self.counts, rotated_S, xy, rec_range
-            )
+            recviewer.fill_voxels(data, grid, counts, rotated_S, xy, rec_range)
+
+        return grid, counts
 
 
 @dials.util.show_mail_handle_errors()
