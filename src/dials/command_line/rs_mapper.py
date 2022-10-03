@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import concurrent.futures
 import math
+
+import numpy as np
 
 import libtbx
 from cctbx import sgtbx, uctbx
@@ -62,6 +65,32 @@ rs_mapper
 )
 
 
+def process_block(
+    block, imageset, grid_size, reverse_phi, S, ignore_mask, xy, rec_range
+):
+    grid = flex.double(flex.grid(grid_size, grid_size, grid_size), 0)
+    counts = flex.int(flex.grid(grid_size, grid_size, grid_size), 0)
+
+    axis = imageset.get_goniometer().get_rotation_axis()
+    for i in block:
+        osc_range = imageset.get_scan(i).get_oscillation_range()
+
+        angle = (osc_range[0] + osc_range[1]) / 2 / 180 * math.pi
+        if not reverse_phi:
+            # the pixel is in S AFTER rotation. Thus we have to rotate BACK.
+            angle *= -1
+        rotated_S = S.rotate_around_origin(axis, angle)
+
+        data = imageset.get_raw_data(i)[0]
+        if not ignore_mask:
+            mask = imageset.get_mask(i)[0]
+            data.set_selected(~mask, 0)
+
+        recviewer.fill_voxels(data, grid, counts, rotated_S, xy, rec_range)
+
+    return grid, counts
+
+
 class Script:
     def __init__(self):
         """Initialise the script."""
@@ -106,9 +135,10 @@ class Script:
             flex.grid(self.grid_size, self.grid_size, self.grid_size), 0
         )
 
-        if params.rs_mapper.nproc is libtbx.Auto:
-            params.rs_mapper.nproc = available_cores()
-            print("Setting nproc={}".format(params.rs_mapper.nproc))
+        self.nproc = params.rs_mapper.nproc
+        if self.nproc is libtbx.Auto:
+            self.nproc = available_cores()
+            print("Setting nproc={}".format(self.nproc))
 
         for experiment in self.experiments:
             grid, counts = self.process_imageset(experiment.imageset)
@@ -154,25 +184,49 @@ class Script:
         s1 = s1 / s1.norms() * (1 / beam.get_wavelength())
         S = s1 - s0
 
-        grid = flex.double(flex.grid(self.grid_size, self.grid_size, self.grid_size), 0)
-        counts = flex.int(flex.grid(self.grid_size, self.grid_size, self.grid_size), 0)
+        # Split imageset into up to nproc blocks of at least 10 images
+        nblocks = min(self.nproc, int(math.ceil(len(imageset) / 10)))
+        blocks = np.array_split(range(len(imageset)), nblocks)
 
-        for i in range(len(imageset)):
-            axis = imageset.get_goniometer().get_rotation_axis()
-            osc_range = imageset.get_scan(i).get_oscillation_range()
-            print(f"Oscillation range: {osc_range[0]:.2f} - {osc_range[1]:.2f}")
-            angle = (osc_range[0] + osc_range[1]) / 2 / 180 * math.pi
-            if not self.reverse_phi:
-                # the pixel is in S AFTER rotation. Thus we have to rotate BACK.
-                angle *= -1
-            rotated_S = S.rotate_around_origin(axis, angle)
+        print(f"Calculation split over {len(blocks)} blocks.")
 
-            data = imageset.get_raw_data(i)[0]
-            if not self.ignore_mask:
-                mask = imageset.get_mask(i)[0]
-                data.set_selected(~mask, 0)
+        if len(blocks) == 1:
+            results = [
+                process_block(
+                    blocks[0].tolist(),
+                    imageset,
+                    self.grid_size,
+                    self.reverse_phi,
+                    S,
+                    self.ignore_mask,
+                    xy,
+                    rec_range,
+                ),
+            ]
+        else:
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=len(blocks)
+            ) as pool:
+                results = [
+                    pool.submit(
+                        process_block,
+                        block.tolist(),
+                        imageset,
+                        self.grid_size,
+                        self.reverse_phi,
+                        S,
+                        self.ignore_mask,
+                        xy,
+                        rec_range,
+                    )
+                    for block in blocks
+                ]
+            results = [e.result() for e in results]
 
-            recviewer.fill_voxels(data, grid, counts, rotated_S, xy, rec_range)
+        grid, counts = results[0]
+        for (g, c) in results[1:]:
+            grid += g
+            counts += c
 
         return grid, counts
 
