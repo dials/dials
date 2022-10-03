@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 
+import libtbx
 from cctbx import sgtbx, uctbx
 from iotbx import ccp4_map, phil
 from scitbx.array_family import flex
@@ -9,6 +10,7 @@ from scitbx.array_family import flex
 import dials.algorithms.rs_mapper as recviewer
 import dials.util
 from dials.util import Sorry
+from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
@@ -49,6 +51,11 @@ rs_mapper
     .type = bool
     .optional = True
     .short_caption = Ignore masks from dxtbx class
+  nproc = Auto
+    .help = "Number of processes over which to split the calculation. If set to"
+            "Auto, DIALS will choose automatically."
+    .type = int(value_min=1)
+    .expert_level = 1
 }
 """,
     process_includes=True,
@@ -98,6 +105,10 @@ class Script:
         self.counts = flex.int(
             flex.grid(self.grid_size, self.grid_size, self.grid_size), 0
         )
+
+        if params.rs_mapper.nproc is libtbx.Auto:
+            params.rs_mapper.nproc = available_cores()
+            print("Setting nproc={}".format(params.rs_mapper.nproc))
 
         for experiment in self.experiments:
             self.process_imageset(experiment.imageset)
