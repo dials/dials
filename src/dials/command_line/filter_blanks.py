@@ -97,6 +97,10 @@ def run(args=None):
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
+    # if we are dealing with indexed reflections, we can only handle indexed
+    # reflections (c/f https://github.com/dials/dials/issues/1029)
+    reflections = [refl.select(refl["id"] >= 0) for refl in reflections]
+
     # TODO make this work gracefully if multiple reflection lists /
     # experiment files are passed in (rather than just the multi-run
     # single-file equivalent)
