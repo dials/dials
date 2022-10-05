@@ -125,7 +125,8 @@ def compute_mean_cchalf_in_bins(bin_data):
             cchalf = compute_cchalf(mean, var)
             mean_cchalf += n * cchalf
             count += n
-    mean_cchalf /= count
+    if count:
+        mean_cchalf /= count
     return mean_cchalf
 
 

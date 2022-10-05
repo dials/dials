@@ -335,6 +335,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<af::reflection_table, std::size_t, int, int, bool>())
       .def("next", &ShoeboxProcessor::next<double>)
       .def("next", &ShoeboxProcessor::next<int>)
+      .def("next_data_only", &ShoeboxProcessor::next_data_only<double>)
+      .def("next_data_only", &ShoeboxProcessor::next_data_only<int>)
       .def("frame0", &ShoeboxProcessor::frame0)
       .def("frame1", &ShoeboxProcessor::frame1)
       .def("frame", &ShoeboxProcessor::frame)

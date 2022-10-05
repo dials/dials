@@ -50,7 +50,7 @@ class KaptonTape_2019:
             p.set_local_frame(fast.elems, slow.elems, ori.elems)
             p.set_pixel_size((pixel_size, pixel_size))
             p.set_image_size(image_size)
-            p.set_trusted_range((-1, 2e6))
+            p.set_trusted_range((0, 2e6))
             p.set_name(f"KAPTON_{name}")
             return d
 

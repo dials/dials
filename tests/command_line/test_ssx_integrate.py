@@ -46,6 +46,40 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
         assert tmp_path.joinpath(f"nuggets/nugget_integrated_{i}.json").is_file()
 
 
+@pytest.mark.xdist_group(name="group1")
+def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
+    # Download data set and the internally referenced images
+    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    dials_data("cunir_serial", pathlib=True)
+
+    expts = load.experiment_list(ssx / "indexed.expt", check_format=False)
+    expts[3:4].as_file(tmp_path / "single.expt")
+    refls = flex.reflection_table.from_file(ssx / "indexed.refl")
+    refls = refls.select_on_experiment_identifiers([expts[3].identifier])
+    refls.as_file(tmp_path / "single.refl")
+
+    result = procrunner.run(
+        [
+            "dev.dials.ssx_integrate",
+            tmp_path / "single.refl",
+            tmp_path / "single.expt",
+            "nproc=1",
+            "algorithm=ellipsoid",
+            "n_macro_cycles=2",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmp_path.joinpath("integrated_1.refl").is_file()
+    assert tmp_path.joinpath("integrated_1.expt").is_file()
+    assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
+    expts = load.experiment_list(tmp_path / "integrated_1.expt", check_format=False)
+    mosaicity = expts[0].profile.mosaicity()
+    assert mosaicity["radial"] < 0.0250 and mosaicity["radial"] > 0.0240
+    assert mosaicity["angular_0"] < 0.0265 and mosaicity["angular_0"] > 0.0255
+    assert mosaicity["angular_1"] < 0.006 and mosaicity["angular_1"] > 0.004
+
+
 @pytest.mark.parametrize("algorithm,expected_n_refls", [("stills", 614)])
 @pytest.mark.xdist_group(name="group1")
 def test_ssx_integrate_algorithms(dials_data, algorithm, expected_n_refls):

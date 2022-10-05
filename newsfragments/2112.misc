@@ -1,1 +1,0 @@
-Regenerate all module dispatchers when installing dxtbx, instead of just potential dependencies.

@@ -30,36 +30,41 @@ Usage:
 
 from __future__ import annotations
 
-import concurrent.futures
 import copy
 import json
 import logging
 import pathlib
+from dataclasses import dataclass
+from multiprocessing import Pool
+from typing import Any
 
 import iotbx.phil
 from cctbx import crystal
-from dxtbx.model import ExperimentList
+from dxtbx.model import Experiment, ExperimentList
 from libtbx import Auto
 from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
 
 from dials.algorithms.indexing.ssx.analysis import report_on_crystal_clusters
+from dials.algorithms.indexing.ssx.processing import manage_loggers
 from dials.algorithms.integration.ssx.ellipsoid_integrate import (
     EllipsoidIntegrator,
     EllipsoidOutputAggregator,
 )
 from dials.algorithms.integration.ssx.ssx_integrate import (
     OutputAggregator,
+    SimpleIntegrator,
     generate_html_report,
 )
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
+from dials.command_line.combine_experiments import CombineWithReference
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 
 try:
-    from typing import List
+    from typing import List, Type
 except ImportError:
     pass
 
@@ -163,42 +168,9 @@ loggers_to_disable_for_stills = loggers_to_disable + [
 ]
 
 
-def disable_loggers(lognames: List[str]) -> None:
-    for logname in lognames:
-        logging.getLogger(logname).disabled = True
-
-
-def process_one_image_ellipsoid_integrator(experiment, table, params):
-
-    if params.individual_log_verbosity < 2:
-        disable_loggers(loggers_to_disable)  # disable the loggers within each process
-    elif params.individual_log_verbosity == 2:
-        for name in loggers_to_disable:
-            logging.getLogger(name).setLevel(logging.INFO)
-
+def process_one_image(experiment, table, params, integrator_class):
     collect_data = params.output.html or params.output.json
-    integrator = EllipsoidIntegrator(params, collect_data)
-    try:
-        experiment, table, collector = integrator.run(experiment, table)
-    except RuntimeError as e:
-        logger.info(f"Processing failed due to error: {e}")
-        return (None, None, None)
-    else:
-        return experiment, table, collector
-
-
-def process_one_image_stills_integrator(experiment, table, params):
-
-    if params.individual_log_verbosity < 2:
-        disable_loggers(
-            loggers_to_disable_for_stills
-        )  # disable the loggers within each process
-    elif params.individual_log_verbosity == 2:
-        for name in loggers_to_disable_for_stills:
-            logging.getLogger(name).setLevel(logging.INFO)
-
-    collect_data = params.output.html or params.output.json
-    integrator = StillsIntegrator(params, collect_data)
+    integrator = integrator_class(params, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
@@ -237,10 +209,10 @@ def setup(reflections, params):
 
     # aggregate some output for json, html etc
     if params.algorithm == "ellipsoid":
-        process = process_one_image_ellipsoid_integrator
+        process = EllipsoidIntegrator
         aggregator = EllipsoidOutputAggregator()
     elif params.algorithm == "stills":
-        process = process_one_image_stills_integrator
+        process = StillsIntegrator
         aggregator = OutputAggregator()
     else:
         raise ValueError("Invalid algorithm choice")
@@ -249,81 +221,122 @@ def setup(reflections, params):
         "process": process,
         "aggregator": aggregator,
         "params": params,
+        "loggers_to_disable": (
+            loggers_to_disable
+            if params.algorithm == "ellipsoid"
+            else loggers_to_disable_for_stills
+        ),
     }
 
     return batches, configuration
 
 
-def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
-    integrated_reflections = flex.reflection_table()
-    with concurrent.futures.ProcessPoolExecutor(
-        max_workers=configuration["params"].nproc
-    ) as pool:
-        futures = {
-            pool.submit(
-                configuration["process"], expt, table, configuration["params"]
-            ): i
-            for i, (table, expt) in enumerate(zip(sub_tables, sub_expts))
+@dataclass
+class InputToIntegrate:
+    integrator_class: Type[SimpleIntegrator]
+    experiment: Experiment
+    table: flex.reflection_table
+    params: Any
+    crystalno: int
+
+
+@dataclass
+class IntegrationResult:
+    experiment: Experiment
+    table: flex.reflection_table
+    collector: Any
+    crystalno: int
+
+
+def wrap_integrate_one(input_to_integrate: InputToIntegrate):
+    expt, refls, collector = process_one_image(
+        input_to_integrate.experiment,
+        input_to_integrate.table,
+        input_to_integrate.params,
+        input_to_integrate.integrator_class,
+    )
+
+    result = IntegrationResult(expt, refls, collector, input_to_integrate.crystalno)
+    if expt and refls:
+        if not input_to_integrate.params.debug.output.shoeboxes:
+            del result.table["shoebox"]
+        logger.info(f"Processed crystal {input_to_integrate.crystalno}")
+    if input_to_integrate.params.output.nuggets:
+        img = input_to_integrate.experiment.imageset.get_image_identifier(0).split("/")[
+            -1
+        ]
+        msg = {
+            "crystal_no": input_to_integrate.crystalno,
+            "n_integrated": 0,
+            "i_over_sigma_overall": 0,
+            "image": img,
         }
-        tables_list = [0] * len(sub_expts)
-        expts_list = [0] * len(sub_expts)
-        for future in concurrent.futures.as_completed(futures):
-            j = futures[future]
-            crystalno = j + 1 + batch_offset
-            if configuration["params"].output.nuggets:
-                img = sub_expts[j].imageset.get_image_identifier(0).split("/")[-1]
-                msg = {
-                    "crystal_no": crystalno,
-                    "n_integrated": 0,
-                    "i_over_sigma_overall": 0,
-                    "image": img,
-                }
-            try:
-                expt, refls, collector = future.result()
-            except Exception as e:
-                logger.info(e)
-            else:
-                if refls and expt:
-                    logger.info(f"Processed crystal {crystalno}")
-                    tables_list[j] = refls
-                    expts_list[j] = expt
-                    configuration["aggregator"].add_dataset(collector, crystalno)
-                    if configuration["params"].output.nuggets:
-                        msg["n_integrated"] = collector.data["n_integrated"]
-                        msg["i_over_sigma_overall"] = round(
-                            collector.data["i_over_sigma_overall"], 2
-                        )
-            if configuration["params"].output.nuggets:
-                with open(
-                    configuration["params"].output.nuggets
-                    / f"nugget_integrated_{crystalno}.json",
-                    "w",
-                ) as f:
-                    f.write(json.dumps(msg))
+        if expt and refls:
+            msg["n_integrated"] = collector.data["n_integrated"]
+            msg["i_over_sigma_overall"] = round(
+                collector.data["i_over_sigma_overall"], 2
+            )
 
-        expts_list = list(filter(lambda a: a != 0, expts_list))
-        integrated_experiments = ExperimentList(expts_list)
+        with open(
+            input_to_integrate.params.output.nuggets
+            / f"nugget_integrated_{input_to_integrate.crystalno}.json",
+            "w",
+        ) as f:
+            f.write(json.dumps(msg))
+    return result
 
-        n_integrated = 0
-        for _ in range(len(tables_list)):
-            table = tables_list.pop(0)
-            if not table:
-                continue
-            # renumber actual id before extending
-            ids_map = dict(table.experiment_identifiers())
-            assert len(ids_map) == 1, ids_map
-            del table.experiment_identifiers()[list(ids_map.keys())[0]]
-            table["id"] = flex.int(table.size(), n_integrated)
-            table.experiment_identifiers()[n_integrated] = list(ids_map.values())[0]
-            n_integrated += 1
-            if not configuration["params"].debug.output.shoeboxes:
-                del table["shoebox"]
-            integrated_reflections.extend(table)
-            del table
 
-        integrated_reflections.assert_experiment_identifiers_are_consistent(
-            integrated_experiments
+def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
+
+    # create iterable
+    input_iterable: List[InputToIntegrate] = []
+    for i, (table, expt) in enumerate(zip(sub_tables, sub_expts)):
+        input_iterable.append(
+            InputToIntegrate(
+                configuration["process"],
+                expt,
+                table,
+                configuration["params"],
+                i + 1 + batch_offset,
+            )
         )
+
+    with manage_loggers(
+        configuration["params"].individual_log_verbosity,
+        configuration["loggers_to_disable"],
+    ):
+        if configuration["params"].nproc > 1:
+            with Pool(configuration["params"].nproc) as pool:
+                results: List[IntegrationResult] = pool.map(
+                    wrap_integrate_one, input_iterable
+                )
+        else:
+            results: List[IntegrationResult] = [
+                wrap_integrate_one(i) for i in input_iterable
+            ]
+
+    # then join
+    integrated_reflections = flex.reflection_table()
+    integrated_experiments = []
+
+    n_integrated = 0
+    for result in results:
+        if result.table:
+            ids_map = dict(result.table.experiment_identifiers())
+            del result.table.experiment_identifiers()[list(ids_map.keys())[0]]
+            result.table["id"] = flex.int(result.table.size(), n_integrated)
+            result.table.experiment_identifiers()[n_integrated] = list(
+                ids_map.values()
+            )[0]
+            n_integrated += 1
+            integrated_reflections.extend(result.table)
+            integrated_experiments.append(result.experiment)
+            configuration["aggregator"].add_dataset(result.collector, result.crystalno)
+
+    integrated_experiments = ExperimentList(integrated_experiments)
+    integrated_reflections.assert_experiment_identifiers_are_consistent(
+        integrated_experiments
+    )
     return integrated_experiments, integrated_reflections
 
 
@@ -416,7 +429,15 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     for i, (int_expt, int_refl, aggregator) in enumerate(
         run_integration(reflections, experiments, params)
     ):
-
+        # combine beam and detector models if not already
+        if len(int_expt.detectors()) > 1 or len(int_expt.beams()) > 1:
+            combine = CombineWithReference(
+                detector=int_expt[0].detector, beam=int_expt[0].beam
+            )
+            elist = ExperimentList()
+            for expt in int_expt:
+                elist.append(combine(expt))
+            int_expt = elist
         reflections_filename = f"integrated_{i+1}.refl"
         experiments_filename = f"integrated_{i+1}.expt"
         logger.info(f"Saving {int_refl.size()} reflections to {reflections_filename}")

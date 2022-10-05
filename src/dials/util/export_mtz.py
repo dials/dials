@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import Counter
+from copy import deepcopy
 from math import isclose
 
 import numpy as np
@@ -163,12 +164,16 @@ class UnmergedMTZWriter(MTZWriterBase):
         cell_array = flex.float(flex.grid(n_batches, 6))
 
         # Reciprocal lattice vectors in the lab frame at zero scan angle
-        S = matrix.sqr(experiment.goniometer.get_setting_rotation())
-        F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
-        UBlab = S * F * matrix.sqr(experiment.crystal.get_A())
+        if experiment.goniometer:
+            S = matrix.sqr(experiment.goniometer.get_setting_rotation())
+            F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
+            UBlab = S * F * matrix.sqr(experiment.crystal.get_A())
 
-        axis = matrix.col(experiment.goniometer.get_rotation_axis())
-        axis_datum = matrix.col(experiment.goniometer.get_rotation_axis_datum())
+            axis = matrix.col(experiment.goniometer.get_rotation_axis())
+            axis_datum = matrix.col(experiment.goniometer.get_rotation_axis_datum())
+
+        else:
+            UBlab = matrix.sqr(experiment.crystal.get_A())
 
         i0 = image_range[0]
         for i in range(n_batches):
@@ -178,7 +183,11 @@ class UnmergedMTZWriter(MTZWriterBase):
                 )
 
             # Unit cell and UB matrix for the centre of the image for scan-varying model
-            if not force_static_model and experiment.crystal.num_scan_points > 0:
+            if (
+                not force_static_model
+                and experiment.crystal.num_scan_points > 0
+                and experiment.goniometer
+            ):
 
                 # Get the index of the image in the sequence e.g. first => 0, second => 1
                 image_index = i + i0 - experiment.scan.get_image_range()[0]
@@ -653,6 +662,23 @@ def convert_to_cambridge(experiments):
     in which X is along the idealized X-ray beam and Z is along the primary
     rotation axis"""
 
+    # First handle the potential for shared experiment models - we don't
+    # want to apply multiple transformations to shared models, simplest way is
+    # to make a copy for each experiment.
+    n_expt = len(experiments)
+    if len(experiments.crystals()) < n_expt:
+        for expt in experiments:
+            expt.crystal = deepcopy(expt.crystal)
+    if len(experiments.beams()) < n_expt:
+        for expt in experiments:
+            expt.beam = deepcopy(expt.beam)
+    if len(experiments.detectors()) < n_expt:
+        for expt in experiments:
+            expt.detector = deepcopy(expt.detector)
+    if any(experiments.goniometers()) and len(experiments.goniometers()) < n_expt:
+        for expt in experiments:
+            expt.goniometer = deepcopy(expt.goniometer)
+
     for expt in experiments:
         if expt.goniometer:
             primary_axis = matrix.col(expt.goniometer.get_rotation_axis_datum())
@@ -664,18 +690,19 @@ def convert_to_cambridge(experiments):
         axis_angle = r3_rotation_axis_and_angle_from_matrix(R)
         axis = matrix.col(axis_angle.axis)
         angle = axis_angle.angle()
-        logger.info(
+        logger.debug(
             f"Rotating experiment{'s' if len(experiments) else ''} about axis {axis.elems} by {np.degrees(angle):.2f}°"
         )
         expt.detector.rotate_around_origin(axis, angle, deg=False)
         expt.beam.rotate_around_origin(axis, angle, deg=False)
 
         # For the goniometer, each component needs transformation
-        F = matrix.sqr(expt.goniometer.get_fixed_rotation())
-        expt.goniometer.set_fixed_rotation(R * F * R.transpose())
-        expt.goniometer.set_rotation_axis_datum(R * primary_axis)
-        S = matrix.sqr(expt.goniometer.get_setting_rotation())
-        expt.goniometer.set_setting_rotation(R * S * R.transpose())
+        if expt.goniometer:
+            F = matrix.sqr(expt.goniometer.get_fixed_rotation())
+            expt.goniometer.set_fixed_rotation(R * F * R.transpose())
+            expt.goniometer.set_rotation_axis_datum(R * primary_axis)
+            S = matrix.sqr(expt.goniometer.get_setting_rotation())
+            expt.goniometer.set_setting_rotation(R * S * R.transpose())
 
         if expt.crystal is not None:
             expt.crystal = rotate_crystal(expt.crystal, R, axis, angle)

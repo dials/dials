@@ -179,7 +179,13 @@ def test_ResolutionPlotsAndStats(iobs):
     )
 
     tables = plotter.statistics_tables()
-    assert len(tables) == 2  # overall and per resolution
+    for expected in [
+        "overall",
+        "resolution_binned",
+        "cc_half_significance_level",
+        "overall_summary_data",
+    ]:
+        assert expected in tables  # overall and per resolution
 
     # test plots individually
     d = plotter.cc_one_half_plot()

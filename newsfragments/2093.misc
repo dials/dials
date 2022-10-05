@@ -1,1 +1,0 @@
-Move get_flex_image, get_flex_image_multipanel to their own module, so that they can be imported without importing wx.

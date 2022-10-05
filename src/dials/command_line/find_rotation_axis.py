@@ -15,6 +15,7 @@ Examples::
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import sys
 
@@ -23,11 +24,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import dxtbx.flumpy as flumpy
+import libtbx
 import libtbx.phil
 
 import dials.util
 import dials.util.log
 from dials.array_family import flex
+from dials.util.mp import available_cores
 
 # from dials.array_family import flex
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
@@ -64,6 +67,12 @@ opposite = False
     .type = bool
     .help = "Try the opposite from the initial value (or that given by"
             "azimuth=VAL)"
+
+nproc = Auto
+    .help = "Number of processes over which to split the search. If set to"
+            "Auto, DIALS will choose automatically."
+    .type = int(value_min=1)
+    .expert_level = 1
 
 output {
     experiments = optimised.expt
@@ -214,6 +223,13 @@ def make(arr, azimuth: float, wavelength: float):
     return xyz
 
 
+def calc_var(arr, azimuth, wavelength, hist_bins):
+    xyz = make(arr, azimuth, wavelength)
+    H, _, _ = cylinder_histo(xyz, bins=hist_bins)
+    var = np.var(H)
+    return var
+
+
 def optimise(
     arr,
     azimuth_start: float,
@@ -221,7 +237,7 @@ def optimise(
     plusminus: int = 180,
     step: int = 10,
     hist_bins: (int, int) = (1000, 500),
-    plot: bool = False,
+    nproc: int = 1,
 ) -> float:
     """
     Optimise the value of azimuth around the given point.
@@ -231,7 +247,7 @@ def optimise(
         step, plusminus: together with azimuth_start define the range of values
             to loop over
         hist_bins: size of the 2d histogram to produce the final phi/theta plot
-        plot: toggle to plot the histogram after each step
+        nproc: number of processes over which to split the search
 
     Returns:
         The best value for the azimuth angle
@@ -242,26 +258,19 @@ def optimise(
     best_score = 0
     best_azimuth = 0
 
-    for azimuth in r:
-        xyz = make(arr, azimuth, wavelength)
+    if nproc > 1:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
+            vvals = [
+                pool.submit(calc_var, arr, azimuth, wavelength, hist_bins)
+                for azimuth in r
+            ]
+        vvals = [e.result() for e in vvals]
+    else:
+        # For nproc=1 keep the jobs in the main process
+        vvals = [calc_var(arr, azimuth, wavelength, hist_bins) for azimuth in r]
 
-        H, xedges, yedges = cylinder_histo(xyz, bins=hist_bins)
-
-        var = np.var(H)
-
+    for azimuth, var in zip(r, vvals):
         logger.info(f"azimuth: {azimuth:8.2f}, variance: {var:5.2f}")
-
-        if plot:
-            plot_histo(
-                H,
-                xedges,
-                yedges,
-                title=f"azimuth={azimuth:.2f}$^\\circ$ | variance: {var:.2f}",
-            )
-
-        xvals.append(azimuth)
-        vvals.append(var)
-
         if var > best_score:
             best_azimuth = azimuth
             best_score = var
@@ -376,7 +385,7 @@ def run(args=None, phil=phil_scope):
     expt = experiments[0]
     wavelength = expt.beam.get_wavelength()
     rotx, roty, _ = expt.goniometer.get_rotation_axis()
-    azimuth_current = np.degrees(np.arctan2(roty, rotx))
+    azimuth_current = np.degrees(np.arctan2(-roty, rotx))
     arr = extract_spot_data(reflections, experiments, params.max_two_theta)
 
     if params.azimuth is not None:
@@ -399,6 +408,10 @@ def run(args=None, phil=phil_scope):
         f"                 {np.radians(azimuth_current):.5f} radians"
     )
 
+    if params.nproc is libtbx.Auto:
+        params.nproc = available_cores()
+        logger.info("Setting nproc={}".format(params.nproc))
+
     hist_bins = 1000, 500
 
     if params.view:
@@ -417,17 +430,35 @@ def run(args=None, phil=phil_scope):
             logger.info("Performing global search")
             azimuth_tmp = 0
             azimuth_global = azimuth_tmp = optimise(
-                arr, azimuth_tmp, wavelength, plusminus=180, step=5, hist_bins=hist_bins
+                arr,
+                azimuth_tmp,
+                wavelength,
+                plusminus=180,
+                step=5,
+                hist_bins=hist_bins,
+                nproc=params.nproc,
             )
 
         logger.info("Performing local search")
         azimuth_local = azimuth_tmp = optimise(
-            arr, azimuth_tmp, wavelength, plusminus=5, step=1, hist_bins=hist_bins
+            arr,
+            azimuth_tmp,
+            wavelength,
+            plusminus=5,
+            step=1,
+            hist_bins=hist_bins,
+            nproc=params.nproc,
         )
 
         logger.info("Performing fine search")
         azimuth_fine = azimuth_tmp = optimise(
-            arr, azimuth_tmp, wavelength, plusminus=1, step=0.1, hist_bins=hist_bins
+            arr,
+            azimuth_tmp,
+            wavelength,
+            plusminus=1,
+            step=0.1,
+            hist_bins=hist_bins,
+            nproc=params.nproc,
         )
 
         azimuth_final = azimuth_tmp

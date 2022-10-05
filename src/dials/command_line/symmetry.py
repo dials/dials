@@ -97,6 +97,11 @@ systematic_absences {
     .type = bool
     .help = "Check systematic absences for the current laue group."
 
+  method = *direct fourier
+    .type = choice
+    .help = "Use fourier analysis or direct analysis of I/sigma to determine"
+            "likelihood of systematic absences"
+
   significance_level = *0.95 0.975 0.99
     .type = choice
     .help = "Signficance to use when testing whether axial reflections are "
@@ -384,6 +389,9 @@ def symmetry(experiments, reflection_tables, params=None):
             )
         )
         # Reindex the input data
+        _, refls_for_sym = _reindex_experiments_reflections(
+            experiments, refls_for_sym, best_space_group, cb_op_inp_best
+        )
         experiments, reflection_tables = _reindex_experiments_reflections(
             experiments, reflection_tables, best_space_group, cb_op_inp_best
         )
@@ -451,12 +459,16 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 joint_reflections = refls_for_sym[0]
 
             merged_reflections = prepare_merged_reflection_table(
-                experiments, joint_reflections, d_min
+                experiments,
+                joint_reflections,
+                d_min,
+                partiality_threshold=params.partiality_threshold,
             )
             run_systematic_absences_checks(
                 experiments,
                 merged_reflections,
                 float(params.systematic_absences.significance_level),
+                method=params.systematic_absences.method,
             )
 
     logger.info(

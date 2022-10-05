@@ -265,12 +265,12 @@ def test_targeted_scaling_against_mtz(dials_data, tmp_path):
 
     refl = location / "scaled_30.refl"
     expt = location / "scaled_30.expt"
-    target_mtz = tmp_path / "unmerged.mtz"
+    reference = tmp_path / "unmerged.mtz"
     command = [
         "dials.scale",
         refl,
         expt,
-        f"target_mtz={target_mtz}",
+        f"reference={reference}",
         "unmerged_mtz=unmerged_2.mtz",
     ]
 
@@ -565,7 +565,8 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     assert result.overall.cc_one_half > 0.89  # on 04/05/22 on mac was 0.893
     assert result.overall.n_obs > 20000  # on 04/05/22 on mac was 20188
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == [
         [[16, 24], 4]
     ]
@@ -600,7 +601,8 @@ def test_scale_and_filter_termination(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
     assert analysis_results["termination_reason"] == "max_percent_removed"
     assert len(analysis_results["cycle_results"]["1"]["removed_datasets"]) == 1
     refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
@@ -629,7 +631,8 @@ def test_scale_and_filter_image_group_single_dataset(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == []
     assert len(analysis_results["cycle_results"].keys()) == 1
     assert analysis_results["termination_reason"] == "no_more_removed"
@@ -727,7 +730,8 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == [
         analysis_results["initial_expids_and_image_ranges"][4][0]
     ]
