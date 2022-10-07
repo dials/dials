@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import pytest
+
 from dials.util.image_grouping import (
     ConstantMetadataForFile,
+    FilePair,
     ImageFile,
     MetadataInFile,
     ParsedYAML,
     RepeatInImageFile,
+    _determine_groupings,
+    _files_to_groups,
+    _get_expt_file_to_groupsdata,
     example_yaml,
     simple_template_example,
 )
@@ -72,11 +78,133 @@ def test_yml_parsing_template(tmp_path):
 
     # check the metadata was found
     assert parsed.metadata_items["dose_point"] == {I1: RepeatInImageFile(10)}
+    assert parsed.metadata_items["wavelength"] == {I1: ConstantMetadataForFile(1)}
 
     # Now check the two groupings
     assert list(parsed.groupings.keys()) == ["merge_by"]
     merge_by = parsed.groupings["merge_by"]
-    assert merge_by.metadata_names == {"dose_point"}
-    assert merge_by._images_to_metadata[I1] == {"dose_point": RepeatInImageFile(10)}
-    assert merge_by.tolerances == {"dose_point": 0.1}
+    assert merge_by.metadata_names == {"dose_point", "wavelength"}
+    assert merge_by._images_to_metadata[I1] == {
+        "dose_point": RepeatInImageFile(10),
+        "wavelength": ConstantMetadataForFile(1),
+    }
+    assert merge_by.tolerances == {"dose_point": 0.1, "wavelength": 0.01}
     print(merge_by)  # test the __str__ method
+
+    groups = _determine_groupings(merge_by)
+
+    for g in groups:
+        print(g)
+    ftg = _files_to_groups(merge_by.extract_data(), groups)
+    iitgi = ftg[I1]["img_idx_to_group_id"]
+    assert iitgi.repeat == 10
+    assert iitgi.single_return_val is None
+    assert iitgi.group_ids is None
+
+
+invalid_example = """
+---
+images:
+  - "/path/to/example_master.h5"
+metadata:
+  timepoint:
+    "/path/to/example_master.h5" : "/path/to/meta.h5:/timepoint"
+  wavelength:
+    "/path/to/example_master.h5" : "repeat=2"
+structure:
+  merge_by:
+    values:
+      - timepoint
+      - wavelength
+    tolerances:
+      - 0.1
+      - 0.01
+"""
+invalid_example_2 = """
+---
+images:
+  - "/path/to/example_master.h5"
+metadata:
+  timepoint:
+    "/path/to/example_master.h5" : "repeat=4"
+  wavelength:
+    "/path/to/example_master.h5" : "repeat=2"
+structure:
+  merge_by:
+    values:
+      - timepoint
+      - wavelength
+    tolerances:
+      - 0.1
+      - 0.01
+"""
+
+
+def test_invalid_yml(tmp_path):
+    with open(tmp_path / "example.yaml", "w") as f:
+        f.write(invalid_example)
+    with pytest.raises("AssertionError"):
+        _ = ParsedYAML(tmp_path / "example.yaml")
+    with open(tmp_path / "example_2.yaml", "w") as f:
+        f.write(invalid_example_2)
+    with pytest.raises("AssertionError"):
+        _ = ParsedYAML(tmp_path / "example_2.yaml")
+
+
+import os
+import subprocess
+from pathlib import Path
+
+
+def test_real_example(tmp_path, dials_data):
+    ssx = dials_data("cunir_serial", pathlib=True)
+    fpath = str(os.fspath(ssx)) + "/merlin0047_#####.cbf"
+    real_example = f"""
+---
+templates:
+  - "{fpath}"
+metadata:
+  timepoint:
+    "{fpath}" : "repeat=2"
+structure:
+  merge_by:
+    values:
+      - timepoint
+    tolerances:
+      - 0.1
+"""
+    with open(tmp_path / "real_example.yaml", "w") as f:
+        print(real_example)
+        f.write(real_example)
+
+    parsed = ParsedYAML(tmp_path / "real_example.yaml")
+    mergeby = parsed.groupings["merge_by"]
+    groups = _determine_groupings(mergeby)
+    ftg = _files_to_groups(mergeby.extract_data(), groups)
+
+    args = ["dials.import", f"template={fpath}"]
+    result = subprocess.run(args, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+    args = ["dials.find_spots", "imported.expt"]
+    result = subprocess.run(args, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+    args = [
+        "dev.dials.ssx_index",
+        "imported.expt",
+        "strong.refl",
+        "unit_cell=96.4,96.4,96.4,90,90,90",
+        "space_group=P213",
+    ]
+    result = subprocess.run(args, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
+
+    """fps = [
+        FilePair(Path(tmp_path/ "split_0.expt"), Path(tmp_path/ "split_0.refl")),
+        FilePair(Path(tmp_path/ "split_1.expt"), Path(tmp_path/ "split_1.refl")),
+    ]"""
+    expt_file_to_groupsdata = _get_expt_file_to_groupsdata(fps, ftg)
+
+    assert list(expt_file_to_groupsdata[fps[0].expt].groups_array) == [0, 1, 0, 1, 0]
+    assert 0
