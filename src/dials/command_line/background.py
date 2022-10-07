@@ -34,6 +34,10 @@ phil_scope = iotbx.phil.parse(
     """\
 n_bins = 100
   .type = int
+n_checkpoints = None
+  .type = int(value_min=1)
+  .help = "Number of evenly-spaced checkpoint images on which to perform the"
+          "analysis. Has no effect if images are also specified"
 images = None
   .type = ints
   .help = "Images on which to perform the analysis (otherwise use all images)"
@@ -99,6 +103,15 @@ def run(args=None):
     for i_imgset, imageset in enumerate(imagesets):
         first, last = imageset.get_scan().get_image_range()
         images = range(first, last + 1)
+
+        if params.n_checkpoints:
+            if params.n_checkpoints == 1:
+                images = (first,)
+            elif params.n_checkpoints == 2:
+                images = (first, last)
+            else:
+                step = max(1, int((last - first) / (params.n_checkpoints - 1)))
+                images = range(first, last + 1, step)
 
         if params.images:
             if min(params.images) < first or max(params.images) > last:
