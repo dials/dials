@@ -312,14 +312,11 @@ def run_filtering(params, experiments, reflections):
             raise Sorry(e)
 
     if params.remove_by_index:
-        to_remove=flex.size_t(params.remove_by_index)
-        filter=flex.bool(len(reflections), True)
+        to_remove = flex.size_t(params.remove_by_index)
+        filter = flex.bool(len(reflections), True)
         filter.set_selected(to_remove, False)
         reflections = reflections.select(filter)
-        print(
-            "Selected %d reflections after removing by index"
-            % (len(reflections))
-        )
+        print("Selected %d reflections after removing by index" % (len(reflections)))
 
     # Dead time filter
     if params.dead_time.value > 0:
