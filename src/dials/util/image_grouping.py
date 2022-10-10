@@ -770,7 +770,6 @@ class GroupingImageTemplates(object):
                     groups_for_this = []
                     for iset in expts.imagesets():
                         for p in iset.paths():
-                            print(p)
                             t = template_regex(p)
                             groups_for_this.append(group_indices[t[1]])
                     groupdata.groups_array = np.array(groups_for_this)
@@ -839,3 +838,112 @@ class GroupingImageTemplates(object):
                     fp = result[1]
                     filesdict[name].append(fp)
         return filesdict
+
+
+class GroupingImageFiles(GroupingImageTemplates):
+    @staticmethod
+    def _files_to_groups(
+        metadata: Dict[ImageFile, Dict[str, ExtractedValues]],
+        groups: List[MetaDataGroup],
+    ) -> dict[ImageFile, GroupInfo]:
+
+        # Ok now we have the groupings of the metadata. Now find which groups each
+        # file contains.
+        # Purpose here is to create an object that will allow easy allocation from
+        # image to group
+        file_to_groups: dict[ImageFile, GroupInfo] = {
+            n: {"group_ids": [], "img_idx_to_group_id": ImgIdxToGroupId()}
+            for n in metadata.keys()
+        }
+        for f in file_to_groups:
+            metaforfile = metadata[f]
+            for i, group in enumerate(groups):
+                in_group = np.array([])
+                # loop through metadata names, see if any data within limits
+                repeat_val = None
+                for n, extracted in metaforfile.items():
+                    data = extracted.data
+                    if extracted.is_repeat:
+                        assert repeat_val is None
+                        repeat_val = len(data)
+                    minv, maxv = group.min_max_for_metadata(n)
+                    s1 = data >= minv
+                    s2 = data < maxv
+                    if in_group.size == 0:
+                        in_group = s1 & s2
+                    else:
+                        in_group = in_group & s1 & s2
+                if any(in_group):
+                    file_to_groups[f]["group_ids"].append(i)
+                    if in_group.size == 1:
+                        # this means that all of the data arrays were size 1, i.e.
+                        # all metadata items are simple labels, therefore all
+                        # data for this image must belong to a single group.
+                        file_to_groups[f]["img_idx_to_group_id"].single_return_val = i
+                    elif repeat_val:
+                        file_to_groups[f]["img_idx_to_group_id"].repeat = repeat_val
+                    else:
+                        if file_to_groups[f]["img_idx_to_group_id"].group_ids:
+                            file_to_groups[f]["img_idx_to_group_id"].set_selected(
+                                flumpy.from_numpy(in_group), i
+                            )
+                        else:
+                            file_to_groups[f]["img_idx_to_group_id"].add_selection(
+                                flex.int(in_group.size, 0)
+                            )
+                            file_to_groups[f]["img_idx_to_group_id"].set_selected(
+                                flumpy.from_numpy(in_group), i
+                            )
+
+        return file_to_groups
+
+    def get_expt_file_to_groupsdata(self, integrated_files: List[FilePair]):
+        expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = {}
+
+        for fp in integrated_files:
+            expts = load.experiment_list(fp.expt, check_format=False)
+            # need to match the images to the imagesets.
+            images = set()
+            image_to_group_info = {}
+            for iset in expts.imagesets():
+                images.update(iset.paths())
+            for iset in images:
+                image = None
+                for ifile in self._files_to_groups_dict.keys():
+                    if iset == ifile.name:
+                        image = ifile
+                        break
+                if image is None:
+                    raise ValueError(f"Imageset {iset} not found in metadata")
+                image_to_group_info[iset] = self._files_to_groups_dict[image]
+
+            groupdata = GroupsIdentifiersForExpt()
+            # from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
+
+            if len(images) == 1:
+                group_info: GroupInfo = image_to_group_info[list(images)[0]]
+                if len(group_info["group_ids"]) == 1:
+                    groupdata.single_group = group_info["group_ids"][
+                        0
+                    ]  # all data from this expt goes to a single group
+                    groupdata.unique_group_numbers = set(group_info["group_ids"])
+                else:  # one h5 image, but more than one group
+                    groups_for_this = []
+                    group_indices = group_info["img_idx_to_group_id"]
+                    for expt in expts:
+                        index = expt.imageset.indices()[0]
+                        idx = group_indices[index]
+                        groups_for_this.append(idx)
+                    groupdata.groups_array = np.array(groups_for_this)
+                    groupdata.unique_group_numbers = set(groupdata.groups_array)
+            else:  # multiple h5 images
+                groups_for_this = []
+                for expt in expts:
+                    img, index = expt.imageset.paths()[0], expt.imageset.indices()[0]
+                    idx = image_to_group_info[img]["img_idx_to_group_id"][index]
+                    groups_for_this.append(idx)
+                groupdata.groups_array = np.array(groups_for_this)
+                groupdata.unique_group_numbers = set(groupdata.groups_array)
+
+            expt_file_to_groupsdata[fp.expt] = groupdata
+        return expt_file_to_groupsdata
