@@ -14,6 +14,7 @@ from dials.util.image_grouping import (
     _get_expt_file_to_groupsdata,
     example_yaml,
     simple_template_example,
+    GroupingImageTemplates,
 )
 
 
@@ -179,12 +180,12 @@ structure:
 
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
     mergeby = parsed.groupings["merge_by"]
-    groups = _determine_groupings(mergeby)
-    ftg = _files_to_groups(mergeby.extract_data(), groups)
+    handler = GroupingImageTemplates(mergeby)
 
     args = ["dials.import", f"template={fpath}"]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
+
     args = ["dials.find_spots", "imported.expt"]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
@@ -194,17 +195,48 @@ structure:
         "strong.refl",
         "unit_cell=96.4,96.4,96.4,90,90,90",
         "space_group=P213",
+        "nproc=1",
     ]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
-
+    from dxtbx.serialize import load
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
+    #expt_file_to_groupsdata = handler.get_expt_file_to_groupsdata(fps)
+    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    #expect 1, 2, 3, 4 - 17001, 17002, 17003, 17004
+    # assert list(expt_file_to_groupsdata[fps[0].expt].groups_array) == [1, 0, 1, 0]
 
-    """fps = [
-        FilePair(Path(tmp_path/ "split_0.expt"), Path(tmp_path/ "split_0.refl")),
-        FilePair(Path(tmp_path/ "split_1.expt"), Path(tmp_path/ "split_1.refl")),
-    ]"""
-    expt_file_to_groupsdata = _get_expt_file_to_groupsdata(fps, ftg)
+    assert list(fd.keys()) == ["group_1", "group_2"]
+    filelist_1 = fd["group_1"]
+    assert len(filelist_1) == 1
+    expts1 = load.experiment_list(filelist_1[0].expt)
+    assert len(expts1) == 2
+    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17002.cbf"
+    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17004.cbf"
+    filelist_2 = fd["group_2"]
+    assert len(filelist_2) == 1
+    expts2 = load.experiment_list(filelist_2[0].expt)
+    assert len(expts2) == 2
+    assert expts2[0].imageset.get_path(0).split("_")[-1] == "17001.cbf"
+    assert expts2[1].imageset.get_path(0).split("_")[-1] == "17003.cbf"
 
-    assert list(expt_file_to_groupsdata[fps[0].expt].groups_array) == [0, 1, 0, 1, 0]
-    assert 0
+    fps = [FilePair(Path(tmp_path / "imported.expt"), Path(tmp_path / "strong.refl"))]
+    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    #expt_file_to_groupsdata = handler.get_expt_file_to_groupsdata(fps)
+    #expect 0, 1, 2, 3, 4 - 17000, 17001, 17002, 17003, 17004
+    assert list(fd.keys()) == ["group_1", "group_2"]
+    filelist_1 = fd["group_1"]
+    assert len(filelist_1) == 1
+    expts1 = load.experiment_list(filelist_1[0].expt)
+    assert len(expts1) == 3
+    assert expts1[0].scan.get_image_range()[0] == 17000
+    assert expts1[1].scan.get_image_range()[0] == 17002
+    assert expts1[2].scan.get_image_range()[0] == 17004
+    filelist_2 = fd["group_2"]
+    assert len(filelist_2) == 1
+    expts2 = load.experiment_list(filelist_2[0].expt)
+    assert len(expts2) == 2
+    assert expts2[0].scan.get_image_range()[0] == 17001
+    assert expts2[1].scan.get_image_range()[0] == 17003
+
+    #assert list(expt_file_to_groupsdata[fps[0].expt].groups_array) == [0, 1, 0, 1, 0]

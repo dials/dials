@@ -8,10 +8,11 @@ grouping structure.
 from __future__ import annotations
 
 from collections import defaultdict
-from copyreg import remove_extension
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, TypedDict
+
+from multiprocessing import Pool
 
 import h5py
 import numpy as np
@@ -534,7 +535,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
 
 
 from dxtbx import flumpy
-from scitbx.array_family import flex
+from dials.array_family import flex
 
 
 def _files_to_groups(
@@ -624,6 +625,194 @@ class FilePair:
 
 
 from dxtbx.serialize import load
+
+@dataclass
+class InputIterable(object):
+    working_directory: Path
+    fp: FilePair
+    fileindex: int
+    groupindex: int
+    groupdata: GroupsIdentifiersForExpt
+    name: str
+    reduction_params: Any
+
+def save_subset(input_):
+    expts = load.experiment_list(input_.fp.expt, check_format=False)
+    refls = flex.reflection_table.from_file(input_.fp.refl)
+    groupdata = input_.groupdata
+    if groupdata.single_group == input_.groupindex:
+        pass
+    else:
+        # need to select
+        identifiers = expts.identifiers()
+        sel = input_.groupdata.groups_array == input_.groupindex
+        sel_identifiers = list(identifiers.select(flumpy.from_numpy(sel)))
+        expts.select_on_experiment_identifiers(sel_identifiers)
+        refls.select_on_experiment_identifiers(sel_identifiers)
+    if expts:
+        exptout = input_.working_directory / f"group_{input_.groupindex}_{input_.fileindex}.expt"
+        reflout = input_.working_directory / f"group_{input_.groupindex}_{input_.fileindex}.refl"
+        expts.as_file(exptout)
+        refls.as_file(reflout)
+        return (input_.name, FilePair(exptout, reflout))
+    return None
+
+class GroupingImageTemplates(object):
+
+    def __init__(self, parsed_group: ParsedGrouping, nproc=1):
+        self._parsed_group = parsed_group
+        self.nproc = nproc
+        self._grouping_metadata = parsed_group.extract_data()
+        self._groups = _determine_groupings(parsed_group)
+        self._files_to_groups_dict = self._files_to_groups(self._grouping_metadata, self._groups)
+
+    @staticmethod
+    def _files_to_groups(
+        metadata: Dict[ImageFile, Dict[str, ExtractedValues]], groups: List[MetaDataGroup]
+    ) -> dict[ImageFile, GroupInfo]:
+
+        # Ok now we have the groupings of the metadata. Now find which groups each
+        # file contains.
+        # Purpose here is to create an object that will allow easy allocation from
+        # image to group
+        file_to_groups: dict[ImageFile, GroupInfo] = {
+            n: {"group_ids": [], "img_idx_to_group_id": ImgIdxToGroupId()}
+            for n in metadata.keys()
+        }
+        for f in file_to_groups:
+            metaforfile = metadata[f]
+            for i, group in enumerate(groups):
+                in_group = np.array([])
+                # loop through metadata names, see if any data within limits
+                repeat_val = None
+                for n, extracted in metaforfile.items():
+                    data = extracted.data
+                    if extracted.is_repeat:
+                        assert repeat_val is None
+                        repeat_val = len(data)
+                    minv, maxv = group.min_max_for_metadata(n)
+                    s1 = data >= minv
+                    s2 = data < maxv
+                    if in_group.size == 0:
+                        in_group = s1 & s2
+                    else:
+                        in_group = in_group & s1 & s2
+                if any(in_group):
+                    file_to_groups[f]["group_ids"].append(i)
+                    if in_group.size == 1:
+                        # this means that all of the data arrays were size 1, i.e.
+                        # all metadata items are simple labels, therefore all
+                        # data for this image must belong to a single group.
+                        file_to_groups[f]["img_idx_to_group_id"].single_return_val = i
+                    elif repeat_val:
+                        file_to_groups[f]["img_idx_to_group_id"].repeat = repeat_val
+                    else:
+                        raise ValueError("Templates only support repeat metadata or single value metadata")
+
+        return file_to_groups
+
+    def get_expt_file_to_groupsdata(self, integrated_files:List[FilePair]):
+        expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = {}
+
+        for fp in integrated_files:
+            expts = load.experiment_list(fp.expt, check_format=False)
+            # need to match the images to the imagesets.
+            images = set()
+            for iset in expts.imagesets():
+                images.update(iset.paths())
+            from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
+            template_to_group_indices = {}
+            for iset in group_files_by_imageset(images):
+                image = None
+                for ifile in self._files_to_groups_dict.keys():
+                    if iset == ifile.name:
+                        image = ifile
+                        break
+                if image is None:
+                    raise ValueError(f"Imageset {iset} not found in metadata")
+                template_to_group_indices[iset] = self._files_to_groups_dict[image]["img_idx_to_group_id"]
+
+            groupdata = GroupsIdentifiersForExpt()
+
+            if len(template_to_group_indices) == 1:  # the experiment list only refers to one template.
+                group_indices: ImgIdxToGroupId = list(template_to_group_indices.values())[0]
+                if group_indices.single_return_val is not None:
+                    groupdata.single_group = group_indices.single_return_val
+                    groupdata.unique_group_numbers = set(group_indices.single_return_val)
+                else:
+                    # the image goes to several groups, we just need to know the groups
+                    # relevant for these images
+                    groups_for_this = []
+                    for iset in expts.imagesets():
+                        for p in iset.paths():
+                            print(p)
+                            t = template_regex(p)
+                            groups_for_this.append(group_indices[t[1]])
+                    groupdata.groups_array = np.array(groups_for_this)
+                    groupdata.unique_group_numbers = set(groupdata.groups_array)
+            else:
+                # the expt list contains data from more than one image/template
+                groups_for_this = []
+                for iset in expts.imagesets():
+                    templ = template_regex(iset.paths()[0])[0]
+                    group_indices: ImgIdxToGroupId = template_to_group_indices[templ]
+                    for p in iset.paths():
+                        t = template_regex(p)
+                        groups_for_this.append(
+                            group_indices[t[1]])
+                groupdata.groups_array = np.array(groups_for_this)
+                groupdata.unique_group_numbers = set(groupdata.groups_array)
+            expt_file_to_groupsdata[fp.expt] = groupdata
+        return expt_file_to_groupsdata
+
+    def split_files_to_groups(
+        self,
+        working_directory: Path,
+        integrated_files: List[FilePair],
+        reduction_params,
+        function_to_apply = save_subset,
+        prefix="",
+    ):
+
+        expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = self.get_expt_file_to_groupsdata(
+            integrated_files
+        )
+        template = "{name}group_{index:0{maxindexlength:d}d}"
+        name_template = functools.partial(
+            template.format,
+            name=f"{prefix}",
+            maxindexlength=len(str(len(self._groups))),
+        )
+
+        names: List[str] = [name_template(index=i + 1) for i, _ in enumerate(self._groups)]
+        filesdict: dict[str, List[FilePair]] = {name: [] for name in names}
+
+        input_iterable = []
+        for g, name in enumerate(names):
+            for i, fp in enumerate(integrated_files):
+                groupdata = expt_file_to_groupsdata[fp.expt]
+                if g in groupdata.unique_group_numbers:#groupdata.single_group == g:
+                    # all data into single group, so no selection needed.
+                    input_iterable.append(
+                        InputIterable(
+                            working_directory,
+                            fp,
+                            i,
+                            g,
+                            groupdata,
+                            name,
+                            reduction_params,
+                        )
+                    )
+        if input_iterable:
+            with Pool(min(self.nproc, len(input_iterable))) as pool:
+                results = pool.map(function_to_apply, input_iterable)
+            for result in results:
+                if result:
+                    name = result[0]
+                    fp = result[1]
+                    filesdict[name].append(fp)
+        return filesdict
 
 
 def _get_expt_file_to_groupsdata(
