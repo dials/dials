@@ -9,10 +9,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Dict, List, TypedDict
-
-from multiprocessing import Pool
 
 import h5py
 import numpy as np
@@ -433,11 +432,14 @@ import itertools
 class MetaDataGroup(object):
     def __init__(self, data_dict):
         self._data_dict = data_dict
+        self._default_all = False
 
     def min_max_for_metadata(self, name):
         return (self._data_dict[name]["min"], self._data_dict[name]["max"])
 
     def __str__(self):
+        if self._default_all:
+            return "all data"
         return "\n".join(
             f"  {k} : {v['min']} - {v['max']}" for k, v in self._data_dict.items()
         )
@@ -535,6 +537,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
 
 
 from dxtbx import flumpy
+
 from dials.array_family import flex
 
 
@@ -626,6 +629,7 @@ class FilePair:
 
 from dxtbx.serialize import load
 
+
 @dataclass
 class InputIterable(object):
     working_directory: Path
@@ -635,6 +639,7 @@ class InputIterable(object):
     groupdata: GroupsIdentifiersForExpt
     name: str
     reduction_params: Any
+
 
 def save_subset(input_):
     expts = load.experiment_list(input_.fp.expt, check_format=False)
@@ -650,25 +655,34 @@ def save_subset(input_):
         expts.select_on_experiment_identifiers(sel_identifiers)
         refls.select_on_experiment_identifiers(sel_identifiers)
     if expts:
-        exptout = input_.working_directory / f"group_{input_.groupindex}_{input_.fileindex}.expt"
-        reflout = input_.working_directory / f"group_{input_.groupindex}_{input_.fileindex}.refl"
+        exptout = (
+            input_.working_directory
+            / f"group_{input_.groupindex}_{input_.fileindex}.expt"
+        )
+        reflout = (
+            input_.working_directory
+            / f"group_{input_.groupindex}_{input_.fileindex}.refl"
+        )
         expts.as_file(exptout)
         refls.as_file(reflout)
         return (input_.name, FilePair(exptout, reflout))
     return None
 
-class GroupingImageTemplates(object):
 
+class GroupingImageTemplates(object):
     def __init__(self, parsed_group: ParsedGrouping, nproc=1):
         self._parsed_group = parsed_group
         self.nproc = nproc
         self._grouping_metadata = parsed_group.extract_data()
         self._groups = _determine_groupings(parsed_group)
-        self._files_to_groups_dict = self._files_to_groups(self._grouping_metadata, self._groups)
+        self._files_to_groups_dict = self._files_to_groups(
+            self._grouping_metadata, self._groups
+        )
 
     @staticmethod
     def _files_to_groups(
-        metadata: Dict[ImageFile, Dict[str, ExtractedValues]], groups: List[MetaDataGroup]
+        metadata: Dict[ImageFile, Dict[str, ExtractedValues]],
+        groups: List[MetaDataGroup],
     ) -> dict[ImageFile, GroupInfo]:
 
         # Ok now we have the groupings of the metadata. Now find which groups each
@@ -707,11 +721,13 @@ class GroupingImageTemplates(object):
                     elif repeat_val:
                         file_to_groups[f]["img_idx_to_group_id"].repeat = repeat_val
                     else:
-                        raise ValueError("Templates only support repeat metadata or single value metadata")
+                        raise ValueError(
+                            "Templates only support repeat metadata or single value metadata"
+                        )
 
         return file_to_groups
 
-    def get_expt_file_to_groupsdata(self, integrated_files:List[FilePair]):
+    def get_expt_file_to_groupsdata(self, integrated_files: List[FilePair]):
         expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = {}
 
         for fp in integrated_files:
@@ -721,6 +737,7 @@ class GroupingImageTemplates(object):
             for iset in expts.imagesets():
                 images.update(iset.paths())
             from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
+
             template_to_group_indices = {}
             for iset in group_files_by_imageset(images):
                 image = None
@@ -730,15 +747,23 @@ class GroupingImageTemplates(object):
                         break
                 if image is None:
                     raise ValueError(f"Imageset {iset} not found in metadata")
-                template_to_group_indices[iset] = self._files_to_groups_dict[image]["img_idx_to_group_id"]
+                template_to_group_indices[iset] = self._files_to_groups_dict[image][
+                    "img_idx_to_group_id"
+                ]
 
             groupdata = GroupsIdentifiersForExpt()
 
-            if len(template_to_group_indices) == 1:  # the experiment list only refers to one template.
-                group_indices: ImgIdxToGroupId = list(template_to_group_indices.values())[0]
+            if (
+                len(template_to_group_indices) == 1
+            ):  # the experiment list only refers to one template.
+                group_indices: ImgIdxToGroupId = list(
+                    template_to_group_indices.values()
+                )[0]
                 if group_indices.single_return_val is not None:
                     groupdata.single_group = group_indices.single_return_val
-                    groupdata.unique_group_numbers = set(group_indices.single_return_val)
+                    groupdata.unique_group_numbers = set(
+                        group_indices.single_return_val
+                    )
                 else:
                     # the image goes to several groups, we just need to know the groups
                     # relevant for these images
@@ -758,8 +783,7 @@ class GroupingImageTemplates(object):
                     group_indices: ImgIdxToGroupId = template_to_group_indices[templ]
                     for p in iset.paths():
                         t = template_regex(p)
-                        groups_for_this.append(
-                            group_indices[t[1]])
+                        groups_for_this.append(group_indices[t[1]])
                 groupdata.groups_array = np.array(groups_for_this)
                 groupdata.unique_group_numbers = set(groupdata.groups_array)
             expt_file_to_groupsdata[fp.expt] = groupdata
@@ -770,13 +794,13 @@ class GroupingImageTemplates(object):
         working_directory: Path,
         integrated_files: List[FilePair],
         reduction_params,
-        function_to_apply = save_subset,
+        function_to_apply=save_subset,
         prefix="",
     ):
 
-        expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = self.get_expt_file_to_groupsdata(
-            integrated_files
-        )
+        expt_file_to_groupsdata: Dict[
+            Path, GroupsIdentifiersForExpt
+        ] = self.get_expt_file_to_groupsdata(integrated_files)
         template = "{name}group_{index:0{maxindexlength:d}d}"
         name_template = functools.partial(
             template.format,
@@ -784,14 +808,16 @@ class GroupingImageTemplates(object):
             maxindexlength=len(str(len(self._groups))),
         )
 
-        names: List[str] = [name_template(index=i + 1) for i, _ in enumerate(self._groups)]
+        names: List[str] = [
+            name_template(index=i + 1) for i, _ in enumerate(self._groups)
+        ]
         filesdict: dict[str, List[FilePair]] = {name: [] for name in names}
 
         input_iterable = []
         for g, name in enumerate(names):
             for i, fp in enumerate(integrated_files):
                 groupdata = expt_file_to_groupsdata[fp.expt]
-                if g in groupdata.unique_group_numbers:#groupdata.single_group == g:
+                if g in groupdata.unique_group_numbers:  # groupdata.single_group == g:
                     # all data into single group, so no selection needed.
                     input_iterable.append(
                         InputIterable(
@@ -813,84 +839,3 @@ class GroupingImageTemplates(object):
                     fp = result[1]
                     filesdict[name].append(fp)
         return filesdict
-
-
-def _get_expt_file_to_groupsdata(
-    integrated_files: List[FilePair], img_file_to_groups: dict[ImageFile, GroupInfo]
-) -> Dict[Path, GroupsIdentifiersForExpt]:
-
-    expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = {}
-
-    for fp in integrated_files:
-        expts = load.experiment_list(fp.expt, check_format=False)
-        images = list({expt.imageset.paths()[0] for expt in expts})
-        # could be all one (e.g. h5 files)
-        # could be multiple within the same template - find that template perhaps?
-        from dxtbx.sequence_filenames import group_files_by_imageset
-
-        g = group_files_by_imageset(images)
-        print(g)
-        groupdata = GroupsIdentifiersForExpt()
-        if len(g) == 1:  # the experiment list only refers to one image file/template.
-            iset = list(g.keys())[0]
-            image = None
-            for ifile in img_file_to_groups.keys():
-                if iset == ifile.name:
-                    image = ifile
-                    break
-            if image is None:
-                raise ValueError(f"Image {images[0]} not found in metadata")
-            groups_for_img = img_file_to_groups[image]
-            print(groups_for_img["group_ids"])
-            if len(groups_for_img["group_ids"]) == 1:
-                groupdata.single_group = groups_for_img["group_ids"][
-                    0
-                ]  # all data from this expt goes to a single group
-                groupdata.unique_group_numbers = set(groups_for_img["group_ids"])
-            else:
-                # the image goes to several groups, we just need to know the groups
-                # relevant for this subset of the image
-                groups_for_this = []
-                group_indices: ImgIdxToGroupId = img_file_to_groups[image][
-                    "img_idx_to_group_id"
-                ]
-                for iset in expts.imagesets():
-                    for idx in range(iset.get_array_range()):
-                        groups_for_this.append(group_indices)
-                    paths = iset.paths()
-                    for idx in iset.indices():
-                        path = paths[idx]
-
-                for expt in expts:
-                    print(dir(expt.imageset))
-                    if expt.imageset.get_template():
-                        print(expt.imageset.get_template())
-                    print(expt.imageset.get_image_identifier())
-                    img, index = expt.imageset.paths()[0], expt.imageset.indices()[0]
-                    index = expt.imageset.indices()[0]
-                    print(img, index)
-                    idx = group_indices[index]
-                    groups_for_this.append(idx)
-                groupdata.groups_array = np.array(groups_for_this)
-                groupdata.unique_group_numbers = set(groupdata.groups_array)
-        else:
-            # the expt list contains data from more than one image/template
-            groups_for_this = []
-            img_to_ifile = {}
-            for image in images:
-                for ifile in img_file_to_groups.keys():
-                    if image == ifile.name:
-                        img_to_ifile[image] = ifile
-                        break
-                if image not in img_to_ifile:
-                    raise ValueError(f"Image {image} not found in metadata")
-            for expt in expts:
-                img, index = expt.imageset.paths()[0], expt.imageset.indices()[0]
-                ifile = img_to_ifile[img]
-                idx = img_file_to_groups[ifile]["img_idx_to_group_id"][index]
-                groups_for_this.append(idx)
-            groupdata.groups_array = np.array(groups_for_this)
-            groupdata.unique_group_numbers = set(groupdata.groups_array)
-
-        expt_file_to_groupsdata[fp.expt] = groupdata
-    return expt_file_to_groupsdata

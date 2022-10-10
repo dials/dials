@@ -5,16 +5,15 @@ import pytest
 from dials.util.image_grouping import (
     ConstantMetadataForFile,
     FilePair,
+    GroupingImageTemplates,
     ImageFile,
     MetadataInFile,
     ParsedYAML,
     RepeatInImageFile,
     _determine_groupings,
     _files_to_groups,
-    _get_expt_file_to_groupsdata,
     example_yaml,
     simple_template_example,
-    GroupingImageTemplates,
 )
 
 
@@ -200,11 +199,11 @@ structure:
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     from dxtbx.serialize import load
+
+    # First test on indexed data - here each image has its own imageset
+    # only images 17001, 17002, 17003, 17004 get indexed, so expect these to be split into groups [1,0,1,0]
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
-    #expt_file_to_groupsdata = handler.get_expt_file_to_groupsdata(fps)
     fd = handler.split_files_to_groups(tmp_path, fps, "")
-    #expect 1, 2, 3, 4 - 17001, 17002, 17003, 17004
-    # assert list(expt_file_to_groupsdata[fps[0].expt].groups_array) == [1, 0, 1, 0]
 
     assert list(fd.keys()) == ["group_1", "group_2"]
     filelist_1 = fd["group_1"]
@@ -220,10 +219,10 @@ structure:
     assert expts2[0].imageset.get_path(0).split("_")[-1] == "17001.cbf"
     assert expts2[1].imageset.get_path(0).split("_")[-1] == "17003.cbf"
 
+    # Now test on imported data. Here, we have one imagesequence, expect
+    # images 17000-17004, to be split into alternating groups.
     fps = [FilePair(Path(tmp_path / "imported.expt"), Path(tmp_path / "strong.refl"))]
     fd = handler.split_files_to_groups(tmp_path, fps, "")
-    #expt_file_to_groupsdata = handler.get_expt_file_to_groupsdata(fps)
-    #expect 0, 1, 2, 3, 4 - 17000, 17001, 17002, 17003, 17004
     assert list(fd.keys()) == ["group_1", "group_2"]
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
@@ -238,5 +237,3 @@ structure:
     assert len(expts2) == 2
     assert expts2[0].scan.get_image_range()[0] == 17001
     assert expts2[1].scan.get_image_range()[0] == 17003
-
-    #assert list(expt_file_to_groupsdata[fps[0].expt].groups_array) == [0, 1, 0, 1, 0]
