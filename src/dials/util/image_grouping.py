@@ -768,8 +768,12 @@ class GroupingImageTemplates(object):
                     # the image goes to several groups, we just need to know the groups
                     # relevant for these images
                     groups_for_this = []
-                    for iset in expts.imagesets():
-                        for p in iset.paths():
+                    for expt in expts:
+                        if expt.scan:
+                            start = expt.scan.get_image_range()[0]
+                            groups_for_this.append(group_indices[start])
+                        else:
+                            p = expt.imageset.paths()[0]
                             t = template_regex(p)
                             groups_for_this.append(group_indices[t[1]])
                     groupdata.groups_array = np.array(groups_for_this)

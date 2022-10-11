@@ -195,6 +195,7 @@ structure:
         "unit_cell=96.4,96.4,96.4,90,90,90",
         "space_group=P213",
         "nproc=1",
+        "max_lattices=2",
     ]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
@@ -205,6 +206,7 @@ structure:
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
     fd = handler.split_files_to_groups(tmp_path, fps, "")
 
+    # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
     assert list(fd.keys()) == ["group_1", "group_2"]
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
@@ -215,9 +217,10 @@ structure:
     filelist_2 = fd["group_2"]
     assert len(filelist_2) == 1
     expts2 = load.experiment_list(filelist_2[0].expt)
-    assert len(expts2) == 2
+    assert len(expts2) == 3
     assert expts2[0].imageset.get_path(0).split("_")[-1] == "17001.cbf"
-    assert expts2[1].imageset.get_path(0).split("_")[-1] == "17003.cbf"
+    assert expts2[1].imageset.get_path(0).split("_")[-1] == "17001.cbf"
+    assert expts2[2].imageset.get_path(0).split("_")[-1] == "17003.cbf"
 
     # Now test on imported data. Here, we have one imagesequence, expect
     # images 17000-17004, to be split into alternating groups.
