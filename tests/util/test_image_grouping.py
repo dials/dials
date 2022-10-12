@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import os
+import subprocess
+from pathlib import Path
+
 import pytest
 
 from dials.util.image_grouping import (
@@ -149,11 +153,6 @@ def test_invalid_yml(tmp_path):
         f.write(invalid_example_2)
     with pytest.raises("AssertionError"):
         _ = ParsedYAML(tmp_path / "example_2.yaml")
-
-
-import os
-import subprocess
-from pathlib import Path
 
 
 def test_real_example(tmp_path, dials_data):
