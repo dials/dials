@@ -13,7 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, Tuple, TypedDict, Union
 
 import h5py
 import numpy as np
@@ -577,7 +577,7 @@ class InputIterable(object):
     reduction_params: Any
 
 
-def save_subset(input_: InputIterable):
+def save_subset(input_: InputIterable) -> Union[Tuple[str, FilePair], None]:
     expts = load.experiment_list(input_.fp.expt, check_format=False)
     refls = flex.reflection_table.from_file(input_.fp.refl)
     groupdata = input_.groupdata
@@ -608,6 +608,14 @@ def save_subset(input_: InputIterable):
 
 
 class GroupingImageTemplates(object):
+
+    """Class that takes a parsed group and determines the groupings and mappings
+    required to split input data into groups.
+
+    This class provides specific implementations for when the images are provided
+    as a template. The main difference from h5 images is getting the image index.
+    """
+
     def __init__(self, parsed_group: ParsedGrouping, nproc=1):
         self._parsed_group = parsed_group
         self.nproc = nproc
@@ -719,11 +727,17 @@ class GroupingImageTemplates(object):
             else:
                 # the expt list contains data from more than one image/template
                 groups_for_this = []
-                for iset in expts.imagesets():
-                    templ = template_regex(iset.paths()[0])[0]
-                    group_indices: ImgIdxToGroupId = template_to_group_indices[templ]
-                    for p in iset.paths():
+                for expt in expts:
+                    if expt.scan:
+                        p = expt.imageset.paths()[0]
                         t = template_regex(p)
+                        group_indices = template_to_group_indices[t[0]]
+                        start = expt.scan.get_image_range()[0]
+                        groups_for_this.append(group_indices[start])
+                    else:
+                        p = expt.imageset.paths()[0]
+                        t = template_regex(p)
+                        group_indices = template_to_group_indices[t[0]]
                         groups_for_this.append(group_indices[t[1]])
                 groupdata.groups_array = np.array(groups_for_this)
                 groupdata.unique_group_numbers = set(groupdata.groups_array)
@@ -782,6 +796,11 @@ class GroupingImageTemplates(object):
 
 
 class GroupingImageFiles(GroupingImageTemplates):
+
+    """This class provides specific implementations for when the images are h5 files.
+    The main difference from tempaltes is getting the image index.
+    """
+
     @staticmethod
     def _files_to_groups(
         metadata: Dict[ImageFile, Dict[str, ExtractedValues]],

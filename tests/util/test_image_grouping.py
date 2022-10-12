@@ -15,7 +15,6 @@ from dials.util.image_grouping import (
     ParsedYAML,
     RepeatInImageFile,
     _determine_groupings,
-    _files_to_groups,
     example_yaml,
     simple_template_example,
 )
@@ -99,7 +98,7 @@ def test_yml_parsing_template(tmp_path):
 
     for g in groups:
         print(g)
-    ftg = _files_to_groups(merge_by.extract_data(), groups)
+    ftg = GroupingImageTemplates._files_to_groups(merge_by.extract_data(), groups)
     iitgi = ftg[I1]["img_idx_to_group_id"]
     assert iitgi.repeat == 10
     assert iitgi.single_return_val is None
@@ -147,11 +146,11 @@ structure:
 def test_invalid_yml(tmp_path):
     with open(tmp_path / "example.yaml", "w") as f:
         f.write(invalid_example)
-    with pytest.raises("AssertionError"):
+    with pytest.raises(AssertionError):
         _ = ParsedYAML(tmp_path / "example.yaml")
     with open(tmp_path / "example_2.yaml", "w") as f:
         f.write(invalid_example_2)
-    with pytest.raises("AssertionError"):
+    with pytest.raises(AssertionError):
         _ = ParsedYAML(tmp_path / "example_2.yaml")
 
 
