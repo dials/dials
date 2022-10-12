@@ -86,6 +86,8 @@ structure:
       - 0.01
 """
 
+EPS = 1e-9
+
 ## Define classes for defining the metadata type and values/location.
 # class to wrap some metadata
 @dataclass
@@ -437,9 +439,13 @@ class MetaDataGroup(object):
     def __str__(self):
         if self._default_all:
             return "all data"
-        return "\n".join(
-            f"  {k} : {v['min']} - {v['max']}" for k, v in self._data_dict.items()
-        )
+        outlines = []
+        for k, v in self._data_dict.items():
+            if abs(v["min"] - v["max"]) < EPS:
+                outlines.append(f"{k}={v['min']}")
+            else:
+                outlines.append(f"{k}={v['min']}-{v['max']}")
+        return ", ".join(outlines)
 
 
 # Define mapping from image index to group id.
@@ -521,7 +527,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
             parsed_group.metadata_names, vals
         ):  # val is the lower bound for that group
             full_vals = full_values_per_metadata[name]
-            sel = (full_vals >= val) & (full_vals < val + tolerances[name] + 1e-9)
+            sel = (full_vals >= val) & (full_vals < val + tolerances[name] + EPS)
             sel1 = sel1 & sel
         if np.any(sel1):
             groups.append(
@@ -652,7 +658,7 @@ class GroupingImageTemplates(object):
                         repeat_val = len(data)
                     minv, maxv = group.min_max_for_metadata(n)
                     s1 = data >= minv
-                    s2 = data < maxv
+                    s2 = data < maxv + EPS
                     if in_group.size == 0:
                         in_group = s1 & s2
                     else:
@@ -828,7 +834,7 @@ class GroupingImageFiles(GroupingImageTemplates):
                         repeat_val = len(data)
                     minv, maxv = group.min_max_for_metadata(n)
                     s1 = data >= minv
-                    s2 = data < maxv
+                    s2 = data < maxv + EPS
                     if in_group.size == 0:
                         in_group = s1 & s2
                     else:
