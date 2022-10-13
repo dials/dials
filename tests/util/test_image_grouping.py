@@ -172,7 +172,6 @@ structure:
       - 0.1
 """
     with open(tmp_path / "real_example.yaml", "w") as f:
-        print(real_example)
         f.write(real_example)
 
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
@@ -238,3 +237,61 @@ structure:
     assert len(expts2) == 2
     assert expts2[0].scan.get_image_range()[0] == 17001
     assert expts2[1].scan.get_image_range()[0] == 17003
+
+    real_example_block = f"""
+---
+templates:
+  - "{fpath}"
+metadata:
+  timepoint:
+    "{fpath}" : "block=17000:17004:2"
+structure:
+  merge_by:
+    values:
+      - timepoint
+    tolerances:
+      - 0.1
+"""
+
+    with open(tmp_path / "real_example_block.yaml", "w") as f:
+        f.write(real_example_block)
+
+    parsed = ParsedYAML(tmp_path / "real_example_block.yaml")
+    mergeby = parsed.groupings["merge_by"]
+    handler = GroupingImageTemplates(mergeby)
+
+    fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
+    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    assert list(fd.keys()) == ["group_1", "group_2", "group_3"]
+    # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
+    filelist_1 = fd["group_1"]
+    assert len(filelist_1) == 1
+    expts1 = load.experiment_list(filelist_1[0].expt)
+    assert len(expts1) == 2
+    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17001.cbf"
+    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17001.cbf"
+    filelist_2 = fd["group_2"]
+    assert len(filelist_2) == 1
+    expts2 = load.experiment_list(filelist_2[0].expt)
+    assert len(expts2) == 2
+    assert expts2[0].imageset.get_path(0).split("_")[-1] == "17002.cbf"
+    assert expts2[1].imageset.get_path(0).split("_")[-1] == "17003.cbf"
+    filelist_3 = fd["group_3"]
+    assert len(filelist_3) == 1
+    expts3 = load.experiment_list(filelist_3[0].expt)
+    assert len(expts3) == 1
+    assert expts3[0].imageset.get_path(0).split("_")[-1] == "17004.cbf"
+
+    handler.write_groupids_into_files(fps)
+    from dials.array_family import flex
+
+    refls = flex.reflection_table.from_file(fps[0].refl)
+    assert set(refls["id"]) == {0, 1, 2, 3, 4}
+    sel0 = refls["id"] == 0
+    sel1 = refls["id"] == 1
+    assert set(refls["group_id"].select(sel0 | sel1)) == {0}
+    sel2 = refls["id"] == 2
+    sel3 = refls["id"] == 3
+    assert set(refls["group_id"].select(sel2 | sel3)) == {1}
+    sel4 = refls["id"] == 4
+    assert set(refls["group_id"].select(sel4)) == {2}

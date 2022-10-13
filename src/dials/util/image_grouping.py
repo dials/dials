@@ -21,6 +21,7 @@ import yaml
 from yaml.loader import SafeLoader
 
 from dxtbx import flumpy
+from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
 from dxtbx.serialize import load
 
 from dials.array_family import flex
@@ -94,12 +95,14 @@ EPS = 1e-9
 class ExtractedValues:
     data: np.array
     is_repeat: bool
+    is_block: bool
 
 
 class MetadataForFile(object):
-    pass
+    def __init__(self):
+        self.extracted_data = None
 
-    def extract(self) -> ExtractedValues:
+    def extract(self) -> None:
         raise NotImplementedError
 
 
@@ -114,7 +117,7 @@ class MetadataInFile(MetadataForFile):
     def __str__(self):
         return f"(File={self.file}, item={self.item})"
 
-    def extract(self) -> ExtractedValues:
+    def extract(self) -> None:
         item = self.item
         with h5py.File(self.file, mode="r") as filedata:
             try:
@@ -126,7 +129,7 @@ class MetadataInFile(MetadataForFile):
             except Exception:
                 raise ValueError(f"Unable to extract {item} from {self.file}")
             else:
-                return ExtractedValues(this_values, False)
+                self.extracted_data = ExtractedValues(this_values, False, False)
 
 
 class RepeatInImageFile(MetadataForFile):
@@ -140,7 +143,33 @@ class RepeatInImageFile(MetadataForFile):
         return f"repeat={self.repeat}"
 
     def extract(self) -> ExtractedValues:
-        return ExtractedValues(np.array(range(0, self.repeat)), True)
+        self.extracted_data = ExtractedValues(
+            np.array(range(0, self.repeat)), True, False
+        )
+
+
+class BlockInImageFile(MetadataForFile):
+    def __init__(self, first: int, last: int, block: int):
+        self.first = first
+        self.last = last
+        self.block = block
+
+    def __eq__(self, other: BlockInImageFile):
+        return (
+            (self.first == other.first)
+            and (self.block == other.block)
+            and (self.last == other.last)
+        )
+
+    def __str__(self):
+        return f"first={self.first}, block={self.block}, last={self.last}"
+
+    def extract(self) -> ExtractedValues:
+        n_images = self.last + 1 - self.first
+        n_groups = (n_images // self.block) + 1
+        x = np.arange(0, stop=n_groups)
+        self.extracted_data = ExtractedValues(x, False, True)
+        # return ExtractedValues(np.repeat(x, self.block), False, True)
 
 
 class ConstantMetadataForFile(MetadataForFile):
@@ -154,7 +183,7 @@ class ConstantMetadataForFile(MetadataForFile):
         return str(self.value)
 
     def extract(self):
-        return ExtractedValues(np.array([self.value]), False)
+        self.extracted_data = ExtractedValues(np.array([self.value]), False, False)
 
 
 @dataclass(frozen=True)  # frozen=True makes hashable to use as keys in a dict
@@ -264,13 +293,14 @@ Summary of data in ParsedGrouping class
             header += f"  Image: {i}\n    metadata: {v}\n"
         return header
 
-    def extract_data(self) -> Dict[ImageFile, Dict[str, ExtractedValues]]:
-        relevant_metadata: Dict[ImageFile, Dict[str, ExtractedValues]] = defaultdict(
+    def extract_data(self) -> Dict[ImageFile, Dict[str, MetadataForFile]]:
+        relevant_metadata: Dict[ImageFile, Dict[str, MetadataForFile]] = defaultdict(
             dict
         )
         for img, meta in self._images_to_metadata.items():  # ImgFile, NameToMetaDict
             for name, metaforfile in meta.items():  # str, MetaForFile
-                relevant_metadata[img][name] = metaforfile.extract()
+                metaforfile.extract()
+                relevant_metadata[img][name] = metaforfile
         return relevant_metadata
 
 
@@ -363,6 +393,21 @@ class ParsedYAML(object):
                             )
                         else:
                             self.metadata_items[name][imgfile] = RepeatInImageFile(n)
+                    elif meta.startswith("block="):
+                        try:
+                            first, last, block = meta.split("=")[1].split(":")
+                            first = int(first)
+                            last = int(last)
+                            block = int(block)
+                        except Exception as e:
+                            raise ValueError(
+                                f"Error interpreting {meta} as block=first:last:n, where first,last are the first and last image numbers and n is an"
+                                + f"\ninteger indicating the number of images in a block. Specific exception: {e}"
+                            )
+                        else:
+                            self.metadata_items[name][imgfile] = BlockInImageFile(
+                                first, last, block
+                            )
                     else:
                         try:
                             metafile, loc = meta.split(":")
@@ -450,10 +495,11 @@ class MetaDataGroup(object):
 
 # Define mapping from image index to group id.
 class ImgIdxToGroupId(object):
-    def __init__(self, single_return_val=None, repeat=None):
+    def __init__(self, single_return_val=None, repeat=None, block=None):
         self.single_return_val = single_return_val
         self.repeat = repeat
-        self.group_ids = None
+        self.group_ids = None  # only relevant for h5 files - split up?
+        self.block = None
 
     def add_selection(self, int_array):
         self.group_ids = int_array
@@ -466,6 +512,8 @@ class ImgIdxToGroupId(object):
             return self.single_return_val
         elif self.repeat is not None:
             return key % self.repeat
+        elif self.block is not None:
+            return (key - self.block.first) // self.block.block
         return self.group_ids[key]
 
 
@@ -487,7 +535,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
         values = np.array([])
         # loop over the image files to get the values of this metadata
         for file, md in metadata.items():
-            extracted = md[name]
+            extracted = md[name].extracted_data
             values = np.concatenate([values, extracted.data])
             n_images_per_file[file] = extracted.data.size
         set_of_values = np.array(sorted(set(np.around(values, decimals=9))))
@@ -514,7 +562,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
     for name in parsed_group.metadata_names:
         values = np.array([])
         for file, md in metadata.items():
-            extracted = md[name]
+            extracted = md[name].extracted_data
             values = np.concatenate([values, extracted.data])
         full_values_per_metadata[name] = values
 
@@ -545,8 +593,6 @@ class GroupsIdentifiersForExpt(object):
     def __init__(self):
         self.single_group = None
         self.groups_array = None
-        # self.keep_all_original = True
-        # self.identifiers = []
         self.unique_group_numbers = None
 
 
@@ -633,7 +679,7 @@ class GroupingImageTemplates(object):
 
     @staticmethod
     def _files_to_groups(
-        metadata: Dict[ImageFile, Dict[str, ExtractedValues]],
+        metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
         groups: List[MetaDataGroup],
     ) -> dict[ImageFile, GroupInfo]:
 
@@ -648,47 +694,54 @@ class GroupingImageTemplates(object):
         for f in file_to_groups:
             metaforfile = metadata[f]
             for i, group in enumerate(groups):
-                in_group = np.array([])
+                in_group = np.array([True], dtype=bool)
                 # loop through metadata names, see if any data within limits
-                repeat_val = None
-                for n, extracted in metaforfile.items():
-                    data = extracted.data
-                    if extracted.is_repeat:
-                        assert repeat_val is None
-                        repeat_val = len(data)
+                block = None
+                repeat = None
+                special_types = None
+                for n, extracted in metaforfile.items():  # e.g. timepoint, wavelength
+                    extractedvalues = extracted.extracted_data
+                    if extractedvalues.is_repeat or extractedvalues.is_block:
+                        if special_types:  # i.e. already have one of these cases
+                            raise ValueError(
+                                "Templates only support one instance of repeat metadata or block per grouping"
+                            )
+                        if extractedvalues.is_repeat:
+                            special_types = "repeat"
+                            repeat = len(extractedvalues.data)
+                        else:
+                            special_types = "block"
+                            block = extracted
+                    # allowable data types are block, repeat or single valiue
                     minv, maxv = group.min_max_for_metadata(n)
-                    s1 = data >= minv
-                    s2 = data < maxv + EPS
-                    if in_group.size == 0:
-                        in_group = s1 & s2
-                    else:
-                        in_group = in_group & s1 & s2
+                    s1 = extractedvalues.data >= minv
+                    s2 = extractedvalues.data < maxv + EPS
+                    in_group = (s1 & s2) & in_group
+                    if not any(in_group):
+                        break
                 if any(in_group):
                     file_to_groups[f]["group_ids"].append(i)
-                    if in_group.size == 1:
+                    if not special_types:
                         # this means that all of the data arrays were size 1, i.e.
                         # all metadata items are simple labels, therefore all
                         # data for this image must belong to a single group.
                         file_to_groups[f]["img_idx_to_group_id"].single_return_val = i
-                    elif repeat_val:
-                        file_to_groups[f]["img_idx_to_group_id"].repeat = repeat_val
+                    elif special_types == "repeat":
+                        file_to_groups[f]["img_idx_to_group_id"].repeat = repeat
                     else:
-                        raise ValueError(
-                            "Templates only support repeat metadata or single value metadata"
-                        )
+                        file_to_groups[f]["img_idx_to_group_id"].block = block
 
         return file_to_groups
 
-    def get_expt_file_to_groupsdata(self, integrated_files: List[FilePair]):
+    def get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
         expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = {}
 
-        for fp in integrated_files:
+        for fp in data_file_pairs:
             expts = load.experiment_list(fp.expt, check_format=False)
             # need to match the images to the imagesets.
             images = set()
             for iset in expts.imagesets():
                 images.update(iset.paths())
-            from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
 
             template_to_group_indices = {}
             for iset in group_files_by_imageset(images):
@@ -728,7 +781,7 @@ class GroupingImageTemplates(object):
                             p = expt.imageset.paths()[0]
                             t = template_regex(p)
                             groups_for_this.append(group_indices[t[1]])
-                    groupdata.groups_array = np.array(groups_for_this)
+                    groupdata.groups_array = np.array(groups_for_this, dtype=np.uint64)
                     groupdata.unique_group_numbers = set(groupdata.groups_array)
             else:
                 # the expt list contains data from more than one image/template
@@ -745,15 +798,50 @@ class GroupingImageTemplates(object):
                         t = template_regex(p)
                         group_indices = template_to_group_indices[t[0]]
                         groups_for_this.append(group_indices[t[1]])
-                groupdata.groups_array = np.array(groups_for_this)
+                groupdata.groups_array = np.array(groups_for_this, dtype=np.uint64)
                 groupdata.unique_group_numbers = set(groupdata.groups_array)
             expt_file_to_groupsdata[fp.expt] = groupdata
         return expt_file_to_groupsdata
 
+    def write_groupids_into_files(self, data_file_pairs: List[FilePair]) -> None:
+        "Write a group_id column into the reflection table"
+        expt_file_to_groupsdata: Dict[
+            Path, GroupsIdentifiersForExpt
+        ] = self.get_expt_file_to_groupsdata(data_file_pairs)
+
+        def set_group_id_column(
+            filepair: FilePair,
+            groupdata: GroupsIdentifiersForExpt,
+        ):
+            expts = load.experiment_list(filepair.expt, check_format=False)
+            refls = flex.reflection_table.from_file(filepair.refl)
+            groupdata = groupdata
+            if groupdata.single_group is not None:
+                group_id = groupdata.single_group
+                refls["group_id"] = flex.int(refls.size(), group_id)
+            else:
+                identifiers_map = refls.experiment_identifiers()
+                list_of_identifiers: List = list(expts.identifiers())
+                groups_array = flumpy.from_numpy(groupdata.groups_array)
+
+                def table_id_to_group_id(table_id):
+                    identifier = identifiers_map[table_id]
+                    idx = list_of_identifiers.index(identifier)
+                    return groups_array[idx]
+
+                refls["group_id"] = flex.int(map(table_id_to_group_id, refls["id"]))
+
+            refls.as_file(filepair.refl)
+            return filepair
+
+        for fp in data_file_pairs:
+            groupdata = expt_file_to_groupsdata[fp.expt]
+            set_group_id_column(fp, groupdata)
+
     def split_files_to_groups(
         self,
         working_directory: Path,
-        integrated_files: List[FilePair],
+        data_file_pairs: List[FilePair],
         reduction_params,
         function_to_apply=save_subset,
         prefix="",
@@ -761,7 +849,7 @@ class GroupingImageTemplates(object):
 
         expt_file_to_groupsdata: Dict[
             Path, GroupsIdentifiersForExpt
-        ] = self.get_expt_file_to_groupsdata(integrated_files)
+        ] = self.get_expt_file_to_groupsdata(data_file_pairs)
         template = "{name}group_{index:0{maxindexlength:d}d}"
         name_template = functools.partial(
             template.format,
@@ -775,16 +863,16 @@ class GroupingImageTemplates(object):
         filesdict: dict[str, List[FilePair]] = {name: [] for name in names}
 
         input_iterable = []
-        for g, name in enumerate(names):
-            for i, fp in enumerate(integrated_files):
+        for groupindex, name in enumerate(names):
+            for fileindex, fp in enumerate(data_file_pairs):
                 groupdata = expt_file_to_groupsdata[fp.expt]
-                if g in groupdata.unique_group_numbers:
+                if groupindex in groupdata.unique_group_numbers:
                     input_iterable.append(
                         InputIterable(
                             working_directory,
                             fp,
-                            i,
-                            g,
+                            fileindex,
+                            groupindex,
                             groupdata,
                             name,
                             reduction_params,
@@ -809,7 +897,7 @@ class GroupingImageFiles(GroupingImageTemplates):
 
     @staticmethod
     def _files_to_groups(
-        metadata: Dict[ImageFile, Dict[str, ExtractedValues]],
+        metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
         groups: List[MetaDataGroup],
     ) -> dict[ImageFile, GroupInfo]:
 
@@ -824,30 +912,55 @@ class GroupingImageFiles(GroupingImageTemplates):
         for f in file_to_groups:
             metaforfile = metadata[f]
             for i, group in enumerate(groups):
-                in_group = np.array([])
+                # Do we know how many images are in this h5 file?
+                # N.B. assumes that data array was written with correct size.
+                known_size = None
+                for v in metaforfile.values():
+                    if isinstance(v, MetadataInFile):
+                        if v.extracted_data is not None:
+                            known_size = v.extracted_data.data.size
+
+                in_group = np.array([True], dtype=bool)  # important that this is size 1
                 # loop through metadata names, see if any data within limits
-                repeat_val = None
-                for n, extracted in metaforfile.items():
-                    data = extracted.data
-                    if extracted.is_repeat:
-                        assert repeat_val is None
-                        repeat_val = len(data)
+                block = None
+                repeat = None
+                special_types = None
+                for n, extracted in metaforfile.items():  # e.g. timepoint, wavelength
+                    extractedvalues = extracted.extracted_data
+                    if extractedvalues.is_repeat or extractedvalues.is_block:
+                        if (
+                            special_types or known_size
+                        ):  # i.e. already have one of these cases
+                            raise ValueError(
+                                "H5 images only support one instance of repeat metadata or block per grouping"
+                            )
+                        if extractedvalues.is_repeat:
+                            special_types = "repeat"
+                            repeat = len(extractedvalues.data)
+                        else:
+                            special_types = "block"
+                            block = extracted
                     minv, maxv = group.min_max_for_metadata(n)
-                    s1 = data >= minv
-                    s2 = data < maxv + EPS
-                    if in_group.size == 0:
-                        in_group = s1 & s2
-                    else:
-                        in_group = in_group & s1 & s2
+                    s1 = extractedvalues.data >= minv
+                    s2 = extractedvalues.data < maxv + EPS
+                    # N.B. The checks above ensure that if s1 & s2 are greater
+                    # than size 1 (i.e. size n), then in future iterations of the
+                    # loop they will also be either size 1 or n, thus allowing
+                    # multiplication as numpy arrays.
+                    in_group = (s1 & s2) & in_group
+                    if not any(in_group):
+                        break
                 if any(in_group):
                     file_to_groups[f]["group_ids"].append(i)
-                    if in_group.size == 1:
+                    if not special_types and not known_size:
                         # this means that all of the data arrays were size 1, i.e.
                         # all metadata items are simple labels, therefore all
                         # data for this image must belong to a single group.
                         file_to_groups[f]["img_idx_to_group_id"].single_return_val = i
-                    elif repeat_val:
-                        file_to_groups[f]["img_idx_to_group_id"].repeat = repeat_val
+                    elif special_types == "repeat":
+                        file_to_groups[f]["img_idx_to_group_id"].repeat = repeat
+                    elif special_types == "block":
+                        file_to_groups[f]["img_idx_to_group_id"].block = block
                     else:
                         if file_to_groups[f]["img_idx_to_group_id"].group_ids:
                             file_to_groups[f]["img_idx_to_group_id"].set_selected(
@@ -863,10 +976,10 @@ class GroupingImageFiles(GroupingImageTemplates):
 
         return file_to_groups
 
-    def get_expt_file_to_groupsdata(self, integrated_files: List[FilePair]):
+    def get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
         expt_file_to_groupsdata: Dict[Path, GroupsIdentifiersForExpt] = {}
 
-        for fp in integrated_files:
+        for fp in data_file_pairs:
             expts = load.experiment_list(fp.expt, check_format=False)
             # need to match the images to the imagesets.
             images = set()
@@ -884,7 +997,6 @@ class GroupingImageFiles(GroupingImageTemplates):
                 image_to_group_info[iset] = self._files_to_groups_dict[image]
 
             groupdata = GroupsIdentifiersForExpt()
-            # from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
 
             if len(images) == 1:
                 group_info: GroupInfo = image_to_group_info[list(images)[0]]
@@ -900,7 +1012,7 @@ class GroupingImageFiles(GroupingImageTemplates):
                         index = expt.imageset.indices()[0]
                         idx = group_indices[index]
                         groups_for_this.append(idx)
-                    groupdata.groups_array = np.array(groups_for_this)
+                    groupdata.groups_array = np.array(groups_for_this, dtype=np.uint64)
                     groupdata.unique_group_numbers = set(groupdata.groups_array)
             else:  # multiple h5 images
                 groups_for_this = []
@@ -908,7 +1020,7 @@ class GroupingImageFiles(GroupingImageTemplates):
                     img, index = expt.imageset.paths()[0], expt.imageset.indices()[0]
                     idx = image_to_group_info[img]["img_idx_to_group_id"][index]
                     groups_for_this.append(idx)
-                groupdata.groups_array = np.array(groups_for_this)
+                groupdata.groups_array = np.array(groups_for_this, dtype=np.uint64)
                 groupdata.unique_group_numbers = set(groupdata.groups_array)
 
             expt_file_to_groupsdata[fp.expt] = groupdata
