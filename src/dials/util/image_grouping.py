@@ -766,9 +766,7 @@ class GroupingImageTemplates(object):
                 )[0]
                 if group_indices.single_return_val is not None:
                     groupdata.single_group = group_indices.single_return_val
-                    groupdata.unique_group_numbers = set(
-                        group_indices.single_return_val
-                    )
+                    groupdata.unique_group_numbers = {group_indices.single_return_val}
                 else:
                     # the image goes to several groups, we just need to know the groups
                     # relevant for these images

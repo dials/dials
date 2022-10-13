@@ -155,6 +155,16 @@ def test_invalid_yml(tmp_path):
 
 
 def test_real_example(tmp_path, dials_data):
+
+    """This test tests a few use cases on real cbf data, using the template
+    metadata definition.
+
+    First, post-indexed and pre-indexed data are split (to test the different
+    imageset layouts for these kinds of files), with the "repeat=" definition.
+    Then, the "block=" definition is tested on the indexed data.
+    Finally, the single value definition is tested.
+    """
+
     ssx = dials_data("cunir_serial", pathlib=True)
     fpath = str(os.fspath(ssx)) + "/merlin0047_#####.cbf"
     real_example = f"""
@@ -165,7 +175,7 @@ metadata:
   timepoint:
     "{fpath}" : "repeat=2"
 structure:
-  merge_by:
+  group_by:
     values:
       - timepoint
     tolerances:
@@ -175,8 +185,8 @@ structure:
         f.write(real_example)
 
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
-    mergeby = parsed.groupings["merge_by"]
-    handler = GroupingImageTemplates(mergeby)
+    groupby = parsed.groupings["group_by"]
+    handler = GroupingImageTemplates(groupby)
 
     args = ["dials.import", f"template={fpath}"]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
@@ -246,7 +256,7 @@ metadata:
   timepoint:
     "{fpath}" : "block=17000:17004:2"
 structure:
-  merge_by:
+  group_by:
     values:
       - timepoint
     tolerances:
@@ -257,8 +267,8 @@ structure:
         f.write(real_example_block)
 
     parsed = ParsedYAML(tmp_path / "real_example_block.yaml")
-    mergeby = parsed.groupings["merge_by"]
-    handler = GroupingImageTemplates(mergeby)
+    groupby = parsed.groupings["group_by"]
+    handler = GroupingImageTemplates(groupby)
 
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
     fd = handler.split_files_to_groups(tmp_path, fps, "")
@@ -295,3 +305,32 @@ structure:
     assert set(refls["group_id"].select(sel2 | sel3)) == {1}
     sel4 = refls["id"] == 4
     assert set(refls["group_id"].select(sel4)) == {2}
+
+    real_example_single = f"""
+---
+templates:
+  - "{fpath}"
+metadata:
+  timepoint:
+    "{fpath}" : 1
+structure:
+  group_by:
+    values:
+      - timepoint
+    tolerances:
+      - 0.1
+"""
+    with open(tmp_path / "real_example_single.yaml", "w") as f:
+        f.write(real_example_single)
+
+    parsed = ParsedYAML(tmp_path / "real_example_single.yaml")
+    groupby = parsed.groupings["group_by"]
+    handler = GroupingImageTemplates(groupby)
+
+    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    assert list(fd.keys()) == ["group_1"]
+    # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
+    filelist_1 = fd["group_1"]
+    assert len(filelist_1) == 1
+    expts1 = load.experiment_list(filelist_1[0].expt)
+    assert len(expts1) == 5
