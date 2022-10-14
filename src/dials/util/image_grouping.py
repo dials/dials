@@ -439,20 +439,19 @@ class ParsedYAML(object):
                 raise ValueError(
                     f"Grouping {groupby} 'values:' must be specified as a list"
                 )
-            if "tolerances" not in data:
-                raise ValueError(
-                    f"Grouping {groupby} does not have 'tolerances' specified"
-                )
-            if not isinstance(data["tolerances"], list):
-                raise ValueError(
-                    f"Grouping {groupby} 'tolerances:' must be specified as a list"
-                )
             values = data["values"]
-            tolerances = data["tolerances"]
-            if len(tolerances) != len(values):
-                raise ValueError(
-                    f"The tolerances and values lists are unequal in {groupby} grouping"
-                )
+            if "tolerances" in data:
+                if not isinstance(data["tolerances"], list):
+                    raise ValueError(
+                        f"Grouping {groupby} 'tolerances:' must be specified as a list"
+                    )
+                tolerances = data["tolerances"]
+                if len(tolerances) != len(values):
+                    raise ValueError(
+                        f"The tolerances and values lists are unequal in {groupby} grouping: {tolerances}, {values}"
+                    )
+            else:
+                tolerances = [0 for _ in values]
 
             for name in values:  # e.g. timepoint, wavelength
                 if name not in self.metadata_items:
