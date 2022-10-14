@@ -311,15 +311,26 @@ class ParsedYAML(object):
 
         # load the images or templates
         self._images: dict[str, ImageFile] = {}
-        if ("images" not in data) and ("templates" not in data):
+
+        # Check for the metadata first
+        if "metadata" not in data:
+            raise AssertionError(
+                f"No metadata defined in {yml_file}. Example format: {example_yaml}"
+            )
+        if not isinstance(data["metadata"], dict):
+            raise AssertionError(
+                f"'metadata:' in {yml_file} must be defined as a dictionary. Example format: {example_yaml}"
+            )
+
+        """if ("images" not in data) and ("templates" not in data):
             raise AssertionError(
                 f"No images defined in {yml_file}. Example format: {example_yaml}"
             )
         elif ("images" in data) and ("templates" in data):
             raise AssertionError(
                 f"Only images or templates can be defined in {yml_file}. Example format: {example_yaml}"
-            )
-        elif "images" in data:
+            )"""
+        if "images" in data:
             if not isinstance(data["images"], list):
                 raise AssertionError(
                     f"'images:' in {yml_file} must be defined as a list. Example format: {example_yaml}"
@@ -329,23 +340,16 @@ class ParsedYAML(object):
                     self._images[name] = ImageFile(name, True, False)
                 else:
                     raise AssertionError("Image file must be .h5 or .nxs format")
-        else:  # templates in data
+        elif "templates" in data:
             if not isinstance(data["templates"], list):
                 raise AssertionError(
                     f"'templates:' in {yml_file} must be defined as a list. Example format: {example_yaml}"
                 )
             for name in data["templates"]:
                 self._images[name] = ImageFile(name, False, True)
+        else:
+            self._images = self._extract_images_from_metadata(data["metadata"])
 
-        # Check for the metadata and structure
-        if "metadata" not in data:
-            raise AssertionError(
-                f"No metadata defined in {yml_file}. Example format: {example_yaml}"
-            )
-        if not isinstance(data["metadata"], dict):
-            raise AssertionError(
-                f"'metadata:' in {yml_file} must be defined as a dictionary. Example format: {example_yaml}"
-            )
         if "structure" not in data:
             raise AssertionError(
                 f"No structure defined in {yml_file}. Example format: {example_yaml}"
@@ -361,6 +365,47 @@ class ParsedYAML(object):
         # ^ e.g. mergeby to ParsedGrouping
         self._parse_metadata(data["metadata"])
         self._parse_structure(data["structure"])
+
+    def _extract_images_from_metadata(self, metadata: dict) -> dict[str, ImageFile]:
+        images: dict[str, ImageFile] = {}
+        for i, metadict in enumerate(metadata.values()):
+            # name is e.g. timepoint, metadict is image : file
+            if not isinstance(metadict, dict):
+                raise AssertionError(
+                    f"Metadata items in {self._yml_file} must be defined as a dictionary of images to metadata. Example format: {example_yaml}"
+                )
+            if i == 0:
+                for image in metadict.keys():
+                    if "#" in image:
+                        images[image] = ImageFile(image, False, True)
+                    elif image.endswith(".h5") or image.endswith(".nxs"):
+                        images[image] = ImageFile(image, True, False)
+                    else:
+                        raise AssertionError(
+                            "Image file must be .h5 or .nxs format, or be an image template (containing #)"
+                        )
+                if any(i.is_h5 for i in images.values()) and any(
+                    i.is_template for i in images.values()
+                ):
+                    raise ValueError(
+                        "Cannot mix image file and templates as definitions of images"
+                    )
+            else:
+                new_images: dict[str, ImageFile] = {}
+                for image in metadict.keys():
+                    if "#" in image:
+                        new_images[image] = ImageFile(image, False, True)
+                    elif image.endswith(".h5") or image.endswith(".nxs"):
+                        new_images[image] = ImageFile(image, True, False)
+                    else:
+                        raise AssertionError(
+                            "Image file must be .h5 or .nxs format, or be an image template (containing #)"
+                        )
+                    if new_images != images:
+                        raise AssertionError(
+                            "Inconsistent images for different metadata items"
+                        )
+        return images
 
     @property
     def groupings(self) -> Dict[str, ParsedGrouping]:
