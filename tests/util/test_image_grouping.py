@@ -114,7 +114,7 @@ metadata:
     "/path/to/example_master.h5" : "/path/to/meta.h5:/timepoint"
   wavelength:
     "/path/to/example_master.h5" : "repeat=2"
-structure:
+grouping:
   merge_by:
     values:
       - timepoint
@@ -132,7 +132,7 @@ metadata:
     "/path/to/example_master.h5" : "repeat=4"
   wavelength:
     "/path/to/example_master.h5" : "repeat=2"
-structure:
+grouping:
   merge_by:
     values:
       - timepoint
@@ -174,7 +174,7 @@ templates:
 metadata:
   timepoint:
     "{fpath}" : "repeat=2"
-structure:
+grouping:
   group_by:
     values:
       - timepoint
@@ -218,6 +218,8 @@ structure:
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
+    for expt in expts1:
+        print(expt.imageset.get_path(0).split("_")[-1])
     assert len(expts1) == 2
     assert expts1[0].imageset.get_path(0).split("_")[-1] == "17002.cbf"
     assert expts1[1].imageset.get_path(0).split("_")[-1] == "17004.cbf"
@@ -255,7 +257,7 @@ templates:
 metadata:
   timepoint:
     "{fpath}" : "block=17000:17004:2"
-structure:
+grouping:
   group_by:
     values:
       - timepoint
@@ -313,7 +315,7 @@ templates:
 metadata:
   timepoint:
     "{fpath}" : 1
-structure:
+grouping:
   group_by:
     values:
       - timepoint
