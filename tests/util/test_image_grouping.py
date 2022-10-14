@@ -213,16 +213,16 @@ grouping:
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
     fd = handler.split_files_to_groups(tmp_path, fps, "")
 
-    # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
+    # with max lattices=2, 17000 & 17001 has two lattices, 17002,17003,17004 have one
     assert list(fd.keys()) == ["group_1", "group_2"]
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
-    for expt in expts1:
-        print(expt.imageset.get_path(0).split("_")[-1])
-    assert len(expts1) == 2
-    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17002.cbf"
-    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17004.cbf"
+    assert len(expts1) == 4
+    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17000.cbf"
+    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17000.cbf"
+    assert expts1[2].imageset.get_path(0).split("_")[-1] == "17002.cbf"
+    assert expts1[3].imageset.get_path(0).split("_")[-1] == "17004.cbf"
     filelist_2 = fd["group_2"]
     assert len(filelist_2) == 1
     expts2 = load.experiment_list(filelist_2[0].expt)
@@ -275,13 +275,15 @@ grouping:
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
     fd = handler.split_files_to_groups(tmp_path, fps, "")
     assert list(fd.keys()) == ["group_1", "group_2", "group_3"]
-    # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
+    # with max lattices=2, 17000 & 17001 has two lattices, 17002,17003,17004 have one
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
-    assert len(expts1) == 2
-    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17001.cbf"
-    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17001.cbf"
+    assert len(expts1) == 4
+    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17000.cbf"
+    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17000.cbf"
+    assert expts1[2].imageset.get_path(0).split("_")[-1] == "17001.cbf"
+    assert expts1[3].imageset.get_path(0).split("_")[-1] == "17001.cbf"
     filelist_2 = fd["group_2"]
     assert len(filelist_2) == 1
     expts2 = load.experiment_list(filelist_2[0].expt)
@@ -298,15 +300,17 @@ grouping:
     from dials.array_family import flex
 
     refls = flex.reflection_table.from_file(fps[0].refl)
-    assert set(refls["id"]) == {0, 1, 2, 3, 4}
+    assert set(refls["id"]) == {0, 1, 2, 3, 4, 5, 6}
     sel0 = refls["id"] == 0
     sel1 = refls["id"] == 1
-    assert set(refls["group_id"].select(sel0 | sel1)) == {0}
     sel2 = refls["id"] == 2
     sel3 = refls["id"] == 3
-    assert set(refls["group_id"].select(sel2 | sel3)) == {1}
+    assert set(refls["group_id"].select(sel0 | sel1 | sel2 | sel3)) == {0}
     sel4 = refls["id"] == 4
-    assert set(refls["group_id"].select(sel4)) == {2}
+    sel5 = refls["id"] == 5
+    assert set(refls["group_id"].select(sel4 | sel5)) == {1}
+    sel6 = refls["id"] == 6
+    assert set(refls["group_id"].select(sel6)) == {2}
 
     real_example_single = f"""
 ---
@@ -331,8 +335,8 @@ grouping:
 
     fd = handler.split_files_to_groups(tmp_path, fps, "")
     assert list(fd.keys()) == ["group_1"]
-    # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
+    # with max lattices=2, 17000 & 17001 has two lattices, 17002,17003,17004 have one
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
-    assert len(expts1) == 5
+    assert len(expts1) == 7
