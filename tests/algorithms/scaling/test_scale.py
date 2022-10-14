@@ -736,6 +736,8 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
         analysis_results["initial_expids_and_image_ranges"][4][0]
     ]
     assert "expids_and_image_ranges" in analysis_results
+    refls = flex.reflection_table.from_file(tmp_path / "filtered.refl")
+    assert set(refls["id"]) == {0, 1, 2, 3, 5, 6}
 
 
 def test_scale_array(dials_data, tmp_path):
