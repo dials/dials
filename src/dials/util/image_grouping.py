@@ -28,9 +28,6 @@ from dials.array_family import flex
 
 example_yaml = """
 ---
-images:
-  - "/path/to/example_master.h5"                                            # images are h5 files
-  - "/path/to/example_2_master.h5"
 metadata:
   timepoint:
     "/path/to/example_master.h5" : "/path/to/example_master.h5:/timepoint"  # metadata contained in image file
@@ -302,8 +299,6 @@ class ParsedYAML(object):
     def __init__(self, yml_file: Path):
         with open(yml_file, "r") as f:
             data = list(yaml.load_all(f, Loader=SafeLoader))[0]
-        # load the images or templates
-        self._images: dict[str, ImageFile] = {}
 
         # Check for the metadata first
         if "metadata" not in data:
@@ -314,25 +309,10 @@ class ParsedYAML(object):
             raise AssertionError(
                 f"'metadata:' in {yml_file} must be defined as a dictionary. Example format: {example_yaml}"
             )
-        if "images" in data:
-            if not isinstance(data["images"], list):
-                raise AssertionError(
-                    f"'images:' in {yml_file} must be defined as a list. Example format: {example_yaml}"
-                )
-            for name in data["images"]:
-                if name.endswith(".h5") or name.endswith(".nxs"):
-                    self._images[name] = ImageFile(name, True, False)
-                else:
-                    raise AssertionError("Image file must be .h5 or .nxs format")
-        elif "templates" in data:
-            if not isinstance(data["templates"], list):
-                raise AssertionError(
-                    f"'templates:' in {yml_file} must be defined as a list. Example format: {example_yaml}"
-                )
-            for name in data["templates"]:
-                self._images[name] = ImageFile(name, False, True)
-        else:
-            self._images = self._extract_images_from_metadata(data["metadata"])
+        # load the images or templates
+        self._images: dict[str, ImageFile] = self._extract_images_from_metadata(
+            data["metadata"]
+        )
 
         if "grouping" not in data:
             raise AssertionError(
@@ -385,10 +365,8 @@ class ParsedYAML(object):
                         raise ValueError(
                             "Image file must be .h5 or .nxs format, or be an image template (containing #)"
                         )
-                    if new_images != images:
-                        raise ValueError(
-                            "Inconsistent images for different metadata items"
-                        )
+                if new_images != images:
+                    raise ValueError("Inconsistent images for different metadata items")
         return images
 
     @property

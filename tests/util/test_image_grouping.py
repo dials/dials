@@ -107,8 +107,6 @@ def test_yml_parsing_template(tmp_path):
 
 invalid_example = """
 ---
-images:
-  - "/path/to/example_master.h5"
 metadata:
   timepoint:
     "/path/to/example_master.h5" : "/path/to/meta.h5:/timepoint"
@@ -125,8 +123,6 @@ grouping:
 """
 invalid_example_2 = """
 ---
-images:
-  - "/path/to/example_master.h5"
 metadata:
   timepoint:
     "/path/to/example_master.h5" : "repeat=4"
@@ -169,8 +165,6 @@ def test_real_example(tmp_path, dials_data):
     fpath = str(os.fspath(ssx)) + "/merlin0047_#####.cbf"
     real_example = f"""
 ---
-templates:
-  - "{fpath}"
 metadata:
   timepoint:
     "{fpath}" : "repeat=2"
@@ -252,8 +246,6 @@ grouping:
 
     real_example_block = f"""
 ---
-templates:
-  - "{fpath}"
 metadata:
   timepoint:
     "{fpath}" : "block=17000:17004:2"
@@ -314,8 +306,6 @@ grouping:
 
     real_example_single = f"""
 ---
-templates:
-  - "{fpath}"
 metadata:
   timepoint:
     "{fpath}" : 1
