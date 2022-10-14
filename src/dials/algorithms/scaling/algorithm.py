@@ -347,6 +347,9 @@ class ScalingAlgorithm:
 
         # update imageset ids before combining reflection tables.
         self.reflections = update_imageset_ids(self.experiments, self.reflections)
+        # Note, we don't use flex.reflection_table.concat below on purpose, so
+        # that the dataset ids in the table are consistent from input to output
+        # when datasets are removed, e.g. by filtering, exclude_datasets= etc.
         joint_table = flex.reflection_table()
         for i in range(len(self.reflections)):
             joint_table.extend(self.reflections[i])
