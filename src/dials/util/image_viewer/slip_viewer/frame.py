@@ -203,8 +203,8 @@ class XrayFrame(XFBaseClass):
             )
 
             posn_str = "Picture:  fast={:.3f} / slow={:.3f} pixels.".format(
-                fast_picture,
-                slow_picture,
+                fast_picture + 0.5,
+                slow_picture + 0.5,
             )
             coords = self.pyslip.tiles.get_flex_pixel_coordinates(lon, lat)
             if len(coords) >= 2:
@@ -212,7 +212,7 @@ class XrayFrame(XFBaseClass):
                     readout = int(round(coords[2]))
                 else:
                     readout = -1
-
+                coords = [x + 0.5 for x in coords]
                 coords_str = f"fast={coords[1]:.3f} / slow={coords[0]:.3f} pixels"
                 if len(coords) == 2:
                     posn_str += " Readout: " + coords_str + "."
@@ -451,7 +451,10 @@ class XrayFrame(XFBaseClass):
         if abs(detector[0].get_distance()) > 0:
 
             def map_coords(x, y, p):
-                y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(p, y, x)
+                y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                    p, y - 0.5, x - 0.5
+                )
+                # y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(p, y, x)
                 return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
 
             panel_id, beam_pixel_fast, beam_pixel_slow = self.get_beam_center_px()
