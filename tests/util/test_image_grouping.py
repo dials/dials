@@ -4,14 +4,16 @@ import os
 import subprocess
 from pathlib import Path
 
+import numpy as np
 import pytest
 
-from dials.util.image_grouping import (
+import dials.util.image_grouping
+from dials.util.image_grouping import (  # MetadataInFile,
     ConstantMetadataForFile,
+    ExtractedValues,
     FilePair,
     GroupingImageTemplates,
     ImageFile,
-    MetadataInFile,
     ParsedYAML,
     RepeatInImageFile,
     _determine_groupings,
@@ -23,51 +25,70 @@ from dials.util.image_grouping import (
 def test_yml_parsing(tmp_path):
     with open(tmp_path / "example.yaml", "w") as f:
         f.write(example_yaml)
-    parsed = ParsedYAML(tmp_path / "example.yaml")
 
-    # check the images were found
-    assert list(parsed._images.keys()) == [
-        "/path/to/example_master.h5",
-        "/path/to/example_2_master.h5",
-    ]
+    class MetaDataOverWrite(dials.util.image_grouping.MetadataInFile):
+        def __init__(self, file, item):
+            self.file = file
+            self.item = item
+            self.extracted_data = ExtractedValues(np.array([1.0]), False, False, True)
 
-    I1 = ImageFile("/path/to/example_master.h5", True, False)
-    I2 = ImageFile("/path/to/example_2_master.h5", True, False)
+    from unittest import mock
 
-    # check the metadata was found
-    assert parsed.metadata_items["timepoint"] == {
-        I1: MetadataInFile("/path/to/example_master.h5", "/timepoint"),
-        I2: MetadataInFile("/path/to/meta.h5", "/timepoint"),
-    }
-    assert parsed.metadata_items["wavelength"] == {
-        I1: ConstantMetadataForFile(0.4),
-        I2: ConstantMetadataForFile(0.6),
-    }
+    with mock.patch(
+        "dials.util.image_grouping.MetadataInFile", side_effect=MetaDataOverWrite
+    ):
+        parsed = ParsedYAML(tmp_path / "example.yaml")
+        # check the images were found
+        assert list(parsed._images.keys()) == [
+            "/path/to/example_master.h5",
+            "/path/to/example_2_master.h5",
+        ]
 
-    # Now check the two groupings
-    assert list(parsed.groupings.keys()) == ["merge_by", "index_by"]
-    merge_by = parsed.groupings["merge_by"]
-    assert merge_by.metadata_names == {"timepoint", "wavelength"}
-    assert merge_by._images_to_metadata[I1] == {
-        "timepoint": MetadataInFile("/path/to/example_master.h5", "/timepoint"),
-        "wavelength": ConstantMetadataForFile(0.4),
-    }
-    assert merge_by._images_to_metadata[I2] == {
-        "timepoint": MetadataInFile("/path/to/meta.h5", "/timepoint"),
-        "wavelength": ConstantMetadataForFile(0.6),
-    }
-    assert merge_by.tolerances == {"timepoint": 0.1, "wavelength": 0.01}
-    print(merge_by)  # test the __str__ method
-    index_by = parsed.groupings["index_by"]
-    assert index_by.metadata_names == {"wavelength"}
-    assert index_by._images_to_metadata[I1] == {
-        "wavelength": ConstantMetadataForFile(0.4)
-    }
-    assert index_by._images_to_metadata[I2] == {
-        "wavelength": ConstantMetadataForFile(0.6)
-    }
-    assert index_by.tolerances == {"wavelength": 0.01}
-    print(index_by)  # test the __str__ method
+        I1 = ImageFile("/path/to/example_master.h5", True, False)
+        I2 = ImageFile("/path/to/example_2_master.h5", True, False)
+
+        # check the metadata was found
+        assert parsed.metadata_items["timepoint"] == {
+            I1: dials.util.image_grouping.MetadataInFile(
+                "/path/to/example_master.h5", "/timepoint"
+            ),
+            I2: dials.util.image_grouping.MetadataInFile(
+                "/path/to/meta.h5", "/timepoint"
+            ),
+        }
+        assert parsed.metadata_items["wavelength"] == {
+            I1: ConstantMetadataForFile(0.4),
+            I2: ConstantMetadataForFile(0.6),
+        }
+
+        # Now check the two groupings
+        assert list(parsed.groupings.keys()) == ["merge_by", "index_by"]
+        merge_by = parsed.groupings["merge_by"]
+        assert merge_by.metadata_names == {"timepoint", "wavelength"}
+        assert merge_by._images_to_metadata[I1] == {
+            "timepoint": dials.util.image_grouping.MetadataInFile(
+                "/path/to/example_master.h5", "/timepoint"
+            ),
+            "wavelength": ConstantMetadataForFile(0.4),
+        }
+        assert merge_by._images_to_metadata[I2] == {
+            "timepoint": dials.util.image_grouping.MetadataInFile(
+                "/path/to/meta.h5", "/timepoint"
+            ),
+            "wavelength": ConstantMetadataForFile(0.6),
+        }
+        assert merge_by.tolerances == {"timepoint": 0.1, "wavelength": 0.01}
+        print(merge_by)  # test the __str__ method
+        index_by = parsed.groupings["index_by"]
+        assert index_by.metadata_names == {"wavelength"}
+        assert index_by._images_to_metadata[I1] == {
+            "wavelength": ConstantMetadataForFile(0.4)
+        }
+        assert index_by._images_to_metadata[I2] == {
+            "wavelength": ConstantMetadataForFile(0.6)
+        }
+        assert index_by.tolerances == {"wavelength": 0.01}
+        print(index_by)  # test the __str__ method
 
 
 def test_yml_parsing_template(tmp_path):
@@ -100,9 +121,10 @@ def test_yml_parsing_template(tmp_path):
         print(g)
     ftg = GroupingImageTemplates._files_to_groups(merge_by.extract_data(), groups)
     iitgi = ftg[I1]["img_idx_to_group_id"]
-    assert iitgi.repeat == 10
+    for i in range(100):
+        assert iitgi[i] == i % 10
     assert iitgi.single_return_val is None
-    assert iitgi.group_ids is None
+    assert iitgi.group_ids.size() == 0
 
 
 invalid_example = """
@@ -142,7 +164,7 @@ grouping:
 def test_invalid_yml(tmp_path):
     with open(tmp_path / "example.yaml", "w") as f:
         f.write(invalid_example)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         _ = ParsedYAML(tmp_path / "example.yaml")
     with open(tmp_path / "example_2.yaml", "w") as f:
         f.write(invalid_example_2)
@@ -205,7 +227,7 @@ grouping:
     # First test on indexed data - here each image has its own imageset
     # only images 17001, 17002, 17003, 17004 get indexed, so expect these to be split into groups [1,0,1,0]
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
-    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    fd = handler.split_files_to_groups(tmp_path, fps)
 
     # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
     assert list(fd.keys()) == ["group_1", "group_2"]
@@ -228,7 +250,7 @@ grouping:
     # Now test on imported data. Here, we have one imagesequence, expect
     # images 17000-17004, to be split into alternating groups.
     fps = [FilePair(Path(tmp_path / "imported.expt"), Path(tmp_path / "strong.refl"))]
-    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    fd = handler.split_files_to_groups(tmp_path, fps)
     assert list(fd.keys()) == ["group_1", "group_2"]
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
@@ -265,7 +287,7 @@ grouping:
     handler = GroupingImageTemplates(groupby)
 
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
-    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    fd = handler.split_files_to_groups(tmp_path, fps)
     assert list(fd.keys()) == ["group_1", "group_2", "group_3"]
     # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
     filelist_1 = fd["group_1"]
@@ -319,7 +341,7 @@ grouping:
     groupby = parsed.groupings["group_by"]
     handler = GroupingImageTemplates(groupby)
 
-    fd = handler.split_files_to_groups(tmp_path, fps, "")
+    fd = handler.split_files_to_groups(tmp_path, fps)
     assert list(fd.keys()) == ["group_1"]
     # with max lattices=2, 17001 has two lattices, 17002,17003,17004 have one
     filelist_1 = fd["group_1"]
