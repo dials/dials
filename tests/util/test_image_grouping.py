@@ -95,7 +95,7 @@ def test_yml_parsing(tmp_path):
 
 def test_determine_groupings(tmp_path):
     """Test the grouping with tolerances on a more involved example"""
-    test_h5 = str(os.fspath(tmp_path)) + "/meta.h5"
+    test_h5 = str(os.fspath(tmp_path / "meta.h5"))
     wl_example = f"""
 metadata:
   timepoint:
@@ -249,7 +249,7 @@ def test_real_example(tmp_path, dials_data):
     """
 
     ssx = dials_data("cunir_serial", pathlib=True)
-    fpath = str(os.fspath(ssx)) + "/merlin0047_#####.cbf"
+    fpath = str(os.fspath(ssx / "merlin0047_#####.cbf"))
     real_example = f"""
 ---
 metadata:
