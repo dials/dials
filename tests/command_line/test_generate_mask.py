@@ -177,7 +177,7 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
 
         # Import with narrow trusted range to produce overloads
         do_import(
-            ["trusted_range=-1,100", "output.experiments=overloads.expt"] + image_files,
+            ["trusted_range=0,100", "output.experiments=overloads.expt"] + image_files,
             phil=import_phil_scope,
         )
 

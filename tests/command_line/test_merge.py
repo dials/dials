@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import procrunner
 import pytest
 
@@ -64,9 +66,17 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "dials.merge.html").is_file()
-    assert (tmp_path / "dials.merge.json").is_file()
+    merge_json = tmp_path / "dials.merge.json"
+    assert merge_json.is_file()
     expected_labels = mean_labels
     unexpected_labels = []
+
+    with merge_json.open() as fh:
+        json_d = json.load(fh)
+        wl = list(json_d.keys())[0]
+        for k in {"merging_stats", "merging_stats_anom"}:
+            assert k in json_d[wl]
+            assert {"d_star_sq_min", "n_obs", "cc_anom"} <= json_d[wl][k].keys()
 
     if truncate:
         expected_labels += amp_labels

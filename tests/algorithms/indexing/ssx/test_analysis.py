@@ -27,7 +27,7 @@ def generate_test_results_dict(n_lattices=1):
                 "Image": "test_image_002.cbf",
                 "n_indexed": 50,
                 "n_strong": 200,
-                "RMSD_X": 1.0,
+                "RMSD_X": 0.5,
                 "RMSD_Y": 1.1,
                 "RMSD_dPsi": 1.2,
             }
@@ -37,7 +37,7 @@ def generate_test_results_dict(n_lattices=1):
                 "Image": "test_image_003.cbf",
                 "n_indexed": 30,
                 "n_strong": 50,
-                "RMSD_X": 0.2,
+                "RMSD_X": 0.5,
                 "RMSD_Y": 0.4,
                 "RMSD_dPsi": 0.6,
             }
@@ -71,7 +71,7 @@ def test_make_summary_table(n_lattices):
         expected_last = "| test_image_003.cbf |         2 |         2 | 10/50 (20.0%)  |      0.3 |      0.5 |         0.7 |"
     else:
         assert "lattice" not in headerline
-        expected_last = "| test_image_003.cbf |         1 | 30/50 (60.0%)  |      0.2 |      0.4 |         0.6 |"
+        expected_last = "| test_image_003.cbf |         1 | 30/50 (60.0%)  |      0.5 |      0.4 |         0.6 |"
     assert expected_last == last_lattice_line
 
 
@@ -117,7 +117,7 @@ def test_generate_plots(n_lattices):
     assert sum(plots["percent_indexed_hist"]["data"][0]["y"]) == 3
 
     # rmsd plots
-    assert plots["rmsds"]["data"][0]["y"] == [1.0, 0.2]  # X
+    assert plots["rmsds"]["data"][0]["y"] == [0.5, 0.5]  # X
     assert plots["rmsds"]["data"][1]["y"] == [1.1, 0.4]  # Y
     assert plots["rmsdz"]["data"][0]["y"] == [1.2, 0.6]  # dPsi
     if n_lattices == 2:
