@@ -4,11 +4,13 @@ import os
 import subprocess
 from pathlib import Path
 
+import h5py
 import numpy as np
 import pytest
 
 import dials.util.image_grouping
 from dials.util.image_grouping import (  # MetadataInFile,
+    BlockInImageFile,
     ConstantMetadataForFile,
     ExtractedValues,
     FilePair,
@@ -91,6 +93,53 @@ def test_yml_parsing(tmp_path):
         print(index_by)  # test the __str__ method
 
 
+def test_determine_groupings(tmp_path):
+    """Test the grouping with tolerances on a more involved example"""
+    test_h5 = str(os.fspath(tmp_path)) + "/meta.h5"
+    wl_example = f"""
+metadata:
+  timepoint:
+    "/path/to/example_master.h5" : "{test_h5}:/timepoint"
+  wavelength:
+    "/path/to/example_master.h5" : "{test_h5}:/wavelength"
+grouping:
+  merge_by:
+    values:
+      - wavelength
+      - timepoint
+    tolerances:
+      - 0.1
+      - 0
+"""
+    with open(tmp_path / "example.yaml", "w") as f:
+        f.write(wl_example)
+
+    # Write some example data into a h5 file
+    wl_array = np.array([1.0, 1.02, 1.05, 2.0, 2.01, 2.02])
+    tp_array = np.array([1, 0, 1, 1, 1, 1], dtype=np.int)
+    f = h5py.File(test_h5, "w")
+    f.create_dataset("wavelength", data=wl_array)
+    f.create_dataset("timepoint", data=tp_array)
+    f.close()
+
+    # expect three groups
+    # - tp=0, wl=1.0-1.1
+    # - tp=1 wl=1.0-1.1
+    # - tp=1, wl=2.0-2.1
+
+    parsed = ParsedYAML(tmp_path / "example.yaml")
+    groups = _determine_groupings(parsed.groupings["merge_by"])
+    assert len(groups) == 3
+    # NB important that there is not an empty fourth group with tp=0, wl=1.0-1.1
+
+    assert groups[0].min_max_for_metadata("timepoint") == (0.0, 0.0)
+    assert groups[0].min_max_for_metadata("wavelength") == (1.0, 1.1)
+    assert groups[1].min_max_for_metadata("timepoint") == (1.0, 1.0)
+    assert groups[1].min_max_for_metadata("wavelength") == (1.0, 1.1)
+    assert groups[2].min_max_for_metadata("timepoint") == (1.0, 1.0)
+    assert groups[2].min_max_for_metadata("wavelength") == (2.0, 2.1)
+
+
 def test_yml_parsing_template(tmp_path):
     with open(tmp_path / "example.yaml", "w") as f:
         f.write(simple_template_example)
@@ -125,6 +174,25 @@ def test_yml_parsing_template(tmp_path):
         assert iitgi[i] == i % 10
     assert iitgi.single_return_val is None
     assert iitgi.group_ids.size() == 0
+
+    simple_block_example = """
+metadata:
+  crystal_id:
+    "/path/to/example_#####.cbf" : "block=1:100:10"
+grouping:
+  merge_by:
+    values:
+      - crystal_id
+"""
+    with open(tmp_path / "block_example.yaml", "w") as f:
+        f.write(simple_block_example)
+    parsed = ParsedYAML(tmp_path / "block_example.yaml")
+
+    I1 = ImageFile("/path/to/example_#####.cbf", False, True)
+    # check the images were found
+    assert list(parsed._images.keys()) == [I1.name]
+    # check the metadata was found
+    assert parsed.metadata_items["crystal_id"] == {I1: BlockInImageFile(1, 100, 10)}
 
 
 invalid_example = """

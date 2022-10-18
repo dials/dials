@@ -233,10 +233,6 @@ class ParsedGrouping(object):
         self._metadata_names: set = set()
 
     @property
-    def n_images(self) -> int:
-        return len(self._images_to_metadata)
-
-    @property
     def metadata_names(self) -> set:
         return self._metadata_names
 
