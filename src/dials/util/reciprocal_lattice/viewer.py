@@ -40,7 +40,7 @@ autospin = False
   .type = bool
 model_view_matrix = None
   .type = floats(size=16)
-max_experiments = 10
+max_experiments = 15
   .type = int(value_min=0)
 """,
     process_includes=True,
