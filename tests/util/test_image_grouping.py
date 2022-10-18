@@ -3,13 +3,14 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
+from unittest import mock
 
 import h5py
 import numpy as np
 import pytest
 
 import dials.util.image_grouping
-from dials.util.image_grouping import (  # MetadataInFile,
+from dials.util.image_grouping import (
     BlockInImageFile,
     ConstantMetadataForFile,
     ExtractedValues,
@@ -20,6 +21,7 @@ from dials.util.image_grouping import (  # MetadataInFile,
     RepeatInImageFile,
     _determine_groupings,
     example_yaml,
+    get_grouping_handler,
     simple_template_example,
 )
 
@@ -33,8 +35,6 @@ def test_yml_parsing(tmp_path):
             self.file = file
             self.item = item
             self.extracted_data = ExtractedValues(np.array([1.0]), False, False, True)
-
-    from unittest import mock
 
     with mock.patch(
         "dials.util.image_grouping.MetadataInFile", side_effect=MetaDataOverWrite
@@ -165,9 +165,6 @@ def test_yml_parsing_template(tmp_path):
     print(merge_by)  # test the __str__ method
 
     groups = _determine_groupings(merge_by)
-
-    for g in groups:
-        print(g)
     ftg = GroupingImageTemplates._files_to_groups(merge_by.extract_data(), groups)
     iitgi = ftg[I1]["img_idx_to_group_id"]
     for i in range(100):
@@ -269,8 +266,7 @@ grouping:
         f.write(real_example)
 
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
-    groupby = parsed.groupings["group_by"]
-    handler = GroupingImageTemplates(groupby)
+    handler = get_grouping_handler(parsed, "group_by")
 
     args = ["dials.import", f"template={fpath}"]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
@@ -302,8 +298,6 @@ grouping:
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
-    for expt in expts1:
-        print(expt.imageset.get_path(0).split("_")[-1])
     assert len(expts1) == 2
     assert expts1[0].imageset.get_path(0).split("_")[-1] == "17002.cbf"
     assert expts1[1].imageset.get_path(0).split("_")[-1] == "17004.cbf"
@@ -351,8 +345,7 @@ grouping:
         f.write(real_example_block)
 
     parsed = ParsedYAML(tmp_path / "real_example_block.yaml")
-    groupby = parsed.groupings["group_by"]
-    handler = GroupingImageTemplates(groupby)
+    handler = get_grouping_handler(parsed, "group_by")
 
     fps = [FilePair(Path(tmp_path / "indexed.expt"), Path(tmp_path / "indexed.refl"))]
     fd = handler.split_files_to_groups(tmp_path, fps)
@@ -406,8 +399,7 @@ grouping:
         f.write(real_example_single)
 
     parsed = ParsedYAML(tmp_path / "real_example_single.yaml")
-    groupby = parsed.groupings["group_by"]
-    handler = GroupingImageTemplates(groupby)
+    handler = get_grouping_handler(parsed, "group_by")
 
     fd = handler.split_files_to_groups(tmp_path, fps)
     assert list(fd.keys()) == ["group_1"]

@@ -1013,3 +1013,16 @@ class GroupingImageFiles(GroupingImageTemplates):
 
             expt_file_to_groupsdata[fp.expt] = groupdata
         return expt_file_to_groupsdata
+
+
+def get_grouping_handler(parsed: ParsedYAML, grouping: str, nproc: int = 1):
+    """Determine"""
+    if all(image.is_template for image in parsed._images.values()):
+        handler_class = GroupingImageTemplates
+    elif all(image.is_h5 for image in parsed._images.values()):
+        handler_class = GroupingImageFiles
+    else:
+        raise ValueError("Can't mix image templates and image files in yml definition.")
+    if grouping not in parsed.groupings:
+        raise ValueError(f"Grouping definition {grouping} not found in parsed yaml.")
+    return handler_class(parsed.groupings[grouping], nproc)
