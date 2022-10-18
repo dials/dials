@@ -729,7 +729,7 @@ class GroupingImageTemplates(object):
 
         return file_to_groups
 
-    def get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
+    def _get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
         expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = {}
 
         for fp in data_file_pairs:
@@ -801,7 +801,7 @@ class GroupingImageTemplates(object):
         "Write a group_id column into the reflection table"
         expt_file_to_groupsdata: Dict[
             Path, GroupsForExpt
-        ] = self.get_expt_file_to_groupsdata(data_file_pairs)
+        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
 
         def set_group_id_column(
             filepair: FilePair,
@@ -845,7 +845,7 @@ class GroupingImageTemplates(object):
 
         expt_file_to_groupsdata: Dict[
             Path, GroupsForExpt
-        ] = self.get_expt_file_to_groupsdata(data_file_pairs)
+        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
         template = "{name}group_{index:0{maxindexlength:d}d}"
         name_template = functools.partial(
             template.format,
@@ -964,7 +964,7 @@ class GroupingImageFiles(GroupingImageTemplates):
 
         return file_to_groups
 
-    def get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
+    def _get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
         expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = {}
 
         for fp in data_file_pairs:
