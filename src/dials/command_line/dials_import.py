@@ -153,6 +153,9 @@ phil_scope = libtbx.phil.parse(
     grid_size = None
       .type = ints(size=2)
       .help = "If importing as a grid scan set the size"
+
+    convert_stills_to_sequences = True
+      .type = bool
   }
 
   include scope dials.util.options.format_phil_scope
@@ -354,9 +357,9 @@ class ManualGeometryUpdater:
             for j in range(len(imageset)):
                 imageset.set_scan(None, j)
                 imageset.set_goniometer(None, j)
-        if not isinstance(imageset, ImageSequence):
-            if self.params.geometry.convert_stills_to_sequences:
-                imageset = self.convert_stills_to_sequence(imageset)
+        # if not isinstance(imageset, ImageSequence):
+        #    if self.params.geometry.convert_stills_to_sequences:
+        #        imageset = self.convert_stills_to_sequence(imageset, idx)
         if isinstance(imageset, ImageSequence):
             beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
             detector = DetectorFactory.from_phil(
@@ -513,7 +516,6 @@ class MetaDataUpdater:
         """
         # Import the lookup data
         lookup = self.import_lookup_data(self.params)
-
         # Convert all to ImageGrid
         if self.params.input.as_grid_scan:
             imageset_list = self.convert_to_grid_scan(imageset_list, self.params)
@@ -614,6 +616,45 @@ class MetaDataUpdater:
                             crystal=None,
                         )
                     )
+
+        if self.params.input.convert_stills_to_sequences:
+            if any(~isinstance(i, ImageSequence) for i in experiments.imagesets()):
+                # assert all not imageseqs?
+                n_files = list({i.get_path(0) for i in experiments.imagesets()})
+                from dxtbx.model import Scan
+
+                if len(n_files) == 1:
+                    # all in one imageseq
+                    first, last = (1, len(experiments))
+                    from dxtbx.imageset import ImageSetFactory
+                    from dxtbx.model import GoniometerFactory
+
+                    iset0 = experiments.imagesets()[0]
+                    imageset = ImageSetFactory.make_sequence(
+                        template=n_files[0],
+                        indices=list(range(first, last + 1)),
+                        format_class=iset0.get_format_class(),
+                        beam=iset0.get_beam(),
+                        detector=iset0.get_detector(),
+                        goniometer=GoniometerFactory.make_goniometer(
+                            (0.0, 1.0, 0.0), (1, 0, 0, 0, 1, 0, 0, 0, 1)
+                        ),
+                        scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
+                        format_kwargs=imageset.params(),
+                    )
+                    experiments = ExperimentList()
+                    for j in range(first - 1, last):
+                        subset = imageset[j : j + 1]
+                        experiments.append(
+                            Experiment(
+                                imageset=imageset,
+                                beam=imageset.get_beam(),
+                                detector=imageset.get_detector(),
+                                goniometer=imageset.get_goniometer(),
+                                scan=subset.get_scan(),
+                                crystal=None,
+                            )
+                        )
 
         if self.params.identifier_type:
             generate_experiment_identifiers(experiments, self.params.identifier_type)
@@ -864,6 +905,7 @@ def do_import(
 
     # Re-extract the imagesets to rebuild experiments from
     imagesets = _extract_or_read_imagesets(params)
+    print(len(imagesets))
 
     metadata_updater = MetaDataUpdater(params)
     experiments = metadata_updater(imagesets)

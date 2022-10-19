@@ -111,10 +111,6 @@ geometry
   include scope dxtbx.model.goniometer.goniometer_phil_scope
   include scope dxtbx.model.scan.scan_phil_scope
 
-  convert_stills_to_sequences = False
-    .type = bool
-    .help = "When overriding the scan, convert stills into sequences"
-    .short_caption = "Convert stills into sequences"
 
   convert_sequences_to_stills = False
     .type = bool
