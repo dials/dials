@@ -213,7 +213,7 @@ class XrayFrame(XFBaseClass):
                 else:
                     readout = -1
                 # the dials convention is that the center of the pixel is 0.5,0.5, so the extent
-                # of the 0,0 pixel is from 0.0,0.0 to 1.0,1.0 in pixel space.  Here we are
+                # of the 0,0 pixel is from 0.0,0.0 to 1.0,1.0 in pixel space.  However
                 # get_flex_pixel_coordinates defines the center of the pixel as 0.0,0.0, so we
                 # are a half pixel off
                 coords[0] += 0.5
@@ -454,7 +454,6 @@ class XrayFrame(XFBaseClass):
                 y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
                     p, y - 0.5, x - 0.5
                 )
-                # y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(p, y, x)
                 return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
 
             panel_id, beam_pixel_fast, beam_pixel_slow = self.get_beam_center_px()
