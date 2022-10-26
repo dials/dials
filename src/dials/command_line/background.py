@@ -76,6 +76,8 @@ def run(args=None):
 
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
+    if not experiments:
+        raise Sorry("No experiments found in the input")
     imagesets = experiments.imagesets()
 
     # Configure the logging

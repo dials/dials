@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import procrunner
 import pytest
 
@@ -59,15 +61,22 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
+        "json=dials.merge.json",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    if truncate and anomalous:
-        assert (tmp_path / "dials.merge.html").is_file()
-    else:
-        assert not (tmp_path / "dials.merge.html").is_file()
+    assert (tmp_path / "dials.merge.html").is_file()
+    merge_json = tmp_path / "dials.merge.json"
+    assert merge_json.is_file()
     expected_labels = mean_labels
     unexpected_labels = []
+
+    with merge_json.open() as fh:
+        json_d = json.load(fh)
+        wl = list(json_d.keys())[0]
+        for k in {"merging_stats", "merging_stats_anom"}:
+            assert k in json_d[wl]
+            assert {"d_star_sq_min", "n_obs", "cc_anom"} <= json_d[wl][k].keys()
 
     if truncate:
         expected_labels += amp_labels
@@ -110,6 +119,7 @@ def test_merge_dmin_dmax(dials_data, tmp_path, best_unit_cell):
         "crystal_name=jam",
         "dataset_name=spam",
         f"best_unit_cell={best_unit_cell}",
+        "output.html=None",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr

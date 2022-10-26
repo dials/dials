@@ -24,8 +24,8 @@ jobs:
           git fetch --unshallow
           git log HEAD -n 1
           commit_merge_base="$(git merge-base ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }})"
-          if ! git diff --name-status $commit_merge_base ${{ github.event.pull_request.head.sha }} -- newsfragments/ | grep '^A'; then
-            echo "::error ::PR Branch is missing a newsfragment. Please add one with a number or named XXX.<type>."
+          if ! git diff --name-status $commit_merge_base ${{ github.event.pull_request.head.sha }} -- newsfragments/ | grep -E '^A.*\.(feature|bugfix|doc|removal|misc)'; then
+            echo "::error ::PR Branch is missing a valid newsfragment. Please add one with a number or named XXX.(feature|bugfix|doc|removal|misc)"
             exit 1
           else
             echo "✅  Newsfragment entry present"

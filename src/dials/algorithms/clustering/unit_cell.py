@@ -61,6 +61,7 @@ class Cluster:
 class ClusteringResult:
     clusters: list[Cluster]
     dendrogram: Optional[dict] = None
+    linkage_matrix: Optional[np.ndarray] = None
 
     def __len__(self):
         return len(self.clusters)
@@ -208,8 +209,12 @@ def cluster_unit_cells(
     pair_distances = ssd.pdist(g6_cells, metric=metric)
     if len(pair_distances) > 0:
         logger.info("Distances have been calculated")
-        this_linkage = hierarchy.linkage(pair_distances, method="single", metric=metric)
-        cluster_ids = hierarchy.fcluster(this_linkage, threshold, criterion="distance")
+        linkage_matrix = hierarchy.linkage(
+            pair_distances, method="single", metric=metric
+        )
+        cluster_ids = hierarchy.fcluster(
+            linkage_matrix, threshold, criterion="distance"
+        )
         logger.debug("Clusters have been calculated")
     else:
         logger.debug("No distances were calculated. Aborting clustering.")
@@ -231,7 +236,7 @@ def cluster_unit_cells(
         cluster.name = f"cluster_{i + 1}"
 
     dendrogram = hierarchy.dendrogram(
-        this_linkage,
+        linkage_matrix,
         # labels=labels,
         p=200,
         truncate_mode="lastp",  # show only the last p merged clusters
@@ -242,4 +247,6 @@ def cluster_unit_cells(
         no_plot=no_plot,
     )
 
-    return ClusteringResult(clusters=sub_clusters, dendrogram=dendrogram)
+    return ClusteringResult(
+        clusters=sub_clusters, dendrogram=dendrogram, linkage_matrix=linkage_matrix
+    )

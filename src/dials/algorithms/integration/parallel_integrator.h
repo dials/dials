@@ -410,24 +410,24 @@ namespace dials { namespace algorithms {
      * @param compute_intensity The intensity calculation function
      * @param buffer The image buffer array
      * @param zstart The first image index
-     * @param underload The underload value
-     * @param overload The overload value
+     * @param min_trusted The minimum trusted value
+     * @param max_trusted The maximum trusted value
      */
     ReflectionIntegrator(const MaskCalculatorIface &compute_mask,
                          const BackgroundCalculatorIface &compute_background,
                          const IntensityCalculatorIface &compute_intensity,
                          const Buffer &buffer,
                          int zstart,
-                         double underload,
-                         double overload,
+                         double min_trusted,
+                         double max_trusted,
                          bool debug)
         : compute_mask_(compute_mask),
           compute_background_(compute_background),
           compute_intensity_(compute_intensity),
           buffer_(buffer),
           zstart_(zstart),
-          underload_(underload),
-          overload_(overload),
+          min_trusted_(min_trusted),
+          max_trusted_(max_trusted),
           debug_(debug) {}
 
     /**
@@ -457,7 +457,7 @@ namespace dials { namespace algorithms {
         index, reflection_list, adjacency_list, reflection, adjacent_reflections);
 
       // Extract the shoebox data
-      extract_shoebox(buffer_, reflection, zstart_, underload_, overload_);
+      extract_shoebox(buffer_, reflection, zstart_, min_trusted_, max_trusted_);
 
       // Compute the mask
       compute_mask_(reflection);
@@ -474,7 +474,7 @@ namespace dials { namespace algorithms {
       try {
         compute_background_(reflection);
       } catch (dials::error const &) {
-        finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
+        finalize_shoebox(reflection, adjacent_reflections, min_trusted_, max_trusted_);
         return;
       }
 
@@ -494,7 +494,7 @@ namespace dials { namespace algorithms {
       }
 
       // Erase the shoebox
-      finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
+      finalize_shoebox(reflection, adjacent_reflections, min_trusted_, max_trusted_);
 
       // Set the reflection data
       set_reflection(index, reflection_list, reflection);
@@ -553,10 +553,10 @@ namespace dials { namespace algorithms {
      */
     void finalize_shoebox(af::Reflection &reflection,
                           std::vector<af::Reflection> &adjacent_reflections,
-                          double underload,
-                          double overload) const {
+                          double min_trusted,
+                          double max_trusted) const {
       // Inspect the pixels
-      inspect_pixels(reflection, underload, overload);
+      inspect_pixels(reflection, min_trusted, max_trusted);
 
       // Delete the shoebox
       delete_shoebox(reflection, adjacent_reflections);
@@ -567,8 +567,8 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      */
     void inspect_pixels(af::Reflection &reflection,
-                        double underload,
-                        double overload) const {
+                        double min_trusted,
+                        double max_trusted) const {
       typedef Shoebox<>::float_type float_type;
 
       // Get the shoebox
@@ -593,7 +593,7 @@ namespace dials { namespace algorithms {
         double d = data[i];
         int m = mask[i];
 
-        if (d >= overload) {
+        if (d > max_trusted) {
           flags |= af::Overloaded;
         }
 
@@ -660,8 +660,8 @@ namespace dials { namespace algorithms {
     void extract_shoebox(const Buffer &buffer,
                          af::Reflection &reflection,
                          int zstart,
-                         double underload,
-                         double overload) const {
+                         double min_trusted,
+                         double max_trusted) const {
       typedef af::const_ref<Buffer::float_type, af::c_grid<2> > data_buffer_type;
       std::size_t panel = reflection.get<std::size_t>("panel");
       int6 bbox = reflection.get<int6>("bbox");
@@ -698,7 +698,7 @@ namespace dials { namespace algorithms {
             if (jj >= 0 && ii >= 0 && jj < data_buffer.accessor()[0]
                 && ii < data_buffer.accessor()[1]) {
               double d = data_buffer(jj, ii);
-              int m = (d > underload && d < overload) ? Valid : 0;
+              int m = (d >= min_trusted && d <= max_trusted) ? Valid : 0;
               data(k, j, i) = d;
               mask(k, j, i) = m;
             } else {
@@ -761,8 +761,8 @@ namespace dials { namespace algorithms {
     const IntensityCalculatorIface &compute_intensity_;
     const Buffer &buffer_;
     int zstart_;
-    double underload_;
-    double overload_;
+    double min_trusted_;
+    double max_trusted_;
     bool debug_;
     mutable boost::mutex mutex_;
   };
@@ -1094,14 +1094,14 @@ namespace dials { namespace algorithms {
         buffer_size = zsize;
       }
 
-      // Get the starting frame and the underload/overload values
+      // Get the starting frame and the trusted range values
       int zstart = scan.get_array_range()[0];
-      double underload = detector[0].get_trusted_range()[0];
-      double overload = detector[0].get_trusted_range()[1];
-      DIALS_ASSERT(underload < overload);
+      double min_trusted = detector[0].get_trusted_range()[0];
+      double max_trusted = detector[0].get_trusted_range()[1];
+      DIALS_ASSERT(min_trusted < max_trusted);
       for (std::size_t i = 1; i < detector.size(); ++i) {
-        DIALS_ASSERT(underload == detector[i].get_trusted_range()[0]);
-        DIALS_ASSERT(overload == detector[i].get_trusted_range()[1]);
+        DIALS_ASSERT(min_trusted == detector[i].get_trusted_range()[0]);
+        DIALS_ASSERT(max_trusted == detector[i].get_trusted_range()[1]);
       }
 
       // Get the reflection flags and bbox
@@ -1117,8 +1117,9 @@ namespace dials { namespace algorithms {
       AdjacencyList overlaps = find_overlapping_multi_panel(bbox, panel);
 
       // Allocate the array for the image data
+      double mask_value = min_trusted - 1.0;
       Buffer buffer(
-        detector, zsize, buffer_size, underload, imageset.get_static_mask());
+        detector, zsize, buffer_size, mask_value, imageset.get_static_mask());
 
       // If we have shoeboxes then delete
       if (reflections.contains("shoebox")) {
@@ -1146,8 +1147,8 @@ namespace dials { namespace algorithms {
                                       compute_intensity,
                                       buffer,
                                       zstart,
-                                      underload,
-                                      overload,
+                                      min_trusted,
+                                      max_trusted,
                                       debug);
 
       // Do the integration

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+
 import numpy as np
 
 from dxtbx import flumpy
@@ -15,6 +17,7 @@ from dials.algorithms.profile_model.ellipsoid.algorithm import (
     final_integrator,
     initial_integrator,
     predict,
+    predict_after_ellipsoid_refinement,
     run_ellipsoid_refinement,
 )
 from dials.algorithms.profile_model.ellipsoid.indexer import reindex
@@ -78,12 +81,25 @@ class EllipsoidIntegrator(SimpleIntegrator):
         if self.params.profile.ellipsoid.orientation.fixed:
             fix_list.append("orientation")
 
-        self.collector.initial_collect(experiment, table)
+        initial_table = copy.deepcopy(table)
 
-        for _ in range(self.params.profile.ellipsoid.refinement.n_macro_cycles):
+        self.collector.initial_collect(experiment, initial_table)
+
+        for i in range(self.params.profile.ellipsoid.refinement.n_macro_cycles):
             try:
-                table, sigma_d = self.preprocess(experiment, table, self.params)
-                self.collector.collect_after_preprocess(experiment, table)
+                if i == 0:
+                    table, sigma_d = self.preprocess(
+                        experiment, initial_table, self.params
+                    )
+                    self.collector.collect_after_preprocess(experiment, table)
+                else:
+                    # update the predictions and s1 vectors using the latest models
+                    initial_table = predict_after_ellipsoid_refinement(
+                        experiment, initial_table
+                    )
+                    table, sigma_d = self.preprocess(
+                        experiment, initial_table, self.params
+                    )
             except ToFewReflections as e:
                 raise RuntimeError(e)
             else:

@@ -44,7 +44,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2022.3"  # April 2022 release
+_prebuilt_cctbx_base = "2022.7"  # August 2022 release
 
 
 def make_executable(filepath):
@@ -1002,7 +1002,7 @@ def update_sources(options):
             ("cctbx/cctbx_project", "master"),
             ("cctbx/dxtbx", "main"),
             ("dials/annlib", "master"),
-            ("dials/cbflib", "master"),
+            ("dials/cbflib", "main"),
             ("dials/ccp4io", "master"),
             ("dials/ccp4io_adaptbx", "master"),
             ("dials/dials", "main"),

@@ -5,6 +5,7 @@ import pickle
 import procrunner
 import pytest
 
+from dxtbx.serialize import load
 from scitbx.array_family import flex
 
 
@@ -12,8 +13,18 @@ def test_model_background(dials_data, tmp_path):
     centroid = dials_data("centroid_test_data", pathlib=True)
     expts = centroid / "experiments.json"
 
+    # Patched data file. Original had trusted_range from -1, but now this range
+    # is defined to start from the minimum trusted value. This test should be
+    # updated with new data.
+    # https://github.com/dials/dials/issues/2200
+    exp = load.experiment_list(expts)
+    panel = exp[0].detector[0]
+    max_trusted = panel.get_trusted_range()[1]
+    panel.set_trusted_range((0, max_trusted))
+    exp.as_json(tmp_path / "trusted_range_patch.expt")
+
     result = procrunner.run(
-        ["dials.model_background", expts],
+        ["dials.model_background", "trusted_range_patch.expt"],
         working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
@@ -46,7 +57,7 @@ def test_model_background(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.integrate",
-            expts,
+            "trusted_range_patch.expt",
             refls,
             "background.algorithm=gmodel",
             "gmodel.robust.algorithm=False",
@@ -59,7 +70,7 @@ def test_model_background(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.integrate",
-            expts,
+            "trusted_range_patch.expt",
             refls,
             "background.algorithm=gmodel",
             "gmodel.robust.algorithm=True",

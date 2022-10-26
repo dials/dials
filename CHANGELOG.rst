@@ -1,3 +1,104 @@
+DIALS 3.11.2 (2022-09-27)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.scale``: Fix bug in intensity combination scoring for multi-sweep datasets, affecting midpoint test values. (`#2199 <https://github.com/dials/dials/issues/2199>`_)
+
+
+DIALS 3.11.1 (2022-09-02)
+=========================
+
+Bugfixes
+--------
+
+- Revert default installation to Python 3.9, to avoid WXPython incompatibilities. (`#2216 <https://github.com/dials/dials/issues/2216>`_)
+
+
+DIALS 3.11.0 (2022-08-24)
+=========================
+
+Features
+--------
+
+- ``dials.scale``: Added the ``reference=`` option, with support for using a cif data file as a scaling reference. This replaces the old usages of ``target_mtz=`` and ``target_model=``, which are now deprecated. (`#2148 <https://github.com/dials/dials/issues/2148>`_)
+- ``dials.algorithms.clustering.unit_cell`` API: Include the linkage matrix in the returned ``ClusteringResult`` object. (`#2152 <https://github.com/dials/dials/issues/2152>`_)
+- ``dials.cosym``: Allow use of a reference dataset, to consistently index against. (`#2154 <https://github.com/dials/dials/issues/2154>`_)
+- ``dials.find_rotation_axis``: Dramatically improve execution time by performing the search in parallel. (`#2160 <https://github.com/dials/dials/issues/2160>`_)
+- ``dials.image_viewer``: Score tool now accepts keyboard entry. (`#2162 <https://github.com/dials/dials/issues/2162>`_)
+- ``dials.merge``: Add merging statistics to output html report, and the PHIL option ``output.json=`` to write this this to json. (`#2178 <https://github.com/dials/dials/issues/2178>`_)
+- ``dials.symmetry``: Add option to score systematic absences using fourier analysis. Thanks to Kevin Dalton for contributing this feature. (`#2184 <https://github.com/dials/dials/issues/2184>`_)
+- Unit cell clustering reports: Add plots of unit cell angle distribution. (`#2197 <https://github.com/dials/dials/issues/2197>`_)
+- Use Python 3.10 by default when running bootstrap. (`#2206 <https://github.com/dials/dials/issues/2206>`_)
+- ``dials.merge``: include merging statistics in json output (`#2207 <https://github.com/dials/dials/issues/2207>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.find_rotation_axis``: Consistently report rotation axis angle at start and end of the search. (`#2145 <https://github.com/dials/dials/issues/2145>`_)
+- ``dials.generate_mask``: Make the log filename consistent with the program name. (`#2147 <https://github.com/dials/dials/issues/2147>`_)
+- ``dials.image_viewer``: Automatically complete an active polygon mask when saving mask parameters. (`#2150 <https://github.com/dials/dials/issues/2150>`_)
+- ``dials.refine``: Correct an error mapping constraint definitions to models. (`#2155 <https://github.com/dials/dials/issues/2155>`_)
+- ``dials.background``: Check for empty experiments. (`#2163 <https://github.com/dials/dials/issues/2163>`_)
+- ``dials.estimate_gain``: Now works on multiple experiments from a single image sequence. (`#2164 <https://github.com/dials/dials/issues/2164>`_)
+- ``dials.powder_calibrate``: More general determination of background mask removal. (`#2165 <https://github.com/dials/dials/issues/2165>`_)
+- Fix DIALS version reporting for release builds. (`#2166 <https://github.com/dials/dials/issues/2166>`_)
+- Logging messages from dxtbx are now included in program output. (`#2171 <https://github.com/dials/dials/issues/2171>`_)
+- ``dev.dials.ssx_integrate``: Handle potential assertion errors from FastMCD. (`#2179 <https://github.com/dials/dials/issues/2179>`_)
+- ``dials.symmetry``: Ensure data for systematic absences check is in the correct setting for non-conventional minimum cells. (`#2183 <https://github.com/dials/dials/issues/2183>`_)
+- ``dials.scale``: Fix bug in intensity combination scoring for multi-sweep datasets, affecting midpoint test values. (`#2199 <https://github.com/dials/dials/issues/2199>`_)
+- ``dev.dials.ssx_index``: Fix crash when generating plotting data where rmsd values are almost all equivalent. (`#2203 <https://github.com/dials/dials/issues/2203>`_)
+- ``dev.dials.ssx_integrate``: Fix divergent refinement bug when n_macro_cycles > 1. (`#2204 <https://github.com/dials/dials/issues/2204>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- ``dials.scale``: The ``target_mtz=`` and ``target_model=`` options are deprecated. Please use ``reference=`` instead for both uses. (`#2148 <https://github.com/dials/dials/issues/2148>`_)
+
+
+Misc
+----
+
+- `#2115 <https://github.com/dials/dials/issues/2115>`_, `#2138 <https://github.com/dials/dials/issues/2138>`_, `#2143 <https://github.com/dials/dials/issues/2143>`_, `#2144 <https://github.com/dials/dials/issues/2144>`_, `#2169 <https://github.com/dials/dials/issues/2169>`_, `#2180 <https://github.com/dials/dials/issues/2180>`_, `#2181 <https://github.com/dials/dials/issues/2181>`_, `#2185 <https://github.com/dials/dials/issues/2185>`_, `#2188 <https://github.com/dials/dials/issues/2188>`_
+
+
+DIALS 3.10.3 (2022-08-02)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.image_viewer``: Fix error after loading images with the "Load" button. (`#2168 <https://github.com/dials/dials/issues/2168>`_)
+- ``dials.merge``: Fix crash for P-1 datasets. (`#2175 <https://github.com/dials/dials/issues/2175>`_)
+- ``dials.export format=mtz``: Handle shared experiment models when converting to cambridge frame (`#2182 <https://github.com/dials/dials/issues/2182>`_)
+
+
+DIALS 3.10.2 (2022-07-13)
+=========================
+
+Bugfixes
+--------
+
+- Fix DIALS version reporting for release builds. (`#2166 <https://github.com/dials/dials/issues/2166>`_)
+
+
+DIALS 3.10.1 (2022-07-12)
+=========================
+
+Bugfixes
+--------
+
+- Refinement internals: Terminate Levenberg-Marquardt refinement if the objective is not expected to decrease. (`#2135 <https://github.com/dials/dials/issues/2135>`_)
+- ``dials.scale``: Avoid edge case crashes when all reflections filtered out during reflection selection for a dataset in multi-dataset scaling (`#2146 <https://github.com/dials/dials/issues/2146>`_)
+- ``dials.cosym``: Fix bug whereby the change of basis op was applied twice to the crystal model (`#2151 <https://github.com/dials/dials/issues/2151>`_)
+- ``dials.ssx_index``: Fix potential numpy crash when trying to generate histograms from one datapoint (`#2156 <https://github.com/dials/dials/issues/2156>`_)
+- ``dials.image_viewer``: Allow viewing still collections where some images have no reflections. (`#2157 <https://github.com/dials/dials/issues/2157>`_)
+- ``dev.dials.ssx_index``: Fix cluster reporting for only one image indexed, fix crash when all images filtered out (`#2159 <https://github.com/dials/dials/issues/2159>`_)
+
+
 DIALS 3.10.0 (2022-06-09)
 =========================
 

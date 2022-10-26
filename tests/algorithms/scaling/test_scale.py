@@ -265,12 +265,12 @@ def test_targeted_scaling_against_mtz(dials_data, tmp_path):
 
     refl = location / "scaled_30.refl"
     expt = location / "scaled_30.expt"
-    target_mtz = tmp_path / "unmerged.mtz"
+    reference = tmp_path / "unmerged.mtz"
     command = [
         "dials.scale",
         refl,
         expt,
-        f"target_mtz={target_mtz}",
+        f"reference={reference}",
         "unmerged_mtz=unmerged_2.mtz",
     ]
 
@@ -736,6 +736,8 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
         analysis_results["initial_expids_and_image_ranges"][4][0]
     ]
     assert "expids_and_image_ranges" in analysis_results
+    refls = flex.reflection_table.from_file(tmp_path / "filtered.refl")
+    assert set(refls["id"]) == {0, 1, 2, 3, 5, 6}
 
 
 def test_scale_array(dials_data, tmp_path):
