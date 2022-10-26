@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 
 from dials.array_family import flex
@@ -25,8 +26,13 @@ def pixel_histogram(spot_filename, maximum=0x10000):
             )
         )
 
-    for c, v in zip(histogram.slot_centers(), histogram.slots()):
-        print(c, v)
+    pixels = flex.ceil(histogram.slot_centers()).iround()
+    values = histogram.slots()
+    sel = values > 0
+    with open("histogram.json", "w") as f:
+        json.dump(
+            {"pixels": list(pixels.select(sel)), "counts": list(values.select(sel))}, f
+        )
 
 
 if __name__ == "__main__":
