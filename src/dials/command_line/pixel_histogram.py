@@ -7,7 +7,7 @@ import sys
 from dials.array_family import flex
 
 
-def pixel_histogram(spot_filename, maximum=0x10000):
+def pixel_histogram(spot_filename: str, maximum: int = 0x10000) -> None:
     """Compute a histogram of pixel values up to the given maximum value"""
 
     spots = flex.reflection_table.from_file(spot_filename)
