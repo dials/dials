@@ -1,3 +1,4 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.pixel_histogram
 from __future__ import annotations
 
 import json
@@ -10,6 +11,7 @@ def pixel_histogram(spot_filename, maximum=0x10000):
     """Compute a histogram of pixel values up to the given maximum value"""
 
     spots = flex.reflection_table.from_file(spot_filename)
+    spots = spots.select(spots.get_flags(spots.flags.indexed))
 
     if "shoebox" not in spots:
         sys.exit(f"no shoeboxes in {spot_filename}")
