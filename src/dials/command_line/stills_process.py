@@ -124,9 +124,10 @@ def _control_phil_str():
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    suppressed_logging = False
-      .type = bool
-      .help = Suppress a lot of DIALS refine output
+    logging_option = *normal suppressed disabled
+      .type = choice
+      .help = normal includes all logging, suppress turns off DIALS refine output
+      .help = and disabled removes basically all logging
     experiments_filename = None
       .type = str
       .help = The filename for output experiments. For example, %s_imported.expt
@@ -471,7 +472,7 @@ class Script:
                 transmitted_info = None
             params, options, all_paths = comm.bcast(transmitted_info, root=0)
 
-        if params.output.suppressed_logging:
+        if params.output.logging_option == "suppressed":
             logging.getLogger("dials.algorithms.indexing.nave_parameters").setLevel(
                 logging.ERROR
             )
@@ -484,6 +485,9 @@ class Script:
             logging.getLogger(
                 "dials.algorithms.refinement.reflection_manager"
             ).setLevel(logging.ERROR)
+
+        elif params.output.logging_option == "disabled":
+            logging.disable(logging.ERROR)
 
         # Check we have some filenames
         if not all_paths:
