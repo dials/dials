@@ -124,6 +124,9 @@ def _control_phil_str():
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
+    suppressed_logging = False
+      .type = bool
+      .help = Suppress a lot of DIALS refine output
     experiments_filename = None
       .type = str
       .help = The filename for output experiments. For example, %s_imported.expt
@@ -468,6 +471,20 @@ class Script:
                 transmitted_info = None
             params, options, all_paths = comm.bcast(transmitted_info, root=0)
 
+        if params.output.suppressed_logging:
+            logging.getLogger("dials.algorithms.indexing.nave_parameters").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.indexing.stills_indexer").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.refinement.refiner").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger(
+                "dials.algorithms.refinement.reflection_manager"
+            ).setLevel(logging.ERROR)
+
         # Check we have some filenames
         if not all_paths:
             self.parser.print_help()
@@ -745,7 +762,12 @@ class Script:
 
                 if rank == 0:
                     # server process
+                    num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
+                        print(
+                            "Processing %d / %d shots" % (item_num, num_iter),
+                            flush=True,
+                        )
                         if process_fractions and not process_this_event(item_num):
                             continue
 
