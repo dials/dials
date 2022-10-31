@@ -81,7 +81,7 @@ phil_scope = libtbx.phil.parse(
 
     experiments = imported.expt
       .type = str
-      .help = "The output JSON or pickle file"
+      .help = "The output experiment file"
 
     log = 'dials.import.log'
       .type = str
@@ -89,7 +89,7 @@ phil_scope = libtbx.phil.parse(
 
     compact = False
       .type = bool
-      .help = "For JSON output use compact representation"
+      .help = "For experiment output use compact JSON representation"
 
   }
 

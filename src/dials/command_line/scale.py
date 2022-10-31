@@ -64,11 +64,10 @@ phil_scope = phil.parse(
       .help = "The log filename"
     experiments = "scaled.expt"
       .type = str
-      .help = "Option to set filepath for output json."
+      .help = "Option to set filepath for output experiments."
     reflections = "scaled.refl"
       .type = str
-      .help = "Option to set filepath for output pickle file of scaled
-               intensities."
+      .help = "Option to set filepath for output intensities."
     html = "dials.scale.html"
       .type = str
       .help = "Filename for html report."
