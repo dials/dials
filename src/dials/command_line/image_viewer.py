@@ -30,7 +30,7 @@ Examples::
 
 phil_scope = iotbx.phil.parse(
     """\
-brightness = 100
+brightness = 10
   .type = int
 color_scheme = *grayscale rainbow heatmap invert
   .type = choice

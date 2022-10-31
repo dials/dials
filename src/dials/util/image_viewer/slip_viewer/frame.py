@@ -203,8 +203,8 @@ class XrayFrame(XFBaseClass):
             )
 
             posn_str = "Picture:  fast={:.3f} / slow={:.3f} pixels.".format(
-                fast_picture,
-                slow_picture,
+                fast_picture + 0.5,
+                slow_picture + 0.5,
             )
             coords = self.pyslip.tiles.get_flex_pixel_coordinates(lon, lat)
             if len(coords) >= 2:
@@ -212,13 +212,17 @@ class XrayFrame(XFBaseClass):
                     readout = int(round(coords[2]))
                 else:
                     readout = -1
-
+                # the dials convention is that the center of the pixel is 0.5,0.5, so the extent
+                # of the 0,0 pixel is from 0.0,0.0 to 1.0,1.0 in pixel space.  However
+                # get_flex_pixel_coordinates defines the center of the pixel as 0.0,0.0, so we
+                # are a half pixel off
+                coords[0] += 0.5
+                coords[1] += 0.5
                 coords_str = f"fast={coords[1]:.3f} / slow={coords[0]:.3f} pixels"
                 if len(coords) == 2:
                     posn_str += " Readout: " + coords_str + "."
                 elif readout >= 0:
                     posn_str += " Readout %d: %s." % (readout, coords_str)
-
                 possible_intensity = None
                 fi = self.pyslip.tiles.raw_image
                 detector = fi.get_detector()
