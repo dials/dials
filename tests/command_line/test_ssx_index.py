@@ -19,7 +19,7 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     refls = ssx / "strong_5.refl"
     pathlib.Path.mkdir(tmp_path / "nuggets")
     result = procrunner.run(
-        ["dev.dials.ssx_index", expts, refls, "output.nuggets=nuggets", "min_spots=72"],
+        ["dials.ssx_index", expts, refls, "output.nuggets=nuggets", "min_spots=72"],
         working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
@@ -46,7 +46,7 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path):
     refls = ssx / "strong_5.refl"
 
     result = procrunner.run(
-        ["dev.dials.ssx_index", expts, refls, "-vv"],
+        ["dials.ssx_index", expts, refls, "-vv"],
         working_directory=tmp_path,
     )
 

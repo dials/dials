@@ -24,7 +24,7 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     pathlib.Path.mkdir(tmp_path / "nuggets")
     result = procrunner.run(
         [
-            "dev.dials.ssx_integrate",
+            "dials.ssx_integrate",
             ssx / "indexed.refl",
             ssx / "indexed.expt",
             "nproc=1",
@@ -60,7 +60,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
 
     result = procrunner.run(
         [
-            "dev.dials.ssx_integrate",
+            "dials.ssx_integrate",
             tmp_path / "single.refl",
             tmp_path / "single.expt",
             "nproc=1",
