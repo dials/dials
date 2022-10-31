@@ -89,7 +89,7 @@ phil_scope = libtbx.phil.parse(
 
     compact = False
       .type = bool
-      .help = "For experiement output use compact JSON representation"
+      .help = "For experiment output use compact JSON representation"
 
   }
 
