@@ -1,5 +1,0 @@
-The deprecated ``dials.algorithms.symmetry.cosym.target.Target.get_sym_ops()`` function has been removed. Please use the ``Target.sym_ops`` property instead. The ``nproc`` argument to the ``Target`` constructor has also been removed.
-The deprecated ``dials.util.mp.parallel_map`` function has been removed.
-The deprecated ``dials.command_line.dials_import.ImageImporter`` has been removed. Please use ``do_import`` instead.
-The command ``dials.rl_csv`` has been removed. Similar functionality is available with ``dials.export format=json``.
-The command ``dials.find_shared_models`` has been removed. Use ``dials.show show_shared_modules=True ...`` instead.
