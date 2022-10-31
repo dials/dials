@@ -1126,7 +1126,7 @@ class ArgumentParser(ArgumentParserBase):
 class OptionParser(ArgumentParser):
     def __init__(self, *args, **kwargs):
         # Backwards compatibility 2021-11-10; 2022-04-06
-        # Remove after Oct 2022
+        # Remove after Dec 2022
         warnings.warn(
             "OptionParser is deprecated, use ArgumentParser instead",
             UserWarning,
