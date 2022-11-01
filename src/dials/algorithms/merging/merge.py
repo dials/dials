@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from io import StringIO
 from typing import Optional, Tuple
 
+import numpy as np
+
 from dxtbx.model import ExperimentList
 from iotbx import mtz, phil
 from mmtbx.scaling import data_statistics
@@ -382,6 +384,12 @@ def merge_scaled_array_to_mtz_with_report_collection(
     scaled_array,
     wavelength: Optional[float] = None,
 ) -> Tuple[mtz.object, dict]:
+    if wavelength is None:
+        wavelength = np.mean(
+            np.array(
+                [expt.beam.get_wavelength() for expt in experiments], dtype=np.float
+            )
+        )
     with collect_html_data_from_merge() as collector:
         mtz_dataset = MTZDataClass(
             wavelength=wavelength,
