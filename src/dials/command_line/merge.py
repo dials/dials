@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 import logging
 import sys
-from contextlib import contextmanager
 from io import StringIO
 from typing import List, Tuple
 
@@ -16,17 +15,12 @@ from iotbx import mtz, phil
 
 from dials.algorithms.merging.merge import (
     MTZDataClass,
+    collect_html_data_from_merge,
     make_merged_mtz_file,
     merge,
-    merge_scaled_array,
-    show_wilson_scaling_analysis,
-    truncate,
+    process_merged_data,
 )
-from dials.algorithms.merging.reporting import (
-    MergeJSONCollector,
-    generate_html_report,
-    make_dano_table,
-)
+from dials.algorithms.merging.reporting import generate_html_report
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
@@ -137,15 +131,6 @@ output {
 )
 
 
-@contextmanager
-def collect_html_data_from_merge():
-    try:
-        html_collector = MergeJSONCollector()
-        yield html_collector
-    finally:
-        html_collector.reset()
-
-
 def merge_data_to_mtz_with_report_collection(
     params: phil.scope_extract,
     experiments: ExperimentList,
@@ -156,86 +141,6 @@ def merge_data_to_mtz_with_report_collection(
         mtz = merge_data_to_mtz(params, experiments, reflections)
         json_data = collector.create_json()
     return mtz, json_data
-
-
-def merge_scaled_array_to_mtz_with_report_collection(
-    params: phil.scope_extract,
-    experiments: ExperimentList,
-    scaled_array,
-    wavelength=1.0,
-) -> Tuple[mtz.object, dict]:
-    with collect_html_data_from_merge() as collector:
-        mtz_dataset = MTZDataClass(
-            wavelength=wavelength,
-            project_name=params.output.project_name,
-            dataset_name=params.output.dataset_names[0],
-            crystal_name=params.output.crystal_names[0],
-        )
-
-        merged, merged_anomalous, stats_summary = merge_scaled_array(
-            experiments,
-            scaled_array,
-            anomalous=params.anomalous,
-            assess_space_group=params.assess_space_group,
-            n_bins=params.merging.n_bins,
-            use_internal_variance=params.merging.use_internal_variance,
-        )
-        _collect_merged_data(
-            params, mtz_dataset, merged, merged_anomalous, stats_summary
-        )
-        mtz = make_merged_mtz_file([mtz_dataset])
-        json_data = collector.create_json()
-    return mtz, json_data
-
-
-def _collect_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_summary):
-    merged_array = merged.array()
-    # Save the relevant data in the mtz_dataset dataclass
-    # This will add the data for IMEAN/SIGIMEAN
-    mtz_dataset.merged_array = merged_array
-    if merged_anomalous:
-        merged_anomalous_array = merged_anomalous.array()
-        # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
-        mtz_dataset.merged_anomalous_array = merged_anomalous_array
-        mtz_dataset.multiplicities = merged_anomalous.redundancies()
-    else:
-        merged_anomalous_array = None
-        # This will add the data for N
-        mtz_dataset.multiplicities = merged.redundancies()
-
-    if params.anomalous:
-        merged_intensities = merged_anomalous_array
-    else:
-        merged_intensities = merged_array
-
-    anom_amplitudes = None
-    if params.truncate:
-        amplitudes, anom_amplitudes, dano = truncate(
-            merged_intensities,
-            implementation=params.french_wilson.implementation,
-            min_reflections=params.french_wilson.min_reflections,
-            fallback_to_flat_prior=params.french_wilson.fallback_to_flat_prior,
-        )
-        # This will add the data for F, SIGF
-        mtz_dataset.amplitudes = amplitudes
-        # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
-        mtz_dataset.anomalous_amplitudes = anom_amplitudes
-        # This will add the data for DANO, SIGDANO
-        mtz_dataset.dano = dano
-
-    # print out analysis statistics
-    B_iso = show_wilson_scaling_analysis(merged_intensities)
-    stats_summary.Wilson_B_iso = B_iso
-
-    if anom_amplitudes:
-        logger.info(make_dano_table(anom_amplitudes))
-
-    if stats_summary.merging_statistics_result:
-        logger.info(stats_summary)
-
-    if MergeJSONCollector.initiated:
-        stats_summary.anomalous_amplitudes = anom_amplitudes
-        MergeJSONCollector.data[mtz_dataset.wavelength] = stats_summary
 
 
 def merge_data_to_mtz(
@@ -329,7 +234,7 @@ def merge_data_to_mtz(
             n_bins=params.merging.n_bins,
             use_internal_variance=params.merging.use_internal_variance,
         )
-        _collect_merged_data(
+        process_merged_data(
             params, mtz_dataset, merged, merged_anomalous, stats_summary
         )
 

@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from contextlib import contextmanager
 from io import StringIO
-from typing import List, Optional
+from typing import Optional, Tuple
 
-from cctbx import miller
 from dxtbx.model import ExperimentList
-from iotbx.merging_statistics import dataset_statistics
+from iotbx import mtz, phil
 from mmtbx.scaling import data_statistics
 
+from dials.algorithms.merging.reporting import (
+    MergeJSONCollector,
+    MergingStatisticsData,
+    make_dano_table,
+)
 from dials.algorithms.scaling.Ih_table import (
     _reflection_table_to_iobs,
     map_indices_to_asu,
@@ -25,18 +29,21 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
 )
 from dials.array_family import flex
-from dials.report.analysis import (
-    format_statistics,
-    make_merging_statistics_summary,
-    table_1_stats,
-    table_1_summary,
-)
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.util.filter_reflections import filter_reflection_table
 
 from .french_wilson import french_wilson
 
 logger = logging.getLogger("dials")
+
+
+@contextmanager
+def collect_html_data_from_merge():
+    try:
+        html_collector = MergeJSONCollector()
+        yield html_collector
+    finally:
+        html_collector.reset()
 
 
 def prepare_merged_reflection_table(
@@ -176,42 +183,6 @@ def make_merged_mtz_file(mtz_datasets):
         )
 
     return mtz_writer.mtz_file
-
-
-@dataclass
-class MergingStatisticsData:
-    experiments: ExperimentList
-    scaled_miller_array: miller.array
-    reflections: Optional[
-        List[flex.reflection_table]
-    ] = None  # only needed if using this class like a script when making batch plots
-    merging_statistics_result: Optional[dataset_statistics] = None
-    anom_merging_statistics_result: Optional[dataset_statistics] = None
-    anomalous_amplitudes: Optional[miller.array] = None
-    Wilson_B_iso: Optional[float] = None
-
-    def __str__(self):
-        if not self.merging_statistics_result:
-            return ""
-        stats_summary = make_merging_statistics_summary(self.merging_statistics_result)
-        stats_summary += table_1_summary(
-            self.merging_statistics_result,
-            self.anom_merging_statistics_result,
-            Wilson_B_iso=self.Wilson_B_iso,
-        )
-        return stats_summary
-
-    def table_1_stats(self):
-        return format_statistics(
-            table_1_stats(
-                self.merging_statistics_result,
-                self.anom_merging_statistics_result,
-                Wilson_B_iso=self.Wilson_B_iso,
-            )
-        )
-
-    def __repr__(self):
-        return self.__str__()
 
 
 def merge_scaled_array(
@@ -403,3 +374,83 @@ def truncate(
     logger.info("Total number of rejected intensities %s", n_removed)
     logger.debug(out.getvalue())
     return amplitudes, anom_amplitudes, dano
+
+
+def merge_scaled_array_to_mtz_with_report_collection(
+    params: phil.scope_extract,
+    experiments: ExperimentList,
+    scaled_array,
+    wavelength: Optional[float] = None,
+) -> Tuple[mtz.object, dict]:
+    with collect_html_data_from_merge() as collector:
+        mtz_dataset = MTZDataClass(
+            wavelength=wavelength,
+            project_name=params.output.project_name,
+            dataset_name=params.output.dataset_names[0],
+            crystal_name=params.output.crystal_names[0],
+        )
+
+        merged, merged_anomalous, stats_summary = merge_scaled_array(
+            experiments,
+            scaled_array,
+            anomalous=params.anomalous,
+            assess_space_group=params.assess_space_group,
+            n_bins=params.merging.n_bins,
+            use_internal_variance=params.merging.use_internal_variance,
+        )
+        process_merged_data(
+            params, mtz_dataset, merged, merged_anomalous, stats_summary
+        )
+        mtz = make_merged_mtz_file([mtz_dataset])
+        json_data = collector.create_json()
+    return mtz, json_data
+
+
+def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_summary):
+    merged_array = merged.array()
+    # Save the relevant data in the mtz_dataset dataclass
+    # This will add the data for IMEAN/SIGIMEAN
+    mtz_dataset.merged_array = merged_array
+    if merged_anomalous:
+        merged_anomalous_array = merged_anomalous.array()
+        # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
+        mtz_dataset.merged_anomalous_array = merged_anomalous_array
+        mtz_dataset.multiplicities = merged_anomalous.redundancies()
+    else:
+        merged_anomalous_array = None
+        # This will add the data for N
+        mtz_dataset.multiplicities = merged.redundancies()
+
+    if params.anomalous:
+        merged_intensities = merged_anomalous_array
+    else:
+        merged_intensities = merged_array
+
+    anom_amplitudes = None
+    if params.truncate:
+        amplitudes, anom_amplitudes, dano = truncate(
+            merged_intensities,
+            implementation=params.french_wilson.implementation,
+            min_reflections=params.french_wilson.min_reflections,
+            fallback_to_flat_prior=params.french_wilson.fallback_to_flat_prior,
+        )
+        # This will add the data for F, SIGF
+        mtz_dataset.amplitudes = amplitudes
+        # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
+        mtz_dataset.anomalous_amplitudes = anom_amplitudes
+        # This will add the data for DANO, SIGDANO
+        mtz_dataset.dano = dano
+
+    # print out analysis statistics
+    B_iso = show_wilson_scaling_analysis(merged_intensities)
+    stats_summary.Wilson_B_iso = B_iso
+
+    if anom_amplitudes:
+        logger.info(make_dano_table(anom_amplitudes))
+
+    if stats_summary.merging_statistics_result:
+        logger.info(stats_summary)
+
+    if MergeJSONCollector.initiated:
+        stats_summary.anomalous_amplitudes = anom_amplitudes
+        MergeJSONCollector.data[mtz_dataset.wavelength] = stats_summary
