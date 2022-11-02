@@ -9,7 +9,10 @@ import h5py
 import numpy as np
 import pytest
 
+from dxtbx.serialize import load
+
 import dials.util.image_grouping
+from dials.array_family import flex
 from dials.util.image_grouping import (
     BlockInImageFile,
     ConstantMetadataForFile,
@@ -116,7 +119,7 @@ grouping:
 
     # Write some example data into a h5 file
     wl_array = np.array([1.0, 1.02, 1.05, 2.0, 2.01, 2.02])
-    tp_array = np.array([1, 0, 1, 1, 1, 1], dtype=np.int)
+    tp_array = np.array([1, 0, 1, 1, 1, 1], dtype=int)
     f = h5py.File(test_h5, "w")
     f.create_dataset("wavelength", data=wl_array)
     f.create_dataset("timepoint", data=tp_array)
@@ -237,7 +240,144 @@ def test_invalid_yml(tmp_path):
         _ = ParsedYAML(tmp_path / "example_2.yaml")
 
 
-def test_real_example(tmp_path, dials_data):
+def test_real_h5_example(tmp_path, dials_data):
+
+    """This test tests a few use cases on processed data derived from h5 format."""
+    fpath1 = (
+        "/dls/mx/data/nt30330/nt30330-15/VMXi-AB1698/well_42/images/image_58766.nxs"
+    )
+    fpath2 = (
+        "/dls/mx/data/nt30330/nt30330-15/VMXi-AB1698/well_39/images/image_58763.nxs"
+    )
+    real_example = f"""
+---
+metadata:
+  timepoint:
+    {fpath1} : "repeat=2"
+    {fpath2} : "repeat=2"
+grouping:
+  group_by:
+    values:
+      - timepoint
+"""
+    # single file indices for the first dataset are 5051,5056,5058,5062,5063,5064,5065,5066
+    # 5073,5074,5141,5142,5143,5144,5151,5152,5231,5248,5309
+    ids_group1_file1 = [1, 2, 3, 5, 7, 9, 11, 13, 15, 17]
+    ids_group2_file1 = [0, 4, 6, 8, 10, 12, 14, 16, 18]
+    expected_group1_file1 = [5056, 5058, 5062, 5064, 5066, 5074, 5142, 5144, 5152, 5248]
+    expected_group2_file1 = [5051, 5063, 5065, 5073, 5141, 5143, 5151, 5231, 5309]
+    expected_group1_file2 = [11000, 11100, 11256, 11258, 11360, 11384, 11598]
+    expected_group2_file2 = [
+        11083,
+        11101,
+        11257,
+        11361,
+        11383,
+        11385,
+        11515,
+        11599,
+        11799,
+    ]
+    with open(tmp_path / "real_example.yaml", "w") as f:
+        f.write(real_example)
+
+    parsed = ParsedYAML(tmp_path / "real_example.yaml")
+    handler = get_grouping_handler(parsed, "group_by")
+    dtbp = dials_data("dtpb_serial_processed", pathlib=True)
+
+    fps = [
+        FilePair(
+            dtbp / "well42_batch6_integrated.expt",
+            dtbp / "well42_batch6_integrated.refl",
+        )
+    ]
+    fd = handler.split_files_to_groups(tmp_path, fps)
+    assert set(fd.keys()) == {"group_1", "group_2"}
+    expts1 = load.experiment_list(fd["group_1"][0].expt, check_format=False)
+    indices1 = [expt.imageset.indices()[0] for expt in expts1]
+    assert indices1 == expected_group1_file1
+    expts2 = load.experiment_list(fd["group_2"][0].expt, check_format=False)
+    indices2 = [expt.imageset.indices()[0] for expt in expts2]
+    assert indices2 == expected_group2_file1
+
+    # Check writing the group ids to the file
+    handler.write_groupids_into_files(fps)
+    refls = flex.reflection_table.from_file(fps[0].refl)
+    assert set(refls["id"]) == set(range(19))
+    sel = flex.bool(refls.size(), False)
+    for id_ in ids_group1_file1:
+        sel |= refls["id"] == id_
+    assert set(refls["group_id"].select(sel)) == {0}
+    sel = flex.bool(refls.size(), False)
+    for id_ in ids_group2_file1:
+        sel |= refls["id"] == id_
+    assert set(refls["group_id"].select(sel)) == {1}
+
+    # now join files to test expt files with multiple h5 images referenced:
+    expts1 = load.experiment_list(
+        dtbp / "well42_batch6_integrated.expt", check_format=False
+    )
+    expts2 = load.experiment_list(
+        dtbp / "well39_batch12_integrated.expt", check_format=False
+    )
+    expts1.extend(expts2)
+    expts1.as_file(tmp_path / "joint.expt")
+    refls1 = flex.reflection_table.from_file(dtbp / "well42_batch6_integrated.refl")
+    refls2 = flex.reflection_table.from_file(dtbp / "well39_batch12_integrated.refl")
+    joint_refls = flex.reflection_table.concat([refls1, refls2])
+    joint_refls.as_file(tmp_path / "joint.refl")
+
+    fps = [FilePair(tmp_path / "joint.expt", tmp_path / "joint.refl")]
+    fd = handler.split_files_to_groups(tmp_path, fps)
+    assert set(fd.keys()) == {"group_1", "group_2"}
+    expts1 = load.experiment_list(fd["group_1"][0].expt, check_format=False)
+    indices1 = [expt.imageset.indices()[0] for expt in expts1]
+    assert indices1 == expected_group1_file1 + expected_group1_file2
+    expts2 = load.experiment_list(fd["group_2"][0].expt, check_format=False)
+    indices2 = [expt.imageset.indices()[0] for expt in expts2]
+    assert indices2 == expected_group2_file1 + expected_group2_file2
+
+    test_h5 = str(os.fspath(tmp_path / "meta.h5"))
+
+    # Write the same groupings into a h5 file
+    tp_array = np.zeros((6000,), dtype=int)
+    for i in expected_group1_file1:
+        tp_array[i] = 0
+    for i in expected_group2_file1:
+        tp_array[i] = 1
+    f = h5py.File(test_h5, "w")
+    f.create_dataset("timepoint", data=tp_array)
+    f.close()
+
+    real_example_metafile = f"""
+---
+metadata:
+  timepoint:
+    {fpath1} : "{test_h5}:/timepoint"
+    {fpath2} : 0
+grouping:
+  group_by:
+    values:
+      - timepoint
+"""
+    with open(tmp_path / "real_example_metafile.yaml", "w") as f:
+        f.write(real_example_metafile)
+    parsed = ParsedYAML(tmp_path / "real_example_metafile.yaml")
+    handler = get_grouping_handler(parsed, "group_by")
+    fps = [FilePair(tmp_path / "joint.expt", tmp_path / "joint.refl")]
+    fd = handler.split_files_to_groups(tmp_path, fps)
+    assert set(fd.keys()) == {"group_1", "group_2"}
+    expts1 = load.experiment_list(fd["group_1"][0].expt, check_format=False)
+    indices1 = [expt.imageset.indices()[0] for expt in expts1]
+    assert indices1 == sorted(
+        expected_group1_file1 + expected_group1_file2 + expected_group2_file2
+    )
+    expts2 = load.experiment_list(fd["group_2"][0].expt, check_format=False)
+    indices2 = [expt.imageset.indices()[0] for expt in expts2]
+    assert indices2 == expected_group2_file1
+
+
+def test_real_cbf_example(tmp_path, dials_data):
 
     """This test tests a few use cases on real cbf data, using the template
     metadata definition.
@@ -276,7 +416,7 @@ grouping:
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     args = [
-        "dev.dials.ssx_index",
+        "dials.ssx_index",
         "imported.expt",
         "strong.refl",
         "unit_cell=96.4,96.4,96.4,90,90,90",
@@ -286,7 +426,6 @@ grouping:
     ]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
-    from dxtbx.serialize import load
 
     # First test on indexed data - here each image has its own imageset
     # only images 17001, 17002, 17003, 17004 get indexed, so expect these to be split into groups [1,0,1,0]
@@ -370,7 +509,6 @@ grouping:
     assert expts3[0].imageset.get_path(0).split("_")[-1] == "17004.cbf"
 
     handler.write_groupids_into_files(fps)
-    from dials.array_family import flex
 
     refls = flex.reflection_table.from_file(fps[0].refl)
     assert set(refls["id"]) == {0, 1, 2, 3, 4}
