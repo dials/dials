@@ -21,7 +21,7 @@ from scitbx.lstbx import normal_eqns, normal_eqns_solving
 from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import ArgumentParser
 
-matplotlib.use("Agg")
+matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
