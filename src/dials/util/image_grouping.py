@@ -516,7 +516,13 @@ class _ImgIdxToGroupId(object):
             return self.single_return_val
         elif self.key_to_group_id:
             return self.key_to_group_id(key)
-        return self.group_ids[key]
+        try:
+            return self.group_ids[key]
+        except IndexError:
+            raise ValueError(
+                f"Unable to index data array of size {self.group_ids.size()} with index {key}, \n"
+                + "check that the metadata array sizes match the number of images in the nexus files"
+            )
 
 
 class _GroupInfo(TypedDict):
