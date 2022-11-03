@@ -178,8 +178,8 @@ class Script:
         ax.grid(True, which="minor")
         ax.set_axisbelow(True)
         ax.set_aspect("equal")
-        ax.set_xlabel(r"$F_c$")
-        ax.set_ylabel(r"$F_o$")
+        ax.set_xlabel("$F_c$")
+        ax.set_ylabel("$F_o$")
         ax.scatter(self.fc, self.fobs, s=1, c="indianred")
 
         if self.params.max_Fc:
