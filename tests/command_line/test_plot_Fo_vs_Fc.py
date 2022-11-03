@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import procrunner
+import os
+import subprocess
 
 
 def test(dials_data, tmp_path):
@@ -8,8 +9,15 @@ def test(dials_data, tmp_path):
     mtz_file = (
         dials_data("lysozyme_electron_diffraction", pathlib=True) / "refmac_final.mtz"
     )
-    result = procrunner.run(
-        ["dials.plot_Fo_vs_Fc", f"hklin={mtz_file}"], working_directory=tmp_path
+    env = os.environ.copy()
+    env[
+        "PYTHONDEVMODE"
+    ] = ""  # disable a developermode warning from pyparsing from mathtext in matplotlib
+    result = subprocess.run(
+        ["dials.plot_Fo_vs_Fc", f"hklin={mtz_file}"],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("Fo_vs_Fc.pdf").is_file()
