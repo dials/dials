@@ -80,6 +80,12 @@ phil_str = (
       .type = bool
       .short_caption = "Scan-varying refinement"
 
+    interval_width_degrees = None
+        .help = "Overall default value of the width of scan between checkpoints"
+                "in degrees for scan-varying refinement. If set to None, each"
+                "model will use its own specified value."
+        .type = float(value_min=0.)
+
     compose_model_per = image *block
       .help = "For scan-varying parameterisations, compose a new model either"
               "every image or within blocks of a width specified in the"
@@ -789,6 +795,22 @@ def build_prediction_parameterisation(
     Returns:
         A prediction equation parameterisation object
     """
+
+    # Set overall default interval_width_degrees values, if requested
+    if options.interval_width_degrees:
+        options.beam.smoother.interval_width_degrees = options.interval_width_degrees
+        options.crystal.orientation.smoother.interval_width_degrees = (
+            options.interval_width_degrees
+        )
+        options.crystal.unit_cell.smoother.interval_width_degrees = (
+            options.interval_width_degrees
+        )
+        options.detector.smoother.interval_width_degrees = (
+            options.interval_width_degrees
+        )
+        options.goniometer.smoother.interval_width_degrees = (
+            options.interval_width_degrees
+        )
 
     # If required, do full centroid analysis on the reflections (assumes
     # outlier-rejection has been done already) to determine suitable interval
