@@ -308,18 +308,25 @@ Summary of data in ParsedGrouping class
 
 
 class ParsedYAML(object):
-    def __init__(self, yml_file: Path):
-        with open(yml_file, "r") as f:
-            data = list(yaml.load_all(f, Loader=SafeLoader))[0]
+    def __init__(self, yml_file: Optional[Path] = None, yml_str: Optional[str] = None):
+        if yml_file:
+            with open(yml_file, "r") as f:
+                data = list(yaml.load_all(f, Loader=SafeLoader))[0]
+        elif yml_str:
+            data = list(yaml.load_all(yml_str, Loader=SafeLoader))[0]
+        else:
+            raise ValueError(
+                "Either yml_file or yml_str must be specified as input to ParsedYAML class"
+            )
 
         # Check for the metadata first
         if "metadata" not in data:
             raise AssertionError(
-                f"No metadata defined in {yml_file}. Example format: {example_yaml}"
+                f"No metadata defined in input yaml. Example format: {example_yaml}"
             )
         if not isinstance(data["metadata"], dict):
             raise AssertionError(
-                f"'metadata:' in {yml_file} must be defined as a dictionary. Example format: {example_yaml}"
+                f"'metadata:' in input yaml must be defined as a dictionary. Example format: {example_yaml}"
             )
         # load the images or templates
         self._images: dict[str, ImageFile] = self._extract_images_from_metadata(
@@ -328,13 +335,12 @@ class ParsedYAML(object):
 
         if "grouping" not in data:
             raise AssertionError(
-                f"No grouping defined in {yml_file}. Example format: {example_yaml}"
+                f"No grouping defined in input yaml. Example format: {example_yaml}"
             )
         if not isinstance(data["grouping"], dict):
             raise AssertionError(
-                f"'grouping:' in {yml_file} must be defined as a dictionary. Example format: {example_yaml}"
+                f"'grouping:' in input yaml must be defined as a dictionary. Example format: {example_yaml}"
             )
-        self._yml_file = yml_file
         self.metadata_items: dict[str, ImgToMetadataDict] = {}
         # ^ e.g. timepoint to MetadataDict
         self._groupings: dict[str, ParsedGrouping] = {}
@@ -390,7 +396,7 @@ class ParsedYAML(object):
                     imgfile = self._images[image]
                 except KeyError:
                     raise ValueError(
-                        f"Image {image} not listed in 'images:' in {self._yml_file}"
+                        f"Image {image} not listed in 'images:' in input yaml"
                     )
                 if type(meta) is float or type(meta) is int:
                     self.metadata_items[name][imgfile] = ConstantMetadataForFile(meta)
