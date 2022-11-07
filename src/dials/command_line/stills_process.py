@@ -500,7 +500,7 @@ class Script:
             self.pr = cProfile.Profile()
             self.pr.enable()
 
-        print(f"Have {len(all_paths)} files")
+        logger.info(f"Have {len(all_paths)} files")
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
