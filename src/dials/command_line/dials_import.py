@@ -651,6 +651,7 @@ class MetaDataUpdater:
                         scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
                         format_kwargs=iset_params[i],
                     )
+                    sequence = self.update_lookup(sequence, lookup)
                     for j in range(first - 1, last):
                         subset = sequence[j : j + 1]
                         experiments.append(
@@ -913,7 +914,6 @@ def do_import(
 
     # Re-extract the imagesets to rebuild experiments from
     imagesets = _extract_or_read_imagesets(params)
-    print(len(imagesets))
 
     metadata_updater = MetaDataUpdater(params)
     experiments = metadata_updater(imagesets)
