@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from typing import List, Optional
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
-from cctbx import uctbx
+from cctbx import miller, uctbx
+from dxtbx.model import ExperimentList
+from iotbx.merging_statistics import dataset_statistics
 
 from dials.algorithms.clustering import plots as cluster_plotter
 from dials.algorithms.clustering.observers import uc_params_from_experiments
-from dials.algorithms.merging.merge import MergingStatisticsData
 from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.array_family import flex
+from dials.report.analysis import (
+    format_statistics,
+    make_merging_statistics_summary,
+    table_1_stats,
+    table_1_summary,
+)
 from dials.report.plots import d_star_sq_to_d_ticks
 from dials.util import tabulate
 
@@ -35,6 +44,42 @@ class MergeJSONCollector(object):
         return generate_json_data(self.data)
 
 
+@dataclass
+class MergingStatisticsData:
+    experiments: ExperimentList
+    scaled_miller_array: miller.array
+    reflections: Optional[
+        List[flex.reflection_table]
+    ] = None  # only needed if using this class like a script when making batch plots
+    merging_statistics_result: Optional[dataset_statistics] = None
+    anom_merging_statistics_result: Optional[dataset_statistics] = None
+    anomalous_amplitudes: Optional[miller.array] = None
+    Wilson_B_iso: Optional[float] = None
+
+    def __str__(self):
+        if not self.merging_statistics_result:
+            return ""
+        stats_summary = make_merging_statistics_summary(self.merging_statistics_result)
+        stats_summary += table_1_summary(
+            self.merging_statistics_result,
+            self.anom_merging_statistics_result,
+            Wilson_B_iso=self.Wilson_B_iso,
+        )
+        return stats_summary
+
+    def table_1_stats(self):
+        return format_statistics(
+            table_1_stats(
+                self.merging_statistics_result,
+                self.anom_merging_statistics_result,
+                Wilson_B_iso=self.Wilson_B_iso,
+            )
+        )
+
+    def __repr__(self):
+        return self.__str__()
+
+
 def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
     json_data = {}
     for wl, stats in data.items():
@@ -57,6 +102,7 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
                 make_dano_plots({wl: stats.anomalous_amplitudes})["dF"]
             )
         json_data[wl_key]["merging_stats"] = stats.merging_statistics_result.as_dict()
+        json_data[wl_key]["table_1_stats"] = stats.table_1_stats()
         json_data[wl_key][
             "merging_stats_anom"
         ] = stats.anom_merging_statistics_result.as_dict()
