@@ -102,9 +102,9 @@ def test_determine_groupings(tmp_path):
     wl_example = f"""
 metadata:
   timepoint:
-    "/path/to/example_master.h5" : "{test_h5}:/timepoint"
+    '/path/to/example_master.h5' : '{test_h5}:/timepoint'
   wavelength:
-    "/path/to/example_master.h5" : "{test_h5}:/wavelength"
+    '/path/to/example_master.h5' : '{test_h5}:/wavelength'
 grouping:
   merge_by:
     values:
@@ -178,7 +178,7 @@ def test_yml_parsing_template(tmp_path):
     simple_block_example = """
 metadata:
   crystal_id:
-    "/path/to/example_#####.cbf" : "block=1:100:10"
+    '/path/to/example_#####.cbf' : 'block=1:100:10'
 grouping:
   merge_by:
     values:
@@ -199,9 +199,9 @@ invalid_example = """
 ---
 metadata:
   timepoint:
-    "/path/to/example_master.h5" : "/path/to/meta.h5:/timepoint"
+    '/path/to/example_master.h5' : '/path/to/meta.h5:/timepoint'
   wavelength:
-    "/path/to/example_master.h5" : "repeat=2"
+    '/path/to/example_master.h5' : 'repeat=2'
 grouping:
   merge_by:
     values:
@@ -215,9 +215,9 @@ invalid_example_2 = """
 ---
 metadata:
   timepoint:
-    "/path/to/example_master.h5" : "repeat=4"
+    '/path/to/example_master.h5' : 'repeat=4'
   wavelength:
-    "/path/to/example_master.h5" : "repeat=2"
+    '/path/to/example_master.h5' : 'repeat=2'
 grouping:
   merge_by:
     values:
@@ -253,8 +253,8 @@ def test_real_h5_example(tmp_path, dials_data):
 ---
 metadata:
   timepoint:
-    {fpath1} : "repeat=2"
-    {fpath2} : "repeat=2"
+    {fpath1} : 'repeat=2'
+    {fpath2} : 'repeat=2'
 grouping:
   group_by:
     values:
@@ -353,7 +353,7 @@ grouping:
 ---
 metadata:
   timepoint:
-    {fpath1} : "{test_h5}:/timepoint"
+    {fpath1} : '{test_h5}:/timepoint'
     {fpath2} : 0
 grouping:
   group_by:
@@ -394,7 +394,7 @@ def test_real_cbf_example(tmp_path, dials_data):
 ---
 metadata:
   timepoint:
-    "{fpath}" : "repeat=2"
+    '{fpath}' : 'repeat=2'
 grouping:
   group_by:
     values:
@@ -471,7 +471,7 @@ grouping:
 ---
 metadata:
   timepoint:
-    "{fpath}" : "block=17000:17004:2"
+    '{fpath}' : 'block=17000:17004:2'
 grouping:
   group_by:
     values:
@@ -525,7 +525,7 @@ grouping:
 ---
 metadata:
   timepoint:
-    "{fpath}" : 1
+    '{fpath}' : 1
 grouping:
   group_by:
     values:

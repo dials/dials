@@ -30,11 +30,11 @@ example_yaml = """
 ---
 metadata:
   timepoint:
-    "/path/to/example_master.h5" : "/path/to/example_master.h5:/timepoint"  # metadata contained in image file
-    "/path/to/example_2_master.h5" : "/path/to/meta.h5:/timepoint"          # metadata in separate file
+    '/path/to/example_master.h5' : '/path/to/example_master.h5:/timepoint'  # metadata contained in image file
+    '/path/to/example_2_master.h5' : '/path/to/meta.h5:/timepoint'         # metadata in separate file
   wavelength:
-    /path/to/example_master.h5 : 0.4                                        # metadata is a shared value for every image
-    /path/to/example_2_master.h5 : 0.6
+    '/path/to/example_master.h5' : 0.4                                        # metadata is a shared value for every image
+    '/path/to/example_2_master.h5' : 0.6
 grouping:
   merge_by:                  # define a grouping for a particular process
     values:                  # the values are keys for the metadata
@@ -54,7 +54,7 @@ simple_example = """
 ---
 metadata:
   timepoint:
-    "/path/to/example_master.h5" : "/path/to/meta.h5:/timepoint"
+    '/path/to/example_master.h5' : '/path/to/meta.h5:/timepoint'
 grouping:
   merge_by:
     values:
@@ -65,9 +65,9 @@ simple_template_example = """
 ---
 metadata:
   dose_point:
-    "/path/to/example_#####.cbf" : "repeat=10"
+    '/path/to/example_#####.cbf' : 'repeat=10'
   wavelength:
-    "/path/to/example_#####.cbf" : 1
+    '/path/to/example_#####.cbf' : 1
 grouping:
   merge_by:
     values:
