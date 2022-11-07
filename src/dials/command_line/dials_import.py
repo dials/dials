@@ -651,7 +651,7 @@ class MetaDataUpdater:
                         scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
                         format_kwargs=iset_params[i],
                     )
-                    sequence = self.update_lookup(sequence, lookup)
+                    sequence = self.update_lookup(sequence, lookup)  # for mask etc
                     for j in range(first - 1, last):
                         subset = sequence[j : j + 1]
                         experiments.append(

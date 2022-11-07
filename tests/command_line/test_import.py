@@ -3,10 +3,12 @@ from __future__ import annotations
 import os
 import pathlib
 import shutil
+import subprocess
 
 import procrunner
 import pytest
 
+from dxtbx.imageset import ImageSequence
 from dxtbx.serialize import load
 
 
@@ -583,3 +585,50 @@ def test_with_convert_sequences_to_stills(dials_data, tmpdir):
 
     # all should call out as still too
     assert experiments.all_stills()
+
+
+def test_convert_stills_to_sequences(dials_data, tmp_path):
+    """Test with Jungfrau data"""
+    JF16M = dials_data("lysozyme_JF16M_4img", pathlib=True)
+    result = subprocess.run(
+        [
+            "dials.import",
+            "convert_stills_to_sequences=True",
+            JF16M / "lyso009a_0087.JF07T32V01_master_4img.h5",
+            "output.experiments=experiments_as_seq.expt",
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "experiments_as_seq.expt").is_file()
+    experiments = load.experiment_list(tmp_path / "experiments_as_seq.expt")
+    for exp in experiments:
+        assert exp.identifier != ""
+
+    # should be no goniometers
+    assert len(experiments.imagesets()) == 1
+    assert isinstance(experiments.imagesets()[0], ImageSequence)
+    assert len(experiments.scans()) == 4
+
+    # Test with sacla data
+    sacla_path = dials_data("image_examples", pathlib=True)
+    image_path = sacla_path / "SACLA-MPCCD-run266702-0-subset.h5"
+    result = subprocess.run(
+        [
+            "dials.import",
+            "convert_stills_to_sequences=True",
+            image_path,
+            "output.experiments=experiments_as_seq_sacla.expt",
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "experiments_as_seq_sacla.expt").is_file()
+    experiments2 = load.experiment_list(tmp_path / "experiments_as_seq_sacla.expt")
+    for exp in experiments2:
+        assert exp.identifier != ""
+
+    # should be no goniometers
+    assert len(experiments2.imagesets()) == 1
+    assert isinstance(experiments2.imagesets()[0], ImageSequence)
+    assert len(experiments2.scans()) == 4
