@@ -116,6 +116,8 @@ geometry
     .type = bool
     .help = "When overriding the scan, convert sequences into stills"
     .short_caption = "Convert sequences into stills"
+  convert_stills_to_sequences = False
+    .type = bool
 }
 """,
     process_includes=True,

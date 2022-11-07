@@ -153,9 +153,6 @@ phil_scope = libtbx.phil.parse(
     grid_size = None
       .type = ints(size=2)
       .help = "If importing as a grid scan set the size"
-
-    convert_stills_to_sequences = True
-      .type = bool
   }
 
   include scope dials.util.options.format_phil_scope
@@ -617,40 +614,51 @@ class MetaDataUpdater:
                         )
                     )
 
-        if self.params.input.convert_stills_to_sequences:
+        if self.params.geometry.convert_stills_to_sequences:
             if any(~isinstance(i, ImageSequence) for i in experiments.imagesets()):
                 # assert all not imageseqs?
-                n_files = list({i.get_path(0) for i in experiments.imagesets()})
-                from dxtbx.model import Scan
+                from collections import defaultdict
 
-                if len(n_files) == 1:
-                    # all in one imageseq
-                    first, last = (1, len(experiments))
-                    from dxtbx.imageset import ImageSetFactory
-                    from dxtbx.model import GoniometerFactory
+                files_to_indiv = defaultdict(int)
+                beams = []
+                formats = []
+                detectors = []
+                iset_params = []
+                for i in experiments.imagesets():
+                    path = i.get_path(0)
+                    if path not in files_to_indiv:
+                        beams.append(i.get_beam())
+                        detectors.append(i.get_detector())
+                        formats.append(i.get_format_class())
+                        iset_params.append(i.params())
+                    files_to_indiv[i.get_path(0)] += 1
 
-                    iset0 = experiments.imagesets()[0]
-                    imageset = ImageSetFactory.make_sequence(
-                        template=n_files[0],
+                from dxtbx.imageset import ImageSetFactory
+                from dxtbx.model import GoniometerFactory, Scan
+
+                experiments = ExperimentList()
+                for i, (file, n) in enumerate(files_to_indiv.items()):
+                    first, last = (1, n)
+                    sequence = ImageSetFactory.make_sequence(
+                        template=file,
                         indices=list(range(first, last + 1)),
-                        format_class=iset0.get_format_class(),
-                        beam=iset0.get_beam(),
-                        detector=iset0.get_detector(),
+                        format_class=formats[i],
+                        beam=beams[i],
+                        detector=detectors[i],
                         goniometer=GoniometerFactory.make_goniometer(
                             (0.0, 1.0, 0.0), (1, 0, 0, 0, 1, 0, 0, 0, 1)
                         ),
                         scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
-                        format_kwargs=imageset.params(),
+                        format_kwargs=iset_params[i],
                     )
-                    experiments = ExperimentList()
                     for j in range(first - 1, last):
-                        subset = imageset[j : j + 1]
+                        subset = sequence[j : j + 1]
                         experiments.append(
                             Experiment(
-                                imageset=imageset,
-                                beam=imageset.get_beam(),
-                                detector=imageset.get_detector(),
-                                goniometer=imageset.get_goniometer(),
+                                imageset=sequence,
+                                beam=sequence.get_beam(),
+                                detector=sequence.get_detector(),
+                                goniometer=sequence.get_goniometer(),
                                 scan=subset.get_scan(),
                                 crystal=None,
                             )
