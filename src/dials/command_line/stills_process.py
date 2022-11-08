@@ -124,7 +124,7 @@ def _control_phil_str():
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    logging_option = *normal suppressed disabled
+    logging_option = normal *suppressed disabled
       .type = choice
       .help = normal includes all logging, suppress turns off DIALS refine output
       .help = and disabled removes basically all logging
