@@ -427,7 +427,7 @@ class ParsedYAML(object):
                             )
                     else:
                         try:
-                            metafile, loc = meta.split(":")
+                            metafile, loc = meta.rsplit(":", 1)
                         except Exception as e:
                             raise ValueError(
                                 f"Unable to understand value: {meta}, expected format file:item e.g. /data/file.h5:/entry/data/timepoint. Specific exception: {e}"
