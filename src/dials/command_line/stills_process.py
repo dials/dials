@@ -1215,13 +1215,11 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         if not indexing_succeeded:
             if self.params.indexing.stills.reflection_subsampling.enable:
-                subsets = list(
-                    range(
-                        self.params.indexing.stills.reflection_subsampling.step_start,
-                        self.params.indexing.stills.reflection_subsampling.step_stop
-                        - self.params.indexing.stills.reflection_subsampling.step_size,
-                        -self.params.indexing.stills.reflection_subsampling.step_size,
-                    )
+                subsets = range(
+                    self.params.indexing.stills.reflection_subsampling.step_start,
+                    self.params.indexing.stills.reflection_subsampling.step_stop
+                    - self.params.indexing.stills.reflection_subsampling.step_size,
+                    -self.params.indexing.stills.reflection_subsampling.step_size,
                 )
             else:
                 subsets = [100]
