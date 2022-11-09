@@ -226,8 +226,29 @@ def _dials_phil_str():
         .type = strings
         .help = List of indexing methods. If indexing fails with first method, indexing will be \
                 attempted with the next, and so forth
-      ransac = False
-        .type = bool
+      reflection_subsampling
+      {
+        enable  = False
+          .type = bool
+          .help = Enable random subsampling of reflections during indexing. Attempts to index    \
+                  will be repeated with random subsampling of spotfinder spots, starting at      \
+                  step_start % of total spots, repeating n_attempts_per_step times per step,     \
+                  and decreasing by step_size % until step_stop % is reached. With the defaults, \
+                  26 total indexing attempts will be made, randomly subsampling from 100% to     \
+                  50% by 2 % steps, one attempt per step.
+        step_start = 100
+          .type = int
+          .help = What percent of reflections to start with
+        step_stop = 50
+          .type = int
+          .help = What percent of reflections to end with
+        step_size = 2
+          .type = int
+          .help = What percent of reflections to decrease by per step
+        n_attempts_per_step = 1
+          .type = int
+          .help = How many attempts to make at each step
+      }
       known_orientations = None
         .type = path
         .multiple = True
@@ -1193,8 +1214,15 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     raise
 
         if not indexing_succeeded:
-            if self.params.indexing.stills.ransac:
-                subsets = list(reversed(range(50, 101, 2)))
+            if self.params.indexing.stills.reflection_subsampling.enable:
+                subsets = list(
+                    range(
+                        self.params.indexing.stills.reflection_subsampling.step_start,
+                        self.params.indexing.stills.reflection_subsampling.step_stop
+                        - self.params.indexing.stills.reflection_subsampling.step_size,
+                        -self.params.indexing.stills.reflection_subsampling.step_size,
+                    )
+                )
             else:
                 subsets = [100]
             all_reflections = reflections
