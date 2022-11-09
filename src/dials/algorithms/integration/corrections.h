@@ -31,7 +31,9 @@ namespace dials { namespace algorithms {
    * Compute the LP correction for a single reflection. Note that the
    * polarization fraction follows XDS convention, in which a value of 0.5
    * implies an unpolarized beam, rather than the MOSFLM definition in which
-   * an unpolarized beam has a polarization factor of 0.0.
+   * an unpolarized beam has a polarization factor of 0.0. See the section
+   * "Data correction and scaling" in https://doi.org/10.1107/S0021889888007903
+   * for a description.
    * @param s0 The direct beam vector
    * @param pn The polarization plane normal
    * @param pf The polarization plane fraction
