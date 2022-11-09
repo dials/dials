@@ -1,5 +1,5 @@
 /*
- * corrections.cc
+ * corrections.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
