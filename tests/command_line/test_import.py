@@ -4,6 +4,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+from pathlib import Path
 
 import procrunner
 import pytest
@@ -588,7 +589,7 @@ def test_with_convert_sequences_to_stills(dials_data, tmpdir):
 
 
 def test_convert_stills_to_sequences(dials_data, tmp_path):
-    """Test with Jungfrau data"""
+    """Test with Jungfrau & Sacla data"""
     JF16M = dials_data("lysozyme_JF16M_4img", pathlib=True)
     result = subprocess.run(
         [
@@ -605,7 +606,6 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     for exp in experiments:
         assert exp.identifier != ""
 
-    # should be no goniometers
     assert len(experiments.imagesets()) == 1
     assert isinstance(experiments.imagesets()[0], ImageSequence)
     assert len(experiments.scans()) == 4
@@ -628,7 +628,61 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     for exp in experiments2:
         assert exp.identifier != ""
 
-    # should be no goniometers
     assert len(experiments2.imagesets()) == 1
     assert isinstance(experiments2.imagesets()[0], ImageSequence)
     assert len(experiments2.scans()) == 4
+
+    # also add in something that is sequences, for completess
+    centroid_image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )[
+        :3
+    ]  # just three images
+    result = subprocess.run(
+        [
+            "dials.import",
+            "convert_stills_to_sequences=True",
+            image_path,
+            "output.experiments=joint.expt",
+        ]
+        + centroid_image_files,
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "joint.expt").is_file()
+    experiments3 = load.experiment_list(tmp_path / "joint.expt")
+    for exp in experiments3:
+        assert exp.identifier != ""
+
+    assert len(experiments3.imagesets()) == 2
+    assert isinstance(experiments3.imagesets()[0], ImageSequence)
+    assert isinstance(experiments3.imagesets()[1], ImageSequence)
+    assert len(experiments3.scans()) == 5  # four for sacla stills, 1 for centroid data
+
+
+def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
+    image_path = Path(
+        dials_regression,
+        "image_examples",
+        "LCLS_cspad_nexus",
+        "idx-20130301060858801.cbf",
+    )
+    assert image_path.is_file()
+    result = subprocess.run(
+        [
+            "dials.import",
+            "convert_stills_to_sequences=True",
+            image_path,
+            "output.experiments=lcls.expt",
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "lcls.expt").is_file()
+    experiments = load.experiment_list(tmp_path / "lcls.expt")
+    for exp in experiments:
+        assert exp.identifier != ""
+
+    assert len(experiments.imagesets()) == 1
+    assert isinstance(experiments.imagesets()[0], ImageSequence)
+    assert len(experiments.scans()) == 1  # only one image example here
