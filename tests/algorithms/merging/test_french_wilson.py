@@ -40,7 +40,7 @@ def test_french_wilson_insulin(dials_data):
 
 @pytest.mark.parametrize("space_group_symbol", [None, "P1"])
 def test_french_wilson_l_cysteine(dials_data, space_group_symbol):
-    l_cysteine = dials_data("l_cysteine_4_sweeps_scaled")
+    l_cysteine = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     expts = load.experiment_list(l_cysteine / "scaled_30.expt", check_format=False)
     refls = flex.reflection_table.from_file(l_cysteine / "scaled_30.refl")
     if space_group_symbol:
