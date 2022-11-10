@@ -1,3 +1,51 @@
+DIALS 3.12.0 (2022-10-31)
+=========================
+
+Features
+--------
+
+- ``dials.stills_process``: Add ``known_orientations=`` feature, useful for specifying previous processing results to use when reprocessing data, or for multiple detectors in an experiment. (`#2110 <https://github.com/dials/dials/issues/2110>`_)
+- ``dials.filter_reflections``: Added ``remove_by_index=`` option. (`#2201 <https://github.com/dials/dials/issues/2201>`_)
+- ``dials.rs_mapper``: Perform the calculation in parallel to improve speed. (`#2238 <https://github.com/dials/dials/issues/2238>`_)
+- ``dials.background``: Add ``n_checkpoints=`` parameter, to run the analysis on evenly-spaced images. (`#2240 <https://github.com/dials/dials/issues/2240>`_)
+- `dials.image_viewer`: Change default brightness to 10. (`#2254 <https://github.com/dials/dials/issues/2254>`_)
+- The ``dials.ssx_index`` and ``dials.ssx_integrate`` programs are now considered stable, so have dropped the ``dev.`` prefix. (`#2265 <https://github.com/dials/dials/issues/2265>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.stills_process``: Fix crashes for raster scans of stills. (`#2128 <https://github.com/dials/dials/issues/2128>`_)
+- ``dials.image_viewer``: Fix intensity readout mouseover, and beamcenter half-pixel errors. (`#2194 <https://github.com/dials/dials/issues/2194>`_)
+- **trusted_range** is now defined throughout DIALS consistently as the *inclusive* range between the minimum and maximum trusted values - valid pixels are those less than or equal to the maximum trusted value and greater than or equal to the minimum trusted value. (`#2195 <https://github.com/dials/dials/issues/2195>`_)
+- ``dials.find_rotation_axis``: Recover a plot that was broken by previous changes. (`#2225 <https://github.com/dials/dials/issues/2225>`_)
+- ``dials.scale``: Restore consistent dataset id output numbering when a dataset is excluded. (`#2246 <https://github.com/dials/dials/issues/2246>`_)
+- ``dials.reciprocal_lattice_viewer``: Set the maximum number of experiments to show in the selector toggles (default 15). Datasets with a number larger than this will not be individually selectable. (`#2248 <https://github.com/dials/dials/issues/2248>`_)
+- ``dials.ssx_integrate``: Gracefully handle assertion error for particular bad data. (`#2264 <https://github.com/dials/dials/issues/2264>`_)
+
+
+Improved Documentation
+----------------------
+
+- Removed references to pickle and json from PHIL config help strings. (`#2208 <https://github.com/dials/dials/issues/2208>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- The deprecated ``dials.algorithms.symmetry.cosym.target.Target.get_sym_ops()`` function has been removed. Please use the ``Target.sym_ops`` property instead. The ``nproc`` argument to the ``Target`` constructor has also been removed.
+  The deprecated ``dials.util.mp.parallel_map`` function has been removed.
+  The deprecated ``dials.command_line.dials_import.ImageImporter`` has been removed. Please use ``do_import`` instead.
+  The command ``dials.rl_csv`` has been removed. Similar functionality is available with ``dials.export format=json``.
+  The command ``dials.find_shared_models`` has been removed. Use ``dials.show show_shared_modules=True ...`` instead. (`#2212 <https://github.com/dials/dials/issues/2212>`_)
+
+
+Misc
+----
+
+- `#2230 <https://github.com/dials/dials/issues/2230>`_
+
+
 DIALS 3.11.2 (2022-09-27)
 =========================
 

@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from contextlib import contextmanager
 from io import StringIO
-from typing import List, Optional
+from typing import Optional, Tuple
 
-from cctbx import miller
+import numpy as np
+
 from dxtbx.model import ExperimentList
-from iotbx.merging_statistics import dataset_statistics
+from iotbx import mtz, phil
 from mmtbx.scaling import data_statistics
 
+from dials.algorithms.merging.reporting import (
+    MergeJSONCollector,
+    MergingStatisticsData,
+    make_dano_table,
+)
 from dials.algorithms.scaling.Ih_table import (
     _reflection_table_to_iobs,
     map_indices_to_asu,
@@ -25,13 +31,21 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
 )
 from dials.array_family import flex
-from dials.report.analysis import make_merging_statistics_summary, table_1_summary
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.util.filter_reflections import filter_reflection_table
 
 from .french_wilson import french_wilson
 
 logger = logging.getLogger("dials")
+
+
+@contextmanager
+def collect_html_data_from_merge():
+    try:
+        html_collector = MergeJSONCollector()
+        yield html_collector
+    finally:
+        html_collector.reset()
 
 
 def prepare_merged_reflection_table(
@@ -173,29 +187,50 @@ def make_merged_mtz_file(mtz_datasets):
     return mtz_writer.mtz_file
 
 
-@dataclass
-class MergingStatisticsData:
-    reflections: List[flex.reflection_table]
-    experiments: ExperimentList
-    scaled_miller_array: miller.array
-    merging_statistics_result: Optional[dataset_statistics] = None
-    anom_merging_statistics_result: Optional[dataset_statistics] = None
-    anomalous_amplitudes: Optional[miller.array] = None
-    Wilson_B_iso: Optional[float] = None
+def merge_scaled_array(
+    experiments,
+    scaled_array,
+    anomalous=True,
+    use_internal_variance=False,
+    assess_space_group=False,
+    n_bins=20,
+):
+    # assumes filtering already done and converted to combined scaled array
 
-    def __str__(self):
-        if not self.merging_statistics_result:
-            return ""
-        stats_summary = make_merging_statistics_summary(self.merging_statistics_result)
-        stats_summary += table_1_summary(
-            self.merging_statistics_result,
-            self.anom_merging_statistics_result,
-            Wilson_B_iso=self.Wilson_B_iso,
+    # Note, merge_equivalents does not raise an error if data is unique.
+    merged = scaled_array.merge_equivalents(use_internal_variance=use_internal_variance)
+    merged_anom = None
+
+    if anomalous:
+        anomalous_scaled = scaled_array.as_anomalous_array()
+        merged_anom = anomalous_scaled.merge_equivalents(
+            use_internal_variance=use_internal_variance
         )
-        return stats_summary
 
-    def __repr__(self):
-        return self.__str__()
+    # Before merge, do assessment of the space_group
+    if assess_space_group:
+        merged_reflections = flex.reflection_table()
+        merged_reflections["intensity"] = merged.array().data()
+        merged_reflections["variance"] = flex.pow2(merged.array().sigmas())
+        merged_reflections["miller_index"] = merged.array().indices()
+        logger.info("Running systematic absences check")
+        run_systematic_absences_checks(experiments, merged_reflections)
+
+    stats_data = MergingStatisticsData(experiments, scaled_array)
+
+    try:
+        stats, anom_stats = merging_stats_from_scaled_array(
+            scaled_array,
+            n_bins,
+            use_internal_variance,
+        )
+    except DialsMergingStatisticsError as e:
+        logger.error(e, exc_info=True)
+    else:
+        stats_data.merging_statistics_result = stats
+        stats_data.anom_merging_statistics_result = anom_stats
+
+    return merged, merged_anom, stats_data
 
 
 def merge(
@@ -237,40 +272,14 @@ def merge(
     scaled_array = scaled_data_as_miller_array(
         [reflections], experiments, best_unit_cell
     )
-    # Note, merge_equivalents does not raise an error if data is unique.
-    merged = scaled_array.merge_equivalents(use_internal_variance=use_internal_variance)
-    merged_anom = None
-
-    if anomalous:
-        anomalous_scaled = scaled_array.as_anomalous_array()
-        merged_anom = anomalous_scaled.merge_equivalents(
-            use_internal_variance=use_internal_variance
-        )
-
-    # Before merge, do assessment of the space_group
-    if assess_space_group:
-        merged_reflections = flex.reflection_table()
-        merged_reflections["intensity"] = merged.array().data()
-        merged_reflections["variance"] = flex.pow2(merged.array().sigmas())
-        merged_reflections["miller_index"] = merged.array().indices()
-        logger.info("Running systematic absences check")
-        run_systematic_absences_checks(experiments, merged_reflections)
-
-    stats_data = MergingStatisticsData([reflections], experiments, scaled_array)
-
-    try:
-        stats, anom_stats = merging_stats_from_scaled_array(
-            scaled_array,
-            n_bins,
-            use_internal_variance,
-        )
-    except DialsMergingStatisticsError as e:
-        logger.error(e, exc_info=True)
-    else:
-        stats_data.merging_statistics_result = stats
-        stats_data.anom_merging_statistics_result = anom_stats
-
-    return merged, merged_anom, stats_data
+    return merge_scaled_array(
+        experiments,
+        scaled_array,
+        anomalous,
+        use_internal_variance,
+        assess_space_group,
+        n_bins,
+    )
 
 
 def show_wilson_scaling_analysis(merged_intensities, n_residues=200):
@@ -367,3 +376,89 @@ def truncate(
     logger.info("Total number of rejected intensities %s", n_removed)
     logger.debug(out.getvalue())
     return amplitudes, anom_amplitudes, dano
+
+
+def merge_scaled_array_to_mtz_with_report_collection(
+    params: phil.scope_extract,
+    experiments: ExperimentList,
+    scaled_array,
+    wavelength: Optional[float] = None,
+) -> Tuple[mtz.object, dict]:
+    if wavelength is None:
+        wavelength = np.mean(
+            np.array(
+                [expt.beam.get_wavelength() for expt in experiments], dtype=np.float
+            )
+        )
+    with collect_html_data_from_merge() as collector:
+        mtz_dataset = MTZDataClass(
+            wavelength=wavelength,
+            project_name=params.output.project_name,
+            dataset_name=params.output.dataset_names[0],
+            crystal_name=params.output.crystal_names[0],
+        )
+
+        merged, merged_anomalous, stats_summary = merge_scaled_array(
+            experiments,
+            scaled_array,
+            anomalous=params.anomalous,
+            assess_space_group=params.assess_space_group,
+            n_bins=params.merging.n_bins,
+            use_internal_variance=params.merging.use_internal_variance,
+        )
+        process_merged_data(
+            params, mtz_dataset, merged, merged_anomalous, stats_summary
+        )
+        mtz = make_merged_mtz_file([mtz_dataset])
+        json_data = collector.create_json()
+    return mtz, json_data
+
+
+def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_summary):
+    merged_array = merged.array()
+    # Save the relevant data in the mtz_dataset dataclass
+    # This will add the data for IMEAN/SIGIMEAN
+    mtz_dataset.merged_array = merged_array
+    if merged_anomalous:
+        merged_anomalous_array = merged_anomalous.array()
+        # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
+        mtz_dataset.merged_anomalous_array = merged_anomalous_array
+        mtz_dataset.multiplicities = merged_anomalous.redundancies()
+    else:
+        merged_anomalous_array = None
+        # This will add the data for N
+        mtz_dataset.multiplicities = merged.redundancies()
+
+    if params.anomalous:
+        merged_intensities = merged_anomalous_array
+    else:
+        merged_intensities = merged_array
+
+    anom_amplitudes = None
+    if params.truncate:
+        amplitudes, anom_amplitudes, dano = truncate(
+            merged_intensities,
+            implementation=params.french_wilson.implementation,
+            min_reflections=params.french_wilson.min_reflections,
+            fallback_to_flat_prior=params.french_wilson.fallback_to_flat_prior,
+        )
+        # This will add the data for F, SIGF
+        mtz_dataset.amplitudes = amplitudes
+        # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
+        mtz_dataset.anomalous_amplitudes = anom_amplitudes
+        # This will add the data for DANO, SIGDANO
+        mtz_dataset.dano = dano
+
+    # print out analysis statistics
+    B_iso = show_wilson_scaling_analysis(merged_intensities)
+    stats_summary.Wilson_B_iso = B_iso
+
+    if anom_amplitudes:
+        logger.info(make_dano_table(anom_amplitudes))
+
+    if stats_summary.merging_statistics_result:
+        logger.info(stats_summary)
+
+    if MergeJSONCollector.initiated:
+        stats_summary.anomalous_amplitudes = anom_amplitudes
+        MergeJSONCollector.data[mtz_dataset.wavelength] = stats_summary

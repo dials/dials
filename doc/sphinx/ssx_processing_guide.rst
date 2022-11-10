@@ -1,12 +1,11 @@
-Experimental SSX processing guide
+SSX processing guide
 =================================
 
 This is a guide on how to process synchrotron serial crystallography (SSX) data
-with DIALS, using tools that are currently under development. These tools should
-be considered experimental and subject to change \& improvement as the tools
-become more widely tested and user feedback is taken on board.
+with DIALS, using stepwise command line programs in a similar manner to processing
+rotation data.
 
-Indexing SSX data with dev.dials.ssx_index
+Indexing SSX data with dials.ssx_index
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A sequence of SSX images can be imported and spotfinding can be run in the same
@@ -20,7 +19,7 @@ These commands produce an :samp:`imported.expt` experiments file containing the 
 metadata and a :samp:`strong.refl` reflections file containing the found spots.
 Then to index the data, we can use::
 
-    dev.dials.ssx_index strong.refl imported.expt
+    dials.ssx_index strong.refl imported.expt
 
 This program wraps a call to the dials.index program with options suitable
 for processing still images. As with indexing regular sweeps, if the unit cell
@@ -28,7 +27,7 @@ and/or space group are known, providing them as input to the program gives a
 greater chance of successful indexing. These can be provided as additional options,
 for example in this format::
 
-    dev.dials.ssx_index strong.refl imported.expt space_group=P4 unit_cell=60,60,85,90,90,90
+    dials.ssx_index strong.refl imported.expt space_group=P4 unit_cell=60,60,85,90,90,90
 
 For :samp:`dials.ssx_index`, if the unit cell is given, then indexing will be attempted
 on each image with the "fft1d" algorithm, followed by the "real space grid search"
@@ -68,7 +67,7 @@ json format for further analysis, by providing a filename to the option :samp:`o
 
 For weak/sparse serial collections, it may be the case that few images contain
 a useful number of spots. To allow rapid assessment in such cases,
-:samp:`dev.dials.ssx_index` will skip attempted indexing of images which contain fewer
+:samp:`dials.ssx_index` will skip attempted indexing of images which contain fewer
 than :samp:`min_spots` strong spots (default value 10).
 
 The log output of the program is minimal, however as with other DIALS programs,
@@ -87,16 +86,16 @@ To summarise the main options (and their default values)::
     output.html = dials.ssx_index.html     :   'If not None, write a summary html report to this file'
     output.json = None                     :   'If not None, write summary plots data to this file'
 
-To see the full list of options with descriptions, run :samp:`dev.dials.ssx_index -ce2 -a2`
+To see the full list of options with descriptions, run :samp:`dials.ssx_index -ce2 -a2`
 
-Integrating SSX data with dev.dials.ssx_integrate
+Integrating SSX data with dials.ssx_integrate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After indexing, the experimental models can be further refined with dials.refine,
 or the indexing output can also be integrated directly.
 To integrate the data, we can use::
 
-    dev.dials.ssx_integrate indexed.expt indexed.refl
+    dials.ssx_integrate indexed.expt indexed.refl
 
 This program wraps a call to parts of the :samp:`dials.integrate` program,
 using either the :samp:`stills` integrator or the :samp:`ellipsoid` integration algorithm.
@@ -105,8 +104,8 @@ The stills integrator is the default algorithm used for integration in
 orientation and a 3D ellipsoidal mosaicity parameterisation for each crystal,
 by assessing the pixel-intensity distribution of the strong spots::
 
-    dev.dials.ssx_integrate indexed.refl indexed.expt algorithm=stills
-    dev.dials.ssx_integrate indexed.refl indexed.expt algorithm=ellipsoid
+    dials.ssx_integrate indexed.refl indexed.expt algorithm=stills
+    dials.ssx_integrate indexed.refl indexed.expt algorithm=ellipsoid
 
 Processing will be split across the available computing cores for performance.
 During processing, data files will be created after each batch of crystals has
