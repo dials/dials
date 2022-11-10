@@ -260,17 +260,22 @@ def optimise(
 
     if nproc > 1:
         with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
-            vvals = [
+            variances = [
                 pool.submit(calc_var, arr, azimuth, wavelength, hist_bins)
                 for azimuth in r
             ]
-        vvals = [e.result() for e in vvals]
+        variances = [e.result() for e in variances]
     else:
         # For nproc=1 keep the jobs in the main process
-        vvals = [calc_var(arr, azimuth, wavelength, hist_bins) for azimuth in r]
+        variances = [calc_var(arr, azimuth, wavelength, hist_bins) for azimuth in r]
 
-    for azimuth, var in zip(r, vvals):
+    for azimuth, var in zip(r, variances):
         logger.info(f"azimuth: {azimuth:8.2f}, variance: {var:5.2f}")
+
+        # Collate data for the rotation axis distribution curve
+        xvals.append(azimuth)
+        vvals.append(var)
+
         if var > best_score:
             best_azimuth = azimuth
             best_score = var

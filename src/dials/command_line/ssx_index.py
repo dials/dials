@@ -1,4 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.ssx_index
 """
 This program runs indexing on the spotfinding results from a
 still sequence i.e. SSX data. This wraps a call to the regular
@@ -18,8 +17,8 @@ file and a single experiment list file, with a joint detector and beam model.
 Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
 Usage:
-    dev.dials.ssx_index imported.expt strong.refl
-    dev.dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
+    dials.ssx_index imported.expt strong.refl
+    dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
 """
 
 from __future__ import annotations
@@ -115,7 +114,7 @@ phil_scope.adopt_scope(
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
-    Run dev.dials.ssx_index as from the command line.
+    Run dials.ssx_index as from the command line.
 
     This program takes an imported experiment list and a reflection table
     of strong spots and performs parallelised indexing for synchrotron
@@ -126,7 +125,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
 
     parser = ArgumentParser(
-        usage="dev.dials.ssx_index imported.expt strong.refl [options]",
+        usage="dials.ssx_index imported.expt strong.refl [options]",
         read_experiments=True,
         read_reflections=True,
         phil=phil_scope,

@@ -21,7 +21,7 @@ from scitbx.lstbx import normal_eqns, normal_eqns_solving
 from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import ArgumentParser
 
-matplotlib.use("Agg")
+matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
@@ -178,8 +178,8 @@ class Script:
         ax.grid(True, which="minor")
         ax.set_axisbelow(True)
         ax.set_aspect("equal")
-        ax.set_xlabel(r"$F_c$")
-        ax.set_ylabel(r"$F_o$")
+        ax.set_xlabel("$F_c$")
+        ax.set_ylabel("$F_o$")
         ax.scatter(self.fc, self.fobs, s=1, c="indianred")
 
         if self.params.max_Fc:

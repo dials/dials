@@ -132,7 +132,7 @@ class EllipsoidProfileModel(ProfileModelExt):
         self, reflections, crystal, beam, detector, goniometer=None, scan=None, **kwargs
     ):
         raise ValueError(
-            "Ellipsoid profile modelling not implemented outside of dev.dials.ssx_integrate"
+            "Ellipsoid profile modelling not implemented outside of dials.ssx_integrate"
         )
 
     @classmethod

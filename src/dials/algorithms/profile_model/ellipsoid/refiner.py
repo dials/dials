@@ -28,6 +28,10 @@ flex.set_random_seed(0)
 random.seed(0)
 
 
+class BadSpotForIntegrationException(Exception):
+    pass
+
+
 def compute_dSbar(S: np.array, dS: np.array) -> np.array:
     # dS & S are 3x3 arrays. Returns a 2x2 array
     S12 = S[0:2, 2].reshape(2, 1)
@@ -1055,7 +1059,10 @@ class RefinerData(object):
                         C[j, i] = c
 
             # Check we have a sensible number of counts
-            assert ctot > 0, "BUG: strong spots should have more than 0 counts!"
+            if ctot <= 0:
+                raise BadSpotForIntegrationException(
+                    "Strong spot found with <= 0 counts! Check spotfinding results"
+                )
 
             # Compute the mean vector
             C = np.expand_dims(C, axis=2)
@@ -1073,8 +1080,10 @@ class RefinerData(object):
                     Sobs += np.matmul(x - xbar, (x - xbar).T) * C[j, i, 0]
 
             Sobs /= ctot
-            assert Sobs[0, 0] > 0, "BUG: variance must be > 0"
-            assert Sobs[1, 1] > 0, "BUG: variance must be > 0"
+            if (Sobs[0, 0] <= 0) or (Sobs[1, 1] <= 0):
+                raise BadSpotForIntegrationException(
+                    "Strong spot variance <= 0. Check spotfinding results"
+                )
 
             # Add to the lists
             sp_list[:, r] = sp[:, 0]

@@ -4,7 +4,6 @@ import itertools
 import logging
 import os
 import pathlib
-import warnings
 
 import psutil
 
@@ -65,54 +64,6 @@ def available_cores() -> int:
         return nproc
 
     return 1
-
-
-def parallel_map(
-    func,
-    iterable,
-    processes=1,
-    nslots=1,
-    method=None,
-    asynchronous=True,
-    callback=None,
-    preserve_order=True,
-    job_category="low",
-):
-    """
-    A wrapper function to call either drmaa or easy_mp to do a parallel map
-    calculation. This function is setup so that in each case we can select
-    the number of cores on a machine
-    """
-    from dials.util.cluster_map import cluster_map as drmaa_parallel_map
-
-    warnings.warn(
-        "The dials.util.parallel_map function is deprecated",
-        UserWarning,
-        stacklevel=2,
-    )
-
-    if method == "drmaa":
-        return drmaa_parallel_map(
-            func=func,
-            iterable=iterable,
-            callback=callback,
-            nslots=nslots,
-            njobs=processes,
-            job_category=job_category,
-        )
-    else:
-        qsub_command = "qsub -pe smp %d" % nslots
-        return libtbx.easy_mp.parallel_map(
-            func=func,
-            iterable=iterable,
-            callback=callback,
-            method=method,
-            processes=processes,
-            qsub_command=qsub_command,
-            asynchronous=asynchronous,
-            preserve_order=preserve_order,
-            preserve_exception_message=True,
-        )
 
 
 class __cluster_function_wrapper:
