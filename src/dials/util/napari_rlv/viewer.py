@@ -279,8 +279,9 @@ class ReciprocalLatticeViewer(Render3d):
                         "size": 14,
                         "color": np.array(cell.colors),
                         "anchor": "center",
-                        "translation": [0, -5, 0],
+                        "translation": -5,
                     }
+                    # Set "translation": [0, -5, 0], when https://github.com/napari/napari/pull/5321 is released
                     cell_layer = self.napari_viewer.add_shapes(
                         cell.lines,
                         shape_type="line",
@@ -325,8 +326,9 @@ class ReciprocalLatticeViewer(Render3d):
                 "size": 14,
                 "color": "white",
                 "anchor": "center",
-                "translation": [0, -20, 0],
+                "translation": -20,
             }
+            # Set "translation": [0, -20, 0], when https://github.com/napari/napari/pull/5321 is released
             axis_layer = self.napari_viewer.add_shapes(
                 [
                     axis_line,
@@ -371,8 +373,9 @@ class ReciprocalLatticeViewer(Render3d):
                 "size": 14,
                 "color": "white",
                 "anchor": "center",
-                "translation": [0, -20, 0],
+                "translation": -20,
             }
+            # Set "translation": [0, -20, 0], when https://github.com/napari/napari/pull/5321 is released
             beam_vector_layer = self.napari_viewer.add_shapes(
                 [
                     beam_vector_line,
