@@ -614,10 +614,15 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
-    template_list = {
-        str(e.imageset.get_template()) + ":{0}:{1}".format(*e.scan.get_image_range())
-        for e in experiments
-    }
+    try:
+        template_list = {
+            str(e.imageset.get_template())
+            + ":{0}:{1}".format(*e.scan.get_image_range())
+            for e in experiments
+        }
+    except AttributeError:
+        # For stills we need a different approach
+        template_list = {}
 
     # Print out some bulk info
     logger.info("-" * 80)
