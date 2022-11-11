@@ -892,7 +892,10 @@ def do_import(
         counted_imagesets.append(e.imageset)
 
     format_list = {str(e.imageset.get_format_class()) for e in experiments}
-    template_list = {str(e.imageset.get_template()) for e in experiments}
+    template_list = {
+        str(e.imageset.get_template()) + ":{0}:{1}".format(*e.scan.get_image_range())
+        for e in experiments
+    }
 
     # Print out some bulk info
     logger.info("-" * 80)
