@@ -892,11 +892,14 @@ def do_import(
         counted_imagesets.append(e.imageset)
 
     format_list = {str(e.imageset.get_format_class()) for e in experiments}
+    template_list = {str(e.imageset.get_template()) for e in experiments}
 
     # Print out some bulk info
     logger.info("-" * 80)
     for f in format_list:
         logger.info("  format: %s", f)
+    for f in template_list:
+        logger.info("  template: %s", f)
     logger.info("  num images: %d", num_images)
     logger.info("  sequences:")
     logger.info("    still:    %d", num_still_sequences)
