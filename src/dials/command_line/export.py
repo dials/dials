@@ -614,6 +614,17 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
+    template_list = {
+        str(e.imageset.get_template()) + ":{0}:{1}".format(*e.scan.get_image_range())
+        for e in experiments
+    }
+
+    # Print out some bulk info
+    logger.info("-" * 80)
+    for f in template_list:
+        logger.info("  template: %s", f)
+    logger.info("-" * 80)
+
     # do auto interpreting of intensity choice:
     # note that this may still fail certain checks further down the processing,
     # but these are the defaults to try
