@@ -585,6 +585,7 @@ class MetaDataUpdater:
                 new_experiments = ExperimentList()
                 for i, (file, n) in enumerate(files_to_indiv.items()):
                     first, last = (1, n)
+                    iset_params[i].update({"lazy": False})
                     sequence = ImageSetFactory.make_sequence(
                         template=file,
                         indices=list(range(first, last + 1)),
