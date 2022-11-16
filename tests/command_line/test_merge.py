@@ -272,8 +272,8 @@ def test_merge_exclude_images(dials_data, tmp_path):
     """Test the command line script with LCY data: exclude_images"""
 
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
-    refls = location / "scaled_35.refl"
-    expts = location / "scaled_35.expt"
+    refls = location / "scaled_30.refl"
+    expts = location / "scaled_30.expt"
 
     mtz_file = tmp_path / "merge-exclude.mtz"
 
