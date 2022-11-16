@@ -169,6 +169,15 @@ def merge_data_to_mtz(
     dataset_names = params.output.dataset_names
     crystal_names = params.output.crystal_names
 
+    # exclude any images
+    if params.exclude_images:
+        experiments = exclude_image_ranges_from_scans(
+            reflections, experiments, params.exclude_images
+        )
+        reflections = [
+            refl.select(get_selection_for_valid_image_ranges(refl, exp))
+            for refl, exp in zip(reflections, experiments)
+        ]
     # check if best_unit_cell is set.
     best_unit_cell = params.best_unit_cell
     if not best_unit_cell:
@@ -269,13 +278,6 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    experiments = exclude_image_ranges_from_scans(
-        reflections, experiments, params.exclude_images
-    )
-    reflections = [
-        refl.select(get_selection_for_valid_image_ranges(refl, exp))
-        for refl, exp in zip(reflections, experiments)
-    ]
 
     log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())
