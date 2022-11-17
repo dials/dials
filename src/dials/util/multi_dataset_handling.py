@@ -114,6 +114,8 @@ def renumber_table_id_columns(reflection_tables):
 
     new_id_ = 0
     for table in reflection_tables:
+        if not table:
+            continue
         table_id_values = sorted(set(table["id"]).difference({-1}), reverse=True)
         highest_new_id = new_id_ + len(table_id_values) - 1
         expt_ids_dict = table.experiment_identifiers()
