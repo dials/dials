@@ -1227,9 +1227,11 @@ Found %s"""
         numbered 0 .. n-1.
         """
         reverse_map = {v: k for k, v in self.experiment_identifiers()}
-        orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
+        if not len(self):
+            return
+        orig_id = self["id"].deep_copy()
         for i_exp, exp_id in enumerate(reverse_map.keys()):
             sel_exp = orig_id == reverse_map[exp_id]
             self["id"].set_selected(sel_exp, i_exp)
