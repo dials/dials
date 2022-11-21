@@ -450,8 +450,12 @@ def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_sum
         mtz_dataset.dano = dano
 
     # print out analysis statistics
-    B_iso = show_wilson_scaling_analysis(merged_intensities)
-    stats_summary.Wilson_B_iso = B_iso
+    try:
+        B_iso = show_wilson_scaling_analysis(merged_intensities)
+    except Exception as e:
+        logger.info(e)
+    else:
+        stats_summary.Wilson_B_iso = B_iso
 
     if anom_amplitudes:
         logger.info(make_dano_table(anom_amplitudes))
