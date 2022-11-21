@@ -93,7 +93,8 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
 
     """
     ranges_to_remove = []
-    for com in commands:
+    # Note, when extracted rather than parsed, null exclude images becomes [None].
+    for com in filter(lambda x: x is not None, commands):
         if len(com) > 1:
             sub = com
         elif "," in com[0]:

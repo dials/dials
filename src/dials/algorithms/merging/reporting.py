@@ -101,11 +101,15 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
             json_data[wl_key]["resolution_plots"].update(
                 make_dano_plots({wl: stats.anomalous_amplitudes})["dF"]
             )
-        json_data[wl_key]["merging_stats"] = stats.merging_statistics_result.as_dict()
-        json_data[wl_key]["table_1_stats"] = stats.table_1_stats()
-        json_data[wl_key][
-            "merging_stats_anom"
-        ] = stats.anom_merging_statistics_result.as_dict()
+        if stats.merging_statistics_result:
+            json_data[wl_key][
+                "merging_stats"
+            ] = stats.merging_statistics_result.as_dict()
+            json_data[wl_key]["table_1_stats"] = stats.table_1_stats()
+            if stats.anom_merging_statistics_result:
+                json_data[wl_key][
+                    "merging_stats_anom"
+                ] = stats.anom_merging_statistics_result.as_dict()
     if len(json_data) > 1:
         # create an overall summary table
         headers = [""] + ["Wavelength " + f"{wl:.5f}" + " Å" for wl in data.keys()]

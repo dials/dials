@@ -266,3 +266,29 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
 can be processed with dials.merge
 """
     )
+
+
+def test_merge_exclude_images(dials_data, tmp_path):
+    """Test the command line script with LCY data: exclude_images"""
+
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_30.refl"
+    expts = location / "scaled_30.expt"
+
+    mtz_file = tmp_path / "merge-exclude.mtz"
+
+    command = [
+        "dials.merge",
+        refls,
+        expts,
+        f"output.mtz={str(mtz_file)}",
+        "exclude_images=0:851:1700",
+    ]
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+
+    # all the data together is 75% complete
+
+    for record in result.stdout.decode().split("\n"):
+        if record.startswith("Completeness"):
+            assert float(record.split()[1]) < 70
