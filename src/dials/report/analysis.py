@@ -303,19 +303,19 @@ def table_1_stats(
         for key, value in d.items():
             if four_column_output:
                 values = (
-                    getattr(s.overall, value),
-                    getattr(s.bins[0], value),
-                    getattr(s.bins[-1], value),
-                    getattr(r.overall, value),
+                    getattr(s.overall, value) if s else None,
+                    getattr(s.bins[0], value) if s else None,
+                    getattr(s.bins[-1], value) if s else None,
+                    getattr(r.overall, value) if r else None,
                 )
             else:
                 values = (
-                    getattr(r.overall, value),
-                    getattr(r.bins[0], value),
-                    getattr(r.bins[-1], value),
+                    getattr(r.overall, value) if r else None,
+                    getattr(r.bins[0], value) if r else None,
+                    getattr(r.bins[-1], value) if r else None,
                 )
             if "completeness" in value:
-                values = [v_ * 100 for v_ in values]
+                values = [v_ * 100 if v_ else None for v_ in values]
             if values[0] is not None:
                 stats[key] = values
 
