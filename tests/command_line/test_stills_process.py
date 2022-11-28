@@ -191,9 +191,10 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
         if ids is None:
             ids = {0, 1, 2, 3}
         table = flex.reflection_table.from_file(result_filename)
-        for expt_id, n_refls in enumerate(ranges):
+        for expt_id, (min_, max_) in enumerate(ranges):
             subset = table.select(table["id"] == expt_id)
-            assert len(subset) in n_refls, (result_filename, expt_id, len(table))
+            n_refl = len(subset)
+            assert min_ <= n_refl < max_, (result_filename, expt_id, len(table))
         assert "id" in table
         assert set(table["id"]) == ids
 
@@ -201,49 +202,29 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
     if control_flags in [("use_mpi"), ()]:
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
-            [
-                list(range(140, 160)),
-                list(range(575, 600)),
-                list(range(420, 445)),
-                list(range(485, 510)),
-            ],
+            [(140, 160), (575, 600), (420, 445), (485, 510)],
         )
         test_refl_table(
             tmp_path / "idx-0000_coset6.refl",
-            [
-                list(range(145, 160)),
-                list(range(545, 570)),
-                list(range(430, 455)),
-                list(range(490, 515)),
-            ],
+            [(145, 160), (545, 570), (430, 455), (490, 515)],
         )
     elif control_flags == ("known_orientations"):
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
-            [
-                list(range(140, 160)),
-                list(range(575, 600)),
-                list(range(420, 445)),
-                list(range(485, 510)),
-            ],
+            [(140, 160), (575, 600), (420, 445), (485, 510)],
         )
         test_refl_table(
             tmp_path / "idx-0000_coset6.refl",
-            [
-                list(range(155, 175)),
-                list(range(545, 570)),
-                list(range(430, 455)),
-                list(range(480, 495)),
-            ],
+            [(155, 175), (545, 570), (430, 455), (480, 495)],
         )
     elif control_flags == ("wrong_gain"):
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
             [
-                list(range(175, 190)),
-                list(range(515, 535)),
-                # list(range(450, 470)), # this one doesn't work with wrong_gain
-                list(range(520, 540)),
+                (175, 190),
+                (515, 535),
+                # (450, 470), # this one doesn't work with wrong_gain
+                (520, 540),
             ],
             {0, 1, 2},
         )
@@ -251,12 +232,10 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
             [
-                list(range(175, 190)),
-                list(range(515, 535)),
-                list(
-                    range(450, 470)
-                ),  # this one works if wrong_gain and subsample_enable
-                list(range(520, 540)),
+                (175, 190),
+                (515, 535),
+                (450, 470),  # this one works if wrong_gain and subsample_enable
+                (520, 540),
             ],
         )
 
