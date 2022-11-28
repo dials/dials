@@ -1246,7 +1246,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                                 idxr = Indexer.from_parameters(
                                     reflections,
                                     experiments,
-                                    known_crystal_models=known_crystal_models,
                                     params=params,
                                 )
                                 idxr.index()
@@ -1256,7 +1255,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                             else:
                                 ml_indexing_error = None
                                 break
-                        if ml_indexing_error is not None:
+                        if ml_indexing_error:
                             raise ml_indexing_error
                 except Exception as e_subset:
                     subset_indexing_error = e_subset
