@@ -260,64 +260,6 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
             ],
         )
 
-    # large ranges to handle platform-specific differences
-    if wrong_gain:
-        if subsample_enable:
-            test_refl_table(
-                tmp_path / "idx-0000_integrated.refl",
-                [
-                    list(range(175, 190)),
-                    list(range(515, 535)),
-                    list(
-                        range(450, 470)
-                    ),  # this one works if wrong_gain and subsample_enable
-                    list(range(520, 540)),
-                ],
-            )
-        else:
-            test_refl_table(
-                tmp_path / "idx-0000_integrated.refl",
-                [
-                    list(range(175, 190)),
-                    list(range(515, 535)),
-                    # list(range(450, 470)), # this one doesn't work with wrong_gain
-                    list(range(520, 540)),
-                ],
-                {0, 1, 2},
-            )
-
-    else:
-        test_refl_table(
-            tmp_path / "idx-0000_integrated.refl",
-            [
-                list(range(140, 160)),
-                list(range(575, 600)),
-                list(range(420, 445)),
-                list(range(485, 510)),
-            ],
-        )
-
-        if known_orientations:
-            test_refl_table(
-                tmp_path / "idx-0000_coset6.refl",
-                [
-                    list(range(155, 175)),
-                    list(range(545, 570)),
-                    list(range(430, 455)),
-                    list(range(480, 495)),
-                ],
-            )
-        else:
-            test_refl_table(
-                tmp_path / "idx-0000_coset6.refl",
-                [
-                    list(range(145, 160)),
-                    list(range(545, 570)),
-                    list(range(430, 455)),
-                    list(range(490, 515)),
-                ],
-            )
-
 
 @pytest.mark.xfel
 def test_pseudo_scan(dials_data, tmp_path):
