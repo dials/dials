@@ -24,6 +24,10 @@ from dials.algorithms.merging.reporting import generate_html_report
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.exclude_images import (
+    exclude_image_ranges_from_scans,
+    get_selection_for_valid_image_ranges,
+)
 from dials.util.export_mtz import match_wavelengths
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
@@ -126,6 +130,7 @@ output {
         .help = "Dataset name to be used in MTZ file output (multiple names
             allowed for MAD datasets)"
 }
+include scope dials.util.exclude_images.phil_scope
 """,
     process_includes=True,
 )
@@ -164,6 +169,15 @@ def merge_data_to_mtz(
     dataset_names = params.output.dataset_names
     crystal_names = params.output.crystal_names
 
+    # exclude any images
+    if params.exclude_images:
+        experiments = exclude_image_ranges_from_scans(
+            reflections, experiments, params.exclude_images
+        )
+        reflections = [
+            refl.select(get_selection_for_valid_image_ranges(refl, exp))
+            for refl, exp in zip(reflections, experiments)
+        ]
     # check if best_unit_cell is set.
     best_unit_cell = params.best_unit_cell
     if not best_unit_cell:
