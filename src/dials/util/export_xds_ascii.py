@@ -4,8 +4,10 @@ import copy
 import logging
 import os
 
-import dxtbx.model
-import libtbx.phil
+# Import no QA 401 for typing annotations
+
+import dxtbx.model # noqa: F401
+import libtbx.phil # noqa: F401
 from cctbx.miller import map_to_asu
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
@@ -18,7 +20,7 @@ from dials.util.filter_reflections import (
 )
 
 try:
-    from typing import Tuple
+    from typing import Tuple # noqa: F401
 except ImportError:
     pass
 
