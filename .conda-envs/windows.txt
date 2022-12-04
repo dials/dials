@@ -1,7 +1,7 @@
 conda-forge::alabaster
 conda-forge::biopython
-conda-forge::boost
-conda-forge::boost-cpp
+conda-forge::boost<=1.74
+conda-forge::boost-cpp<=1.74
 conda-forge::bzip2
 conda-forge::c-compiler
 conda-forge::colorlog
