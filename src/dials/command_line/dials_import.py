@@ -560,7 +560,6 @@ class MetaDataUpdater:
 
         if self.params.geometry.convert_stills_to_sequences:
             if any(not isinstance(i, ImageSequence) for i in experiments.imagesets()):
-
                 files_to_indiv = defaultdict(int)
                 beams = []
                 formats = []

@@ -1,0 +1,1 @@
+``dials.integrate``: fail on negative profile-fitting intensity variance, not zero variance.
