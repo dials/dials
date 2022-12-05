@@ -194,6 +194,7 @@ formats = {
     "Rmeas(I+/-)": "%7.3f",
     "Rpim(I)": "%7.3f",
     "Rpim(I+/-)": "%7.3f",
+    "Rsplit": "%7.3f",
     "CC half": "%7.3f",
     "Wilson B factor": "%7.3f",
     "Partial bias": "%7.3f",
@@ -285,6 +286,16 @@ def table_1_stats(
         "CC half": "cc_one_half",
         "Total unique": "n_uniq",
     }
+    extra_key_to_var = {}
+    if merging_statistics.r_split:
+        extra_key_to_var.update(
+            {
+                "Rsplit": {
+                    "overall": "r_split",
+                    "binned": "r_split_binned",
+                }
+            }
+        )
 
     anom_key_to_var = {
         "Rmerge(I+/-)": "r_merge",
@@ -299,7 +310,9 @@ def table_1_stats(
 
     stats = {}
 
-    def generate_stats(d, r, s):
+    def generate_stats(d, r, s, e=None):
+        if e is None:
+            e = {}
         for key, value in d.items():
             if four_column_output:
                 values = (
@@ -318,8 +331,26 @@ def table_1_stats(
                 values = [v_ * 100 if v_ else None for v_ in values]
             if values[0] is not None:
                 stats[key] = values
+        for key, value in e.items():
+            if four_column_output:
+                values = (
+                    getattr(s, value["overall"]),
+                    getattr(s, value["binned"])[0],
+                    getattr(s, value["binned"])[-1],
+                    getattr(r, value["overall"]),
+                )
+            else:
+                values = (
+                    getattr(r, value["overall"]),
+                    getattr(r, value["binned"])[0],
+                    getattr(r, value["binned"])[-1],
+                )
+            if values[0] is not None:
+                stats[key] = values
 
-    generate_stats(key_to_var, merging_statistics, selected_statistics)
+    generate_stats(
+        key_to_var, merging_statistics, selected_statistics, extra_key_to_var
+    )
     if Wilson_B_iso:
         stats["Wilson B factor"] = [Wilson_B_iso]
 

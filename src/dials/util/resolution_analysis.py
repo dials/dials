@@ -135,7 +135,6 @@ def resolution_fit_from_merging_stats(merging_stats, metric, model, limit, sel=N
 
     Returns: The estimated resolution limit in units of Å^-1
     """
-
     y_obs = flex.double(getattr(b, metric) for b in merging_stats.bins).reversed()
     d_star_sq = flex.double(
         uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins

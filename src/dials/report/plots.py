@@ -20,6 +20,8 @@ from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_inform
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
 
+from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
+
 logger = logging.getLogger("dials")
 
 
@@ -603,7 +605,10 @@ class ResolutionPlotsAndStats:
     """
 
     def __init__(
-        self, dataset_statistics, anomalous_dataset_statistics, is_centric=False
+        self,
+        dataset_statistics: ExtendedDatasetStatistics,
+        anomalous_dataset_statistics,
+        is_centric=False,
     ):
         self.dataset_statistics = dataset_statistics
         self.anomalous_dataset_statistics = anomalous_dataset_statistics
@@ -623,6 +628,54 @@ class ResolutionPlotsAndStats:
         d.update(self.completeness_plot())
         d.update(self.multiplicity_vs_resolution_plot())
         d.update(self.r_pim_plot())
+        d.update(self.additional_stats_plot())
+        return d
+
+    def additional_stats_plot(self):
+        d = {}
+        if not self.dataset_statistics.binner:
+            return d
+        d_star_sq_bins = []
+        for bin in self.dataset_statistics.binner.range_used():
+            d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+            d_star_sq_bins.append(
+                0.5
+                * (
+                    uctbx.d_as_d_star_sq(d_max_min[0])
+                    + uctbx.d_as_d_star_sq(d_max_min[1])
+                )
+            )
+        d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(
+            d_star_sq_bins, nticks=5
+        )
+        if self.dataset_statistics.r_split:
+
+            d.update(
+                {
+                    "r_split": {
+                        "data": [
+                            {
+                                "x": d_star_sq_bins,  # d_star_sq
+                                "y": self.dataset_statistics.r_split_binned,
+                                "type": "scatter",
+                                "name": "R<sub>split</sub> vs resolution",
+                            }
+                        ],
+                        "layout": {
+                            "title": "R<sub>split</sub> vs resolution",
+                            "xaxis": {
+                                "title": "Resolution (Å)",
+                                "tickvals": d_star_sq_tickvals,
+                                "ticktext": d_star_sq_ticktext,
+                            },
+                            "yaxis": {
+                                "title": "R<sub>split</sub>",
+                                "rangemode": "tozero",
+                            },
+                        },
+                    }
+                }
+            )
         return d
 
     def cc_one_half_plot(self, method=None):
@@ -1255,6 +1308,9 @@ def cc_half_plot(
     d_min=None,
 ):
     d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(d_star_sq, nticks=5)
+    min_y = min([cc if cc is not None else 0 for cc in cc_half] + [0])
+    if cc_anom:
+        min_y = min([min_y, min([cc if cc is not None else 0 for cc in cc_anom])])
     return {
         "data": [
             {
@@ -1333,7 +1389,7 @@ def cc_half_plot(
             },
             "yaxis": {
                 "title": "CC<sub>½</sub>",
-                "range": [min(cc_half + cc_anom if cc_anom else [] + [0]), 1],
+                "range": [min_y, 1],
             },
         },
         "help": """\
