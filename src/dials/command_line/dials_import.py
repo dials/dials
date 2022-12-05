@@ -559,8 +559,7 @@ class MetaDataUpdater:
                     )
 
         if self.params.geometry.convert_stills_to_sequences:
-            if any(~isinstance(i, ImageSequence) for i in experiments.imagesets()):
-
+            if any(not isinstance(i, ImageSequence) for i in experiments.imagesets()):
                 files_to_indiv = defaultdict(int)
                 beams = []
                 formats = []
@@ -568,7 +567,7 @@ class MetaDataUpdater:
                 iset_params = []
                 existing_isets_sequences = []
                 for i, iset in enumerate(experiments.imagesets()):
-                    if ~isinstance(iset, ImageSequence):
+                    if not isinstance(iset, ImageSequence):
                         path = iset.get_path(0)
                         if path not in files_to_indiv:
                             beams.append(iset.get_beam())
