@@ -1187,7 +1187,8 @@ Found %s"""
         identifiers (strings).
         """
         # First get the reverse of the map i.e. ids for a given exp_identifier
-        assert "id" in self
+        if len(self):
+            assert "id" in self
         id_values = []
         for k, v in zip(
             self.experiment_identifiers().keys(), self.experiment_identifiers().values()
