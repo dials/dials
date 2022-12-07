@@ -21,7 +21,8 @@ def github_api_get(url: str, **kwargs) -> Any:
         **args.pop("headers", {}),
     }
     # If we've set an environment variable, use the token
-    if token := os.environ.get("GITHUB_TOKEN", None):
+    token = os.environ.get("GITHUB_TOKEN", None)
+    if token:
         headers["Authorization"] = f"token {token}"
     req = requests.get(url, headers=headers, **args)
     req.raise_for_status()
