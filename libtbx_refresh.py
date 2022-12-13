@@ -40,8 +40,7 @@ if _dials and _dials.__file__ is None:
 
 # Now, check to see if we configured XFEL first. If so, this is an error and we
 # have a mis-configured environment.
-xfel_module = libtbx.env.module_dict.get("xfel")
-if xfel_module:
+if xfel_module := libtbx.env.module_dict.get("xfel"):
     dials_module = libtbx.env.module_dict.get("dials")
     if libtbx.env.module_list.index(xfel_module) < libtbx.env.module_list.index(
         dials_module
