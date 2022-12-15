@@ -698,7 +698,9 @@ class StillsIndexer(Indexer):
         from rstbx.indexing_api import outlier_detection
 
         od = outlier_detection.find_outliers_from_matches(
-            matches, verbose=True, horizon_phil=hardcoded_phil
+            matches,
+            verbose=self.all_params.refinement.reflections.outlier.sauter_poon.verbose,
+            horizon_phil=hardcoded_phil,
         )
 
         if hardcoded_phil.indexing.outlier_detection.pdf is not None:
