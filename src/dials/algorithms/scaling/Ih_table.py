@@ -843,7 +843,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         """Return the data in flex reflection table format"""
         table = flex.reflection_table()
         table["asu_miller_index"] = self.asu_miller_index
-        for k, v in self.Ih_table.iteritems():
+        for k, v in self.Ih_table.items():
             table[k] = flumpy.from_numpy(v.to_numpy())
         return table
 

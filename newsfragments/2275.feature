@@ -1,0 +1,1 @@
+Add new feature to dials.stills_process: reflection_subsampling. If reflection_subsampling.enable=True, and an image fails to index, the program will randomly subsample the reflections and try again.  It keeps trying, randomly subsampling in smaller amounts until a threshold is reached or the image succesfully indexes.

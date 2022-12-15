@@ -1297,6 +1297,7 @@ def test_experiment_identifiers():
 def test_select_remove_on_experiment_identifiers(caplog):
 
     table = flex.reflection_table()
+    table.reset_ids()  # test empty table
     table["id"] = flex.int([0, 1, 2, 3])
 
     experiments = ExperimentList()
@@ -1604,3 +1605,8 @@ def test_concat():
     assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
     assert list(ids1.keys()) == [0, 1, 2, 3]
     assert list(ids1.values()) == ["a", "b", "c", "d"]
+
+    # test empty tables
+    table1 = flex.reflection_table()
+    table2 = flex.reflection_table()
+    table1 = flex.reflection_table.concat([table1, table2])

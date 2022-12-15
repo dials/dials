@@ -560,7 +560,7 @@ def _finalize_stills(reflections, experiments, params):
 
     # verify sigmas are sensible
     if "intensity.prf.value" in integrated:
-        if (integrated["intensity.prf.variance"] <= 0).count(True) > 0:
+        if (integrated["intensity.prf.variance"] < 0).count(True) > 0:
             raise Sorry(
                 "Found negative variances (prf). Are bad pixels properly masked out?"
             )

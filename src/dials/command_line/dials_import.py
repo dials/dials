@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import pickle
 import sys
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 import dxtbx.model.compare as compare
 import libtbx.phil
@@ -354,9 +354,6 @@ class ManualGeometryUpdater:
             for j in range(len(imageset)):
                 imageset.set_scan(None, j)
                 imageset.set_goniometer(None, j)
-        if not isinstance(imageset, ImageSequence):
-            if self.params.geometry.convert_stills_to_sequences:
-                imageset = self.convert_stills_to_sequence(imageset)
         if isinstance(imageset, ImageSequence):
             beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
             detector = DetectorFactory.from_phil(
@@ -417,59 +414,6 @@ class ManualGeometryUpdater:
         )
         return sequence
 
-    def convert_stills_to_sequence(self, imageset):
-        from dxtbx.model import Scan
-
-        assert self.params.geometry.scan.oscillation is not None
-        beam = imageset.get_beam(index=0)
-        detector = imageset.get_detector(index=0)
-        goniometer = imageset.get_goniometer(index=0)
-        for i in range(1, len(imageset)):
-            b_i = imageset.get_beam(i)
-            d_i = imageset.get_detector(i)
-            g_i = imageset.get_goniometer(i)
-            assert (beam is None and b_i is None) or beam.is_similar_to(
-                imageset.get_beam(index=i),
-                wavelength_tolerance=self.params.input.tolerance.beam.wavelength,
-                direction_tolerance=self.params.input.tolerance.beam.direction,
-                polarization_normal_tolerance=self.params.input.tolerance.beam.polarization_normal,
-                polarization_fraction_tolerance=self.params.input.tolerance.beam.polarization_fraction,
-            )
-            assert (detector is None and d_i is None) or detector.is_similar_to(
-                imageset.get_detector(index=i),
-                fast_axis_tolerance=self.params.input.tolerance.detector.fast_axis,
-                slow_axis_tolerance=self.params.input.tolerance.detector.slow_axis,
-                origin_tolerance=self.params.input.tolerance.detector.origin,
-            )
-            assert (goniometer is None and g_i is None) or goniometer.is_similar_to(
-                imageset.get_goniometer(index=i),
-                rotation_axis_tolerance=self.params.input.tolerance.goniometer.rotation_axis,
-                fixed_rotation_tolerance=self.params.input.tolerance.goniometer.fixed_rotation,
-                setting_rotation_tolerance=self.params.input.tolerance.goniometer.setting_rotation,
-            )
-        oscillation = self.params.geometry.scan.oscillation
-        from dxtbx.imageset import ImageSetFactory
-        from dxtbx.sequence_filenames import template_regex_from_list
-
-        template, indices = template_regex_from_list(imageset.paths())
-        image_range = (min(indices), max(indices))
-        assert (image_range[1] + 1 - image_range[0]) == len(indices)
-        scan = Scan(image_range=image_range, oscillation=oscillation)
-        if template is None:
-            paths = [imageset.get_path(i) for i in range(len(imageset))]
-            assert len(set(paths)) == 1
-            template = paths[0]
-        new_sequence = ImageSetFactory.make_sequence(
-            template=template,
-            indices=indices,
-            format_class=imageset.reader().get_format_class(),
-            beam=beam,
-            detector=detector,
-            goniometer=goniometer,
-            scan=scan,
-        )
-        return new_sequence
-
 
 class MetaDataUpdater:
     """
@@ -513,7 +457,6 @@ class MetaDataUpdater:
         """
         # Import the lookup data
         lookup = self.import_lookup_data(self.params)
-
         # Convert all to ImageGrid
         if self.params.input.as_grid_scan:
             imageset_list = self.convert_to_grid_scan(imageset_list, self.params)
@@ -614,6 +557,64 @@ class MetaDataUpdater:
                             crystal=None,
                         )
                     )
+
+        if self.params.geometry.convert_stills_to_sequences:
+            if any(not isinstance(i, ImageSequence) for i in experiments.imagesets()):
+                files_to_indiv = defaultdict(int)
+                beams = []
+                formats = []
+                detectors = []
+                iset_params = []
+                existing_isets_sequences = []
+                for i, iset in enumerate(experiments.imagesets()):
+                    if not isinstance(iset, ImageSequence):
+                        path = iset.get_path(0)
+                        if path not in files_to_indiv:
+                            beams.append(iset.get_beam())
+                            detectors.append(iset.get_detector())
+                            formats.append(iset.get_format_class())
+                            iset_params.append(iset.params())
+                        files_to_indiv[iset.get_path(0)] += 1
+                    else:
+                        existing_isets_sequences.append(iset)
+
+                from dxtbx.imageset import ImageSetFactory
+                from dxtbx.model import GoniometerFactory, Scan
+
+                new_experiments = ExperimentList()
+                for i, (file, n) in enumerate(files_to_indiv.items()):
+                    first, last = (1, n)
+                    iset_params[i].update({"lazy": False})
+                    sequence = ImageSetFactory.make_sequence(
+                        template=file,
+                        indices=list(range(first, last + 1)),
+                        format_class=formats[i],
+                        beam=beams[i],
+                        detector=detectors[i],
+                        goniometer=GoniometerFactory.make_goniometer(
+                            (0.0, 1.0, 0.0), (1, 0, 0, 0, 1, 0, 0, 0, 1)
+                        ),
+                        scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
+                        format_kwargs=iset_params[i],
+                    )
+                    sequence = self.update_lookup(sequence, lookup)  # for mask etc
+                    for j in range(first - 1, last):
+                        subset = sequence[j : j + 1]
+                        new_experiments.append(
+                            Experiment(
+                                imageset=sequence,
+                                beam=sequence.get_beam(),
+                                detector=sequence.get_detector(),
+                                goniometer=sequence.get_goniometer(),
+                                scan=subset.get_scan(),
+                                crystal=None,
+                            )
+                        )
+                if existing_isets_sequences:
+                    for expt in experiments:
+                        if expt.imageset in existing_isets_sequences:
+                            new_experiments.append(expt)
+                experiments = new_experiments
 
         if self.params.identifier_type:
             generate_experiment_identifiers(experiments, self.params.identifier_type)
