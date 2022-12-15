@@ -124,6 +124,10 @@ def _control_phil_str():
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
+    logging_option = normal *suppressed disabled
+      .type = choice
+      .help = normal includes all logging, suppress turns off DIALS refine output
+      .help = and disabled removes basically all logging
     experiments_filename = None
       .type = str
       .help = The filename for output experiments. For example, %s_imported.expt
@@ -491,6 +495,23 @@ class Script:
                 transmitted_info = None
             params, options, all_paths = comm.bcast(transmitted_info, root=0)
 
+        if params.output.logging_option == "suppressed":
+            logging.getLogger("dials.algorithms.indexing.nave_parameters").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.indexing.stills_indexer").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.refinement.refiner").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger(
+                "dials.algorithms.refinement.reflection_manager"
+            ).setLevel(logging.ERROR)
+
+        elif params.output.logging_option == "disabled":
+            logging.disable(logging.ERROR)
+
         # Check we have some filenames
         if not all_paths:
             self.parser.print_help()
@@ -502,7 +523,7 @@ class Script:
             self.pr = cProfile.Profile()
             self.pr.enable()
 
-        print(f"Have {len(all_paths)} files")
+        logger.info(f"Have {len(all_paths)} files")
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
@@ -768,7 +789,12 @@ class Script:
 
                 if rank == 0:
                     # server process
+                    num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
+                        print(
+                            "Processing %d / %d shots" % (item_num, num_iter),
+                            flush=True,
+                        )
                         if process_fractions and not process_this_event(item_num):
                             continue
 
