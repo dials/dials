@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
 
   void export_modeller() {
     // An abstract class for background model
-    class_<Model, boost::shared_ptr<Model>, boost::noncopyable>("Model", no_init)
+    class_<Model, std::shared_ptr<Model>, boost::noncopyable>("Model", no_init)
       .def("value", &Model::value, (arg("z"), arg("y"), arg("x")))
       .def("params", &Model::params)
       .def("variances", &Model::variances);
