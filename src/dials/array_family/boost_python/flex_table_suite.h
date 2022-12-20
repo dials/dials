@@ -649,8 +649,9 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
       typedef typename T::experiment_map_type::iterator iterator;
       for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i) {
         iterator found = self.experiment_identifiers()->find(*i);
-        DIALS_ASSERT(found != self.experiment_identifiers()->end());
-        (*result.experiment_identifiers())[found->first] = found->second;
+        if (found != self.experiment_identifiers()->end()) {
+          (*result.experiment_identifiers())[found->first] = found->second;
+        }
       }
     }
     // Return new table
