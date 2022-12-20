@@ -387,7 +387,7 @@ def merge_scaled_array_to_mtz_with_report_collection(
     if wavelength is None:
         wavelength = np.mean(
             np.array(
-                [expt.beam.get_wavelength() for expt in experiments], dtype=np.float
+                [expt.beam.get_wavelength() for expt in experiments], dtype=float
             )
         )
     with collect_html_data_from_merge() as collector:
