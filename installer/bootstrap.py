@@ -1144,8 +1144,10 @@ def configure_build(config_flags, prebuilt_cctbx):
         flag.startswith("--compiler=") for flag in config_flags
     ):
         config_flags.append("--compiler=conda")
-    if "--enable_cxx11" not in config_flags:
-        config_flags.append("--enable_cxx11")
+    if "--enable_cxx11" in config_flags:
+        config_flags.remove("--enable_cxx11")
+    if "--cxxstd=c++14" not in config_flags:
+        config_flags.append("--cxxstd=c++14")
     if "--use_conda" not in config_flags:
         config_flags.append("--use_conda")
 
