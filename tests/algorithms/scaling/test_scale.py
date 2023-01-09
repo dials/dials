@@ -5,6 +5,7 @@ Test the command line script dials.scale, for successful completion.
 from __future__ import annotations
 
 import json
+import os
 
 import procrunner
 import pytest
@@ -938,6 +939,31 @@ def test_scale_handle_bad_dataset(dials_data, tmp_path):
     expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
     assert len(expts) == 4
     assert len(reflections.experiment_identifiers()) == 4
+
+
+def test_target_scale_handle_bad_dataset(dials_data, tmp_path):
+    """Set command line parameters such that some datasets do not meet the
+    criteria for inclusion in scaling. Check that these are excluded and the
+    scaling job completes without failure."""
+    location = dials_data("cunir_serial_processed", pathlib=True)
+    pdb = dials_data("cunir_serial", pathlib=True) / "2BW4.pdb"
+    command = [
+        "dials.scale",
+        "reflection_selection.method=intensity_ranges",
+        "Isigma_range=20.0,0.0",
+        "full_matrix=None",
+        os.fspath(location / "integrated.refl"),
+        os.fspath(location / "integrated.expt"),
+        f"reference={os.fspath(pdb)}",
+    ]
+
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+
+    reflections = flex.reflection_table.from_file(tmp_path / "scaled.refl")
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    assert len(expts) == 3
+    assert len(reflections.experiment_identifiers()) == 3
 
 
 def test_targeted_scaling(dials_data, tmp_path):
