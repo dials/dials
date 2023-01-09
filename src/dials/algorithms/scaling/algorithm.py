@@ -284,7 +284,7 @@ class ScalingAlgorithm:
             or self.params.scaling_options.only_target
         ):
             # now remove things that were used as the target:
-            n_target = len(self.experiments) - len(self.scaler.active_scalers)
+            n_target = len(self.experiments) - self.scaler.n_initial_active_scalers
             self.experiments = self.experiments[:-n_target]
             self.reflections = self.reflections[:-n_target]
         # remove any bad datasets:
