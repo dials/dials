@@ -447,6 +447,36 @@ def test_scale_physical(dials_data, tmp_path):
         False
     )
 
+    # run with a precalculated analytical correction (set to 1 for test to check result the same)
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    r2 = flex.reflection_table.from_file(data_dir / "20_integrated.pickle")
+    r2["analytical_correction"] = flex.double(r2.size(), 1.0)
+    r2.as_file(tmp_path / "modified.refl")
+    extra_args = [
+        "model=physical",
+        "physical.analytical_correction=True",
+        "error_model=None",
+        "intensity_choice=profile",
+        "unmerged_mtz=unmerged.mtz",
+        "use_free_set=1",
+        "outlier_rejection=simple",
+    ]
+    import os
+
+    run_one_scaling(
+        tmp_path, [os.fspath(tmp_path / "modified.refl"), expt_1] + extra_args
+    )
+    unmerged_mtz = tmp_path / "unmerged.mtz"
+    assert unmerged_mtz.is_file()
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    assert "analytical" in expts[0].scaling_model.components
+
+    # Now inspect output, check it's identical
+    result2 = get_merging_stats(unmerged_mtz)
+    assert result2.overall.r_pim == result.overall.r_pim
+    assert result2.overall.cc_one_half == result.overall.cc_one_half
+    assert result2.overall.n_obs == result.overall.n_obs
+
     # run again with the concurrent scaling option turned off and the 'standard'
     # outlier rejection
     extra_args = [

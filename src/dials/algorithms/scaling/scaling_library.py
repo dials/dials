@@ -463,6 +463,7 @@ def create_datastructures_for_reference_file(
     expt.crystal = deepcopy(experiments[0].crystal)
     params = Mock()
     params.KB.decay_correction.return_value = False
+    params.KB.analytical_correction = False
     expt.scaling_model = KBScalingModel.from_data(params, [], [])
     expt.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
     expt.identifier = ersatz_uuid4()

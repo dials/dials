@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-from libtbx import phil
 from scitbx import sparse
 from scitbx.array_family import flex
 
 from dials.algorithms.scaling.model.components.scale_components import (
     ScaleComponentBase,
 )
-from dials.algorithms.scaling.model.model import (
-    PhysicalScalingModel,
-    physical_model_phil_str,
-)
 
 
-class AnalyticalAbsorptionComponent(ScaleComponentBase):
+class AnalyticalComponent(ScaleComponentBase):
 
     null_parameter_value = 1.0
 
@@ -70,42 +65,3 @@ class AnalyticalAbsorptionComponent(ScaleComponentBase):
     def calculate_scales(self, block_id=0):
         """Calculate and return inverse scales for a given block."""
         return self._analytical_corrections[block_id]
-
-
-class AnalyticalAbsorptionModel(PhysicalScalingModel):
-
-    """A scaling model for a physical parameterisation."""
-
-    id_ = "analytical_absorption"
-
-    phil_scope = phil.parse(physical_model_phil_str)
-
-    def __init__(self, parameters_dict, configdict, is_scaled=False):
-        """Create the analytical absorption scaling model components."""
-        # First create a physical scaling model
-        super().__init__(parameters_dict, configdict, is_scaled)
-        # now add the analytical absorption null component
-        self._components["analytical_absorption"] = AnalyticalAbsorptionComponent(
-            flex.double([])
-        )
-
-    @classmethod
-    def from_data(cls, params, experiment, reflection_table):
-        if "analytical_absorption_correction" not in reflection_table:
-            raise ValueError(
-                "The reflection table must contain the column 'analytical_absorption_correction'"
-                + "\nwhen using the analytical_absorption scaling model."
-            )
-        return super().from_data(params, experiment, reflection_table)
-
-    def configure_components(self, reflection_table, experiment, params):
-        """Add the required reflection table data to the model components."""
-        super().configure_components(reflection_table, experiment, params)
-        if "analytical_absorption_correction" not in reflection_table:
-            raise ValueError(
-                "The reflection table must contain the column 'analytical_absorption_correction'"
-                + "\nwhen using the analytical_absorption scaling model."
-            )
-        self.components["analytical_absorption"].data = {
-            "correction": reflection_table["analytical_absorption_correction"]
-        }

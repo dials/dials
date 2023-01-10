@@ -11,9 +11,6 @@ import pytest
 
 from libtbx import phil
 
-from dials.algorithms.scaling.model.analytical_absorption_model import (
-    AnalyticalAbsorptionModel,
-)
 from dials.algorithms.scaling.model.model import (
     ArrayScalingModel,
     DoseDecay,
@@ -82,6 +79,7 @@ def mock_physical_params():
     params.physical.lmax = 4
     params.physical.decay_restraint = 1e-1
     params.physical.surface_weight = "auto"
+    params.physical.analytical_correction = False
     return params
 
 
@@ -129,16 +127,6 @@ def test_model_creation_from_data(default_params, mock_exp, test_reflections):
     _ = PhysicalScalingModel.from_data(default_params, mock_exp, test_reflections)
 
     _ = ArrayScalingModel.from_data(default_params, mock_exp, test_reflections)
-
-    with pytest.raises(ValueError):
-        _ = AnalyticalAbsorptionModel.from_data(
-            default_params, mock_exp, test_reflections
-        )
-    test_reflections["analytical_absorption_correction"] = flex.double(
-        test_reflections.size(), 1.0
-    )
-    m = AnalyticalAbsorptionModel.from_data(default_params, mock_exp, test_reflections)
-    assert isinstance(m, AnalyticalAbsorptionModel)
 
 
 def test_KBScalingModel():
@@ -264,6 +252,20 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
     assert physicalmodel.fixed_components == ["decay"]
 
+    mock_physical_params.physical.analytical_correction = True
+    with pytest.raises(ValueError):
+        _ = PhysicalScalingModel.from_data(
+            mock_physical_params, mock_exp, test_reflections
+        )
+    test_reflections["analytical_correction"] = flex.double(
+        test_reflections.size(), 1.0
+    )
+    physicalmodel = PhysicalScalingModel.from_data(
+        mock_physical_params, mock_exp, test_reflections
+    )
+    assert "analytical" in physicalmodel.components
+    mock_physical_params.physical.analytical_correction = False
+
 
 def test_PhysicalScalingModel(test_reflections, mock_exp):
     """Test the PhysicalScalingModel class."""
@@ -312,8 +314,13 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
             "est_standard_devs": [0.05, 0.1],
             "null_parameter_value": 1,
         },
+        "analytical": {
+            "n_parameters": 0,
+            "null_parameter_value": 1.0,
+            "parameters": [],
+        },
         "configuration_parameters": {
-            "corrections": ["scale"],
+            "corrections": ["scale", "analytical"],
             "s_norm_fac": 0.1,
             "scale_rot_interval": 10.0,
             "decay_restaint": 1e-1,
@@ -324,6 +331,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     assert "scale" in physicalmodel.components
     assert "absorption" not in physicalmodel.components
     assert "decay" not in physicalmodel.components
+    assert "analytical" in physicalmodel.components
     assert list(physicalmodel.components["scale"].parameters) == [0.5, 1.0]
     assert list(physicalmodel.components["scale"].parameter_esds) == [0.05, 0.1]
 
@@ -485,40 +493,6 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     ]
     assert physical.configdict["valid_osc_range"] == (4, 45)
     assert physical.configdict["valid_image_range"] == (5, 45)
-
-
-def test_AnalyticalAbsorptionModel(test_reflections, mock_exp):
-    """Test the PhysicalScalingModel class."""
-    configdict = {
-        "corrections": ["scale", "decay", "absorption"],
-        "s_norm_fac": 1.0,
-        "scale_rot_interval": 2.0,
-        "d_norm_fac": 1.0,
-        "decay_rot_interval": 2.0,
-        "lmax": 1,
-        "abs_surface_weight": 1e6,
-    }
-
-    parameters_dict = {
-        "scale": {"parameters": flex.double([1.2, 1.1]), "parameter_esds": None},
-        "decay": {"parameters": flex.double([0.1, 0.2]), "parameter_esds": None},
-        "absorption": {
-            "parameters": flex.double([0.01, 0.01, 0.01]),
-            "parameter_esds": None,
-        },
-    }
-
-    model = AnalyticalAbsorptionModel(parameters_dict, configdict)
-    assert model.id_ == "analytical_absorption"
-    assert "Absorption component" in str(model)
-    comps = model.components
-    assert "scale" in comps
-    assert "absorption" in comps
-    assert "decay" in comps
-    assert "analytical_absorption" in comps
-    assert list(comps["scale"].parameters) == [1.2, 1.1]
-    assert list(comps["decay"].parameters) == [0.1, 0.2]
-    assert list(comps["absorption"].parameters) == [0.01, 0.01, 0.01]
 
 
 def test_DoseDecayModel(test_reflections, mock_exp):

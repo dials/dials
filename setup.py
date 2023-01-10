@@ -60,7 +60,6 @@ setup_kwargs = {
             "KB = dials.algorithms.scaling.model.model:KBScalingModel",
             "array = dials.algorithms.scaling.model.model:ArrayScalingModel",
             "dose_decay = dials.algorithms.scaling.model.model:DoseDecay",
-            "analytical_absorption = dials.algorithms.scaling.model.analytical_absorption_model:AnalyticalAbsorptionModel",
         ],
         "dials.index.basis_vector_search": [
             "fft1d = dials.algorithms.indexing.basis_vector_search:FFT1D",
