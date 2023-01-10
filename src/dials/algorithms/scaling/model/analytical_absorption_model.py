@@ -47,7 +47,6 @@ class AnalyticalAbsorptionComponent(ScaleComponentBase):
 
     @free_parameter_esds.setter
     def free_parameter_esds(self, esds):
-        # assert len(esds) == len(self.free_parameters)
         self._parameter_esds = flex.double([])
 
     def update_reflection_data(self, selection=None, block_selections=None):
@@ -66,8 +65,6 @@ class AnalyticalAbsorptionComponent(ScaleComponentBase):
     def calculate_scales_and_derivatives(self, block_id=0):
         """Calculate and return inverse scales and derivatives for a given block."""
         derivatives = sparse.matrix(self.n_refl[block_id], 0)
-        # for i in range(self.n_refl[block_id]):
-        #    derivatives[i, 0] = 0.0
         return self._analytical_corrections[block_id], derivatives
 
     def calculate_scales(self, block_id=0):
@@ -84,17 +81,31 @@ class AnalyticalAbsorptionModel(PhysicalScalingModel):
     phil_scope = phil.parse(physical_model_phil_str)
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
-        """Create the physical scaling model components."""
+        """Create the analytical absorption scaling model components."""
+        # First create a physical scaling model
         super().__init__(parameters_dict, configdict, is_scaled)
-        # now add the analytical absorption
-
+        # now add the analytical absorption null component
         self._components["analytical_absorption"] = AnalyticalAbsorptionComponent(
             flex.double([])
         )
 
+    @classmethod
+    def from_data(cls, params, experiment, reflection_table):
+        if "analytical_absorption_correction" not in reflection_table:
+            raise ValueError(
+                "The reflection table must contain the column 'analytical_absorption_correction'"
+                + "\nwhen using the analytical_absorption scaling model."
+            )
+        return super().from_data(params, experiment, reflection_table)
+
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
         super().configure_components(reflection_table, experiment, params)
+        if "analytical_absorption_correction" not in reflection_table:
+            raise ValueError(
+                "The reflection table must contain the column 'analytical_absorption_correction'"
+                + "\nwhen using the analytical_absorption scaling model."
+            )
         self.components["analytical_absorption"].data = {
             "correction": reflection_table["analytical_absorption_correction"]
         }
