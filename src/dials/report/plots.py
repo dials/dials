@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from io import StringIO
+from typing import Type
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -14,13 +15,12 @@ from scipy.stats import norm
 
 from cctbx import uctbx
 from dxtbx import flumpy
+from iotbx.merging_statistics import dataset_statistics
 from libtbx.utils import Sorry
 from mmtbx.scaling import printed_output
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
-
-from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
 
 logger = logging.getLogger("dials")
 
@@ -606,8 +606,8 @@ class ResolutionPlotsAndStats:
 
     def __init__(
         self,
-        dataset_statistics: ExtendedDatasetStatistics,
-        anomalous_dataset_statistics,
+        dataset_statistics: Type[dataset_statistics],
+        anomalous_dataset_statistics: Type[dataset_statistics],
         is_centric=False,
     ):
         self.dataset_statistics = dataset_statistics
@@ -633,7 +633,12 @@ class ResolutionPlotsAndStats:
 
     def additional_stats_plot(self):
         d = {}
-        if not self.dataset_statistics.binner:
+        # 'binner' attribute only exists for ExtendedDatasetStatistics, make sure
+        # this function also works with regular iotbx dataset_statistics with this check.
+        if (
+            not hasattr(self.dataset_statistics, "binner")
+            or not self.dataset_statistics.binner
+        ):
             return d
         d_star_sq_bins = []
         for bin in self.dataset_statistics.binner.range_used():

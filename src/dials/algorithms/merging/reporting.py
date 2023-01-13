@@ -2,19 +2,17 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from cctbx import miller, uctbx
 from dxtbx.model import ExperimentList
+from iotbx.merging_statistics import dataset_statistics
 
 from dials.algorithms.clustering import plots as cluster_plotter
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.algorithms.scaling.observers import make_merging_stats_plots
-
-# from iotbx.merging_statistics import dataset_statistics
-from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
 from dials.array_family import flex
 from dials.report.analysis import (
     format_statistics,
@@ -53,8 +51,8 @@ class MergingStatisticsData:
     reflections: Optional[
         List[flex.reflection_table]
     ] = None  # only needed if using this class like a script when making batch plots
-    merging_statistics_result: Optional[ExtendedDatasetStatistics] = None
-    anom_merging_statistics_result: Optional[ExtendedDatasetStatistics] = None
+    merging_statistics_result: Optional[Type[dataset_statistics]] = None
+    anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
     anomalous_amplitudes: Optional[miller.array] = None
     Wilson_B_iso: Optional[float] = None
 
@@ -184,7 +182,7 @@ def make_additional_stats_table(stats_summary: MergingStatisticsData):
     stats = stats_summary.merging_statistics_result
     header = ["Resolution range"]
     rows = []
-    if not stats.r_split:
+    if not hasattr(stats, "r_split") or not stats.r_split:
         return ""
     rows = [[] for _ in range(len(stats.binner.range_used()) + 1)]  # +1 for overall
     for i, i_bin in enumerate(list(stats.binner.range_used())):
