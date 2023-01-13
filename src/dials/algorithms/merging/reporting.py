@@ -193,8 +193,8 @@ def make_additional_stats_table(stats_summary: MergingStatisticsData):
     for (i, rsplit) in enumerate(stats.r_split_binned):
         rows[i].append(f"{rsplit:.5f}" if rsplit is not None else "None")
     rows[-1].append(f"{stats.r_split:.5f}")
-    output_ = "\n" + tabulate(rows, header)
-    return output_
+    output = "\n" + tabulate(rows, header)
+    return output
 
 
 def make_dano_plots(anomalous_data):

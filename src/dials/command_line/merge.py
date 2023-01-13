@@ -131,6 +131,7 @@ output {
             allowed for MAD datasets)"
     additional_stats = False
        .type = bool
+       .help = "Calculate and report the R-split statistic in the log"
 }
 include scope dials.util.exclude_images.phil_scope
 """,
