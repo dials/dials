@@ -752,9 +752,9 @@ class Script:
                 threshold=params.clustering.threshold,
             )
             n_clusters = len(clustered)
-            max_c = params.clustering.max_clusters
-            to_c = min(max_c, n_clusters) if max_c is not None else n_clusters
-            clusters = sorted(clustered.clusters, key=len, reverse=True)[:to_c]
+            clusters = sorted(clustered.clusters, key=len, reverse=True)
+            if params.clustering.max_clusters:
+                clusters = clusters[:params.clustering.max_clusters]
             if params.clustering.exclude_single_crystal_clusters:
                 clusters = [c for c in clusters if len(c) > 1]
             clustered_experiments = [
