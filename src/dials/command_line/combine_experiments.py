@@ -753,7 +753,7 @@ class Script:
             )
             n_clusters = len(clustered)
             clusters = sorted(clustered.clusters, key=len, reverse=True)
-            if params.clustering.max_clusters:
+            if params.clustering.max_clusters is not None:
                 clusters = clusters[:params.clustering.max_clusters]
             if params.clustering.exclude_single_crystal_clusters:
                 clusters = [c for c in clusters if len(c) > 1]
