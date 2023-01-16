@@ -177,26 +177,6 @@ def make_dano_table(anomalous_amplitudes):
     return tabulate(rows, header)
 
 
-def make_additional_stats_table(stats_summary: MergingStatisticsData):
-
-    stats = stats_summary.merging_statistics_result
-    header = ["Resolution range"]
-    rows = []
-    if not hasattr(stats, "r_split") or not stats.r_split:
-        return ""
-    rows = [[] for _ in range(len(stats.binner.range_used()) + 1)]  # +1 for overall
-    for i, i_bin in enumerate(list(stats.binner.range_used())):
-        d_max_bin, d_min_bin = stats.binner.bin_d_range(i_bin)
-        rows[i].append(f"{d_max_bin:.3f} - {d_min_bin:.3f}")
-    rows[-1].append("Overall")
-    header.append("r-split")
-    for (i, rsplit) in enumerate(stats.r_split_binned):
-        rows[i].append(f"{rsplit:.5f}" if rsplit is not None else "None")
-    rows[-1].append(f"{stats.r_split:.5f}")
-    output = "\n" + tabulate(rows, header)
-    return output
-
-
 def make_dano_plots(anomalous_data):
     """
     Make dicts of data for plotting e.g. for plotly.

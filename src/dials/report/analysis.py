@@ -290,7 +290,7 @@ def table_1_stats(
     if merging_statistics.r_split:
         extra_key_to_var.update(
             {
-                "Rsplit": {
+                "Rsplit(I)": {
                     "overall": "r_split",
                     "binned": "r_split_binned",
                 }
@@ -385,43 +385,10 @@ def make_merging_statistics_summary(dataset_statistics):
     """Format merging statistics information into an output string."""
 
     text = "\n            ----------Merging statistics by resolution bin----------           \n\n"
-    text += (
-        " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
-        + "    r_mrg   r_meas    r_pim   r_anom   cc1/2   cc_ano\n"
-    )
     r_split_vals = []
-    if (
-        hasattr(dataset_statistics, "r_split")
-        and dataset_statistics.r_split is not None
-    ):
-        r_split_vals = list(dataset_statistics.r_split_binned) + [
-            dataset_statistics.r_split
-        ]
-        text = text[:-16] + "r_splt  " + text[-16:]
 
-    for i, bin_stats in enumerate(dataset_statistics.bins):
-        if r_split_vals:
-            lst = bin_stats.format().rsplit(maxsplit=2)
-            lst.insert(-2, r_split_vals[i])
-            text += (
-                lst[0]
-                + f"   {r_split_vals[i]:5.3f}"
-                + f"   {lst[-2]}   {lst[-1]}"
-                + "\n"
-            )
-        else:
-            text += bin_stats.format() + "\n"
-    # 14/15 columns in table, need to know max size of values in each col
-    # reformat, need to know max with and num decimal places
-    # n=14
-    names = [
-        "d_max",
-        "d_min",
-        "#obs",
-        "#uniq",
-        "mult.",
-        f"%comp",
-        "<I>",
+    # 14/15 columns in table, need to know max size of the values string in each col to reformat
+    names = ["d_max", "d_min", "#obs", "#uniq", "mult.", f"{'%'}comp", "<I>"] + [
         "<I/sI>",
         "r_mrg",
         "r_meas",
@@ -430,44 +397,52 @@ def make_merging_statistics_summary(dataset_statistics):
         "cc1/2",
         "cc_ano",
     ]
-    n_headers = len(names)
+    if (
+        hasattr(dataset_statistics, "r_split")
+        and dataset_statistics.r_split is not None
+    ):
+        r_split_vals = list(dataset_statistics.r_split_binned) + [
+            dataset_statistics.r_split
+        ]
+        names.insert(-2, "r_splt")
+    n_headers = len(names)  # 14 or 15
     vals = [[] for _ in range(n_headers)]
-    for i, bin_stats in enumerate(dataset_statistics.bins):
-        txt = bin_stats.format().split()
-        if len(txt) < n_headers:
-            txt.insert(-2, "0.000")  # handle bad r_anom
+    for i, stats in enumerate(
+        list(dataset_statistics.bins) + [dataset_statistics.overall]
+    ):
+        txt = stats.format().split()
+        if r_split_vals:
+            txt.insert(-2, f"{r_split_vals[i]:.3f}")
+            if len(txt) < n_headers:
+                txt.insert(-3, "0.000")  # handle null r_anom
+        else:
+            if len(txt) < n_headers:
+                txt.insert(-2, "0.000")  # handle null r_anom
+        assert len(txt) == n_headers, "Mismatch between number of headers and values"
         for j, t in enumerate(txt):
             vals[j].append(t)
-    # rules, the end of the col name should be aligned with the end of the number
-    # at least one space
 
-    max_lengths = []
-    hasasterisk = []
-    for col, name in zip(vals, names):
-        hasaster = any("*" in v for v in col)
-        hasasterisk.append(hasaster)
-        max_length = max(len(s) for s in col)
-        max_lengths.append(max_length)
+    max_lengths = [max(len(s) for s in col) for col in vals]
+    hasasterisk = [any("*" in v for v in col) for col in vals]
     header = ""
-    min_separator = 2
-    for i, (name, ml, hasaster) in enumerate(zip(names, max_lengths, hasasterisk)):
-        if ml > len(name):
-            if hasaster:
-                header += name.rjust(ml + min_separator - 1) + " "
-            else:
-                header += name.rjust(ml + min_separator)
-        else:
-            if hasaster:
-                header += name.rjust(len(name) + min_separator - 1) + " "
-            else:
-                header += name.rjust(len(name) + min_separator)
-            max_lengths[i] = len(name)
+    min_separator = 2  # min whitespace between values in a colum
 
-    table = ""
-    rows = ["" for _ in range(len(dataset_statistics.bins))]
+    # First format the header, adjusting max length if necessary.
+    for i, (name, ml, hasaster) in enumerate(zip(names, max_lengths, hasasterisk)):
+        width_this = max(ml, len(name))  # longest of name or max value length
+        max_lengths[i] = width_this  # update in case name longer
+        if hasaster:  # i.e. if any of the values in the column have an asterisk
+            header += (
+                name.rjust(width_this + min_separator - 1) + " "
+            )  # align with last value not asterisk
+        else:
+            header += name.rjust(width_this + min_separator)
+
+    # Now write the values into the rows with correct separation
+    rows = ["" for _ in range(len(dataset_statistics.bins) + 1)]  # +1 for overall
     for ml, col, hasaster in zip(max_lengths, vals, hasasterisk):
         for i, value in enumerate(col):
-            if hasaster:
+            if hasaster:  # i.e. if any of the values in the column have an asterisk
                 if "*" in value:
                     rows[i] += value.rjust(ml + min_separator)
                 else:
@@ -475,12 +450,7 @@ def make_merging_statistics_summary(dataset_statistics):
             else:
                 rows[i] += value.rjust(ml + min_separator)
     rows.insert(0, header)
-    text = "\n".join(i for i in rows) + "\n\n"
-
-    # d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
-    #    + "    r_mrg   r_meas    r_pim   r_anom   cc1/2   cc_ano
-
-    # text += dataset_statistics.overall.format() + "\n\n"
+    text = "\n".join(r for r in rows) + "\n\n"
 
     return (
         "\n            ----------Merging statistics by resolution bin----------           \n\n"

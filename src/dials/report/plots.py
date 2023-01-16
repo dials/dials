@@ -893,12 +893,19 @@ class ResolutionPlotsAndStats:
         ]
         if not self.is_centric:
             headers.append("CC<sub>ano</sub>")
+        r_split_vals = []
+        if (
+            hasattr(self.dataset_statistics, "r_split")
+            and self.dataset_statistics.r_split_binned
+        ):
+            headers.insert(-2, "R<sub>split</sub>")
+            r_split_vals = self.dataset_statistics.r_split_binned
         rows = []
 
         def safe_format(format_str, item):
             return format_str % item if item is not None else ""
 
-        for bin_stats in self.dataset_statistics.bins:
+        for i, bin_stats in enumerate(self.dataset_statistics.bins):
             row = [
                 f"{bin_stats.d_max:.2f} - {bin_stats.d_min:.2f}",
                 bin_stats.n_obs,
@@ -912,6 +919,8 @@ class ResolutionPlotsAndStats:
                 safe_format("%.3f", bin_stats.r_pim),
                 safe_format("%.3f", bin_stats.r_anom),
             ]
+            if r_split_vals:
+                row.append(f"{r_split_vals[i]:.3f}")
             if cc_half_method == "sigma_tau":
                 row.append(
                     "%.3f%s"

@@ -16,7 +16,6 @@ from mmtbx.scaling import data_statistics
 from dials.algorithms.merging.reporting import (
     MergeJSONCollector,
     MergingStatisticsData,
-    make_additional_stats_table,
     make_dano_table,
 )
 from dials.algorithms.scaling.Ih_table import (
@@ -463,8 +462,6 @@ def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_sum
 
     if anom_amplitudes:
         logger.info(make_dano_table(anom_amplitudes))
-    if params.output.additional_stats:
-        logger.info(make_additional_stats_table(stats_summary))
 
     if stats_summary.merging_statistics_result:
         logger.info(stats_summary)
