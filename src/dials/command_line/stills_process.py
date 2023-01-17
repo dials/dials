@@ -1463,21 +1463,23 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         # Integrate the reflections
         integrated = integrator.integrate()
 
-        # correct integrated intensities for absorption correction, if necessary
+        # correct integrated intensities for absorption correction,if necessary
         for abs_params in self.params.integration.absorption_correction:
             if abs_params.apply:
                 if abs_params.algorithm == "fuller_kapton":
-                    from dials.algorithms.integration.kapton_correction import (
-                        multi_kapton_correction,
-                    )
+                    from dials.algorithms.integration.kapton_correction \
+                        import multi_kapton_correction
                 elif abs_params.algorithm == "kapton_2019":
-                    from dials.algorithms.integration.kapton_2019_correction import (
-                        multi_kapton_correction,
-                    )
-
+                    from dials.algorithms.integration.kapton_2019_correction \
+                        import multi_kapton_correction
+                elif abs_params.algorithm == "other":
+                    continue  # custom abs. corr. implementation should go here
+                else:
+                    raise ValueError("Absorption_correction.apply=True, "
+                                     "but no .algorithm has been selected!")
                 experiments, integrated = multi_kapton_correction(
-                    experiments, integrated, abs_params.fuller_kapton, logger=logger
-                )()
+                    experiments, integrated, abs_params.fuller_kapton,
+                    logger=logger)()
 
         if self.params.significance_filter.enable:
             from dials.algorithms.integration.stills_significance_filter import (
