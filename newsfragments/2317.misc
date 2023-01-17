@@ -1,0 +1,1 @@
+Raise a more verbose error when kapton `absorption_correction.apply=True`, but `algorithm=None`
