@@ -972,6 +972,16 @@ class ResolutionPlotsAndStats:
             ["R<sub>meas</sub>"] + [f"{s.r_meas:.3f}" for s in stats],
             ["R<sub>pim</sub>"] + [f"{s.r_pim:.3f}" for s in stats],
         ]
+        if (
+            hasattr(self.dataset_statistics, "r_split")
+            and self.dataset_statistics.r_split is not None
+        ):
+            rsplits = (
+                self.dataset_statistics.r_split,
+                self.dataset_statistics.r_split_binned[0],
+                self.dataset_statistics.r_split_binned[-1],
+            )
+            rows.append(["R<sub>split</sub>"] + [f"{rs:.3f}" for rs in rsplits])
 
         if cc_half_method == "sigma_tau":
             rows.append(

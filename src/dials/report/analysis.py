@@ -194,7 +194,7 @@ formats = {
     "Rmeas(I+/-)": "%7.3f",
     "Rpim(I)": "%7.3f",
     "Rpim(I+/-)": "%7.3f",
-    "Rsplit": "%7.3f",
+    "Rsplit(I)": "%7.3f",
     "CC half": "%7.3f",
     "Wilson B factor": "%7.3f",
     "Partial bias": "%7.3f",
