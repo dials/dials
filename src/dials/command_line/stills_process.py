@@ -1478,7 +1478,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     continue  # custom abs. corr. implementation should go here
                 else:
                     raise ValueError(
-                        "Absorption_correction.apply=True, "
+                        "absorption_correction.apply=True, "
                         "but no .algorithm has been selected!"
                     )
                 experiments, integrated = multi_kapton_correction(

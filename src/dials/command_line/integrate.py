@@ -620,7 +620,7 @@ def run_integration(params, experiments, reference=None):
                 continue  # custom abs. corr. implementation should go here
             else:
                 raise ValueError(
-                    "Absorption_correction.apply=True, "
+                    "absorption_correction.apply=True, "
                     "but no .algorithm has been selected!"
                 )
             experiments, reflections = multi_kapton_correction(
