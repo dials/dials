@@ -378,7 +378,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
     """A class to extend iotbx merging statistics."""
 
-    def __init__(self, *args, additional_stats=False, **kwargs):
+    def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
         super().__init__(*args, **kwargs)
         self.r_split = None
         self.r_split_binned = None
@@ -393,8 +393,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         i_obs_copy.setup_binner(n_bins=n_bins)
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
-
-        seed = 0
 
         split_datasets = split_unmerged(
             unmerged_indices=i_obs.indices(),
@@ -435,6 +433,9 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     def calc_rsplit(cls, this, other, assume_index_matching=False, use_binning=False):
         # based on White, T. A. et al. J. Appl. Cryst. 45, 335-341 (2012).
         # adapted from cctbx_project/xfel/cxi_cc.py
+        # Note that compared to the original published definition, we have used random
+        # half-set assignment of observations (like in cc1/2), rather than random half-set
+        # assignment of whole images.
         if not use_binning:
             assert other.indices().size() == this.indices().size()
             if this.data().size() == 0:
