@@ -446,10 +446,10 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             else:
                 (o, c) = this.common_sets(other=other, assert_no_singles=True)
 
-            den = flex.sum(o.data() + c.data())
+            den = 0.5 * flex.sum(o.data() + c.data())
             if den == 0:  # avoid zero division error
                 return -1
-            return math.sqrt(2) * flex.sum(flex.abs(o.data() - c.data())) / den
+            return (1.0 / math.sqrt(2)) * flex.sum(flex.abs(o.data() - c.data())) / den
 
         assert this.binner is not None
         results = []
