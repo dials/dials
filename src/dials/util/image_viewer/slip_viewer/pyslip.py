@@ -1645,7 +1645,12 @@ class PySlip(_BufferedCanvas):
                     (x, y) = pt
                     if radius:
                         rectangles.append(
-                            (x + x_off - radius, y + y_off - radius, diameter, diameter)
+                            (
+                                int(x + x_off - radius),
+                                int(y + y_off - radius),
+                                int(diameter),
+                                int(diameter),
+                            )
                         )
                     else:
                         points.append((x + x_off, y + y_off))
