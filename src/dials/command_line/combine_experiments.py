@@ -802,13 +802,40 @@ class Script:
                 )
         return
 
-    def _save_output(self, experiments, reflections, exp_name, refl_name):
-        # save output
-
+    @staticmethod
+    def _save_output(experiments, reflections, exp_name, refl_name):
         print(f"Saving combined experiments to {exp_name}")
         experiments.as_file(exp_name)
         print(f"Saving combined reflections to {refl_name}")
         reflections.as_file(refl_name)
+
+    def _save_output_batched(self,
+                             expt: ExperimentList,
+                             refl: flex.reflection_table,
+                             expt_name: str,
+                             refl_name: str,
+                             batch_size: int = None
+                             ):
+        batch_count = len(expt) // batch_size + 1 if batch_size else 1
+        expt_ids = list(range(len(expt)))
+        expt_ids_batched = _split_equal_parts_of_length(expt_ids, batch_count)
+        for batch_i, batch_expt_ids in enumerate(expt_ids_batched):
+            batch_expts = ExperimentList()
+            batch_refls = flex.reflection_table()
+            if refl.experiment_identifiers().keys():
+                for expt_id in batch_expt_ids:
+                    batch_expts.append(expt[expt_id])
+                batch_refls = refl.select(batch_expts)
+                batch_refls.reset_ids()
+            else:
+                for sub_id, expt_id in enumerate(batch_expt_ids):
+                    batch_expts.append(expt[expt_id])
+                    sub_refls = refl.select(refl["id"] == expt_id)
+                    sub_refls["id"] = flex.int(len(sub_refls), sub_id)
+                    batch_refls.extend(sub_refls)
+            expt_fname = f"{os.path.splitext(expt_name)[0]}_{batch_i:03d}.expt"
+            refl_fname = f"{os.path.splitext(refl_name)[0]}_{batch_i:03d}.refl"
+            self._save_output(batch_expts, batch_refls, expt_fname, refl_fname)
 
 
 @dials.util.show_mail_handle_errors()
