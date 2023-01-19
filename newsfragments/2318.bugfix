@@ -1,0 +1,1 @@
+Sort clusters created by ``dials.combine_experiments`` by decreasing size and correctly index them from zero
