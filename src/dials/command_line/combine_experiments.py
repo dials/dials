@@ -726,7 +726,6 @@ class Script:
                 dendrogram=params.clustering.dendrogram,
                 threshold=params.clustering.threshold,
             )
-            n_clusters = len(clustered)
             clusters = sorted(clustered.clusters, key=len, reverse=True)[
                 : min(params.clustering.max_clusters, n_clusters)
             ]
@@ -751,13 +750,13 @@ class Script:
                 refl.reset_ids()
                 ebase = os.path.splitext(params.output.experiments_filename)[0]
                 rbase = os.path.splitext(params.output.reflections_filename)[0]
-                expt_name = f"{ebase}_cluster{n_clusters - i_cluster:d}.expt"
-                refl_name = f"{rbase}_cluster{n_clusters - i_cluster:d}.expt"
-                s = params.output.max_batch_size
-                self._save_output_batched(expts, refl, expt_name, refl_name, s)
+                expt_name = f"{ebase}_cluster{i_cluster:d}.expt"
+                refl_name = f"{rbase}_cluster{i_cluster:d}.expt"
+                max_bsize = params.output.max_batch_size
+                self._save_output(expts, refl, expt_name, refl_name, max_bsize)
 
         else:
-            self._save_output_batched(
+            self._save_output(
                 experiments,
                 reflections,
                 params.output.experiments_filename,
@@ -766,19 +765,12 @@ class Script:
             )
 
     @staticmethod
-    def _save_output(experiments, reflections, exp_name, refl_name):
-        print(f"Saving combined experiments to {exp_name}")
-        experiments.as_file(exp_name)
-        print(f"Saving combined reflections to {refl_name}")
-        reflections.as_file(refl_name)
-
-    def _save_output_batched(self,
-                             expt: ExperimentList,
-                             refl: flex.reflection_table,
-                             expt_name: str,
-                             refl_name: str,
-                             batch_size: int = None
-                             ):
+    def _save_output(expt: ExperimentList,
+                     refl: flex.reflection_table,
+                     expt_name: str,
+                     refl_name: str,
+                     batch_size: int = None
+                     ):
         batch_count = len(expt) // batch_size + 1 if batch_size else 1
         expt_ids = list(range(len(expt)))
         expt_ids_batched = _split_equal_parts_of_length(expt_ids, batch_count)
@@ -799,7 +791,10 @@ class Script:
             name_suffix = f"_{batch_i:03d}" if batch_size else ""
             expt_name = os.path.splitext(expt_name)[0] + name_suffix + ".expt"
             refl_name = os.path.splitext(refl_name)[0] + name_suffix + ".expt"
-            self._save_output(batch_expts, batch_refls, expt_name, refl_name)
+            print(f"Saving combined experiments to {expt_name}")
+            batch_expts.as_file(expt_name)
+            print(f"Saving combined reflections to {refl_name}")
+            batch_refls.as_file(refl_name)
 
 
 @dials.util.show_mail_handle_errors()
