@@ -761,16 +761,17 @@ class Script:
                 reflections,
                 params.output.experiments_filename,
                 params.output.reflections_filename,
-                params.output.max_batch_size
+                params.output.max_batch_size,
             )
 
     @staticmethod
-    def _save_output(expt: ExperimentList,
-                     refl: flex.reflection_table,
-                     expt_name: str,
-                     refl_name: str,
-                     batch_size: int = None
-                     ):
+    def _save_output(
+        expt: ExperimentList,
+        refl: flex.reflection_table,
+        expt_name: str,
+        refl_name: str,
+        batch_size: int = None,
+    ):
         batch_count = len(expt) // batch_size + 1 if batch_size else 1
         expt_ids = list(range(len(expt)))
         expt_ids_batched = _split_equal_parts_of_length(expt_ids, batch_count)
