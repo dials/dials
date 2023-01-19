@@ -718,31 +718,6 @@ class Script:
             experiments = subset_exp
             reflections = subset_refls
 
-        def save_in_batches(
-            experiments, reflections, exp_name, refl_name, batch_size=1000
-        ):
-            for i, indices in enumerate(
-                _split_equal_parts_of_length(
-                    list(range(len(experiments))), (len(experiments) // batch_size) + 1
-                )
-            ):
-                batch_expts = ExperimentList()
-                batch_refls = flex.reflection_table()
-                if reflections.experiment_identifiers().keys():
-                    for sub_idx in indices:
-                        batch_expts.append(experiments[sub_idx])
-                    batch_refls = reflections.select(batch_expts)
-                    batch_refls.reset_ids()
-                else:
-                    for sub_id, sub_idx in enumerate(indices):
-                        batch_expts.append(experiments[sub_idx])
-                        sub_refls = reflections.select(reflections["id"] == sub_idx)
-                        sub_refls["id"] = flex.int(len(sub_refls), sub_id)
-                        batch_refls.extend(sub_refls)
-                exp_filename = os.path.splitext(exp_name)[0] + "_%03d.expt" % i
-                ref_filename = os.path.splitext(refl_name)[0] + "_%03d.refl" % i
-                self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
-
         # cluster the resulting experiments if requested
         if params.clustering.use and len(experiments) > 1:
             clustered = do_unit_cell_clustering(
@@ -778,29 +753,17 @@ class Script:
                 rbase = os.path.splitext(params.output.reflections_filename)[0]
                 expt_name = f"{ebase}_cluster{n_clusters - i_cluster:d}.expt"
                 refl_name = f"{rbase}_cluster{n_clusters - i_cluster:d}.expt"
-                if params.output.max_batch_size is None:
-                    self._save_output(expts, refl, expt_name, refl_name)
-                else:
-                    save_in_batches(expts, refl, expt_name, refl_name,
-                                    batch_size=params.output.max_batch_size)
+                s = params.output.max_batch_size
+                self._save_output_batched(expts, refl, expt_name, refl_name, s)
 
         else:
-            if params.output.max_batch_size is None:
-                self._save_output(
-                    experiments,
-                    reflections,
-                    params.output.experiments_filename,
-                    params.output.reflections_filename,
-                )
-            else:
-                save_in_batches(
-                    experiments,
-                    reflections,
-                    params.output.experiments_filename,
-                    params.output.reflections_filename,
-                    batch_size=params.output.max_batch_size,
-                )
-        return
+            self._save_output_batched(
+                experiments,
+                reflections,
+                params.output.experiments_filename,
+                params.output.reflections_filename,
+                params.output.max_batch_size
+            )
 
     @staticmethod
     def _save_output(experiments, reflections, exp_name, refl_name):
@@ -833,9 +796,10 @@ class Script:
                     sub_refls = refl.select(refl["id"] == expt_id)
                     sub_refls["id"] = flex.int(len(sub_refls), sub_id)
                     batch_refls.extend(sub_refls)
-            expt_fname = f"{os.path.splitext(expt_name)[0]}_{batch_i:03d}.expt"
-            refl_fname = f"{os.path.splitext(refl_name)[0]}_{batch_i:03d}.refl"
-            self._save_output(batch_expts, batch_refls, expt_fname, refl_fname)
+            name_suffix = f"_{batch_i:03d}" if batch_size else ""
+            expt_name = os.path.splitext(expt_name)[0] + name_suffix + ".expt"
+            refl_name = os.path.splitext(refl_name)[0] + name_suffix + ".expt"
+            self._save_output(batch_expts, batch_refls, expt_name, refl_name)
 
 
 @dials.util.show_mail_handle_errors()
