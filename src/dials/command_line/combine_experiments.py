@@ -771,31 +771,18 @@ class Script:
                 reflections.select_on_experiment_identifiers(cluster.lattice_ids)
                 for cluster in clusters
             ]
-            for i_cluster, (expts, refl) in enumerate(
-                zip(clustered_experiments, clustered_reflections)
-            ):
+            expt_refl_zip = zip(clustered_experiments, clustered_reflections)
+            for i_cluster, (expts, refl) in enumerate(expt_refl_zip):
                 refl.reset_ids()
-                exp_name = os.path.splitext(params.output.experiments_filename)[0] + (
-                    "_cluster%d.expt" % (n_clusters - i_cluster)
-                )
-                refl_name = os.path.splitext(params.output.reflections_filename)[0] + (
-                    "_cluster%d.refl" % (n_clusters - i_cluster)
-                )
+                ebase = os.path.splitext(params.output.experiments_filename)[0]
+                rbase = os.path.splitext(params.output.reflections_filename)[0]
+                expt_name = f"{ebase}_cluster{n_clusters - i_cluster:d}.expt"
+                refl_name = f"{rbase}_cluster{n_clusters - i_cluster:d}.expt"
                 if params.output.max_batch_size is None:
-                    self._save_output(
-                        expts,
-                        refl,
-                        exp_name,
-                        refl_name,
-                    )
+                    self._save_output(expts, refl, expt_name, refl_name)
                 else:
-                    save_in_batches(
-                        expts,
-                        refl,
-                        exp_name,
-                        refl_name,
-                        batch_size=params.output.max_batch_size,
-                    )
+                    save_in_batches(expts, refl, expt_name, refl_name,
+                                    batch_size=params.output.max_batch_size)
 
         else:
             if params.output.max_batch_size is None:
