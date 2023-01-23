@@ -1463,7 +1463,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         # Integrate the reflections
         integrated = integrator.integrate()
 
-        # correct integrated intensities for absorption correction,if necessary
+        # correct integrated intensities for absorption correction, if necessary
         for abs_params in self.params.integration.absorption_correction:
             if abs_params.apply:
                 if abs_params.algorithm == "fuller_kapton":
