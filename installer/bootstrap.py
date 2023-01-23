@@ -1144,10 +1144,11 @@ def configure_build(config_flags, prebuilt_cctbx):
         flag.startswith("--compiler=") for flag in config_flags
     ):
         config_flags.append("--compiler=conda")
-    if "--enable_cxx11" not in config_flags:
-        config_flags.append("--enable_cxx11")
     if "--use_conda" not in config_flags:
         config_flags.append("--use_conda")
+    # Default to C++14 if otherwise unspecified
+    if not any(x.startswith("--cxxstd") for x in config_flags):
+        config_flags.append("--cxxstd=c++14")
 
     print("Setting up build directory")
     if prebuilt_cctbx:
