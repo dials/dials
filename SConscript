@@ -41,6 +41,12 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         LIBS=env_etc.libm
         + ["scitbx_boost_python", boost_python, "boost_thread", "cctbx"],
     )
+
+    # Fix the build environment so that it doesn't break on modern C++
+    for path in list(env["CPPPATH"]):
+        if "msvc9.0_include" in path:
+            env["CPPPATH"].remove(path)
+
     env.SConscript("src/dials/model/SConscript", exports={"env": env})
     env.SConscript("src/dials/array_family/SConscript", exports={"env": env})
     env.SConscript("src/dials/algorithms/SConscript", exports={"env": env})
