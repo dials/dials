@@ -1554,6 +1554,7 @@ class MultiScaler(MultiScalerBase):
         super().__init__(single_scalers)
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
         self._active_scalers = self.single_scalers
+        self.n_initial_active_scalers = len(self._active_scalers)
         self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
             self.params.anomalous
         )
@@ -1672,6 +1673,7 @@ class TargetScaler(MultiScalerBase):
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
         self.unscaled_scalers = unscaled_scalers
         self._active_scalers = unscaled_scalers
+        self.n_initial_active_scalers = len(self._active_scalers)
         self._target_active_scalers = unscaled_scalers
         self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
             self.params.anomalous
