@@ -49,7 +49,7 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
 
     # Attempt to fix compilation errors on windows
     if env_etc.compiler == "win32_cl":
-        env.Append(CPPDEFINES="HAVESNPRINTF")
+        env.Append(CPPDEFINES="HAVE_SNPRINTF")
 
     env.SConscript("src/dials/model/SConscript", exports={"env": env})
     env.SConscript("src/dials/array_family/SConscript", exports={"env": env})
