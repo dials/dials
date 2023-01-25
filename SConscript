@@ -44,6 +44,7 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
             env["CPPPATH"].remove(path)
 
     # Fix compilation errors on windows, caused by function redefinition
+    # See: https://github.com/boostorg/system/issues/32#issuecomment-462912013
     if env_etc.compiler == "win32_cl":
         env.Append(CPPDEFINES="HAVE_SNPRINTF")
 
