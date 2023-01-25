@@ -194,6 +194,7 @@ def merge_scaled_array(
     use_internal_variance=False,
     assess_space_group=False,
     n_bins=20,
+    show_additional_stats=False,
 ):
     # assumes filtering already done and converted to combined scaled array
 
@@ -223,6 +224,7 @@ def merge_scaled_array(
             scaled_array,
             n_bins,
             use_internal_variance,
+            additional_stats=show_additional_stats,
         )
     except DialsMergingStatisticsError as e:
         logger.error(e, exc_info=True)
@@ -245,6 +247,7 @@ def merge(
     use_internal_variance=False,
     assess_space_group=False,
     n_bins=20,
+    show_additional_stats=False,
 ):
     """
     Merge reflection table data and generate a summary of the merging statistics.
@@ -279,6 +282,7 @@ def merge(
         use_internal_variance,
         assess_space_group,
         n_bins,
+        show_additional_stats=show_additional_stats,
     )
 
 
@@ -386,9 +390,7 @@ def merge_scaled_array_to_mtz_with_report_collection(
 ) -> Tuple[mtz.object, dict]:
     if wavelength is None:
         wavelength = np.mean(
-            np.array(
-                [expt.beam.get_wavelength() for expt in experiments], dtype=np.float
-            )
+            np.array([expt.beam.get_wavelength() for expt in experiments], dtype=float)
         )
     with collect_html_data_from_merge() as collector:
         mtz_dataset = MTZDataClass(
@@ -405,6 +407,7 @@ def merge_scaled_array_to_mtz_with_report_collection(
             assess_space_group=params.assess_space_group,
             n_bins=params.merging.n_bins,
             use_internal_variance=params.merging.use_internal_variance,
+            show_additional_stats=params.output.additional_stats,
         )
         process_merged_data(
             params, mtz_dataset, merged, merged_anomalous, stats_summary

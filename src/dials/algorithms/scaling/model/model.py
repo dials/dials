@@ -12,6 +12,9 @@ import logging
 from libtbx import Auto, phil
 
 from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
+from dials.algorithms.scaling.model.components.analytical_component import (
+    AnalyticalComponent,
+)
 from dials.algorithms.scaling.model.components.scale_components import (
     LinearDoseDecay,
     QuadraticDoseDecay,
@@ -51,6 +54,11 @@ base_model_phil_str = """\
 correction.fix = None
     .type = strings
     .help = "If specified, this correction will not be refined in this scaling run"
+analytical_correction = False
+    .type = bool
+    .help = "If True, the "analytical_correction" column from the reflection table will"
+            "be used as a fixed correction during scaling (in addition to any corrections"
+            "specified as fixed with the option correction.fix=)"
 """
 
 kb_model_phil_str = (
@@ -485,6 +493,8 @@ class DoseDecay(ScalingModelBase):
             self._components["absorption"] = SHScaleComponent(
                 absorption_setup["parameters"], absorption_setup["parameter_esds"]
             )
+        if "analytical" in configdict["corrections"]:
+            self._components["analytical"] = AnalyticalComponent(flex.double([]))
 
     @property
     def consecutive_refinement_order(self):
@@ -523,6 +533,15 @@ class DoseDecay(ScalingModelBase):
             _add_absorption_component_to_physically_derived_model(
                 self, reflection_table
             )
+        if "analytical" in self.components:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            self.components["analytical"].data = {
+                "correction": reflection_table["analytical_correction"]
+            }
 
     def limit_image_range(self, new_image_range):
         """Modify the model to be suitable for a reduced image range.
@@ -623,6 +642,13 @@ class DoseDecay(ScalingModelBase):
                 "parameters": flex.double(n_abs_param, 0.0),
                 "parameter_esds": None,
             }
+        if params.analytical_correction:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            configdict["corrections"].append("analytical")
 
         model = cls(parameters_dict, configdict)
         if params.correction.fix:
@@ -631,7 +657,7 @@ class DoseDecay(ScalingModelBase):
 
     @classmethod
     def from_dict(cls, obj):
-        """Create a :obj:`PhysicalScalingModel` from a dictionary."""
+        """Create a :obj:`DoseDecayScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
             raise RuntimeError(f"expected __id__ {cls.id_}, got {obj['__id__']}")
         (s_params, d_params, abs_params, B) = (None, None, None, None)
@@ -709,6 +735,8 @@ class PhysicalScalingModel(ScalingModelBase):
             self._components["absorption"] = SHScaleComponent(
                 absorption_setup["parameters"], absorption_setup["parameter_esds"]
             )
+        if "analytical" in configdict["corrections"]:
+            self._components["analytical"] = AnalyticalComponent(flex.double([]))
 
     @property
     def consecutive_refinement_order(self):
@@ -737,6 +765,15 @@ class PhysicalScalingModel(ScalingModelBase):
             _add_absorption_component_to_physically_derived_model(
                 self, reflection_table
             )
+        if "analytical" in self.components:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            self.components["analytical"].data = {
+                "correction": reflection_table["analytical_correction"]
+            }
 
     def limit_image_range(self, new_image_range):
         """Modify the model to be suitable for a reduced image range.
@@ -889,6 +926,13 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameters": flex.double(n_abs_param, 0.0),
                 "parameter_esds": None,
             }
+        if params.analytical_correction:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            configdict["corrections"].append("analytical")
 
         model = cls(parameters_dict, configdict)
         if params.correction.fix:
@@ -1016,6 +1060,8 @@ class ArrayScalingModel(ScalingModelBase):
                 shape=(configdict["n_x_mod_param"], configdict["n_y_mod_param"]),
                 parameter_esds=mod_setup["parameter_esds"],
             )
+        if "analytical" in configdict["corrections"]:
+            self._components["analytical"] = AnalyticalComponent(flex.double([]))
 
     @property
     def consecutive_refinement_order(self):
@@ -1056,6 +1102,15 @@ class ArrayScalingModel(ScalingModelBase):
                 "y_det_bin_width"
             ]
             self.components["modulation"].data = {"x": norm_x_det, "y": norm_y_det}
+        if "analytical" in self.components:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            self.components["analytical"].data = {
+                "correction": reflection_table["analytical_correction"]
+            }
 
     def limit_image_range(self, new_image_range):
         """Modify the model to be suitable for a reduced image range.
@@ -1222,6 +1277,13 @@ class ArrayScalingModel(ScalingModelBase):
                 "parameters": flex.double((n_x_mod_param * n_y_mod_param), 1.0),
                 "parameter_esds": None,
             }
+        if params.analytical_correction:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            configdict["corrections"].append("analytical")
 
         model = cls(parameters_dict, configdict)
         if params.correction.fix:
@@ -1288,6 +1350,8 @@ class KBScalingModel(ScalingModelBase):
                 parameters_dict["decay"]["parameters"],
                 parameters_dict["decay"]["parameter_esds"],
             )
+        if "analytical" in configdict["corrections"]:
+            self._components["analytical"] = AnalyticalComponent(flex.double([]))
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -1296,6 +1360,15 @@ class KBScalingModel(ScalingModelBase):
         if "decay" in self.components:
             self.components["decay"].data = {
                 "d": reflection_table["d"],
+            }
+        if "analytical" in self.components:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            self.components["analytical"].data = {
+                "correction": reflection_table["analytical_correction"]
             }
 
     @property
@@ -1348,6 +1421,13 @@ class KBScalingModel(ScalingModelBase):
             "parameters": flex.double([1.0]),
             "parameter_esds": None,
         }
+        if params.KB.analytical_correction:
+            if "analytical_correction" not in reflection_table:
+                raise ValueError(
+                    "The reflection table must contain the column 'analytical_correction'"
+                    + "\nwhen using the option analytical_correction=True."
+                )
+            configdict["corrections"].append("analytical")
 
         model = cls(parameters_dict, configdict)
         if params.KB.correction.fix:
