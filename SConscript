@@ -43,7 +43,7 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         if "msvc9.0_include" in path:
             env["CPPPATH"].remove(path)
 
-    # Attempt to fix compilation errors on windows
+    # Fix compilation errors on windows, caused by function redefinition
     if env_etc.compiler == "win32_cl":
         env.Append(CPPDEFINES="HAVE_SNPRINTF")
 
