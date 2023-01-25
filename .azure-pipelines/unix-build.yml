@@ -42,14 +42,6 @@ steps:
   workingDirectory: $(Pipeline.Workspace)
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
 
-# XXX temporary hack to checkout cctbx boost-c++11 branch
-- bash: |
-    set -eux
-    cd modules/cctbx_project
-    git checkout boost-c++11
-  displayName: Checkout cctbx boost-c++11 branch
-  workingDirectory: $(Pipeline.Workspace)
-
 # Build DIALS using the bootstrap script
 - bash: |
     set -eux
