@@ -1,1 +1,0 @@
-``dials.integrate``: Clearer error message when kapton ``absorption_correction.apply=True``, but ``algorithm=None``.
