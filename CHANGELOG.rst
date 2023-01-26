@@ -1,3 +1,47 @@
+DIALS 3.13.0 (2023-01-26)
+=========================
+
+Features
+--------
+
+- ``dev.dials.napari_rlv``: A reciprocal lattice viewer based on napari. This currently requires the ``napari`` module to be manually added into your DIALS installation. (`#2229 <https://github.com/dials/dials/issues/2229>`_)
+- ``dials.stills_process``: Adds ``suppressed_logging=`` option, and minimial progress feedback. (`#2263 <https://github.com/dials/dials/issues/2263>`_)
+- ``dials.refine``: Use an overall ``interval_width_degrees=`` parameter to set the default smoothness in scan-varying refinement for all models. This does not affect which models will be parameterised as scan-varying, which is controlled by their individual ``force_static=`` parameters. (`#2268 <https://github.com/dials/dials/issues/2268>`_)
+- Use Python 3.10 by default when running bootstrap. (`#2272 <https://github.com/dials/dials/issues/2272>`_)
+- ``dials.stills_process``: Added reflection subsampling. If ``reflection_subsampling.enable=True``, and an image fails to index, the reflections will be randomly subsampled, and indexing tried again. Reflections will be randomly subsampled in smaller amounts until a threshold is reached or the image succesfully indexes. (`#2275 <https://github.com/dials/dials/issues/2275>`_)
+- ``dials.merge``: Allow ``exclude_images=`` parameter, as in ``dials.scale``. (`#2280 <https://github.com/dials/dials/issues/2280>`_)
+- ``dials.scale``: Add ability to use a precalculated analytical correction as part of scaling models. (`#2313 <https://github.com/dials/dials/issues/2313>`_)
+- Add ``additional_stats`` option to generate R-split statistic for stills data in ``dials.merge`` and ``dials.scale``. (`#2314 <https://github.com/dials/dials/issues/2314>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.integrate``: Fail for negative profile-fitting intensity variance, not zero variance. (`#2271 <https://github.com/dials/dials/issues/2271>`_)
+- ``dials.import``: Fix ``convert_stills_to_sequences=`` option for h5 data formats. (`#2273 <https://github.com/dials/dials/issues/2273>`_)
+- Slightly better support when handling empty reflection tables. (`#2281 <https://github.com/dials/dials/issues/2281>`_)
+- ``dials.scale``: Catch rare crash when making summary stats table. (`#2284 <https://github.com/dials/dials/issues/2284>`_)
+- Fix wxPython 4.2.0 type error affecting RLV and geometry viewer. (`#2287 <https://github.com/dials/dials/issues/2287>`_)
+- Allow ``reflection_table.remove_on_experiment_identifiers()`` for an empty ``flex.reflection_table``. (`#2298 <https://github.com/dials/dials/issues/2298>`_)
+- ``dials.cluster_unit_cell``: Correctly report the number of lattices in each cluster, instead of the number of clusters. (`#2300 <https://github.com/dials/dials/issues/2300>`_)
+- ``dials.image_viewer``: Fix error when using newer versions of wxPython. (`#2306 <https://github.com/dials/dials/issues/2306>`_)
+- ``dials.combine_experiments``: Prevent default ``clustering.max_clusters=None`` from raising error when clustering. (`#2311 <https://github.com/dials/dials/issues/2311>`_)
+- ``dials.scale``: Fix crash when scaling against reference, and some datasets were removed during scaling. (`#2312 <https://github.com/dials/dials/issues/2312>`_)
+- ``dials.integrate``: Clearer error message when kapton ``absorption_correction.apply=True``, but ``algorithm=None``. (`#2317 <https://github.com/dials/dials/issues/2317>`_)
+
+
+Improved Documentation
+----------------------
+
+- ``integration/corrections.h``: Improve comments pertaining to the polarization correction. (`#2274 <https://github.com/dials/dials/issues/2274>`_)
+
+
+Misc
+----
+
+- `#2266 <https://github.com/dials/dials/issues/2266>`_, `#2267 <https://github.com/dials/dials/issues/2267>`_, `#2269 <https://github.com/dials/dials/issues/2269>`_, `#2282 <https://github.com/dials/dials/issues/2282>`_, `#2289 <https://github.com/dials/dials/issues/2289>`_, `#2290 <https://github.com/dials/dials/issues/2290>`_, `#2293 <https://github.com/dials/dials/issues/2293>`_, `#2301 <https://github.com/dials/dials/issues/2301>`_, `#2303 <https://github.com/dials/dials/issues/2303>`_, `#2307 <https://github.com/dials/dials/issues/2307>`_, `#2308 <https://github.com/dials/dials/issues/2308>`_, `#2309 <https://github.com/dials/dials/issues/2309>`_, `#2310 <https://github.com/dials/dials/issues/2310>`_, `#2319 <https://github.com/dials/dials/issues/2319>`_, `#2321 <https://github.com/dials/dials/issues/2321>`_
+
+
 DIALS 3.12.1 (2022-12-05)
 =========================
 
