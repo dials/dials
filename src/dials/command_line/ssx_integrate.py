@@ -57,8 +57,8 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
 )
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
-from dials.command_line.combine_experiments import CombineWithReference
 from dials.util import log, show_mail_handle_errors
+from dials.util.combine_experiments import CombineWithReference
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 
