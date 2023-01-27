@@ -42,11 +42,10 @@ def find_experiment_in(
 ) -> Tuple[int, int]:
     """Search the phil experiment list and find where an experiment came from."""
     for i, elist in enumerate(list_of_experiments):
-        try:
-            index = elist.index(experiment)
-            return (i, index)
-        except ValueError:
-            pass
+        index = elist.find(experiment.identifier)
+        if index == -1:
+            continue
+        return (i, index)
     raise ValueError("Experiment not found")
 
 

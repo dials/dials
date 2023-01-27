@@ -406,6 +406,8 @@ def test_failed_tolerance_error(dials_regression):
         load.experiment_list(jsons.format(2, "experiments.json"), check_format=False),
         load.experiment_list(jsons.format(3, "experiments.json"), check_format=False),
     ]
+    list_of_elists[0][0].identifier = "0"
+    list_of_elists[1][0].identifier = "1"
     list_of_tables = [
         flex.reflection_table.from_file(jsons.format(2, "reflections.pickle")),
         flex.reflection_table.from_file(jsons.format(4, "reflections.pickle")),
