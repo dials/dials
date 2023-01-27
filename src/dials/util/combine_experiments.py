@@ -5,7 +5,7 @@ import random
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Iterator, Optional, Tuple, TypeVar
+from typing import Iterator, List, Optional, Tuple, TypeVar
 
 import dxtbx.model
 import dxtbx.model.compare as compare
@@ -37,20 +37,14 @@ def _split_equal_parts_of_length(a: Sequence[T], n: int) -> Iterator[Sequence[T]
     return (a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
-def find_experiment_in(experiment, all_experiments):
-    """Search the phil experiment list and find where an experiment came from.
-
-    :param Experiment experiment: The experiment to search for
-    :param all_experiments:       The list of all experiments from phil
-    :type  all_experiments:       list[dials.util.phil.FilenameDataWrapper[ExperimentList]]
-    :returns:                     The filename and experiment ID
-    :rtype:                       (str, int)
-    """
-    for source in all_experiments:
+def find_experiment_in(
+    experiment: Experiment, list_of_experiments: List[ExperimentList]
+) -> Tuple[int, int]:
+    """Search the phil experiment list and find where an experiment came from."""
+    for i, elist in enumerate(list_of_experiments):
         try:
-            experiment_list = list(source.data)
-            index = experiment_list.index(experiment)
-            return (source.filename, index)
+            index = elist.index(experiment)
+            return (i, index)
         except ValueError:
             pass
     raise ValueError("Experiment not found")
@@ -476,11 +470,11 @@ def combine_experiments(params, experiment_lists, reflection_tables):
                 experiments.append(combine(exp))
             except ComparisonError as e:
                 # When we failed tolerance checks, give a useful error message
-                (path, index) = find_experiment_in(exp, params.input.experiments)
+                (i, index) = find_experiment_in(exp, experiment_lists)
                 sys.exit(  # FIXME - raise RuntimeError?
-                    "Model didn't match reference within required tolerance for experiment {} in {}:"
+                    "Model didn't match reference within required tolerance for experiment {} in input file {}:"
                     "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
-                        index, path, str(e)
+                        index, i, str(e)
                     )
                 )
 
