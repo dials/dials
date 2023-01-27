@@ -4,8 +4,9 @@ import logging
 import os
 import random
 import sys
-from typing import List
+from typing import List, Tuple
 
+import dxtbx.model
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
 from scitbx import matrix
@@ -190,14 +191,57 @@ phil_scope = parse(
 )
 
 
-def run_with_preparsed(params, flat_exps):
-    """Run combine_experiments, but allow passing in of parameters"""
+def average_detectors(target, panelgroups, depth, average_hierarchy_level=None):
+    # Recursive function to do the averaging
 
-    ref_beam = params.reference_from_experiment.beam
-    ref_goniometer = params.reference_from_experiment.goniometer
-    ref_scan = params.reference_from_experiment.scan
-    ref_crystal = params.reference_from_experiment.crystal
-    ref_detector = params.reference_from_experiment.detector
+    if average_hierarchy_level is None or depth == average_hierarchy_level:
+        n = len(panelgroups)
+        sum_fast = matrix.col((0.0, 0.0, 0.0))
+        sum_slow = matrix.col((0.0, 0.0, 0.0))
+        sum_ori = matrix.col((0.0, 0.0, 0.0))
+
+        # Average the d matrix vectors
+        for pg in panelgroups:
+            sum_fast += matrix.col(pg.get_local_fast_axis())
+            sum_slow += matrix.col(pg.get_local_slow_axis())
+            sum_ori += matrix.col(pg.get_local_origin())
+        sum_fast /= n
+        sum_slow /= n
+        sum_ori /= n
+
+        # Re-orthagonalize the slow and the fast vectors by rotating around the cross product
+        c = sum_fast.cross(sum_slow)
+        a = sum_fast.angle(sum_slow, deg=True) / 2
+        sum_fast = sum_fast.rotate_around_origin(c, a - 45, deg=True)
+        sum_slow = sum_slow.rotate_around_origin(c, -(a - 45), deg=True)
+
+        target.set_local_frame(sum_fast, sum_slow, sum_ori)
+
+    if target.is_group():
+        # Recurse
+        for i, target_pg in enumerate(target):
+            average_detectors(
+                target_pg,
+                [pg[i] for pg in panelgroups],
+                depth + 1,
+                average_hierarchy_level,
+            )
+
+
+def parse_ref_models(
+    flat_exps: ExperimentList, reference_from_experiment: phil_scope
+) -> Tuple[
+    None | dxtbx.model.beam,
+    None | dxtbx.model.goniometer,
+    None | dxtbx.model.scan,
+    None | dxtbx.model.crystal,
+    None | dxtbx.model.detector,
+]:
+    ref_beam = reference_from_experiment.beam
+    ref_goniometer = reference_from_experiment.goniometer
+    ref_scan = reference_from_experiment.scan
+    ref_crystal = reference_from_experiment.crystal
+    ref_detector = reference_from_experiment.detector
 
     if ref_beam is not None:
         try:
@@ -224,54 +268,29 @@ def run_with_preparsed(params, flat_exps):
             sys.exit(f"{ref_crystal} is not a valid experiment ID")
 
     if ref_detector is not None:
-        assert not params.reference_from_experiment.average_detector
+        assert not reference_from_experiment.average_detector
         try:
             ref_detector = flat_exps[ref_detector].detector
         except IndexError:
             sys.exit(f"{ref_detector} is not a valid experiment ID")
-    elif params.reference_from_experiment.average_detector:
+    elif reference_from_experiment.average_detector:
         # Average all of the detectors together
-
-        def average_detectors(target, panelgroups, depth):
-            # Recursive function to do the averaging
-
-            if (
-                params.reference_from_experiment.average_hierarchy_level is None
-                or depth == params.reference_from_experiment.average_hierarchy_level
-            ):
-                n = len(panelgroups)
-                sum_fast = matrix.col((0.0, 0.0, 0.0))
-                sum_slow = matrix.col((0.0, 0.0, 0.0))
-                sum_ori = matrix.col((0.0, 0.0, 0.0))
-
-                # Average the d matrix vectors
-                for pg in panelgroups:
-                    sum_fast += matrix.col(pg.get_local_fast_axis())
-                    sum_slow += matrix.col(pg.get_local_slow_axis())
-                    sum_ori += matrix.col(pg.get_local_origin())
-                sum_fast /= n
-                sum_slow /= n
-                sum_ori /= n
-
-                # Re-orthagonalize the slow and the fast vectors by rotating around the cross product
-                c = sum_fast.cross(sum_slow)
-                a = sum_fast.angle(sum_slow, deg=True) / 2
-                sum_fast = sum_fast.rotate_around_origin(c, a - 45, deg=True)
-                sum_slow = sum_slow.rotate_around_origin(c, -(a - 45), deg=True)
-
-                target.set_local_frame(sum_fast, sum_slow, sum_ori)
-
-            if target.is_group():
-                # Recurse
-                for i, target_pg in enumerate(target):
-                    average_detectors(
-                        target_pg, [pg[i] for pg in panelgroups], depth + 1
-                    )
-
         ref_detector = flat_exps[0].detector
         average_detectors(
-            ref_detector.hierarchy(), [e.detector.hierarchy() for e in flat_exps], 0
+            ref_detector.hierarchy(),
+            [e.detector.hierarchy() for e in flat_exps],
+            0,
+            reference_from_experiment.average_hierarchy_level,
         )
+    return (ref_beam, ref_goniometer, ref_scan, ref_crystal, ref_detector)
+
+
+def run_with_preparsed(params, flat_exps):
+    """Run combine_experiments, but allow passing in of parameters"""
+
+    ref_beam, ref_goniometer, ref_scan, ref_crystal, ref_detector = parse_ref_models(
+        flat_exps, params.reference_from_experiment
+    )
 
     combine = CombineWithReference(
         beam=ref_beam,
