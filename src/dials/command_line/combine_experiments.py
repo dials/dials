@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
-import random
 import sys
-from typing import List
+from collections.abc import Sequence
+from typing import Iterator, List, Optional, TypeVar
 
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import phil
@@ -14,13 +14,14 @@ import dials.util
 from dials.array_family import flex
 from dials.util import log
 from dials.util.combine_experiments import (
-    _split_equal_parts_of_length,
     combine_experiments,
+    combine_experiments_no_reflections,
     do_unit_cell_clustering,
 )
 from dials.util.options import ArgumentParser
 from dials.util.version import dials_version
 
+T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 help_message = """
@@ -187,10 +188,15 @@ phil_scope = parse(
 )
 
 
+def _split_equal_parts_of_length(a: Sequence[T], n: int) -> Iterator[Sequence[T]]:
+    k, m = divmod(len(a), n)
+    return (a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
+
+
 def save_combined_experiments(
     experiments,
-    reflections,
     clustering: phil.scope_extract,
+    reflections: Optional[flex.reflection_table] = None,
     max_batch_size: int = None,
     experiments_filename="combined.expt",
     reflections_filename="combined.refl",
@@ -207,7 +213,6 @@ def save_combined_experiments(
             sys.exit("Error: max_clusters must be None or >0")
         clustered = do_unit_cell_clustering(
             experiments,
-            reflections,
             dendrogram=clustering.dendrogram,
             threshold=clustering.threshold,
         )
@@ -223,27 +228,71 @@ def save_combined_experiments(
             )
             for cluster in clusters
         ]
-        output_reflections_list = [
-            reflections.select_on_experiment_identifiers(cluster.lattice_ids)
-            for cluster in clusters
-        ]
-        for i_cluster, refl in enumerate(output_reflections_list):
-            refl.reset_ids()  # move up into clustered_reflections creation?
+        if reflections:
+            output_reflections_list = [
+                reflections.select_on_experiment_identifiers(cluster.lattice_ids)
+                for cluster in clusters
+            ]
+            for table in output_reflections_list:
+                table.reset_ids()
+        for i_cluster, _ in enumerate(output_experiments_list):
             exp_name = os.path.splitext(experiments_filename)[0] + (
                 "_cluster%d.expt" % (n_clusters - i_cluster)
             )
-            refl_name = os.path.splitext(reflections_filename)[0] + (
-                "_cluster%d.refl" % (n_clusters - i_cluster)
-            )
             expt_names_list.append(exp_name)
-            refl_names_list.append(refl_name)
+            if reflections:
+                refl_name = os.path.splitext(reflections_filename)[0] + (
+                    "_cluster%d.refl" % (n_clusters - i_cluster)
+                )
+                refl_names_list.append(refl_name)
 
     else:
         output_experiments_list = [experiments]
-        output_reflections_list = [reflections]
         expt_names_list = [experiments_filename]
-        refl_names_list = [reflections_filename]
+        if reflections:
+            output_reflections_list = [reflections]
+            refl_names_list = [reflections_filename]
 
+    if reflections:
+        _save_experiments_and_reflections(
+            output_experiments_list,
+            expt_names_list,
+            output_reflections_list,
+            refl_names_list,
+            max_batch_size,
+        )
+    else:
+        _save_only_experiments(output_experiments_list, expt_names_list, max_batch_size)
+
+
+def _save_only_experiments(
+    output_experiments_list, expt_names_list, max_batch_size=None
+):
+    for elist, ename in zip(output_experiments_list, expt_names_list):
+        if max_batch_size is None:
+            logger.info(f"Saving combined experiments to {ename}")
+            elist.as_file(ename)
+        else:
+            for i, indices in enumerate(
+                _split_equal_parts_of_length(
+                    list(range(len(elist))), (len(elist) // max_batch_size) + 1
+                )
+            ):
+                batch_expts = ExperimentList()
+                for sub_id, sub_idx in enumerate(indices):
+                    batch_expts.append(elist[sub_idx])
+                exp_filename = os.path.splitext(ename)[0] + "_%03d.expt" % i
+                logger.info(f"Saving combined experiments to {exp_filename}")
+                batch_expts.as_file(exp_filename)
+
+
+def _save_experiments_and_reflections(
+    output_experiments_list,
+    expt_names_list,
+    output_reflections_list,
+    refl_names_list,
+    max_batch_size=None,
+):
     for elist, table, ename, rname in zip(
         output_experiments_list,
         output_reflections_list,
@@ -306,22 +355,26 @@ def run(args=None) -> None:
     logger.info(dials_version())
 
     if not params.input.experiments:
-        print("No Experiments found in the input")
+        logger.info("No Experiments found in the input")
         parser.print_help()
         return
     if not params.input.reflections:
         if (
             params.output.n_subset is not None
-            and params.output.n_subset_method != random
+            and params.output.n_subset_method != "random"
         ):
-            print("No reflection data found in the input")
+            logger.info(
+                """No reflection data found in the input.
+Reflection tables are needed if n_subset_method != random and n_subset is not None"""
+            )
             parser.print_help()
             return
-    if len(params.input.reflections) != len(params.input.experiments):
-        sys.exit(
-            "The number of input reflections files does not match the "
-            "number of input experiments"
-        )
+    else:
+        if len(params.input.reflections) != len(params.input.experiments):
+            sys.exit(
+                "The number of input reflections files does not match the "
+                "number of input experiments"
+            )
 
     # we want a list of experiment lists and list of experiment tables (one per input file)
     experiment_lists: List[ExperimentList] = [
@@ -330,12 +383,15 @@ def run(args=None) -> None:
     reflection_tables: List[flex.reflection_table] = [
         o.data for o in params.input.reflections
     ]
-
-    expts, refls = combine_experiments(params, experiment_lists, reflection_tables)
+    if reflection_tables:
+        expts, refls = combine_experiments(params, experiment_lists, reflection_tables)
+    else:
+        expts = combine_experiments_no_reflections(params, experiment_lists)
+        refls = None
     save_combined_experiments(
         expts,
+        params.clustering,
         refls,
-        clustering=params.clustering,
         max_batch_size=params.output.max_batch_size,
         experiments_filename=params.output.experiments_filename,
         reflections_filename=params.output.reflections_filename,

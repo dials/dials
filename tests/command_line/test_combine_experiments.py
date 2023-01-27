@@ -16,7 +16,11 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
 from dials.array_family import flex
-from dials.command_line.combine_experiments import combine_experiments, phil_scope
+from dials.command_line.combine_experiments import (
+    combine_experiments,
+    combine_experiments_no_reflections,
+    phil_scope,
+)
 
 
 def test(dials_regression, tmp_path):
@@ -207,8 +211,11 @@ def test(dials_regression, tmp_path):
     assert not tmp_path.joinpath("test_by_detector_002.refl").is_file()
 
 
-@pytest.mark.parametrize("with_identifiers", ["True", "False"])
-def test_combine_clustering(dials_data, tmp_path, with_identifiers):
+@pytest.mark.parametrize(
+    "with_identifiers,with_reflections",
+    [("True", "True"), ("False", "True"), ("True", "False")],
+)
+def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflections):
     """Test with the clustering.use=True option.
 
     Need to use an integrated dataset for this option.
@@ -231,14 +238,19 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
             (
                 f"  input.experiments={tmp_path / f'{i}.expt'}\n"
                 + f"  input.reflections={tmp_path / f'{i}.refl'}"
+                if with_reflections
+                else ""
             )
             for i in [0, 1, 2, 3, 4]
         )
+
     else:
         phil_input = "\n".join(
             (
                 f"  input.experiments={data_dir}/experiments_{i}.json\n"
                 + f"  input.reflections={data_dir}/reflections_{i}.pickle"
+                if with_reflections
+                else ""
             )
         )
 
@@ -259,19 +271,21 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
     #   combined_cluster_2 (3 expts)
 
     assert not result.returncode and not result.stderr
-    assert tmp_path.joinpath("combined_cluster2.refl").is_file()
     assert tmp_path.joinpath("combined_cluster2.expt").is_file()
-    assert tmp_path.joinpath("combined_cluster1.refl").is_file()
     assert tmp_path.joinpath("combined_cluster1.expt").is_file()
+    if with_reflections:
+        assert tmp_path.joinpath("combined_cluster2.refl").is_file()
+        assert tmp_path.joinpath("combined_cluster1.refl").is_file()
 
     exps = load.experiment_list(tmp_path / "combined_cluster1.expt", check_format=False)
     assert len(exps) == 2
-    refls = flex.reflection_table.from_file(tmp_path / "combined_cluster1.refl")
-    assert list(set(refls["id"])) == [0, 1]
     exps = load.experiment_list(tmp_path / "combined_cluster2.expt", check_format=False)
     assert len(exps) == 3
-    refls = flex.reflection_table.from_file(tmp_path / "combined_cluster2.refl")
-    assert list(set(refls["id"])) == [0, 1, 2]
+    if with_reflections:
+        refls = flex.reflection_table.from_file(tmp_path / "combined_cluster1.refl")
+        assert list(set(refls["id"])) == [0, 1]
+        refls = flex.reflection_table.from_file(tmp_path / "combined_cluster2.refl")
+        assert list(set(refls["id"])) == [0, 1, 2]
 
 
 @pytest.fixture
@@ -445,3 +459,8 @@ def test_combine_imagesets(dials_data, tmp_path):
 
     # Check that we have preserved unindexed reflections for all of these
     assert set(refls.select(refls["id"] == -1)["imageset_id"]) == {0, 1, 2, 3}
+
+    # test combining without reflections
+    expts2 = combine_experiments_no_reflections(params, list_of_elists)
+    assert len(expts2) == 4
+    assert expts2.identifiers() == expts.identifiers()

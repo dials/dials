@@ -3,9 +3,8 @@ from __future__ import annotations
 import logging
 import random
 import sys
-from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Iterator, List, Optional, Tuple, TypeVar
+from typing import List, Optional, Tuple
 
 import dxtbx.model
 import dxtbx.model.compare as compare
@@ -27,14 +26,7 @@ from dials.algorithms.integration.stills_significance_filter import (
 from dials.array_family import flex
 from dials.util import tabulate
 
-T = TypeVar("T")
-
 logger = logging.getLogger(__name__)
-
-
-def _split_equal_parts_of_length(a: Sequence[T], n: int) -> Iterator[Sequence[T]]:
-    k, m = divmod(len(a), n)
-    return (a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
 def find_experiment_in(
@@ -182,7 +174,7 @@ class CombineWithReference:
         )
 
 
-def do_unit_cell_clustering(experiments, reflections, dendrogram=False, threshold=1000):
+def do_unit_cell_clustering(experiments, dendrogram=False, threshold=1000):
     if dendrogram:
         import matplotlib.pyplot as plt
 
@@ -306,19 +298,12 @@ class significance_params:
     significance_filter: phil.scope_extract
 
 
-def select_subset(
-    experiments: ExperimentList,
-    reflections: flex.reflection_table,
-    n_subset: int = 1,
-    n_subset_method: str = "random",
-    n_refl_panel_list=None,
-    significance_filter: Optional[phil.scope_extract] = None,
-) -> Tuple[ExperimentList, flex.reflection_table]:
+def _select_random_subset(experiments, reflections=None, n_subset: int = 1):
+    n_picked = 0
+    indices = list(range(len(experiments)))
     subset_exp = ExperimentList()
     subset_refls = flex.reflection_table()
-    if n_subset_method == "random":  # Doesn't require reflections
-        n_picked = 0
-        indices = list(range(len(experiments)))
+    if reflections:
         if reflections.experiment_identifiers().keys():
             indices_to_sel = []
             while n_picked < n_subset:
@@ -341,7 +326,32 @@ def select_subset(
         logger.info(
             f"Selecting a random subset of {n_subset} experiments out of {len(experiments)} total."
         )
-    elif n_subset_method == "n_refl":  # Does require reflections
+    else:
+        while n_picked < n_subset:
+            idx = indices.pop(random.randint(0, len(indices) - 1))
+            subset_exp.append(experiments[idx])
+            n_picked += 1
+        logger.info(
+            f"Selecting a random subset of {n_subset} experiments out of {len(experiments)} total."
+        )
+    return subset_exp, subset_refls
+
+
+def select_subset(
+    experiments: ExperimentList,
+    reflections: flex.reflection_table,
+    n_subset: int = 1,
+    n_subset_method: str = "random",
+    n_refl_panel_list=None,
+    significance_filter: Optional[phil.scope_extract] = None,
+) -> Tuple[ExperimentList, flex.reflection_table]:
+    subset_exp = ExperimentList()
+    subset_refls = flex.reflection_table()
+    if n_subset_method == "random":  # Doesn't require reflections
+        subset_exp, subset_refls = _select_random_subset(
+            experiments, reflections, n_subset
+        )
+    elif n_subset_method == "n_refl":
         if n_refl_panel_list is None:
             refls_subset = reflections
         else:
@@ -368,7 +378,7 @@ def select_subset(
             f"Selecting a subset of {n_subset} experiments with highest number of reflections out of {len(experiments)} total."
         )
 
-    elif n_subset_method == "significance_filter":  # Does require reflections
+    elif n_subset_method == "significance_filter":
         if significance_filter is None:
             significance_filter = sig_filter_phil_scope.extract()
         significance_filter.enable = True
@@ -395,8 +405,59 @@ def select_subset(
     return subset_exp, subset_refls
 
 
+def combine_experiments_no_reflections(params, experiment_lists):
+    """Run combine_experiments, without corresponding reflection tables"""
+    flat_exps = ExperimentList()
+    try:
+        for elist in experiment_lists:
+            flat_exps.extend(elist)
+    except RuntimeError:
+        sys.exit(  # FIXME
+            "Unable to combine experiments. Are experiment IDs unique? "
+            "You may need to run dials.assign_experiment_identifiers first to "
+            "reset IDs."
+        )
+
+    ref_beam, ref_goniometer, ref_scan, ref_crystal, ref_detector = parse_ref_models(
+        flat_exps, params.reference_from_experiment
+    )
+    combine = CombineWithReference(
+        beam=ref_beam,
+        goniometer=ref_goniometer,
+        scan=ref_scan,
+        crystal=ref_crystal,
+        detector=ref_detector,
+        params=params,
+    )
+    experiments = ExperimentList()
+    for elist in experiment_lists:
+        for expt in elist:
+            try:
+                experiments.append(combine(expt))
+            except ComparisonError as e:
+                # When we failed tolerance checks, give a useful error message
+                (i, index) = find_experiment_in(expt, experiment_lists)
+                sys.exit(  # FIXME - raise RuntimeError?
+                    "Model didn't match reference within required tolerance for experiment {} in input file {}:"
+                    "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
+                        index, i, str(e)
+                    )
+                )
+    # select a subset if requested
+    if params.output.n_subset is not None and len(experiments) > params.output.n_subset:
+        assert (
+            params.output.n_subset_method == "random"
+        ), "Combining only experiments and not reflections is only possible with n_subset_method=random if n_subset is not None"
+        experiments, _ = _select_random_subset(
+            experiments,
+            reflections=None,
+            n_subset=params.output.n_subset,
+        )
+    return experiments
+
+
 def combine_experiments(params, experiment_lists, reflection_tables):
-    """Run combine_experiments, but allow passing in of parameters"""
+    """Run combine_experiments"""
 
     flat_exps = ExperimentList()
     try:
