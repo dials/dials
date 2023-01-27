@@ -15,8 +15,8 @@ import pytest
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
-import dials.command_line.combine_experiments as combine_experiments
 from dials.array_family import flex
+from dials.command_line.combine_experiments import combine_experiments, phil_scope
 
 
 def test(dials_regression, tmp_path):
@@ -391,7 +391,7 @@ def test_combine_nsubset(
     assert list(set(refls["id"])) == [0, 1, 2]
 
 
-def test_failed_tolerance_error(dials_regression, monkeypatch):
+def test_failed_tolerance_error(dials_regression):
     """Test that we get a sensible error message on tolerance failures"""
     # Select some experiments to use for combining
     jsons = os.path.join(
@@ -402,47 +402,44 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
         "sweep_{:03d}",
         "{}",
     )
-    files = [
-        jsons.format(2, "experiments.json"),
-        jsons.format(2, "reflections.pickle"),
-        jsons.format(3, "experiments.json"),
-        jsons.format(3, "reflections.pickle"),
+    list_of_elists = [
+        load.experiment_list(jsons.format(2, "experiments.json"), check_format=False),
+        load.experiment_list(jsons.format(3, "experiments.json"), check_format=False),
+    ]
+    list_of_tables = [
+        flex.reflection_table.from_file(jsons.format(2, "reflections.pickle")),
+        flex.reflection_table.from_file(jsons.format(4, "reflections.pickle")),
     ]
 
-    # Use the combine script
-    script = combine_experiments.Script()
-    # Disable writing output
-    monkeypatch.setattr(script, "_save_output", lambda *args: None)
-    # Parse arguments and configure
-    params, options = script.parser.parse_args(files)
+    params = phil_scope.extract()
     params.reference_from_experiment.beam = 0
 
     # Validate that these pass
-    script.run_with_preparsed(params, options)
+    combine_experiments(params, list_of_elists, list_of_tables)
 
     # Now, alter the beam to check it doesn't pass
-    exp_2 = params.input.experiments[1].data[0]
-    exp_2.beam.set_wavelength(exp_2.beam.get_wavelength() * 2)
+    expt2 = list_of_elists[1][0]
+    expt2.beam.set_wavelength(expt2.beam.get_wavelength() * 2)
 
     with pytest.raises(SystemExit) as exc:
-        script.run_with_preparsed(params, options)
+        combine_experiments(params, list_of_elists, list_of_tables)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)
 
 
 def test_combine_imagesets(dials_data, tmp_path):
     data = dials_data("l_cysteine_dials_output", pathlib=True)
-    args = [
-        *sorted(data.glob("*_integrated.pickle")),
-        *sorted(data.glob("*_integrated_experiments.json")),
-        f"experiments_filename={tmp_path}/combined.expt",
-        f"reflections_file={tmp_path}/combined.refl",
+    list_of_elists = [
+        load.experiment_list(f, check_format=False)
+        for f in sorted(data.glob("*_integrated_experiments.json"))
     ]
-    combine_experiments.run([str(x) for x in args])
-
-    comb = flex.reflection_table.from_file(tmp_path / "combined.refl")
-
-    assert set(comb["imageset_id"]) == {0, 1, 2, 3}
+    list_of_tables = [
+        flex.reflection_table.from_file(f)
+        for f in sorted(data.glob("*_integrated.pickle"))
+    ]
+    params = phil_scope.extract()
+    expts, refls = combine_experiments(params, list_of_elists, list_of_tables)
+    assert set(refls["imageset_id"]) == {0, 1, 2, 3}
 
     # Check that we have preserved unindexed reflections for all of these
-    assert set(comb.select(comb["id"] == -1)["imageset_id"]) == {0, 1, 2, 3}
+    assert set(refls.select(refls["id"] == -1)["imageset_id"]) == {0, 1, 2, 3}
