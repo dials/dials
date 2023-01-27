@@ -4,15 +4,18 @@ import logging
 import os
 import random
 import sys
-from typing import List, Tuple
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
-import dxtbx.model
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx import phil
 from libtbx.phil import parse
-from scitbx import matrix
 
 import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
+from dials.algorithms.integration.stills_significance_filter import (
+    phil_scope as sig_filter_phil_scope,
+)
 from dials.array_family import flex
 from dials.util import log, tabulate
 from dials.util.combine_experiments import (
@@ -21,8 +24,9 @@ from dials.util.combine_experiments import (
     _split_equal_parts_of_length,
     do_unit_cell_clustering,
     find_experiment_in,
+    parse_ref_models,
 )
-from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.options import ArgumentParser
 from dials.util.version import dials_version
 
 logger = logging.getLogger(__name__)
@@ -191,102 +195,113 @@ phil_scope = parse(
 )
 
 
-def average_detectors(target, panelgroups, depth, average_hierarchy_level=None):
-    # Recursive function to do the averaging
-
-    if average_hierarchy_level is None or depth == average_hierarchy_level:
-        n = len(panelgroups)
-        sum_fast = matrix.col((0.0, 0.0, 0.0))
-        sum_slow = matrix.col((0.0, 0.0, 0.0))
-        sum_ori = matrix.col((0.0, 0.0, 0.0))
-
-        # Average the d matrix vectors
-        for pg in panelgroups:
-            sum_fast += matrix.col(pg.get_local_fast_axis())
-            sum_slow += matrix.col(pg.get_local_slow_axis())
-            sum_ori += matrix.col(pg.get_local_origin())
-        sum_fast /= n
-        sum_slow /= n
-        sum_ori /= n
-
-        # Re-orthagonalize the slow and the fast vectors by rotating around the cross product
-        c = sum_fast.cross(sum_slow)
-        a = sum_fast.angle(sum_slow, deg=True) / 2
-        sum_fast = sum_fast.rotate_around_origin(c, a - 45, deg=True)
-        sum_slow = sum_slow.rotate_around_origin(c, -(a - 45), deg=True)
-
-        target.set_local_frame(sum_fast, sum_slow, sum_ori)
-
-    if target.is_group():
-        # Recurse
-        for i, target_pg in enumerate(target):
-            average_detectors(
-                target_pg,
-                [pg[i] for pg in panelgroups],
-                depth + 1,
-                average_hierarchy_level,
-            )
+@dataclass
+class significance_params:
+    significance_filter: phil.scope_extract
 
 
-def parse_ref_models(
-    flat_exps: ExperimentList, reference_from_experiment: phil_scope
-) -> Tuple[
-    None | dxtbx.model.beam,
-    None | dxtbx.model.goniometer,
-    None | dxtbx.model.scan,
-    None | dxtbx.model.crystal,
-    None | dxtbx.model.detector,
-]:
-    ref_beam = reference_from_experiment.beam
-    ref_goniometer = reference_from_experiment.goniometer
-    ref_scan = reference_from_experiment.scan
-    ref_crystal = reference_from_experiment.crystal
-    ref_detector = reference_from_experiment.detector
-
-    if ref_beam is not None:
-        try:
-            ref_beam = flat_exps[ref_beam].beam
-        except IndexError:
-            sys.exit(f"{ref_beam} is not a valid experiment ID")
-
-    if ref_goniometer is not None:
-        try:
-            ref_goniometer = flat_exps[ref_goniometer].goniometer
-        except IndexError:
-            sys.exit(f"{ref_goniometer} is not a valid experiment ID")
-
-    if ref_scan is not None:
-        try:
-            ref_scan = flat_exps[ref_scan].scan
-        except IndexError:
-            sys.exit(f"{ref_scan} is not a valid experiment ID")
-
-    if ref_crystal is not None:
-        try:
-            ref_crystal = flat_exps[ref_crystal].crystal
-        except IndexError:
-            sys.exit(f"{ref_crystal} is not a valid experiment ID")
-
-    if ref_detector is not None:
-        assert not reference_from_experiment.average_detector
-        try:
-            ref_detector = flat_exps[ref_detector].detector
-        except IndexError:
-            sys.exit(f"{ref_detector} is not a valid experiment ID")
-    elif reference_from_experiment.average_detector:
-        # Average all of the detectors together
-        ref_detector = flat_exps[0].detector
-        average_detectors(
-            ref_detector.hierarchy(),
-            [e.detector.hierarchy() for e in flat_exps],
-            0,
-            reference_from_experiment.average_hierarchy_level,
+def select_subset(
+    experiments: ExperimentList,
+    reflections: flex.reflection_table,
+    n_subset: int = 1,
+    n_subset_method: str = "random",
+    n_refl_panel_list=None,
+    significance_filter: Optional[phil.scope_extract] = None,
+) -> Tuple[ExperimentList, flex.reflection_table]:
+    subset_exp = ExperimentList()
+    subset_refls = flex.reflection_table()
+    if n_subset_method == "random":
+        n_picked = 0
+        indices = list(range(len(experiments)))
+        if reflections.experiment_identifiers().keys():
+            indices_to_sel = []
+            while n_picked < n_subset:
+                idx = indices.pop(random.randint(0, len(indices) - 1))
+                indices_to_sel.append(idx)
+                n_picked += 1
+            # make sure select in order.
+            for idx in sorted(indices_to_sel):
+                subset_exp.append(experiments[idx])
+            subset_refls = reflections.select(subset_exp)
+            subset_refls.reset_ids()
+        else:
+            while n_picked < n_subset:
+                idx = indices.pop(random.randint(0, len(indices) - 1))
+                subset_exp.append(experiments[idx])
+                refls = reflections.select(reflections["id"] == idx)
+                refls["id"] = flex.int(len(refls), n_picked)
+                subset_refls.extend(refls)
+                n_picked += 1
+        logger.info(
+            f"Selecting a random subset of {n_subset} experiments out of {len(experiments)} total."
         )
-    return (ref_beam, ref_goniometer, ref_scan, ref_crystal, ref_detector)
+    elif n_subset_method == "n_refl":
+        if n_refl_panel_list is None:
+            refls_subset = reflections
+        else:
+            sel = flex.bool(len(reflections), False)
+            for p in n_refl_panel_list:
+                sel |= reflections["panel"] == p
+            refls_subset = reflections.select(sel)
+        refl_counts = flex.int()
+        for expt_id in range(len(experiments)):
+            refl_counts.append((refls_subset["id"] == expt_id).count(True))
+        sort_order = flex.sort_permutation(refl_counts, reverse=True)
+        if reflections.experiment_identifiers().keys():
+            for idx in sorted(sort_order[:n_subset]):
+                subset_exp.append(experiments[idx])
+            subset_refls = reflections.select(subset_exp)
+            subset_refls.reset_ids()
+        else:
+            for expt_id, idx in enumerate(sort_order[:n_subset]):
+                subset_exp.append(experiments[idx])
+                refls = reflections.select(reflections["id"] == idx)
+                refls["id"] = flex.int(len(refls), expt_id)
+                subset_refls.extend(refls)
+        logger.info(
+            f"Selecting a subset of {n_subset} experiments with highest number of reflections out of {len(experiments)} total."
+        )
+
+    elif n_subset_method == "significance_filter":
+        if significance_filter is None:
+            significance_filter = sig_filter_phil_scope.extract()
+        significance_filter.enable = True
+        sig_filter = SignificanceFilter(significance_params(significance_filter))
+        refls_subset = sig_filter(experiments, reflections)
+        refl_counts = flex.int()
+        for expt_id in range(len(experiments)):
+            refl_counts.append((refls_subset["id"] == expt_id).count(True))
+        sort_order = flex.sort_permutation(refl_counts, reverse=True)
+        if reflections.experiment_identifiers().keys():
+            for idx in sorted(sort_order[:n_subset]):
+                subset_exp.append(experiments[idx])
+            subset_refls = reflections.select(subset_exp)
+            subset_refls.reset_ids()
+        else:
+            for expt_id, idx in enumerate(sort_order[:n_subset]):
+                subset_exp.append(experiments[idx])
+                refls = reflections.select(reflections["id"] == idx)
+                refls["id"] = flex.int(len(refls), expt_id)
+                subset_refls.extend(refls)
+    else:
+        raise ValueError(f"Invalid option for n_subset_method: {n_subset_method}")
+
+    return subset_exp, subset_refls
 
 
-def run_with_preparsed(params, flat_exps):
+def run_with_preparsed(params, experiment_lists, reflection_tables):
     """Run combine_experiments, but allow passing in of parameters"""
+
+    flat_exps = ExperimentList()
+    try:
+        for elist in experiment_lists:
+            flat_exps.extend(elist)
+    except RuntimeError:
+        sys.exit(  # FIXME
+            "Unable to combine experiments. Are experiment IDs unique? "
+            "You may need to run dials.assign_experiment_identifiers first to "
+            "reset IDs."
+        )
 
     ref_beam, ref_goniometer, ref_scan, ref_crystal, ref_detector = parse_ref_models(
         flat_exps, params.reference_from_experiment
@@ -303,22 +318,16 @@ def run_with_preparsed(params, flat_exps):
 
     # set up global experiments and reflections lists
     reflections = flex.reflection_table()
+    experiments = ExperimentList()
     global_id = 0
     skipped_expts_min_refl = 0
     skipped_expts_max_refl = 0
-    experiments = ExperimentList()
 
     # loop through the input, building up the global lists
     nrefs_per_exp = []
-    for ref_wrapper, exp_wrapper in zip(
-        params.input.reflections, params.input.experiments
-    ):
-        refs = ref_wrapper.data
-        exps = exp_wrapper.data
-
+    for refs, exps in zip(reflection_tables, experiment_lists):
         # Record initial mapping of ids for updating later.
         ids_map = dict(refs.experiment_identifiers())
-
         # Keep track of mapping of imageset_ids old->new within this experimentlist
         imageset_result_map = {}
 
@@ -355,14 +364,14 @@ def run_with_preparsed(params, flat_exps):
             except ComparisonError as e:
                 # When we failed tolerance checks, give a useful error message
                 (path, index) = find_experiment_in(exp, params.input.experiments)
-                sys.exit(
+                sys.exit(  # FIXME - raise RuntimeError?
                     "Model didn't match reference within required tolerance for experiment {} in {}:"
                     "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
                         index, path, str(e)
                     )
                 )
 
-            # Rewrite imageset_id, if the experiment has and imageset
+            # Rewrite imageset_id, if the experiment has an imageset
             if exp.imageset and "imageset_id" in sub_ref:
                 # Get the index of the imageset for this experiment and record how it changed
                 new_imageset_id = experiments.imagesets().index(
@@ -392,113 +401,39 @@ def run_with_preparsed(params, flat_exps):
                 subs["imageset_id"] = flex.int(len(subs), imageset_result_map[old_id])
                 reflections.extend(subs)
 
+    # Finished building global lists
+
     if (
         params.output.min_reflections_per_experiment is not None
         and skipped_expts_min_refl > 0
     ):
-        print(
-            "Removed {} experiments with fewer than {} reflections".format(
-                skipped_expts_min_refl, params.output.min_reflections_per_experiment
-            )
+        logger.info(
+            f"Removed {skipped_expts_min_refl} experiments with fewer than {params.output.min_reflections_per_experiment} reflections"
         )
     if (
         params.output.max_reflections_per_experiment is not None
         and skipped_expts_max_refl > 0
     ):
-        print(
-            "Removed {} experiments with more than {} reflections".format(
-                skipped_expts_max_refl, params.output.max_reflections_per_experiment
-            )
+        logger.info(
+            f"Removed {skipped_expts_max_refl} experiments with more than {params.output.max_reflections_per_experiment} reflections"
         )
 
     # print number of reflections per experiment
 
     header = ["Experiment", "Number of reflections"]
     rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
-    print(tabulate(rows, header))
+    logger.info(tabulate(rows, header))
 
     # save a random subset if requested
     if params.output.n_subset is not None and len(experiments) > params.output.n_subset:
-        subset_exp = ExperimentList()
-        subset_refls = flex.reflection_table()
-        if params.output.n_subset_method == "random":
-            n_picked = 0
-            indices = list(range(len(experiments)))
-            if reflections.experiment_identifiers().keys():
-                indices_to_sel = []
-                while n_picked < params.output.n_subset:
-                    idx = indices.pop(random.randint(0, len(indices) - 1))
-                    indices_to_sel.append(idx)
-                    n_picked += 1
-                # make sure select in order.
-                for idx in sorted(indices_to_sel):
-                    subset_exp.append(experiments[idx])
-                subset_refls = reflections.select(subset_exp)
-                subset_refls.reset_ids()
-            else:
-                while n_picked < params.output.n_subset:
-                    idx = indices.pop(random.randint(0, len(indices) - 1))
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select(reflections["id"] == idx)
-                    refls["id"] = flex.int(len(refls), n_picked)
-                    subset_refls.extend(refls)
-                    n_picked += 1
-            print(
-                "Selecting a random subset of {} experiments out of {} total.".format(
-                    params.output.n_subset, len(experiments)
-                )
-            )
-        elif params.output.n_subset_method == "n_refl":
-            if params.output.n_refl_panel_list is None:
-                refls_subset = reflections
-            else:
-                sel = flex.bool(len(reflections), False)
-                for p in params.output.n_refl_panel_list:
-                    sel |= reflections["panel"] == p
-                refls_subset = reflections.select(sel)
-            refl_counts = flex.int()
-            for expt_id in range(len(experiments)):
-                refl_counts.append((refls_subset["id"] == expt_id).count(True))
-            sort_order = flex.sort_permutation(refl_counts, reverse=True)
-            if reflections.experiment_identifiers().keys():
-                for idx in sorted(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                subset_refls = reflections.select(subset_exp)
-                subset_refls.reset_ids()
-            else:
-                for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select(reflections["id"] == idx)
-                    refls["id"] = flex.int(len(refls), expt_id)
-                    subset_refls.extend(refls)
-            print(
-                "Selecting a subset of {} experiments with highest number of reflections out of {} total.".format(
-                    params.output.n_subset, len(experiments)
-                )
-            )
-
-        elif params.output.n_subset_method == "significance_filter":
-            params.output.significance_filter.enable = True
-            sig_filter = SignificanceFilter(params.output)
-            refls_subset = sig_filter(experiments, reflections)
-            refl_counts = flex.int()
-            for expt_id in range(len(experiments)):
-                refl_counts.append((refls_subset["id"] == expt_id).count(True))
-            sort_order = flex.sort_permutation(refl_counts, reverse=True)
-            if reflections.experiment_identifiers().keys():
-                for idx in sorted(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                subset_refls = reflections.select(subset_exp)
-                subset_refls.reset_ids()
-            else:
-                for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select(reflections["id"] == idx)
-                    refls["id"] = flex.int(len(refls), expt_id)
-                    subset_refls.extend(refls)
-
-        experiments = subset_exp
-        reflections = subset_refls
+        experiments, reflections = select_subset(
+            experiments,
+            reflections,
+            n_subset=params.output.n_subset,
+            n_subset_method=params.output.n_subset_method,
+            n_refl_panel_list=params.output.n_refl_panel_list,
+            significance_filter=params.output.significance_filter,
+        )
 
     # cluster the resulting experiments if requested
     if params.clustering.use and len(experiments) > 1:
@@ -641,16 +576,15 @@ def run(args=None) -> None:
             "number of input experiments"
         )
 
-    try:
-        flat_exps = flatten_experiments(params.input.experiments)
-    except RuntimeError:
-        sys.exit(
-            "Unable to combine experiments. Are experiment IDs unique? "
-            "You may need to run dials.assign_experiment_identifiers first to "
-            "reset IDs."
-        )
+    # we want a list of experiment lists and list of experiment tables (one per input file)
+    experiment_lists: List[ExperimentList] = [
+        ExperimentList(o.data) for o in params.input.experiments
+    ]
+    reflection_tables: List[flex.reflection_table] = [
+        o.data for o in params.input.reflections
+    ]
 
-    run_with_preparsed(params, flat_exps)
+    run_with_preparsed(params, experiment_lists, reflection_tables)
 
 
 if __name__ == "__main__":
