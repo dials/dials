@@ -190,12 +190,9 @@ def run_macrocycle(params, reflections, experiments):
     """
     # Get the refiner
     logger.info("Configuring refiner")
-    try:
-        refiner = RefinerFactory.from_parameters_data_experiments(
-            params, reflections, experiments
-        )
-    except DialsRefineConfigError as e:
-        sys.exit(str(e))
+    refiner = RefinerFactory.from_parameters_data_experiments(
+        params, reflections, experiments
+    )
 
     # Refine the geometry
     nexp = len(experiments)
@@ -205,10 +202,7 @@ def run_macrocycle(params, reflections, experiments):
         logger.info(f"Performing refinement of {nexp} Experiments...")
 
     # Refine and get the refinement history
-    try:
-        history = refiner.run()
-    except DialsRefineRuntimeError as e:
-        sys.exit(str(e))
+    history = refiner.run()
 
     # Update predictions for all indexed reflections
     logger.info("Updating predictions for indexed reflections")
@@ -405,9 +399,12 @@ def run(args=None, phil=working_phil):
         logger.info(diff_phil)
 
     # Run refinement
-    experiments, reflections, refiner, history = run_dials_refine(
-        experiments, reflections, params
-    )
+    try:
+        experiments, reflections, refiner, history = run_dials_refine(
+            experiments, reflections, params
+        )
+    except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
+        sys.exit(str(e))
 
     # For the usual case of refinement of one crystal, print that model for information
     crystals = experiments.crystals()
