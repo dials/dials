@@ -278,6 +278,31 @@ def run_dials_refine(experiments, reflections, params):
 
     """
 
+    # Warn about potentially unhelpful options
+    if params.refinement.mp.nproc > 1:
+        logger.warning(
+            "Setting nproc > 1 is only helpful in rare "
+            "circumstances. It is not recommended for typical data processing "
+            "tasks."
+        )
+
+    if params.refinement.parameterisation.scan_varying is not False:
+        # duplicate crystal if necessary for scan varying - will need
+        # to compare the scans with crystals - if not 1:1 will need to
+        # split the crystals
+
+        crystal_has_scan = {}
+        for j, e in enumerate(experiments):
+            if e.crystal in crystal_has_scan:
+                if e.scan is not crystal_has_scan[e.crystal]:
+                    logger.info(
+                        "Duplicating crystal model for scan-varying refinement of experiment %d",
+                        j,
+                    )
+                    e.crystal = copy.deepcopy(e.crystal)
+            else:
+                crystal_has_scan[e.crystal] = e.scan
+
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:
         params.refinement.refinery.journal.track_parameter_correlation = True
@@ -378,31 +403,6 @@ def run(args=None, phil=working_phil):
     if diff_phil:
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
-
-    # Warn about potentially unhelpful options
-    if params.refinement.mp.nproc > 1:
-        logger.warning(
-            "Setting nproc > 1 is only helpful in rare "
-            "circumstances. It is not recommended for typical data processing "
-            "tasks."
-        )
-
-    if params.refinement.parameterisation.scan_varying is not False:
-        # duplicate crystal if necessary for scan varying - will need
-        # to compare the scans with crystals - if not 1:1 will need to
-        # split the crystals
-
-        crystal_has_scan = {}
-        for j, e in enumerate(experiments):
-            if e.crystal in crystal_has_scan:
-                if e.scan is not crystal_has_scan[e.crystal]:
-                    logger.info(
-                        "Duplicating crystal model for scan-varying refinement of experiment %d",
-                        j,
-                    )
-                    e.crystal = copy.deepcopy(e.crystal)
-            else:
-                crystal_has_scan[e.crystal] = e.scan
 
     # Run refinement
     experiments, reflections, refiner, history = run_dials_refine(
