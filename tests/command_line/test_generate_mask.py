@@ -86,8 +86,8 @@ def test_generate_mask_with_d_min_d_max(experiments_masks, tmpdir):
     experiments, masks = experiments_masks
 
     params = phil_scope.fetch().extract()
-    params.d_min = 3
-    params.d_max = 2
+    params.d_min = 2
+    params.d_max = 3
     with tmpdir.as_cwd():
         generate_mask(experiments, params)
 
