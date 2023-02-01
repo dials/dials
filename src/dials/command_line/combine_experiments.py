@@ -793,7 +793,7 @@ class Script:
                     batch_refls.extend(sub_refls)
             name_suffix = f"_{batch_i:03d}" if batch_size else ""
             expt_name = os.path.splitext(expt_name)[0] + name_suffix + ".expt"
-            refl_name = os.path.splitext(refl_name)[0] + name_suffix + ".expt"
+            refl_name = os.path.splitext(refl_name)[0] + name_suffix + ".refl"
             print(f"Saving combined experiments to {expt_name}")
             batch_expts.as_file(expt_name)
             print(f"Saving combined reflections to {refl_name}")
