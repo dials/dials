@@ -753,7 +753,7 @@ class Script:
                 ebase = os.path.splitext(params.output.experiments_filename)[0]
                 rbase = os.path.splitext(params.output.reflections_filename)[0]
                 expt_name = f"{ebase}_cluster{i_cluster:d}.expt"
-                refl_name = f"{rbase}_cluster{i_cluster:d}.expt"
+                refl_name = f"{rbase}_cluster{i_cluster:d}.refl"
                 max_bsize = params.output.max_batch_size
                 self._save_output(expts, refl, expt_name, refl_name, max_bsize)
 
