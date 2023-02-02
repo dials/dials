@@ -255,23 +255,23 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
         working_directory=tmp_path,
     )
     # this should create two clusters:
+    #   combined_cluster_0 (3 expts)
     #   combined_cluster_1 (2 expts)
-    #   combined_cluster_2 (3 expts)
 
     assert not result.returncode and not result.stderr
-    assert tmp_path.joinpath("combined_cluster2.refl").is_file()
-    assert tmp_path.joinpath("combined_cluster2.expt").is_file()
+    assert tmp_path.joinpath("combined_cluster0.refl").is_file()
+    assert tmp_path.joinpath("combined_cluster0.expt").is_file()
     assert tmp_path.joinpath("combined_cluster1.refl").is_file()
     assert tmp_path.joinpath("combined_cluster1.expt").is_file()
 
+    exps = load.experiment_list(tmp_path / "combined_cluster0.expt", check_format=False)
+    assert len(exps) == 3
+    refls = flex.reflection_table.from_file(tmp_path / "combined_cluster0.refl")
+    assert list(set(refls["id"])) == [0, 1, 2]
     exps = load.experiment_list(tmp_path / "combined_cluster1.expt", check_format=False)
     assert len(exps) == 2
     refls = flex.reflection_table.from_file(tmp_path / "combined_cluster1.refl")
     assert list(set(refls["id"])) == [0, 1]
-    exps = load.experiment_list(tmp_path / "combined_cluster2.expt", check_format=False)
-    assert len(exps) == 3
-    refls = flex.reflection_table.from_file(tmp_path / "combined_cluster2.refl")
-    assert list(set(refls["id"])) == [0, 1, 2]
 
 
 @pytest.fixture
