@@ -359,24 +359,46 @@ def run_dials_refine(experiments, reflections, params):
     # Look for disjoint sets of experiments
     disjoint_sets = _find_disjoint_sets(experiments)
 
-    if params.n_static_macrocycles == 1:
-        refiner, reflections, history = run_macrocycle(params, reflections, experiments)
-        experiments = refiner.get_experiments()
+    if len(disjoint_sets) == 1:
+        # No splitting required, this is one interdependent refinement job
+        refinement_sets = [(experiments, reflections, params)]
     else:
-        for i in range(params.n_static_macrocycles):
-            logger.info("\nStatic refinement macrocycle %s", i + 1)
+        # Split into independent refinement jobs, unless there are constraints
+        # or restraints that might break independence
+        pass
+
+    refinement_results = []
+    for (experiments, reflections, params) in refinement_sets:
+        if params.n_static_macrocycles == 1:
+            refiner, reflections, history = run_macrocycle(
+                params, reflections, experiments
+            )
+            experiments = refiner.get_experiments()
+        else:
+            for i in range(params.n_static_macrocycles):
+                logger.info("\nStatic refinement macrocycle %s", i + 1)
+                refiner, reflections, history = run_macrocycle(
+                    params, reflections, experiments
+                )
+                experiments = refiner.get_experiments()
+
+        # Scan-varying macrocycle, if appropriate
+        if scan_varying is Auto and refiner.experiment_type == "scans":
+            logger.info("\nScan-varying refinement")
+            params.refinement.parameterisation.scan_varying = True
+            params.refinement.parameterisation.sparse = sparse
             refiner, reflections, history = run_macrocycle(
                 params, reflections, experiments
             )
             experiments = refiner.get_experiments()
 
-    # Scan-varying macrocycle, if appropriate
-    if scan_varying is Auto and refiner.experiment_type == "scans":
-        logger.info("\nScan-varying refinement")
-        params.refinement.parameterisation.scan_varying = True
-        params.refinement.parameterisation.sparse = sparse
-        refiner, reflections, history = run_macrocycle(params, reflections, experiments)
-        experiments = refiner.get_experiments()
+        refinement_results.append((experiments, reflections, refiner, history))
+
+    if len(refinement_results) == 1:
+        experiments, reflections, refiner, history = refinement_results[0]
+    else:
+        # Rejoin results in the expected order of experiments
+        pass
 
     return experiments, reflections, refiner, history
 
