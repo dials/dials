@@ -255,6 +255,71 @@ def run_macrocycle(params, reflections, experiments):
     return refiner, reflections, history
 
 
+def _find_disjoint_sets(experiments):
+
+    # Extract parameterisable models from the experiments
+    models = []
+    for experiment in experiments:
+        models.append(
+            [
+                m
+                for m in [
+                    experiment.beam,
+                    experiment.crystal,
+                    experiment.detector,
+                    experiment.goniometer,
+                ]
+                if m is not None
+            ]
+        )
+
+    # Record first set of models
+    sets = [set(models[0])]
+    ids = [
+        [0],
+    ]
+
+    # Go through all other models, matching to previous sets
+    for i, m in enumerate(models[1:]):
+        new_set = set(m)
+        disj = [new_set.isdisjoint(s) for s in sets]
+        if all(disj):
+            # no shared models, so form a new set
+            sets.append(new_set)
+            ids.append([i + 1])
+        else:
+            # models shared with at least one existing set
+            for j, d in enumerate(disj):
+                if d:
+                    continue
+                sets[j].update(new_set)
+                ids[j].append(i + 1)
+
+    # Now combine lists in ids if any are not unique (https://stackoverflow.com/a/4842897)
+    accepted = []
+    while len(ids) > 0:
+        first, *rest = ids
+        first = set(first)
+
+        lf = -1
+        while len(first) > lf:
+            lf = len(first)
+
+            rest2 = []
+            for r in rest:
+                if len(first.intersection(set(r))) > 0:
+                    first |= set(r)
+                else:
+                    rest2.append(r)
+            rest = rest2
+
+        accepted.append(first)
+        ids = rest
+    accepted = [sorted(s) for s in accepted]
+
+    return accepted
+
+
 def run_dials_refine(experiments, reflections, params):
     """Functional interface to tasks performed by the program dials.refine.
 
@@ -290,6 +355,9 @@ def run_dials_refine(experiments, reflections, params):
 
     # Similarly, keep track of sparse to reset that for scan-varying macrocycle
     sparse = params.refinement.parameterisation.sparse
+
+    # Look for disjoint sets of experiments
+    disjoint_sets = _find_disjoint_sets(experiments)
 
     if params.n_static_macrocycles == 1:
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)
