@@ -22,6 +22,7 @@ import logging
 import sys
 
 import libtbx.phil
+from dxtbx.model.experiment_list import ExperimentList
 from libtbx import Auto
 
 import dials.util
@@ -359,13 +360,52 @@ def run_dials_refine(experiments, reflections, params):
     # Look for disjoint sets of experiments
     disjoint_sets = _find_disjoint_sets(experiments)
 
+    # Look for "hidden" links between experiments from constraints or restraints
+    bp = params.refinement.parameterisation.beam
+    ucp = params.refinement.parameterisation.crystal.unit_cell
+    op = params.refinement.parameterisation.crystal.orientation
+    dp = params.refinement.parameterisation.detector
+    gp = params.refinement.parameterisation.goniometer
+    crosslinks = any(
+        (
+            bp.constraints,
+            ucp.constraints,
+            ucp.restraints.tie_to_group,
+            op.constraints,
+            dp.constraints,
+            gp.constraints,
+        )
+    )
+
     if len(disjoint_sets) == 1:
         # No splitting required, this is one interdependent refinement job
         refinement_sets = [(experiments, reflections, params)]
+    elif crosslinks:
+        # Refuse to split because there are restraints or constraints present
+        logger.warning(
+            "The experiments contain disjoint subsets that do not share models. "
+            "However, these will not be refined independently, because restraints "
+            "or constraints may link models between the subsets."
+        )
+        refinement_sets = [(experiments, reflections, params)]
     else:
-        # Split into independent refinement jobs, unless there are constraints
-        # or restraints that might break independence
-        pass
+        # Split into independent refinement jobs
+        refinement_sets = []
+        for ids in disjoint_sets:
+            el = ExperimentList()
+            for i in ids:
+                el.append(experiments[i])
+
+            refl = flex.reflection_table()
+            new_id = 0
+            for i in ids:
+                refl_one_experiment = reflections.select(reflections["id"] == i)
+                refl_one_experiment["id"] = flex.int(len(refl_one_experiment), new_id)
+                new_id += 1
+                refl.extend(refl_one_experiment)
+            refinement_sets.append((el, refl, copy.deepcopy(params)))
+
+        # Report on independent refinement sets here XXX
 
     refinement_results = []
     for (experiments, reflections, params) in refinement_sets:
@@ -397,7 +437,8 @@ def run_dials_refine(experiments, reflections, params):
     if len(refinement_results) == 1:
         experiments, reflections, refiner, history = refinement_results[0]
     else:
-        # Rejoin results in the expected order of experiments
+        # Rejoin results in the expected order of experiments XXX
+        # Report on RMSD by experiments after joining (get this from history?) XXX
         pass
 
     return experiments, reflections, refiner, history
