@@ -9,7 +9,7 @@ import math
 import random
 
 import iotbx.phil
-import libtbx.introspection
+import libtbx
 from libtbx.test_utils import approx_equal
 from libtbx.utils import plural_s
 from rstbx.dps_core import Direction, Directional_FFT
@@ -23,6 +23,7 @@ from scitbx.simplex import simplex_opt
 import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
+from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 
@@ -496,7 +497,7 @@ def run(args=None):
         random.seed(params.seed)
 
     if params.nproc is libtbx.Auto:
-        params.nproc = libtbx.introspection.number_of_processors()
+        params.nproc = available_cores()
 
     imagesets = experiments.imagesets()
     # Split all the refln tables by ID, corresponding to the respective imagesets
