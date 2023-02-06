@@ -91,6 +91,11 @@ phil_scope = libtbx.phil.parse(
     .type = int(value_min=1)
     .help = "Number of macro-cycles of static refinement to perform"
 
+  separate_independent_sets = True
+    .type = bool
+    .help = "If true, the experiment list will be separated into independent groups"
+            "that do not share models, and these groups will be refined separately."
+
   include scope dials.algorithms.refinement.refiner.phil_scope
 """,
     process_includes=True,
@@ -377,7 +382,7 @@ def run_dials_refine(experiments, reflections, params):
         )
     )
 
-    if len(disjoint_sets) == 1:
+    if len(disjoint_sets) == 1 or not params.separate_independent_sets:
         # No splitting required, this is one interdependent refinement job
         refinement_sets = [(experiments, reflections, params)]
     elif crosslinks:
