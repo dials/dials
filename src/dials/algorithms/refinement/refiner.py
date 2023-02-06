@@ -717,6 +717,8 @@ class Refiner:
         # Keep track of whether this is stills or scans type refinement
         self.experiment_type = refman.experiment_type
 
+        self._exp_rmsd_table_data = None
+
         return
 
     def get_experiments(self):
@@ -865,10 +867,9 @@ class Refiner:
 
         return
 
-    def print_exp_rmsd_table(self):
-        """print useful output about refinement steps in the form of a simple table"""
-
-        logger.info("\nRMSDs by experiment:")
+    def calc_exp_rmsd_table(self):
+        if self._exp_rmsd_table_data:
+            return self._exp_rmsd_table_data
 
         header = ["Exp\nid", "Nref"]
         for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
@@ -922,6 +923,16 @@ class Refiner:
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)
             rows.append([str(iexp), str(num)] + [f"{r:.5g}" for r in rmsds])
+
+        self._exp_rmsd_table_data = (header, rows)
+        return self._exp_rmsd_table_data
+
+    def print_exp_rmsd_table(self):
+        """print useful output about refinement steps in the form of a simple table"""
+
+        logger.info("\nRMSDs by experiment:")
+
+        header, rows = self.calc_exp_rmsd_table()
 
         if len(rows) > 0:
             logger.info(dials.util.tabulate(rows, header))

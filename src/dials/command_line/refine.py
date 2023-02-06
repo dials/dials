@@ -440,14 +440,25 @@ def run_dials_refine(experiments, reflections, params):
         # Rejoin results in the expected order of experiments
         experiments = {}
         reflections = flex.reflection_table()
-        for (el, refl, _, history), ids in zip(refinement_results, disjoint_sets):
+        table_headers = []
+        table_rows = {}
+        for (el, refl, refiner, _), ids in zip(refinement_results, disjoint_sets):
+            header, rows = refiner.calc_exp_rmsd_table()
             id_col = flex.int(len(refl))
             for new_id, orig_id in enumerate(ids):
                 experiments[orig_id] = el[new_id]
                 id_col.set_selected(refl["id"] == new_id, orig_id)
+                rows[new_id][0] = str(orig_id)
+                table_rows[orig_id] = rows[new_id]
             refl["id"] = id_col
             reflections.extend(refl)
+            table_headers.append(header)
+
         experiments = ExperimentList([experiments[i] for i in range(len(experiments))])
+
+        logger.info(
+            "\nIndependently-refined groups of experiments have been recombined"
+        )
 
         # There are multiple refiners and history objects. We don't have a way
         # to combine these usefully, so return None to avoid misleading the
@@ -455,8 +466,16 @@ def run_dials_refine(experiments, reflections, params):
         refiner = None
         history = None
 
-        # Report on RMSD by experiments after joining (get this from history?) XXX
-        pass
+        # Report on RMSD by experiments after joining
+        rows = [table_rows[i] for i in range(len(table_rows))]
+        header = table_headers[0]
+        if not (h == header for h in table_headers[1:]):
+            logger.warning(
+                "Cannot calculate RMSDs by experiment as units are inconsistent"
+            )
+        else:
+            logger.info("\nRMSDs by experiment:")
+            logger.info(dials.util.tabulate(rows, header))
 
     return experiments, reflections, refiner, history
 
