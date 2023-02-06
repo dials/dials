@@ -437,7 +437,24 @@ def run_dials_refine(experiments, reflections, params):
     if len(refinement_results) == 1:
         experiments, reflections, refiner, history = refinement_results[0]
     else:
-        # Rejoin results in the expected order of experiments XXX
+        # Rejoin results in the expected order of experiments
+        experiments = {}
+        reflections = flex.reflection_table()
+        for (el, refl, _, history), ids in zip(refinement_results, disjoint_sets):
+            id_col = flex.int(len(refl))
+            for new_id, orig_id in enumerate(ids):
+                experiments[orig_id] = el[new_id]
+                id_col.set_selected(refl["id"] == new_id, orig_id)
+            refl["id"] = id_col
+            reflections.extend(refl)
+        experiments = ExperimentList([experiments[i] for i in range(len(experiments))])
+
+        # There are multiple refiners and history objects. We don't have a way
+        # to combine these usefully, so return None to avoid misleading the
+        # caller that these are relevant for the full refinement
+        refiner = None
+        history = None
+
         # Report on RMSD by experiments after joining (get this from history?) XXX
         pass
 
@@ -549,8 +566,13 @@ def run(args=None, phil=working_phil):
 
     # Write table of centroids to file, if requested
     if params.output.centroids:
-        logger.info(f"Writing table of centroids to '{params.output.centroids}'")
-        write_centroids_table(refiner, params.output.centroids)
+        if not refiner:
+            logger.warning(
+                "Cannot write table of centroids as a single refiner object is not available"
+            )
+        else:
+            logger.info(f"Writing table of centroids to '{params.output.centroids}'")
+            write_centroids_table(refiner, params.output.centroids)
 
     # Write scan-varying parameters to file, if there were any
     if params.output.parameter_table:
@@ -559,6 +581,10 @@ def run(args=None, phil=working_phil):
             logger.info(
                 "Writing a scan-varying parameter table is only supported "
                 "for refinement of a single scan"
+            )
+        elif not refiner:
+            logger.warning(
+                "Cannot write scan-varying parameter table as a single refiner object is not available"
             )
         else:
             scan = scans[0]
@@ -578,20 +604,36 @@ def run(args=None, phil=working_phil):
 
     # Save matches to file for debugging
     if params.output.matches:
-        matches = refiner.get_matches()
-        logger.info(
-            "Saving matches (use for debugging purposes) to %s", params.output.matches
-        )
-        matches.as_file(params.output.matches)
+        if not refiner:
+            logger.warning(
+                "Cannot write matches to file as a single refiner object is not available"
+            )
+        else:
+            matches = refiner.get_matches()
+            logger.info(
+                "Saving matches (use for debugging purposes) to %s",
+                params.output.matches,
+            )
+            matches.as_file(params.output.matches)
 
     # Create correlation plots
     if params.output.correlation_plot.filename is not None:
-        create_correlation_plots(refiner, params.output)
+        if not refiner:
+            logger.warning(
+                "Cannot create correlation plots as a single refiner object is not available"
+            )
+        else:
+            create_correlation_plots(refiner, params.output)
 
     # Save refinement history
     if params.output.history:
-        logger.info(f"Saving refinement step history to {params.output.history}")
-        history.to_json_file(params.output.history)
+        if not history:
+            logger.warning(
+                "Cannot write refinement step history as a single history object is not available"
+            )
+        else:
+            logger.info(f"Saving refinement step history to {params.output.history}")
+            history.to_json_file(params.output.history)
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
