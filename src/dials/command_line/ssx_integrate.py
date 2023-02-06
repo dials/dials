@@ -41,7 +41,6 @@ import iotbx.phil
 from cctbx import crystal
 from dxtbx.model import Experiment, ExperimentList
 from libtbx import Auto
-from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
 
 from dials.algorithms.indexing.ssx.analysis import report_on_crystal_clusters
@@ -59,6 +58,7 @@ from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
 from dials.command_line.combine_experiments import CombineWithReference
 from dials.util import log, show_mail_handle_errors
+from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 
@@ -203,7 +203,7 @@ def setup(reflections, params):
 
     # Note, memory processing logic can go here
     if params.nproc is Auto:
-        params.nproc = number_of_processors(return_value_if_unknown=1)
+        params.nproc = available_cores()
     logger.info(f"Using {params.nproc} processes for integration")
 
     # aggregate some output for json, html etc
