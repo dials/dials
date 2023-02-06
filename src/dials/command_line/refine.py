@@ -405,7 +405,16 @@ def run_dials_refine(experiments, reflections, params):
                 refl.extend(refl_one_experiment)
             refinement_sets.append((el, refl, copy.deepcopy(params)))
 
-        # Report on independent refinement sets here XXX
+        # Report on independent refinement sets
+        logger.info(
+            "The experiments have been separated into independent groups that "
+            "do not share models.\nRefinement will occur separately for each group:"
+        )
+        header = ["Group", "Experiment ids"]
+        rows = []
+        for i, ids in enumerate(disjoint_sets):
+            rows.append([str(i), " ".join(str(e) for e in ids)])
+        logger.info(dials.util.tabulate(rows, header))
 
     refinement_results = []
     for (experiments, reflections, params) in refinement_sets:
