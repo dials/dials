@@ -207,6 +207,8 @@ def initial_integrator(experiments, reflection_table):
         strong_refls["panel"], strong_refls["bbox"], allocate=True
     )
     strong_refls.extract_shoeboxes(experiment.imageset)
+    reflection_table.is_overloaded(experiments)
+    reflection_table.contains_invalid_pixels()
 
     _compute_mask(experiment, strong_refls, sigma_d, "s1_obs", strong_shoeboxes)
 
@@ -259,6 +261,9 @@ def final_integrator(
         reflection_table["panel"], reflection_table["bbox"], allocate=True
     )
     reflection_table.extract_shoeboxes(experiment.imageset)
+
+    reflection_table.is_overloaded(experiments)
+    reflection_table.contains_invalid_pixels()
 
     if use_crude_shoebox_mask:
         _compute_mask(experiment, reflection_table, sigma_d, "s1")
