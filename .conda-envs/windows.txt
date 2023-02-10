@@ -37,14 +37,14 @@ conda-forge::pytest-forked
 conda-forge::pytest-mock
 conda-forge::pytest-nunit=1.0.0
 conda-forge::pytest-xdist
-conda-forge::pytest>=4.5,<7.0
+conda-forge::pytest
 conda-forge::python-dateutil>=2.7.0
 conda-forge::reportlab
 conda-forge::requests
 conda-forge::scikit-learn
 conda-forge::scipy
 conda-forge::scons
-conda-forge::setuptools<60
+conda-forge::setuptools
 conda-forge::six
 conda-forge::sphinx>=4
 conda-forge::sqlite
