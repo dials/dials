@@ -396,6 +396,8 @@ def run_dials_refine(experiments, reflections, params):
     else:
         # Split into independent refinement jobs
         refinement_sets = []
+        params.input.reflections = None
+        params.input.experiments = None
         for ids in disjoint_sets:
             el = ExperimentList()
             for i in ids:
