@@ -76,7 +76,8 @@ def sort_tables_to_experiments_order(reflection_tables, experiments):
     exp_id_to_table_idx = {}
     for i, table in enumerate(reflection_tables):
         id_values = table.experiment_identifiers().values()
-        if id_values:
+        any_blanks = any([len(id_value) == 0 for id_value in id_values])
+        if id_values and not any_blanks:
             identifiers_list.extend(id_values)
             identifiers_by_table_idx[i] = id_values
             for id_ in id_values:
