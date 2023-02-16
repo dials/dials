@@ -5,7 +5,6 @@ Tests for the constraints system used in refinement
 from __future__ import annotations
 
 from copy import deepcopy
-from pathlib import Path
 
 import procrunner
 
@@ -110,17 +109,17 @@ def test_contraints_manager_simple_test():
     assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
 
 
-def test_constrained_refinement(dials_regression, tmp_path):
+def test_constrained_refinement(dials_data, tmp_path):
     """Test joint refinement where two detectors are constrained to enforce a
     differential distance (along the shared initial normal vector) of 1 mm.
     This test can be constructed on the fly from data already in
-    dials_regression"""
+    dials_data"""
 
     # use the 'centroid' data for this test. The 'regularized' experiments are
     # useful because the detector has fast and slow exactly aligned with X, -Y
     # so the distance is exactly along the normal vector and can be altered
     # directly by changing the Z component of the origin vector
-    data_dir = Path(dials_regression) / "refinement_test_data" / "centroid"
+    data_dir = dials_data("refinement_test_data", pathlib=True)
     experiments_path = data_dir / "experiments_XPARM_REGULARIZED.json"
     pickle_path = data_dir / "spot_1000_xds.pickle"
 
