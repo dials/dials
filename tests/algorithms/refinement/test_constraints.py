@@ -120,8 +120,8 @@ def test_constrained_refinement(dials_data, tmp_path):
     # so the distance is exactly along the normal vector and can be altered
     # directly by changing the Z component of the origin vector
     data_dir = dials_data("refinement_test_data", pathlib=True)
-    experiments_path = data_dir / "experiments_XPARM_REGULARIZED.json"
-    pickle_path = data_dir / "spot_1000_xds.pickle"
+    experiments_path = data_dir / "from-xds.json"
+    pickle_path = data_dir / "from-xds-1000.pickle"
 
     # load the experiments and spots
     el = ExperimentListFactory.from_json_file(experiments_path, check_format=False)
