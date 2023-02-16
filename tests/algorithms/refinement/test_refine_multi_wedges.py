@@ -5,8 +5,6 @@ Test refinement of multiple narrow sequences.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import procrunner
 import pytest
 
@@ -16,8 +14,8 @@ from scitbx import matrix
 from dials.algorithms.refinement.engine import Journal
 
 
-def test(dials_regression, tmp_path):
-    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
+def test(dials_data, tmp_path):
+    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
 
     selection = (2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 17, 18, 19, 20)
 
@@ -30,12 +28,9 @@ def test(dials_regression, tmp_path):
             "reference_from_experiment.goniometer=0",
             "reference_from_experiment.detector=0",
         ]
+        + [f"experiments={data_dir}/sweep_%03d_experiments.json" % n for n in selection]
         + [
-            f"experiments={data_dir}/data/sweep_%03d/experiments.json" % n
-            for n in selection
-        ]
-        + [
-            f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
+            f"reflections={data_dir}/sweep_%03d_reflections.pickle" % n
             for n in selection
         ],
         working_directory=tmp_path,
@@ -78,11 +73,11 @@ def test(dials_regression, tmp_path):
         assert s0_1.accute_angle(s0_2, deg=True) < 0.0057  # ~0.1 mrad
 
 
-def test_order_invariance(dials_regression, tmp_path):
+def test_order_invariance(dials_data, tmp_path):
     """Check that the order that datasets are included in refinement does not
     matter"""
 
-    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
+    data_dir = data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
     selection1 = (2, 3, 4, 5, 6)
     selection2 = (2, 3, 4, 6, 5)
 
@@ -95,11 +90,11 @@ def test_order_invariance(dials_regression, tmp_path):
             "reference_from_experiment.detector=0",
         ]
         + [
-            f"experiments={data_dir}/data/sweep_%03d/experiments.json" % n
+            f"experiments={data_dir}/sweep_%03d_experiments.json" % n
             for n in selection1
         ]
         + [
-            f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
+            f"reflections={data_dir}/sweep_%03d_reflections.pickle" % n
             for n in selection1
         ],
         working_directory=tmp_path,
@@ -129,11 +124,11 @@ def test_order_invariance(dials_regression, tmp_path):
             "reference_from_experiment.detector=0",
         ]
         + [
-            f"experiments={data_dir}/data/sweep_%03d/experiments.json" % n
+            f"experiments={data_dir}/sweep_%03d_experiments.json" % n
             for n in selection2
         ]
         + [
-            f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
+            f"reflections={data_dir}/sweep_%03d_reflections.pickle" % n
             for n in selection2
         ],
         working_directory=tmp_path,
