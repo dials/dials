@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import math
-import os
 
 import pytest
 
@@ -59,11 +58,10 @@ def generate_reflections(experiments):
     return obs_refs, ref_predictor
 
 
-def test1(dials_regression):
+def test1(dials_data):
     # use a experiments that contains a CS-PAD detector description
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "hierarchy_test")
-    experiments_path = os.path.join(data_dir, "datablock.json")
-    assert os.path.exists(experiments_path)
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "cspad-single-image-datablock.json"
 
     # load models
     from dxtbx.model.experiment_list import ExperimentListFactory
