@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import os
-
 from libtbx import easy_run
 
 
-def test_compare_orientation_matrices(dials_regression, run_in_tmp_path):
-    path = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
+def test_compare_orientation_matrices(dials_data, run_in_tmp_path):
+    data_dir = dials_data("refinement_test_data", pathlib=True)
     cmd = (
-        "dials.compare_orientation_matrices %s/experiments.json %s/regression_experiments.json"
-        % (path, path)
+        "dials.compare_orientation_matrices %s/i04-weak.json %s/i04-weak-regression.json"
+        % (data_dir, data_dir)
     )
     result = easy_run.fully_buffered(cmd).raise_if_errors()
     out = "\n".join(result.stdout_lines[7:])
