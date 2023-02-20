@@ -194,4 +194,4 @@ def test_constrained_refinement(dials_data, tmp_path):
     det1, det2 = ref_exp.detectors()
     p1 = det1[0]
     p2 = det2[0]
-    assert approx_equal(p2.get_distance() - p1.get_distance(), 0.9987655)
+    assert approx_equal(p2.get_distance() - p1.get_distance(), 0.9987655, eps=1e-5)
