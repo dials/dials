@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import os
 
-import procrunner
+from dials.command_line import plot_scan_varying_model
 
 
-def test(dials_regression, run_in_tmp_path):
-    result = procrunner.run(
+def test(dials_regression, tmp_path, capsys):
+    plot_scan_varying_model.run(
         [
-            "dials.plot_scan_varying_model",
             os.path.join(
                 dials_regression,
                 "refinement_test_data",
@@ -18,6 +17,11 @@ def test(dials_regression, run_in_tmp_path):
                 "index",
                 "sv_refined_experiments.json",
             ),
+            f"output.directory={tmp_path}",
         ]
     )
-    assert not result.returncode and not result.stderr
+    captured = capsys.readouterr()
+    assert not captured.err
+    output_dir = tmp_path / "scan-varying_model"
+    assert output_dir.is_file("orientation.png")
+    assert output_dir.is_file("unit_cell.png")
