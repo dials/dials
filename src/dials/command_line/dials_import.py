@@ -308,7 +308,7 @@ class ReferenceGeometryUpdater:
                     "The reference geometry file contains %d detector definitions, but only a single definition is allowed."
                     % len(experiments.detectors())
                 )
-            if len(experiments.beams()) > 1:
+            if len(experiments.beams()) > 1 and self.params.input.use_beam_reference:
                 raise Sorry(
                     "The reference geometry file contains %d beam definitions, but only a single definition is allowed."
                     % len(experiments.beams())
