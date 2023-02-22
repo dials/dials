@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
-import subprocess
 
 from dials.command_line import plot_scan_varying_model
 
@@ -25,5 +23,5 @@ def test(dials_regression, tmp_path, capsys):
     captured = capsys.readouterr()
     assert not captured.err
     output_dir = tmp_path / "scan-varying_model"
-    assert output_dir.is_file("orientation.png")
-    assert output_dir.is_file("unit_cell.png")
+    assert (output_dir / "orientation.png").is_file()
+    assert (output_dir / "unit_cell.png").is_file()
