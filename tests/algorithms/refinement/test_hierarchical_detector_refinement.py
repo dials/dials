@@ -61,7 +61,7 @@ def generate_reflections(experiments):
 def test1(dials_data):
     # use a experiments that contains a CS-PAD detector description
     data_dir = dials_data("refinement_test_data", pathlib=True)
-    experiments_path = data_dir / "cspad-single-image-datablock.json"
+    experiments_path = data_dir / "cspad-single-image.expt"
 
     # load models
     from dxtbx.model.experiment_list import ExperimentListFactory
