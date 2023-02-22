@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import random
 
 import pytest
@@ -296,7 +295,7 @@ def test_two_triclinic_crystals():
         assert an == pytest.approx(fd, abs=1e-5)
 
 
-def test_10_crystals_with_stills_parameterisation(dials_regression):
+def test_10_crystals_with_stills_parameterisation(dials_data):
     """Test with multiple crystals, and a stills refiner"""
 
     # The phil scope
@@ -332,9 +331,9 @@ def test_10_crystals_with_stills_parameterisation(dials_regression):
     working_params = working_phil.extract()
 
     # use the multi stills test data
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
-    experiments_path = os.path.join(data_dir, "combined_experiments.json")
-    pickle_path = os.path.join(data_dir, "combined_reflections.pickle")
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "multi_stills_combined.json"
+    pickle_path = data_dir / "multi_stills_combined.pickle"
 
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False
@@ -393,7 +392,7 @@ def test_10_crystals_with_stills_parameterisation(dials_regression):
         assert an == pytest.approx(fd, abs=1e-5)
 
 
-def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_regression):
+def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_data):
 
     # The phil scope
     from dials.algorithms.refinement.refiner import phil_scope
@@ -426,9 +425,9 @@ def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_regre
     working_params = working_phil.extract()
 
     # use the multi stills test data
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
-    experiments_path = os.path.join(data_dir, "combined_experiments.json")
-    pickle_path = os.path.join(data_dir, "combined_reflections.pickle")
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "multi_stills_combined.json"
+    pickle_path = data_dir / "multi_stills_combined.pickle"
 
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False

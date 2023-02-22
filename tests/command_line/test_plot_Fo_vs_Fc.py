@@ -13,7 +13,7 @@ def test(dials_data, tmp_path):
     env = os.environ.copy()
     env[
         "PYTHONDEVMODE"
-    ] = ""  # disable a developermode warning from pyparsing from mathtext in matplotlib
+    ] = ""  # Temporarily disable a developermode warning from pyparsing from mathtext in matplotlib. Try removing after June 2023
     result = subprocess.run(
         [shutil.which("dials.plot_Fo_vs_Fc"), f"hklin={mtz_file}"],
         cwd=tmp_path,
