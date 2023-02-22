@@ -7,7 +7,7 @@ conda-forge::c-compiler
 conda-forge::colorlog
 conda-forge::conda
 conda-forge::cxx-compiler
-conda-forge::dials-data
+conda-forge::dials-data>=2.4.58
 conda-forge::docutils
 conda-forge::eigen
 conda-forge::future

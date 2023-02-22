@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 
 from dials.command_line import plot_scan_varying_model
 

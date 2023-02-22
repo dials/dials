@@ -5,7 +5,6 @@ Test refinement of a crystal unit cell using a two theta target.
 
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 from math import pi
 
@@ -189,14 +188,13 @@ def test_fd_derivatives():
     pred_param.set_param_vals(p_vals)
 
 
-def test_refinement(dials_regression):
+def test_refinement(dials_data):
     """Test a refinement run"""
 
     # Get a beam and detector from a experiments. This one has a CS-PAD, but that
     # is irrelevant
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "hierarchy_test")
-    experiments_path = os.path.join(data_dir, "datablock.json")
-    assert os.path.exists(experiments_path)
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "cspad-single-image-datablock.json"
 
     # load models
     from dxtbx.model.experiment_list import ExperimentListFactory
