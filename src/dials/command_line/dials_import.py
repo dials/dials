@@ -293,6 +293,7 @@ class ReferenceGeometryUpdater:
         # Load reference geometry
         reference_detector = None
         reference_beam = None
+        reference_goniometer = None
         if params.input.reference_geometry is not None:
             from dxtbx.serialize import load
 
@@ -302,20 +303,23 @@ class ReferenceGeometryUpdater:
             )
             assert experiments, "Could not import reference geometry"
             assert len(experiments.detectors()) >= 1
-            assert len(experiments.beams()) >= 1
             if len(experiments.detectors()) > 1:
                 raise Sorry(
                     "The reference geometry file contains %d detector definitions, but only a single definition is allowed."
                     % len(experiments.detectors())
                 )
-            if len(experiments.beams()) > 1 and self.params.input.use_beam_reference:
-                raise Sorry(
-                    "The reference geometry file contains %d beam definitions, but only a single definition is allowed."
-                    % len(experiments.beams())
-                )
             reference_detector = experiments.detectors()[0]
-            reference_beam = experiments.beams()[0]
-            reference_goniometer = experiments.goniometers()[0]
+            if self.params.input.use_beam_reference:
+                assert len(experiments.beams()) >= 1
+                if len(experiments.beams()) > 1:
+                    raise Sorry(
+                        "The reference geometry file contains %d beam definitions, but only a single definition is allowed."
+                        % len(experiments.beams())
+                    )
+                reference_beam = experiments.beams()[0]
+            if self.params.input.use_gonio_reference:
+                assert len(experiments.goniometers()) >= 1
+                reference_goniometer = experiments.goniometers()[0]
         Reference = namedtuple("Reference", ["detector", "beam", "goniometer"])
         return Reference(
             detector=reference_detector,
