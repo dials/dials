@@ -10,7 +10,7 @@ import pickle
 from typing import Iterable, Tuple
 
 import libtbx
-import uctbx
+from cctbx import uctbx
 from dxtbx.format.image import ImageBool
 from dxtbx.imageset import ImageSequence, ImageSet
 from dxtbx.model import ExperimentList
