@@ -154,7 +154,9 @@ def test_search_single(run_in_tmp_path, dials_regression):
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "phi_scan")
     pickle_path = os.path.join(data_dir, "strong.pickle")
-    experiments_path = os.path.join(data_dir, "datablock.json")
+    experiments_path = os.path.join(
+        data_dir, "experiments-converted-from-datablock.json"
+    )
 
     search_beam_position.run([experiments_path, pickle_path])
     assert run_in_tmp_path.joinpath("optimised.expt").is_file()
@@ -214,7 +216,12 @@ def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmp_path):
     )
     experiment_files = sorted(
         glob.glob(
-            os.path.join(data_dir, "SWEEP[1,2]", "index", "*_datablock_import.json")
+            os.path.join(
+                data_dir,
+                "SWEEP[1,2]",
+                "index",
+                "experiments-converted-from-*_datablock_import.json",
+            )
         )
     )
 
