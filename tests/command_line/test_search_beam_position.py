@@ -220,7 +220,7 @@ def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmp_path):
                 data_dir,
                 "SWEEP[1,2]",
                 "index",
-                "experiments-converted-from-*_datablock_import.json",
+                "converted-from-*_datablock_import.json.expt",
             )
         )
     )
