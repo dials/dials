@@ -46,7 +46,8 @@ namespace dials { namespace util {
           vec3<double> r = s1 - s0;
           double length = r.length();
           if (length == 0) {
-            // If s1 == s0, shift to the pixel edge instead (https://github.com/dials/dials/issues/2322)
+            // If s1 == s0, shift to the pixel edge instead
+            // (https://github.com/dials/dials/issues/2322)
             px += 0.5;
             s1 = panel.get_pixel_lab_coord(px).normalize() * wavenumber;
             r = s1 - s0;
