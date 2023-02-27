@@ -286,6 +286,7 @@ def test_merge_exclude_images(dials_data, tmp_path):
         expts,
         f"output.mtz={str(mtz_file)}",
         "exclude_images=0:851:1700",
+        "d_min=0.59",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
