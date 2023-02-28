@@ -131,7 +131,8 @@ output {
             allowed for MAD datasets)"
     additional_stats = False
        .type = bool
-       .help = "Calculate and report the R-split statistic"
+       .help = "Calculate and report the R-split statistic. Also saves the"
+               "half-dataset merged arrays to the MTZ output file."
 }
 include scope dials.util.exclude_images.phil_scope
 """,

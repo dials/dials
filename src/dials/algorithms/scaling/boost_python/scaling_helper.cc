@@ -1,6 +1,8 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/scaling/scaling_helper.h>
+#include <cctbx/miller.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials_scaling { namespace boost_python {
 
@@ -99,6 +101,26 @@ namespace dials_scaling { namespace boost_python {
       .def("multi_value_weight", &GaussianSmootherFirstFixed::multi_value_weight)
       .def("multi_value_weight_first_fixed",
            &GaussianSmootherFirstFixed::multi_value_weight_first_fixed);
+  }
+
+  void export_split_unmerged() {
+    class_<split_unmerged>("split_unmerged", no_init)
+      .def(init<scitbx::af::const_ref<cctbx::miller::index<> > const&,
+                scitbx::af::const_ref<double> const&,
+                scitbx::af::const_ref<double> const&,
+                bool,
+                unsigned>((arg("unmerged_indices"),
+                           arg("unmerged_data"),
+                           arg("unmerged_sigmas"),
+                           arg("weighted") = true,
+                           arg("seed") = 0)))
+      .def("data1", &split_unmerged::data1)
+      .def("data2", &split_unmerged::data2)
+      .def("sigma1", &split_unmerged::sigma1)
+      .def("sigma2", &split_unmerged::sigma2)
+      .def("n1", &split_unmerged::n1)
+      .def("n2", &split_unmerged::n2)
+      .def("indices", &split_unmerged::indices);
   }
 
 }}  // namespace dials_scaling::boost_python

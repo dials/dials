@@ -43,6 +43,14 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     anom_labels = ["I(+)", "I(-)", "SIGI(+)", "SIGI(-)"]
     amp_labels = ["F", "SIGF"]
     anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)", "DANO", "SIGDANO"]
+    half_labels = [
+        "IHALF1",
+        "SIGIHALF1",
+        "IHALF2",
+        "SIGIHALF2",
+        "NHALF1",
+        "NHALF2",
+    ]  # appear for additional_stats=True
 
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     refls = location / "scaled_20_25.refl"
@@ -69,7 +77,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     assert (tmp_path / "dials.merge.html").is_file()
     merge_json = tmp_path / "dials.merge.json"
     assert merge_json.is_file()
-    expected_labels = mean_labels
+    expected_labels = mean_labels + half_labels
     unexpected_labels = []
 
     with merge_json.open() as fh:

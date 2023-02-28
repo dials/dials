@@ -5,6 +5,7 @@ import time
 from collections import Counter
 from copy import deepcopy
 from math import isclose
+from typing import Optional
 
 import numpy as np
 
@@ -16,7 +17,10 @@ from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 import dials.util.ext
-from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.algorithms.scaling.scaling_library import (
+    MergedHalfDatasets,
+    determine_best_unit_cell,
+)
 from dials.array_family import flex
 from dials.util.batch_handling import (
     assign_batches_to_reflections,
@@ -90,6 +94,7 @@ class MergedMTZWriter(MTZWriterBase):
         dano=None,
         multiplicities=None,
         suffix=None,
+        half_datasets: Optional[MergedHalfDatasets] = None,
     ):
         """Add merged data to the most recent dataset.
 
@@ -116,6 +121,21 @@ class MergedMTZWriter(MTZWriterBase):
             self.current_dataset.add_miller_array(
                 dano, "DANO" + suffix, column_types="DQ"
             )
+        if half_datasets:
+            self.current_dataset.add_miller_array(
+                half_datasets.data1, "IHALF1" + suffix, column_types="JQ"
+            )
+            self.current_dataset.add_miller_array(
+                half_datasets.data2, "IHALF2" + suffix, column_types="JQ"
+            )
+            self.current_dataset.add_miller_array(
+                half_datasets.multiplicity1,
+                "NHALF1" + suffix,
+            )
+            self.current_dataset.add_miller_array(
+                half_datasets.multiplicity2,
+                "NHALF2" + suffix,
+            )
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
@@ -130,6 +150,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         dano=None,
         multiplicities=None,
         suffix=None,
+        half_datasets: Optional[MergedHalfDatasets] = None,
     ):
         if not suffix:
             suffix = f"_WAVE{self.n_datasets}"
@@ -141,6 +162,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
             dano,
             multiplicities,
             suffix,
+            half_datasets,
         )
 
 
