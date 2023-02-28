@@ -73,7 +73,7 @@ refinement {
     outlier_probability = 0.975
         .type = float
 
-    n_macro_cycles = 1
+    n_macro_cycles = 3
         .type = int
 
     n_cycles = 3
