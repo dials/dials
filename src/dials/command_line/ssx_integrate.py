@@ -172,7 +172,7 @@ def process_one_image(experiment, table, params, integrator_class):
     integrator = integrator_class(params, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
-    except (RuntimeError, ValueError) as e:
+    except RuntimeError as e:
         logger.info(f"Processing failed due to error: {e}")
         return (None, None, None)
     else:
