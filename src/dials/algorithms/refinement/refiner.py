@@ -261,10 +261,6 @@ class RefinerFactory:
 
     @classmethod
     def from_parameters_data_experiments(cls, params, reflections, experiments):
-        # TODO Checks on the input
-        # E.g. does every experiment contain at least one overlapping model with at
-        # least one other experiment? Are all the experiments either rotation series
-        # or stills (the combination of both not yet supported)?
 
         # copy the experiments
         experiments = _copy_experiments_for_refining(experiments)
@@ -272,11 +268,34 @@ class RefinerFactory:
         # copy and filter the reflections
         reflections = cls._filter_reflections(reflections)
 
-        return cls._build_components(params, reflections, experiments)
+        (
+            experiments,
+            refman,
+            ref_predictor,
+            do_stills,
+        ) = cls._build_reflection_manager_and_predictor(
+            params, reflections, experiments
+        )
+
+        return cls._build_refiner(params, experiments, refman, ref_predictor, do_stills)
 
     @classmethod
-    def _build_components(cls, params, reflections, experiments):
-        """low level build"""
+    def reflections_after_outlier_rejection(cls, params, reflections, experiments):
+
+        # copy the experiments
+        experiments = _copy_experiments_for_refining(experiments)
+
+        # copy and filter the reflections
+        reflections = cls._filter_reflections(reflections)
+
+        experiments, refman, _, _ = cls._build_reflection_manager_and_predictor(
+            params, reflections, experiments
+        )
+
+        return refman.get_obs()
+
+    @classmethod
+    def _build_reflection_manager_and_predictor(cls, params, reflections, experiments):
 
         # Currently a refinement job can only have one parameterisation of the
         # prediction equation. This can either be of the XYDelPsi (stills) type, the
@@ -348,7 +367,6 @@ class RefinerFactory:
 
         # configure use of sparse data types
         params = cls.config_sparse(params, experiments)
-        do_sparse = params.refinement.parameterisation.sparse
 
         # create managed reflection predictor
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
@@ -378,6 +396,14 @@ class RefinerFactory:
         # Now predictions and centroid analysis are available, so we can finalise
         # the reflection manager
         refman.finalise(analysis)
+
+        return (experiments, refman, ref_predictor, do_stills)
+
+    @classmethod
+    def _build_refiner(cls, params, experiments, refman, ref_predictor, do_stills):
+        """low level build"""
+
+        do_sparse = params.refinement.parameterisation.sparse
 
         # Create model parameterisations
         logger.debug("Building prediction equation parameterisation")
