@@ -394,10 +394,20 @@ def run_dials_refine(experiments, reflections, params):
         )
         refinement_sets = [(experiments, reflections, params)]
     else:
-        # Split into independent refinement jobs
-        refinement_sets = []
+        # If outlier rejection is meant to be done across all experiments then
+        # do that once here
+        if not params.refinement.reflections.outlier.separate_experiments:
+            reflections = RefinerFactory.reflections_after_outlier_rejection(
+                params, reflections, experiments
+            )
+            params.refinement.reflections.outlier.algorithm = "null"
+
+        # Set large objects in params to None for copying
         params.input.reflections = None
         params.input.experiments = None
+
+        # Split into independent refinement jobs
+        refinement_sets = []
         for ids in disjoint_sets:
             el = ExperimentList()
             for i in ids:
