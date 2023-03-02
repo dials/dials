@@ -51,14 +51,14 @@ steps:
   displayName: Install additional packages
   workingDirectory: $(Pipeline.Workspace)
 
-# # Retrieve the regression data from cache if possible
-# # The cache allows day-to-day incremental updates, which is relevant only if
-# # tests are added that refer to datasets in dials-data that were not previously
-# # referred to.
-# # New versions of dials-data also lead to cache updates, kick-started from the
-# # previous cache version.
-# # The cache is shared across operating systems and python versions, and flushed
-# # once a week and for dials-data major and minor releases (eg. 2.0->2.1).
+# Retrieve the regression data from cache if possible
+# The cache allows day-to-day incremental updates, which is relevant only if
+# tests are added that refer to datasets in dials-data that were not previously
+# referred to.
+# New versions of dials-data also lead to cache updates, kick-started from the
+# previous cache version.
+# The cache is shared across operating systems and python versions, and flushed
+# once a week and for dials-data major and minor releases (eg. 2.0->2.1).
 - task: Cache@2
   inputs:
     key: '"data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)" | "$(DIALS_DATA_VERSION_FULL)"'
@@ -81,7 +81,7 @@ steps:
 
 # Finally, run the full regression test suite
 - script: |
-    set DIALS_DATA=$(Pipeline.Workspace)\data
+    set DIALS_DATA=$(Pipeline.Workspace)/data
     set PYTHONDEVMODE=1
     set PYTHONUNBUFFERED=TRUE
     call dials.bat
