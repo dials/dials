@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from unittest import mock
@@ -408,15 +409,15 @@ grouping:
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
     handler = get_grouping_handler(parsed, "group_by")
 
-    args = ["dials.import", f"template={fpath}"]
+    args = [shutil.which("dials.import"), f"template={fpath}"]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
-    args = ["dials.find_spots", "imported.expt"]
+    args = [shutil.which("dials.find_spots"), "imported.expt"]
     result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     args = [
-        "dials.ssx_index",
+        shutil.which("dials.ssx_index"),
         "imported.expt",
         "strong.refl",
         "unit_cell=96.4,96.4,96.4,90,90,90",
