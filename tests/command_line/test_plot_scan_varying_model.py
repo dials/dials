@@ -1,26 +1,27 @@
 from __future__ import annotations
 
 import os
-import shutil
-import subprocess
+
+from dials.command_line import plot_scan_varying_model
 
 
-def test(dials_data, tmp_path):
-    experiments = (
-        dials_data("refinement_test_data", pathlib=True)
-        / "glucose_isomerase_sv_refined.json"
-    )
-    env = os.environ.copy()
-    env[
-        "PYTHONDEVMODE"
-    ] = ""  # Temporarily disable a developermode warning from pyparsing from mathtext in matplotlib. Try removing after June 2023
-    result = subprocess.run(
+def test(dials_regression, tmp_path, capsys):
+    plot_scan_varying_model.run(
         [
-            shutil.which("dials.plot_scan_varying_model"),
-            experiments,
-        ],
-        cwd=tmp_path,
-        env=env,
-        capture_output=True,
+            os.path.join(
+                dials_regression,
+                "refinement_test_data",
+                "multi_sweep_one_sample",
+                "glucose_isomerase",
+                "SWEEP1",
+                "index",
+                "sv_refined_experiments.json",
+            ),
+            f"output.directory={tmp_path}",
+        ]
     )
-    assert not result.returncode and not result.stderr
+    captured = capsys.readouterr()
+    assert not captured.err
+    output_dir = tmp_path / "scan-varying_model"
+    assert (output_dir / "orientation.png").is_file()
+    assert (output_dir / "unit_cell.png").is_file()
