@@ -132,6 +132,7 @@ class MTZDataClass:
         anomalous_amplitudes=None,
         dano=None,
         multiplicities=None,
+        anomalous_multiplicities=None,
         merged_half_datasets=None,
     ):
         self.wavelength = wavelength
@@ -144,6 +145,7 @@ class MTZDataClass:
         self.anomalous_amplitudes = anomalous_amplitudes
         self.dano = dano
         self.multiplicities = multiplicities
+        self.anomalous_multiplicities = anomalous_multiplicities
         self.merged_half_datasets = merged_half_datasets
 
 
@@ -184,6 +186,7 @@ def make_merged_mtz_file(mtz_datasets):
             dataset.anomalous_amplitudes,
             dataset.dano,
             dataset.multiplicities,
+            dataset.anomalous_multiplicities,
             half_datasets=dataset.merged_half_datasets,
         )
 
@@ -429,11 +432,11 @@ def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_sum
         merged_anomalous_array = merged_anomalous.array()
         # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
         mtz_dataset.merged_anomalous_array = merged_anomalous_array
-        mtz_dataset.multiplicities = merged_anomalous.redundancies()
+        mtz_dataset.anomalous_multiplicities = merged_anomalous.redundancies()
     else:
         merged_anomalous_array = None
-        # This will add the data for N
-        mtz_dataset.multiplicities = merged.redundancies()
+    # This will add the data for N
+    mtz_dataset.multiplicities = merged.redundancies()
 
     if params.anomalous:
         merged_intensities = merged_anomalous_array

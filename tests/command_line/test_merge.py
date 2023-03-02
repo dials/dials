@@ -208,13 +208,13 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
 
-    # 6 miller arrays for each dataset, check the expected number of reflections.
+    # 7 miller arrays for each dataset, check the expected number of reflections.
     arrays = m.as_miller_arrays()
-    assert len(arrays) == 12
+    assert len(arrays) == 14
     assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert arrays[6].info().wavelength == pytest.approx(0.6889)
+    assert arrays[7].info().wavelength == pytest.approx(0.6889)
     assert abs(arrays[0].size() - 1223) < 10  # check number of miller indices
-    assert abs(arrays[6].size() - 1453) < 10  # check number of miller indices
+    assert abs(arrays[7].size() - 1453) < 10  # check number of miller indices
 
     # test changing the wavelength tolerance such that data is combined under
     # one wavelength. Check the number of reflections to confirm this.
@@ -231,7 +231,7 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     m = mtz.object(str(tmp_path / "merged.mtz"))
     arrays = m.as_miller_arrays()
     assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert len(arrays) == 6
+    assert len(arrays) == 7
     assert abs(arrays[0].size() - 1538) < 10
 
 

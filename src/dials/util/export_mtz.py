@@ -93,6 +93,7 @@ class MergedMTZWriter(MTZWriterBase):
         anom_amplitudes=None,
         dano=None,
         multiplicities=None,
+        anom_multiplicities=None,
         suffix=None,
         half_datasets: Optional[MergedHalfDatasets] = None,
     ):
@@ -109,12 +110,14 @@ class MergedMTZWriter(MTZWriterBase):
         if not suffix:
             suffix = ""
         self.current_dataset.add_miller_array(merged_array, "IMEAN" + suffix)
-        if anom_array:
-            self.current_dataset.add_miller_array(anom_array, "I" + suffix)
         if multiplicities:
             self.current_dataset.add_miller_array(multiplicities, "N" + suffix)
         if amplitudes:
             self.current_dataset.add_miller_array(amplitudes, "F" + suffix)
+        if anom_array:
+            self.current_dataset.add_miller_array(anom_array, "I" + suffix)
+        if anom_multiplicities:
+            self.current_dataset.add_miller_array(anom_multiplicities, "N" + suffix)
         if anom_amplitudes:
             self.current_dataset.add_miller_array(anom_amplitudes, "F" + suffix)
         if dano:
@@ -149,6 +152,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         anom_amplitudes=None,
         dano=None,
         multiplicities=None,
+        anom_multiplicities=None,
         suffix=None,
         half_datasets: Optional[MergedHalfDatasets] = None,
     ):
@@ -161,6 +165,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
             anom_amplitudes,
             dano,
             multiplicities,
+            anom_multiplicities,
             suffix,
             half_datasets,
         )
