@@ -33,6 +33,7 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 from dials.array_family import flex
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.resolution_analysis import resolution_cc_half
 
 from .french_wilson import french_wilson
 
@@ -195,6 +196,7 @@ def merge_scaled_array(
     assess_space_group=False,
     n_bins=20,
     show_additional_stats=False,
+    applied_d_min=None,
 ):
     # assumes filtering already done and converted to combined scaled array
 
@@ -231,6 +233,31 @@ def merge_scaled_array(
     else:
         stats_data.merging_statistics_result = stats
         stats_data.anom_merging_statistics_result = anom_stats
+        # try to fit resolution
+        try:
+            if applied_d_min is None:
+                d_min = resolution_cc_half(stats, limit=0.3).d_min
+            else:
+                d_min = applied_d_min
+        except RuntimeError as e:
+            logger.debug(f"Resolution fit failed: {e}")
+        else:
+            max_current_res = stats.bins[-1].d_min
+            if d_min and d_min - max_current_res > 0.005:
+                try:
+                    cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
+                        scaled_array.resolution_filter(d_min=d_min),
+                        n_bins,
+                        use_internal_variance,
+                        additional_stats=show_additional_stats,
+                    )
+                except DialsMergingStatisticsError:
+                    pass
+                else:
+                    if scaled_array.space_group().is_centric():
+                        cut_anom_stats = None
+                    stats_data.cut_merging_statistics_result = cut_stats
+                    stats_data.cut_anom_merging_statistics_result = cut_anom_stats
 
     return merged, merged_anom, stats_data
 
@@ -283,6 +310,7 @@ def merge(
         assess_space_group,
         n_bins,
         show_additional_stats=show_additional_stats,
+        applied_d_min=d_min,
     )
 
 
@@ -387,6 +415,7 @@ def merge_scaled_array_to_mtz_with_report_collection(
     experiments: ExperimentList,
     scaled_array,
     wavelength: Optional[float] = None,
+    applied_d_min: Optional[int] = None,
 ) -> Tuple[mtz.object, dict]:
     if wavelength is None:
         wavelength = np.mean(
@@ -408,6 +437,7 @@ def merge_scaled_array_to_mtz_with_report_collection(
             n_bins=params.merging.n_bins,
             use_internal_variance=params.merging.use_internal_variance,
             show_additional_stats=params.output.additional_stats,
+            applied_d_min=applied_d_min,
         )
         process_merged_data(
             params, mtz_dataset, merged, merged_anomalous, stats_summary
