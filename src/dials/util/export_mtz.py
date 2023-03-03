@@ -5,6 +5,7 @@ import time
 from collections import Counter
 from copy import deepcopy
 from math import isclose
+from typing import Optional
 
 import numpy as np
 
@@ -16,7 +17,10 @@ from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 import dials.util.ext
-from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.algorithms.scaling.scaling_library import (
+    MergedHalfDatasets,
+    determine_best_unit_cell,
+)
 from dials.array_family import flex
 from dials.util.batch_handling import (
     assign_batches_to_reflections,
@@ -89,7 +93,9 @@ class MergedMTZWriter(MTZWriterBase):
         anom_amplitudes=None,
         dano=None,
         multiplicities=None,
+        anom_multiplicities=None,
         suffix=None,
+        half_datasets: Optional[MergedHalfDatasets] = None,
     ):
         """Add merged data to the most recent dataset.
 
@@ -104,17 +110,34 @@ class MergedMTZWriter(MTZWriterBase):
         if not suffix:
             suffix = ""
         self.current_dataset.add_miller_array(merged_array, "IMEAN" + suffix)
-        if anom_array:
-            self.current_dataset.add_miller_array(anom_array, "I" + suffix)
         if multiplicities:
             self.current_dataset.add_miller_array(multiplicities, "N" + suffix)
         if amplitudes:
             self.current_dataset.add_miller_array(amplitudes, "F" + suffix)
+        if anom_array:
+            self.current_dataset.add_miller_array(anom_array, "I" + suffix)
+        if anom_multiplicities:
+            self.current_dataset.add_miller_array(anom_multiplicities, "N" + suffix)
         if anom_amplitudes:
             self.current_dataset.add_miller_array(anom_amplitudes, "F" + suffix)
         if dano:
             self.current_dataset.add_miller_array(
                 dano, "DANO" + suffix, column_types="DQ"
+            )
+        if half_datasets:
+            self.current_dataset.add_miller_array(
+                half_datasets.data1, "IHALF1" + suffix, column_types="JQ"
+            )
+            self.current_dataset.add_miller_array(
+                half_datasets.data2, "IHALF2" + suffix, column_types="JQ"
+            )
+            self.current_dataset.add_miller_array(
+                half_datasets.multiplicity1,
+                "NHALF1" + suffix,
+            )
+            self.current_dataset.add_miller_array(
+                half_datasets.multiplicity2,
+                "NHALF2" + suffix,
             )
 
 
@@ -129,7 +152,9 @@ class MADMergedMTZWriter(MergedMTZWriter):
         anom_amplitudes=None,
         dano=None,
         multiplicities=None,
+        anom_multiplicities=None,
         suffix=None,
+        half_datasets: Optional[MergedHalfDatasets] = None,
     ):
         if not suffix:
             suffix = f"_WAVE{self.n_datasets}"
@@ -140,7 +165,9 @@ class MADMergedMTZWriter(MergedMTZWriter):
             anom_amplitudes,
             dano,
             multiplicities,
+            anom_multiplicities,
             suffix,
+            half_datasets,
         )
 
 

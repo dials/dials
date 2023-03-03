@@ -43,6 +43,14 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     anom_labels = ["I(+)", "I(-)", "SIGI(+)", "SIGI(-)"]
     amp_labels = ["F", "SIGF"]
     anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)", "DANO", "SIGDANO"]
+    half_labels = [
+        "IHALF1",
+        "SIGIHALF1",
+        "IHALF2",
+        "SIGIHALF2",
+        "NHALF1",
+        "NHALF2",
+    ]  # appear for additional_stats=True
 
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     refls = location / "scaled_20_25.refl"
@@ -69,7 +77,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     assert (tmp_path / "dials.merge.html").is_file()
     merge_json = tmp_path / "dials.merge.json"
     assert merge_json.is_file()
-    expected_labels = mean_labels
+    expected_labels = mean_labels + half_labels
     unexpected_labels = []
 
     with merge_json.open() as fh:
@@ -200,13 +208,13 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
 
-    # 6 miller arrays for each dataset, check the expected number of reflections.
+    # 7 miller arrays for each dataset, check the expected number of reflections.
     arrays = m.as_miller_arrays()
-    assert len(arrays) == 12
+    assert len(arrays) == 14
     assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert arrays[6].info().wavelength == pytest.approx(0.6889)
+    assert arrays[7].info().wavelength == pytest.approx(0.6889)
     assert abs(arrays[0].size() - 1223) < 10  # check number of miller indices
-    assert abs(arrays[6].size() - 1453) < 10  # check number of miller indices
+    assert abs(arrays[7].size() - 1453) < 10  # check number of miller indices
 
     # test changing the wavelength tolerance such that data is combined under
     # one wavelength. Check the number of reflections to confirm this.
@@ -223,7 +231,7 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     m = mtz.object(str(tmp_path / "merged.mtz"))
     arrays = m.as_miller_arrays()
     assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert len(arrays) == 6
+    assert len(arrays) == 7
     assert abs(arrays[0].size() - 1538) < 10
 
 
