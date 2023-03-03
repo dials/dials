@@ -9,47 +9,90 @@ steps:
 # Obtain a shallow clone of the DIALS repository.
 # DIALS will not be able to report proper version numbers
 - checkout: self
-  path: modules/dials
+  path: ./modules/dials
   fetchDepth: 1
   displayName: Checkout $(Build.SourceBranch)
 
-# Download source repositories using the bootstrap script
-- powershell: |
-    set PYTHONUNBUFFERED=TRUE
-    python.exe modules\dials\installer\bootstrap.py update
-  displayName: Repository checkout
-  failOnStderr: true
-  workingDirectory: $(Pipeline.Workspace)
+- powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+  displayName: Add conda to PATH
 
 # Create a new conda environment using the bootstrap script
-- script: |
-    set PYTHONUNBUFFERED=TRUE
-    python modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION)
+- bash: |
+    set -eux
+    # Workaround from dxtbx pipeline:
+    # Remove compilers from conda-env, as prebuilt cctbx appears to use
+    # the system configured compilers and so the conda-forge settings conflict
+    grep -v compiler modules/dials/.conda-envs/windows.txt > ci-conda-env.txt
+    echo pycbf >> ci-conda-env.txt
+    echo cmake >> ci-conda-env.txt
+    mv ci-conda-env.txt modules/dials/.conda-envs/windows.txt
+
+    python3 modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION)
+
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
 
+# Build and install dxtbx
+- script: |
+    git clone https://github.com/cctbx/dxtbx ./modules/dxtbx
+    call activate conda_base/
+    mkdir build_dxtbx
+    cd build_dxtbx
+    cmake ../modules/dxtbx
+    if %errorlevel% neq 0 exit /b %errorlevel%
+
+    cmake --build . --config Release
+    if %errorlevel% neq 0 exit /b %errorlevel%
+
+    cmake --install . --config Release
+    if %errorlevel% neq 0 exit /b %errorlevel%
+
+    pip install ../modules/dxtbx
+    if %errorlevel% neq 0 exit /b %errorlevel%
+  displayName: Build and install dxtbx
+  workingDirectory: $(Pipeline.Workspace)
+
+
 # Build DIALS using the bootstrap script
-- script: |
-    pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-    for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
-    popd
-    call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
+# - script: |
+#     pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
+#     for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
+#     popd
+#     call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
 
-    python modules/dials/installer/bootstrap.py build
-  displayName: DIALS build
+#     python modules/dials/installer/bootstrap.py build
+#   displayName: DIALS build
+#   workingDirectory: $(Pipeline.Workspace)
+
+- script: |
+    call activate conda_base/
+    mkdir build_dials
+    cd build_dials
+    cmake ../modules/dials
+    if %errorlevel% neq 0 exit /b %errorlevel%
+
+    cmake --build . --config Release
+    if %errorlevel% neq 0 exit /b %errorlevel%
+
+    cmake --install . --config Release
+    if %errorlevel% neq 0 exit /b %errorlevel%
+
+    pip install ../modules/dials
+    if %errorlevel% neq 0 exit /b %errorlevel%
+  displayName: Build and install DIALS
   workingDirectory: $(Pipeline.Workspace)
 
-# Ensure we are using up-to-date testing packages.
-# Extract the dials-data version so we can correctly cache regression data.
-- script: |
-    call dials.bat
-    conda install -y dials-data pytest-azurepipelines pytest-timeout
-    dials.data info -v
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
-    mkdir -p data
-  displayName: Install additional packages
-  workingDirectory: $(Pipeline.Workspace)
+# # Ensure we are using up-to-date testing packages.
+# # Extract the dials-data version so we can correctly cache regression data.
+# - script: |
+#     call dials.bat
+#     conda install -y dials-data pytest-azurepipelines pytest-timeout
+#     dials.data info -v
+#     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
+#     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
+#     mkdir -p data
+#   displayName: Install additional packages
+#   workingDirectory: $(Pipeline.Workspace)
 
 # # Retrieve the regression data from cache if possible
 # # The cache allows day-to-day incremental updates, which is relevant only if
@@ -69,15 +112,15 @@ steps:
 #     cacheHitVar: DATA_CACHED
 #   displayName: Restore regression data cache
 
-- script: |
-    set DIALS_DATA=$(Pipeline.Workspace)\data
-    set PYTHONDEVMODE=1
-    set PYTHONUNBUFFERED=TRUE
-    call dials.bat
-    cd modules/dials
-    libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
-  displayName: Run some tests (temporary)
-  workingDirectory: $(Pipeline.Workspace)
+# - script: |
+#     set DIALS_DATA=$(Pipeline.Workspace)\data
+#     set PYTHONDEVMODE=1
+#     set PYTHONUNBUFFERED=TRUE
+#     call dials.bat
+#     cd modules/dials
+#     libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
+#   displayName: Run some tests (temporary)
+#   workingDirectory: $(Pipeline.Workspace)
 
 # Finally, run the full regression test suite
 # - bash: |
@@ -92,30 +135,30 @@ steps:
 
 # Recover disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
-- powershell: |
-    echo "Disk space usage:"
-    Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
+# - powershell: |
+#     echo "Disk space usage:"
+#     Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
 
-    echo ""
-    echo "Build directory:"
-    cd build
-    Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
-    cd ..
+#     echo ""
+#     echo "Build directory:"
+#     cd build
+#     Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
+#     cd ..
 
-    if (Test-Path -Path tests) {
-      echo ""
-      echo "Test artifacts:"
-      cd tests
-      Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
-      cd ..
+#     if (Test-Path -Path tests) {
+#       echo ""
+#       echo "Test artifacts:"
+#       cd tests
+#       Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
+#       cd ..
 
-      echo ""
-      echo "Cleaning up test artifacts"
-      Get-ChildItem -Path tests -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-      Remove-Item -Path tests -Recurse -Force -ErrorAction SilentlyContinue
-    }
+#       echo ""
+#       echo "Cleaning up test artifacts"
+#       Get-ChildItem -Path tests -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+#       Remove-Item -Path tests -Recurse -Force -ErrorAction SilentlyContinue
+#     }
 
-    dir
-  displayName: Recover disk space
-  workingDirectory: $(Pipeline.Workspace)
+#     dir
+#   displayName: Recover disk space
+#   workingDirectory: $(Pipeline.Workspace)
 # condition: ne(variables.DATA_CACHED, 'true')
