@@ -235,9 +235,9 @@ def index_all_concurrent(
                         reflection_table=reflections[refl_index],
                         experiment=expt,
                         parameters=params,
-                        image_identifier=os.path.split(iset.get_image_identifier(i))[
-                            -1
-                        ],
+                        image_identifier=pathlib.Path(
+                            iset.get_image_identifier(i)
+                        ).name,
                         image_no=refl_index,
                         method_list=method_list,
                     )
@@ -245,7 +245,7 @@ def index_all_concurrent(
             else:  # experiments that have already been filtered
                 results_summary[refl_index].append(
                     {
-                        "Image": os.path.split(iset.get_image_identifier(i))[-1],
+                        "Image": pathlib.Path(iset.get_image_identifier(i)).name,
                         "n_indexed": 0,
                         "n_strong": 0,
                     }
