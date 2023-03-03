@@ -27,7 +27,7 @@ steps:
     echo cmake >> ci-conda-env.txt
     mv ci-conda-env.txt modules/dials/.conda-envs/windows.txt
 
-    python3 modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION)
+    python3 modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION) --prebuilt-cctbx
 
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
