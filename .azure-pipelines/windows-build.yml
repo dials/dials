@@ -51,7 +51,7 @@ steps:
     if %errorlevel% neq 0 exit /b %errorlevel%
 
     cd ..
-    rmdir -s -q build_dxtbx
+    rmdir /s /q build_dxtbx
   displayName: dxtbx Build/Install
   workingDirectory: $(Pipeline.Workspace)
 
