@@ -52,7 +52,7 @@ steps:
 
     cd ..
     rmdir -s -q build_dxtbx
-  displayName: Build and install dxtbx
+  displayName: dxtbx Build/Install
   workingDirectory: $(Pipeline.Workspace)
 
 
@@ -82,7 +82,7 @@ steps:
 
     pip install ../modules/dials
     if %errorlevel% neq 0 exit /b %errorlevel%
-  displayName: Build and install DIALS
+  displayName: DIALS Build/Install
   workingDirectory: $(Pipeline.Workspace)
 
 # # Ensure we are using up-to-date testing packages.
