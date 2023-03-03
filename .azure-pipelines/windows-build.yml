@@ -49,6 +49,9 @@ steps:
 
     pip install ../modules/dxtbx
     if %errorlevel% neq 0 exit /b %errorlevel%
+
+    cd ..
+    rmdir -s -q build_dxtbx
   displayName: Build and install dxtbx
   workingDirectory: $(Pipeline.Workspace)
 
