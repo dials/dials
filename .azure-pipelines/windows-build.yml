@@ -32,6 +32,17 @@ steps:
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
 
+# Extract the dials-data version so we can correctly cache regression data.
+- bash: |
+    # Note: Running directly avoids having to deal with cross bash/cmd conda activation
+    conda_base/Scripts/dials.data-script.py info -v
+
+    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(conda_base/Scripts/dials.data-script.py info -v | grep version.full)"
+    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(conda_base/Scripts/dials.data-script.py info -v | grep version.major_minor)"
+    mkdir -p data
+  displayName: Determine dials.data version
+  workingDirectory: $(Pipeline.Workspace)
+
 # Build and install dxtbx
 - script: |
     git clone https://github.com/cctbx/dxtbx ./modules/dxtbx
@@ -55,18 +66,6 @@ steps:
   displayName: dxtbx Build/Install
   workingDirectory: $(Pipeline.Workspace)
 
-
-# Build DIALS using the bootstrap script
-# - script: |
-#     pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-#     for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
-#     popd
-#     call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
-
-#     python modules/dials/installer/bootstrap.py build
-#   displayName: DIALS build
-#   workingDirectory: $(Pipeline.Workspace)
-
 - script: |
     call activate conda_base/
     mkdir build_dials
@@ -85,56 +84,48 @@ steps:
   displayName: DIALS Build/Install
   workingDirectory: $(Pipeline.Workspace)
 
-# # Ensure we are using up-to-date testing packages.
-# # Extract the dials-data version so we can correctly cache regression data.
-# - script: |
-#     call dials.bat
-#     conda install -y dials-data pytest-azurepipelines pytest-timeout
-#     dials.data info -v
-#     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
-#     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
-#     mkdir -p data
-#   displayName: Install additional packages
-#   workingDirectory: $(Pipeline.Workspace)
+# Retrieve the regression data from cache if possible
+# The cache allows day-to-day incremental updates, which is relevant only if
+# tests are added that refer to datasets in dials-data that were not previously
+# referred to.
+# New versions of dials-data also lead to cache updates, kick-started from the
+# previous cache version.
+# The cache is shared across operating systems and python versions, and flushed
+# once a week and for dials-data major and minor releases (eg. 2.0->2.1).
+- task: Cache@2
+  inputs:
+    key: '"data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)" | "$(DIALS_DATA_VERSION_FULL)"'
+    restoreKeys: |
+      "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)"
+      "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)"
+    path: $(Pipeline.Workspace)/data
+    cacheHitVar: DATA_CACHED
+  displayName: Restore regression data cache
 
-# # Retrieve the regression data from cache if possible
-# # The cache allows day-to-day incremental updates, which is relevant only if
-# # tests are added that refer to datasets in dials-data that were not previously
-# # referred to.
-# # New versions of dials-data also lead to cache updates, kick-started from the
-# # previous cache version.
-# # The cache is shared across operating systems and python versions, and flushed
-# # once a week and for dials-data major and minor releases (eg. 2.0->2.1).
-# - task: Cache@2
-#   inputs:
-#     key: '"data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)" | "$(DIALS_DATA_VERSION_FULL)"'
-#     restoreKeys: |
-#       "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)"
-#       "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)"
-#     path: $(Pipeline.Workspace)/data
-#     cacheHitVar: DATA_CACHED
-#   displayName: Restore regression data cache
+# Run the dxtbx regression suite
+- script: |
+    call activate conda_base/
+    SET PYTHONDEVMODE=1
+    SET DIALS_DATA=$(Pipeline.Workspace)/data
+    pytest -v -ra modules/dials/tests --regression --basetemp="$(Pipeline.Workspace)/tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
+    if %errorlevel% neq 0 exit /b %errorlevel%
+  displayName: Run Tests
+  workingDirectory: $(Pipeline.Workspace)
 
-# - script: |
-#     set DIALS_DATA=$(Pipeline.Workspace)\data
-#     set PYTHONDEVMODE=1
-#     set PYTHONUNBUFFERED=TRUE
-#     call dials.bat
-#     cd modules/dials
-#     libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
-#   displayName: Run some tests (temporary)
-#   workingDirectory: $(Pipeline.Workspace)
+# Recover disk space after testing
+# This is only relevant if we had cache misses, as free disk space is required to create cache archives
+- bash: |
+    echo Disk space usage:
+    df -h
+    du -sh *
+    echo
+    echo Test artefacts:
+    du -h tests
+    rm -rf tests
+  displayName: Recover disk space
+  workingDirectory: $(Pipeline.Workspace)
+  condition: ne(variables.DATA_CACHED, 'true')
 
-# Finally, run the full regression test suite
-# - bash: |
-#     set -e
-#     export DIALS_DATA=$(pwd)/data
-#     . dials
-#     cd modules/dials
-#     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
-#         --timeout=5400 --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
-#   displayName: Run tests
-#   workingDirectory: $(Pipeline.Workspace)
 
 # Recover disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
