@@ -111,6 +111,95 @@ class RadialProfileThresholdDebug:
         return dispersion
 
 
+def calculate_isoresolution_lines(
+    spacings, beam, detector, unit_cell, space_group, flex_image, n_rays=720
+):
+
+    # Calculate 2θ angles
+    wavelength = beam.get_wavelength()
+    twotheta = uctbx.d_star_sq_as_two_theta(uctbx.d_as_d_star_sq(spacings), wavelength)
+
+    # Get beam vector and two orthogonal vectors
+    beamvec = matrix.col(beam.get_s0())
+    bor1 = beamvec.ortho()
+    bor2 = beamvec.cross(bor1)
+
+    ring_data = []
+    resolution_text_data = []
+    for tt, d in zip(twotheta, spacings):
+
+        # Generate rays at 2θ
+        cone_base_centre = beamvec * math.cos(tt)
+        cone_base_radius = (beamvec * math.sin(tt)).length()
+        rad1 = bor1.normalize() * cone_base_radius
+        rad2 = bor2.normalize() * cone_base_radius
+        ticks = (2 * math.pi / n_rays) * flex.double_range(n_rays)
+        offset1 = flex.vec3_double(n_rays, rad1) * flex.cos(ticks)
+        offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
+        rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
+
+        # Get the ray intersections. Need to set a dummy phi value
+        rt = flex.reflection_table.empty_standard(n_rays)
+        rt["s1"] = rays
+        rt["phi"] = flex.double(n_rays, 0)
+        from dials.algorithms.spot_prediction import ray_intersection
+
+        intersect = ray_intersection(detector, rt)
+        rt = rt.select(intersect)
+        if len(rt) == 0:
+            continue
+
+        curr_panel_id = rt[0]["panel"]
+        panel = detector[curr_panel_id]
+
+        # Split the intersections into sets of vertices in separate paths
+        paths = []
+        vertices = []
+        for ref in rt.rows():
+            if ref["panel"] != curr_panel_id:
+                # close off the current path and reset the vertices
+                paths.append(vertices)
+                vertices = []
+                curr_panel_id = ref["panel"]
+                panel = detector[curr_panel_id]
+            x, y = panel.millimeter_to_pixel(ref["xyzcal.mm"][0:2])
+            y, x = flex_image.tile_readout_to_picture(curr_panel_id, y - 0.5, x - 0.5)
+            vertices.append((x, y))
+        paths.append(vertices)
+
+        # For each path, convert vertices to segments and add to the ring data
+        segments = []
+        for vertices in paths:
+            for i in range(len(vertices) - 1):
+                segments.append((vertices[i], vertices[i + 1]))
+        ring_data.extend(segments)
+
+        # Add labels to the iso-resolution lines
+        if unit_cell is None and space_group is None:
+            cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
+            for angle in (45, 135, 225, 315):
+                txtvec = cb1.rotate_around_origin(
+                    axis=beamvec, angle=math.radians(angle)
+                )
+                try:
+                    panel_id, txtpos = detector.get_ray_intersection(txtvec)
+                except RuntimeError:
+                    continue
+                txtpos = detector[panel_id].millimeter_to_pixel(txtpos)
+                x, y = flex_image.tile_readout_to_picture(
+                    panel_id, txtpos[1], txtpos[0]
+                )[::-1]
+                resolution_text_data.append(
+                    (
+                        x,
+                        y,
+                        f"{d:.2f}",
+                    )
+                )
+
+    return (ring_data, resolution_text_data)
+
+
 class SpotFrame(XrayFrame):
     def __init__(self, *args, **kwds):
         self.experiments = kwds.pop("experiments")
@@ -682,105 +771,34 @@ class SpotFrame(XrayFrame):
     ):
         """Draw resolution rings for arbitrary detector geometry using a polygon path"""
 
-        # Calculate 2θ angles
-        wavelength = beam.get_wavelength()
-        twotheta = uctbx.d_star_sq_as_two_theta(
-            uctbx.d_as_d_star_sq(spacings), wavelength
+        segments, res_labels = calculate_isoresolution_lines(
+            spacings,
+            beam,
+            detector,
+            unit_cell,
+            space_group,
+            self.pyslip.tiles.flex_image,
         )
 
-        # Get beam vector and two orthogonal vectors
-        beamvec = matrix.col(beam.get_s0())
-        bor1 = beamvec.ortho()
-        bor2 = beamvec.cross(bor1)
+        ring_data = []
+        metadata = {
+            "color": "red",
+            "closed": False,
+            "width": self.pyslip.DefaultPolygonWidth,
+        }
+        for segment in segments:
+            coord1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(*segment[0])
+            coord2 = self.pyslip.tiles.picture_fast_slow_to_map_relative(*segment[1])
+            ring_data.append(((coord1, coord2), metadata))
 
         resolution_text_data = []
-        ring_data = []
-        n_rays = 720
-        for tt, d in zip(twotheta, spacings):
-
-            # Generate rays at 2θ
-            cone_base_centre = beamvec * math.cos(tt)
-            cone_base_radius = (beamvec * math.sin(tt)).length()
-            rad1 = bor1.normalize() * cone_base_radius
-            rad2 = bor2.normalize() * cone_base_radius
-            ticks = (2 * math.pi / n_rays) * flex.double_range(n_rays)
-            offset1 = flex.vec3_double(n_rays, rad1) * flex.cos(ticks)
-            offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
-            rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
-
-            # Get the ray intersections. Need to set a dummy phi value
-            rt = flex.reflection_table.empty_standard(n_rays)
-            rt["s1"] = rays
-            rt["phi"] = flex.double(n_rays, 0)
-            from dials.algorithms.spot_prediction import ray_intersection
-
-            intersect = ray_intersection(detector, rt)
-            rt = rt.select(intersect)
-            if len(rt) == 0:
-                continue
-
-            curr_panel_id = rt[0]["panel"]
-            panel = detector[curr_panel_id]
-
-            # Split the intersections into sets of vertices in separate paths
-            paths = []
-            vertices = []
-            for ref in rt.rows():
-                if ref["panel"] != curr_panel_id:
-                    # close off the current path and reset the vertices
-                    paths.append(vertices)
-                    vertices = []
-                    curr_panel_id = ref["panel"]
-                    panel = detector[curr_panel_id]
-                x, y = panel.millimeter_to_pixel(ref["xyzcal.mm"][0:2])
-                vertices.append(self.map_coords(x, y, curr_panel_id))
-            paths.append(vertices)
-
-            # For each path, convert vertices to segments and add to the ring data
-            segments = []
-            for vertices in paths:
-                for i in range(len(vertices) - 1):
-                    segments.append(
-                        (
-                            (vertices[i], vertices[i + 1]),
-                            {
-                                "width": self.pyslip.DefaultPolygonWidth,
-                                "color": "red",
-                                "closed": False,
-                            },
-                        )
-                    )
-            ring_data.extend(segments)
-
-            # Add labels to the iso-resolution lines
-            if unit_cell is None and space_group is None:
-                cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
-                for angle in (45, 135, 225, 315):
-                    txtvec = cb1.rotate_around_origin(
-                        axis=beamvec, angle=math.radians(angle)
-                    )
-                    try:
-                        panel_id, txtpos = detector.get_ray_intersection(txtvec)
-                    except RuntimeError:
-                        continue
-                    txtpos = detector[panel_id].millimeter_to_pixel(txtpos)
-                    txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                        panel_id, txtpos[1], txtpos[0]
-                    )[::-1]
-                    x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(
-                        txtpos[0], txtpos[1]
-                    )
-                    resolution_text_data.append(
-                        (
-                            x,
-                            y,
-                            f"{d:.2f}",
-                            {
-                                "placement": "cc",
-                                "colour": "red",
-                            },
-                        )
-                    )
+        metadata = {
+            "placement": "cc",
+            "colour": "red",
+        }
+        for (txt_x, txt_y, txt_str) in res_labels:
+            x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(txt_x, txt_y)
+            resolution_text_data.append((x, y, txt_str, metadata))
 
         # Remove the old ring layer, and draw a new one.
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
