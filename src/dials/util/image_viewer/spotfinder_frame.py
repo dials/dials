@@ -163,7 +163,14 @@ def calculate_isoresolution_lines(
                 curr_panel_id = ref["panel"]
                 panel = detector[curr_panel_id]
             x, y = panel.millimeter_to_pixel(ref["xyzcal.mm"][0:2])
-            y, x = flex_image.tile_readout_to_picture(curr_panel_id, y - 0.5, x - 0.5)
+            try:
+                # Multi-panel case
+                y, x = flex_image.tile_readout_to_picture(
+                    curr_panel_id, y - 0.5, x - 0.5
+                )
+            except AttributeError:
+                # Single panel FlexImage
+                pass
             vertices.append((x, y))
         paths.append(vertices)
 
@@ -186,9 +193,14 @@ def calculate_isoresolution_lines(
                 except RuntimeError:
                     continue
                 txtpos = detector[panel_id].millimeter_to_pixel(txtpos)
-                x, y = flex_image.tile_readout_to_picture(
-                    panel_id, txtpos[1], txtpos[0]
-                )[::-1]
+                try:
+                    # Multi-panel case
+                    x, y = flex_image.tile_readout_to_picture(
+                        panel_id, txtpos[1], txtpos[0]
+                    )[::-1]
+                except AttributeError:
+                    # Single panel FlexImage
+                    x, y = txtpos
                 resolution_text_data.append(
                     (
                         x,
