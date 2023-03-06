@@ -127,34 +127,3 @@ steps:
   displayName: Recover disk space
   workingDirectory: $(Pipeline.Workspace)
   condition: ne(variables.DATA_CACHED, 'true')
-
-
-# Recover disk space after testing
-# This is only relevant if we had cache misses, as free disk space is required to create cache archives
-# - powershell: |
-#     echo "Disk space usage:"
-#     Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
-
-#     echo ""
-#     echo "Build directory:"
-#     cd build
-#     Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
-#     cd ..
-
-#     if (Test-Path -Path tests) {
-#       echo ""
-#       echo "Test artifacts:"
-#       cd tests
-#       Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
-#       cd ..
-
-#       echo ""
-#       echo "Cleaning up test artifacts"
-#       Get-ChildItem -Path tests -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-#       Remove-Item -Path tests -Recurse -Force -ErrorAction SilentlyContinue
-#     }
-
-#     dir
-#   displayName: Recover disk space
-#   workingDirectory: $(Pipeline.Workspace)
-# condition: ne(variables.DATA_CACHED, 'true')
