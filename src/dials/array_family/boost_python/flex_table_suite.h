@@ -23,7 +23,6 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <scitbx/array_family/flex_types.h>
-#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/boost_python/slice.h>
 #include <scitbx/boost_python/utils.h>
 #include <dials/array_family/flex_table.h>
@@ -31,6 +30,8 @@
 #include <dials/error.h>
 #include <dxtbx/model/experiment.h>
 #include <dxtbx/model/experiment_list.h>
+
+#include "ref_pickle_double_buffered.h"
 
 namespace dials { namespace af { namespace boost_python { namespace flex_table_suite {
 
