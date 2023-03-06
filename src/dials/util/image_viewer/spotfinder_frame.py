@@ -112,7 +112,7 @@ class RadialProfileThresholdDebug:
 
 
 def calculate_isoresolution_lines(
-    spacings, beam, detector, unit_cell, space_group, flex_image, n_rays=720
+    spacings, beam, detector, flex_image, add_text=True, n_rays=720
 ):
 
     # Calculate 2θ angles
@@ -175,7 +175,7 @@ def calculate_isoresolution_lines(
         ring_data.extend(segments)
 
         # Add labels to the iso-resolution lines
-        if unit_cell is None and space_group is None:
+        if add_text:
             cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
             for angle in (45, 135, 225, 315):
                 txtvec = cb1.rotate_around_origin(
@@ -771,13 +771,9 @@ class SpotFrame(XrayFrame):
     ):
         """Draw resolution rings for arbitrary detector geometry using a polygon path"""
 
+        add_text = unit_cell is None and space_group is None
         segments, res_labels = calculate_isoresolution_lines(
-            spacings,
-            beam,
-            detector,
-            unit_cell,
-            space_group,
-            self.pyslip.tiles.flex_image,
+            spacings, beam, detector, self.pyslip.tiles.flex_image, add_text
         )
 
         ring_data = []
