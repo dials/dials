@@ -8,6 +8,8 @@
 #include <dials/error.h>
 #include <math.h>
 #include <dials/algorithms/refinement/gaussian_smoother.h>
+#include <scitbx/random.h>
+#include <cctbx/miller.h>
 
 typedef scitbx::sparse::matrix<double>::column_type col_type;
 
@@ -533,6 +535,130 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
   return coefficients_list;
 }
 
+// adaptation of cctbx/miller/merge_equivalents.h
+class split_unmerged {
+public:
+  split_unmerged(scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
+                 scitbx::af::const_ref<double> const& unmerged_data,
+                 scitbx::af::const_ref<double> const& unmerged_sigmas,
+                 bool weighted = true,
+                 unsigned seed = 0) {
+    if (unmerged_indices.size() == 0) return;
+    if (seed != 0) gen.seed(seed);
+    CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
+    std::size_t group_begin = 0;
+    std::size_t group_end = 1;
+    for (; group_end < unmerged_indices.size(); group_end++) {
+      if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
+        process_group(group_begin,
+                      group_end,
+                      unmerged_indices[group_begin],
+                      unmerged_data,
+                      unmerged_sigmas,
+                      weighted);
+        group_begin = group_end;
+      }
+    }
+    process_group(group_begin,
+                  group_end,
+                  unmerged_indices[group_begin],
+                  unmerged_data,
+                  unmerged_sigmas,
+                  weighted);
+  }
+
+  scitbx::af::shared<double> data1() const {
+    return data_1;
+  }
+
+  scitbx::af::shared<double> data2() const {
+    return data_2;
+  }
+
+  scitbx::af::shared<double> sigma1() const {
+    return sigma_1;
+  }
+
+  scitbx::af::shared<double> sigma2() const {
+    return sigma_2;
+  }
+
+  scitbx::af::shared<int> n1() const {
+    return n_1;
+  }
+
+  scitbx::af::shared<int> n2() const {
+    return n_2;
+  }
+
+  scitbx::af::shared<cctbx::miller::index<> > indices() const {
+    return indices_;
+  }
+
+protected:
+  scitbx::af::shared<double> data_1;
+  scitbx::af::shared<double> data_2;
+  scitbx::af::shared<double> sigma_1;
+  scitbx::af::shared<double> sigma_2;
+  scitbx::af::shared<int> n_1;
+  scitbx::af::shared<int> n_2;
+  scitbx::af::shared<cctbx::miller::index<> > indices_;
+  void process_group(std::size_t group_begin,
+                     std::size_t group_end,
+                     cctbx::miller::index<> const& current_index,
+                     scitbx::af::const_ref<double> const& unmerged_data,
+                     scitbx::af::const_ref<double> const& unmerged_sigmas,
+                     bool weighted) {
+    const std::size_t n = group_end - group_begin;
+    if (n < 2) {
+      return;
+    } else {
+      // temp is a copy of the array of intensites of each observation
+      std::vector<double> temp(n), temp_w(n);
+      for (std::size_t i = 0; i < n; i++) {
+        temp[i] = unmerged_data[group_begin + i];
+        if (weighted) {
+          temp_w[i] =
+            1.0 / (unmerged_sigmas[group_begin + i] * unmerged_sigmas[group_begin + i]);
+        } else {
+          temp_w[i] = 1.0;
+        }
+      }
+      std::size_t nsum = n / 2;
+      // actually I (Kay) don't think it matters, and we
+      // don't do it in picknofm, but it's like that in the Science paper:
+      if (2 * nsum != n && gen.random_double() < 0.5) nsum += 1;
+      std::vector<double> i_obs(2, 0.), sum_w(2, 0.), sum_wx2(2, 0.), v2(2, 0);
+      std::vector<int> n_obs(2, 0);
+      n_obs[0] = nsum;
+      n_obs[1] = n - nsum;
+      for (std::size_t i = 0; i < nsum; i++) {
+        // choose a random index ind from 0 to n-i-1
+        const std::size_t ind =
+          i + std::min(n - i - 1, std::size_t(gen.random_double() * (n - i)));
+        i_obs[0] += temp[ind] * temp_w[ind];
+        sum_w[0] += temp_w[ind];
+        temp[ind] = temp[i];
+        temp_w[ind] = temp_w[i];
+      }
+      for (std::size_t i = nsum; i < n; i++) {
+        i_obs[1] += temp[i] * temp_w[i];
+        sum_w[1] += temp_w[i];
+      }
+      float mu_0 = i_obs[0] / sum_w[0];
+      float mu_1 = i_obs[1] / sum_w[1];
+      data_1.push_back(mu_0);
+      data_2.push_back(mu_1);
+      sigma_1.push_back(std::sqrt(1.0 / sum_w[0]));
+      sigma_2.push_back(std::sqrt(1.0 / sum_w[1]));
+      n_1.push_back(n_obs[0]);
+      n_2.push_back(n_obs[1]);
+      indices_.push_back(current_index);
+    }
+  }
+
+  scitbx::random::mersenne_twister gen;
+};
 }  // namespace dials_scaling
 
 #endif  // DIALS_SCALING_SCALING_HELPER_H

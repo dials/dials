@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import math
 from copy import deepcopy
+from dataclasses import dataclass
 from unittest.mock import Mock
 
 import numpy as np
@@ -21,7 +22,6 @@ import pkg_resources
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
-from cctbx.miller import split_unmerged
 from dxtbx.model import Experiment
 from dxtbx.util import ersatz_uuid4
 from libtbx import Auto, phil
@@ -36,6 +36,7 @@ from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
 from dials.util.reference import intensities_from_reference_file
+from dials_scaling_ext import split_unmerged
 
 logger = logging.getLogger("dials")
 
@@ -374,6 +375,14 @@ def determine_best_unit_cell(experiments):
     return best_unit_cell
 
 
+@dataclass
+class MergedHalfDatasets:
+    data1: miller.array
+    data2: miller.array
+    multiplicity1: miller.array
+    multiplicity2: miller.array
+
+
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
     """A class to extend iotbx merging statistics."""
@@ -383,6 +392,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         self.r_split = None
         self.r_split_binned = None
         self.binner = None
+        self.merged_half_datasets = None
         if not additional_stats:
             return
         i_obs = kwargs.get("i_obs")
@@ -394,21 +404,32 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
 
-        split_datasets = split_unmerged(
+        split = split_unmerged(
             unmerged_indices=i_obs.indices(),
             unmerged_data=i_obs.data(),
             unmerged_sigmas=i_obs.sigmas(),
             seed=seed,
         )
-        indices = split_datasets.indices
+        indices = split.indices()
         m1 = miller.array(
             miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split_datasets.data_1,
+            data=split.data1(),
+            sigmas=split.sigma1(),
         )
         m2 = miller.array(
             miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split_datasets.data_2,
+            data=split.data2(),
+            sigmas=split.sigma2(),
         )
+        n1 = miller.array(
+            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+            data=split.n1(),
+        )
+        n2 = miller.array(
+            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+            data=split.n2(),
+        )
+        self.merged_half_datasets = MergedHalfDatasets(m1, m2, n1, n2)
         assert i_obs_copy.binner() is not None
         self.binner = i_obs_copy.binner()
         m1.use_binning(self.binner)

@@ -133,6 +133,8 @@ class MTZDataClass:
         anomalous_amplitudes=None,
         dano=None,
         multiplicities=None,
+        anomalous_multiplicities=None,
+        merged_half_datasets=None,
     ):
         self.wavelength = wavelength
         self.project_name = project_name
@@ -144,6 +146,8 @@ class MTZDataClass:
         self.anomalous_amplitudes = anomalous_amplitudes
         self.dano = dano
         self.multiplicities = multiplicities
+        self.anomalous_multiplicities = anomalous_multiplicities
+        self.merged_half_datasets = merged_half_datasets
 
 
 def make_merged_mtz_file(mtz_datasets):
@@ -183,6 +187,8 @@ def make_merged_mtz_file(mtz_datasets):
             dataset.anomalous_amplitudes,
             dataset.dano,
             dataset.multiplicities,
+            dataset.anomalous_multiplicities,
+            half_datasets=dataset.merged_half_datasets,
         )
 
     return mtz_writer.mtz_file
@@ -456,16 +462,23 @@ def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_sum
         merged_anomalous_array = merged_anomalous.array()
         # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
         mtz_dataset.merged_anomalous_array = merged_anomalous_array
-        mtz_dataset.multiplicities = merged_anomalous.redundancies()
+        mtz_dataset.anomalous_multiplicities = merged_anomalous.redundancies()
     else:
         merged_anomalous_array = None
-        # This will add the data for N
-        mtz_dataset.multiplicities = merged.redundancies()
+    # This will add the data for N
+    mtz_dataset.multiplicities = merged.redundancies()
 
     if params.anomalous:
         merged_intensities = merged_anomalous_array
     else:
         merged_intensities = merged_array
+    if (
+        hasattr(stats_summary.merging_statistics_result, "merged_half_datasets")
+        and stats_summary.merging_statistics_result.merged_half_datasets is not None
+    ):
+        mtz_dataset.merged_half_datasets = (
+            stats_summary.merging_statistics_result.merged_half_datasets
+        )
 
     anom_amplitudes = None
     if params.truncate:
