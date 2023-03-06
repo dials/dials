@@ -460,7 +460,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
    * @returns A new table with the chosen elements
    */
   template <typename T>
-  T getitem_slice(const T &self, slice s) {
+  T getitem_slice(const T &self, boost::python::slice s) {
     typedef typename T::const_iterator iterator;
     scitbx::boost_python::adapted_slice as(s, self.nrows());
     T result(as.size);
@@ -494,7 +494,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
    * @param s The slice
    */
   template <typename T>
-  void delitem_slice(T &self, slice s) {
+  void delitem_slice(T &self, boost::python::slice s) {
     scitbx::boost_python::adapted_slice as(s, self.nrows());
     if (as.step == 1) {
       self.erase(as.start, as.size);
@@ -516,7 +516,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
    * @param other The other table whose elements to set
    */
   template <typename T>
-  void setitem_slice(T &self, slice s, const T &other) {
+  void setitem_slice(T &self, boost::python::slice s, const T &other) {
     typedef typename T::const_iterator iterator;
     DIALS_ASSERT(self.is_consistent());
     DIALS_ASSERT(other.is_consistent());
