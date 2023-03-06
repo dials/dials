@@ -678,9 +678,21 @@ class SpotFrame(XrayFrame):
             return "#3b3b3b"  # dark grey
 
     def _draw_resolution_polygons(
-        self, twotheta, spacings, beamvec, bor1, bor2, detector, unit_cell, space_group
+        self, spacings, beam, detector, unit_cell, space_group
     ):
         """Draw resolution rings for arbitrary detector geometry using a polygon path"""
+
+        # Calculate 2θ angles
+        wavelength = beam.get_wavelength()
+        twotheta = uctbx.d_star_sq_as_two_theta(
+            uctbx.d_as_d_star_sq(spacings), wavelength
+        )
+
+        # Get beam vector and two orthogonal vectors
+        beamvec = matrix.col(beam.get_s0())
+        bor1 = beamvec.ortho()
+        bor2 = beamvec.cross(bor1)
+
         resolution_text_data = []
         ring_data = []
         n_rays = 720
@@ -827,6 +839,16 @@ class SpotFrame(XrayFrame):
                 [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
             )
 
+        # For non-coplanar detectors use a polygon method rather than ellipses
+        if detector.has_projection_2d():
+            return self._draw_resolution_polygons(
+                spacings,
+                beam,
+                detector,
+                unit_cell,
+                space_group,
+            )
+
         wavelength = beam.get_wavelength()
         twotheta = uctbx.d_star_sq_as_two_theta(
             uctbx.d_as_d_star_sq(spacings), wavelength
@@ -836,19 +858,6 @@ class SpotFrame(XrayFrame):
         beamvec = matrix.col(beam.get_s0())
         bor1 = beamvec.ortho()
         bor2 = beamvec.cross(bor1)
-
-        # For non-coplanar detectors use a polygon method rather than ellipses
-        if detector.has_projection_2d():
-            return self._draw_resolution_polygons(
-                twotheta,
-                spacings,
-                beamvec,
-                bor1,
-                bor2,
-                detector,
-                unit_cell,
-                space_group,
-            )
 
         resolution_text_data = []
         ring_data = []
