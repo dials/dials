@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 import iotbx.phil
+from cctbx import uctbx
 from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 
 from dials.algorithms.image.threshold import DispersionThresholdDebug
@@ -15,6 +16,7 @@ from dials.util.image_viewer.slip_viewer.flex_image import (
     get_flex_image,
     get_flex_image_multipanel,
 )
+from dials.util.image_viewer.spotfinder_frame import calculate_isoresolution_lines
 from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
@@ -71,6 +73,14 @@ saturation = 0
   .type = int
 show_mask = False
   .type = bool
+show_resolution_rings = False
+  .type = bool
+resolution_rings {
+  number = 5
+    .type = int(value_min=1)
+  fontsize = 30
+    .type = int
+}
 png {
   compress_level = 1
     .type = int(value_min=0, value_max=9)
@@ -222,6 +232,30 @@ def imageset_as_bitmaps(imageset, params):
         pil_img = Image.frombytes(
             "RGB", (flex_image.ex_size2(), flex_image.ex_size1()), flex_image.as_bytes()
         )
+
+        if params.show_resolution_rings:
+            beam = imageset.get_beam()
+
+            d_min = detector.get_max_resolution(beam.get_s0())
+            d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
+
+            n_rings = params.resolution_rings.number
+            step = d_star_sq_max / n_rings
+            spacings = flex.double(
+                [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
+            )
+            segments, res_labels = calculate_isoresolution_lines(
+                spacings, beam, detector, flex_image
+            )
+            draw = ImageDraw.Draw(pil_img)
+            for segment in segments:
+                draw.line(segment, fill="red", width=2)
+            font = ImageFont.truetype(
+                "arial.ttf", size=params.resolution_rings.fontsize
+            )
+            for x, y, label in res_labels:
+                draw.text((x, y), label, fill="red", font=font)
+
         if params.output.file:
             path = os.path.join(output_dir, params.output.file)
         else:
