@@ -405,7 +405,7 @@ def preprocess(
                 except (DialsIndexError, AssertionError):
                     pass
         if not max_cells:
-            raise ValueError("Unable to find a max cell for any images")
+            raise DialsIndexError("Unable to find a max cell for any images")
         import numpy as np
 
         sorted_cells = np.sort(np.array(max_cells))
