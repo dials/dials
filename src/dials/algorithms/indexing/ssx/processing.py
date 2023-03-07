@@ -406,8 +406,14 @@ def preprocess(
                     pass
         if not max_cells:
             raise ValueError("Unable to find a max cell for any images")
-        logger.info(f"Setting max cell to {max(max_cells):.1f} " + "\u212B")
-        params.indexing.max_cell = max(max_cells)
+        import numpy as np
+
+        sorted_cells = np.sort(np.array(max_cells))
+        n_cells = len(sorted_cells)
+        ncentile_95 = min(int(math.ceil(95 * n_cells / 100)), n_cells - 1)
+        centile_95 = sorted_cells[ncentile_95]
+        logger.info(f"Setting max cell to {centile_95:.1f} " + "\u212B")
+        params.indexing.max_cell = centile_95
 
     # Determine which methods to try
     method_list = params.method
