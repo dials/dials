@@ -178,6 +178,11 @@ def calculate_isoresolution_lines(
         segments = []
         for vertices in paths:
             for i in range(len(vertices) - 1):
+                # Avoid long segments along the image edges
+                dx = abs(vertices[i + 1][0] - vertices[i][0])
+                dy = abs(vertices[i + 1][1] - vertices[i][1])
+                if dx > 30 or dy > 30:
+                    continue
                 segments.append((vertices[i], vertices[i + 1]))
         ring_data.extend(segments)
 
