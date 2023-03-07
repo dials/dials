@@ -9,7 +9,7 @@
 #include <dxtbx/model/panel.h>
 #include <dials/error.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
-//#include <dials/algorithms/refinement/rtmats.h>
+#include <dials/algorithms/refinement/rtmats.h>
 #include <scitbx/math/r3_rotation.h>
 #include <boost/python.hpp>
 #include <unordered_map>
@@ -20,12 +20,6 @@ namespace dials { namespace refinement {
   using scitbx::mat3;
   using scitbx::vec3;
   using scitbx::math::r3_rotation::axis_and_angle_as_matrix;
-
-  // declare this here - can't #include the header as the function is defined
-  // there, leading to multiple definitions
-  mat3<double> dR_from_axis_and_angle(const vec3<double> &axis,
-                                      double angle,
-                                      bool deg = false);
 
   af::shared<mat3<double> > selected_multi_panel_compose(
     const af::const_ref<vec3<double> > &initial_state,
