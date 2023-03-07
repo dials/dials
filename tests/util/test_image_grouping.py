@@ -241,6 +241,10 @@ def test_invalid_yml(tmp_path):
         _ = ParsedYAML(tmp_path / "example_2.yaml")
 
 
+@pytest.mark.xfail(
+    os.name == "nt",
+    reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
+)
 def test_real_h5_example(tmp_path, dials_data):
 
     """This test tests a few use cases on processed data derived from h5 format."""
@@ -378,6 +382,10 @@ grouping:
     assert indices2 == expected_group2_file1
 
 
+@pytest.mark.xfail(
+    os.name == "nt",
+    reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
+)
 def test_real_cbf_example(tmp_path, dials_data):
 
     """This test tests a few use cases on real cbf data, using the template
