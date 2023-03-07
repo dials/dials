@@ -77,7 +77,7 @@ output
 
 
 def process_block(
-    block, imageset, grid_size, reverse_phi, S, ignore_mask, xy, rec_range
+    block, imageset, i_panel, grid_size, reverse_phi, S, ignore_mask, xy, rec_range
 ):
     grid = flex.double(flex.grid(grid_size, grid_size, grid_size), 0)
     counts = flex.int(flex.grid(grid_size, grid_size, grid_size), 0)
@@ -92,9 +92,9 @@ def process_block(
             angle *= -1
         rotated_S = S.rotate_around_origin(axis, angle)
 
-        data = imageset.get_raw_data(i)[0]
+        data = imageset.get_raw_data(i)[i_panel]
         if not ignore_mask:
-            mask = imageset.get_mask(i)[0]
+            mask = imageset.get_mask(i)[i_panel]
             data.set_selected(~mask, 0)
 
         recviewer.fill_voxels(data, grid, counts, rotated_S, xy, rec_range)
@@ -154,10 +154,11 @@ class Script:
             logger.info("Setting nproc={}".format(self.nproc))
 
         for experiment in self.experiments:
-            grid, counts = self.process_imageset(experiment.imageset)
+            for i_panel in range(len(experiment.detector)):
+                grid, counts = self.process_imageset(experiment.imageset, i_panel)
 
-            self.grid += grid
-            self.counts += counts
+                self.grid += grid
+                self.counts += counts
 
         recviewer.normalize_voxels(self.grid, self.counts)
 
@@ -178,17 +179,15 @@ class Script:
             flex.std_string(["cctbx.miller.fft_map"]),
         )
 
-    def process_imageset(self, imageset):
+    def process_imageset(self, imageset, i_panel):
         rec_range = 1 / self.max_resolution
 
-        if len(imageset.get_detector()) != 1:
-            raise Sorry("This program does not support multi-panel detectors.")
-
-        panel = imageset.get_detector()[0]
         beam = imageset.get_beam()
         s0 = beam.get_s0()
+
+        panel = imageset.get_detector()[i_panel]
         pixel_size = panel.get_pixel_size()
-        xlim, ylim = imageset.get_raw_data(0)[0].all()
+        xlim, ylim = imageset.get_raw_data(0)[i_panel].all()
         if pixel_size[0] != pixel_size[1]:
             raise Sorry("This program does not support non-square pixels.")
 
@@ -203,7 +202,7 @@ class Script:
         blocks = np.array_split(range(len(imageset)), nblocks)
         blocks = [block.tolist() for block in blocks]
 
-        logger.info(f"Calculation split over {len(blocks)} blocks")
+        logger.info(f"Calculation for panel {i_panel} split over {len(blocks)} blocks")
         header = ["Block", "Oscillation range (°)"]
         scan = imageset.get_scan()
         rows = [
@@ -220,6 +219,7 @@ class Script:
                 process_block(
                     blocks[0],
                     imageset,
+                    i_panel,
                     self.grid_size,
                     self.reverse_phi,
                     S,
@@ -237,6 +237,7 @@ class Script:
                         process_block,
                         block,
                         imageset,
+                        i_panel,
                         self.grid_size,
                         self.reverse_phi,
                         S,
