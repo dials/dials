@@ -4,6 +4,7 @@ Contains implementation interface for finding spots on one or many images
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import math
 import pickle
@@ -18,7 +19,7 @@ from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
 from dials.util import Sorry, log
 from dials.util.log import rehandle_cached_records
-from dials.util.mp import available_cores, batch_multi_node_parallel_map
+from dials.util.mp import available_cores
 
 logger = logging.getLogger(__name__)
 
@@ -367,9 +368,7 @@ class ExtractSpots:
         region_of_interest=None,
         max_strong_pixel_fraction=0.1,
         compute_mean_background=False,
-        mp_method=None,
         mp_nproc=1,
-        mp_njobs=1,
         mp_chunksize=1,
         min_spot_size=1,
         max_spot_size=20,
@@ -383,17 +382,14 @@ class ExtractSpots:
 
         :param threshold_function: The image thresholding strategy
         :param mask: The mask to use
-        :param mp_method: The multi processing method
         :param nproc: The number of processors
         :param max_strong_pixel_fraction: The maximum number of strong pixels
         """
         # Set the required strategies
         self.threshold_function = threshold_function
         self.mask = mask
-        self.mp_method = mp_method
         self.mp_chunksize = mp_chunksize
         self.mp_nproc = mp_nproc
-        self.mp_njobs = mp_njobs
         self.max_strong_pixel_fraction = max_strong_pixel_fraction
         self.compute_mean_background = compute_mean_background
         self.region_of_interest = region_of_interest
@@ -440,31 +436,25 @@ class ExtractSpots:
         """
         # Change the number of processors if necessary
         mp_nproc = self.mp_nproc
-        mp_njobs = self.mp_njobs
         if mp_nproc is libtbx.Auto:
             mp_nproc = available_cores()
             logger.info(f"Setting nproc={mp_nproc}")
-        if mp_nproc * mp_njobs > len(imageset):
-            mp_nproc = min(mp_nproc, len(imageset))
-            mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
+        mp_nproc = min(mp_nproc, len(imageset))
 
-        mp_method = self.mp_method
         mp_chunksize = self.mp_chunksize
 
         if mp_chunksize is libtbx.Auto:
             mp_chunksize = self._compute_chunksize(
-                len(imageset), mp_njobs * mp_nproc, self.min_chunksize
+                len(imageset), mp_nproc, self.min_chunksize
             )
             logger.info("Setting chunksize=%i", mp_chunksize)
 
-        len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
+        len_by_nproc = int(math.floor(len(imageset) / mp_nproc))
         if mp_chunksize > len_by_nproc:
             mp_chunksize = len_by_nproc
         if mp_chunksize == 0:
             mp_chunksize = 1
         assert mp_nproc > 0, "Invalid number of processors"
-        assert mp_njobs > 0, "Invalid number of jobs"
-        assert mp_njobs == 1 or mp_method is not None, "Invalid cluster method"
         assert mp_chunksize > 0, "Invalid chunk size"
 
         # The extract pixels function
@@ -486,39 +476,16 @@ class ExtractSpots:
 
         # Do the processing
         logger.info("Extracting strong pixels from images")
-        if mp_njobs > 1:
-            logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n",
-                mp_method,
-                mp_njobs,
-                mp_nproc,
-            )
-        else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
-        if mp_nproc > 1 or mp_njobs > 1:
+        logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
 
-            def process_output(result):
+        with concurrent.futures.ProcessPoolExecutor(max_workers=mp_nproc) as executor:
+            for result in executor.map(
+                ExtractSpotsParallelTask(function), indices, chunksize=mp_chunksize
+            ):
                 rehandle_cached_records(result[1])
                 assert len(pixel_labeller) == len(result[0]), "Inconsistent size"
                 for plabeller, plist in zip(pixel_labeller, result[0]):
                     plabeller.add(plist)
-
-            batch_multi_node_parallel_map(
-                func=ExtractSpotsParallelTask(function),
-                iterable=indices,
-                nproc=mp_nproc,
-                njobs=mp_njobs,
-                cluster_method=mp_method,
-                chunksize=mp_chunksize,
-                callback=process_output,
-            )
-        else:
-            for task in indices:
-                result = function(task)
-                assert len(pixel_labeller) == len(result), "Inconsistent size"
-                for plabeller, plist in zip(pixel_labeller, result):
-                    plabeller.add(plist)
-                result.clear()
 
         # Create shoeboxes from pixel list
         return pixel_list_to_reflection_table(
@@ -538,27 +505,20 @@ class ExtractSpots:
         :return: The list of spot shoeboxes
         """
         # Change the number of processors if necessary
-        mp_nproc = self.mp_nproc
-        mp_njobs = self.mp_njobs
-        if mp_nproc * mp_njobs > len(imageset):
-            mp_nproc = min(mp_nproc, len(imageset))
-            mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
+        mp_nproc = min(self.mp_nproc, len(imageset))
 
-        mp_method = self.mp_method
         mp_chunksize = self.mp_chunksize
 
         if mp_chunksize == libtbx.Auto:
             mp_chunksize = self._compute_chunksize(
-                len(imageset), mp_njobs * mp_nproc, self.min_chunksize
+                len(imageset), mp_nproc, self.min_chunksize
             )
             logger.info("Setting chunksize=%i", mp_chunksize)
 
-        len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
+        len_by_nproc = int(math.floor(len(imageset) / mp_nproc))
         if mp_chunksize > len_by_nproc:
             mp_chunksize = len_by_nproc
         assert mp_nproc > 0, "Invalid number of processors"
-        assert mp_njobs > 0, "Invalid number of jobs"
-        assert mp_njobs == 1 or mp_method is not None, "Invalid cluster method"
         assert mp_chunksize > 0, "Invalid chunk size"
 
         # The extract pixels function
@@ -582,35 +542,15 @@ class ExtractSpots:
 
         # Do the processing
         logger.info("Extracting strong spots from images")
-        if mp_njobs > 1:
-            logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n",
-                mp_method,
-                mp_njobs,
-                mp_nproc,
-            )
-        else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
-        if mp_nproc > 1 or mp_njobs > 1:
-
-            def process_output(result):
+        logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=mp_nproc) as executor:
+            for result in executor.map(
+                ExtractSpotsParallelTask(function), indices, chunksize=mp_chunksize
+            ):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 reflections.extend(result[0][0])
                 result[0][0] = None
-
-            batch_multi_node_parallel_map(
-                func=ExtractSpotsParallelTask(function),
-                iterable=indices,
-                nproc=mp_nproc,
-                njobs=mp_njobs,
-                cluster_method=mp_method,
-                chunksize=mp_chunksize,
-                callback=process_output,
-            )
-        else:
-            for task in indices:
-                reflections.extend(function(task)[0])
 
         # Return the reflections
         return reflections, None
@@ -628,9 +568,7 @@ class SpotFinder:
         region_of_interest=None,
         max_strong_pixel_fraction=0.1,
         compute_mean_background=False,
-        mp_method=None,
         mp_nproc=1,
-        mp_njobs=1,
         mp_chunksize=1,
         mask_generator=None,
         filter_spots=None,
@@ -666,10 +604,8 @@ class SpotFinder:
         self.hot_mask_prefix = hot_mask_prefix
         self.min_spot_size = min_spot_size
         self.max_spot_size = max_spot_size
-        self.mp_method = mp_method
         self.mp_chunksize = mp_chunksize
         self.mp_nproc = mp_nproc
-        self.mp_njobs = mp_njobs
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
@@ -769,9 +705,7 @@ class SpotFinder:
             region_of_interest=self.region_of_interest,
             max_strong_pixel_fraction=self.max_strong_pixel_fraction,
             compute_mean_background=self.compute_mean_background,
-            mp_method=self.mp_method,
             mp_nproc=self.mp_nproc,
-            mp_njobs=self.mp_njobs,
             mp_chunksize=self.mp_chunksize,
             min_spot_size=self.min_spot_size,
             max_spot_size=self.max_spot_size,

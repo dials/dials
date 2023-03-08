@@ -109,14 +109,6 @@ def generate_phil_scope():
     }
 
     mp {
-      method = *none drmaa sge lsf pbs
-        .type = choice
-        .help = "The cluster method to use"
-
-      njobs = 1
-        .type = int(value_min=1)
-        .help = "The number of cluster jobs to use"
-
       nproc = 1
         .type = int(value_min=1)
         .help = "The number of processes to use per cluster job"
@@ -446,10 +438,6 @@ class SpotFinderFactory:
             dials.util.masking.generate_mask, params=params.spotfinder.filter
         )
 
-        # Make sure 'none' is interpreted as None
-        if params.spotfinder.mp.method == "none":
-            params.spotfinder.mp.method = None
-
         # Setup the spot finder
         return SpotFinder(
             threshold_function=threshold_function,
@@ -458,9 +446,7 @@ class SpotFinderFactory:
             scan_range=params.spotfinder.scan_range,
             write_hot_mask=params.spotfinder.write_hot_mask,
             hot_mask_prefix=params.spotfinder.hot_mask_prefix,
-            mp_method=params.spotfinder.mp.method,
             mp_nproc=params.spotfinder.mp.nproc,
-            mp_njobs=params.spotfinder.mp.njobs,
             mp_chunksize=params.spotfinder.mp.chunksize,
             max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction,
             compute_mean_background=params.spotfinder.compute_mean_background,
