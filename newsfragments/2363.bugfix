@@ -1,1 +1,1 @@
-Replace the deprecated ``imp`` library by ``importlib``
+Replace the deprecated ``imp`` library with ``importlib``.
