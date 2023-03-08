@@ -130,11 +130,7 @@ class Script:
         else:
             self.map_file = params.output.map_file
 
-        # Ensure we have either a data block or an experiment list
         self.experiments = flatten_experiments(params.input.experiments)
-        if len(self.experiments) != 1:
-            self.parser.print_help()
-            return
 
         self.reverse_phi = params.rs_mapper.reverse_phi
         self.grid_size = params.rs_mapper.grid_size
