@@ -231,14 +231,6 @@ def generate_phil_scope():
       include scope dials.algorithms.integration.overlaps_filter.phil_scope
 
       mp {
-        method = *multiprocessing drmaa sge lsf pbs
-          .type = choice
-          .help = "The multiprocessing method to use"
-
-        njobs = 1
-          .type = int(value_min=1)
-          .help = "The number of cluster jobs to use"
-
         nproc = 1
           .type = int(value_min=1)
           .help = "The number of processes to use per cluster job"
@@ -391,9 +383,7 @@ class Parameters:
 
         # Create the multi processing parameters
         mp = processor.MultiProcessing()
-        mp.method = params.mp.method
         mp.nproc = params.mp.nproc
-        mp.njobs = params.mp.njobs
         mp.n_subset_split = params.mp.multiprocessing.n_subset_split
 
         # Set the lookup parameters
@@ -1274,50 +1264,45 @@ class Integrator:
             reflections, _, time_info = processor.process()
             return reflections, time_info
 
-        if self.params.integration.mp.method != "multiprocessing":
-            self.reflections, time_info = _run_processor(self.reflections)
+        # need to do a memory check and decide whether to split table
+        available_immediate, _, __ = assess_available_memory(self.params.integration)
+
+        #  here don't consider nproc as the processor will reduce nproc to 1
+        # if necessary, only want to split if we can't even process with
+        # nproc = 1
+
+        if self.params.integration.mp.n_subset_split:
+            tables = self.reflections.random_split(
+                self.params.integration.mp.n_subset_split
+            )
         else:
-            # need to do a memory check and decide whether to split table
-            available_immediate, _, __ = assess_available_memory(
-                self.params.integration
+            tables = _iterative_table_split(
+                [self.reflections],
+                self.experiments,
+                available_immediate,
             )
 
-            #  here don't consider nproc as the processor will reduce nproc to 1
-            # if necessary, only want to split if we can't even process with
-            # nproc = 1
+        if len(tables) == 1:
+            # will not fail a memory check in the processor, so proceed
+            self.reflections, time_info = _run_processor(self.reflections)
+        else:
+            # Split the reflections and process by performing multiple
+            # passes over each imageset
+            time_info = TimingInfo()
+            reflections = flex.reflection_table()
 
-            if self.params.integration.mp.n_subset_split:
-                tables = self.reflections.random_split(
-                    self.params.integration.mp.n_subset_split
-                )
-            else:
-                tables = _iterative_table_split(
-                    [self.reflections],
-                    self.experiments,
-                    available_immediate,
-                )
-
-            if len(tables) == 1:
-                # will not fail a memory check in the processor, so proceed
-                self.reflections, time_info = _run_processor(self.reflections)
-            else:
-                # Split the reflections and process by performing multiple
-                # passes over each imageset
-                time_info = TimingInfo()
-                reflections = flex.reflection_table()
-
-                logger.info(
-                    """Predicted maximum memory needed exceeds available memory.
+            logger.info(
+                """Predicted maximum memory needed exceeds available memory.
 Splitting reflection table into %s subsets for processing
 """,
-                    len(tables),
-                )
-                for i, table in enumerate(tables):
-                    logger.info("Processing subset %s of reflection table", i + 1)
-                    processed, this_time_info = _run_processor(table)
-                    reflections.extend(processed)
-                    time_info += this_time_info
-                self.reflections = reflections
+                len(tables),
+            )
+            for i, table in enumerate(tables):
+                logger.info("Processing subset %s of reflection table", i + 1)
+                processed, this_time_info = _run_processor(table)
+                reflections.extend(processed)
+                time_info += this_time_info
+            self.reflections = reflections
 
         # Finalize the reflections
         self.reflections, self.experiments = self.finalize_reflections(

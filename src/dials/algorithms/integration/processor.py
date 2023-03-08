@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 import itertools
 import logging
 import math
@@ -19,7 +20,7 @@ from dials.array_family import flex
 from dials.model.data import make_image
 from dials.util import tabulate
 from dials.util.log import rehandle_cached_records
-from dials.util.mp import available_cores, multi_node_parallel_map
+from dials.util.mp import available_cores
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     Group,
@@ -185,16 +186,12 @@ class MultiProcessing:
     """
 
     def __init__(self):
-        self.method = "multiprocessing"
         self.nproc = 1
-        self.njobs = 1
         self.nthreads = 1
         self.n_subset_split = None
 
     def update(self, other):
-        self.method = other.method
         self.nproc = other.nproc
-        self.njobs = other.njobs
         self.nthreads = other.nthreads
         self.n_subset_split = other.n_subset_split
 
@@ -343,44 +340,18 @@ class _Processor:
         """
         start_time = time()
         self.manager.initialize()
-        mp_method = self.manager.params.mp.method
-        mp_njobs = self.manager.params.mp.njobs
         mp_nproc = self.manager.params.mp.nproc
 
         assert mp_nproc > 0, "Invalid number of processors"
-        if mp_nproc * mp_njobs > len(self.manager):
-            mp_nproc = min(mp_nproc, len(self.manager))
-            mp_njobs = int(math.ceil(len(self.manager) / mp_nproc))
+        mp_nproc = min(mp_nproc, len(self.manager))
         logger.info(self.manager.summary())
-        if mp_njobs > 1:
-            assert mp_method != "none" and mp_method is not None
-            logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n",
-                mp_method,
-                mp_njobs,
-                mp_nproc,
-            )
-        else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+        logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
 
-        if mp_njobs * mp_nproc > 1:
-
-            def process_output(result):
+        with concurrent.futures.ProcessPoolExecutor(max_workers=mp_nproc) as executor:
+            for result in executor.map(execute_parallel_task, self.manager.tasks()):
                 rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
 
-            multi_node_parallel_map(
-                func=execute_parallel_task,
-                iterable=list(self.manager.tasks()),
-                njobs=mp_njobs,
-                nproc=mp_nproc,
-                callback=process_output,
-                cluster_method=mp_method,
-                preserve_order=True,
-            )
-        else:
-            for task in self.manager.tasks():
-                self.manager.accumulate(task())
         self.manager.finalize()
         end_time = time()
         self.manager.time.user_time = end_time - start_time
@@ -747,7 +718,7 @@ class _Manager:
 
         if self.params.block.size == libtbx.Auto:
             if (
-                self.params.mp.nproc * self.params.mp.njobs == 1
+                self.params.mp.nproc == 1
                 and not self.params.debug.output
                 and not self.params.block.force
             ):
@@ -785,7 +756,7 @@ class _Manager:
             elif self.params.block.size == libtbx.Auto:
                 # auto determine based on nframes and overlap
                 nframes = array_range[1] - array_range[0]
-                nblocks = self.params.mp.nproc * self.params.mp.njobs
+                nblocks = self.params.mp.nproc
                 # want data to be split into n blocks with overlaps
                 # i.e. [x, overlap, y, overlap, y, overlap, ....,y,  overlap, x]
                 # blocks are x + overlap, or overlap + y + overlap.
@@ -876,22 +847,10 @@ class _Manager:
         output_level = logging.INFO
 
         # Limit the number of parallel processes by amount of available memory
-        if self.params.mp.method == "multiprocessing" and self.params.mp.nproc > 1:
+        if self.params.mp.nproc > 1:
 
             # Compute expected memory usage and warn if not enough
-            njobs = available_immediate_limit / memory_required_per_process
-            if njobs >= self.params.mp.nproc:
-                # There is enough memory. Take no action
-                pass
-            elif njobs >= 1:
-                # There is enough memory to run, but not as many processes as requested
-                output_level = logging.WARNING
-                report.append(
-                    "Reducing number of processes from %d to %d due to memory constraints."
-                    % (self.params.mp.nproc, int(njobs))
-                )
-                self.params.mp.nproc = int(njobs)
-            elif (
+            if (
                 available_incl_swap * self.params.block.max_memory_usage
                 >= memory_required_per_process
             ):
