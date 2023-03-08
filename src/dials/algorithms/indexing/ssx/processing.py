@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from multiprocessing import Pool
 from typing import Any, List, Optional, Tuple, Union
 
+import numpy as np
+
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from libtbx import Auto, phil
 
@@ -406,14 +408,19 @@ def preprocess(
                     pass
         if not max_cells:
             raise DialsIndexError("Unable to find a max cell for any images")
-        import numpy as np
 
         sorted_cells = np.sort(np.array(max_cells))
         n_cells = len(sorted_cells)
-        ncentile_95 = min(int(math.ceil(95 * n_cells / 100)), n_cells - 1)
-        centile_95 = sorted_cells[ncentile_95]
-        logger.info(f"Setting max cell to {centile_95:.1f} " + "\u212B")
-        params.indexing.max_cell = centile_95
+        if n_cells >= 12:
+            median = sorted_cells[int(n_cells / 2)]
+            q1 = sorted_cells[int(n_cells / 4)]
+            q3 = sorted_cells[int(3 * n_cells / 4)]
+            limit = (1.5 * (q3 - q1)) + median
+            logger.info(f"Setting max cell to {limit:.1f} " + "\u212B")
+            params.indexing.max_cell = limit
+        else:
+            params.indexing.max_cell = sorted_cells[-1]
+            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212B")
 
     # Determine which methods to try
     method_list = params.method
