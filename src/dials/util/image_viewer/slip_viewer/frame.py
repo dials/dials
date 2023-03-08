@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-import imp
 import math
 import os
+from importlib.machinery import SourceFileLoader
 
 import wx
 
@@ -89,9 +89,9 @@ class XrayFrame(XFBaseClass):
         ]
         self.plugins = {}
         for name in plugin_names:
-            self.plugins[name] = imp.load_source(
+            self.plugins[name] = SourceFileLoader(
                 name, os.path.join(slip_viewer_dir, name + ".py")
-            )
+            ).load_module()
         if len(plugin_names) > 0:
             print("Loaded plugins: " + ", ".join(plugin_names))
 
