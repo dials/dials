@@ -13,18 +13,19 @@ namespace recviewer { namespace ext {
 
   static af::shared<vec2<double> > get_target_pixels(dxtbx::model::Panel panel,
                                                      vec3<double> s0,
-                                                     int xlim,
-                                                     int ylim,
+                                                     int nfast,
+                                                     int nslow,
                                                      double maxres) {
     af::shared<vec2<double> > ret;
     vec2<double> xy;
 
-    for (size_t x = 0; x < xlim; x++) {
-      for (size_t y = 0; y < ylim; y++) {
+    for (size_t y = 0; y < nslow; y++) {
+      for (size_t x = 0; x < nfast; x++) {
         xy[0] = x;
         xy[1] = y;
 
         // get_resolution_at_pixel() no longer returns INF, so this is safe
+        // Expects coord given in terms of (fast, slow), which is column, row...
         if (panel.get_resolution_at_pixel(s0, xy) > maxres) {
           ret.push_back(xy);
         }
@@ -52,7 +53,7 @@ namespace recviewer { namespace ext {
       if (ind_x >= npoints || ind_y >= npoints || ind_z >= npoints || ind_x < 0
           || ind_y < 0 || ind_z < 0)
         continue;
-      grid(ind_x, ind_y, ind_z) += image(x, y);
+      grid(ind_x, ind_y, ind_z) += image(y, x);
       counts(ind_x, ind_y, ind_z)++;
     }
   }
