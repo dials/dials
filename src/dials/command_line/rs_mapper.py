@@ -183,12 +183,13 @@ class Script:
 
         panel = imageset.get_detector()[i_panel]
         pixel_size = panel.get_pixel_size()
-        xlim, ylim = imageset.get_raw_data(0)[i_panel].all()
+        nfast, nslow = panel.get_image_size()
+
         if pixel_size[0] != pixel_size[1]:
             raise Sorry("This program does not support non-square pixels.")
 
         # cache transformation
-        xy = recviewer.get_target_pixels(panel, s0, xlim, ylim, self.max_resolution)
+        xy = recviewer.get_target_pixels(panel, s0, nfast, nslow, self.max_resolution)
         s1 = panel.get_lab_coord(xy * pixel_size[0])
         s1 = s1 / s1.norms() * (1 / beam.get_wavelength())
         S = s1 - s0
