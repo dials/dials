@@ -52,7 +52,7 @@ namespace recviewer { namespace ext {
       if (ind_x >= npoints || ind_y >= npoints || ind_z >= npoints || ind_x < 0
           || ind_y < 0 || ind_z < 0)
         continue;
-      grid(ind_x, ind_y, ind_z) += image(y, x);
+      grid(ind_x, ind_y, ind_z) += image(x, y);
       counts(ind_x, ind_y, ind_z)++;
     }
   }
