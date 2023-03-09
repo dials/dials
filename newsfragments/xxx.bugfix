@@ -1,0 +1,1 @@
+``dials.rs_mapper``: fix bug in which the image data was accessed with transposed indices.
