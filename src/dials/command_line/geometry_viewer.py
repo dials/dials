@@ -660,6 +660,10 @@ def run(args=None):
 
     import wxtbx.app
 
+    try:
+        wx.App.GTKSuppressDiagnostics(-1)
+    except AttributeError:
+        pass
     a = wxtbx.app.CCTBXApp(0)
     a.settings = params
     f = ExperimentViewer(None, -1, "Experiment viewer", size=(1024, 768))
