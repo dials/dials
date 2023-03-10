@@ -115,7 +115,11 @@ class Script:
 
         # Initialise the base class
         self.parser = ArgumentParser(
-            usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
+            usage=usage,
+            phil=phil_scope,
+            epilog=help_message,
+            read_experiments=True,
+            read_experiments_from_images=True,
         )
 
     def run(self, args=None):
