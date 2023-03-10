@@ -1015,12 +1015,11 @@ class RefinerData(object):
             "Computing observed covariance for %d reflections" % len(reflections)
         )
         s0_length = norm(s0)
-        assert len(experiment.detector) == 1
-        panel = experiment.detector[0]
+
         sbox = reflections["shoebox"]
         xyzobs = reflections["xyzobs.px.value"]
         for r in range(len(reflections)):
-
+            panel = experiment.detector[reflections[r]["panel"]]
             # The vector to the pixel centroid
             sp = np.array(
                 panel.get_pixel_lab_coord(xyzobs[r][0:2]), dtype=np.float64

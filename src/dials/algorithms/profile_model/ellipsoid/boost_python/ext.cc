@@ -160,7 +160,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       // Get stuff from experiment
       mat3<double> A = experiment_.get_crystal()->get_A();
       vec3<double> s0 = experiment_.get_beam()->get_s0();
-      Panel panel = detector[0];
 
       // Initialise some arrays
       af::shared<cctbx::miller::index<> > miller_indices;
@@ -219,22 +218,25 @@ namespace dials { namespace algorithms { namespace boost_python {
           vec3<double> v(mubar[0], mubar[1], s0.length());
           vec3<double> s1 = R.transpose() * (v.normalize() * s0.length());
 
-          try {
-            // Do the panel ray intersection
-            vec2<double> xymm = panel.get_ray_intersection(s1);
-            vec2<double> xypx = panel.millimeter_to_pixel(xymm);
+          for (int j = 0; j < detector.size(); ++j) {
+            Panel panel = detector[j];
+            try {
+              // Do the panel ray intersection
+              vec2<double> xymm = panel.get_ray_intersection(s1);
+              vec2<double> xypx = panel.millimeter_to_pixel(xymm);
 
-            // Append the stuff to arrays
-            experiment_id.push_back(0);
-            miller_indices.push_back(h[i]);
-            entering.push_back(false);
-            panel_list.push_back(0);
-            s1_list.push_back(s1);
-            s2_list.push_back(s2);
-            xyzcalpx.push_back(vec3<double>(xypx[0], xypx[1], 0));
-            xyzcalmm.push_back(vec3<double>(xymm[0], xymm[1], 0));
-          } catch (dxtbx::error) {
-            continue;
+              // Append the stuff to arrays
+              experiment_id.push_back(0);
+              miller_indices.push_back(h[i]);
+              entering.push_back(false);
+              panel_list.push_back(j);
+              s1_list.push_back(s1);
+              s2_list.push_back(s2);
+              xyzcalpx.push_back(vec3<double>(xypx[0], xypx[1], 0));
+              xyzcalmm.push_back(vec3<double>(xymm[0], xymm[1], 0));
+            } catch (dxtbx::error) {
+              continue;
+            }
           }
         }
       }
