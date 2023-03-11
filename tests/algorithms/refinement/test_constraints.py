@@ -164,6 +164,7 @@ def test_constrained_refinement(dials_data, tmp_path):
             "foo.refl",
             "history=history.json",
             "refinement.parameterisation.detector.constraints.parameter=Dist",
+            "refinement.reflections.outlier.algorithm=null",
             "scan_varying=False",
         ),
         working_directory=tmp_path,
@@ -176,8 +177,8 @@ def test_constrained_refinement(dials_data, tmp_path):
         tmp_path / "refined.expt", check_format=False
     )
 
-    # we expect 8 steps of constrained refinement
-    assert history.get_nrows() == 8
+    # we expect 7 steps of constrained refinement
+    assert history.get_nrows() == 7
 
     # get parameter vector from the final step
     pvec = history["parameter_vector"][-1]
@@ -194,4 +195,4 @@ def test_constrained_refinement(dials_data, tmp_path):
     det1, det2 = ref_exp.detectors()
     p1 = det1[0]
     p2 = det2[0]
-    assert approx_equal(p2.get_distance() - p1.get_distance(), 0.9987655, eps=1e-5)
+    assert approx_equal(p2.get_distance() - p1.get_distance(), 0.99978914, eps=1e-5)
