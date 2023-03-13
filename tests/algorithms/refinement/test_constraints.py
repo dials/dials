@@ -156,7 +156,9 @@ def test_constrained_refinement(dials_data, tmp_path):
     rt.extend(rt2)
     rt.as_file(tmp_path / "foo.refl")
 
-    # set up refinement, constraining the distance parameter
+    # Set up refinement, constraining the "Dist" parameter. We have to also
+    # fix the tilt and twist type parameters to ensure this actually constrains
+    # the distance between the models.
     result = procrunner.run(
         (
             "dials.refine",
@@ -164,6 +166,8 @@ def test_constrained_refinement(dials_data, tmp_path):
             "foo.refl",
             "history=history.json",
             "refinement.parameterisation.detector.constraints.parameter=Dist",
+            "refinement.parameterisation.detector.fix_list=Tau2,Tau3",
+            "refinement.reflections.outlier.algorithm=null",
             "scan_varying=False",
         ),
         working_directory=tmp_path,
@@ -176,22 +180,15 @@ def test_constrained_refinement(dials_data, tmp_path):
         tmp_path / "refined.expt", check_format=False
     )
 
-    # we expect 8 steps of constrained refinement
-    assert history.get_nrows() == 8
-
     # get parameter vector from the final step
     pvec = history["parameter_vector"][-1]
 
-    # the constrained parameters have indices 0 and 6 in this case. Check they
+    # the constrained parameters have indices 0 and 4 in this case. Check they
     # are still exactly 1 mm apart
-    assert pvec[0] == pvec[6] - 1.0
+    assert pvec[0] == pvec[4] - 1.0
 
-    # NB because the other detector parameters were not also constrained, the
-    # refined lab frame distances may not in fact differ by 1 mm. The constraint
-    # acts along the initial detector normal vector during composition of a new
-    # detector position. After refinement of tilt/twist type rotations,
-    # the final distances along the new normal vectors will change
+    # check also the refined distances remain 1 mm different
     det1, det2 = ref_exp.detectors()
     p1 = det1[0]
     p2 = det2[0]
-    assert approx_equal(p2.get_distance() - p1.get_distance(), 0.9987655, eps=1e-5)
+    assert approx_equal(p2.get_distance() - p1.get_distance(), 1.0, eps=1e-6)
