@@ -217,26 +217,25 @@ namespace dials { namespace algorithms { namespace boost_python {
           // Compute the diffracted beam vector
           vec3<double> v(mubar[0], mubar[1], s0.length());
           vec3<double> s1 = R.transpose() * (v.normalize() * s0.length());
+          try {
+            // Do the panel ray intersection
+            Detector::coord_type impact = detector.get_ray_intersection(s1);
+            std::size_t panel_id = impact.first;
+            Panel panel = detector[panel_id];
+            vec2<double> xymm = panel.get_ray_intersection(s1);
+            vec2<double> xypx = panel.millimeter_to_pixel(xymm);
 
-          for (int j = 0; j < detector.size(); ++j) {
-            Panel panel = detector[j];
-            try {
-              // Do the panel ray intersection
-              vec2<double> xymm = panel.get_ray_intersection(s1);
-              vec2<double> xypx = panel.millimeter_to_pixel(xymm);
-
-              // Append the stuff to arrays
-              experiment_id.push_back(0);
-              miller_indices.push_back(h[i]);
-              entering.push_back(false);
-              panel_list.push_back(j);
-              s1_list.push_back(s1);
-              s2_list.push_back(s2);
-              xyzcalpx.push_back(vec3<double>(xypx[0], xypx[1], 0));
-              xyzcalmm.push_back(vec3<double>(xymm[0], xymm[1], 0));
-            } catch (dxtbx::error) {
-              continue;
-            }
+            // Append the stuff to arrays
+            experiment_id.push_back(0);
+            miller_indices.push_back(h[i]);
+            entering.push_back(false);
+            panel_list.push_back(panel_id);
+            s1_list.push_back(s1);
+            s2_list.push_back(s2);
+            xyzcalpx.push_back(vec3<double>(xypx[0], xypx[1], 0));
+            xyzcalmm.push_back(vec3<double>(xymm[0], xymm[1], 0));
+          } catch (dxtbx::error) {
+            continue;
           }
         }
       }
