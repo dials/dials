@@ -448,13 +448,9 @@ def index(
         method_list,
     )
 
-    # combine beam and detector models if not already
-    if (len(indexed_experiments.detectors())) > 1 or (
-        len(indexed_experiments.beams())
-    ) > 1:
-        combine = CombineWithReference(
-            detector=indexed_experiments[0].detector, beam=indexed_experiments[0].beam
-        )
+    # combine detector models if not already
+    if (len(indexed_experiments.detectors())) > 1:
+        combine = CombineWithReference(detector=indexed_experiments[0].detector)
         elist = ExperimentList()
         for expt in indexed_experiments:
             elist.append(combine(expt))
