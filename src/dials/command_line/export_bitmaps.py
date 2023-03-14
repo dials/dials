@@ -73,9 +73,9 @@ saturation = 0
   .type = int
 show_mask = False
   .type = bool
-show_resolution_rings = False
-  .type = bool
 resolution_rings {
+  show = False
+    .type = bool
   number = 5
     .type = int(value_min=1)
   fontsize = 30
@@ -233,7 +233,7 @@ def imageset_as_bitmaps(imageset, params):
             "RGB", (flex_image.ex_size2(), flex_image.ex_size1()), flex_image.as_bytes()
         )
 
-        if params.show_resolution_rings:
+        if params.resolution_rings.show:
             beam = imageset.get_beam()
 
             d_min = detector.get_max_resolution(beam.get_s0())

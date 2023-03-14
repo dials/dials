@@ -18,7 +18,7 @@ def test_export_single_bitmap(dials_data, tmp_path, show_resolution_rings):
         [
             "dials.export_bitmaps",
             dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf",
-            f"show_resolution_rings={show_resolution_rings}",
+            f"resolution_rings.show={show_resolution_rings}",
         ],
         working_directory=tmp_path,
     )
@@ -132,7 +132,7 @@ def test_export_multi_panel(dials_regression, tmp_path, show_resolution_rings):
                 image,
                 "binning=%i" % binning,
                 "prefix=binning_%i_" % binning,
-                f"show_resolution_rings={show_resolution_rings}",
+                f"resolution_rings.show={show_resolution_rings}",
             ],
             working_directory=tmp_path,
         )
