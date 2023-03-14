@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pathlib
+
 import procrunner
 import pytest
 
@@ -31,6 +33,38 @@ def test_rs_mapper(dials_data, tmp_path):
 
     assert m.header_mean == pytest.approx(0.018924040719866753, abs=1e-6)
     assert flex.mean(m.data) == pytest.approx(0.01892407052218914, abs=1e-6)
+
+
+def test_multi_panel(dials_regression, tmp_path):
+    image = (
+        pathlib.Path(dials_regression)
+        / "image_examples"
+        / "DLS_I23"
+        / "germ_13KeV_0001.cbf"
+    )
+
+    result = procrunner.run(
+        [
+            "dials.rs_mapper",
+            image,
+            'map_file="junk.ccp4"',
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "junk.ccp4").is_file()
+
+    # load results
+    m = ccp4_map.map_reader(file_name=str(tmp_path / "junk.ccp4"))
+    assert len(m.data) == 7189057
+    assert m.header_min == 0.0
+    assert flex.min(m.data) == 0.0
+
+    assert m.header_max == 31342.25
+    assert flex.max(m.data) == 31342.25
+
+    assert m.header_mean == pytest.approx(0.05911629647016525, abs=1e-6)
+    assert flex.mean(m.data) == pytest.approx(0.05911629647016525, abs=1e-6)
 
 
 def test_masked(dials_data, tmp_path):
