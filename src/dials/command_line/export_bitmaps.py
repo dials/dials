@@ -250,9 +250,13 @@ def imageset_as_bitmaps(imageset, params):
             draw = ImageDraw.Draw(pil_img)
             for segment in segments:
                 draw.line(segment, fill="red", width=2)
-            font = ImageFont.truetype(
-                "arial.ttf", size=params.resolution_rings.fontsize
-            )
+            try:
+                font = ImageFont.truetype(
+                    "arial.ttf", size=params.resolution_rings.fontsize
+                )
+            except OSError:
+                # Revert to default bitmap font if we must, but fontsize will not work
+                font = ImageFont.load_default()
             for x, y, label in res_labels:
                 draw.text((x, y), label, fill="red", font=font)
 
