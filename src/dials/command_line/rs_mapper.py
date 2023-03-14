@@ -153,7 +153,8 @@ class Script:
             self.nproc = available_cores()
             logger.info("Setting nproc={}".format(self.nproc))
 
-        for experiment in self.experiments:
+        for i_expt, experiment in enumerate(self.experiments):
+            logger.info(f"Calculation for experiment {i_expt}")
             for i_panel in range(len(experiment.detector)):
                 grid, counts = self.process_imageset(experiment.imageset, i_panel)
 
