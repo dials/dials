@@ -411,11 +411,9 @@ def preprocess(
 
         sorted_cells = np.sort(np.array(max_cells))
         n_cells = len(sorted_cells)
-        if n_cells >= 12:
-            median = sorted_cells[int(n_cells / 2)]
-            q1 = sorted_cells[int(n_cells / 4)]
-            q3 = sorted_cells[int(3 * n_cells / 4)]
-            limit = (1.5 * (q3 - q1)) + median
+        if n_cells > 20:
+            centile_95_pos = int(math.floor(0.95 * n_cells))
+            limit = sorted_cells[centile_95_pos]
             logger.info(f"Setting max cell to {limit:.1f} " + "\u212B")
             params.indexing.max_cell = limit
         else:
