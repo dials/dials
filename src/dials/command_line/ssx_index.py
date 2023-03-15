@@ -163,7 +163,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         indexed_experiments, indexed_reflections, summary_data = index(
             experiments, reflections[0], params
         )
-    except (DialsIndexError, ValueError) as e:
+    except DialsIndexError as e:
         sys.exit(f"Error: {e}")
 
     summary_table = make_summary_table(summary_data)
