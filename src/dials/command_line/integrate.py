@@ -25,6 +25,7 @@ from __future__ import annotations
 import logging
 import math
 import sys
+import warnings
 
 from orderedset import OrderedSet
 
@@ -37,6 +38,10 @@ from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
+from dials.util.exclude_images import (
+    exclude_image_ranges_from_scans,
+    get_valid_image_ranges,
+)
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
@@ -123,10 +128,7 @@ phil_scope = parse(
 
   }
 
-  exclude_images = None
-    .type = ints
-    .help = "Exclude images from integration (e.g. 1,2,3,4,5 etc)"
-
+  include scope dials.util.exclude_images.phil_scope
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
@@ -478,9 +480,47 @@ def run_integration(params, experiments, reference=None):
 
     # Modify experiment list if exclude images is set
     if params.exclude_images:
-        for experiment in experiments:
-            for index in params.exclude_images:
-                experiment.imageset.mark_for_rejection(index, True)
+        try:
+            experiments = exclude_image_ranges_from_scans(
+                None, experiments, params.exclude_images
+            )
+            valid_image_ranges_by_experiment = get_valid_image_ranges(experiments)
+            for valid_image_ranges, experiment in zip(
+                valid_image_ranges_by_experiment, experiments
+            ):
+                rejects = flex.bool(experiment.scan.get_num_images(), True)
+                first, last = experiment.scan.get_image_range()
+                for image_range in valid_image_ranges:
+                    # Need to index into the imageset's 0-based array
+                    accepts = (
+                        flex.size_t(list(range(image_range[0], image_range[1] + 1)))
+                        - first
+                    )
+                    rejects.set_selected(accepts, False)
+                for index in rejects.iselection():
+                    experiment.imageset.mark_for_rejection(index, True)
+        except ValueError as err:
+            # Handle deprecated way of providing exclude_images
+            try:
+                exclude_images = [
+                    int(e)
+                    for e in str(params.exclude_images)
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("'", "")
+                    .split(",")
+                ]
+            except ValueError:
+                raise (err)
+            warnings.warn(
+                "Providing exclude_images as a single list (e.g. 1,2,3,4,5 etc.) is deprecated.\n"
+                + str(err),
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            for experiment in experiments:
+                for index in exclude_images:
+                    experiment.imageset.mark_for_rejection(index, True)
 
     # Predict the reflections
     logger.info("\n".join(("", "=" * 80, "")))
