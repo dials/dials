@@ -8,8 +8,6 @@ from __future__ import annotations
 import copy
 import os
 
-import wx
-
 import wxtbx.app
 from scitbx.array_family import flex
 
@@ -62,11 +60,7 @@ def run(args=None):
 
     reflections = reflections[0]
 
-    try:
-        wx.App.GTKSuppressDiagnostics(-1)
-    except AttributeError:
-        pass
-    a = wxtbx.app.CCTBXApp(0)
+    a = wxtbx.app.CCTBXApp(0, gtk_suppress_diagnostics=True)
     a.settings = params
     f = ReciprocalLatticeViewer(
         None,

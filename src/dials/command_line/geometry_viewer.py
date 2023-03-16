@@ -660,11 +660,7 @@ def run(args=None):
 
     import wxtbx.app
 
-    try:
-        wx.App.GTKSuppressDiagnostics(-1)
-    except AttributeError:
-        pass
-    a = wxtbx.app.CCTBXApp(0)
+    a = wxtbx.app.CCTBXApp(0, gtk_suppress_diagnostics=True)
     a.settings = params
     f = ExperimentViewer(None, -1, "Experiment viewer", size=(1024, 768))
     f.load_imageset(imageset, crystal=crystal)
