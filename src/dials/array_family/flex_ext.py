@@ -30,6 +30,7 @@ import dials.extensions.simple_centroid_ext
 import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
+from dials.util.exclude_images import exclude_image_ranges_from_scans
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -169,7 +170,12 @@ class _:
                 params.spotfinder.filter.min_spot_size,
             )
 
-        # Get the integrator from the input parameters
+        # Set images to exclude
+        experiments = exclude_image_ranges_from_scans(
+            None, experiments, params.spotfinder.exclude_images
+        )
+
+        # Get the spot-finder from the input parameters
         logger.info("Configuring spot finder from input parameters")
         spotfinder = SpotFinderFactory.from_parameters(
             experiments=experiments, params=params, is_stills=is_stills

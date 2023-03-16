@@ -50,6 +50,8 @@ def generate_phil_scope():
       .type = ints(size=2)
       .multiple = True
 
+    include scope dials.util.exclude_images.phil_scope
+
     region_of_interest = None
       .type = ints(size=4)
       .help = "A region of interest to look for spots."

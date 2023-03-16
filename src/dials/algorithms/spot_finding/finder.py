@@ -17,6 +17,7 @@ from dxtbx.model import ExperimentList
 from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
 from dials.util import Sorry, log
+from dials.util.exclude_images import get_valid_image_ranges
 from dials.util.log import rehandle_cached_records
 from dials.util.mp import available_cores, batch_multi_node_parallel_map
 
@@ -689,6 +690,9 @@ class SpotFinder:
         for experiment in experiments:
             if experiment.imageset not in imagesets:
                 imagesets.append(experiment.imageset)
+
+        # Set valid image ranges XXX
+        self._valid_image_ranges = get_valid_image_ranges(experiments)
 
         # Loop through all the imagesets and find the strong spots
         reflections = flex.reflection_table()
