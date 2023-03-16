@@ -468,6 +468,20 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
       copy_to_slice_visitor<T> visitor(result, it->first, as);
       it->second.apply_visitor(visitor);
     }
+    if (self.contains("id")) {
+      /* note some tables contain id values of -1 for unindexed reflections
+      but the identifiers map only allows keys of type size_t
+      */
+      af::shared<int> col = result["id"];
+      std::set<int> new_ids(col.begin(), col.end());
+      typedef typename T::experiment_map_type::iterator iterator;
+      for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i) {
+        iterator found = self.experiment_identifiers()->find(*i);
+        if (found != self.experiment_identifiers()->end()) {
+          (*result.experiment_identifiers())[found->first] = found->second;
+        }
+      }
+    }
     return result;
   }
 
