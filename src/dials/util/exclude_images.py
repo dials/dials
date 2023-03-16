@@ -54,7 +54,7 @@ def get_valid_image_ranges(experiments):
 
 def set_initial_valid_image_ranges(experiments):
     """Set the valid_image_range for each experiment to be the scan image range.
-    Kept separate from dxtbx.scan object as requires experiment indentifiers.
+    Kept separate from dxtbx.scan object as requires experiment identifiers.
     Also this function can be called for a mix of sequences and scanless experiments.
     """
     for exp in experiments:
@@ -116,14 +116,17 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                 if len(vals) != 3:
                     raise ValueError(
                         "Exclude images must be input in the form experimentnumber:start:stop, or start:stop for a single experiment"
-                        + "Multiple ranges can be specified by comma or space separated values e.g 0:100:150,1:120:200"
+                        + " Multiple ranges can be specified by comma or space separated values e.g 0:100:150,1:120:200"
                     )
                 dataset_id = int(vals[0])
-                for table in reflections:
-                    if dataset_id in table.experiment_identifiers():
-                        expid = table.experiment_identifiers()[dataset_id]
-                        ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
-                        break
+                if reflections:
+                    for table in reflections:
+                        if dataset_id in table.experiment_identifiers():
+                            expid = table.experiment_identifiers()[dataset_id]
+                            ranges_to_remove.append(
+                                (expid, (int(vals[1]), int(vals[2])))
+                            )
+                            break
     return ranges_to_remove
 
 
