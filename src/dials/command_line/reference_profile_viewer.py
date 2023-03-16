@@ -330,6 +330,10 @@ def run():
 
 
 def show_reference_profile_viewer(data, params):
+    try:
+        wx.App.GTKSuppressDiagnostics(-1)
+    except AttributeError:
+        pass
     app = wx.App()
     app.frame = ProfilesFrame(data)
     app.frame.Show()
