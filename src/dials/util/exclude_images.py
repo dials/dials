@@ -127,6 +127,9 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                                 (expid, (int(vals[1]), int(vals[2])))
                             )
                             break
+                else:
+                    expid = experiments[dataset_id].identifier
+                    ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
     return ranges_to_remove
 
 
