@@ -38,10 +38,7 @@ from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
-from dials.util.exclude_images import (
-    exclude_image_ranges_from_scans,
-    get_valid_image_ranges,
-)
+from dials.util.exclude_images import set_invalid_images
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
@@ -478,27 +475,10 @@ def run_integration(params, experiments, reference=None):
             experiments, reference, params.scan_range
         )
 
-    # Modify experiment list if exclude images is set
+    # Modify experiment list if exclude_images is set
     if params.exclude_images:
         try:
-            experiments = exclude_image_ranges_from_scans(
-                None, experiments, params.exclude_images
-            )
-            valid_image_ranges_by_experiment = get_valid_image_ranges(experiments)
-            for valid_image_ranges, experiment in zip(
-                valid_image_ranges_by_experiment, experiments
-            ):
-                rejects = flex.bool(experiment.scan.get_num_images(), True)
-                first, last = experiment.scan.get_image_range()
-                for image_range in valid_image_ranges:
-                    # Need to index into the imageset's 0-based array
-                    accepts = (
-                        flex.size_t(list(range(image_range[0], image_range[1] + 1)))
-                        - first
-                    )
-                    rejects.set_selected(accepts, False)
-                for index in rejects.iselection():
-                    experiment.imageset.mark_for_rejection(index, True)
+            experiments = set_invalid_images(experiments, params.exclude_images)
         except ValueError as err:
             # Handle deprecated way of providing exclude_images
             try:
