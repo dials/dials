@@ -22,7 +22,7 @@
 #include <dials/model/data/image.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/array_family/reflection_table.h>
-#include <dials/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/boost_python/flex_table_suite.h>
 
 namespace dials { namespace algorithms {
 
@@ -544,7 +544,7 @@ namespace dials { namespace algorithms {
      * @returns The reflections for a particular block.
      */
     af::reflection_table split(std::size_t index) {
-      using namespace af::boost_python::flex_table_suite;
+      using namespace dxtbx::af::boost_python::flex_table_suite;
 
       // Check the input
       DIALS_ASSERT(index < finished_.size());
@@ -574,7 +574,7 @@ namespace dials { namespace algorithms {
      * Accumulate the results.
      */
     void accumulate(std::size_t index, af::reflection_table result) {
-      using namespace af::boost_python::flex_table_suite;
+      using namespace dxtbx::af::boost_python::flex_table_suite;
 
       // Check the input
       DIALS_ASSERT(index < finished_.size());

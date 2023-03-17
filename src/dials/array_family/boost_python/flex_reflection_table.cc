@@ -14,7 +14,7 @@
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <dials/util/python_streambuf.h>
 #include <numeric>
-#include <dials/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/reflection.h>
 #include <dials/array_family/reflection_table_msgpack_adapter.h>
@@ -26,6 +26,8 @@
 #include <scitbx/vec3.h>
 #include <scitbx/vec2.h>
 #include <cctbx/miller.h>
+#include <dxtbx/model/experiment.h>
+#include <dxtbx/model/experiment_list.h>
 
 namespace dials { namespace af { namespace boost_python {
 
@@ -34,11 +36,11 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::Observation;
   using dials::model::Shoebox;
   using dials::util::streambuf;
-  using flex_table_suite::column_to_object_visitor;
-  using flex_table_suite::flex_table_wrapper;
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
+
+  namespace flex_table_suite = dxtbx::af::boost_python::flex_table_suite;
 
   /**
    * Construct a reflection table from a list of observations and shoeboxes
@@ -590,9 +592,51 @@ namespace dials { namespace af { namespace boost_python {
    * @returns The new table with the requested rows
    */
   template <typename T>
+  T select_rows_index(const T &self, const scitbx::af::const_ref<std::size_t> &index) {
+    // Check that indices are valid
+    std::size_t nrows = self.nrows();
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      DIALS_ASSERT(index[i] < nrows);
+    }
+
+    // Get the indices from the table
+    T result(index.size());
+    for (typename T::const_iterator it = self.begin(); it != self.end(); ++it) {
+      flex_table_suite::copy_from_indices_visitor<T> visitor(result, it->first, index);
+      it->second.apply_visitor(visitor);
+    }
+
+    // Get the id column (if it exists) and make a set of unique values
+    if (self.contains("id")) {
+      scitbx::af::shared<int> col = result["id"];
+      std::set<int> new_ids(col.begin(), col.end());
+
+      // Copy across identifiers for ids in new table
+      typedef typename T::experiment_map_type::const_iterator const_iterator;
+      for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i) {
+        for (const_iterator it = self.experiment_identifiers()->begin();
+             it != self.experiment_identifiers()->end();
+             ++it) {
+          if (it->first == *i) {
+            (*result.experiment_identifiers())[it->first] = it->second;
+          }
+        }
+      }
+    }
+    // Return new table
+    return result;
+  }
+
+  /**
+   * Select a number of rows from the table via an index array
+   * @param self The current table
+   * @param index The index array
+   * @returns The new table with the requested rows
+   */
+  template <typename T>
   T reflection_table_select_rows_index(const T &self,
                                        const af::const_ref<std::size_t> &index) {
-    T result = flex_table_suite::select_rows_index<T>(self, index);
+    T result = select_rows_index<T>(self, index);
     return result;
   }
 
@@ -610,6 +654,45 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Extend the identifiers
+   */
+  template <typename T>
+  void reflection_table_extend_identifiers(T &self, const T &other) {
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+    typedef typename T::experiment_map_type::iterator iterator;
+    for (const_iterator it = other.experiment_identifiers()->begin();
+         it != other.experiment_identifiers()->end();
+         ++it) {
+      iterator found = self.experiment_identifiers()->find(it->first);
+      if (found == self.experiment_identifiers()->end()) {
+        (*self.experiment_identifiers())[it->first] = it->second;
+      } else if (it->second != found->second) {
+        throw DIALS_ERROR("Experiment identifiers do not match");
+      }
+    }
+  }
+
+  /**
+   * Extend the table with column data from another table. This will add
+   * all the columns from the other table onto the end of the current table.
+   * @param self The current table
+   * @param other The other table
+   */
+  template <typename T>
+  void extend(T &self, const T &other) {
+    typedef typename T::const_iterator iterator;
+    typename T::size_type ns = self.nrows();
+    typename T::size_type no = other.nrows();
+    self.resize(ns + no);
+    for (iterator it = other.begin(); it != other.end(); ++it) {
+      flex_table_suite::extend_column_visitor<T> visitor(self, it->first, ns, no);
+      it->second.apply_visitor(visitor);
+    }
+    // now extend identifiers
+    reflection_table_extend_identifiers(self, other);
+  }
+
+  /**
    * Select a number of columns from the table via an key array
    * @param self The current table
    * @param keys The key array
@@ -619,7 +702,7 @@ namespace dials { namespace af { namespace boost_python {
   T reflection_table_select_cols_keys(const T &self,
                                       const af::const_ref<std::string> &keys) {
     T result = flex_table_suite::select_cols_keys<T>(self, keys);
-    flex_table_suite::reflection_table_extend_identifiers(result, self);
+    reflection_table_extend_identifiers(result, self);
     return result;
   }
 
@@ -632,7 +715,7 @@ namespace dials { namespace af { namespace boost_python {
   template <typename T>
   T reflection_table_select_cols_tuple(const T &self, boost::python::tuple keys) {
     T result = flex_table_suite::select_cols_tuple<T>(self, keys);
-    flex_table_suite::reflection_table_extend_identifiers(result, self);
+    reflection_table_extend_identifiers(result, self);
     return result;
   }
 
@@ -640,16 +723,36 @@ namespace dials { namespace af { namespace boost_python {
    * Extend the reflection table
    */
   void reflection_table_extend(reflection_table &self, const reflection_table &other) {
-    flex_table_suite::reflection_table_extend_identifiers(self, other);
-    flex_table_suite::extend(self, other);
+    reflection_table_extend_identifiers(self, other);
+    extend(self, other);
   }
 
   /**
    * Update the reflection table
    */
   void reflection_table_update(reflection_table &self, const reflection_table &other) {
-    flex_table_suite::reflection_table_extend_identifiers(self, other);
+    reflection_table_extend_identifiers(self, other);
     flex_table_suite::update(self, other);
+  }
+
+  /**
+   * Perform a deep copy
+   */
+  template <typename T>
+  T reflection_table_deepcopy(const T &self, dict obj) {
+    typedef typename T::const_iterator iterator;
+    T result(self.nrows());
+    for (iterator it = self.begin(); it != self.end(); ++it) {
+      flex_table_suite::copy_column_visitor<T> visitor(result, it->first);
+      it->second.apply_visitor(visitor);
+    }
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+    for (const_iterator it = self.experiment_identifiers()->begin();
+         it != self.experiment_identifiers()->end();
+         ++it) {
+      (*result.experiment_identifiers())[it->first] = it->second;
+    }
+    return result;
   }
 
   /**
@@ -862,6 +965,74 @@ namespace dials { namespace af { namespace boost_python {
     return r;
   }
 
+  template <typename T>
+  T select_using_experiment(T &self, dxtbx::model::Experiment expt) {
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+
+    std::string identifier = expt.get_identifier();
+    int id_value = -1;
+    for (const_iterator it = self.experiment_identifiers()->begin();
+         it != self.experiment_identifiers()->end();
+         ++it) {
+      if (identifier == it->second) {
+        id_value = it->first;
+        break;
+      }
+    }
+
+    T result;
+    if (self.contains("id") && id_value != -1) {
+      scitbx::af::shared<int> col1 = self["id"];
+      scitbx::af::shared<std::size_t> sel;
+      for (int i = 0; i < col1.size(); ++i) {
+        if (col1[i] == id_value) {
+          sel.push_back(i);
+        }
+      }
+      scitbx::af::const_ref<std::size_t> idx = sel.const_ref();
+
+      result = select_rows_index(self, idx);
+    }
+
+    return result;
+  }
+
+  template <typename T>
+  T select_using_experiments(T &self, dxtbx::model::ExperimentList expts) {
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+    typedef dxtbx::model::ExperimentList::shared_type::const_iterator
+      expt_const_iterator;
+    T result;
+    for (expt_const_iterator expt = expts.begin(); expt != expts.end(); ++expt) {
+      std::string identifier = expt->get_identifier();
+      int id_value = -1;
+      for (const_iterator it = self.experiment_identifiers()->begin();
+           it != self.experiment_identifiers()->end();
+           ++it) {
+        if (identifier == it->second) {
+          id_value = it->first;
+          break;
+        }
+      }
+
+      if (self.contains("id") && id_value != -1) {
+        scitbx::af::shared<int> col1 = self["id"];
+        scitbx::af::shared<std::size_t> sel;
+        for (int i = 0; i < col1.size(); ++i) {
+          if (col1[i] == id_value) {
+            sel.push_back(i);
+          }
+        }
+        scitbx::af::const_ref<std::size_t> idx = sel.const_ref();
+
+        T sel_refl = select_rows_index(self, idx);
+        extend(result, sel_refl);
+      }
+    }
+
+    return result;
+  }
+
   /*
    * Class to pickle and unpickle the table
    */
@@ -884,7 +1055,7 @@ namespace dials { namespace af { namespace boost_python {
 
       // Get the columns as a dictionary
       dict columns;
-      column_to_object_visitor visitor;
+      flex_table_suite::column_to_object_visitor visitor;
       for (const_iterator it = self.begin(); it != self.end(); ++it) {
         columns[it->first] = it->second.apply_visitor(visitor);
       }
@@ -968,8 +1139,9 @@ namespace dials { namespace af { namespace boost_python {
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
-  struct flex_reflection_table_wrapper : public flex_table_wrapper<T> {
-    typedef flex_table_wrapper<T> base_type;
+  struct flex_reflection_table_wrapper
+      : public flex_table_suite::flex_table_wrapper<T> {
+    typedef flex_table_suite::flex_table_wrapper<T> base_type;
     typedef typename base_type::flex_table_type flex_table_type;
     typedef typename base_type::class_type class_type;
 
@@ -1012,6 +1184,9 @@ namespace dials { namespace af { namespace boost_python {
         .def("select", &reflection_table_select_cols_tuple<flex_table_type>)
         .def("extend", reflection_table_extend)
         .def("update", reflection_table_update)
+        .def("select", &select_using_experiment<flex_table_type>)
+        .def("select", &select_using_experiments<flex_table_type>)
+        .def("__deepcopy__", &reflection_table_deepcopy<flex_table_type>)
         .def_pickle(flex_reflection_table_pickle_suite());
 
       // Create the flags enum in the reflection table scope

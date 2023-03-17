@@ -23,7 +23,7 @@
 #include <dials/model/data/image.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/array_family/reflection_table.h>
-#include <dials/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/boost_python/flex_table_suite.h>
 
 namespace dials { namespace algorithms {
 
@@ -117,8 +117,8 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void next(const Image<T>& image, Executor& executor) {
-      using dials::af::boost_python::flex_table_suite::select_rows_index;
-      using dials::af::boost_python::flex_table_suite::set_selected_rows_index;
+      using dxtbx::af::boost_python::flex_table_suite::select_rows_index;
+      using dxtbx::af::boost_python::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
       typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
       typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
