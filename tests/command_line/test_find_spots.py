@@ -318,6 +318,28 @@ def test_find_spots_with_user_defined_region(dials_data, tmp_path):
     assert y.all_lt(1200)
 
 
+def test_find_spots_with_image_exclusions(dials_data, tmp_path):
+    result = procrunner.run(
+        [
+            "dials.find_spots",
+            "nproc=1",
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=True",
+            "exclude_images=4:6",
+        ]
+        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "spotfinder.refl").is_file()
+
+    reflections = flex.reflection_table.from_file(tmp_path / "spotfinder.refl")
+    _, _, z = reflections["xyzobs.px.value"].parts()
+    # 4th image starts at z==3. 6th image ends at z==6, but lowest z centroid
+    # is put in the centre of that image, at z==6.5
+    assert len(z.select((z > 3) & (z < 6.5))) == 0
+
+
 def test_find_spots_with_xfel_stills(dials_regression, tmp_path):
     # now with XFEL stills
     result = procrunner.run(
