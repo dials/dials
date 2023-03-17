@@ -12,26 +12,6 @@
 #ifndef DIALS_FRAMEWORK_TABLE_BOOST_PYTHON_FLEX_TABLE_SUITE_H
 #define DIALS_FRAMEWORK_TABLE_BOOST_PYTHON_FLEX_TABLE_SUITE_H
 
-#include <string>
-#include <iterator>
-#include <iostream>
-#include <sstream>
-#include <set>
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/slice.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <boost/mpl/for_each.hpp>
-#include <scitbx/array_family/flex_types.h>
-#include <scitbx/boost_python/slice.h>
-#include <scitbx/boost_python/utils.h>
-#include <dials/array_family/flex_table.h>
-#include <dials/array_family/scitbx_shared_and_versa.h>
-#include <dials/error.h>
-#include <dxtbx/model/experiment.h>
-#include <dxtbx/model/experiment_list.h>
-
-#include "ref_pickle_double_buffered.h"
 #include <dxtbx/array_family/flex_table_suite.h>
 
 namespace dials { namespace af { namespace boost_python { namespace flex_table_suite {
