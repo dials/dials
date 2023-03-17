@@ -1,7 +1,7 @@
 #ifndef DIALS_ARRAY_FAMILY_BOOST_PYTHON_REFLECTION_TABLE_SUITE_H
 #define DIALS_ARRAY_FAMILY_BOOST_PYTHON_REFLECTION_TABLE_SUITE_H
 
-#include <dxtbx/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 #include <dials/error.h>
 #include <dxtbx/model/experiment.h>
 #include <dxtbx/model/experiment_list.h>
@@ -9,7 +9,7 @@
 namespace dials { namespace af { namespace boost_python {
   namespace reflection_table_suite {
 
-    namespace flex_table_suite = dxtbx::af::boost_python::flex_table_suite;
+    namespace flex_table_suite = dxtbx::af::flex_table_suite;
 
     /**
      * Select a number of rows from the table via an index array

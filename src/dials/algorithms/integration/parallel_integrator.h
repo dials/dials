@@ -26,7 +26,7 @@
 #include <dials/algorithms/shoebox/find_overlapping.h>
 #include <dials/algorithms/integration/sum/summation.h>
 #include <dials/algorithms/centroid/centroid.h>
-#include <dxtbx/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 #include <dials/array_family/boost_python/reflection_table_suite.h>
 #include <map>
 
@@ -1606,8 +1606,8 @@ namespace dials { namespace algorithms {
      * @returns The split reflection table
      */
     af::reflection_table split_reflections(af::reflection_table data) const {
-      using dxtbx::af::boost_python::flex_table_suite::reorder;
-      using dxtbx::af::boost_python::flex_table_suite::setitem_column;
+      using dxtbx::af::flex_table_suite::reorder;
+      using dxtbx::af::flex_table_suite::setitem_column;
 
       // Check input
       DIALS_ASSERT(data.is_consistent());
@@ -1908,7 +1908,7 @@ namespace dials { namespace algorithms {
      * Accumulate the results.
      */
     void accumulate(std::size_t index, af::reflection_table result) {
-      using dxtbx::af::boost_python::flex_table_suite::set_selected_rows_index;
+      using dxtbx::af::flex_table_suite::set_selected_rows_index;
       DIALS_ASSERT(index < finished_.size());
       DIALS_ASSERT(finished_[index] == false);
 

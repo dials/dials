@@ -25,7 +25,7 @@
 #include <dials/algorithms/integration/parallel_integrator.h>
 #include <dials/algorithms/integration/sum/summation.h>
 #include <dials/algorithms/centroid/centroid.h>
-#include <dxtbx/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 #include <map>
 
 #include <dials/algorithms/integration/interfaces.h>

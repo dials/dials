@@ -16,7 +16,7 @@
 #include <numeric>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/boost_python/reflection_table_suite.h>
-#include <dxtbx/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 #include <dials/algorithms/profile_model/modeller/modeller_interface.h>
 
 namespace dials { namespace algorithms {
@@ -58,7 +58,7 @@ namespace dials { namespace algorithms {
      */
     void model(af::reflection_table reflections) {
       using dials::af::boost_python::reflection_table_suite::select_rows_index;
-      using dxtbx::af::boost_python::flex_table_suite::set_selected_rows_index;
+      using dxtbx::af::flex_table_suite::set_selected_rows_index;
 
       // Check some stuff
       DIALS_ASSERT(size() > 0);
@@ -130,7 +130,7 @@ namespace dials { namespace algorithms {
      */
     af::shared<bool> fit(af::reflection_table reflections) const {
       using dials::af::boost_python::reflection_table_suite::select_rows_index;
-      using dxtbx::af::boost_python::flex_table_suite::set_selected_rows_index;
+      using dxtbx::af::flex_table_suite::set_selected_rows_index;
 
       // Check some stuff
       DIALS_ASSERT(size() > 0);
@@ -207,7 +207,7 @@ namespace dials { namespace algorithms {
      */
     void validate(af::reflection_table reflections) const {
       using dials::af::boost_python::reflection_table_suite::select_rows_index;
-      using dxtbx::af::boost_python::flex_table_suite::set_selected_rows_index;
+      using dxtbx::af::flex_table_suite::set_selected_rows_index;
 
       // Check some stuff
       DIALS_ASSERT(size() > 0);

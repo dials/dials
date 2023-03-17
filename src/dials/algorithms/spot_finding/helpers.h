@@ -12,7 +12,7 @@
 #define DIALS_ALGORITHMS_SPOT_FINDING_HELPERS_H
 
 #include <dials/array_family/reflection_table.h>
-#include <dxtbx/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 #include <dials/algorithms/image/connected_components/connected_components.h>
 
 namespace dials { namespace algorithms {
