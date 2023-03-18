@@ -182,11 +182,15 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
 def set_invalid_images(experiments, exclude_images):
     """Set invalid images in the imageset, which is the mechanism used by
     dials.find_spots and dials.integrate to handle image exclusions."""
+    if not exclude_images:
+        return experiments
     experiments = exclude_image_ranges_from_scans(None, experiments, exclude_images)
     valid_image_ranges_by_experiment = get_valid_image_ranges(experiments)
     for valid_image_ranges, experiment in zip(
         valid_image_ranges_by_experiment, experiments
     ):
+        if not experiment.scan:
+            raise ValueError("Trying to exclude a scanless experiment")
         rejects = flex.bool(experiment.scan.get_num_images(), True)
         first, last = experiment.scan.get_image_range()
         for image_range in valid_image_ranges:
