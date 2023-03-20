@@ -2,6 +2,7 @@
 #define DIALS_ARRAY_FAMILY_BOOST_PYTHON_REFLECTION_TABLE_SUITE_H
 
 #include <dxtbx/array_family/flex_table_suite.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 #include <dxtbx/model/experiment.h>
 #include <dxtbx/model/experiment_list.h>
@@ -229,6 +230,39 @@ namespace dials { namespace af { namespace boost_python {
     T select_cols_tuple(const T &self, boost::python::tuple keys) {
       T result = flex_table_suite::select_cols_tuple<T>(self, keys);
       extend_identifiers(result, self);
+      return result;
+    }
+
+    /**
+     * Get a slice of the table and return a new table
+     * @param self The current table
+     * @param slice The slice
+     * @returns A new table with the chosen elements
+     */
+    template <typename T>
+    T getitem_slice(const T &self, boost::python::slice s) {
+      typedef typename T::const_iterator iterator;
+      scitbx::boost_python::adapted_slice as(s, self.nrows());
+      T result(as.size);
+      for (iterator it = self.begin(); it != self.end(); ++it) {
+        dxtbx::af::flex_table_suite::copy_to_slice_visitor<T> visitor(
+          result, it->first, as);
+        it->second.apply_visitor(visitor);
+      }
+      if (self.contains("id")) {
+        /* note some tables contain id values of -1 for unindexed reflections
+        but the identifiers map only allows keys of type size_t
+        */
+        af::shared<int> col = result["id"];
+        std::set<int> new_ids(col.begin(), col.end());
+        typedef typename T::experiment_map_type::iterator iterator;
+        for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i) {
+          iterator found = self.experiment_identifiers()->find(*i);
+          if (found != self.experiment_identifiers()->end()) {
+            (*result.experiment_identifiers())[found->first] = found->second;
+          }
+        }
+      }
       return result;
     }
 

@@ -14,7 +14,7 @@
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <dials/util/python_streambuf.h>
 #include <numeric>
-#include <dxtbx/array_family/flex_table_suite.h>
+#include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/reflection.h>
 #include <dials/array_family/reflection_table_msgpack_adapter.h>
@@ -39,7 +39,7 @@ namespace dials { namespace af { namespace boost_python {
   using scitbx::vec3;
   using scitbx::af::int6;
 
-  namespace flex_table_suite = dxtbx::af::flex_table_suite;
+  using namespace dials::af::boost_python::flex_table_suite;
 
   /**
    * Construct a reflection table from a list of observations and shoeboxes
@@ -947,6 +947,7 @@ namespace dials { namespace af { namespace boost_python {
              &reflection_table_suite::select_using_experiment<flex_table_type>)
         .def("select",
              &reflection_table_suite::select_using_experiments<flex_table_type>)
+        .def("__getitem__", &flex_table_suite::getitem_slice<flex_table_type>)
         .def("extend", &reflection_table_suite::extend<flex_table_type>)
         .def("update", &reflection_table_suite::update<flex_table_type>)
         .def("__deepcopy__", &reflection_table_suite::deepcopy<flex_table_type>)
@@ -1135,8 +1136,6 @@ namespace dials { namespace af { namespace boost_python {
       .def("keys", &experiment_map_type_detail::keys)
       .def("values", &experiment_map_type_detail::values)
       .def("__iter__", experiment_map_type_detail::make_iterator::range());
-    ;
-    ;
 
     // Export the reflection table
     flex_reflection_table_wrapper<reflection_table>::wrap("reflection_table");
