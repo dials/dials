@@ -196,7 +196,7 @@ def set_invalid_images(experiments, exclude_images):
         for image_range in valid_image_ranges:
             # Need to index into the imageset's 0-based array
             accepts = (
-                flex.size_t(list(range(image_range[0], image_range[1] + 1))) - first
+                flex.size_t_range(image_range[0], image_range[1] + 1) - first
             )
             rejects.set_selected(accepts, False)
         for index in rejects.iselection():
