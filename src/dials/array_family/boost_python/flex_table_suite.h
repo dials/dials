@@ -149,10 +149,10 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
   }
 
   template <typename T>
-  void delitem_slice(T &self, slice s) {
-    [[deprecated(
-      "delitem_slice has moved to dxtbx/array_family/flex_table_suite.h")]] dxtbx::af::
-      flex_table_suite::delitem_slice(self, s);
+  [[deprecated(
+    "delitem_slice has moved to dxtbx/array_family/flex_table_suite.h")]] void
+  delitem_slice(T &self, slice s) {
+    dxtbx::af::flex_table_suite::delitem_slice(self, s);
   }
 
   template <typename T>
