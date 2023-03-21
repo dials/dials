@@ -5,12 +5,16 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 from io import StringIO
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
+import iotbx.mtz
+from cctbx import miller, r_free_utils
 from dxtbx.model import ExperimentList
 from iotbx import mtz, phil
+from iotbx.reflection_file_editor import is_rfree_array
+from iotbx.reflection_file_utils import get_r_free_flags_scores
 from mmtbx.scaling import data_statistics
 
 from dials.algorithms.merging.reporting import (
@@ -150,7 +154,7 @@ class MTZDataClass:
         self.merged_half_datasets = merged_half_datasets
 
 
-def make_merged_mtz_file(mtz_datasets):
+def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
     """
     Make an mtz file object for the data, adding the date, time and program.
 
@@ -174,8 +178,15 @@ def make_merged_mtz_file(mtz_datasets):
         mtz_datasets[0].merged_array.unit_cell(),
     )
 
+    if r_free_array:
+        mtz_writer.add_crystal(crystal_name="HKL_base", project_name="HKL_base")
+        mtz_writer.add_empty_dataset(wavelength=0, name="HKL_base")
+        mtz_writer.add_dataset(
+            r_free_array=r_free_array,
+        )
+
     #### Add each wavelength as a new crystal.
-    for dataset in mtz_datasets:
+    for i, dataset in enumerate(mtz_datasets):
         mtz_writer.add_crystal(
             crystal_name=dataset.crystal_name, project_name=dataset.project_name
         )
@@ -189,6 +200,7 @@ def make_merged_mtz_file(mtz_datasets):
             dataset.multiplicities,
             dataset.anomalous_multiplicities,
             half_datasets=dataset.merged_half_datasets,
+            suffix=f"_WAVE{i+1}" if len(mtz_datasets) > 1 else "",
         )
 
     return mtz_writer.mtz_file
@@ -512,3 +524,80 @@ def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_sum
     if MergeJSONCollector.initiated:
         stats_summary.anomalous_amplitudes = anom_amplitudes
         MergeJSONCollector.data[mtz_dataset.wavelength] = stats_summary
+
+
+def combined_miller_set(mtz_datasets: List[MTZDataClass]) -> miller.array:
+    miller_set = miller.set(
+        crystal_symmetry=mtz_datasets[0].merged_array.crystal_symmetry(),
+        indices=mtz_datasets[0].merged_array.indices().deep_copy(),
+        anomalous_flag=False,
+    )
+    for dataset in mtz_datasets[1:]:
+        indices = dataset.merged_array.indices()
+        missing_isel = miller.match_indices(miller_set.indices(), indices).singles(1)
+        miller_set.indices().extend(indices.select(missing_isel))
+    return miller_set
+
+
+def r_free_flags_from_reference(
+    params: phil.scope_extract,
+    mtz_datasets: List[MTZDataClass],
+) -> miller.array:
+
+    mtz = iotbx.mtz.object(params.r_free_flags.reference)
+    r_free_arrays = []
+    for ma in mtz.as_miller_arrays():
+        if is_rfree_array(ma, ma.info()):
+            r_free_arrays.append(ma)
+    flag_scores = get_r_free_flags_scores(
+        miller_arrays=r_free_arrays,
+        test_flag_value=params.r_free_flags.old_test_flag_value,
+    )
+    i = flag_scores.scores.index(max(flag_scores.scores))
+    r_free_array = r_free_arrays[i]
+    logger.info(
+        f"Copying FreeR flags from {params.r_free_flags.reference} with labels={r_free_array.info().labels}"
+    )
+
+    if params.r_free_flags.extend:
+        miller_set = combined_miller_set(mtz_datasets)
+        d_max, d_min = miller_set.d_max_min()
+        missing_set = r_free_array.complete_set(
+            d_min=d_min,
+            d_max=d_max,
+        ).lone_set(r_free_array.map_to_asu())
+
+        if r_free_utils.looks_like_ccp4_flags(r_free_array):
+            flag_format = "ccp4"
+        else:
+            flag_format = "cns"
+        missing_flags = missing_set.generate_r_free_flags(
+            fraction=params.r_free_flags.fraction,
+            max_free=2000,
+            lattice_symmetry_max_delta=5.0,
+            use_lattice_symmetry=params.r_free_flags.use_lattice_symmetry,
+            format=flag_format,
+        )
+        r_free_array = r_free_array.concatenate(other=missing_flags)
+
+    return r_free_array
+
+
+def generate_r_free_flags(
+    params: phil.scope_extract,
+    mtz_datasets: List[MTZDataClass],
+) -> miller.array:
+    miller_set = combined_miller_set(mtz_datasets)
+
+    if params.r_free_flags.relative_to_complete_set:
+        miller_set = miller_set.complete_set(
+            d_min=miller_set.d_min() - params.r_free_flags.d_eps
+        )
+
+    return miller_set.generate_r_free_flags(
+        fraction=params.r_free_flags.fraction,
+        max_free=2000,
+        lattice_symmetry_max_delta=5.0,
+        use_lattice_symmetry=params.r_free_flags.use_lattice_symmetry,
+        format="ccp4",
+    )
