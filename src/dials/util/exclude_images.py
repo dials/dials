@@ -54,7 +54,7 @@ def get_valid_image_ranges(experiments):
 
 def set_initial_valid_image_ranges(experiments):
     """Set the valid_image_range for each experiment to be the scan image range.
-    Kept separate from dxtbx.scan object as requires experiment indentifiers.
+    Kept separate from dxtbx.scan object as requires experiment identifiers.
     Also this function can be called for a mix of sequences and scanless experiments.
     """
     for exp in experiments:
@@ -116,14 +116,20 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                 if len(vals) != 3:
                     raise ValueError(
                         "Exclude images must be input in the form experimentnumber:start:stop, or start:stop for a single experiment"
-                        + "Multiple ranges can be specified by comma or space separated values e.g 0:100:150,1:120:200"
+                        + " Multiple ranges can be specified by comma or space separated values e.g 0:100:150,1:120:200"
                     )
                 dataset_id = int(vals[0])
-                for table in reflections:
-                    if dataset_id in table.experiment_identifiers():
-                        expid = table.experiment_identifiers()[dataset_id]
-                        ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
-                        break
+                if reflections:
+                    for table in reflections:
+                        if dataset_id in table.experiment_identifiers():
+                            expid = table.experiment_identifiers()[dataset_id]
+                            ranges_to_remove.append(
+                                (expid, (int(vals[1]), int(vals[2])))
+                            )
+                            break
+                else:
+                    expid = experiments[dataset_id].identifier
+                    ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
     return ranges_to_remove
 
 
@@ -170,6 +176,31 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
         else:
             valid_ranges = []
         exp.scan.set_valid_image_ranges(exp.identifier, valid_ranges)
+    return experiments
+
+
+def set_invalid_images(experiments, exclude_images):
+    """Set invalid images in the imageset, which is the mechanism used by
+    dials.find_spots and dials.integrate to handle image exclusions."""
+    if not exclude_images:
+        return experiments
+    experiments = exclude_image_ranges_from_scans(None, experiments, exclude_images)
+    valid_image_ranges_by_experiment = get_valid_image_ranges(experiments)
+    for valid_image_ranges, experiment in zip(
+        valid_image_ranges_by_experiment, experiments
+    ):
+        if not experiment.scan:
+            raise ValueError("Trying to exclude a scanless experiment")
+        rejects = flex.bool(experiment.scan.get_num_images(), True)
+        first, last = experiment.scan.get_image_range()
+        for image_range in valid_image_ranges:
+            # Need to index into the imageset's 0-based array
+            accepts = (
+                flex.size_t_range(image_range[0], image_range[1] + 1) - first
+            )
+            rejects.set_selected(accepts, False)
+        for index in rejects.iselection():
+            experiment.imageset.mark_for_rejection(index, True)
     return experiments
 
 
