@@ -563,8 +563,8 @@ def r_free_flags_from_reference(
         miller_set = combined_miller_set(mtz_datasets)
         d_max, d_min = miller_set.d_max_min()
         missing_set = r_free_array.complete_set(
-            d_min=d_min,
-            d_max=d_max,
+            d_min=d_min - params.r_free_flags.d_eps,
+            d_max=d_max + params.r_free_flags.d_eps,
         ).lone_set(r_free_array.map_to_asu())
 
         if r_free_utils.looks_like_ccp4_flags(r_free_array):
@@ -590,8 +590,10 @@ def generate_r_free_flags(
     miller_set = combined_miller_set(mtz_datasets)
 
     if params.r_free_flags.relative_to_complete_set:
+        d_max, d_min = miller_set.d_max_min()
         miller_set = miller_set.complete_set(
-            d_min=miller_set.d_min() - params.r_free_flags.d_eps
+            d_min=d_min - params.r_free_flags.d_eps,
+            d_max=d_max + params.r_free_flags.d_eps,
         )
 
     return miller_set.generate_r_free_flags(

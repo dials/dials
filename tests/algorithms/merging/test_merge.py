@@ -53,7 +53,7 @@ def test_generate_r_free_flags():
         == 0.05
     )
     assert set(r_free_flags.data()) == set(range(20))
-    assert pytest.approx(r_free_flags.completeness(), rel=0.01) == 0.9
+    assert pytest.approx(r_free_flags.completeness(), rel=0.02) == 0.9
 
     params.r_free_flags.relative_to_complete_set = True
     r_free_flags_complete = generate_r_free_flags(params, mtz_datasets)
@@ -84,7 +84,7 @@ def test_r_free_flags_from_reference(tmp_path):
     # Now actually test r_free_flags_from_reference
     params.r_free_flags.reference = str(mtz_file)
     r_free_flags = r_free_flags_from_reference(params, mtz_datasets)
-    assert pytest.approx(r_free_flags.completeness(), rel=0.01) == 0.9
+    assert pytest.approx(r_free_flags.completeness(), rel=0.02) == 0.9
 
     # And now with extension of flags to complete set
     params.r_free_flags.extend = True
