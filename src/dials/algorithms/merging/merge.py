@@ -597,7 +597,7 @@ def generate_r_free_flags(
     return miller_set.generate_r_free_flags(
         fraction=params.r_free_flags.fraction,
         max_free=2000,
-        lattice_symmetry_max_delta=params.r_free_flags.lattice_symmetry_max_delta
+        lattice_symmetry_max_delta=params.r_free_flags.lattice_symmetry_max_delta,
         use_lattice_symmetry=params.r_free_flags.use_lattice_symmetry,
         format="ccp4",
     )
