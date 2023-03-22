@@ -576,6 +576,7 @@ def r_free_flags_from_reference(
             max_free=2000,
             lattice_symmetry_max_delta=5.0,
             use_lattice_symmetry=params.r_free_flags.use_lattice_symmetry,
+            n_shells=params.r_free_flags.n_shells,
             format=flag_format,
         )
         r_free_array = r_free_array.concatenate(other=missing_flags)
@@ -598,8 +599,9 @@ def generate_r_free_flags(
 
     return miller_set.generate_r_free_flags(
         fraction=params.r_free_flags.fraction,
-        max_free=2000,
+        max_free=params.r_free_flags.max_free,
         lattice_symmetry_max_delta=params.r_free_flags.lattice_symmetry_max_delta,
         use_lattice_symmetry=params.r_free_flags.use_lattice_symmetry,
+        n_shells=params.r_free_flags.n_shells,
         format="ccp4",
     )
