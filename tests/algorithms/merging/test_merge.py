@@ -98,5 +98,5 @@ def test_r_free_flags_from_reference(tmp_path):
 
     # And now with d_min override
     params.r_free_flags.d_min = 1.5
-    r_free_flags_d_min = generate_r_free_flags(params, mtz_datasets)
+    r_free_flags_d_min = r_free_flags_from_reference(params, mtz_datasets)
     assert r_free_flags_d_min.d_min() == pytest.approx(1.5, rel=1e-3)
