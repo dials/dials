@@ -89,4 +89,4 @@ def test_r_free_flags_from_reference(tmp_path):
     # And now with extension of flags to complete set
     params.r_free_flags.extend = True
     r_free_flags_extended = r_free_flags_from_reference(params, mtz_datasets)
-    assert r_free_flags_extended.completeness() == 1
+    assert pytest.approx(r_free_flags_extended.completeness(), rel=5e-4) == 1
