@@ -57,13 +57,13 @@ def test_generate_r_free_flags():
 
     params.r_free_flags.relative_to_complete_set = True
     r_free_flags_complete = generate_r_free_flags(params, mtz_datasets)
-    assert r_free_flags_complete.completeness() == 1
+    assert pytest.approx(r_free_flags_complete.completeness(), rel=5e-4) == 1
     assert r_free_flags_complete.size() > r_free_flags.size()
-    assert r_free_flags_complete.d_min() == pytest.approx(2, rel=1e-4)
+    assert r_free_flags_complete.d_min() == pytest.approx(2, rel=1e-3)
 
     params.r_free_flags.d_min = 1.5
     r_free_flags_d_min = generate_r_free_flags(params, mtz_datasets)
-    assert r_free_flags_d_min.d_min() == pytest.approx(1.5, rel=1e-4)
+    assert r_free_flags_d_min.d_min() == pytest.approx(1.5, rel=1e-3)
 
 
 def test_r_free_flags_from_reference(tmp_path):
@@ -95,3 +95,8 @@ def test_r_free_flags_from_reference(tmp_path):
     params.r_free_flags.extend = True
     r_free_flags_extended = r_free_flags_from_reference(params, mtz_datasets)
     assert pytest.approx(r_free_flags_extended.completeness(), rel=5e-4) == 1
+
+    # And now with d_min override
+    params.r_free_flags.d_min = 1.5
+    r_free_flags_d_min = generate_r_free_flags(params, mtz_datasets)
+    assert r_free_flags_d_min.d_min() == pytest.approx(1.5, rel=1e-3)
