@@ -36,6 +36,8 @@ from dials.util.version import dials_version
 
 logger = logging.getLogger(__name__)
 
+import os
+
 
 class MTZWriterBase:
     """Helper for adding metadata, crystals and datasets to an mtz file object."""
@@ -43,7 +45,10 @@ class MTZWriterBase:
     def __init__(self, space_group, unit_cell=None):
         """If a unit cell is provided, will be used as default unless specified
         for each crystal."""
-        mtz_file = mtz.object()
+        if "GEMMI_MTZ" in os.environ:
+            mtz_file = dials.util.ext.GemmiMtzObject()
+        else:
+            mtz_file = mtz.object()
         mtz_file.set_title(f"From {env.dispatcher_name}")
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
         if time.strftime("%Z") != "GMT":
