@@ -12,6 +12,10 @@
 #include <iotbx/mtz/object.h>
 #include <scitbx/array_family/misc_functions.h>
 
+#define GEMMI_WRITE_IMPLEMENTATION
+#include <gemmi/mtz.hpp>
+#include <gemmi/unitcell.hpp>
+
 namespace dials { namespace util {
 
   using cctbx::uctbx::unit_cell;
@@ -203,6 +207,19 @@ namespace dials { namespace util {
 
     return mosflm_U;
   }
+
+  class GemmiMtzObject {
+  public:
+    GemmiMtzObject() {}
+
+    void set_title(const char* title) {
+      mtz_.title = title;
+    }
+
+  private:
+    gemmi::Mtz mtz_;
+  };
+
 }}  // namespace dials::util
 
 #endif

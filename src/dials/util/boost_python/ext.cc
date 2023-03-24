@@ -57,6 +57,9 @@ namespace dials { namespace util { namespace boost_python {
          arg("axis"),
          arg("s0n")));
 
+    // Have to specify noncopyable because gemmi::Mtz is noncopyable
+    class_<GemmiMtzObject, boost::noncopyable>("GemmiMtzObject");
+
     class_<ResolutionMaskGenerator>("ResolutionMaskGenerator", no_init)
       .def(init<const BeamBase &, const Panel &>())
       .def("apply", &ResolutionMaskGenerator::apply);
