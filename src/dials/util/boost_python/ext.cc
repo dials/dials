@@ -58,7 +58,10 @@ namespace dials { namespace util { namespace boost_python {
          arg("s0n")));
 
     // Have to specify noncopyable because gemmi::Mtz is noncopyable
-    class_<GemmiMtzObject, boost::noncopyable>("GemmiMtzObject");
+    class_<GemmiMtzObject, boost::noncopyable>("GemmiMtzObject")
+      .def("set_title", &GemmiMtzObject::set_title)
+      .def("add_history", &GemmiMtzObject::add_history)
+      .def("set_space_group_by_name", &GemmiMtzObject::set_space_group_by_name);
 
     class_<ResolutionMaskGenerator>("ResolutionMaskGenerator", no_init)
       .def(init<const BeamBase &, const Panel &>())

@@ -15,6 +15,7 @@
 #define GEMMI_WRITE_IMPLEMENTATION
 #include <gemmi/mtz.hpp>
 #include <gemmi/unitcell.hpp>
+#include <gemmi/symmetry.hpp>
 
 namespace dials { namespace util {
 
@@ -214,6 +215,14 @@ namespace dials { namespace util {
 
     void set_title(const char* title) {
       mtz_.title = title;
+    }
+
+    void add_history(const char* history) {
+      mtz_.history.emplace_back(history);
+    }
+
+    void set_space_group_by_name(const char* symbol) {
+      mtz_.spacegroup = gemmi::find_spacegroup_by_name(symbol);
     }
 
   private:
