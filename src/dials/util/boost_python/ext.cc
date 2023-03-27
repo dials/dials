@@ -57,6 +57,23 @@ namespace dials { namespace util { namespace boost_python {
          arg("axis"),
          arg("s0n")));
 
+    def("add_dials_batches",
+        &add_dials_batches_gemmi,
+        (arg("mtz"),
+         arg("dataset_id"),
+         arg("image_range"),
+         arg("batch_offset"),
+         arg("wavelength"),
+         arg("mosaic"),
+         arg("phi_start"),
+         arg("phi_range"),
+         arg("cell_array"),
+         arg("umat_array"),
+         arg("panel_size"),
+         arg("panel_distance"),
+         arg("axis"),
+         arg("s0n")));
+
     // Have to specify noncopyable because gemmi::Mtz is noncopyable
     class_<GemmiMtzObject, boost::noncopyable>("GemmiMtzObject")
       .def("set_title", &GemmiMtzObject::set_title)
