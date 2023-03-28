@@ -238,8 +238,27 @@ namespace dials { namespace util {
       mtz_.batches.push_back(batch);
     }
 
+    void add_dataset(const char* project_name,
+                     const char* crystal_name,
+                     const char* dataset_name,
+                     af::double6 const& unit_cell_parameters,
+                     float wavelength) {
+      std::array<double, 6> params;
+      for (std::size_t i = 0; i < unit_cell_parameters.size(); i++)
+        params[i] = unit_cell_parameters[i];
+      gemmi::UnitCell cell(params);
+      mtz_.datasets.push_back({next_data_set_id_,
+                               project_name,
+                               crystal_name,
+                               dataset_name,
+                               cell,
+                               wavelength});
+      next_data_set_id_++;
+    }
+
   private:
     gemmi::Mtz mtz_;
+    size_t next_data_set_id_ = 1;
   };
 
   void add_dials_batches_gemmi(GemmiMtzObject& mtz,

@@ -7,8 +7,47 @@ from dials_util_ext import *  # noqa: F403; lgtm
 from dials_util_ext import GemmiMtzObject
 
 
+class CrystalView:
+    def __init__(self, crystal_name, project_name, unit_cell_parameters, mtz_object):
+
+        self.datasets = []
+        self.crystal_name = crystal_name
+        self.project_name = project_name
+        self.unit_cell_parameters = unit_cell_parameters
+        self.mtz_object = mtz_object
+
+        return
+
+    def add_dataset(self, dataset_name, wavelength):
+
+        dataset = DatasetView(dataset_name, wavelength, self)
+        self.mtz_object.add_dataset(
+            self.project_name,
+            self.crystal_name,
+            dataset_name,
+            self.unit_cell_parameters,
+            wavelength,
+        )
+        self.datasets.append(dataset)
+
+        return dataset
+
+
+class DatasetView:
+    def __init__(self, dataset_name, wavelength, crystal_view):
+
+        self.dataset_name = dataset_name
+        self.wavelength = wavelength
+        self.crystal_view = crystal_view
+
+        return
+
+
 @bp.inject_into(GemmiMtzObject)
 class _:
+
+    crystals = []
+
     def set_space_group_info(self, space_group_info, symbol=None):
         if symbol is None:
             symbol = extract_from_symmetry_lib.ccp4_symbol(
@@ -30,6 +69,13 @@ class _:
         #  self.set_lattice_centring_type(symbol="?")
         # self.set_space_group(space_group=space_group_info.group())
         # return self
+
+    def add_crystal(self, crystal_name, project_name, unit_cell_parameters):
+        """Cache information about a crystal to add with the dataset later"""
+
+        crystal = CrystalView(crystal_name, project_name, unit_cell_parameters, self)
+        self.crystals.append(crystal)
+        return crystal
 
 
 __all__ = (  # noqa: F405
