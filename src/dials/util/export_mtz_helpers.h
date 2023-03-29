@@ -247,18 +247,21 @@ namespace dials { namespace util {
       for (std::size_t i = 0; i < unit_cell_parameters.size(); i++)
         params[i] = unit_cell_parameters[i];
       gemmi::UnitCell cell(params);
-      mtz_.datasets.push_back({next_data_set_id_,
+      mtz_.datasets.push_back({++current_data_set_id_,
                                project_name,
                                crystal_name,
                                dataset_name,
                                cell,
                                wavelength});
-      next_data_set_id_++;
+    }
+
+    void add_column(const char* column_name, const char column_type) {
+      mtz_.add_column(column_name, column_type, current_data_set_id_, -1, false);
     }
 
   private:
     gemmi::Mtz mtz_;
-    size_t next_data_set_id_ = 1;
+    int current_data_set_id_ = 0;
   };
 
   void add_dials_batches_gemmi(GemmiMtzObject& mtz,

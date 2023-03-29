@@ -42,6 +42,23 @@ class DatasetView:
 
         return
 
+    def add_column(self, column_name, column_type):
+
+        self.crystal_view.mtz_object.add_column(column_name, column_type)
+        column = ColumnView(column_name, column_type, self)
+        return column
+
+
+class ColumnView:
+    def __init__(self, column_name, column_type, dataset_view):
+
+        self.column_name = column_name
+        self.column_type = column_type
+        self.dataset_view = dataset_view
+
+    def set_values(array):
+        pass
+
 
 @bp.inject_into(GemmiMtzObject)
 class _:
