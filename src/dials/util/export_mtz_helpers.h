@@ -259,9 +259,18 @@ namespace dials { namespace util {
       mtz_.add_column(column_name, column_type, current_data_set_id_, -1, false);
     }
 
+    void add_column_data(af::const_ref<float> const& values) {
+      column_data_.push_back(values);
+    }
+
+    void set_n_reflections(int n_reflections) {
+      mtz_.nreflections = n_reflections;
+    }
+
   private:
     gemmi::Mtz mtz_;
     int current_data_set_id_ = 0;
+    std::vector<af::const_ref<float> > column_data_;
   };
 
   void add_dials_batches_gemmi(GemmiMtzObject& mtz,

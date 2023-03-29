@@ -56,8 +56,9 @@ class ColumnView:
         self.column_type = column_type
         self.dataset_view = dataset_view
 
-    def set_values(array):
-        pass
+    def set_values(self, array):
+
+        self.dataset_view.crystal_view.mtz_object.add_column_data(array)
 
 
 @bp.inject_into(GemmiMtzObject)
@@ -93,6 +94,9 @@ class _:
         crystal = CrystalView(crystal_name, project_name, unit_cell_parameters, self)
         self.crystals.append(crystal)
         return crystal
+
+    def adjust_column_array_sizes(self, nref):
+        pass
 
 
 __all__ = (  # noqa: F405

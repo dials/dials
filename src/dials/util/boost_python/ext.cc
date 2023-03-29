@@ -80,7 +80,9 @@ namespace dials { namespace util { namespace boost_python {
       .def("add_history", &GemmiMtzObject::add_history)
       .def("set_space_group_by_name", &GemmiMtzObject::set_space_group_by_name)
       .def("add_dataset", &GemmiMtzObject::add_dataset)
-      .def("add_column", &GemmiMtzObject::add_column);
+      .def("add_column", &GemmiMtzObject::add_column)
+      .def("add_column_data", &GemmiMtzObject::add_column_data)
+      .def("set_n_reflections", &GemmiMtzObject::set_n_reflections);
 
     class_<ResolutionMaskGenerator>("ResolutionMaskGenerator", no_init)
       .def(init<const BeamBase &, const Panel &>())
