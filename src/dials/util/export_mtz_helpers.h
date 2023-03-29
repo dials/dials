@@ -267,6 +267,30 @@ namespace dials { namespace util {
       mtz_.nreflections = n_reflections;
     }
 
+    void replace_original_index_miller_indices(
+      af::const_ref<cctbx::miller::index<> > const& indices) {
+      gemmi::UnmergedHklMover hkl_mover(mtz_.spacegroup);
+
+      af::shared<float> h_col;
+      af::shared<float> k_col;
+      af::shared<float> l_col;
+      af::shared<float> m_isym_col;
+
+      for (int i_refl = 0; i_refl < indices.size(); ++i_refl) {
+        cctbx::miller::index<> miller_index = indices[i_refl];
+        std::array<int, 3> hkl = {miller_index[0], miller_index[1], miller_index[2]};
+        int isym = hkl_mover.move_to_asu(hkl);
+        h_col.push_back((float)hkl[0]);
+        k_col.push_back((float)hkl[1]);
+        l_col.push_back((float)hkl[2]);
+        m_isym_col.push_back((float)isym);
+      }
+      add_column_data(h_col.const_ref());
+      add_column_data(k_col.const_ref());
+      add_column_data(l_col.const_ref());
+      add_column_data(m_isym_col.const_ref());
+    }
+
   private:
     gemmi::Mtz mtz_;
     int current_data_set_id_ = 0;

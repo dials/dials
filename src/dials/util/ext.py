@@ -58,7 +58,10 @@ class ColumnView:
 
     def set_values(self, array):
 
-        self.dataset_view.crystal_view.mtz_object.add_column_data(array)
+        # Do not set dummy data for these columns, as they will be set by
+        # replace_original_index_miller_indices instead.
+        if self.column_name not in ("H", "K", "L", "M_ISYM"):
+            self.dataset_view.crystal_view.mtz_object.add_column_data(array)
 
 
 @bp.inject_into(GemmiMtzObject)
