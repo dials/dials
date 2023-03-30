@@ -225,6 +225,8 @@ namespace dials { namespace util {
 
     void set_space_group_by_name(const char* symbol) {
       mtz_.spacegroup = gemmi::find_spacegroup_by_name(symbol);
+      // Also add base dataset at this point
+      mtz_.add_base();
     }
 
     int get_max_batch_number() {
@@ -291,9 +293,37 @@ namespace dials { namespace util {
       add_column_data(m_isym_col.const_ref());
     }
 
+    void write(const char* file_name) {
+      IOTBX_ASSERT(file_name != 0);
+
+      // Set the data size
+      IOTBX_ASSERT(column_data_.size() == mtz_.columns.size());
+      mtz_.data.resize(column_data_.size() * (size_t)mtz_.nreflections);
+
+      // Add the column data
+      size_t k = 0;
+      for (std::size_t i = 0; i < mtz_.nreflections; i++) {
+        for (std::size_t j = 0; j < column_data_.size(); j++) {
+          af::const_ref<float>& col = column_data_[j];
+          float val = col[i];
+          std::cout << val << std::endl;
+          // mtz_.data[k++] = column_data_[j][i];
+        }
+      }
+
+      mtz_.sort(5);
+      // Write data to disk
+      try {
+        mtz_.write_to_file(file_name);
+      } catch (std::runtime_error& e) {
+        throw cctbx::error(std::string("MTZ write failed: ")
+                           + (std::string(e.what()) + ": " + file_name));
+      }
+    }
+
   private:
     gemmi::Mtz mtz_;
-    int current_data_set_id_ = 0;
+    int current_data_set_id_ = -1;
     std::vector<af::const_ref<float> > column_data_;
   };
 

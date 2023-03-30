@@ -44,7 +44,9 @@ class DatasetView:
 
     def add_column(self, column_name, column_type):
 
-        self.crystal_view.mtz_object.add_column(column_name, column_type)
+        # These columns are added by add_base instead
+        if column_name not in ("H", "K", "L"):
+            self.crystal_view.mtz_object.add_column(column_name, column_type)
         column = ColumnView(column_name, column_type, self)
         return column
 
