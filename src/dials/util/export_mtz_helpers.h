@@ -261,7 +261,7 @@ namespace dials { namespace util {
       mtz_.add_column(column_name, column_type, current_data_set_id_, -1, false);
     }
 
-    void add_column_data(af::const_ref<float> const& values) {
+    void add_column_data(af::shared<float> const& values) {
       column_data_.push_back(values);
     }
 
@@ -287,10 +287,10 @@ namespace dials { namespace util {
         l_col.push_back((float)hkl[2]);
         m_isym_col.push_back((float)isym);
       }
-      add_column_data(h_col.const_ref());
-      add_column_data(k_col.const_ref());
-      add_column_data(l_col.const_ref());
-      add_column_data(m_isym_col.const_ref());
+      add_column_data(h_col);
+      add_column_data(k_col);
+      add_column_data(l_col);
+      add_column_data(m_isym_col);
     }
 
     void write(const char* file_name) {
@@ -304,10 +304,7 @@ namespace dials { namespace util {
       size_t k = 0;
       for (std::size_t i = 0; i < mtz_.nreflections; i++) {
         for (std::size_t j = 0; j < column_data_.size(); j++) {
-          af::const_ref<float>& col = column_data_[j];
-          float val = col[i];
-          std::cout << val << std::endl;
-          // mtz_.data[k++] = column_data_[j][i];
+          mtz_.data[k++] = column_data_[j][i];
         }
       }
 
@@ -324,7 +321,7 @@ namespace dials { namespace util {
   private:
     gemmi::Mtz mtz_;
     int current_data_set_id_ = -1;
-    std::vector<af::const_ref<float> > column_data_;
+    std::vector<af::shared<float> > column_data_;
   };
 
   void add_dials_batches_gemmi(GemmiMtzObject& mtz,
