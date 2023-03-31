@@ -320,7 +320,7 @@ namespace dials { namespace util {
 
   private:
     gemmi::Mtz mtz_;
-    int current_data_set_id_ = -1;
+    int current_data_set_id_ = 0;
     std::vector<af::shared<float> > column_data_;
   };
 
