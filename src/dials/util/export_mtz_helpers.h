@@ -257,6 +257,14 @@ namespace dials { namespace util {
                                wavelength});
     }
 
+    void set_cell_for_all(af::double6 const& unit_cell_parameters) {
+      std::array<double, 6> params;
+      for (std::size_t i = 0; i < unit_cell_parameters.size(); i++)
+        params[i] = unit_cell_parameters[i];
+      gemmi::UnitCell cell(params);
+      mtz_.set_cell_for_all(cell);
+    }
+
     void add_column(const char* column_name, const char column_type) {
       mtz_.add_column(column_name, column_type, current_data_set_id_, -1, false);
     }
@@ -308,7 +316,10 @@ namespace dials { namespace util {
         }
       }
 
+      // Tidy up
+      mtz_.update_reso();
       mtz_.sort(5);
+
       // Write data to disk
       try {
         mtz_.write_to_file(file_name);
@@ -316,6 +327,82 @@ namespace dials { namespace util {
         throw cctbx::error(std::string("MTZ write failed: ")
                            + (std::string(e.what()) + ": " + file_name));
       }
+    }
+
+    std::string summary() {
+      std::stringstream ss;
+      ss << "Title: " << mtz_.title << "\n";
+      ss << "Total Number of Datasets " << mtz_.datasets.size() << "\n";
+      for (const gemmi::Mtz::Dataset& ds : mtz_.datasets) {
+        ss << "Dataset " << std::setw(4) << ds.id << "   " << ds.project_name << " > "
+           << ds.crystal_name << " > " << ds.dataset_name << "\n";
+        ss << "        cell " << std::setw(7) << ds.cell.a << " " << std::setw(7)
+           << ds.cell.b << " " << std::setw(7) << ds.cell.c << " " << std::setw(7)
+           << ds.cell.alpha << " " << std::setw(7) << ds.cell.beta << " "
+           << std::setw(7) << ds.cell.gamma << "\n";
+        ss << "  wavelength  " << std::setw(7) << ds.wavelength << "\n";
+      }
+      ss << "\nNumber of Columns = " << mtz_.columns.size() << "\n";
+      ss << "Number of Reflections = " << mtz_.nreflections << "\n";
+      ss << "Number of Batches = " << mtz_.batches.size() << "\n";
+      ss << "Missing values marked as: " << std::setw(7) << mtz_.valm << "\n";
+      ss << "Global Cell (obsolete): " << std::setw(7) << mtz_.cell.a << " "
+         << std::setw(7) << mtz_.cell.b << " " << std::setw(7) << mtz_.cell.c << " "
+         << std::setw(7) << mtz_.cell.alpha << " " << std::setw(7) << mtz_.cell.beta
+         << " " << std::setw(7) << mtz_.cell.gamma << "\n";
+      ss.setf(std::ios::fixed);
+      ss.precision(2);
+      ss << "Resolution: " << mtz_.resolution_high() << " - " << mtz_.resolution_low()
+         << " A"
+         << "\n";
+      ss << "Sort Order: " << mtz_.sort_order[0] << " " << mtz_.sort_order[1] << " "
+         << mtz_.sort_order[2] << " " << mtz_.sort_order[3] << " " << mtz_.sort_order[4]
+         << "\n";
+      ss << "Space Group: " << mtz_.spacegroup->short_name() << "\n";
+      ss << "Space Group Number: " << mtz_.spacegroup->ccp4 << "\n\n";
+      ss << "Header info"
+         << "\n";
+      ss << "Column    Type  Dataset    Min        Max"
+         << "\n";
+      ss.precision(6);
+      for (const gemmi::Mtz::Column& col : mtz_.columns) {
+        auto minmax =
+          gemmi::calculate_min_max_disregarding_nans(col.begin(), col.end());
+
+        // formatting not right yet: will have to be conditional on the col.type I think
+        ss << std::left << std::setw(12) << col.label << " " << col.type << "  "
+           << std::setw(2) << col.dataset_id << " " << std::left << std::setw(12)
+           << minmax[0] << " " << std::left << std::setw(10) << minmax[1] << "\n";
+      }
+      if (mtz_.history.empty()) {
+        ss << "\nNo history in the file." << std::endl;
+      } else {
+        ss << "\nHistory (" << mtz_.history.size() << " lines):\n";
+        for (const std::string& hline : mtz_.history) ss << hline << std::endl;
+      }
+      if (!mtz_.batches.empty()) {
+        int prev_ds_id = -INT_MAX;
+        int bspan[2] = {-INT_MAX, -INT_MAX};
+        ss << "\nBatch numbers:";
+        for (size_t i = 0; i < mtz_.batches.size(); ++i) {
+          const gemmi::Mtz::Batch& batch = mtz_.batches[i];
+          int ds_id = batch.dataset_id();
+          if (ds_id != prev_ds_id || batch.number != bspan[1] + 1) {
+            if (i != 0) ss << bspan[0] << "-" << bspan[1];
+            bspan[0] = batch.number;
+            if (ds_id != prev_ds_id) {
+              ss << "\n dataset " << ds_id;
+              prev_ds_id = ds_id;
+            }
+          }
+          bspan[1] = batch.number;
+        }
+        ss << " " << bspan[0] << "-" << bspan[1] << std::endl;
+      }
+      if (!mtz_.appended_text.empty())
+        ss << "\nAppendix: " << mtz_.appended_text.size() << " bytes." << std::endl;
+
+      return ss.str();
     }
 
   private:

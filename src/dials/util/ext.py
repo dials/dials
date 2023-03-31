@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+from contextlib import redirect_stdout
+
 import boost_adaptbx.boost.python as bp
 from iotbx.mtz import extract_from_symmetry_lib
 
@@ -94,14 +97,22 @@ class _:
         # return self
 
     def add_crystal(self, crystal_name, project_name, unit_cell_parameters):
-        """Cache information about a crystal to add with the dataset later"""
+        """Cache information about a crystal to add with the dataset later.
+        Also set the general MTZ cell dimensions from this crystal"""
 
+        self.set_cell_for_all(unit_cell_parameters)
         crystal = CrystalView(crystal_name, project_name, unit_cell_parameters, self)
         self.crystals.append(crystal)
         return crystal
 
     def adjust_column_array_sizes(self, nref):
         pass
+
+    def show_summary(self, out=None, prefix=""):
+        if out is None:
+            out = sys.stdout
+        with redirect_stdout(out):
+            print(self.summary())
 
 
 __all__ = (  # noqa: F405
