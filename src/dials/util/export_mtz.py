@@ -87,7 +87,7 @@ class MergedMTZWriter(MTZWriterBase):
 
     def add_dataset(
         self,
-        merged_array,
+        merged_array=None,
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
@@ -96,6 +96,7 @@ class MergedMTZWriter(MTZWriterBase):
         anom_multiplicities=None,
         suffix=None,
         half_datasets: Optional[MergedHalfDatasets] = None,
+        r_free_array=None,
     ):
         """Add merged data to the most recent dataset.
 
@@ -109,7 +110,8 @@ class MergedMTZWriter(MTZWriterBase):
         """
         if not suffix:
             suffix = ""
-        self.current_dataset.add_miller_array(merged_array, "IMEAN" + suffix)
+        if merged_array:
+            self.current_dataset.add_miller_array(merged_array, "IMEAN" + suffix)
         if multiplicities:
             self.current_dataset.add_miller_array(multiplicities, "N" + suffix)
         if amplitudes:
@@ -139,6 +141,10 @@ class MergedMTZWriter(MTZWriterBase):
                 half_datasets.multiplicity2,
                 "NHALF2" + suffix,
             )
+        if r_free_array:
+            self.current_dataset.add_miller_array(
+                r_free_array, column_root_label="FreeR_flag", column_types="I"
+            )
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
@@ -146,7 +152,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
 
     def add_dataset(
         self,
-        merged_array,
+        merged_array=None,
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
@@ -155,6 +161,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         anom_multiplicities=None,
         suffix=None,
         half_datasets: Optional[MergedHalfDatasets] = None,
+        r_free_array=None,
     ):
         if not suffix:
             suffix = f"_WAVE{self.n_datasets}"
@@ -168,6 +175,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
             anom_multiplicities,
             suffix,
             half_datasets,
+            r_free_array=r_free_array,
         )
 
 

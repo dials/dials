@@ -16,9 +16,11 @@ from iotbx import mtz, phil
 from dials.algorithms.merging.merge import (
     MTZDataClass,
     collect_html_data_from_merge,
+    generate_r_free_flags,
     make_merged_mtz_file,
     merge,
     process_merged_data,
+    r_free_flags_from_reference,
 )
 from dials.algorithms.merging.reporting import generate_html_report
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
@@ -106,6 +108,7 @@ merging {
         .type = bool
         .help = "Option to control whether reported merging stats are anomalous."
 }
+include scope dials.algorithms.merging.merge.r_free_flags_phil_scope
 output {
     log = dials.merge.log
         .type = str
@@ -139,6 +142,17 @@ include scope dials.util.exclude_images.phil_scope
     process_includes=True,
 )
 
+# local overrides for refiner.phil_scope
+phil_overrides = phil.parse(
+    """
+  r_free_flags
+  {
+    fraction = 0.05
+  }
+"""
+)
+phil_scope = phil_scope.fetch(sources=[phil_overrides])
+
 
 def merge_data_to_mtz_with_report_collection(
     params: phil.scope_extract,
@@ -166,6 +180,7 @@ def merge_data_to_mtz(
         experiments,
         absolute_tolerance=params.wavelength_tolerance,
     )  # wavelengths is an ordered dict
+
     mtz_datasets = [
         MTZDataClass(wavelength=w, project_name=params.output.project_name)
         for w in wavelengths.keys()
@@ -257,8 +272,15 @@ def merge_data_to_mtz(
             params, mtz_dataset, merged, merged_anomalous, stats_summary
         )
 
+    if params.r_free_flags.reference:
+        r_free_array = r_free_flags_from_reference(params, mtz_datasets)
+    elif params.r_free_flags.generate:
+        r_free_array = generate_r_free_flags(params, mtz_datasets)
+    else:
+        r_free_array = None
+
     # pass the dataclasses to an MTZ writer to generate the mtz file and return.
-    return make_merged_mtz_file(mtz_datasets)
+    return make_merged_mtz_file(mtz_datasets, r_free_array=r_free_array)
 
 
 @show_mail_handle_errors()
