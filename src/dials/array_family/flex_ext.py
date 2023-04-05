@@ -499,6 +499,10 @@ class _:
         n = np.arange(e.size)
         p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
         print(f"{hkl[0].dtype=}")
+        from dxtbx import flumpy
+
+        print(f"{self['entering']=}")
+        print(f"{flumpy.to_numpy(self['entering'])=}")
         print(f"{e.dtype=}")
         print(f"{n.dtype=}")
         print(f"{p0.dtypes=}")
@@ -509,6 +513,8 @@ class _:
         n = np.arange(e.size)
         p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
         print(f"{hkl[0].dtype=}")
+        print(f"{self['entering']=}")
+        print(f"{flumpy.to_numpy(self['entering'])=}")
         print(f"{e.dtype=}")
         print(f"{n.dtype=}")
         print(f"{p1.dtypes=}")
