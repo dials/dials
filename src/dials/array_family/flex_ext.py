@@ -494,16 +494,24 @@ class _:
         """
 
         hkl = self["miller_index"].as_vec3_double().parts()
-        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        hkl = list(part.as_numpy_array().astype(int) for part in hkl)
         e = self["entering"].as_numpy_array()
         n = np.arange(e.size)
         p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+        print(f"{hkl[0].dtype=}")
+        print(f"{e.dtype=}")
+        print(f"{n.dtype=}")
+        print(f"{p0.dtypes=}")
 
         hkl = other["miller_index"].as_vec3_double().parts()
-        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        hkl = list(part.as_numpy_array().astype(int) for part in hkl)
         e = other["entering"].as_numpy_array()
         n = np.arange(e.size)
         p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+        print(f"{hkl[0].dtype=}")
+        print(f"{e.dtype=}")
+        print(f"{n.dtype=}")
+        print(f"{p1.dtypes=}")
 
         merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], suffixes=[0, 1])
 
