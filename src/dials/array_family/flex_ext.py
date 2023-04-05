@@ -502,9 +502,12 @@ class _:
         from dxtbx import flumpy
 
         print(f"{self['entering']=}")
-        print(f"{flumpy.to_numpy(self['entering'])=}")
-        print(f"{e.dtype=}")
-        print(f"{n.dtype=}")
+        print(f"{flumpy.to_numpy(self['entering']).dtype.type=}")
+        print(f"{hkl[0].dtype.type=}")
+        print(f"{hkl[1].dtype.type=}")
+        print(f"{hkl[2].dtype.type=}")
+        print(f"{e.dtype.type=}")
+        print(f"{n.dtype.type=}")
         print(f"{p0.dtypes=}")
 
         hkl = other["miller_index"].as_vec3_double().parts()
@@ -512,11 +515,13 @@ class _:
         e = other["entering"].as_numpy_array()
         n = np.arange(e.size)
         p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
-        print(f"{hkl[0].dtype=}")
         print(f"{self['entering']=}")
-        print(f"{flumpy.to_numpy(self['entering'])=}")
-        print(f"{e.dtype=}")
-        print(f"{n.dtype=}")
+        print(f"{flumpy.to_numpy(self['entering']).dtype.type=}")
+        print(f"{hkl[0].dtype.type=}")
+        print(f"{hkl[1].dtype.type=}")
+        print(f"{hkl[2].dtype.type=}")
+        print(f"{e.dtype.type=}")
+        print(f"{n.dtype.type=}")
         print(f"{p1.dtypes=}")
 
         merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], suffixes=[0, 1])
