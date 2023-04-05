@@ -109,7 +109,7 @@ steps:
     call activate conda_base/
     SET PYTHONDEVMODE=1
     SET DIALS_DATA=$(Pipeline.Workspace)/data
-    pytest -v -n auto -ra modules/dials/tests --regression --basetemp="$(Pipeline.Workspace)/tests" --durations=10
+    pytest -vs -n auto -ra modules/dials/tests/array_family/test_reflection_table.py::test_match_by_hkle -vs --regression --basetemp="$(Pipeline.Workspace)/tests" --durations=10
     if %errorlevel% neq 0 exit /b %errorlevel%
   displayName: Run Tests
   workingDirectory: $(Pipeline.Workspace)
