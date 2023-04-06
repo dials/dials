@@ -23,7 +23,6 @@ import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
-from dxtbx import flumpy
 from scitbx import matrix
 
 import dials.extensions.glm_background_ext
@@ -496,13 +495,13 @@ class _:
 
         hkl = self["miller_index"].as_vec3_double().parts()
         hkl = (part.as_numpy_array().astype(int) for part in hkl)
-        e = flumpy.to_numpy(self["entering"])
+        e = self["entering"].as_numpy_array().astype(int)
         n = np.arange(e.size)
         p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
         hkl = other["miller_index"].as_vec3_double().parts()
         hkl = (part.as_numpy_array().astype(int) for part in hkl)
-        e = flumpy.to_numpy(other["entering"])
+        e = other["entering"].as_numpy_array().astype(int)
         n = np.arange(e.size)
         p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
