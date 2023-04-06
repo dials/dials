@@ -453,7 +453,10 @@ class ModelState(object):
 
     @U_params.setter
     def U_params(self, params) -> None:
-        self._U_parameterisation.set_param_vals(tuple(float(i) for i in params))
+        try:
+            self._U_parameterisation.set_param_vals(tuple(float(i) for i in params))
+        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+            raise RuntimeError(f"Error setting U parameterisation: {e}")
 
     @property
     def B_params(self) -> np.array:
@@ -462,7 +465,10 @@ class ModelState(object):
 
     @B_params.setter
     def B_params(self, params) -> None:
-        self._B_parameterisation.set_param_vals(tuple(float(i) for i in params))
+        try:
+            self._B_parameterisation.set_param_vals(tuple(float(i) for i in params))
+        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+            raise RuntimeError(f"Error setting B parameterisation: {e}")
 
     @property
     def M_params(self) -> np.array:

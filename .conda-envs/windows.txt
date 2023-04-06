@@ -7,7 +7,7 @@ conda-forge::c-compiler
 conda-forge::colorlog
 conda-forge::conda
 conda-forge::cxx-compiler
-conda-forge::dials-data
+conda-forge::dials-data>=2.4.58
 conda-forge::docutils
 conda-forge::eigen
 conda-forge::future
@@ -35,7 +35,7 @@ conda-forge::pybind11
 conda-forge::pyrtf
 conda-forge::pytest-forked
 conda-forge::pytest-mock
-conda-forge::pytest-nunit=1.0.0
+conda-forge::pytest-nunit
 conda-forge::pytest-xdist
 conda-forge::pytest
 conda-forge::python-dateutil>=2.7.0

@@ -3,13 +3,22 @@ from __future__ import annotations
 import os
 
 import procrunner
+import pytest
 
 
-def test_export_single_bitmap(dials_data, tmp_path):
+@pytest.mark.parametrize(
+    "show_resolution_rings",
+    [
+        False,
+        True,
+    ],
+)
+def test_export_single_bitmap(dials_data, tmp_path, show_resolution_rings):
     result = procrunner.run(
         [
             "dials.export_bitmaps",
             dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf",
+            f"resolution_rings.show={show_resolution_rings}",
         ],
         working_directory=tmp_path,
     )
@@ -104,7 +113,14 @@ def test_export_still_image(dials_regression, tmp_path):
     assert tmp_path.joinpath("image0001.png").is_file()
 
 
-def test_export_multi_panel(dials_regression, tmp_path):
+@pytest.mark.parametrize(
+    "show_resolution_rings",
+    [
+        False,
+        True,
+    ],
+)
+def test_export_multi_panel(dials_regression, tmp_path, show_resolution_rings):
     image = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )
@@ -116,6 +132,7 @@ def test_export_multi_panel(dials_regression, tmp_path):
                 image,
                 "binning=%i" % binning,
                 "prefix=binning_%i_" % binning,
+                f"resolution_rings.show={show_resolution_rings}",
             ],
             working_directory=tmp_path,
         )

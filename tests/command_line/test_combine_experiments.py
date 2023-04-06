@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import copy
 import os
-from pathlib import Path
 
 import procrunner
 import pytest
@@ -19,8 +18,8 @@ import dials.command_line.combine_experiments as combine_experiments
 from dials.array_family import flex
 
 
-def test(dials_regression, tmp_path):
-    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
+def test(dials_data, tmp_path):
+    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
 
     input_range = list(range(2, 49))
     for i in (8, 10, 15, 16, 34, 39, 45):
@@ -29,8 +28,8 @@ def test(dials_regression, tmp_path):
     phil_input = (
         "\n".join(
             (
-                f"  input.experiments={data_dir}/data/sweep_{i:03d}/experiments.json\n"
-                + f"  input.reflections={data_dir}/data/sweep_{i:03d}/reflections.pickle"
+                f"  input.experiments={data_dir}/sweep_{i:03d}_experiments.json\n"
+                + f"  input.reflections={data_dir}/sweep_{i:03d}_reflections.pickle"
             )
             for i in input_range
         )
@@ -275,17 +274,15 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
 
 
 @pytest.fixture
-def narrow_wedge_input_with_identifiers(dials_regression, tmpdir):
+def narrow_wedge_input_with_identifiers(dials_data, tmpdir):
     """Make a fixture to avoid multiple runs of assign identifiers."""
-    data_dir = os.path.join(
-        dials_regression, "refinement_test_data", "multi_narrow_wedges"
-    )
+    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
     input_range = [9, 11, 12, 31]
     for n, i in enumerate(input_range):
         command = [
             "dials.assign_experiment_identifiers",
-            os.path.join(data_dir, "data/sweep_%03d/experiments.json" % i),
-            os.path.join(data_dir, "data/sweep_%03d/reflections.pickle" % i),
+            data_dir / ("sweep_%03d_experiments.json" % i),
+            data_dir / ("sweep_%03d_reflections.pickle" % i),
             f"output.experiments={n}.expt",
             f"output.reflections={n}.refl",
         ]
@@ -303,9 +300,7 @@ def narrow_wedge_input_with_identifiers(dials_regression, tmpdir):
 
 @pytest.mark.parametrize("min_refl", ["None", "100"])
 @pytest.mark.parametrize("max_refl", ["None", "150"])
-def test_min_max_reflections_per_experiment(
-    dials_regression, tmp_path, min_refl, max_refl
-):
+def test_min_max_reflections_per_experiment(dials_data, tmp_path, min_refl, max_refl):
 
     expected_results = {
         ("None", "None"): 10,
@@ -314,10 +309,10 @@ def test_min_max_reflections_per_experiment(
         ("100", "150"): 5,
     }
 
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+    data_dir = dials_data("refinement_test_data", pathlib=True)
     input_phil = (
-        f" input.experiments={data_dir}/combined_experiments.json\n"
-        + f" input.reflections={data_dir}/combined_reflections.pickle\n"
+        f" input.experiments={data_dir}/multi_stills_combined.json\n"
+        + f" input.reflections={data_dir}/multi_stills_combined.pickle\n"
         + f" output.min_reflections_per_experiment={min_refl}\n"
         + f" output.max_reflections_per_experiment={max_refl}\n"
     ).format(data_dir, min_refl, max_refl)
@@ -339,7 +334,7 @@ def test_min_max_reflections_per_experiment(
 @pytest.mark.parametrize("with_identifiers", ["True", "False"])
 @pytest.mark.parametrize("method", ["random", "n_refl", "significance_filter"])
 def test_combine_nsubset(
-    dials_regression,
+    dials_data,
     tmpdir,
     with_identifiers,
     method,
@@ -350,14 +345,12 @@ def test_combine_nsubset(
     if with_identifiers:
         phil_input = narrow_wedge_input_with_identifiers
     else:
-        data_dir = os.path.join(
-            dials_regression, "refinement_test_data", "multi_narrow_wedges"
-        )
+        data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
         input_range = [9, 11, 12, 31]
         phil_input = "\n".join(
             (
-                "  input.experiments={0}/data/sweep_%03d/experiments.json\n"
-                + "  input.reflections={0}/data/sweep_%03d/reflections.pickle"
+                "  input.experiments={0}/sweep_%03d_experiments.json\n"
+                + "  input.reflections={0}/sweep_%03d_reflections.pickle"
             )
             % (i, i)
             for i in input_range
@@ -391,16 +384,13 @@ def test_combine_nsubset(
     assert list(set(refls["id"])) == [0, 1, 2]
 
 
-def test_failed_tolerance_error(dials_regression, monkeypatch):
+def test_failed_tolerance_error(dials_data, monkeypatch):
     """Test that we get a sensible error message on tolerance failures"""
     # Select some experiments to use for combining
+    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
     jsons = os.path.join(
-        dials_regression,
-        "refinement_test_data",
-        "multi_narrow_wedges",
-        "data",
-        "sweep_{:03d}",
-        "{}",
+        data_dir,
+        "sweep_{:03d}_{}",
     )
     files = [
         jsons.format(2, "experiments.json"),

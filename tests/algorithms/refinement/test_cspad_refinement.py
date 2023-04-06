@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import procrunner
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 
 
-def test1(dials_regression, tmp_path):
+def test1(dials_data, tmp_path):
     """
     Refinement test of 300 CSPAD images, testing auto_reduction, parameter
     fixing, constraints, SparseLevMar, and sauter_poon outlier rejection. See
     README in the regression folder for more details.
     """
-    data_dir = Path(dials_regression) / "refinement_test_data" / "cspad_refinement"
+    data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
 
     result = procrunner.run(
         [

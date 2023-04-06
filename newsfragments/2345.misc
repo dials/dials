@@ -1,0 +1,1 @@
+``dials.import``: When importing with a reference, don't require one beam model if use_beam_reference=False

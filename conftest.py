@@ -9,15 +9,10 @@ from __future__ import annotations
 import multiprocessing
 import os
 import sys
-import warnings
 from pathlib import Path
 
 import pytest
 from _pytest.outcomes import Skipped
-
-# https://stackoverflow.com/a/40846742
-warnings.filterwarnings("ignore", message="numpy.dtype size changed")
-warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
 if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
     multiprocessing.set_start_method("forkserver")

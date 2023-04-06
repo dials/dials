@@ -7,10 +7,9 @@ restraints
 from __future__ import annotations
 
 import math
-import os
 
 
-def test(dials_regression):
+def test(dials_data):
     from libtbx.phil import parse
     from libtbx.test_utils import approx_equal
     from scitbx import matrix
@@ -44,12 +43,8 @@ def test(dials_regression):
         from dxtbx.model.experiment_list import ExperimentListFactory
 
         experiments = ExperimentListFactory.from_json_file(
-            os.path.join(
-                dials_regression,
-                "refinement_test_data",
-                "multi_stills",
-                "combined_experiments.json",
-            ),
+            dials_data("refinement_test_data", pathlib=True)
+            / "multi_stills_combined.json",
             check_format=False,
         )
         crystal = experiments[0].crystal

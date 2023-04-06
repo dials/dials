@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 import procrunner
 import pytest
@@ -14,14 +13,14 @@ from dials.algorithms.refinement import RefinerFactory
 from dials.array_family import flex
 
 
-def test1(dials_regression, tmp_path):
-    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_stills"
+def test1(dials_data, tmp_path):
+    data_dir = dials_data("refinement_test_data", pathlib=True)
 
     result = procrunner.run(
         [
             "dials.refine",
-            data_dir / "combined_experiments.json",
-            data_dir / "combined_reflections.pickle",
+            data_dir / "multi_stills_combined.json",
+            data_dir / "multi_stills_combined.pickle",
         ],
         working_directory=tmp_path,
     )
@@ -29,7 +28,7 @@ def test1(dials_regression, tmp_path):
 
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
-        data_dir / "regression_experiments.json", check_format=False
+        data_dir / "multi_stills_regression.json", check_format=False
     )
     ref_exp = ExperimentListFactory.from_json_file(
         tmp_path / "refined.expt", check_format=False
@@ -65,13 +64,13 @@ def test1(dials_regression, tmp_path):
     reason="Multiprocessing error on Windows: 'This class cannot be instantiated from Python'",
 )
 def test_multi_process_refinement_gives_same_results_as_single_process_refinement(
-    dials_regression, tmp_path
+    dials_data, tmp_path
 ):
-    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_stills"
+    data_dir = dials_data("refinement_test_data", pathlib=True)
     cmd = [
         "dials.refine",
-        data_dir / "combined_experiments.json",
-        data_dir / "combined_reflections.pickle",
+        data_dir / "multi_stills_combined.json",
+        data_dir / "multi_stills_combined.pickle",
         "outlier.algorithm=null",
         "engine=LBFGScurvs",
         "output.reflections=None",
@@ -110,7 +109,7 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
         )
 
 
-def test_restrained_refinement_with_fixed_parameterisations(dials_regression, tmp_path):
+def test_restrained_refinement_with_fixed_parameterisations(dials_data, tmp_path):
     # Avoid a regression to https://github.com/dials/dials/issues/1142 by
     # testing that refinement succeeds when some parameterisations are fixed
     # by parameter auto reduction code, but restraints are requested for
@@ -147,9 +146,9 @@ refinement {
     working_params = working_phil.extract()
 
     # use the multi stills test data
-    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_stills"
-    experiments_path = data_dir / "combined_experiments.json"
-    pickle_path = data_dir / "combined_reflections.pickle"
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "multi_stills_combined.json"
+    pickle_path = data_dir / "multi_stills_combined.pickle"
 
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False

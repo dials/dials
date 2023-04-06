@@ -10,8 +10,6 @@ have not changed format and so on.
 
 from __future__ import annotations
 
-import os
-
 import procrunner
 import pytest
 from annlib_ext import AnnAdaptor
@@ -22,14 +20,10 @@ from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex
 
 
-def test1(dials_regression, tmp_path):
-    # use the i04_weak_data for this test
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
-    experiments_path = os.path.join(data_dir, "experiments.json")
-    pickle_path = os.path.join(data_dir, "indexed_strong.pickle")
-
-    for pth in (experiments_path, pickle_path):
-        assert os.path.exists(pth)
+def test1(dials_data, tmp_path):
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "i04-weak.json"
+    pickle_path = data_dir / "i04-weak.pickle"
 
     # set some old defaults
     cmd = (
@@ -46,7 +40,7 @@ def test1(dials_regression, tmp_path):
     assert not result.returncode and not result.stderr
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
-        os.path.join(data_dir, "regression_experiments.json"), check_format=False
+        data_dir / "i04-weak-regression.json", check_format=False
     )[0]
     ref_exp = ExperimentListFactory.from_json_file(
         tmp_path / "refined.expt", check_format=False
@@ -64,18 +58,12 @@ def test1(dials_regression, tmp_path):
     assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8063382, abs=1e-6)
 
 
-def test2(dials_regression, tmp_path):
-    """Run scan-varying refinement, comparing RMSD table with expected values.
-    This test automates what was manually done periodically and recorded in
-    dials_regression/refinement_test_data/centroid/README.txt"""
+def test2(dials_data, tmp_path):
+    """Run scan-varying refinement, comparing RMSD table with expected values."""
 
-    # use the i04_weak_data for this test
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
-    experiments_path = os.path.join(data_dir, "experiments_XPARM_REGULARIZED.json")
-    pickle_path = os.path.join(data_dir, "spot_all_xds.pickle")
-
-    for pth in (experiments_path, pickle_path):
-        assert os.path.exists(pth)
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "from-xds.json"
+    pickle_path = data_dir / "from-xds-all.pickle"
 
     # scan-static refinement first to get refined.expt as start point
     result = procrunner.run(
@@ -139,17 +127,13 @@ def test2(dials_regression, tmp_path):
     assert uir.count(True) == history["num_reflections"][-1]
 
 
-def test3(dials_regression, tmp_path):
+def test3(dials_data, tmp_path):
     """Strict check for scan-varying refinement using automated outlier rejection
     block width and interval width setting"""
 
-    # use the i04_weak_data for this test
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
-    experiments_path = os.path.join(data_dir, "experiments_XPARM_REGULARIZED.json")
-    pickle_path = os.path.join(data_dir, "spot_all_xds.pickle")
-
-    for pth in (experiments_path, pickle_path):
-        assert os.path.exists(pth)
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "from-xds.json"
+    pickle_path = data_dir / "from-xds-all.pickle"
 
     result = procrunner.run(
         (

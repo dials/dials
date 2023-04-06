@@ -190,12 +190,9 @@ def run_macrocycle(params, reflections, experiments):
     """
     # Get the refiner
     logger.info("Configuring refiner")
-    try:
-        refiner = RefinerFactory.from_parameters_data_experiments(
-            params, reflections, experiments
-        )
-    except DialsRefineConfigError as e:
-        sys.exit(str(e))
+    refiner = RefinerFactory.from_parameters_data_experiments(
+        params, reflections, experiments
+    )
 
     # Refine the geometry
     nexp = len(experiments)
@@ -205,10 +202,7 @@ def run_macrocycle(params, reflections, experiments):
         logger.info(f"Performing refinement of {nexp} Experiments...")
 
     # Refine and get the refinement history
-    try:
-        history = refiner.run()
-    except DialsRefineRuntimeError as e:
-        sys.exit(str(e))
+    history = refiner.run()
 
     # Update predictions for all indexed reflections
     logger.info("Updating predictions for indexed reflections")
@@ -277,6 +271,31 @@ def run_dials_refine(experiments, reflections, params):
             Refiner object and the refinement history object.
 
     """
+
+    # Warn about potentially unhelpful options
+    if params.refinement.mp.nproc > 1:
+        logger.warning(
+            "Setting nproc > 1 is only helpful in rare "
+            "circumstances. It is not recommended for typical data processing "
+            "tasks."
+        )
+
+    if params.refinement.parameterisation.scan_varying is not False:
+        # duplicate crystal if necessary for scan varying - will need
+        # to compare the scans with crystals - if not 1:1 will need to
+        # split the crystals
+
+        crystal_has_scan = {}
+        for j, e in enumerate(experiments):
+            if e.crystal in crystal_has_scan:
+                if e.scan is not crystal_has_scan[e.crystal]:
+                    logger.info(
+                        "Duplicating crystal model for scan-varying refinement of experiment %d",
+                        j,
+                    )
+                    e.crystal = copy.deepcopy(e.crystal)
+            else:
+                crystal_has_scan[e.crystal] = e.scan
 
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:
@@ -379,35 +398,13 @@ def run(args=None, phil=working_phil):
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
-    # Warn about potentially unhelpful options
-    if params.refinement.mp.nproc > 1:
-        logger.warning(
-            "Setting nproc > 1 is only helpful in rare "
-            "circumstances. It is not recommended for typical data processing "
-            "tasks."
-        )
-
-    if params.refinement.parameterisation.scan_varying is not False:
-        # duplicate crystal if necessary for scan varying - will need
-        # to compare the scans with crystals - if not 1:1 will need to
-        # split the crystals
-
-        crystal_has_scan = {}
-        for j, e in enumerate(experiments):
-            if e.crystal in crystal_has_scan:
-                if e.scan is not crystal_has_scan[e.crystal]:
-                    logger.info(
-                        "Duplicating crystal model for scan-varying refinement of experiment %d",
-                        j,
-                    )
-                    e.crystal = copy.deepcopy(e.crystal)
-            else:
-                crystal_has_scan[e.crystal] = e.scan
-
     # Run refinement
-    experiments, reflections, refiner, history = run_dials_refine(
-        experiments, reflections, params
-    )
+    try:
+        experiments, reflections, refiner, history = run_dials_refine(
+            experiments, reflections, params
+        )
+    except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
+        sys.exit(str(e))
 
     # For the usual case of refinement of one crystal, print that model for information
     crystals = experiments.crystals()

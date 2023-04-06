@@ -235,7 +235,9 @@ def index_all_concurrent(
                         reflection_table=reflections[refl_index],
                         experiment=expt,
                         parameters=params,
-                        image_identifier=iset.get_image_identifier(i).split("/")[-1],
+                        image_identifier=pathlib.Path(
+                            iset.get_image_identifier(i)
+                        ).name,
                         image_no=refl_index,
                         method_list=method_list,
                     )
@@ -243,7 +245,7 @@ def index_all_concurrent(
             else:  # experiments that have already been filtered
                 results_summary[refl_index].append(
                     {
-                        "Image": iset.get_image_identifier(i).split("/")[-1],
+                        "Image": pathlib.Path(iset.get_image_identifier(i)).name,
                         "n_indexed": 0,
                         "n_strong": 0,
                     }
@@ -446,13 +448,9 @@ def index(
         method_list,
     )
 
-    # combine beam and detector models if not already
-    if (len(indexed_experiments.detectors())) > 1 or (
-        len(indexed_experiments.beams())
-    ) > 1:
-        combine = CombineWithReference(
-            detector=indexed_experiments[0].detector, beam=indexed_experiments[0].beam
-        )
+    # combine detector models if not already
+    if (len(indexed_experiments.detectors())) > 1:
+        combine = CombineWithReference(detector=indexed_experiments[0].detector)
         elist = ExperimentList()
         for expt in indexed_experiments:
             elist.append(combine(expt))

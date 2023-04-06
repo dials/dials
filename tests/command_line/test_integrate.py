@@ -22,15 +22,6 @@ def test_basic_integrate(dials_data, tmpdir):
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-
     exp.as_json(tmpdir.join("modified_input.json"))
 
     result = procrunner.run(
@@ -83,17 +74,6 @@ def test_basic_integrate(dials_data, tmpdir):
     j["experiment"][0]["identifier"] = "bar"
     with tmpdir.join("models.expt").open("w") as fh:
         json.dump(j, fh)
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    exp = load.experiment_list(tmpdir.join("models.expt"))
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-
-    exp.as_json(tmpdir.join("models.expt"))
 
     # Call dials.integrate
     result = procrunner.run(
@@ -168,16 +148,6 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
     expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
     refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
 
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    exp = load.experiment_list(expts)
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-    exp.as_json(tmp_path / "trusted_range_patch.expt")
-
     result = procrunner.run(
         [
             "dials.integrate",
@@ -187,7 +157,7 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
             "njobs=2",
             "nproc=2",
             refls,
-            "trusted_range_patch.expt",
+            expts,
         ],
         working_directory=tmp_path,
     )
@@ -207,15 +177,6 @@ def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "bar"
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-
     exp.as_json(tmpdir.join("modified_input.json"))
 
     result = procrunner.run(
@@ -252,16 +213,6 @@ def test_integration_with_sampling(dials_data, tmpdir):
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-    # exp.as_json(tmp_path / "trusted_range_patch.expt")
-
     exp.as_json(tmpdir / "modified_input.json")
 
     result = procrunner.run(
@@ -293,16 +244,6 @@ def test_integration_with_sample_size(dials_data, tmpdir):
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-    # exp.as_json(tmp_path / "trusted_range_patch.expt")
-
     exp.as_json(tmpdir / "modified_input.json")
 
     result = procrunner.run(
@@ -324,6 +265,41 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 415
     assert dict(table.experiment_identifiers()) == {0: "foo"}
+
+
+def test_integration_with_image_exclusions(dials_data, tmpdir):
+
+    exp = load.experiment_list(
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    )
+    exp[0].identifier = "foo"
+    exp.as_json(tmpdir / "modified_input.json")
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "nproc=1",
+            "modified_input.json",
+            "profile.fitting=False",
+            "exclude_images=4:6",
+            "sampling.random_seed=42",
+            "prediction.padding=0",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    assert experiments[0].identifier == "foo"
+
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+
+    assert len(table) == 91
+
+    # NB the excluded range of centroids is actually wider than the
+    # exclude_images specification, because reflections that extend onto the
+    # excluded images are also rejected.
+    _, _, z = table["xyzcal.px"].parts()
+    assert len(z.select((z > 3) & (z < 7))) == 0
 
 
 def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
@@ -396,22 +372,11 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
 def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
     expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
     refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    exp = load.experiment_list(expts)
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-    exp.as_json(tmpdir.join("trusted_range_patch.expt"))
-
     result = procrunner.run(
         [
             "dials.integrate",
             "nproc=1",
-            "trusted_range_patch.expt",
+            expts,
             refls,
             "profile.fitting=True",
             "sampling.integrate_all_reflections=False",
@@ -439,15 +404,6 @@ def test_multi_sweep(dials_regression, tmpdir):
     experiments = load.experiment_list(expts)
     for i, expt in enumerate(experiments):
         expt.identifier = str(100 + i)
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    panel = experiments[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-
     experiments.as_json(tmpdir / "modified_input.json")
 
     refls = os.path.join(
