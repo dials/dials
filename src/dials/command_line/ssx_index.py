@@ -32,6 +32,7 @@ from functools import reduce
 from cctbx import crystal
 from libtbx import Auto, phil
 
+from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.ssx.analysis import (
     generate_html_report,
     generate_plots,
@@ -158,9 +159,12 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     logger.info(f"Using {params.indexing.nproc} processes for indexing")
 
     st = time.time()
-    indexed_experiments, indexed_reflections, summary_data = index(
-        experiments, reflections[0], params
-    )
+    try:
+        indexed_experiments, indexed_reflections, summary_data = index(
+            experiments, reflections[0], params
+        )
+    except DialsIndexError as e:
+        sys.exit(f"Error: {e}")
 
     summary_table = make_summary_table(summary_data)
     logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
