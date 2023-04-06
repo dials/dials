@@ -19,7 +19,7 @@ def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):
     assert mtz_file.is_file()
     m = mtz.object(str(mtz_file))
 
-    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.6889)
+    assert m.as_miller_arrays()[1].info().wavelength == pytest.approx(0.6889)
     labels = set()
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.update(ma.info().labels)
@@ -39,6 +39,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     # Main options: truncate on/off, anomalous on/off
     # french_wilson.implementation dials/cctbx
 
+    r_free_labels = ["FreeR_flag"]
     mean_labels = ["IMEAN", "SIGIMEAN"]
     anom_labels = ["I(+)", "I(-)", "SIGI(+)", "SIGI(-)"]
     amp_labels = ["F", "SIGF"]
@@ -77,7 +78,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     assert (tmp_path / "dials.merge.html").is_file()
     merge_json = tmp_path / "dials.merge.json"
     assert merge_json.is_file()
-    expected_labels = mean_labels + half_labels
+    expected_labels = mean_labels + half_labels + r_free_labels
     unexpected_labels = []
 
     with merge_json.open() as fh:
@@ -154,6 +155,7 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     """Test that merge handles multi-wavelength data suitably - should be
     exported into an mtz with separate columns for each wavelength."""
 
+    r_free_labels = ["FreeR_flag"]
     mean_labels = [f"{pre}IMEAN_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_labels = [
         f"{pre}I_WAVE{i}({sgn})"
@@ -203,18 +205,19 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
+    assert all(x in labels for x in r_free_labels)
     assert all(x in labels for x in mean_labels)
     assert all(x in labels for x in anom_labels)
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
 
-    # 7 miller arrays for each dataset, check the expected number of reflections.
+    # 7 miller arrays for each dataset, plus FreeR_flag, check the expected number of reflections.
     arrays = m.as_miller_arrays()
-    assert len(arrays) == 14
-    assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert arrays[7].info().wavelength == pytest.approx(0.6889)
-    assert abs(arrays[0].size() - 1223) < 10  # check number of miller indices
-    assert abs(arrays[7].size() - 1453) < 10  # check number of miller indices
+    assert len(arrays) == 15
+    assert arrays[1].info().wavelength == pytest.approx(0.7)
+    assert arrays[8].info().wavelength == pytest.approx(0.6889)
+    assert abs(arrays[1].size() - 1223) < 10  # check number of miller indices
+    assert abs(arrays[8].size() - 1453) < 10  # check number of miller indices
 
     # test changing the wavelength tolerance such that data is combined under
     # one wavelength. Check the number of reflections to confirm this.
@@ -230,9 +233,9 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     m = mtz.object(str(tmp_path / "merged.mtz"))
     arrays = m.as_miller_arrays()
-    assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert len(arrays) == 7
-    assert abs(arrays[0].size() - 1538) < 10
+    assert arrays[1].info().wavelength == pytest.approx(0.7)
+    assert len(arrays) == 8
+    assert abs(arrays[1].size() - 1538) < 10
 
 
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmp_path):
