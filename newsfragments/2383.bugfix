@@ -1,1 +1,1 @@
-``flex.reflection_table.match_by_hkle``: fix failure on Windows with pandas 2.0.0
+``flex.reflection_table.match_by_hkle``: Fix failure on Windows with pandas 2.0.0.
