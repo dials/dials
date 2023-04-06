@@ -14,7 +14,7 @@
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <dials/util/python_streambuf.h>
 #include <numeric>
-#include <dials/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/reflection.h>
 #include <dials/array_family/reflection_table_msgpack_adapter.h>
@@ -39,7 +39,7 @@ namespace dials { namespace af { namespace boost_python {
   using scitbx::vec3;
   using scitbx::af::int6;
 
-  using namespace dials::af::boost_python::flex_table_suite;
+  using namespace dxtbx::af;
 
   /**
    * Construct a reflection table from a list of observations and shoeboxes

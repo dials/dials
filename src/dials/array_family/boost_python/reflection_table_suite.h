@@ -90,9 +90,6 @@ namespace dials { namespace af { namespace boost_python {
      */
     template <typename T>
     void extend(T &self, const T &other) {
-      typedef typename T::experiment_map_type::const_iterator const_iterator;
-      typedef typename T::experiment_map_type::iterator iterator;
-
       flex_table_suite::extend(self, other);
       extend_identifiers(self, other);
     }
@@ -187,9 +184,6 @@ namespace dials { namespace af { namespace boost_python {
      */
     template <typename T>
     void update(T &self, const T &other) {
-      typedef typename T::experiment_map_type::const_iterator const_iterator;
-      typedef typename T::experiment_map_type::iterator iterator;
-
       extend_identifiers(self, other);
       flex_table_suite::update(self, other);
     }
