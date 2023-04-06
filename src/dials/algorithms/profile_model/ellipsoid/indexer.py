@@ -33,13 +33,14 @@ def _index(reflection_table, experiment, fail_on_bad_index=False):
     miller_index = reflection_table["miller_index"]
     selection = flex.size_t()
     num_reindexed = 0
-    for i, xyz in enumerate(reflection_table["xyzobs.px.value"]):
+    for i, (panel_id, xyz) in enumerate(
+        zip(reflection_table["panel"], reflection_table["xyzobs.px.value"])
+    ):
         # Get the observed pixel coordinate
         x, y, _ = xyz
-
         # Get the lab coord
         s1 = np.array(
-            detector[0].get_pixel_lab_coord((x, y)), dtype=np.float64
+            detector[panel_id].get_pixel_lab_coord((x, y)), dtype=np.float64
         ).reshape(3, 1)
         s1_norm = norm(s1)
         s1 *= s0_length / s1_norm
@@ -107,9 +108,9 @@ def _predict(reflection_table, experiment):
     # Compute the ray intersections
     xyzpx = flex.vec3_double()
     xyzmm = flex.vec3_double()
-    for ss in s1:
-        mm = experiment.detector[0].get_ray_intersection(ss)
-        px = experiment.detector[0].millimeter_to_pixel(mm)
+    for i, (panel_id, ss) in enumerate(zip(reflection_table["panel"], s1)):
+        mm = experiment.detector[panel_id].get_ray_intersection(ss)
+        px = experiment.detector[panel_id].millimeter_to_pixel(mm)
         xyzpx.append(px + (0,))
         xyzmm.append(mm + (0,))
     reflection_table["xyzcal.mm"] = xyzmm

@@ -102,9 +102,11 @@ include scope dials.algorithms.profile_model.ellipsoid.model.phil_scope
 def _compute_beam_vector(experiment, reflection_table):
     """Compute the obseved beam vector"""
     s1_obs = flex.vec3_double(len(reflection_table))
-    for i in range(len(s1_obs)):
-        x, y, _ = reflection_table["xyzobs.px.value"][i]
-        s1_obs[i] = experiment.detector[0].get_pixel_lab_coord((x, y))
+    for i, (panel_id, xyzobs) in enumerate(
+        zip(reflection_table["panel"], reflection_table["xyzobs.px.value"])
+    ):
+        x, y, _ = xyzobs
+        s1_obs[i] = experiment.detector[panel_id].get_pixel_lab_coord((x, y))
     return s1_obs
 
 
@@ -253,9 +255,14 @@ def final_integrator(
 
     # Select reflections within detector
     x0, x1, y0, y1, _, _ = reflection_table["bbox"].parts()
-    xsize, ysize = experiment.detector[0].get_image_size()
-    selection = (x1 > 0) & (y1 > 0) & (x0 < xsize) & (y0 < ysize)
-    reflection_table = reflection_table.select(selection)
+    sel = flex.bool(reflection_table.size(), False)
+    panel_id = reflection_table["panel"]
+    for i in range(len(experiment.detector)):
+        panel_sel = panel_id == i
+        xsize, ysize = experiment.detector[i].get_image_size()
+        selection = panel_sel & (x1 > 0) & (y1 > 0) & (x0 < xsize) & (y0 < ysize)
+        sel |= selection
+    reflection_table = reflection_table.select(sel)
 
     reflection_table["shoebox"] = flex.shoebox(
         reflection_table["panel"], reflection_table["bbox"], allocate=True
@@ -371,10 +378,9 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
     # Compute the ray intersections
     xyzpx = flex.vec3_double()
     xyzmm = flex.vec3_double()
-    for i in range(len(s2)):
-        ss = s1[i]
-        mm = experiment.detector[0].get_ray_intersection(ss)
-        px = experiment.detector[0].millimeter_to_pixel(mm)
+    for ss, panel_id in zip(s1, reflection_table["panel"]):
+        mm = experiment.detector[panel_id].get_ray_intersection(ss)
+        px = experiment.detector[panel_id].millimeter_to_pixel(mm)
         xyzpx.append(px + (0,))
         xyzmm.append(mm + (0,))
     reflection_table["xyzcal.mm"] = xyzmm
