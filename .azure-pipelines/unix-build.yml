@@ -45,7 +45,8 @@ steps:
 # Build DIALS using the bootstrap script
 - bash: |
     set -eux
-    python modules/dials/installer/bootstrap.py build
+    export CXXFLAGS="-isystem$(Pipeline.Workspace)/conda_base ${CXXFLAGS:-}"
+    python modules/dials/installer/bootstrap.py build --config-flags=--use_environment_flags
   displayName: DIALS build
   workingDirectory: $(Pipeline.Workspace)
 
