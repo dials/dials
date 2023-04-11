@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-import os
-
 import procrunner
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
-def test_sequence_to_stills(dials_regression, tmpdir):
-    path = os.path.join(
-        dials_regression, "refinement_test_data", "radiation_damaged_thaumatin"
-    )
-    input_experiments = os.path.join(path, "refined_experiments_P42.json")
-    input_reflections = os.path.join(path, "indexed.pickle")
+def test_sequence_to_stills(dials_data, tmpdir):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    input_experiments = data_dir / "integrated.expt"
+    input_reflections = data_dir / "refined.refl"
     result = procrunner.run(
         [
             "dials.sequence_to_stills",

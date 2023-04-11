@@ -28,6 +28,10 @@ flex.set_random_seed(0)
 random.seed(0)
 
 
+class BadSpotForIntegrationException(Exception):
+    pass
+
+
 def compute_dSbar(S: np.array, dS: np.array) -> np.array:
     # dS & S are 3x3 arrays. Returns a 2x2 array
     S12 = S[0:2, 2].reshape(2, 1)
@@ -170,7 +174,7 @@ def rotate_mat3_double(R, A):
 
 
 class ReflectionLikelihood(object):
-    def __init__(self, model, s0, sp, h, ctot, mobs, sobs):
+    def __init__(self, model, s0, sp, h, ctot, mobs, sobs, panel_id=0):
 
         # Save stuff
         modelstate = ReflectionModelState(model, s0, h)
@@ -182,6 +186,7 @@ class ReflectionLikelihood(object):
         self.ctot = ctot
         self.mobs = mobs.reshape(2, 1)
         self.sobs = sobs
+        self.panel_id = panel_id
 
         # Compute the change of basis
         self.R = compute_change_of_basis_operation(self.s0, self.sp)  # const
@@ -385,7 +390,9 @@ class ReflectionLikelihood(object):
 
 
 class MaximumLikelihoodTarget(object):
-    def __init__(self, model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list):
+    def __init__(
+        self, model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list, panel_ids
+    ):
 
         # Check input
         assert len(h_list) == sp_list.shape[-1]
@@ -408,6 +415,7 @@ class MaximumLikelihoodTarget(object):
                     ctot_list[i],
                     mobs_list[:, i],
                     sobs_list[:, :, i],
+                    panel_ids[i],
                 )
             )
 
@@ -455,8 +463,13 @@ class MaximumLikelihoodTarget(object):
             )
             s1 = matrix.col(flumpy.from_numpy(s1[:, 0]))
             s3 = matrix.col(flumpy.from_numpy(s3[:, 0]))
-            xyzcal = self.model.experiment.detector[0].get_ray_intersection_px(s1)
-            xyzobs = self.model.experiment.detector[0].get_ray_intersection_px(s3)
+            panel_id = self.data[i].panel_id
+            xyzcal = self.model.experiment.detector[panel_id].get_ray_intersection_px(
+                s1
+            )
+            xyzobs = self.model.experiment.detector[panel_id].get_ray_intersection_px(
+                s3
+            )
             r_x = xyzcal[0] - xyzobs[0]
             r_y = xyzcal[1] - xyzobs[1]
             mse += np.array([r_x**2, r_y**2])
@@ -671,6 +684,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         ctot_list,
         mobs_list,
         sobs_list,
+        panel_ids,
         max_iter=1000,
         tolerance=1e-7,
     ):
@@ -693,6 +707,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         self.ctot_list = ctot_list
         self.mobs_list = mobs_list
         self.sobs_list = sobs_list
+        self.panel_ids = panel_ids
 
         # Store the parameter history
         self.history = []
@@ -705,6 +720,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
             self.ctot_list,
             self.mobs_list,
             self.sobs_list,
+            self.panel_ids,
         )
 
         # Print initial
@@ -884,6 +900,7 @@ class Refiner(object):
         self.ctot_list = data.ctot_list
         self.mobs_list = data.mobs_list
         self.sobs_list = data.sobs_list
+        self.panel_ids = data.panel_ids
         self.state = state
         self.history = []
 
@@ -918,6 +935,7 @@ class Refiner(object):
             self.ctot_list,
             self.mobs_list,
             self.sobs_list,
+            self.panel_ids,
         )
 
         # Solve the maximum likelihood equations
@@ -974,7 +992,7 @@ class RefinerData(object):
 
     """
 
-    def __init__(self, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list):
+    def __init__(self, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list, panel_ids):
         """
         Init the data
 
@@ -987,6 +1005,7 @@ class RefinerData(object):
         self.ctot_list = ctot_list
         self.mobs_list = mobs_list
         self.sobs_list = sobs_list
+        self.panel_ids = panel_ids
 
     @classmethod
     def from_reflections(self, experiment, reflections):
@@ -1011,15 +1030,15 @@ class RefinerData(object):
             "Computing observed covariance for %d reflections" % len(reflections)
         )
         s0_length = norm(s0)
-        assert len(experiment.detector) == 1
-        panel = experiment.detector[0]
-        sbox = reflections["shoebox"]
-        xyzobs = reflections["xyzobs.px.value"]
-        for r in range(len(reflections)):
 
+        sbox = reflections["shoebox"]
+        for r, (panel_id, xyz) in enumerate(
+            zip(reflections["panel"], reflections["xyzobs.px.value"])
+        ):
             # The vector to the pixel centroid
+            panel = experiment.detector[panel_id]
             sp = np.array(
-                panel.get_pixel_lab_coord(xyzobs[r][0:2]), dtype=np.float64
+                panel.get_pixel_lab_coord(xyz[0:2]), dtype=np.float64
             ).reshape(3, 1)
             sp *= s0_length / norm(sp)
 
@@ -1055,7 +1074,10 @@ class RefinerData(object):
                         C[j, i] = c
 
             # Check we have a sensible number of counts
-            assert ctot > 0, "BUG: strong spots should have more than 0 counts!"
+            if ctot <= 0:
+                raise BadSpotForIntegrationException(
+                    "Strong spot found with <= 0 counts! Check spotfinding results"
+                )
 
             # Compute the mean vector
             C = np.expand_dims(C, axis=2)
@@ -1073,8 +1095,10 @@ class RefinerData(object):
                     Sobs += np.matmul(x - xbar, (x - xbar).T) * C[j, i, 0]
 
             Sobs /= ctot
-            assert Sobs[0, 0] > 0, "BUG: variance must be > 0"
-            assert Sobs[1, 1] > 0, "BUG: variance must be > 0"
+            if (Sobs[0, 0] <= 0) or (Sobs[1, 1] <= 0):
+                raise BadSpotForIntegrationException(
+                    "Strong spot variance <= 0. Check spotfinding results"
+                )
 
             # Add to the lists
             sp_list[:, r] = sp[:, 0]
@@ -1133,7 +1157,9 @@ class RefinerData(object):
         )
 
         # Return the profile refiner data
-        return RefinerData(s0, sp_list, h_list, ctot_list, mobs_list, Sobs_list)
+        return RefinerData(
+            s0, sp_list, h_list, ctot_list, mobs_list, Sobs_list, reflections["panel"]
+        )
 
 
 def print_eigen_values_and_vectors_of_observed_covariance(A, s0):

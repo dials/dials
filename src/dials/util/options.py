@@ -27,6 +27,11 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.phil import FilenameDataWrapper
 
+
+class InvalidPhilError(ValueError):
+    pass
+
+
 logger = logging.getLogger(__name__)
 
 tolerance_phil_scope = libtbx.phil.parse(
@@ -499,7 +504,10 @@ class PhilCommandParser:
             raise RuntimeError(f"The following definitions were not recognised\n{msg}")
 
         # Extract the parameters
-        params = self._phil.extract()
+        try:
+            params = self._phil.extract()
+        except Exception as e:
+            raise InvalidPhilError(e)
 
         # Stop at this point if quick_parse is set. A second pass may be needed.
         if quick_parse:
@@ -864,12 +872,15 @@ class ArgumentParser(ArgumentParserBase):
             exit(0)
 
         # Parse the phil parameters
-        params, args = self._phil_parser.parse_args(
-            args,
-            options.verbose > 0,
-            return_unhandled=return_unhandled,
-            quick_parse=quick_parse,
-        )
+        try:
+            params, args = self._phil_parser.parse_args(
+                args,
+                options.verbose > 0,
+                return_unhandled=return_unhandled,
+                quick_parse=quick_parse,
+            )
+        except InvalidPhilError as e:
+            self.error(message=f"Invalid phil parameter: {e}")
 
         # Print the diff phil
         if show_diff_phil:
@@ -1126,9 +1137,10 @@ class ArgumentParser(ArgumentParserBase):
 class OptionParser(ArgumentParser):
     def __init__(self, *args, **kwargs):
         # Backwards compatibility 2021-11-10; 2022-04-06
+        # Remove after Dec 2022
         warnings.warn(
             "OptionParser is deprecated, use ArgumentParser instead",
-            DeprecationWarning,
+            UserWarning,
             stacklevel=2,
         )
         super().__init__(*args, **kwargs)

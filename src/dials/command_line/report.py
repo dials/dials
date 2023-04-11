@@ -2092,7 +2092,9 @@ def merging_stats_data(reflections, experiments):
         reflections.split_by_experiment_id()
     )  # needed to get correct batch plots
     scaled_array = scaled_data_as_miller_array(reflections, experiments)
-    stats_data = MergingStatisticsData(reflections, experiments, scaled_array)
+    stats_data = MergingStatisticsData(
+        experiments, scaled_array, reflections=reflections
+    )
     stats, anom_stats = merging_stats_from_scaled_array(
         scaled_array,
         n_bins=20,

@@ -82,7 +82,7 @@ def experiment():
         slow_direction="-y",
         pixel_size=(0.172, 0.172),
         image_size=(2463, 2527),
-        trusted_range=(-1, 1e8),
+        trusted_range=(0, 1e8),
     )
 
     goniometer = GoniometerFactory.single_axis()

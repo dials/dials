@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 
 import pytest
@@ -21,15 +20,11 @@ from dials.util.slice import slice_reflections
     "detector_parameterisation_choice",
     ["automatic", "single", "multiple", "hierarchical"],
 )
-def test_multi_panel_parameterisations(
-    dials_regression, detector_parameterisation_choice
-):
+def test_multi_panel_parameterisations(dials_data, detector_parameterisation_choice):
 
-    data_dir = os.path.join(
-        dials_regression, "refinement_test_data", "cspad_refinement"
-    )
-    exp_file = os.path.join(data_dir, "cspad_refined_experiments_step6_level2_300.json")
-    ref_file = os.path.join(data_dir, "cspad_reflections_step7_300.pickle")
+    data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
+    exp_file = data_dir / "cspad_refined_experiments_step6_level2_300.json"
+    ref_file = data_dir / "cspad_reflections_step7_300.pickle"
 
     reflections = flex.reflection_table.from_file(ref_file)
     experiments = ExperimentListFactory.from_json_file(exp_file, check_format=False)

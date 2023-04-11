@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import procrunner
 import pytest
 
@@ -17,7 +19,7 @@ def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):
     assert mtz_file.is_file()
     m = mtz.object(str(mtz_file))
 
-    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.6889)
+    assert m.as_miller_arrays()[1].info().wavelength == pytest.approx(0.6889)
     labels = set()
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.update(ma.info().labels)
@@ -37,10 +39,19 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     # Main options: truncate on/off, anomalous on/off
     # french_wilson.implementation dials/cctbx
 
+    r_free_labels = ["FreeR_flag"]
     mean_labels = ["IMEAN", "SIGIMEAN"]
     anom_labels = ["I(+)", "I(-)", "SIGI(+)", "SIGI(-)"]
     amp_labels = ["F", "SIGF"]
     anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)", "DANO", "SIGDANO"]
+    half_labels = [
+        "IHALF1",
+        "SIGIHALF1",
+        "IHALF2",
+        "SIGIHALF2",
+        "NHALF1",
+        "NHALF2",
+    ]  # appear for additional_stats=True
 
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     refls = location / "scaled_20_25.refl"
@@ -60,13 +71,24 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
         "crystal_name=jam",
         "dataset_name=spam",
         "json=dials.merge.json",
+        "additional_stats=True",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "dials.merge.html").is_file()
-    assert (tmp_path / "dials.merge.json").is_file()
-    expected_labels = mean_labels
+    merge_json = tmp_path / "dials.merge.json"
+    assert merge_json.is_file()
+    expected_labels = mean_labels + half_labels + r_free_labels
     unexpected_labels = []
+
+    with merge_json.open() as fh:
+        json_d = json.load(fh)
+        wl = list(json_d.keys())[0]
+        for k in {"merging_stats", "merging_stats_anom"}:
+            assert k in json_d[wl]
+            assert {"d_star_sq_min", "n_obs", "cc_anom", "r_split"} <= json_d[wl][
+                k
+            ].keys()
 
     if truncate:
         expected_labels += amp_labels
@@ -133,6 +155,7 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     """Test that merge handles multi-wavelength data suitably - should be
     exported into an mtz with separate columns for each wavelength."""
 
+    r_free_labels = ["FreeR_flag"]
     mean_labels = [f"{pre}IMEAN_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_labels = [
         f"{pre}I_WAVE{i}({sgn})"
@@ -182,18 +205,19 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
+    assert all(x in labels for x in r_free_labels)
     assert all(x in labels for x in mean_labels)
     assert all(x in labels for x in anom_labels)
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
 
-    # 6 miller arrays for each dataset, check the expected number of reflections.
+    # 7 miller arrays for each dataset, plus FreeR_flag, check the expected number of reflections.
     arrays = m.as_miller_arrays()
-    assert len(arrays) == 12
-    assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert arrays[6].info().wavelength == pytest.approx(0.6889)
-    assert abs(arrays[0].size() - 1223) < 10  # check number of miller indices
-    assert abs(arrays[6].size() - 1453) < 10  # check number of miller indices
+    assert len(arrays) == 15
+    assert arrays[1].info().wavelength == pytest.approx(0.7)
+    assert arrays[8].info().wavelength == pytest.approx(0.6889)
+    assert abs(arrays[1].size() - 1223) < 10  # check number of miller indices
+    assert abs(arrays[8].size() - 1453) < 10  # check number of miller indices
 
     # test changing the wavelength tolerance such that data is combined under
     # one wavelength. Check the number of reflections to confirm this.
@@ -209,9 +233,9 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     m = mtz.object(str(tmp_path / "merged.mtz"))
     arrays = m.as_miller_arrays()
-    assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert len(arrays) == 6
-    assert abs(arrays[0].size() - 1538) < 10
+    assert arrays[1].info().wavelength == pytest.approx(0.7)
+    assert len(arrays) == 8
+    assert abs(arrays[1].size() - 1538) < 10
 
 
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmp_path):
@@ -256,3 +280,30 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
 can be processed with dials.merge
 """
     )
+
+
+def test_merge_exclude_images(dials_data, tmp_path):
+    """Test the command line script with LCY data: exclude_images"""
+
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_30.refl"
+    expts = location / "scaled_30.expt"
+
+    mtz_file = tmp_path / "merge-exclude.mtz"
+
+    command = [
+        "dials.merge",
+        refls,
+        expts,
+        f"output.mtz={str(mtz_file)}",
+        "exclude_images=0:851:1700",
+        "d_min=0.59",
+    ]
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+
+    # all the data together is 75% complete
+
+    for record in result.stdout.decode().split("\n"):
+        if record.startswith("Completeness"):
+            assert float(record.split()[1]) < 70

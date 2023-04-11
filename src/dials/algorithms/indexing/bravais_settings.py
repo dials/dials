@@ -12,7 +12,6 @@ from cctbx import crystal, miller, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx import bravais_types
 from dxtbx.model import Crystal
-from libtbx.introspection import number_of_processors
 from rstbx.dps_core.lepage import iotbx_converter
 from rstbx.symmetry.subgroup import MetricSubgroup
 from scitbx.array_family import flex
@@ -23,6 +22,7 @@ from dials.command_line.check_indexing_symmetry import (
     get_symop_correlation_coefficients,
 )
 from dials.util.log import LoggingContext
+from dials.util.mp import available_cores
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +212,7 @@ def refined_settings_from_refined_triclinic(
     """
 
     if params.nproc is libtbx.Auto:
-        params.nproc = number_of_processors()
+        params.nproc = available_cores()
 
     if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
         if experiments[0].goniometer is None:

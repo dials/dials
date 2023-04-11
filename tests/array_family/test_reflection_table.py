@@ -172,6 +172,17 @@ def test_delete():
     assert table.ncols() == 2
 
 
+def test_slice():
+    table = flex.reflection_table()
+    table["col1"] = flex.int([0, 0, 1, 2, 3, 4, 5])
+    table["id"] = flex.int([-1, 0, 1, 2, 3, 4, 5])
+    for i in range(0, 6):
+        table.experiment_identifiers()[i] = str(i)
+    sliced = table[4:]
+    assert sliced.nrows() == 3
+    assert dict(sliced.experiment_identifiers()) == {3: "3", 4: "4", 5: "5"}
+
+
 def test_row_operations():
     # The columns as lists
     c1 = list(range(10))
@@ -795,7 +806,7 @@ def test_extract_shoeboxes():
                 def __getitem__(self, index):
                     class FakePanel:
                         def get_trusted_range(self):
-                            return (-1, 1000000)
+                            return (0, 1000000)
 
                     return FakePanel()
 
@@ -1297,6 +1308,7 @@ def test_experiment_identifiers():
 def test_select_remove_on_experiment_identifiers(caplog):
 
     table = flex.reflection_table()
+    table.reset_ids()  # test empty table
     table["id"] = flex.int([0, 1, 2, 3])
 
     experiments = ExperimentList()
@@ -1604,3 +1616,8 @@ def test_concat():
     assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
     assert list(ids1.keys()) == [0, 1, 2, 3]
     assert list(ids1.values()) == ["a", "b", "c", "d"]
+
+    # test empty tables
+    table1 = flex.reflection_table()
+    table2 = flex.reflection_table()
+    table1 = flex.reflection_table.concat([table1, table2])

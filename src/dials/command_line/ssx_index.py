@@ -1,4 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.ssx_index
 """
 This program runs indexing on the spotfinding results from a
 still sequence i.e. SSX data. This wraps a call to the regular
@@ -18,8 +17,8 @@ file and a single experiment list file, with a joint detector and beam model.
 Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
 Usage:
-    dev.dials.ssx_index imported.expt strong.refl
-    dev.dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
+    dials.ssx_index imported.expt strong.refl
+    dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
 """
 
 from __future__ import annotations
@@ -32,8 +31,8 @@ from functools import reduce
 
 from cctbx import crystal
 from libtbx import Auto, phil
-from libtbx.introspection import number_of_processors
 
+from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.ssx.analysis import (
     generate_html_report,
     generate_plots,
@@ -42,6 +41,7 @@ from dials.algorithms.indexing.ssx.analysis import (
 )
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
+from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -115,7 +115,7 @@ phil_scope.adopt_scope(
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
-    Run dev.dials.ssx_index as from the command line.
+    Run dials.ssx_index as from the command line.
 
     This program takes an imported experiment list and a reflection table
     of strong spots and performs parallelised indexing for synchrotron
@@ -126,7 +126,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
 
     parser = ArgumentParser(
-        usage="dev.dials.ssx_index imported.expt strong.refl [options]",
+        usage="dials.ssx_index imported.expt strong.refl [options]",
         read_experiments=True,
         read_reflections=True,
         phil=phil_scope,
@@ -151,7 +151,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     if params.nproc is Auto:
-        params.nproc = number_of_processors(return_value_if_unknown=1)
+        params.nproc = available_cores()
 
     if params.nproc > 1:
         params.indexing.nproc = params.nproc
@@ -159,9 +159,12 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     logger.info(f"Using {params.indexing.nproc} processes for indexing")
 
     st = time.time()
-    indexed_experiments, indexed_reflections, summary_data = index(
-        experiments, reflections[0], params
-    )
+    try:
+        indexed_experiments, indexed_reflections, summary_data = index(
+            experiments, reflections[0], params
+        )
+    except DialsIndexError as e:
+        sys.exit(f"Error: {e}")
 
     summary_table = make_summary_table(summary_data)
     logger.info("\nSummary of images sucessfully indexed\n" + summary_table)

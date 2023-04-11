@@ -5,7 +5,6 @@ import procrunner
 
 def test(dials_data, tmp_path):
     experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-
     result = procrunner.run(
         [
             "dials.background",
@@ -15,7 +14,6 @@ def test(dials_data, tmp_path):
         ],
         working_directory=tmp_path,
     )
-
     assert not result.returncode and not result.stderr
     assert (tmp_path / "background.png").is_file()
 
@@ -23,6 +21,31 @@ def test(dials_data, tmp_path):
         if line.startswith(b"Mean background"):
             assert line.endswith(b"0.559")
             break
+
+
+def test_checkpoints(dials_data, tmp_path):
+    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    result = procrunner.run(
+        [
+            "dials.background",
+            "n_checkpoints=3",
+            experiments,
+        ],
+        working_directory=tmp_path,
+    )
+
+    assert not result.returncode and not result.stderr
+    images = [
+        line.decode()
+        for line in result.stdout.splitlines()
+        if b"For imageset 0" in line
+    ]
+    images = [
+        line.replace("For imageset 0 image", "").replace(":", "") for line in images
+    ]
+    images = {int(e) for e in images}
+    assert len(images) == 3
+    assert sorted(images) == [1, 5, 9]
 
 
 def test_multiple_imagesets(dials_data, tmp_path):

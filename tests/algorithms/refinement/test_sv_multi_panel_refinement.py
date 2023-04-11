@@ -1,24 +1,20 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import procrunner
 
 from dials.algorithms.refinement.engine import Journal
 
 
-def test_scan_varying_refinement_of_a_multiple_panel_detector(
-    dials_regression, tmp_path
-):
+def test_scan_varying_refinement_of_a_multiple_panel_detector(dials_data, tmp_path):
     from dials.array_family import flex
 
-    data = Path(dials_regression) / "refinement_test_data" / "i23_as_24_panel_barrel"
+    data_dir = dials_data("refinement_test_data", pathlib=True)
 
     result = procrunner.run(
         [
             "dials.refine",
-            data / "experiments.json",
-            data / "indexed.pickle",
+            data_dir / "I23_24_panel.json",
+            data_dir / "I23_24_panel.pickle",
             "scan_varying=true",
             "history=history.json",
             "outlier.separate_blocks=False",

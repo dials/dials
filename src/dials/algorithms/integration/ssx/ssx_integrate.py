@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import functools
 from abc import ABC, abstractmethod
 
 import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
-from scitbx.array_family import flex
+import dials.extensions
+from dials.array_family import flex
 
 
 def generate_html_report(plots_data, filename):
@@ -33,6 +35,18 @@ class SimpleIntegrator(ABC):
     def __init__(self, params):
         self.params = params
         self.collector = NullCollector()
+        BackgroundAlgorithm = dials.extensions.Background.load(
+            params.integration.background.algorithm
+        )
+        flex.reflection_table.background_algorithm = functools.partial(
+            BackgroundAlgorithm, params
+        )
+        CentroidAlgorithm = dials.extensions.Centroid.load(
+            params.integration.centroid.algorithm
+        )
+        flex.reflection_table.centroid_algorithm = functools.partial(
+            CentroidAlgorithm, params
+        )
 
     @abstractmethod
     def run(self, experiment, table):

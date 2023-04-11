@@ -124,6 +124,10 @@ def _control_phil_str():
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
+    logging_option = normal *suppressed disabled
+      .type = choice
+      .help = normal includes all logging, suppress turns off DIALS refine output
+      .help = and disabled removes basically all logging
     experiments_filename = None
       .type = str
       .help = The filename for output experiments. For example, %s_imported.expt
@@ -226,6 +230,43 @@ def _dials_phil_str():
         .type = strings
         .help = List of indexing methods. If indexing fails with first method, indexing will be \
                 attempted with the next, and so forth
+      reflection_subsampling
+      {
+        enable  = False
+          .type = bool
+          .help = Enable random subsampling of reflections during indexing. Attempts to index    \
+                  will be repeated with random subsampling of spotfinder spots, starting at      \
+                  step_start % of total spots, repeating n_attempts_per_step times per step,     \
+                  and decreasing by step_size % until step_stop % is reached. With the defaults, \
+                  26 total indexing attempts will be made, randomly subsampling from 100% to     \
+                  50% by 2 % steps, one attempt per step.
+        step_start = 100
+          .type = int
+          .help = What percent of reflections to start with
+        step_stop = 50
+          .type = int
+          .help = What percent of reflections to end with
+        step_size = 2
+          .type = int
+          .help = What percent of reflections to decrease by per step
+        n_attempts_per_step = 1
+          .type = int
+          .help = How many attempts to make at each step
+      }
+      known_orientations = None
+        .type = path
+        .multiple = True
+        .expert_level = 2
+        .help = Paths to previous processing results including crystal orientations. \
+                If specified, images will not be re-indexed, but instead the known \
+                orientations will be used. Provide paths to experiment list files, using \
+                wildcards as needed.
+      require_known_orientation = False
+        .type = bool
+        .expert_level = 2
+        .help = If known_orientations are provided, and an orientation for an image is not \
+                found, this is whether or not to attempt to index the image from scratch \
+                using indexing.method
     }
   }
 
@@ -243,7 +284,7 @@ def _dials_phil_str():
     integration_only_overrides {
       trusted_range = None
         .type = floats(size=2)
-        .help = "Override the panel trusted range (underload and saturation) during integration."
+        .help = "Override the panel trusted range [min_trusted_value, max_trusted_value] during integration."
         .short_caption = "Panel trusted range"
     }
   }
@@ -423,12 +464,53 @@ class Script:
                 all_paths.extend(
                     [path.strip() for path in open(params.input.file_list).readlines()]
                 )
+
+            if params.indexing.stills.known_orientations:
+                known_orientations = {}
+                for path in params.indexing.stills.known_orientations:
+                    for g in glob.glob(path):
+                        ko_expts = ExperimentList.from_file(g, check_format=False)
+                        for expt in ko_expts:
+                            assert (
+                                len(expt.imageset.indices()) == 1
+                                and len(expt.imageset.paths()) == 1
+                            )
+                            key = (
+                                os.path.basename(expt.imageset.paths()[0]),
+                                expt.imageset.indices()[0],
+                            )
+                            if key not in known_orientations:
+                                known_orientations[key] = []
+                            known_orientations[key].append(expt.crystal)
+                if not known_orientations:
+                    raise Sorry(
+                        "No known_orientations found at the locations specified: %s"
+                        % ", ".join(params.indexing.stills.known_orientations)
+                    )
+                params.indexing.stills.known_orientations = known_orientations
         if size > 1:
             if rank == 0:
                 transmitted_info = params, options, all_paths
             else:
                 transmitted_info = None
             params, options, all_paths = comm.bcast(transmitted_info, root=0)
+
+        if params.output.logging_option == "suppressed":
+            logging.getLogger("dials.algorithms.indexing.nave_parameters").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.indexing.stills_indexer").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.refinement.refiner").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger(
+                "dials.algorithms.refinement.reflection_manager"
+            ).setLevel(logging.ERROR)
+
+        elif params.output.logging_option == "disabled":
+            logging.disable(logging.ERROR)
 
         # Check we have some filenames
         if not all_paths:
@@ -441,7 +523,7 @@ class Script:
             self.pr = cProfile.Profile()
             self.pr.enable()
 
-        print(f"Have {len(all_paths)} files")
+        logger.info(f"Have {len(all_paths)} files")
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
@@ -707,7 +789,12 @@ class Script:
 
                 if rank == 0:
                     # server process
+                    num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
+                        print(
+                            "Processing %d / %d shots" % (item_num, num_iter),
+                            flush=True,
+                        )
                         if process_fractions and not process_this_event(item_num):
                             continue
 
@@ -1025,6 +1112,21 @@ class Processor:
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
+        if (
+            self.params.indexing.stills.known_orientations
+            and self.params.indexing.stills.require_known_orientation
+        ):
+            for expt in experiments:
+                assert (
+                    len(expt.imageset.indices()) == 1
+                    and len(expt.imageset.paths()) == 1
+                )
+                key = (
+                    os.path.basename(expt.imageset.paths()[0]),
+                    expt.imageset.indices()[0],
+                )
+                if key not in self.params.indexing.stills.known_orientations:
+                    raise RuntimeError("Image not found in set of known orientations")
 
         if not self.params.input.ignore_gain_mismatch:
             g1 = self.params.spotfinder.threshold.dispersion.gain
@@ -1094,48 +1196,115 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         if hasattr(self, "known_crystal_models"):
             known_crystal_models = self.known_crystal_models
+        elif self.params.indexing.stills.known_orientations:
+            known_crystal_models = []
+            extended_experiments = ExperimentList()
+            for expt in experiments:
+                assert (
+                    len(expt.imageset.indices()) == 1
+                    and len(expt.imageset.paths()) == 1
+                )
+                key = (
+                    os.path.basename(expt.imageset.paths()[0]),
+                    expt.imageset.indices()[0],
+                )
+                if key not in self.params.indexing.stills.known_orientations:
+                    if self.params.indexing.stills.require_known_orientation:
+                        raise RuntimeError(
+                            "Image not found in set of known orientations"
+                        )
+                    else:
+                        oris = [None]
+                else:
+                    oris = self.params.indexing.stills.known_orientations[key]
+                known_crystal_models.extend(oris)
+                extended_experiments.extend(ExperimentList([expt] * len(oris)))
+            experiments = extended_experiments
         else:
             known_crystal_models = None
 
-        if params.indexing.stills.method_list is None:
-            idxr = Indexer.from_parameters(
-                reflections,
-                experiments,
-                known_crystal_models=known_crystal_models,
-                params=params,
-            )
-            idxr.index()
-        else:
-            indexing_error = None
-            for method in params.indexing.stills.method_list:
-                params.indexing.method = method
+        indexing_succeeded = False
+        if known_crystal_models:
+            try:
+                idxr = Indexer.from_parameters(
+                    reflections,
+                    experiments,
+                    known_crystal_models=known_crystal_models,
+                    params=params,
+                )
+                idxr.index()
+                logger.info("indexed from known orientation")
+                indexing_succeeded = True
+            except Exception:
+                if self.params.indexing.stills.require_known_orientation:
+                    raise
+
+        if not indexing_succeeded:
+            if self.params.indexing.stills.reflection_subsampling.enable:
+                subsets = range(
+                    self.params.indexing.stills.reflection_subsampling.step_start,
+                    self.params.indexing.stills.reflection_subsampling.step_stop
+                    - self.params.indexing.stills.reflection_subsampling.step_size,
+                    -self.params.indexing.stills.reflection_subsampling.step_size,
+                )
+            else:
+                subsets = [100]
+            all_reflections = reflections
+            subset_indexing_error = None
+            for i in subsets:
+                if i != 100:
+                    reflections = all_reflections.select(
+                        flex.random_permutation(len(all_reflections))
+                    )[: int(len(all_reflections) * i / 100)]
                 try:
-                    idxr = Indexer.from_parameters(
-                        reflections, experiments, params=params
-                    )
-                    idxr.index()
-                except Exception as e:
-                    logger.info("Couldn't index using method %s", method)
-                    if indexing_error is None:
-                        if e is None:
-                            e = Exception(f"Couldn't index using method {method}")
-                        indexing_error = e
+                    if params.indexing.stills.method_list is None:
+                        idxr = Indexer.from_parameters(
+                            reflections,
+                            experiments,
+                            params=params,
+                        )
+                        idxr.index()
+                    else:
+                        ml_indexing_error = None
+                        for method in params.indexing.stills.method_list:
+                            params.indexing.method = method
+                            try:
+                                idxr = Indexer.from_parameters(
+                                    reflections,
+                                    experiments,
+                                    params=params,
+                                )
+                                idxr.index()
+                            except Exception as e_ml:
+                                logger.info("Couldn't index using method %s", method)
+                                ml_indexing_error = e_ml
+                            else:
+                                ml_indexing_error = None
+                                break
+                        if ml_indexing_error:
+                            raise ml_indexing_error
+                except Exception as e_subset:
+                    subset_indexing_error = e_subset
                 else:
-                    indexing_error = None
+                    logger.info("Indexed using %d%% of the reflections" % i)
+                    subset_indexing_error = None
                     break
-            if indexing_error is not None:
-                raise indexing_error
+            if subset_indexing_error:
+                raise subset_indexing_error
 
         indexed = idxr.refined_reflections
         experiments = idxr.refined_experiments
 
         if known_crystal_models is not None:
-
-            filtered = flex.reflection_table()
-            for idx in set(indexed["miller_index"]):
-                sel = indexed["miller_index"] == idx
-                if sel.count(True) == 1:
-                    filtered.extend(indexed.select(sel))
+            filtered_sel = flex.bool(len(indexed), True)
+            for expt_id in range(len(experiments)):
+                for idx in set(
+                    indexed["miller_index"].select(indexed["id"] == expt_id)
+                ):
+                    sel = (indexed["miller_index"] == idx) & (indexed["id"] == expt_id)
+                    if sel.count(True) > 1:
+                        filtered_sel = filtered_sel & ~sel
+            filtered = indexed.select(filtered_sel)
             logger.info(
                 "Filtered duplicate reflections, %d out of %d remaining",
                 len(filtered),
@@ -1305,7 +1474,13 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     from dials.algorithms.integration.kapton_2019_correction import (
                         multi_kapton_correction,
                     )
-
+                elif abs_params.algorithm == "other":
+                    continue  # custom abs. corr. implementation should go here
+                else:
+                    raise ValueError(
+                        "absorption_correction.apply=True, "
+                        "but no .algorithm has been selected!"
+                    )
                 experiments, integrated = multi_kapton_correction(
                     experiments, integrated, abs_params.fuller_kapton, logger=logger
                 )()

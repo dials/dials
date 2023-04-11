@@ -120,3 +120,15 @@ def test_filter_reflections(
     assert not result.returncode and not result.stderr
     filtered_refl = flex.reflection_table.from_file(tmp_path / "filtered.refl")
     assert len(filtered_refl) == expected
+
+
+def test_filter_reflections_by_reflection_index(reflections, tmp_path):
+    result = procrunner.run(
+        ["dials.filter_reflections", reflections, "remove_by_index=0,3,5"],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    ref = flex.reflection_table.from_file(tmp_path / "filtered.refl")
+    # The test removed the reflections 0, 3 and 5
+    assert len(ref) == 3
+    assert list(ref["iobs"]) == [1, 2, 4]

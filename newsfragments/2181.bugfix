@@ -1,1 +1,0 @@
-Fix pytest-nunit version to avoid windows azure test script crash

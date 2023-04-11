@@ -267,6 +267,41 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
+def test_integration_with_image_exclusions(dials_data, tmpdir):
+
+    exp = load.experiment_list(
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    )
+    exp[0].identifier = "foo"
+    exp.as_json(tmpdir / "modified_input.json")
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "nproc=1",
+            "modified_input.json",
+            "profile.fitting=False",
+            "exclude_images=4:6",
+            "sampling.random_seed=42",
+            "prediction.padding=0",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    assert experiments[0].identifier == "foo"
+
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+
+    assert len(table) == 91
+
+    # NB the excluded range of centroids is actually wider than the
+    # exclude_images specification, because reflections that extend onto the
+    # excluded images are also rejected.
+    _, _, z = table["xyzcal.px"].parts()
+    assert len(z.select((z > 3) & (z < 7))) == 0
+
+
 def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     """Test that imageset ids are correctly output for multi-sweep integration."""
     # Just integrate 15 images for each sweep
@@ -337,7 +372,6 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
 def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
     expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
     refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
-
     result = procrunner.run(
         [
             "dials.integrate",

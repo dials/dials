@@ -4,9 +4,11 @@ import logging
 import math
 
 from cctbx.sgtbx.bravais_types import bravais_lattice
+from cctbx.uctbx.reduction_base import iteration_limit_exceeded
 from dxtbx.model import Crystal
 from scitbx.array_family import flex
 
+from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
@@ -68,7 +70,10 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
             c = -c
         model = Crystal(a, b, c, space_group_symbol="P 1")
         uc = model.get_unit_cell()
-        cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
+        try:
+            cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
+        except iteration_limit_exceeded as e:
+            raise DialsIndexError(e)
         model = model.change_basis(cb_op_to_niggli)
 
         uc = model.get_unit_cell()

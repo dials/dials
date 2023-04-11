@@ -390,7 +390,7 @@ def insulin_spotfinding_stills(dials_data, tmp_path_factory):
 def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method):
     experiment, reflections = insulin_spotfinding_stills
     expected_unit_cell = uctbx.unit_cell(
-        (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
+        (78.092, 78.092, 78.092, 90.000, 90.000, 90.000)
     )
     expected_hall_symbol = " I 2 2 3"
     expected_rmsds = (0.05, 0.06, 0.01)
@@ -601,7 +601,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
 
 
 @pytest.mark.xfel
-def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp_path):
+def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path):
     """Problem: In stills_indexer, before calling the refine function, the
     experiment list contains a list of dxtbx crystal models (that are not
     MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
@@ -626,18 +626,9 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
         phil_scope as stills_process_phil_scope,
     )
 
-    experiment_data = os.path.join(
-        dials_regression,
-        "refinement_test_data",
-        "cspad_refinement",
-        "cspad_refined_experiments_step6_level2_300.json",
-    )
-    reflection_data = os.path.join(
-        dials_regression,
-        "refinement_test_data",
-        "cspad_refinement",
-        "cspad_reflections_step7_300.pickle",
-    )
+    data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
+    experiment_data = data_dir / "cspad_refined_experiments_step6_level2_300.json"
+    reflection_data = data_dir / "cspad_reflections_step7_300.pickle"
 
     refl = flex.reflection_table.from_file(reflection_data)
     explist = ExperimentListFactory.from_json_file(experiment_data, check_format=False)[

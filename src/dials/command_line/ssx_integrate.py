@@ -1,4 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.ssx_integrate
 #!/usr/bin/env python
 #
 # dials.ssx_integrate.py
@@ -11,7 +10,7 @@
 #  included in the root directory of this package.
 """
 This program rums profile modelling and integration on indexed results from a
-still sequence i.e. SSX data. This scripts uses parts of the regular DIALS
+still sequence i.e. SSX data. This script uses parts of the regular DIALS
 integration code, using either the ellipsoid or stills integrator algorithms.
 
 The ellipsoid algorithm refines the unit cell, orientation and a 3D ellipsoidal
@@ -23,9 +22,9 @@ and clutering statistics.
 Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
 Usage:
-    dev.dials.ssx_integrate indexed.expt indexed.refl
-    dev.dials.ssx_integrate refined.expt refined.refl
-    dev.dials.ssx_integrate indexed.expt indexed.refl algorithm=stills
+    dials.ssx_integrate indexed.expt indexed.refl
+    dials.ssx_integrate refined.expt refined.refl
+    dials.ssx_integrate indexed.expt indexed.refl algorithm=stills
 """
 
 from __future__ import annotations
@@ -42,7 +41,6 @@ import iotbx.phil
 from cctbx import crystal
 from dxtbx.model import Experiment, ExperimentList
 from libtbx import Auto
-from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
 
 from dials.algorithms.indexing.ssx.analysis import report_on_crystal_clusters
@@ -60,6 +58,7 @@ from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
 from dials.command_line.combine_experiments import CombineWithReference
 from dials.util import log, show_mail_handle_errors
+from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 
@@ -204,7 +203,7 @@ def setup(reflections, params):
 
     # Note, memory processing logic can go here
     if params.nproc is Auto:
-        params.nproc = number_of_processors(return_value_if_unknown=1)
+        params.nproc = available_cores()
     logger.info(f"Using {params.nproc} processes for integration")
 
     # aggregate some output for json, html etc
@@ -369,7 +368,7 @@ def run_integration(reflections, experiments, params):
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil=working_phil) -> None:
     """
-    Run dev.dials.ssx_integrate from the command-line.
+    Run dials.ssx_integrate from the command-line.
 
     This program takes an indexed experiment list and reflection table and
     performs parallelised integration for synchrotron serial crystallography
@@ -381,7 +380,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     """
 
     parser = ArgumentParser(
-        usage="dev.dials.ssx_integrate indexed.expt indexed.refl [options]",
+        usage="dials.ssx_integrate indexed.expt indexed.refl [options]",
         phil=phil,
         epilog=__doc__,
         read_experiments=True,

@@ -1,8 +1,6 @@
 # DIALS: Diffraction Integration for Advanced Light Sources
 
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/dials/dials.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/dials/dials/context:python)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/dials/dials.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/dials/dials/alerts/)
 [![Coverage](https://codecov.io/gh/dials/dials/branch/main/graph/badge.svg)](https://codecov.io/gh/dials/dials)
 [![Gitter](https://badges.gitter.im/dials/community.svg)](https://gitter.im/dials/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 

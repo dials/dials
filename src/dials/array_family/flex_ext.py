@@ -30,6 +30,7 @@ import dials.extensions.simple_centroid_ext
 import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
+from dials.util.exclude_images import set_invalid_images
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -169,7 +170,10 @@ class _:
                 params.spotfinder.filter.min_spot_size,
             )
 
-        # Get the integrator from the input parameters
+        # Set images to exclude in the imagesets
+        experiments = set_invalid_images(experiments, params.spotfinder.exclude_images)
+
+        # Get the spot-finder from the input parameters
         logger.info("Configuring spot finder from input parameters")
         spotfinder = SpotFinderFactory.from_parameters(
             experiments=experiments, params=params, is_stills=is_stills
@@ -491,13 +495,13 @@ class _:
 
         hkl = self["miller_index"].as_vec3_double().parts()
         hkl = (part.as_numpy_array().astype(int) for part in hkl)
-        e = self["entering"].as_numpy_array()
+        e = self["entering"].as_numpy_array().astype(int)
         n = np.arange(e.size)
         p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
         hkl = other["miller_index"].as_vec3_double().parts()
         hkl = (part.as_numpy_array().astype(int) for part in hkl)
-        e = other["entering"].as_numpy_array()
+        e = other["entering"].as_numpy_array().astype(int)
         n = np.arange(e.size)
         p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
@@ -1187,7 +1191,8 @@ Found %s"""
         identifiers (strings).
         """
         # First get the reverse of the map i.e. ids for a given exp_identifier
-        assert "id" in self
+        if len(self):
+            assert "id" in self
         id_values = []
         for k, v in zip(
             self.experiment_identifiers().keys(), self.experiment_identifiers().values()
@@ -1227,9 +1232,11 @@ Found %s"""
         numbered 0 .. n-1.
         """
         reverse_map = {v: k for k, v in self.experiment_identifiers()}
-        orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
+        if not len(self):
+            return
+        orig_id = self["id"].deep_copy()
         for i_exp, exp_id in enumerate(reverse_map.keys()):
             sel_exp = orig_id == reverse_map[exp_id]
             self["id"].set_selected(sel_exp, i_exp)

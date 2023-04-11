@@ -284,7 +284,7 @@ class ScalingAlgorithm:
             or self.params.scaling_options.only_target
         ):
             # now remove things that were used as the target:
-            n_target = len(self.experiments) - len(self.scaler.active_scalers)
+            n_target = len(self.experiments) - self.scaler.n_initial_active_scalers
             self.experiments = self.experiments[:-n_target]
             self.reflections = self.reflections[:-n_target]
         # remove any bad datasets:
@@ -318,6 +318,7 @@ class ScalingAlgorithm:
                 self.scaled_miller_array,
                 self.params.output.merging.nbins,
                 self.params.output.use_internal_variance,
+                additional_stats=self.params.output.additional_stats,
             )
         except DialsMergingStatisticsError as e:
             logger.warning(e, exc_info=True)
@@ -347,7 +348,13 @@ class ScalingAlgorithm:
 
         # update imageset ids before combining reflection tables.
         self.reflections = update_imageset_ids(self.experiments, self.reflections)
-        joint_table = flex.reflection_table.concat(self.reflections)
+        # Note, we don't use flex.reflection_table.concat below on purpose, so
+        # that the dataset ids in the table are consistent from input to output
+        # when datasets are removed, e.g. by filtering, exclude_datasets= etc.
+        joint_table = flex.reflection_table()
+        for i in range(len(self.reflections)):
+            joint_table.extend(self.reflections[i])
+            self.reflections[i] = 0  # del reference from initial list
 
         # remove reflections with very low scale factors
         sel = (

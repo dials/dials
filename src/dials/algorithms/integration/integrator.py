@@ -560,7 +560,7 @@ def _finalize_stills(reflections, experiments, params):
 
     # verify sigmas are sensible
     if "intensity.prf.value" in integrated:
-        if (integrated["intensity.prf.variance"] <= 0).count(True) > 0:
+        if (integrated["intensity.prf.variance"] < 0).count(True) > 0:
             raise Sorry(
                 "Found negative variances (prf). Are bad pixels properly masked out?"
             )
@@ -1234,13 +1234,10 @@ class Integrator:
                     for j, experiment in enumerate(experiments):
                         if experiment.imageset == imageset:
                             subset.extend(reflections.select(reflections["id"] == j))
-                try:
-                    if imageset.get_scan():
-                        frame0, frame1 = imageset.get_scan().get_array_range()
-                    else:
-                        raise RuntimeError
-                except RuntimeError:  # catch DXTBX_ASSERT if no scan in imageset
+                if not imageset.get_scan() or imageset.get_scan().is_still():
                     frame0, frame1 = (0, len(imageset))
+                else:
+                    frame0, frame1 = imageset.get_scan().get_array_range()
                 flatten = self.params.integration.integrator == "flat3d"
                 max_needed = max(
                     max_memory_needed(subset, frame0, frame1, flatten),

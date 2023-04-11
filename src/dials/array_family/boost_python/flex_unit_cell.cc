@@ -8,11 +8,11 @@
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/args.hpp>
 #include <boost/python/return_arg.hpp>
-#include <boost/format.hpp>
-#include <scitbx/array_family/boost_python/flex_helpers.h>
 #include <cctbx/uctbx.h>
 #include <cctbx/miller.h>
 #include <dials/error.h>
+
+#include "flex_helpers.h"
 
 namespace dials { namespace af { namespace boost_python {
 

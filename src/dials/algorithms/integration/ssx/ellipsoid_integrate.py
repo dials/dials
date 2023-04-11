@@ -21,6 +21,9 @@ from dials.algorithms.profile_model.ellipsoid.algorithm import (
     run_ellipsoid_refinement,
 )
 from dials.algorithms.profile_model.ellipsoid.indexer import reindex
+from dials.algorithms.profile_model.ellipsoid.refiner import (
+    BadSpotForIntegrationException,
+)
 from dials.constants import FULL_PARTIALITY
 
 
@@ -103,20 +106,24 @@ class EllipsoidIntegrator(SimpleIntegrator):
             except ToFewReflections as e:
                 raise RuntimeError(e)
             else:
-                experiment, table, refiner_output = self.refine(
-                    experiment,
-                    table,
-                    sigma_d,
-                    profile_model=self.params.profile.ellipsoid.rlp_mosaicity.model,
-                    fix_list=fix_list,
-                    n_cycles=self.params.profile.ellipsoid.refinement.n_cycles,
-                    capture_progress=isinstance(
-                        self.collector, EllipsoidOutputCollector
-                    ),
-                )
-                self.collector.collect_after_refinement(
-                    experiment, table, refiner_output["refiner_output"]["history"]
-                )
+                try:
+                    experiment, table, refiner_output = self.refine(
+                        experiment,
+                        table,
+                        sigma_d,
+                        profile_model=self.params.profile.ellipsoid.rlp_mosaicity.model,
+                        fix_list=fix_list,
+                        n_cycles=self.params.profile.ellipsoid.refinement.n_cycles,
+                        capture_progress=isinstance(
+                            self.collector, EllipsoidOutputCollector
+                        ),
+                    )
+                except BadSpotForIntegrationException as e:
+                    raise RuntimeError(e)
+                else:
+                    self.collector.collect_after_refinement(
+                        experiment, table, refiner_output["refiner_output"]["history"]
+                    )
 
         predicted = self.predict(
             experiment,

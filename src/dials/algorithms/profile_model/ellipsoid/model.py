@@ -73,7 +73,7 @@ refinement {
     outlier_probability = 0.975
         .type = float
 
-    n_macro_cycles = 1
+    n_macro_cycles = 3
         .type = int
 
     n_cycles = 3
@@ -132,7 +132,7 @@ class EllipsoidProfileModel(ProfileModelExt):
         self, reflections, crystal, beam, detector, goniometer=None, scan=None, **kwargs
     ):
         raise ValueError(
-            "Ellipsoid profile modelling not implemented outside of dev.dials.ssx_integrate"
+            "Ellipsoid profile modelling not implemented outside of dials.ssx_integrate"
         )
 
     @classmethod
