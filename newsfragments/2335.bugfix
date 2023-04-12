@@ -1,1 +1,0 @@
-Correctly limit CPU cores when running in jobs allocated with the Slurm cluster scheduler.

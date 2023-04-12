@@ -1,1 +1,0 @@
-``dials.refine``: avoid calling ``sys.exit`` when running refinement as a library function.

@@ -1,3 +1,57 @@
+DIALS 3.14.0 (2023-04-12)
+=========================
+
+Features
+--------
+
+- ``dials.damage_analysis``: Add ``dose_group_size=`` option to allow generation of plots for subsets of the data based on dose. (`#1903 <https://github.com/dials/dials/issues/1903>`_)
+- ``dials.import``/``dials.export``: The image template is now reported in the log file, for rotation data. (`#2278 <https://github.com/dials/dials/issues/2278>`_)
+- Refinement tests now use publicly available data, though the ``dials-data`` package. (`#2343 <https://github.com/dials/dials/issues/2343>`_)
+- ``dials.merge``: Now suggests a resolution limit, based on a fit to CC½. (`#2351 <https://github.com/dials/dials/issues/2351>`_)
+- ``dials.merge``: Save merged half datasets to the MTZ file when ``additional_stats=True``. (`#2353 <https://github.com/dials/dials/issues/2353>`_)
+- ``dials.export_bitmaps``: Option to render resolution rings. (`#2360 <https://github.com/dials/dials/issues/2360>`_)
+- ``dials.rs_mapper``: Now works with multi-panel detectors. (`#2362 <https://github.com/dials/dials/issues/2362>`_)
+- ``dials.ssx_integrate``: Add support for multi-panel detectors, for the ellipsoid model. (`#2368 <https://github.com/dials/dials/issues/2368>`_)
+- ``dials.find_spots``: Add the ``exclude_images=`` option. Previously this was only on ``dials.import``. (`#2374 <https://github.com/dials/dials/issues/2374>`_)
+- ``dials.merge``: Generate ``"FreeR_flag"`` column in output mtz, optionally copying from a reference mtz containing a ``FreeR_flag`` column. (`#2378 <https://github.com/dials/dials/issues/2378>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.refine``: Does not call ``sys.exit`` when running as a library function. (`#2325 <https://github.com/dials/dials/issues/2325>`_)
+- ``dials.generate_mask``: Fix a failure when the direct beam intersected the exact centre of a pixel. (`#2329 <https://github.com/dials/dials/issues/2329>`_)
+- Providing invalid PHIL parameters no longer causes a traceback. (`#2331 <https://github.com/dials/dials/issues/2331>`_)
+- ``dials.index``: Handle possibility of Krivy-Gruber iteration limit exceeded in Niggli cell reduction. (`#2332 <https://github.com/dials/dials/issues/2332>`_)
+- CPU allocation limits will now be correctly inherited from the Slurm cluster scheduler. (`#2335 <https://github.com/dials/dials/issues/2335>`_)
+- ``dials.ssx_integrate``: Fix cases where the background and centroid algorithms choices were not being used with ellipsoid-model integration. (`#2337 <https://github.com/dials/dials/issues/2337>`_)
+- ``dials.assign_experiment_identifiers`` now works with experiment lists without identifiers. (`#2342 <https://github.com/dials/dials/issues/2342>`_)
+- Test data files are no longer patched to correct their trusted range values, and usages of the deprecated ``DataBlock`` have been removed. (`#2346 <https://github.com/dials/dials/issues/2346>`_)
+- ``dials.ssx_integrate``: catch rare ``ValueError`` in ellipsoid profile model refinement (`#2349 <https://github.com/dials/dials/issues/2349>`_)
+- ``dials.symmetry``: Handle cases when an experiment has no scan object. (`#2350 <https://github.com/dials/dials/issues/2350>`_)
+- ``dials.ssx_index``: Ensure file paths are split correctly on Windows. (`#2358 <https://github.com/dials/dials/issues/2358>`_)
+- Replace the deprecated ``imp`` library with ``importlib``. (`#2363 <https://github.com/dials/dials/issues/2363>`_)
+- ``dials.rs_mapper``: Fix bug causing the image data to be accessed with out-of-bounds indices. (`#2364 <https://github.com/dials/dials/issues/2364>`_)
+- ``dials.image_viewer``: Fix error when using newer versions of wxPython. (`#2365 <https://github.com/dials/dials/issues/2365>`_)
+- DIALS viewers: Suppress terminal output saying "``Gtk-Message``". (`#2366 <https://github.com/dials/dials/issues/2366>`_)
+- Prevent occasional failures testing constrained geometry refinement. (`#2367 <https://github.com/dials/dials/issues/2367>`_)
+- Slicing a ``reflection_table`` does not lose the experiment identifiers map. (`#2371 <https://github.com/dials/dials/issues/2371>`_)
+- ``dials.integrate``: Update ``exclude_images=`` syntax to match ``dials.import`` and ``dials.find_spots``. The older form is now deprecated. (`#2374 <https://github.com/dials/dials/issues/2374>`_)
+- ``reflection_table.match_by_hkle``: Fix failure on Windows with pandas 2.0.0. (`#2383 <https://github.com/dials/dials/issues/2383>`_)
+
+
+Improved Documentation
+----------------------
+
+- Clarified coordinate system conventions in https://dials.github.io/documentation/conventions.html (`#2373 <https://github.com/dials/dials/issues/2373>`_)
+
+
+Misc
+----
+
+- `#2251 <https://github.com/dials/dials/issues/2251>`_, `#2324 <https://github.com/dials/dials/issues/2324>`_, `#2344 <https://github.com/dials/dials/issues/2344>`_, `#2345 <https://github.com/dials/dials/issues/2345>`_, `#2352 <https://github.com/dials/dials/issues/2352>`_, `#2356 <https://github.com/dials/dials/issues/2356>`_, `#2357 <https://github.com/dials/dials/issues/2357>`_, `#2361 <https://github.com/dials/dials/issues/2361>`_, `#2369 <https://github.com/dials/dials/issues/2369>`_, `#2372 <https://github.com/dials/dials/issues/2372>`_, `#2381 <https://github.com/dials/dials/issues/2381>`_, `#2385 <https://github.com/dials/dials/issues/2385>`_
+
+
 DIALS 3.13.0 (2023-01-26)
 =========================
 
