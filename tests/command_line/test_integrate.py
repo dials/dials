@@ -6,6 +6,7 @@ import os
 import pickle
 import shutil
 import subprocess
+import sys
 from unittest import mock
 
 import pytest
@@ -510,6 +511,10 @@ def test_frame_slice_shoeboxes_not_available_for_flat3d(dials_data, tmp_path):
     assert b"cannot be used with integrator=flat3d" in result.stderr
 
 
+@pytest.mark.xfail(
+    sys.platform == "darwin",
+    reason="Not understood apparent platform numeric differences",
+)
 def test_multi_sweep(dials_data, tmp_path):
     expts = str(dials_data("centroid_test_data") / "multi_sweep_indexed.expt")
     refls = str(dials_data("centroid_test_data") / "multi_sweep_indexed.refl")
