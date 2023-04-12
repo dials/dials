@@ -90,6 +90,7 @@ steps:
     set -ux
     export DIALS_DATA=${PWD}/data
     export PYTHONDEVMODE=1
+    export PYTHONWARNINGS=ignore
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 --dist loadgroup\
         --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \
