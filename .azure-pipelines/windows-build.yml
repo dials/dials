@@ -108,6 +108,7 @@ steps:
 - script: |
     call activate conda_base/
     SET PYTHONDEVMODE=1
+    SET PYTHONWARNINGS="ignore:pkg_resources is deprecated as an API:DeprecationWarning,ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning"
     SET DIALS_DATA=$(Pipeline.Workspace)/data
     pytest -v -n auto -ra modules/dials/tests --regression --basetemp="$(Pipeline.Workspace)/tests" --durations=10
     if %errorlevel% neq 0 exit /b %errorlevel%
