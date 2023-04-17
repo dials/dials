@@ -23,8 +23,6 @@ namespace dials { namespace algorithms { namespace boost_python {
    * Split the reflection table where the blocks are given.
    */
   inline void job_list_split(const JobList &self, af::reflection_table data) {
-    using dxtbx::af::flex_table_suite::setitem_column;
-
     // Check the input
     DIALS_ASSERT(data.is_consistent());
     DIALS_ASSERT(data.contains("bbox"));
