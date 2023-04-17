@@ -594,7 +594,7 @@ namespace dials { namespace algorithms {
       /* } */
 
       // Set the result
-      set_selected_rows_index(data_, ind, result);
+      dxtbx::af::flex_table_suite::set_selected_rows_index(data_, ind, result);
 
       // Set finished flag
       finished_[index] = true;
