@@ -3,6 +3,9 @@ from __future__ import annotations
 import logging
 import math
 
+from scipy.integrate import trapezoid
+
+from dxtbx import flumpy
 from scitbx.matrix import col, sqr
 
 from dials.algorithms.indexing import DialsIndexError
@@ -152,9 +155,16 @@ class NaveParameters:
                 plt.show()
                 plt.close()
 
-            from xfel.mono_simulation.util import green_curve_area
-
-            self.green_curve_area = green_curve_area(two_thetas, tan_outer_deg_ML)
+            # from xfel.mono_simulation.util import green_curve_area
+            # Calculate the 'green curve area' i.e. the area under the green curve in
+            # Sauter et al. 2014, Acta Cryst D 70, 3299-3309.
+            # Ported from xfel.mono_simulation.util to remove xfel dependency.
+            order = flex.sort_permutation(two_thetas)
+            ordered_two_theta = flumpy.to_numpy(two_thetas.select(order))
+            ordered_deltaphi = flumpy.to_numpy(tan_outer_deg_ML.select(order))
+            self.green_curve_area = 2.0 * trapezoid(
+                ordered_deltaphi, ordered_two_theta
+            )  # factor 2 as area between +- curves
             logger.info("The green curve area is %s", self.green_curve_area)
 
             crystal.set_half_mosaicity_deg(M.x[1] * 180.0 / (2.0 * math.pi))
