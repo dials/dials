@@ -9,6 +9,7 @@ from dxtbx import flumpy
 from scitbx.matrix import col, sqr
 
 from dials.algorithms.indexing import DialsIndexError
+from dials.algorithms.indexing.nave_mosaicity_minimizer import minimizer
 from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
@@ -97,8 +98,6 @@ class NaveParameters:
                 2 * k_degrees,
                 k_degrees,
             )
-
-            from xfel.mono_simulation.max_like import minimizer
 
             # coerce the estimates to be positive for max-likelihood
             lower_limit_domain_size = (
