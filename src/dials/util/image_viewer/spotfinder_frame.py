@@ -112,7 +112,13 @@ class RadialProfileThresholdDebug:
 
 
 def calculate_isoresolution_lines(
-    spacings, beam, detector, flex_image, add_text=True, n_rays=720
+    spacings,
+    beam,
+    detector,
+    flex_image,
+    add_text=True,
+    n_rays=720,
+    binning=1,
 ):
 
     # Calculate 2θ angles
@@ -171,7 +177,7 @@ def calculate_isoresolution_lines(
             except AttributeError:
                 # Single panel FlexImage
                 pass
-            vertices.append((x, y))
+            vertices.append((x / binning, y / binning))
         paths.append(vertices)
 
         # For each path, convert vertices to segments and add to the ring data
@@ -208,8 +214,8 @@ def calculate_isoresolution_lines(
                     x, y = txtpos
                 resolution_text_data.append(
                     (
-                        x,
-                        y,
+                        x / binning,
+                        y / binning,
                         f"{d:.2f}",
                     )
                 )
