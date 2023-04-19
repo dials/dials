@@ -245,14 +245,21 @@ def imageset_as_bitmaps(imageset, params):
                 [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
             )
             segments, res_labels = calculate_isoresolution_lines(
-                spacings, beam, detector, flex_image
+                spacings,
+                beam,
+                detector,
+                flex_image,
+                binning=binning,
             )
             draw = ImageDraw.Draw(pil_img)
             for segment in segments:
                 draw.line(segment, fill="red", width=2)
             try:
+                import math
+
                 font = ImageFont.truetype(
-                    "arial.ttf", size=params.resolution_rings.fontsize
+                    "arial.ttf",
+                    size=math.ceil(params.resolution_rings.fontsize / binning**0.5),
                 )
             except OSError:
                 # Revert to default bitmap font if we must, but fontsize will not work
