@@ -95,7 +95,7 @@ class NaveParameters:
                 k_degrees,
             )
 
-            from xfel.mono_simulation.max_like import minimizer
+            from serialtbx.mono_simulation.max_like import minimizer
 
             # coerce the estimates to be positive for max-likelihood
             lower_limit_domain_size = (
