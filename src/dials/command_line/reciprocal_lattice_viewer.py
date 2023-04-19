@@ -60,7 +60,7 @@ def run(args=None):
 
     reflections = reflections[0]
 
-    a = wxtbx.app.CCTBXApp(0, gtk_suppress_diagnostics=True)
+    a = wxtbx.app.CCTBXApp(0)
     a.settings = params
     f = ReciprocalLatticeViewer(
         None,
