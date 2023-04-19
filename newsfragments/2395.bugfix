@@ -1,0 +1,1 @@
+Revert GTK-message-supression change that was causing ``reciprocal_lattice_viewer`` errors.
