@@ -5,7 +5,8 @@ from rstbx.sublattice_support.change_basis import sublattice_change_of_basis
 # for debug: from cctbx.crystal_orientation import crystal_orientation
 from cctbx.miller import set as miller_set
 from cctbx.crystal import symmetry
-import copy, logging
+import copy
+import logging
 from dials.array_family import flex
 from dials.algorithms.indexing.stills_indexer import calc_2D_rmsd_and_displacements
 
