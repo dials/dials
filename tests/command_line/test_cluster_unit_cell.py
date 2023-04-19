@@ -15,7 +15,6 @@ from dials.command_line import cluster_unit_cell
 
 def test_dials_cluster_unit_cell_command_line(dials_data, tmp_path):
     pytest.importorskip("scipy")
-    pytest.importorskip("xfel")
 
     data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
     experiments = sorted(data_dir.glob("sweep_*_experiments.json"))
@@ -31,7 +30,6 @@ def test_dials_cluster_unit_cell_command_line(dials_data, tmp_path):
 
 def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path):
     pytest.importorskip("scipy")
-    pytest.importorskip("xfel")
 
     data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
     experiments = sorted(data_dir.glob("sweep_*_experiments.json"))
@@ -107,7 +105,6 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path)
 
 def test_cluster_unit_cell_api(dials_data):
     pytest.importorskip("scipy")
-    pytest.importorskip("xfel")
 
     data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
     experiments = ExperimentList(
