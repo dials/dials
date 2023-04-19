@@ -1003,9 +1003,9 @@ class Processor:
         if not self.params.mp.debug.output_debug_logs:
             return
 
-        from xfel.cxi.cspad_ana import cspad_tbx  # XXX move to common timestamp format
+        from stillstbx import util  # XXX move to common timestamp format
 
-        ts = cspad_tbx.evt_timestamp()  # Now
+        ts = util.timestamp()  # Now
         debug_file_handle = open(self.debug_file_path, "a")
         if string == "":
             debug_file_handle.write("\n")
