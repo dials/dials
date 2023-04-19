@@ -1406,7 +1406,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     )
 
         if self.params.dispatch.coset:
-            from xfel.util.sublattice_helper import integrate_coset
+            from dials.algorithms.integration.sublattice_helper import integrate_coset
 
             integrate_coset(self, experiments, indexed)
 
