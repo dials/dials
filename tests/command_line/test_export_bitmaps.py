@@ -7,18 +7,23 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    "show_resolution_rings",
+    "show_resolution_rings,show_ice_rings",
     [
-        False,
-        True,
+        (False, False),
+        (True, False),
+        (False, True),
+        (True, True),
     ],
 )
-def test_export_single_bitmap(dials_data, tmp_path, show_resolution_rings):
+def test_export_single_bitmap(
+    dials_data, tmp_path, show_resolution_rings, show_ice_rings
+):
     result = procrunner.run(
         [
             "dials.export_bitmaps",
             dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf",
             f"resolution_rings.show={show_resolution_rings}",
+            f"ice_rings.show={show_ice_rings}",
         ],
         working_directory=tmp_path,
     )
