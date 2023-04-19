@@ -1603,7 +1603,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             return
 
         if self.params.output.integration_pickle is not None:
-            from xfel.command_line.frame_extractor import ConstructFrame
+            from serialtbx.util.construct_frame import ConstructFrame
 
             # Split everything into separate experiments for pickling
             for e_number, experiment in enumerate(experiments):
