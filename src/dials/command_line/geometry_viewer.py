@@ -660,7 +660,7 @@ def run(args=None):
 
     import wxtbx.app
 
-    a = wxtbx.app.CCTBXApp(0, gtk_suppress_diagnostics=True)
+    a = wxtbx.app.CCTBXApp(0)
     a.settings = params
     f = ExperimentViewer(None, -1, "Experiment viewer", size=(1024, 768))
     f.load_imageset(imageset, crystal=crystal)

@@ -1,3 +1,13 @@
+DIALS 3.14.1 (2023-04-20)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.export_bitmaps``: Correctly scale resolution rings with image ``binning=`` set. (`#2392 <https://github.com/dials/dials/issues/2392>`_)
+- Revert GTK-message-supression change that was causing ``reciprocal_lattice_viewer`` errors. (`#2395 <https://github.com/dials/dials/issues/2395>`_)
+
+
 DIALS 3.14.0 (2023-04-12)
 =========================
 
