@@ -287,7 +287,7 @@ def imageset_as_bitmaps(imageset, params):
 
             if params.resolution_rings.show:
                 n_rings = params.resolution_rings.number
-                step = d_star_sq_max / n_rings
+                step = d_star_sq_max / (n_rings + 1)
                 spacings = flex.double(
                     [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
                 )
