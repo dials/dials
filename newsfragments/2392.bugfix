@@ -1,1 +1,0 @@
-``dials.export_bitmaps``: Correctly scale resolution rings with image ``binning=`` set. 
