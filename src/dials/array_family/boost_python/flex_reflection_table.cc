@@ -947,7 +947,7 @@ namespace dials { namespace af { namespace boost_python {
              &reflection_table_suite::select_using_experiment<flex_table_type>)
         .def("select",
              &reflection_table_suite::select_using_experiments<flex_table_type>)
-        .def("__getitem__", &flex_table_suite::getitem_slice<flex_table_type>)
+        .def("__getitem__", &reflection_table_suite::getitem_slice<flex_table_type>)
         .def("extend", &reflection_table_suite::extend<flex_table_type>)
         .def("update", &reflection_table_suite::update<flex_table_type>)
         .def("__deepcopy__", &reflection_table_suite::deepcopy<flex_table_type>)
