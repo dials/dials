@@ -64,7 +64,6 @@ output.composite_output = True
 """
 
 
-@pytest.mark.xfel
 @pytest.mark.parametrize("composite_output", [True, False])
 def test_cspad_cbf_in_memory(dials_regression, tmp_path, composite_output):
     # Check the data files for this test exist
@@ -117,7 +116,6 @@ def test_cspad_cbf_in_memory(dials_regression, tmp_path, composite_output):
     assert (table["id"] == 0).count(False) == 0
 
 
-@pytest.mark.xfel
 @pytest.mark.parametrize(
     "control_flags",
     [
@@ -240,7 +238,6 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
         )
 
 
-@pytest.mark.xfel
 def test_pseudo_scan(dials_data, tmp_path):
     result = procrunner.run(
         (
