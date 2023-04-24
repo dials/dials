@@ -1003,9 +1003,9 @@ class Processor:
         if not self.params.mp.debug.output_debug_logs:
             return
 
-        from stillstbx import util  # XXX move to common timestamp format
+        from serialtbx.util.time import timestamp  # XXX move to common timestamp format
 
-        ts = util.timestamp()  # Now
+        ts = timestamp()  # Now
         debug_file_handle = open(self.debug_file_path, "a")
         if string == "":
             debug_file_handle.write("\n")
