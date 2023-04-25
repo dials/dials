@@ -305,9 +305,17 @@ grouping:
     indices2 = [expt.imageset.indices()[0] for expt in expts2]
     assert indices2 == expected_group2_file1
 
-    # Check writing the group ids to the file
-    handler.write_groupids_into_files(fps)
-    refls = flex.reflection_table.from_file(fps[0].refl)
+    # Check writing the group ids to the file. Don't overwrite dials_data files though
+    fps_copy = [
+        FilePair(
+            tmp_path / "tmp.expt",
+            tmp_path / "tmp.refl",
+        )
+    ]
+    shutil.copy(fps[0].refl, fps_copy[0].refl)
+    shutil.copy(fps[0].expt, fps_copy[0].expt)
+    handler.write_groupids_into_files(fps_copy)
+    refls = flex.reflection_table.from_file(fps_copy[0].refl)
     assert set(refls["id"]) == set(range(19))
     sel = flex.bool(refls.size(), False)
     for id_ in ids_group1_file1:
@@ -517,9 +525,18 @@ grouping:
     assert len(expts3) == 1
     assert expts3[0].imageset.get_path(0).split("_")[-1] == "17004.cbf"
 
-    handler.write_groupids_into_files(fps)
+    # Check writing the group ids to the file. Don't overwrite dials_data files though
+    fps_copy = [
+        FilePair(
+            tmp_path / "tmp2.expt",
+            tmp_path / "tmp2.refl",
+        )
+    ]
+    shutil.copy(fps[0].refl, fps_copy[0].refl)
+    shutil.copy(fps[0].expt, fps_copy[0].expt)
+    handler.write_groupids_into_files(fps_copy)
 
-    refls = flex.reflection_table.from_file(fps[0].refl)
+    refls = flex.reflection_table.from_file(fps_copy[0].refl)
     assert set(refls["id"]) == {0, 1, 2, 3, 4}
     sel0 = refls["id"] == 0
     sel1 = refls["id"] == 1
