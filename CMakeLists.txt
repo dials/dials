@@ -17,8 +17,14 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 find_package(CCTBX COMPONENTS cctbx scitbx ccp4io annlib REQUIRED)
 find_package(DXTBX REQUIRED)
-find_package(msgpack REQUIRED)
 find_package(OpenMP)
+# Handle msgpack.. between versions 3 and 6, split into separate packages.
+# While we still support both, look for both names
+find_package(msgpack-cxx REQUIRED NAMES msgpack-cxx msgpack)
+if (TARGET msgpackc AND NOT TARGET msgpack-cxx)
+    # If the old version of the library, let us refer to the new name
+    add_library(msgpack-cxx ALIAS msgpackc)
+endif()
 
 # Find the boost::python library for this version of python
 set(Boost_USE_STATIC_LIBS OFF) # This is the default everywhere except Windows
