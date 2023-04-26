@@ -59,6 +59,7 @@ def slice_reflections(reflections, image_ranges):
     reflections = copy.deepcopy(reflections)
 
     to_keep = flex.size_t()
+    eps = 1e-7
     for iexp, sr in enumerate(image_ranges):
 
         if sr is None:
@@ -66,8 +67,8 @@ def slice_reflections(reflections, image_ranges):
         isel = (reflections["id"] == iexp).iselection()
         frames = (reflections["xyzobs.px.value"].parts()[2]).select(isel)
         # reflns on image n have frames in range [n-1, n)
-        in_low_lim = frames >= sr[0] - 1
-        in_high_lim = frames < sr[1]
+        in_low_lim = frames - (sr[0] - 1) >= eps
+        in_high_lim = frames - sr[1] <= eps
         in_lim = in_low_lim & in_high_lim
 
         # which indices to keep?
