@@ -1,0 +1,1 @@
+Avoid writing to dials_data in test_image_grouping.py
