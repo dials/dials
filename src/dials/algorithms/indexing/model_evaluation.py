@@ -337,7 +337,6 @@ class ModelEvaluation(Strategy):
                 )
                 refiner.run()
             except (RuntimeError, ValueError):
-                raise
                 return
             else:
                 rmsds = refiner.rmsds()
