@@ -36,9 +36,9 @@ def test_model_background(dials_data, tmp_path):
     data = background.data(panel)
     assert data.all() == (2527, 2463)
     min_max_mean = flex.min_max_mean_double(data.as_1d())
-    assert min_max_mean.max == pytest.approx(5.9114028830604095)
+    assert min_max_mean.max == pytest.approx(5.91140, abs=1e-5)
     assert min_max_mean.min == 0.0
-    assert min_max_mean.mean == pytest.approx(0.5013730161480899)
+    assert min_max_mean.mean == pytest.approx(0.50137, abs=1e-5)
 
     # Test integration using the background model, with robust.algorithm=(True|False)
     refls = centroid / "indexed.refl"

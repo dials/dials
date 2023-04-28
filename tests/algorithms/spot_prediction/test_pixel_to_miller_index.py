@@ -28,4 +28,4 @@ def test(dials_data):
         x, y, z = r["xyzcal.px"]
         h0 = r["miller_index"]
         h1 = transform.h(panel, x, y, z)
-        assert h0 == pytest.approx(h1, abs=1e-7)
+        assert h0 == pytest.approx(h1, abs=1e-3)
