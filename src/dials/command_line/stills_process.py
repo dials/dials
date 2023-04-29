@@ -16,6 +16,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+import libtbx
 from libtbx.phil import parse
 from libtbx.utils import Abort, Sorry
 
@@ -68,6 +69,11 @@ def _control_phil_str():
       .expert_level = 2
       .help = If True, before processing import all the data. Needed only if processing \
               multiple multi-image files at once (not a recommended use case)
+    image_mode = *Auto single multi
+      .type = choice
+      .help = Whether to treat input files as container files (multi, like HDF5) or as \
+              single image files (like SMV). If Auto, the first image will be loaded \
+              and tested to see if it is a container file.
     process_percent = None
       .type = int(value_min=1, value_max=100)
       .help = Percent of events to process
@@ -433,16 +439,12 @@ class Script:
     def run(self, args=None):
         """Execute the script."""
         from libtbx import easy_mp
+        from libtbx.mpi4py import MPI  # thin wrapper
 
-        try:
-            from mpi4py import MPI
-        except ImportError:
-            rank = 0
-            size = 1
-        else:
-            comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
-            size = comm.Get_size()  # size: number of processes running in this job
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
+        size = comm.Get_size()  # size: number of processes running in this job
+        # if no mpi, rank = 0 and size = 1
 
         if rank == 0:
             # Parse the command line
@@ -560,7 +562,6 @@ class Script:
             log.config(verbosity=options.verbose, logfile=logfile)
 
         else:
-
             # Configure logging
             log.config(verbosity=options.verbose, logfile="dials.process.log")
 
@@ -598,45 +599,43 @@ class Script:
 
         # Import stuff
         logger.info("Loading files...")
-        pre_import = params.dispatch.pre_import or len(all_paths) == 1
-        if pre_import:
+
+        if params.dispatch.pre_import:
+            logger.warning("pre_import is deprecated.")
+
+        all_paths = list(sorted(all_paths))
+        if (
+            params.dispatch.image_mode is libtbx.Auto
+            or params.dispatch.image_mode.lower() == "auto"
+        ):
+            if rank == 0:
+                experiments = do_import(all_paths[0], load_models=False)
+                if len(experiments) > 1:
+                    params.dispatch.image_mode = "multi"
+                else:
+                    params.dispatch.image_mode = "single"
+            params.dispatch.image_mode = comm.bcast(params.dispatch.image_mode)
+
+        basenames_counts = collections.defaultdict(int)
+        basenames = []
+        for filename in all_paths:
+            basename = os.path.splitext(os.path.basename(filename))[0]
+            basenames_counts[basename] += 1
+            basenames.append(basename)
+        all_tags = []
+        counts = {t: 0 for t in basenames_counts}
+        for basename in basenames:
+            if basenames_counts[basename] > 1:
+                tag = "%s_%05d" % (basename, counts[basename])
+                counts[basename] += 1
+            else:
+                tag = basename
+            all_tags.append(tag)
+
+        if params.dispatch.image_mode == "multi":
             # Handle still imagesets by breaking them apart into multiple experiments
             # Further handle single file still imagesets (like HDF5) by tagging each
             # frame using its index
-
-            experiments = ExperimentList()
-            for path in sorted(all_paths):
-                experiments.extend(do_import(path, load_models=False))
-
-            indices = []
-            basenames = []
-            basename_counts = {}
-            split_experiments = []
-            for i, imageset in enumerate(experiments.imagesets()):
-                assert len(imageset) == 1
-                paths = imageset.paths()
-                indices.append(i)
-                basename = os.path.splitext(os.path.basename(paths[0]))[0]
-                basenames.append(basename)
-                if basename in basename_counts:
-                    basename_counts[basename] += 1
-                else:
-                    basename_counts[basename] = 1
-                split_experiments.append(experiments[i : i + 1])
-            tags = []
-            split_experiments2 = []
-            for i, basename in zip(indices, basenames):
-                if basename_counts[basename] > 1:
-                    tag = "%s_%05d" % (basename, i)
-                else:
-                    tag = basename
-                if (
-                    not self.params.input.image_tag
-                    or tag in self.params.input.image_tag
-                ):
-                    tags.append(tag)
-                    split_experiments2.append(split_experiments[i])
-            split_experiments = split_experiments2
 
             # Wrapper function
             def do_work(i, item_list, processor=None, finalize=True):
@@ -645,12 +644,17 @@ class Script:
                         copy.deepcopy(params), composite_tag="%04d" % i, rank=i
                     )
 
-                for item in item_list:
-                    tag = item[0]
-                    experiments = split_experiments[item[1]]
+                for tag, filename, item_num in item_list:
+                    if not (
+                        processor.current_experiments
+                        and item_num < len(processor.current_experiments)
+                        and processor.current_experiments[item_num].imageset.paths()[0] == filename
+                    ):
+                        processor.current_experiments = do_import(filename, load_models=False)
+                    experiments = processor.current_experiments
+                    expts = experiments[item_num : item_num + 1]
                     try:
-                        assert len(experiments) == 1
-                        experiment = experiments[0]
+                        experiment = expts[0]
                         experiment.load_models()
                         imageset = experiment.imageset
                         update_geometry(imageset)
@@ -661,7 +665,7 @@ class Script:
                         continue
 
                     if self.reference_detector is not None:
-                        experiment = experiments[0]
+                        experiment = expts[0]
                         if self.params.input.sync_reference_geom:
                             imageset = experiment.imageset
                             sync_geometry(
@@ -672,35 +676,13 @@ class Script:
                         else:
                             experiment.detector = copy.deepcopy(self.reference_detector)
 
-                    processor.process_experiments(tag, experiments)
+                    processor.process_experiments(tag, expts)
                     imageset.clear_cache()
                 if finalize:
                     processor.finalize()
                 return processor
 
-            iterable = list(zip(tags, range(len(split_experiments))))
-
         else:
-            basenames = collections.defaultdict(int)
-            sorted_paths = sorted(all_paths)
-            for filename in sorted_paths:
-                basename = os.path.splitext(os.path.basename(filename))[0]
-                basenames[basename] += 1
-            tags = []
-            all_paths2 = []
-            for i, (basename, count) in enumerate(basenames.items()):
-                if count > 1:
-                    tag = "%s_%05d" % (basename, i)
-                else:
-                    tag = basename
-                if (
-                    not self.params.input.image_tag
-                    or tag in self.params.input.image_tag
-                ):
-                    tags.append(tag)
-                    all_paths2.append(sorted_paths[i])
-            all_paths = all_paths2
-
             # Wrapper function
             def do_work(i, item_list, processor=None, finalize=True):
                 if not processor:
@@ -719,7 +701,7 @@ class Script:
                         raise Abort(f"Found more than one imageset in file: {filename}")
                     if len(imagesets[0]) > 1:
                         raise Abort(
-                            "Found a multi-image file. Run again with pre_import=True"
+                            "Found a multi-image file. Run again with image_mode=multi"
                         )
 
                     try:
@@ -749,16 +731,17 @@ class Script:
                     processor.finalize()
                 return processor
 
-            iterable = list(zip(tags, all_paths))
+        iterable = list(zip(all_tags, all_paths))
 
-        if params.input.max_images:
+        if params.input.max_images and params.dispatch.image_mode == "single":
             iterable = iterable[: params.input.max_images]
 
         if params.input.show_image_tags:
             print("Showing image tags for this dataset and exiting")
-            for tag, item in iterable:
-                print(tag)
-            return
+            if params.dispatch.image_mode == "single":
+                for tag, item in iterable:
+                    print(tag)
+                return
 
         # prepare fractions of process_percent, if given
         process_fractions = None
@@ -789,19 +772,47 @@ class Script:
 
                 if rank == 0:
                     # server process
-                    num_iter = len(iterable)
-                    for item_num, item in enumerate(iterable):
-                        print(
-                            "Processing %d / %d shots" % (item_num, num_iter),
-                            flush=True,
-                        )
-                        if process_fractions and not process_this_event(item_num):
-                            continue
-
+                    def sendit(item):
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
                         print(f"Process {rankreq} is ready, sending {item[0]}\n")
                         comm.send(item, dest=rankreq)
+
+                    if params.dispatch.image_mode == "multi":
+                        count = 0
+                        for filetag, filename in iterable:
+                            experiments = do_import(filename, load_models=False)
+                            for item_num in range(len(experiments)):
+                                tag = filetag + "_%05d" % item_num
+                                if process_fractions and not process_this_event(
+                                    item_num + count
+                                ):
+                                    continue
+                                if (
+                                    params.input.max_images
+                                    and item_num + count >= params.input.max_images
+                                ):
+                                    continue
+                                if params.input.show_image_tags:
+                                    print(tag)
+                                    continue
+                                print(
+                                    "Processing %s, %d / %d shots"
+                                    % (tag, item_num, len(experiments)),
+                                    flush=True,
+                                )
+                                sendit((tag, filename, item_num))
+                            count += len(experiments)
+                    else:
+                        num_iter = len(iterable)
+                        for item_num, item in enumerate(iterable):
+                            print(
+                                "Processing %d / %d shots" % (item_num, num_iter),
+                                flush=True,
+                            )
+                            if process_fractions and not process_this_event(item_num):
+                                continue
+                            sendit(item)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
                     for rankreq in range(size - 1):
@@ -829,6 +840,7 @@ class Script:
                                 "Rank %d unhandled exception processing event" % rank,
                                 str(e),
                             )
+                            raise
                         print("Rank %d event processed" % rank)
                 processor.finalize()
         else:
@@ -871,6 +883,7 @@ class Processor:
     def __init__(self, params, composite_tag=None, rank=0):
         self.params = params
         self.composite_tag = composite_tag
+        self.current_experiments = None # used as a cache
 
         # The convention is to put %s in the phil parameter to add a tag to
         # each output datafile. Save the initial templates here.
@@ -1016,7 +1029,6 @@ class Processor:
         debug_file_handle.close()
 
     def process_experiments(self, tag, experiments):
-
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
         self.tag = tag
@@ -1377,7 +1389,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             # Dump experiments to disk
             if self.params.output.refined_experiments_filename:
-
                 experiments.as_json(self.params.output.refined_experiments_filename)
 
             if self.params.output.indexed_filename:
@@ -1542,7 +1553,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             # Dump experiments to disk
             if self.params.output.integrated_experiments_filename:
-
                 experiments.as_json(self.params.output.integrated_experiments_filename)
 
             if self.params.output.integrated_filename:
@@ -1830,7 +1840,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_imported_experiments) > 0
                 and self.params.output.experiments_filename
             ):
-
                 self.all_imported_experiments.as_json(
                     self.params.output.experiments_filename
                 )
@@ -1847,7 +1856,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_indexed_experiments) > 0
                 and self.params.output.refined_experiments_filename
             ):
-
                 self.all_indexed_experiments.as_json(
                     self.params.output.refined_experiments_filename
                 )
@@ -1864,7 +1872,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_integrated_experiments) > 0
                 and self.params.output.integrated_experiments_filename
             ):
-
                 self.all_integrated_experiments.as_json(
                     self.params.output.integrated_experiments_filename
                 )
@@ -1883,7 +1890,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     len(self.all_coset_experiments) > 0
                     and self.params.output.coset_experiments_filename
                 ):
-
                     self.all_coset_experiments.as_json(
                         self.params.output.coset_experiments_filename
                     )
