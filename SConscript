@@ -13,7 +13,7 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
     env = env_no_includes_boost_python_ext.Clone()
     env_etc.enable_more_warnings(env=env)
 
-    system_includes = [x for x in env_etc.conda_cpppath if x]
+    system_includes = [x for x in env_etc.conda_cpppath if x] if libtbx.env.build_options.use_conda else []
     system_includes.append(str(Path(env_etc.scitbx_dist).parent))
     env.Append(CXXFLAGS=[f"-isystem{x}" for x in system_includes])
     env.Append(SHCXXFLAGS=[f"-isystem{x}" for x in system_includes])
@@ -30,6 +30,11 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         env_etc.dxtbx_include,
         env_etc.dials_include,
     ]
+
+    # Handle no-conda builds that pull msgpack as a 'hot' package from bootstrap
+    msgpack = os.path.join(os.path.dirname(libtbx.env.dist_path("dials")), "msgpack-3.1.1", "include")
+    if os.path.exists(str(msgpack)):
+        include_paths.append(msgpack)
 
     if libtbx.env.build_options.use_conda:
         boost_python = get_boost_library_with_python_version(
