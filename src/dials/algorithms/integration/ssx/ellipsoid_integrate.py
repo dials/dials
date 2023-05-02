@@ -41,6 +41,14 @@ class EllipsoidOutputCollector(OutputCollector):
         # also record some model info:
         self.data["profile_model"] = experiment.profile.to_dict()
         self.data["profile_model_mosaicity"] = experiment.profile.mosaicity()
+        if not "likelihood" in self.data:
+            self.data["likelihood"] = []
+        if not "parameters" in self.data:
+            self.data["parameters"] = []
+        lh_this_cycle = [i["likelihood"] for d in refiner_output for i in d]
+        parameters_per_cycle = [i["parameters"] for d in refiner_output for i in d]
+        self.data["likelihood"].append(lh_this_cycle)
+        self.data["parameters"].append(parameters_per_cycle)
 
     def collect_after_preprocess(self, experiment, reflection_table):
         self.data["n_strong_after_preprocess"] = reflection_table.size()

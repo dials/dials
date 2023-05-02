@@ -763,10 +763,10 @@ class ReflectionModelState(object):
             self._r = np.matmul(A, self._h)
         if not self.state.is_wavelength_spread_fixed:
             self._recalc_sigma_lambda()
-        # if not self.state.is_mosaic_spread_fixed:
-        self._recalc_sigma()
-        if self.state.is_mosaic_spread_angular:
-            self._calc_dQ_dp()
+        if not self.state.is_mosaic_spread_fixed:
+            self._recalc_sigma()
+        # if self.state.is_mosaic_spread_angular:
+        #    self._calc_dQ_dp()
 
         # Compute derivatives w.r.t U parameters
         n_tot = 0
@@ -801,7 +801,7 @@ class ReflectionModelState(object):
                     dM_dp, axes=(1, 2, 0)
                 )
             n_tot += n_M_params
-        if state.is_mosaic_spread_angular:
+        """if state.is_mosaic_spread_angular:
             n_UB_params = n_B_params + n_U_params
             if n_UB_params:
                 M = self.state.mosaicity_covariance_matrix
@@ -811,7 +811,7 @@ class ReflectionModelState(object):
                 )
                 self._ds_dp[:, :, :n_UB_params] += np.einsum(
                     "ji,jk,klm->ilm", self._Q, M, self._dQ_dp
-                )
+                )"""
         # Compute derivatives   w.r.t L parameters
         if not state.is_wavelength_spread_fixed:
             self._dl_dp[n_tot] = self.state.dL_dp[0]

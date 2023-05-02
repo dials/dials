@@ -46,8 +46,25 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
         assert tmp_path.joinpath(f"nuggets/nugget_integrated_{i}.json").is_file()
 
 
+import json
+
+expected_simple1 = {"likelihood": 171374.17402689304, "parameters": []}
+expected_simple6 = {"likelihood": 176234.85435668094, "parameters": []}
+expected_angular2 = {"likelihood": 171782.58590918835, "parameters": []}
+expected_angular4 = {"likelihood": 179074.32882385756, "parameters": []}
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
+        ("simple1", expected_simple1),
+        ("simple6", expected_simple6),
+        ("angular2", expected_angular2),
+        ("angular4", expected_angular4),
+    ],
+)
 @pytest.mark.xdist_group(name="group1")
-def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
+def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expected):
     # Download data set and the internally referenced images
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     dials_data("cunir_serial", pathlib=True)
@@ -65,7 +82,9 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
             tmp_path / "single.expt",
             "nproc=1",
             "algorithm=ellipsoid",
+            f"ellipsoid.rlp_mosaicity={model}",
             "n_macro_cycles=2",
+            f"output.history={tmp_path /'history.json'}",
         ],
         working_directory=tmp_path,
     )
@@ -75,9 +94,11 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
     assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
     expts = load.experiment_list(tmp_path / "integrated_1.expt", check_format=False)
     mosaicity = expts[0].profile.mosaicity()
-    assert mosaicity["radial"] < 0.0250 and mosaicity["radial"] > 0.0240
-    assert mosaicity["angular_0"] < 0.0265 and mosaicity["angular_0"] > 0.0255
-    assert mosaicity["angular_1"] < 0.006 and mosaicity["angular_1"] > 0.004
+    with (tmp_path / "history.json").open("r") as fh:
+        data = json.load(fh)
+        assert data["0"]["likelihood_per_iteration"][-1][-1] == pytest.approx(
+            expected["likelihood"], abs=1e-6
+        )
 
 
 @pytest.mark.parametrize("algorithm,expected_n_refls", [("stills", 614)])

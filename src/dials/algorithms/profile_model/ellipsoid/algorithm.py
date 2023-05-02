@@ -464,7 +464,7 @@ def run_ellipsoid_refinement(
             output_data["refiner_output"]["labels"] = refiner.labels()
 
         # refine the crystal
-        _ = refine_crystal(
+        refinerc = refine_crystal(
             experiments[0],
             profile,
             refiner_data,
@@ -472,6 +472,11 @@ def run_ellipsoid_refinement(
             fix_orientation=fix_orientation,
             wavelength_spread_model=wavelength_model,
         )
+        if capture_progress:
+            # Save some data for plotting later.
+            output_data["refiner_output"]["history"].append(refinerc.history)
+            output_data["refiner_output"]["correlation"] = refinerc.correlation()
+            output_data["refiner_output"]["labels"] = refinerc.labels()
 
     experiments[0].profile = profile
 
