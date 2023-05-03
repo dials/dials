@@ -50,7 +50,7 @@ steps:
     git clone https://github.com/toastisme/dxtbx ./modules/dxtbx
     cd ./modules/dxtbx 
     git checkout add_properties_to_scan
-    cd -
+    cd ../../
     call activate conda_base/
     mkdir build_dxtbx
     cd build_dxtbx
