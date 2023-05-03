@@ -96,7 +96,7 @@ stages:
       matrix:
         python38:
           PYTHON_VERSION: 3.8
-    timeoutInMinutes: 150
+    timeoutInMinutes: 250
     steps:
     - template: unix-build.yml
       parameters:

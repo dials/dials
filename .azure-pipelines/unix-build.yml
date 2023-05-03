@@ -45,7 +45,8 @@ steps:
 # Build DIALS using the bootstrap script
 - bash: |
     set -eux
-    python modules/dials/installer/bootstrap.py build
+    export CXXFLAGS="-isystem$(Pipeline.Workspace)/conda_base ${CXXFLAGS:-}"
+    python modules/dials/installer/bootstrap.py build --config-flags=--use_environment_flags
   displayName: DIALS build
   workingDirectory: $(Pipeline.Workspace)
 
@@ -90,6 +91,8 @@ steps:
     set -ux
     export DIALS_DATA=${PWD}/data
     export PYTHONDEVMODE=1
+    # A conflict between new setuptools and matplotlib causes test failures due to warnings in subprocesses
+    export PYTHONWARNINGS='ignore:pkg_resources is deprecated as an API:DeprecationWarning,ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning'
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 --dist loadgroup\
         --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \

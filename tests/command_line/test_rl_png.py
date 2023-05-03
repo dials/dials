@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 import procrunner
 
 
@@ -26,10 +24,10 @@ def test_rl_png_imported_experiments(dials_data, tmp_path):
         assert tmp_path.joinpath(f"rl_{s}.png").is_file()
 
 
-def test_rl_png_refinement_data(dials_regression, tmp_path):
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
-    experiments_path = os.path.join(data_dir, "experiments.json")
-    indexed_pickle = os.path.join(data_dir, "indexed_strong.pickle")
+def test_rl_png_refinement_data(dials_data, tmp_path):
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "i04-weak.json"
+    indexed_pickle = data_dir / "i04-weak.pickle"
 
     result = procrunner.run(
         ["dials.rl_png", experiments_path, indexed_pickle], working_directory=tmp_path

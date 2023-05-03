@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 import iotbx.phil
+from cctbx import miller, uctbx
 from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 
 from dials.algorithms.image.threshold import DispersionThresholdDebug
@@ -15,6 +16,7 @@ from dials.util.image_viewer.slip_viewer.flex_image import (
     get_flex_image,
     get_flex_image_multipanel,
 )
+from dials.util.image_viewer.spotfinder_frame import calculate_isoresolution_lines
 from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
@@ -71,6 +73,36 @@ saturation = 0
   .type = int
 show_mask = False
   .type = bool
+resolution_rings {
+  show = False
+    .type = bool
+  number = 5
+    .type = int(value_min=1)
+  fontsize = 30
+    .type = int
+    .optional = True
+  fill = red
+    .type = str
+    .help = "Colour of the resolution rings and labels"
+}
+ice_rings {
+  show = False
+    .type = bool
+  fontsize = None
+    .type = int
+    .optional = True
+  unit_cell = 4.498,4.498,7.338,90,90,120
+    .type = unit_cell
+    .help = "The unit cell to generate d_spacings for powder rings."
+    .expert_level = 1
+  space_group = 194
+    .type = space_group
+    .help = "The space group used to generate d_spacings for powder rings."
+    .expert_level = 1
+  fill = blue
+    .type = str
+    .help = "Colour of the ice rings and labels"
+}
 png {
   compress_level = 1
     .type = int(value_min=0, value_max=9)
@@ -222,6 +254,61 @@ def imageset_as_bitmaps(imageset, params):
         pil_img = Image.frombytes(
             "RGB", (flex_image.ex_size2(), flex_image.ex_size1()), flex_image.as_bytes()
         )
+
+        def draw_resolution_rings(spacings, fill: str, fontsize: int | None):
+            segments, res_labels = calculate_isoresolution_lines(
+                spacings,
+                imageset.get_beam(),
+                detector,
+                flex_image,
+                binning=binning,
+            )
+            draw = ImageDraw.Draw(pil_img)
+            for segment in segments:
+                draw.line(segment, fill=fill, width=2)
+            if fontsize:
+                try:
+                    import math
+
+                    font = ImageFont.truetype(
+                        "arial.ttf",
+                        size=math.ceil(fontsize / binning**0.5),
+                    )
+                except OSError:
+                    # Revert to default bitmap font if we must, but fontsize will not work
+                    font = ImageFont.load_default()
+                for x, y, label in res_labels:
+                    draw.text((x, y), label, fill=fill, font=font)
+
+        if params.resolution_rings.show or params.ice_rings.show:
+            beam = imageset.get_beam()
+            d_min = detector.get_max_resolution(beam.get_s0())
+            d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
+
+            if params.resolution_rings.show:
+                n_rings = params.resolution_rings.number
+                step = d_star_sq_max / (n_rings + 1)
+                spacings = flex.double(
+                    [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
+                )
+                draw_resolution_rings(
+                    spacings,
+                    params.resolution_rings.fill,
+                    params.resolution_rings.fontsize,
+                )
+
+            if params.ice_rings.show:
+                space_group = params.ice_rings.space_group.group()
+                unit_cell = space_group.average_unit_cell(params.ice_rings.unit_cell)
+                generator = miller.index_generator(
+                    unit_cell, space_group.type(), False, d_min
+                )
+                indices = generator.to_array()
+                spacings = flex.sorted(unit_cell.d(indices))
+                draw_resolution_rings(
+                    spacings, params.ice_rings.fill, params.ice_rings.fontsize
+                )
+
         if params.output.file:
             path = os.path.join(output_dir, params.output.file)
         else:

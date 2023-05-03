@@ -47,6 +47,10 @@ from scitbx.array_family import flex
 
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
+from dials.pychef.damage_series import (
+    generate_damage_series,
+    generate_damage_series_mtz,
+)
 from dials.util import log, resolution_analysis, show_mail_handle_errors
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
@@ -81,6 +85,11 @@ dose {
                 "automatically adjusted to account for previously accumulated dose."
     }
 }
+damage_series {
+    dose_group_size = 0.0
+        .type = float(value_min=0.0)
+        .help = "Dose group size to split for damage series analysis and output"
+}
 output {
     log = "dials.damage_analysis.log"
         .type = str
@@ -91,6 +100,14 @@ output {
     json = None
         .type = str
         .help = "Filename for the html report data in json format."
+    damage_series = False
+        .type = bool
+        .help = "If a damage series dose group size is given, this option allows"
+                "the data from each group to be saved."
+    accumulation_series = False
+        .type = bool
+        .help = "If a damage series dose group size is given, this option allows"
+                "the data from each accumulated group to be saved."
 }
 include scope dials.pychef.phil_scope
 """,
@@ -105,8 +122,10 @@ class PychefRunner:
     def __init__(self, intensities, dose, params):
         self.params = params
         self.stats = None
+        self.damage_series_plots = None
         sel = dose >= 0
         self.intensities = intensities.select(sel)
+        self.intensities.set_info(intensities.info())
         self.dose = dose.select(sel)
         self.resolution_filter()
 
@@ -131,6 +150,7 @@ class PychefRunner:
             if self.params.d_max:
                 sel &= d_spacings <= self.params.d_max
             self.intensities = self.intensities.select(sel)
+            self.intensities.set_info(self.intensities.info())
             self.dose = self.dose.select(sel)
 
     @classmethod
@@ -164,11 +184,15 @@ class PychefRunner:
             raise KeyError("Batch array not found in mtz file")
 
         indices = mtz_object.extract_original_index_miller_indices()
-        intensities = intensities.customized_copy(indices=indices)
+        intensities = intensities.customized_copy(
+            indices=indices, info=intensities.info()
+        )
         batches = batches.customized_copy(indices=indices)
 
         if params.anomalous:
+            info = intensities.info()
             intensities = intensities.as_anomalous_array()
+            intensities.set_info(info)
             batches = batches.as_anomalous_array()
 
         if dose is None:
@@ -251,9 +275,28 @@ class PychefRunner:
         logger.debug(self.stats.scp_vs_dose_str())
         logger.debug(self.stats.rd_vs_dose_str())
 
+    def create_damage_series(self, params, experiments, reflection_table):
+        self.damage_series_plots = generate_damage_series(
+            params,
+            experiments,
+            reflection_table,
+        )
+
+    def create_damage_series_mtz(self):
+        self.damage_series_plots = generate_damage_series_mtz(
+            self.params, self.dose, self.intensities
+        )
+
     def make_html_report(self, html_filename=None, json_filename=None):
         """Generate html report from pychef stats."""
         data = {"dose_plots": self.stats.to_dict()}
+        if self.damage_series_plots:
+            data["dose_plots"].update(self.damage_series_plots.damage_series)
+            if self.damage_series_plots.accumulation_series:
+                accumul_plots = self.damage_series_plots.accumulation_series
+                for k in list(accumul_plots.keys()):
+                    accumul_plots[k + "_accumul"] = accumul_plots.pop(k)
+                data["dose_plots"].update(accumul_plots)
         if html_filename:
             logger.info("Writing html report to: %s", html_filename)
             loader = ChoiceLoader(
@@ -300,6 +343,10 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     log.config(logfile=params.output.log)
     logger.info(dials_version())
 
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil:
+        logger.info("The following parameters have been modified:\n%s", diff_phil)
+
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -332,6 +379,11 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         sys.exit(f"Error: {e}")
     else:
         script.run()
+        if params.damage_series.dose_group_size:
+            if experiments and reflections:
+                script.create_damage_series(params, experiments, reflections[0])
+            else:
+                script.create_damage_series_mtz()
         script.make_html_report(params.output.html, params.output.json)
 
 

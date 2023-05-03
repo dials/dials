@@ -59,6 +59,10 @@ class spot_wrapper:
 
         from dials.util.image_viewer.spotfinder_frame import SpotFrame
 
+        try:
+            wx.App.GTKSuppressDiagnostics(-1)
+        except AttributeError:
+            pass
         app = wx.App()
 
         self.frame = SpotFrame(

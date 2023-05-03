@@ -31,8 +31,8 @@ from functools import reduce
 
 from cctbx import crystal
 from libtbx import Auto, phil
-from libtbx.introspection import number_of_processors
 
+from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.ssx.analysis import (
     generate_html_report,
     generate_plots,
@@ -41,6 +41,7 @@ from dials.algorithms.indexing.ssx.analysis import (
 )
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
+from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -150,7 +151,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     if params.nproc is Auto:
-        params.nproc = number_of_processors(return_value_if_unknown=1)
+        params.nproc = available_cores()
 
     if params.nproc > 1:
         params.indexing.nproc = params.nproc
@@ -158,9 +159,12 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     logger.info(f"Using {params.indexing.nproc} processes for indexing")
 
     st = time.time()
-    indexed_experiments, indexed_reflections, summary_data = index(
-        experiments, reflections[0], params
-    )
+    try:
+        indexed_experiments, indexed_reflections, summary_data = index(
+            experiments, reflections[0], params
+        )
+    except DialsIndexError as e:
+        sys.exit(f"Error: {e}")
 
     summary_table = make_summary_table(summary_data)
     logger.info("\nSummary of images sucessfully indexed\n" + summary_table)

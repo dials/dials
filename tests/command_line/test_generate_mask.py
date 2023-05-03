@@ -86,8 +86,34 @@ def test_generate_mask_with_d_min_d_max(experiments_masks, tmpdir):
     experiments, masks = experiments_masks
 
     params = phil_scope.fetch().extract()
-    params.d_min = 3
-    params.d_max = 2
+    params.d_min = 2
+    params.d_max = 3
+    with tmpdir.as_cwd():
+        generate_mask(experiments, params)
+
+    assert all(tmpdir.join(mask).check() for mask in masks)
+
+
+def test_generate_mask_with_d_max_and_beam_at_pixel_centre(experiments_masks, tmpdir):
+    # https://github.com/dials/dials/issues/2322
+
+    experiments, masks = experiments_masks
+
+    params = phil_scope.fetch().extract()
+    params.d_max = 20
+
+    # Modify experiment to put beam in the centre of a pixel
+    beam = experiments[0].beam
+    panel = experiments[0].detector[0]
+    px_size = 0.1
+    panel.set_pixel_size((px_size, px_size))  # ensure this is exact
+    beam.set_s0((0, 0, -1))
+    new_origin = (-1235.5 * px_size, 1279.5 * px_size, -190)
+    panel.set_frame((1, 0, 0), (0, -1, 0), new_origin)
+    assert (panel.get_beam_centre_px(beam.get_s0())) == (1235.5, 1279.5)
+
+    params = phil_scope.fetch().extract()
+    params.d_max = 10
     with tmpdir.as_cwd():
         generate_mask(experiments, params)
 

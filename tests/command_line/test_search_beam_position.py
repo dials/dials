@@ -68,8 +68,8 @@ def test_search_multiple(run_in_tmp_path, dials_regression):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path1 = os.path.join(data_dir, "strong_P1_X6_1_0-1.pickle")
     pickle_path2 = os.path.join(data_dir, "strong_P1_X6_2_0-1.pickle")
-    experiments_path1 = os.path.join(data_dir, "datablock_P1_X6_1.json")
-    experiments_path2 = os.path.join(data_dir, "datablock_P1_X6_2.json")
+    experiments_path1 = os.path.join(data_dir, "experiments_P1_X6_1.json")
+    experiments_path2 = os.path.join(data_dir, "experiments_P1_X6_2.json")
 
     args = [experiments_path1, experiments_path2, pickle_path1, pickle_path2]
     search_beam_position.run(args)

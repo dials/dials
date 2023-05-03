@@ -9,6 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 include(SetDefaultBuildRelWithDebInfo) # Default builds to release with debug info
 include(CoverageBuildConfiguration) # Custom module to make turning coverage on easy
 include(AlwaysColourCompilation) # Always show coloured compiler output
+include(CheckCXXSymbolExists)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json
 set(CMAKE_CXX_STANDARD 14)
@@ -16,8 +17,14 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 find_package(CCTBX COMPONENTS cctbx scitbx ccp4io annlib REQUIRED)
 find_package(DXTBX REQUIRED)
-find_package(msgpack REQUIRED)
 find_package(OpenMP)
+# Handle msgpack.. between versions 3 and 6, split into separate packages.
+# While we still support both, look for both names
+find_package(msgpack-cxx REQUIRED NAMES msgpack-cxx msgpack)
+if (TARGET msgpackc AND NOT TARGET msgpack-cxx)
+    # If the old version of the library, let us refer to the new name
+    add_library(msgpack-cxx ALIAS msgpackc)
+endif()
 
 # Find the boost::python library for this version of python
 set(Boost_USE_STATIC_LIBS OFF) # This is the default everywhere except Windows
@@ -26,8 +33,16 @@ find_package(Boost COMPONENTS thread "python${Python_VERSION_MAJOR}${Python_VERS
 # Create Boost::python alias so we don't need to carry the python version around
 if(NOT TARGET Boost::python)
     add_library(Boost::python INTERFACE IMPORTED)
-    set_target_properties(Boost::python PROPERTIES
-        INTERFACE_LINK_LIBRARIES  "python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}" )
+    set_target_properties(Boost::python PROPERTIES INTERFACE_LINK_LIBRARIES Python::Module)
+endif()
+
+# Python 3.8 aliases snprintf and vsnprintf on windows. This causes failures on more
+# recent compilers. Check for this, and set the variable if the symbol is present.
+if(${Python_VERSION} VERSION_LESS "3.9" AND WIN32)
+    check_cxx_symbol_exists(snprintf cstdio HAVE_SNPRINTF)
+    if (HAVE_SNPRINTF)
+        target_compile_definitions(Python::Module INTERFACE HAVE_SNPRINTF)
+    endif()
 endif()
 
 # Put the libraries into lib/ so that we can run this in-place in a TBX install
