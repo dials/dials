@@ -47,7 +47,8 @@ steps:
 
 # Build and install dxtbx
 - script: |
-    git clone https://github.com/cctbx/dxtbx ./modules/dxtbx
+    git clone https://github.com/toastisme/dxtbx ./modules/dxtbx
+    git checkout add_properties_to_scan
     call activate conda_base/
     mkdir build_dxtbx
     cd build_dxtbx
