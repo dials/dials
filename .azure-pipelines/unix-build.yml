@@ -19,7 +19,7 @@ steps:
     set -eux
     python modules/dials/installer/bootstrap.py update
     cd modules/dxtbx 
-    git remote add toastisme git@github.com:toastisme/dxtbx.git
+    git remote add toastisme https://github.com/toastisme/dxtbx
     git fetch toastisme
     git checkout -b add_properties_to_scan toastisme/add_properties_to_scan
 
