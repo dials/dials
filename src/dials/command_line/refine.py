@@ -20,6 +20,7 @@ from __future__ import annotations
 import copy
 import logging
 import sys
+from collections import namedtuple
 
 import libtbx.phil
 from dxtbx.model.experiment_list import ExperimentList
@@ -401,9 +402,14 @@ def run_dials_refine(experiments, reflections, params):
         )
     )
 
+    RefinementSet = namedtuple(
+        "RefinementSet", ["experiments", "reflections", "params", "original_ids"]
+    )
     if len(disjoint_sets) == 1 or not params.separate_independent_sets:
         # No splitting required, this is one interdependent refinement job
-        refinement_sets = [(experiments, reflections, params)]
+        refinement_sets = [
+            RefinementSet(experiments, reflections, params, disjoint_sets[0])
+        ]
     elif crosslinks:
         # Refuse to split because there are restraints or constraints present
         logger.warning(
@@ -411,7 +417,9 @@ def run_dials_refine(experiments, reflections, params):
             "However, these will not be refined independently, because restraints "
             "or constraints may link models between the subsets."
         )
-        refinement_sets = [(experiments, reflections, params)]
+        refinement_sets = [
+            RefinementSet(experiments, reflections, params, disjoint_sets[0])
+        ]
     else:
         # If outlier rejection is meant to be done across all experiments then
         # do that once here
@@ -439,7 +447,7 @@ def run_dials_refine(experiments, reflections, params):
                 refl_one_experiment["id"] = flex.int(len(refl_one_experiment), new_id)
                 new_id += 1
                 refl.extend(refl_one_experiment)
-            refinement_sets.append((el, refl, copy.deepcopy(params)))
+            refinement_sets.append(RefinementSet(el, refl, copy.deepcopy(params), ids))
 
         # Report on independent refinement sets
         logger.info(
@@ -453,7 +461,15 @@ def run_dials_refine(experiments, reflections, params):
         logger.info(dials.util.tabulate(rows, header))
 
     refinement_results = []
-    for (experiments, reflections, params) in refinement_sets:
+    for rs in refinement_sets:
+        experiments = rs.experiments
+        reflections = rs.reflections
+        params = rs.params
+        if len(refinement_sets) > 1:
+            logger.info(
+                "\nSelected group of experiments to refine with original ids: "
+                + " ".join([str(i) for i in rs.original_ids])
+            )
         if params.n_static_macrocycles == 1:
             refiner, reflections, history = run_macrocycle(
                 params, reflections, experiments
