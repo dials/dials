@@ -11,16 +11,19 @@ have not changed format and so on.
 from __future__ import annotations
 
 import math
+import random
 
 import numpy as np
 import procrunner
 import pytest
 from annlib_ext import AnnAdaptor
 
-from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 
 from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex
+from dials.command_line.refine import _find_disjoint_sets
 
 
 def test1(dials_data, tmp_path):
@@ -286,7 +289,82 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
         assert a == pytest.approx(b, abs=1e-6)
 
 
-def test_disjoint_sets(dials_data, tmp_path):
+def test_find_disjoint_sets():
+
+    # Create some experiments with a shared Beam
+    beam = Beam()
+    shared_beam = []
+    for i in range(random.randint(1, 5)):
+        crystal = Crystal((10, 0, 0, 0, 10, 0, 0, 0, 10), "P1")
+        goniometer = Goniometer()
+        detector = Detector()
+        shared_beam.append(
+            Experiment(
+                beam=beam, goniometer=goniometer, crystal=crystal, detector=detector
+            )
+        )
+
+    # Create some experiments with a shared Crystal
+    crystal = Crystal((10, 0, 0, 0, 10, 0, 0, 0, 10), "P1")
+    shared_crystal = []
+    for i in range(random.randint(1, 5)):
+        beam = Beam()
+        goniometer = Goniometer()
+        detector = Detector()
+        shared_crystal.append(
+            Experiment(
+                beam=beam, goniometer=goniometer, crystal=crystal, detector=detector
+            )
+        )
+
+    # Create some experiments with a shared Detector
+    detector = Detector()
+    shared_detector = []
+    for i in range(random.randint(1, 5)):
+        beam = Beam()
+        crystal = Crystal((10, 0, 0, 0, 10, 0, 0, 0, 10), "P1")
+        goniometer = Goniometer()
+        shared_detector.append(
+            Experiment(
+                beam=beam, goniometer=goniometer, crystal=crystal, detector=detector
+            )
+        )
+
+    # Create some experiments with a shared Goniometer
+    goniometer = Goniometer()
+    shared_goniometer = []
+    for i in range(random.randint(1, 5)):
+        beam = Beam()
+        crystal = Crystal((10, 0, 0, 0, 10, 0, 0, 0, 10), "P1")
+        detector = Detector()
+        shared_goniometer.append(
+            Experiment(
+                beam=beam, goniometer=goniometer, crystal=crystal, detector=detector
+            )
+        )
+
+    # Randomly re-order and make an experiment list
+    experiments = shared_beam + shared_crystal + shared_detector + shared_goniometer
+    random.shuffle(experiments)
+    experiments = ExperimentList(experiments)
+
+    disjoint_sets = _find_disjoint_sets(experiments)
+
+    # We know there are 4 groups
+    assert len(disjoint_sets) == 4
+
+    # The length of each group must match one of the known group lengths
+    check = {
+        len(shared_beam),
+        len(shared_crystal),
+        len(shared_detector),
+        len(shared_goniometer),
+    }
+    for group in disjoint_sets:
+        assert len(group) in check
+
+
+def test_refinement_of_disjoint_sets(dials_data, tmp_path):
 
     # Take 22 input experiments that are in 7 disjoint groups
     location = dials_data("polyhedra_narrow_wedges", pathlib=True)
