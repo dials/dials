@@ -10,6 +10,9 @@ have not changed format and so on.
 
 from __future__ import annotations
 
+import math
+
+import numpy as np
 import procrunner
 import pytest
 from annlib_ext import AnnAdaptor
@@ -281,3 +284,105 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
     ]
     for a, b in zip(history["rmsd"], expected_rmsds):
         assert a == pytest.approx(b, abs=1e-6)
+
+
+def test_disjoint_sets(dials_data, tmp_path):
+
+    # Take 22 input experiments that are in 7 disjoint groups
+    location = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    expts = [
+        location / f"sweep_00{i}_experiments.json"
+        for i in ["2", "3", "4", "5", "6", "7", "9"]
+    ]
+    refls = [
+        location / f"sweep_00{i}_reflections.pickle"
+        for i in ["2", "3", "4", "5", "6", "7", "9"]
+    ]
+    result = procrunner.run(
+        [
+            "dials.combine_experiments",
+        ]
+        + expts
+        + refls,
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+
+    # Refine treating the disjoint groups separately and calculate final RMSDs
+    result = procrunner.run(
+        [
+            "dials.refine",
+            "combined.expt",
+            "combined.refl",
+            "scan_varying=False",
+            "output.reflections=separate.refl",
+        ],
+        working_directory=tmp_path,
+    )
+    separate_refl = flex.reflection_table.from_file(tmp_path / "separate.refl")
+    separate_refl = separate_refl.select(
+        separate_refl.get_flags(separate_refl.flags.used_in_refinement)
+    )
+    x_obs, y_obs, z_obs = separate_refl["xyzobs.mm.value"].parts()
+    x_calc, y_calc, z_calc = separate_refl["xyzcal.mm"].parts()
+    x_resid2 = (x_calc - x_obs) ** 2
+    y_resid2 = (y_calc - y_obs) ** 2
+    z_resid2 = (z_calc - z_obs) ** 2
+    separate_rmsd_x = []
+    separate_rmsd_y = []
+    separate_rmsd_z = []
+    for i in range(22):
+        sel = separate_refl["id"] == i
+        n = sel.count(True)
+        separate_rmsd_x.append(math.sqrt(flex.sum(x_resid2.select(sel)) / n))
+        separate_rmsd_y.append(math.sqrt(flex.sum(y_resid2.select(sel)) / n))
+        separate_rmsd_z.append(math.sqrt(flex.sum(z_resid2.select(sel)) / n))
+
+    # Refine all together in one joint refinement and calculate final RMSDs
+    result = procrunner.run(
+        [
+            "dials.refine",
+            "combined.expt",
+            "combined.refl",
+            "scan_varying=False",
+            "separate_independent_sets=False",
+            "output.reflections=joint.refl",
+        ],
+        working_directory=tmp_path,
+    )
+    joint_refl = flex.reflection_table.from_file(tmp_path / "joint.refl")
+    joint_refl = joint_refl.select(
+        joint_refl.get_flags(joint_refl.flags.used_in_refinement)
+    )
+    x_obs, y_obs, z_obs = joint_refl["xyzobs.mm.value"].parts()
+    x_calc, y_calc, z_calc = joint_refl["xyzcal.mm"].parts()
+    x_resid2 = (x_calc - x_obs) ** 2
+    y_resid2 = (y_calc - y_obs) ** 2
+    z_resid2 = (z_calc - z_obs) ** 2
+    joint_rmsd_x = []
+    joint_rmsd_y = []
+    joint_rmsd_z = []
+    for i in range(22):
+        sel = joint_refl["id"] == i
+        n = sel.count(True)
+        joint_rmsd_x.append(math.sqrt(flex.sum(x_resid2.select(sel)) / n))
+        joint_rmsd_y.append(math.sqrt(flex.sum(y_resid2.select(sel)) / n))
+        joint_rmsd_z.append(math.sqrt(flex.sum(z_resid2.select(sel)) / n))
+
+    # Check difference in RMSDs within 1/100th of a pixel and 1/100th of a degree.
+    # We don't expect them to be exactly the same (https://github.com/dials/dials/pull/2336#issue-1572772140)
+    # but we want the two ways to be of equivalent quality.
+    assert (
+        flex.max(flex.abs(flex.double(separate_rmsd_x) - flex.double(joint_rmsd_x)))
+        < 0.01
+    )
+    assert (
+        flex.max(flex.abs(flex.double(separate_rmsd_y) - flex.double(joint_rmsd_y)))
+        < 0.01
+    )
+    assert (
+        np.degrees(
+            flex.max(flex.abs(flex.double(separate_rmsd_z) - flex.double(joint_rmsd_z)))
+        )
+        < 0.01
+    )
