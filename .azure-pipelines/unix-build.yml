@@ -21,6 +21,7 @@ steps:
     rm -rf modules/dxtbx
     cd modules
     git clone https://github.com/dials/dxtbx
+    cd dxtbx
     git checkout 633-imageset-slicing
     cd ../..
   displayName: Repository checkout
