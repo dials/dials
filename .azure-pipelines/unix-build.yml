@@ -18,6 +18,9 @@ steps:
 - bash: |
     set -eux
     python modules/dials/installer/bootstrap.py update
+    cd modules/dxtbx
+    git checkout 633-imageset-slicing
+    cd ../..
   displayName: Repository checkout
   workingDirectory: $(Pipeline.Workspace)
 
