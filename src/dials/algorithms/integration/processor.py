@@ -517,7 +517,7 @@ class Task:
             if len(imageset) > 1:
                 # Slice imageset as a 0-based array
                 index0 = frame0 - allowed_range[0]
-                index1 = frame1 - allowed_range[1]
+                index1 = frame1 - allowed_range[0]
                 imageset = imageset[index0:index1]
         except Exception as e:
             raise RuntimeError(f"Programmer Error: bad array range: {e}")
