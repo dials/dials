@@ -47,9 +47,8 @@ steps:
 
 # Build and install dxtbx
 - script: |
-    git clone https://github.com/cctbx/dxtbx ./modules/dxtbx
+    git clone https://github.com/dials/dxtbx ./modules/dxtbx
     cd ./modules/dxtbx
-    git remote add -f dials git@github.com:dials/dxtbx.git
     git checkout 633-imageset-slicing
     cd ../../
     call activate conda_base/
