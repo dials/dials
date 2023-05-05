@@ -19,6 +19,7 @@ steps:
     set -eux
     python modules/dials/installer/bootstrap.py update
     cd modules/dxtbx
+    git remote add -f dials git@github.com:dials/dxtbx.git
     git checkout 633-imageset-slicing
     cd ../..
   displayName: Repository checkout
