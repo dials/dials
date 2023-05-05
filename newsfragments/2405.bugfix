@@ -1,0 +1,1 @@
+``dials.model_background``: changes that revert imageset slicing mean this program now works again for data sets that do not start from image 1.
