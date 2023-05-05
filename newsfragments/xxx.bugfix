@@ -1,0 +1,1 @@
+Revert imageset slicing operations to use 0-based indices.
