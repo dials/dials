@@ -57,7 +57,7 @@ reference = None
             "data will be reindexed to be consistent with the indexing mode of"
             "this reference file."
     .expert_level = 2
-
+include scope dials.util.reference.reference_phil_str
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
 relative_length_tolerance = 0.05

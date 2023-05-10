@@ -858,7 +858,10 @@ def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.ar
     # Extract/calculate a set of intensities from a reference.
     if params.d_min not in {Auto, None}:
         reference_intensities = intensities_from_reference_file(
-            params.reference, d_min=params.d_min
+            params.reference,
+            d_min=params.d_min,
+            k_sol=params.reference_model.k_sol,
+            b_sol=params.reference_model.b_sol,
         )
     else:
         reference_intensities = intensities_from_reference_file(params.reference)
