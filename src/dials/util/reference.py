@@ -10,12 +10,16 @@ reference_model {
     .type = float
     .help = "Average solvent density to use when calculating the bulk solvent"
             "contribution to the structure factors from a structural model."
-    .expert_level = 2
+            "See Fokine and Urzhumtsev, Acta Cryst. (2002). D58, 1387-1392"
+            "for further details on the meaning of this parameter."
+    .expert_level = 3
   b_sol = 46.0
     .type = float
     .help = "Average solvent B-factor to use when calculating the bulk solvent"
             "contribution to the structure factors from a structural model."
-    .expert_level = 2
+            "See Fokine and Urzhumtsev, Acta Cryst. (2002). D58, 1387-1392"
+            "for further details on the meaning of this parameter."
+    .expert_level = 3
 }
 """
 
