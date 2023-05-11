@@ -21,6 +21,7 @@ from dials.algorithms.profile_model.ellipsoid.parameterisation import (
 )
 from dials.array_family import flex
 from dials.util import tabulate
+from dials_algorithms_profile_model_ellipsoid_ext import reflection_statistics
 
 logger = logging.getLogger("dials")
 
@@ -1035,8 +1036,13 @@ class RefinerData(object):
         for r, (panel_id, xyz) in enumerate(
             zip(reflections["panel"], reflections["xyzobs.px.value"])
         ):
-            # The vector to the pixel centroid
             panel = experiment.detector[panel_id]
+            sp, ctot, xbar, Sobs = reflection_statistics(
+                panel, xyz, s0_length, experiment.beam.get_s0(), sbox[r]
+            )
+
+            """# The vector to the pixel centroid
+
             sp = np.array(
                 panel.get_pixel_lab_coord(xyz[0:2]), dtype=np.float64
             ).reshape(3, 1)
@@ -1071,7 +1077,7 @@ class RefinerData(object):
                         s *= s0_length / norm(s)
                         e = np.matmul(R, s)
                         X[j, i, :] = e[0:2, 0]
-                        C[j, i] = c
+                        C[j, i] = c"""
 
             # Check we have a sensible number of counts
             if ctot <= 0:
@@ -1079,7 +1085,7 @@ class RefinerData(object):
                     "Strong spot found with <= 0 counts! Check spotfinding results"
                 )
 
-            # Compute the mean vector
+            """# Compute the mean vector
             C = np.expand_dims(C, axis=2)
             xbar = C * X
             xbar = xbar.reshape(-1, xbar.shape[-1]).sum(axis=0)
@@ -1094,17 +1100,17 @@ class RefinerData(object):
                     x = np.array(X[j, i], dtype=np.float64).reshape(2, 1)
                     Sobs += np.matmul(x - xbar, (x - xbar).T) * C[j, i, 0]
 
-            Sobs /= ctot
-            if (Sobs[0, 0] <= 0) or (Sobs[1, 1] <= 0):
+            Sobs /= ctot"""
+            if (Sobs[0] <= 0) or (Sobs[3] <= 0):
                 raise BadSpotForIntegrationException(
                     "Strong spot variance <= 0. Check spotfinding results"
                 )
 
             # Add to the lists
-            sp_list[:, r] = sp[:, 0]
+            sp_list[:, r] = sp  # [:, 0]
             ctot_list[r] = ctot
-            mobs_list[:, r] = xbar[:, 0]
-            Sobs_list[:, :, r] = Sobs
+            mobs_list[:, r] = xbar  # [:, 0]
+            Sobs_list[:, :, r] = np.array([Sobs[0:2], Sobs[2:]], dtype=np.float64)
 
         # Print some information
         logger.info("")

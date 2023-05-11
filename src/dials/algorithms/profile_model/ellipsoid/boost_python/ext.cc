@@ -26,6 +26,7 @@
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/error.h>
+#include <iomanip>
 
 using namespace boost::python;
 
@@ -111,6 +112,77 @@ namespace dials { namespace algorithms { namespace boost_python {
     return R;
   }
 
+  boost::python::tuple reflection_statistics(const Panel panel,
+                                             const vec3<double> xyzobs,
+                                             const double s0_length,
+                                             const vec3<double> s0,
+                                             const Shoebox<> sbox) {
+    typedef Shoebox<>::float_type float_type;
+    vec2<double> p1(xyzobs[0], xyzobs[1]);
+    vec3<double> sp = panel.get_pixel_lab_coord(p1).normalize() * s0_length;
+    mat3<double> R = compute_change_of_basis_operation(s0, sp);
+
+    const af::versa<int, af::c_grid<3>> mask = sbox.mask;
+    const af::const_ref<float_type, af::c_grid<3>> data = sbox.data.const_ref();
+    const af::versa<float_type, af::c_grid<3>> bgrd = sbox.background;
+    int i0 = sbox.bbox[0];
+    int j0 = sbox.bbox[2];
+    int n1 = data.accessor()[1];
+    int n2 = data.accessor()[2];
+
+    af::versa<double, af::c_grid<3>> X(af::c_grid<3>(n1, n2, 2));
+    af::versa<double, af::c_grid<2>> C(af::c_grid<2>(n1, n2));
+    double ctot = 0;
+    for (int j = 0; j < n1; ++j) {
+      for (int i = 0; i < n2; ++i) {
+        double c = data(0, j, i) - bgrd(0, j, i);
+        if (c > 0) {
+          if ((mask(0, j, i) & (1 | 4)) == (1 | 4)) {
+            ctot += c;
+            int ii = i + i0;
+            int jj = j + j0;
+            vec2<double> sc(ii + 0.5, jj + 0.5);
+            vec3<double> s = panel.get_pixel_lab_coord(sc).normalize() * s0_length;
+            vec3<double> e = R * s;
+            X(j, i, 0) = e[0];
+            X(j, i, 1) = e[1];
+            C(j, i) = c;
+          }
+        }
+      }
+    }
+    // check ctot > 0
+
+    // now sum to get Xbar
+    vec2<double> xbar(0, 0);
+    for (int j = 0; j < n1; ++j) {
+      for (int i = 0; i < n2; ++i) {
+        xbar[0] += X(j, i, 0) * C(j, i);
+        xbar[1] += X(j, i, 1) * C(j, i);
+      }
+    }
+    xbar[0] = xbar[0] / ctot;
+    xbar[1] = xbar[1] / ctot;
+
+    mat2<double> Sobs(0, 0, 0, 0);
+    for (int j = 0; j < n1; ++j) {
+      for (int i = 0; i < n2; ++i) {
+        double c_i = C(j, i);
+        vec2<double> x_i(X(j, i, 0) - xbar[0], X(j, i, 1) - xbar[1]);
+        Sobs[0] += pow(x_i[0], 2) * c_i;
+        Sobs[1] += x_i[0] * x_i[1] * c_i;
+        Sobs[2] += x_i[0] * x_i[1] * c_i;
+        Sobs[3] += pow(x_i[1], 2) * c_i;
+      }
+    }
+    Sobs[0] = Sobs[0] / ctot;
+    Sobs[1] = Sobs[1] / ctot;
+    Sobs[2] = Sobs[2] / ctot;
+    Sobs[3] = Sobs[3] / ctot;
+
+    return boost::python::make_tuple(sp, ctot, xbar, Sobs);
+  }
+
   /**
    * Perform the change of basis from reciprocal space to a coordinate system of
    * orientated with the reciprocal lattice vector to the reflection
@@ -146,7 +218,7 @@ namespace dials { namespace algorithms { namespace boost_python {
      * @param h The list of miller indices
      * @returns The reflection table
      */
-    af::reflection_table predict(af::const_ref<cctbx::miller::index<> > h) const {
+    af::reflection_table predict(af::const_ref<cctbx::miller::index<>> h) const {
       // Get the beam and detector
       const double TINY = 1e-7;
       DIALS_ASSERT(experiment_.get_beam() != NULL);
@@ -162,12 +234,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       vec3<double> s0 = experiment_.get_beam()->get_s0();
 
       // Initialise some arrays
-      af::shared<cctbx::miller::index<> > miller_indices;
+      af::shared<cctbx::miller::index<>> miller_indices;
       af::shared<bool> entering;
-      af::shared<vec3<double> > s1_list;
-      af::shared<vec3<double> > s2_list;
-      af::shared<vec3<double> > xyzcalpx;
-      af::shared<vec3<double> > xyzcalmm;
+      af::shared<vec3<double>> s1_list;
+      af::shared<vec3<double>> s2_list;
+      af::shared<vec3<double>> xyzcalpx;
+      af::shared<vec3<double>> xyzcalmm;
       af::shared<std::size_t> panel_list;
       af::shared<int> experiment_id;
 
@@ -340,8 +412,8 @@ namespace dials { namespace algorithms { namespace boost_python {
      */
     void compute(af::reflection_table reflections) const {
       // Get some array from the reflection table
-      af::const_ref<vec3<double> > s1 = reflections["s1"];
-      af::const_ref<vec3<double> > s2 = reflections["s2"];
+      af::const_ref<vec3<double>> s1 = reflections["s1"];
+      af::const_ref<vec3<double>> s2 = reflections["s2"];
       af::const_ref<std::size_t> panel = reflections["panel"];
       af::ref<int6> bbox = reflections["bbox"];
 
@@ -551,9 +623,9 @@ namespace dials { namespace algorithms { namespace boost_python {
      */
     void compute(af::reflection_table reflections) const {
       // Get some array from the reflection table
-      af::const_ref<vec3<double> > s1 = reflections["s1"];
-      af::const_ref<vec3<double> > s2 = reflections["s2"];
-      af::ref<Shoebox<> > sbox = reflections["shoebox"];
+      af::const_ref<vec3<double>> s1 = reflections["s1"];
+      af::const_ref<vec3<double>> s2 = reflections["s2"];
+      af::ref<Shoebox<>> sbox = reflections["shoebox"];
 
       // Compute quantile
       double D = chisq_quantile(2, probability_);
@@ -635,7 +707,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat2<double> Sbar_inv = Sbar.inverse();
 
       // Get the mask array
-      af::ref<int, af::c_grid<3> > mask = sbox.mask.ref();
+      af::ref<int, af::c_grid<3>> mask = sbox.mask.ref();
 
       // Get the bounding box
       int x0 = sbox.bbox[0];
@@ -755,36 +827,37 @@ namespace dials { namespace algorithms { namespace boost_python {
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_ellipsoid_ext) {
     def("chisq_quantile", &chisq_quantile);
     def("chisq_pdf", &chisq_pdf);
+    def("reflection_statistics", &reflection_statistics);
 
     class_<PredictorBase>("PredictorBase", no_init)
       .def("predict", &PredictorBase::predict);
 
-    class_<PredictorSimple, bases<PredictorBase> >("PredictorSimple", no_init)
+    class_<PredictorSimple, bases<PredictorBase>>("PredictorSimple", no_init)
       .def(init<Experiment, mat3<double>, double>());
 
-    class_<PredictorAngular, bases<PredictorBase> >("PredictorAngular", no_init)
+    class_<PredictorAngular, bases<PredictorBase>>("PredictorAngular", no_init)
       .def(init<Experiment, mat3<double>, double>());
 
     class_<BBoxCalculatorBase>("BBoxCalculatorBase", no_init)
       .def("compute", &BBoxCalculatorBase::compute);
 
-    class_<BBoxCalculatorSimple, bases<BBoxCalculatorBase> >("BBoxCalculatorSimple",
-                                                             no_init)
+    class_<BBoxCalculatorSimple, bases<BBoxCalculatorBase>>("BBoxCalculatorSimple",
+                                                            no_init)
       .def(init<Experiment, mat3<double>, double, int>());
 
-    class_<BBoxCalculatorAngular, bases<BBoxCalculatorBase> >("BBoxCalculatorAngular",
-                                                              no_init)
+    class_<BBoxCalculatorAngular, bases<BBoxCalculatorBase>>("BBoxCalculatorAngular",
+                                                             no_init)
       .def(init<Experiment, mat3<double>, double, int>());
 
     class_<MaskCalculatorBase>("MaskCalculatorBase", no_init)
       .def("compute", &MaskCalculatorBase::compute);
 
-    class_<MaskCalculatorSimple, bases<MaskCalculatorBase> >("MaskCalculatorSimple",
-                                                             no_init)
+    class_<MaskCalculatorSimple, bases<MaskCalculatorBase>>("MaskCalculatorSimple",
+                                                            no_init)
       .def(init<Experiment, mat3<double>, double>());
 
-    class_<MaskCalculatorAngular, bases<MaskCalculatorBase> >("MaskCalculatorAngular",
-                                                              no_init)
+    class_<MaskCalculatorAngular, bases<MaskCalculatorBase>>("MaskCalculatorAngular",
+                                                             no_init)
       .def(init<Experiment, mat3<double>, double>());
   }
 
