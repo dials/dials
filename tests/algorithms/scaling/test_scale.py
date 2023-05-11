@@ -993,8 +993,8 @@ def test_target_scale_handle_bad_dataset(dials_data, tmp_path):
 
     reflections = flex.reflection_table.from_file(tmp_path / "scaled.refl")
     expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
-    assert len(expts) == 3
-    assert len(reflections.experiment_identifiers()) == 3
+    assert len(expts) == 2
+    assert len(reflections.experiment_identifiers()) == 2
 
 
 def test_targeted_scaling(dials_data, tmp_path):
