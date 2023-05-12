@@ -175,6 +175,8 @@ def prepare_input(params, experiments, reflections):
             params.scaling_options.reference,
             params.anomalous,
             d_min=d_min_for_structure_model,
+            k_sol=params.scaling_options.reference_model.k_sol,
+            b_sol=params.scaling_options.reference_model.b_sol,
         )
         experiments.append(expt)
         reflections.append(reflection_table)

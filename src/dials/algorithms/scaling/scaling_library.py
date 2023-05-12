@@ -552,12 +552,14 @@ def merging_stats_from_scaled_array(
 
 
 def create_datastructures_for_reference_file(
-    experiments, reference_file, anomalous=True, d_min=2.0
+    experiments, reference_file, anomalous=True, d_min=2.0, k_sol=0.35, b_sol=46
 ):
     # If the file is a model file, then d_min is used to determine the highest
     # resolution calculated intensities.
     wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
-    intensities = intensities_from_reference_file(reference_file, d_min, wavelength)
+    intensities = intensities_from_reference_file(
+        reference_file, d_min, wavelength, k_sol, b_sol
+    )
     if not anomalous:
         intensities = intensities.as_non_anomalous_array().merge_equivalents().array()
 
@@ -604,10 +606,10 @@ def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=True):
 
 
 def create_datastructures_for_structural_model(
-    experiments, model_file, anomalous=True, d_min=2.0
+    experiments, model_file, anomalous=True, d_min=2.0, k_sol=0.35, b_sol=46
 ):
     """Read a cif/pdb file, calculate intensities. Return an experiment and
     reflection table to be used for the structural model in scaling."""
     return create_datastructures_for_reference_file(
-        experiments, model_file, anomalous, d_min
+        experiments, model_file, anomalous, d_min, k_sol, b_sol
     )

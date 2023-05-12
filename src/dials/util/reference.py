@@ -4,8 +4,29 @@ from iotbx import cif, mtz, pdb
 from mmtbx.command_line.fmodel import fmodel_from_xray_structure_master_params
 from mmtbx.utils import fmodel_from_xray_structure
 
+reference_phil_str = """
+reference_model {
+  k_sol = 0.35
+    .type = float
+    .help = "Average solvent density to use when calculating the bulk solvent"
+            "contribution to the structure factors from a structural model."
+            "See Fokine and Urzhumtsev, Acta Cryst. (2002). D58, 1387-1392"
+            "for further details on the meaning of this parameter."
+    .expert_level = 3
+  b_sol = 46.0
+    .type = float
+    .help = "Average solvent B-factor to use when calculating the bulk solvent"
+            "contribution to the structure factors from a structural model."
+            "See Fokine and Urzhumtsev, Acta Cryst. (2002). D58, 1387-1392"
+            "for further details on the meaning of this parameter."
+    .expert_level = 3
+}
+"""
 
-def intensities_from_reference_file(filename, d_min=2.0, wavelength=None):
+
+def intensities_from_reference_file(
+    filename, d_min=2.0, wavelength=None, k_sol=0.35, b_sol=46.0
+):
     """
     Extract/calculate intensities from a reference file - which may contain data
     or a model, from a pdb, cif or mtz file. For cif, this can be a file
@@ -13,14 +34,18 @@ def intensities_from_reference_file(filename, d_min=2.0, wavelength=None):
     cif conforming to core_cif.
     """
     if filename.endswith(".pdb"):
-        return intensity_array_from_pdb_model_file(filename, d_min, wavelength)
+        return intensity_array_from_pdb_model_file(
+            filename, d_min, wavelength, k_sol, b_sol
+        )
     elif filename.endswith(".cif"):
         # need to see if file is a datafile or model file.
         # First try to interpret as a data file (quick and cheap to try)
         try:
             return intensity_array_from_cif_data_file(filename)
         except KeyError:
-            return intensity_array_from_cif_model_file(filename, d_min, wavelength)
+            return intensity_array_from_cif_model_file(
+                filename, d_min, wavelength, k_sol, b_sol
+            )
     elif filename.endswith(".mtz"):
         return intensity_array_from_mtz_file(filename)
     else:
@@ -44,22 +69,30 @@ def intensities_from_reference_data_file(filename):
         )
 
 
-def intensities_from_reference_model_file(filename, d_min=2.0, wavelength=None):
+def intensities_from_reference_model_file(
+    filename, d_min=2.0, wavelength=None, k_sol=0.35, b_sol=46.0
+):
     """
     Calculate intensities from a reference model file (i.e. cif or pdb containing
     a crystal structure).
     """
     if filename.endswith(".cif"):
-        return intensity_array_from_cif_model_file(filename, d_min, wavelength)
+        return intensity_array_from_cif_model_file(
+            filename, d_min, wavelength, k_sol, b_sol
+        )
     elif filename.endswith(".pdb"):
-        return intensity_array_from_pdb_model_file(filename, d_min, wavelength)
+        return intensity_array_from_pdb_model_file(
+            filename, d_min, wavelength, k_sol, b_sol
+        )
     else:
         raise ValueError(
             "Unrecognised input format for reference model file (expected .cif or .pdb)"
         )
 
 
-def intensity_array_from_cif_model_file(cif_file, d_min=2.0, wavelength=None):
+def intensity_array_from_cif_model_file(
+    cif_file, d_min=2.0, wavelength=None, k_sol=0.35, b_sol=46.0
+):
     """Return an intensity miller array from a cif file."""
     try:
         # First try to interpret as a MX cif data structure
@@ -78,22 +111,32 @@ def intensity_array_from_cif_model_file(cif_file, d_min=2.0, wavelength=None):
         )
     else:
         # Use the mmtbx methods for quick calculation of fs from model.
-        ic = _mmtbx_intensity_from_structure(xray_structure, d_min, wavelength)
+        ic = _mmtbx_intensity_from_structure(
+            xray_structure, d_min, wavelength, k_sol, b_sol
+        )
     return ic
 
 
-def intensity_array_from_pdb_model_file(pdb_file, d_min=2.0, wavelength=None):
+def intensity_array_from_pdb_model_file(
+    pdb_file, d_min=2.0, wavelength=None, k_sol=0.35, b_sol=46.0
+):
     xray_structure = pdb.hierarchy.input(pdb_file).xray_structure_simple()
-    ic = _mmtbx_intensity_from_structure(xray_structure, d_min, wavelength)
+    ic = _mmtbx_intensity_from_structure(
+        xray_structure, d_min, wavelength, k_sol, b_sol
+    )
     return ic
 
 
-def _mmtbx_intensity_from_structure(xray_structure, d_min, wavelength=None):
+def _mmtbx_intensity_from_structure(
+    xray_structure, d_min, wavelength=None, k_sol=0.35, b_sol=46.0
+):
     """Use the mmtbx methods for quick calculation of fs from model."""
     if wavelength:
         xray_structure.set_inelastic_form_factors(photon=wavelength, table="sasaki")
     params = fmodel_from_xray_structure_master_params.extract()
     params.high_resolution = d_min
+    params.fmodel.k_sol = k_sol
+    params.fmodel.b_sol = b_sol
     if wavelength:
         params.wavelength = wavelength
     fm = fmodel_from_xray_structure(xray_structure, params=params)
