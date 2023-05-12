@@ -62,23 +62,7 @@ ellipsoid_algorithm_phil_scope = parse(
 
   debug {
     output {
-
-      strong_spots = False
-        .type = bool
-
       shoeboxes = False
-        .type = bool
-
-      profile_model = True
-        .type = bool
-
-      history = True
-        .type = bool
-
-      plots = False
-        .type = bool
-
-      print_shoeboxes = False
         .type = bool
     }
   }

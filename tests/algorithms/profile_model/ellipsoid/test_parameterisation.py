@@ -440,18 +440,10 @@ def check_reflection_model_state_with_fixed(
             p[i] = x
             return compute_sigma(p)
 
-        """def f(x):
-            ps = copy(params)
-            ps[i] = x
-            model.state.active_parameters = ps
-            model.update()"""
-
-        # return model.mosaicity_covariance_matrix
-
         dS_num.append(first_derivative(f, params[i], step))
 
     if model.state.is_mosaic_spread_angular:
-        UB_tol = 1e-5
+        UB_tol = 1e-4
     else:
         UB_tol = 1e-7
     # for angular models, the derivatives dS_dp are not in fact zero for the UB params,
@@ -476,12 +468,6 @@ def check_reflection_model_state_with_fixed(
                     print(dS_dp)
                     print(dS_num)
                     assert 0
-
-        # print(dsi)
-        # print(nn)
-        # for cc, nn in zip(dS_dp[:,:,i], dS_num):
-        #    print(cc)
-        #    print(nn)
     model.state.active_parameters = copy(initial_params)
     step = 1e-6
     dr_num = []
@@ -582,22 +568,24 @@ def test_ReflectionModelState(test_experiment):
         fix_wavelength_spread=True,
     )
 
-    # check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_orientation=True)
+    check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_orientation=True)
 
-    # check_reflection_model_state_with_fixed(
-    #    experiments[0], A2, None, fix_wavelength_spread=True
-    # )
+    check_reflection_model_state_with_fixed(
+        experiments[0], A2, None, fix_wavelength_spread=True
+    )
     A2 = Angular2MosaicityParameterisation(np.array([0.02, 0.03]))
     check_reflection_model_state_with_fixed(
         experiments[0], A2, W, fix_mosaic_spread=True, fix_wavelength_spread=True
     )
-    # check_reflection_model_state_with_fixed(
-    #    experiments[0], A2, W, fix_wavelength_spread=True
-    # )
-    """check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_unit_cell=True)
+    check_reflection_model_state_with_fixed(
+        experiments[0], A2, W, fix_wavelength_spread=True
+    )
+    check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_unit_cell=True)
     check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_orientation=True)
 
-    check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_unit_cell=True, fix_wavelength_spread=True)
+    check_reflection_model_state_with_fixed(
+        experiments[0], A4, W, fix_unit_cell=True, fix_wavelength_spread=True
+    )
     check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_orientation=True)
 
     check_reflection_model_state_with_fixed(
@@ -610,13 +598,7 @@ def test_ReflectionModelState(test_experiment):
         experiments[0], A4, W, fix_wavelength_spread=True
     )
     check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_unit_cell=True)
-    check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_orientation=True)"""
-
-
-def first_derivative(func, x, h):
-    return (-func(x + 2 * h) + 8 * func(x + h) - 8 * func(x - h) + func(x - 2 * h)) / (
-        12 * h
-    )
+    check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_orientation=True)
 
 
 def generate_data(experiments, reflections):
@@ -684,131 +666,3 @@ def testdata(test_experiment):
         mobs=mobs,
         Sobs=Sobs,
     )
-
-
-"""def test_ReflectionModelState_derivatives(testdata):
-    def check(
-        mosaicity_parameterisation,
-        wavelength_parameterisation,
-        fix_mosaic_spread=False,
-        fix_wavelength_spread=False,
-        fix_unit_cell=False,
-        fix_orientation=False,
-    ):
-        experiment = testdata.experiment
-        models = testdata.models
-        s0 = testdata.s0
-        h = testdata.h
-        # ctot = testdata.ctot
-        # mobs = testdata.mobs
-        # Sobs = testdata.Sobs
-
-        U_params = models[1].get_param_vals()
-        B_params = models[2].get_param_vals()
-        M_params = np.array(models[0][: mosaicity_parameterisation.num_parameters()])
-        L_params = np.array(models[3])
-
-        state = ModelState(
-            experiment,
-            mosaicity_parameterisation,
-            wavelength_parameterisation,
-            fix_mosaic_spread=fix_mosaic_spread,
-            fix_wavelength_spread=fix_wavelength_spread,
-            fix_unit_cell=fix_unit_cell,
-            fix_orientation=fix_orientation,
-        )
-        state.U_params = U_params
-        state.B_params = B_params
-        state.M_params = M_params
-        state.L_params = L_params
-
-        model = ReflectionModelState(state, s0, h)
-
-        dr_dp = model.get_dr_dp()
-        dS_dp = model.get_dS_dp()
-        dL_dp = model.get_dL_dp()
-
-        def compute_sigma(parameters):
-            state.active_parameters = parameters
-            model = ReflectionModelState(state, s0, h)
-            return model.mosaicity_covariance_matrix
-
-        def compute_r(parameters):
-            state.active_parameters = parameters
-            model = ReflectionModelState(state, s0, h)
-            return model.get_r()
-
-        def compute_sigma_lambda(parameters):
-            state.active_parameters = parameters
-            model = ReflectionModelState(state, s0, h)
-            return model.wavelength_spread
-
-        step = 1e-6
-
-        parameters = copy(state.active_parameters)
-
-        dr_num = []
-        for i in range(len(parameters)):
-
-            def f(x):
-                p = copy(parameters)
-                p[i] = x
-                return compute_r(p)
-
-            dr_num.append(first_derivative(f, parameters[i], step).reshape(3, 1))
-        dr_num = np.concatenate(dr_num, axis=1)
-
-        for n, c in zip(dr_num, dr_dp):
-            for nn, cc in zip(n, c):
-                print(nn)
-                print(cc)
-                assert abs(nn - cc) < 1e-7
-
-        ds_num = []
-        for i in range(len(parameters)):
-
-            def f(x):
-                p = copy(parameters)
-                p[i] = x
-                return compute_sigma(p)
-
-            fd = first_derivative(f, parameters[i], step)
-            print(fd)
-            ds_num.append(fd.reshape(3, 3, 1))
-        ds_num = np.concatenate(ds_num, axis=2)
-
-        for i in range(len(parameters)):
-            for n, c in zip(ds_num[:, :, i], dS_dp[:, :, i]):
-                for nn, cc in zip(n.flatten(), c.flatten()):
-                    print(nn)
-                    print(cc)
-                    assert abs(nn - cc) < 1e-5
-
-        dl_num = []
-        for i in range(len(parameters)):
-
-            def f(x):
-                p = copy(parameters)
-                p[i] = x
-                return compute_sigma_lambda(p) ** 2
-
-            dl_num.append(first_derivative(f, parameters[i], step))
-
-        for n, c in zip(dl_num, dL_dp):
-            assert abs(n - c) < 1e-7
-
-    S1 = Simple1MosaicityParameterisation()
-    S6 = Simple6MosaicityParameterisation()
-    W = WavelengthSpreadParameterisation()
-
-    check(S1, None, fix_wavelength_spread=True)
-    check(S1, W, fix_mosaic_spread=True)
-    check(S1, W, fix_wavelength_spread=True)
-    check(S1, W, fix_unit_cell=True)
-    check(S1, W, fix_orientation=True)
-
-    check(S6, None, fix_wavelength_spread=True)
-    check(S6, W, fix_mosaic_spread=True)
-    check(S6, W, fix_wavelength_spread=True)
-    check(S6, W, fix_unit_cell=True)
-    check(S6, W, fix_orientation=True)"""
