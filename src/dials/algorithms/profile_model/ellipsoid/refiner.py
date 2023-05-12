@@ -548,7 +548,7 @@ class FisherScoringMaximumLikelihoodBase(object):
 
     """
 
-    def __init__(self, x0, max_iter=1000, tolerance=1e-7):
+    def __init__(self, x0, max_iter=100, tolerance=1e-7, LL_tolerance=1e-3):
         """
         Configure the algorithm
 
@@ -560,6 +560,7 @@ class FisherScoringMaximumLikelihoodBase(object):
         self.x0 = matrix.col(x0)
         self.max_iter = max_iter
         self.tolerance = tolerance
+        self.LL_tolerance = LL_tolerance
 
     def solve(self):
         """
@@ -592,6 +593,8 @@ class FisherScoringMaximumLikelihoodBase(object):
             # Break the loop if the parameters change less than the tolerance
             if (x - x0).length() < self.tolerance:
                 break
+            if self.test_LL_convergence():
+                break
 
             # Update the parameter
             x0 = x
@@ -599,6 +602,16 @@ class FisherScoringMaximumLikelihoodBase(object):
         # Save the parameters
         self.num_iter = it + 1
         self.parameters = x
+
+    def test_LL_convergence(self):
+        try:
+            l1 = self.history[-1]["likelihood"]
+            l2 = self.history[-2]["likelihood"]
+        except IndexError:
+            return False
+
+        test = abs(l1 - l2) < self.LL_tolerance
+        return test
 
     def solve_update_equation(self, S, I):
         """
@@ -667,8 +680,9 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         mobs_list,
         sobs_list,
         panel_ids,
-        max_iter=1000,
+        max_iter=100,
         tolerance=1e-7,
+        LL_tolerance=1e-3,
     ):
         """
         Initialise the algorithm:
@@ -676,7 +690,10 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         """
         # Initialise the super class
         super(FisherScoringMaximumLikelihood, self).__init__(
-            model.active_parameters, max_iter=max_iter, tolerance=tolerance
+            model.active_parameters,
+            max_iter=max_iter,
+            tolerance=tolerance,
+            LL_tolerance=LL_tolerance,
         )
 
         # Save the parameterisation
@@ -871,7 +888,7 @@ class Refiner(object):
 
     """
 
-    def __init__(self, state, data):
+    def __init__(self, state, data, max_iter=100, LL_tolerance=1e-3):
         """
         Set the data and initial parameters
 
@@ -885,6 +902,8 @@ class Refiner(object):
         self.panel_ids = data.panel_ids
         self.state = state
         self.history = []
+        self.max_iter = max_iter
+        self.LL_tolerance = LL_tolerance
 
     def refine(self):
         """
@@ -918,6 +937,8 @@ class Refiner(object):
             self.mobs_list,
             self.sobs_list,
             self.panel_ids,
+            max_iter=self.max_iter,
+            LL_tolerance=self.LL_tolerance,
         )
 
         # Solve the maximum likelihood equations

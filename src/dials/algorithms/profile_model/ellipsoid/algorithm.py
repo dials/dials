@@ -277,7 +277,14 @@ def final_integrator(
     return reflection_table
 
 
-def refine_profile(experiment, profile, refiner_data, wavelength_spread_model="delta"):
+def refine_profile(
+    experiment,
+    profile,
+    refiner_data,
+    wavelength_spread_model="delta",
+    max_iter=100,
+    LL_tolerance=1e-3,
+):
     """Do the profile refinement"""
     logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
 
@@ -291,7 +298,7 @@ def refine_profile(experiment, profile, refiner_data, wavelength_spread_model="d
     )
 
     # Create the refiner and refine
-    refiner = ProfileRefiner(state, refiner_data)
+    refiner = ProfileRefiner(state, refiner_data, max_iter, LL_tolerance)
     refiner.refine()
 
     # Set the profile parameters
@@ -309,6 +316,8 @@ def refine_crystal(
     fix_unit_cell=False,
     fix_orientation=False,
     wavelength_spread_model="delta",
+    max_iter=100,
+    LL_tolerance=1e-3,
 ):
     """Do the crystal refinement"""
     if (fix_unit_cell is True) and (fix_orientation is True):
@@ -327,7 +336,7 @@ def refine_crystal(
     )
 
     # Create the refiner and refine
-    refiner = ProfileRefiner(state, refiner_data)
+    refiner = ProfileRefiner(state, refiner_data, max_iter, LL_tolerance)
     refiner.refine()
 
     return refiner
@@ -400,6 +409,8 @@ def run_ellipsoid_refinement(
     fix_orientation=False,
     capture_progress=False,
     n_cycles=3,
+    max_iter=100,
+    LL_tolerance=1e-3,
 ):
     """Runs ellipsoid refinement on strong spots.
 
@@ -431,6 +442,8 @@ def run_ellipsoid_refinement(
             profile,
             refiner_data,
             wavelength_spread_model=wavelength_model,
+            max_iter=max_iter,
+            LL_tolerance=LL_tolerance,
         )
         if capture_progress:
             # Save some data for plotting later.
@@ -446,6 +459,8 @@ def run_ellipsoid_refinement(
             fix_unit_cell=fix_unit_cell,
             fix_orientation=fix_orientation,
             wavelength_spread_model=wavelength_model,
+            max_iter=max_iter,
+            LL_tolerance=LL_tolerance,
         )
         if capture_progress:
             # Save some data for plotting later.
