@@ -183,6 +183,24 @@ namespace dials { namespace algorithms { namespace boost_python {
     return boost::python::make_tuple(sp, ctot, xbar, Sobs);
   }
 
+  boost::python::list calc_s1_s2(const af::shared<cctbx::miller::index<>> miller_idx,
+                                 const mat3<double> A,
+                                 const vec3<double> s0) {
+    double len_s0 = s0.length();
+    af::shared<vec3<double>> s1(miller_idx.size());
+    af::shared<vec3<double>> s2(miller_idx.size());
+    for (std::size_t i = 0; i < miller_idx.size(); ++i) {
+      vec3<double> r = A * miller_idx[i];
+      vec3<double> s2_i = r + s0;
+      s2[i] = s2_i;
+      s1[i] = len_s0 * s2_i.normalize();
+    }
+    boost::python::list result;
+    result.append(s1);
+    result.append(s2);
+    return result;
+  }
+
   /**
    * Perform the change of basis from reciprocal space to a coordinate system of
    * orientated with the reciprocal lattice vector to the reflection
@@ -824,10 +842,34 @@ namespace dials { namespace algorithms { namespace boost_python {
     mat3<double> sigma_;
   };
 
+  vec2<double> rse(const mat3<double> &R,
+                   const vec2<double> &mbar,
+                   const vec2<double> &xobs,
+                   const float norm_s0,
+                   const Detector &detector) {
+    // double norm_s0 = 1.0;
+    vec3<double> s1;
+    vec3<double> s3;
+    s1[0] = (R[0] * mbar[0]) + (R[3] * mbar[1]) + (R[6] * norm_s0);
+    s1[1] = (R[1] * mbar[0]) + (R[4] * mbar[1]) + (R[7] * norm_s0);
+    s1[2] = (R[2] * mbar[0]) + (R[5] * mbar[1]) + (R[8] * norm_s0);
+    s3[0] = (R[0] * xobs[0]) + (R[3] * xobs[1]) + (R[6] * norm_s0);
+    s3[1] = (R[1] * xobs[0]) + (R[4] * xobs[1]) + (R[7] * norm_s0);
+    s3[2] = (R[2] * xobs[0]) + (R[5] * xobs[1]) + (R[8] * norm_s0);
+    vec2<double> xyzcal = detector[0].get_ray_intersection_px(s1);
+    vec2<double> xyzobs = detector[0].get_ray_intersection_px(s3);
+    double rx2 = pow(xyzcal[0] - xyzobs[0], 2);
+    double ry2 = pow(xyzcal[1] - xyzobs[1], 2);
+    vec2<double> res{rx2, ry2};
+    return res;
+  }
+
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_ellipsoid_ext) {
     def("chisq_quantile", &chisq_quantile);
     def("chisq_pdf", &chisq_pdf);
     def("reflection_statistics", &reflection_statistics);
+    def("calc_s1_s2", &calc_s1_s2);
+    def("rse", &rse);
 
     class_<PredictorBase>("PredictorBase", no_init)
       .def("predict", &PredictorBase::predict);

@@ -18,11 +18,9 @@ from math import pi
 import numpy as np
 from numpy.linalg import inv, norm
 
-from dxtbx import flumpy
 from libtbx.phil import parse
-from scitbx import matrix
 
-from dials.algorithms.profile_model.ellipsoid import chisq_pdf
+from dials.algorithms.profile_model.ellipsoid import calc_s1_s2, chisq_pdf
 from dials.algorithms.profile_model.ellipsoid.model import ProfileModelFactory
 from dials.algorithms.profile_model.ellipsoid.parameterisation import ModelState
 from dials.algorithms.profile_model.ellipsoid.refiner import Refiner as ProfileRefiner
@@ -356,24 +354,17 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
     Predict the position of the spots
 
     """
-    # Get some stuff from experiment
-    A = np.array(experiment.crystal.get_A(), dtype=np.float64).reshape((3, 3))
-    s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
-    s0_length = norm(s0)
 
     # Compute the vector to the reciprocal lattice point
     # since this is not on the ewald sphere, lets call it s2
-    h = reflection_table["miller_index"]
-    s1 = flex.vec3_double(len(h))
-    s2 = flex.vec3_double(len(h))
-    for i in range(len(reflection_table)):
-        r = np.matmul(A, np.array([h[i]], dtype=np.float64).reshape(3, 1))
-        s2_i = r + s0
-        s2[i] = matrix.col(flumpy.from_numpy(s2_i))
-        s1[i] = matrix.col(flumpy.from_numpy(s2_i * s0_length / norm(s2_i)))
+    s1, s2 = calc_s1_s2(
+        reflection_table["miller_index"],
+        experiment.crystal.get_A(),
+        experiment.beam.get_s0(),
+    )
     reflection_table["s1"] = s1
     reflection_table["s2"] = s2
-    reflection_table["entering"] = flex.bool(len(h), False)
+    reflection_table["entering"] = flex.bool(reflection_table.size(), False)
 
     # Compute the ray intersections
     xyzpx = flex.vec3_double()

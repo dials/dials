@@ -48,10 +48,22 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
 
 import json
 
-expected_simple1 = {"likelihood": 171374.17402689304, "parameters": []}
-expected_simple6 = {"likelihood": 176234.85435668094, "parameters": []}
-expected_angular2 = {"likelihood": 171782.58590918835, "parameters": []}
-expected_angular4 = {"likelihood": 179074.32882385756, "parameters": []}
+expected_simple1 = {
+    "likelihood": 171374.17464891364,
+    "mosaicity": [0.020799705597009843],
+}
+expected_simple6 = {
+    "likelihood": 176234.85494941485,
+    "mosaicity": [0.007835942631996863, 0.02266467599439014, 0.026879730729450498],
+}
+expected_angular2 = {
+    "likelihood": 171782.5865355478,
+    "mosaicity": [0.024549034458866092, 0.01864434938489629],
+}
+expected_angular4 = {
+    "likelihood": 179074.32947807666,
+    "mosaicity": [0.024550628270576778, 0.025846182907222837, 0.005215268399212766],
+}
 
 
 @pytest.mark.parametrize(
@@ -94,6 +106,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
     assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
     expts = load.experiment_list(tmp_path / "integrated_1.expt", check_format=False)
     mosaicity = expts[0].profile.mosaicity()
+    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1e-6)
     with (tmp_path / "history.json").open("r") as fh:
         data = json.load(fh)
         assert data["0"]["likelihood_per_iteration"][-1][-1] == pytest.approx(
