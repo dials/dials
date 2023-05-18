@@ -1,1 +1,0 @@
-Moved `flex_table.h` and `flex_table_suite.h` to dxtbx. Moved `flex_table` functions that are specific to `reflection_table` to `reflection_table_suite.h`.

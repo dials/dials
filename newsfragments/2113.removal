@@ -1,0 +1,1 @@
+Moved ``dials::af::flex_table`` and associated tooling to dxtbx. Functions that are specific to ``reflection_table`` have been moved to ``reflection_table_suite.h``.
