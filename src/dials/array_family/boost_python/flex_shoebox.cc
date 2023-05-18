@@ -22,7 +22,7 @@
 #include <dials/algorithms/spot_prediction/pixel_to_miller_index.h>
 #include <dials/config.h>
 
-#include "ref_pickle_double_buffered.h"
+#include <dxtbx/array_family/ref_pickle_double_buffered.h>
 
 namespace dials { namespace af { namespace boost_python {
 
