@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import math
 from typing import Iterator, Sequence
 
 from PIL import Image, ImageDraw, ImageFont
@@ -8,6 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 from cctbx import miller, sgtbx, uctbx
 from dxtbx.model import ImageSet
 from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
+from iotbx.detectors import FlexImage, FlexImage_d
 
 from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.array_family import flex
@@ -44,7 +46,7 @@ class ColourScheme(enum.Enum):
     INVERSE_GREYSCALE = 3
 
 
-def imageset_as_bitmaps(
+def imageset_as_flex_image(
     imageset: ImageSet,
     images: Sequence[int],
     brightness: float = 100,
@@ -60,16 +62,7 @@ def imageset_as_bitmaps(
     global_threshold: float = 0,
     min_local: int = 2,
     kernel_size: tuple[int, int] = (3, 3),
-    show_resolution_rings: bool = False,
-    n_resolution_rings: int = 5,
-    resolution_rings_fill: str = "red",
-    resolution_rings_fontsize: int | None = 30,
-    show_ice_rings: bool = False,
-    ice_rings_unit_cell: uctbx.unit_cell = HEXAGONAL_ICE_UNIT_CELL,
-    ice_rings_space_group: sgtbx.space_group = HEXAGONAL_ICE_SPACE_GROUP,
-    ice_rings_fill: str = "blue",
-    ice_rings_fontsize: int | None = None,
-) -> Iterator[Image.Image]:
+) -> Iterator[FlexImage | FlexImage_d]:
     brightness = brightness / 100
     # check that binning is a power of 2
     if not (binning > 0 and ((binning & (binning - 1)) == 0)):
@@ -140,66 +133,7 @@ def imageset_as_bitmaps(
         # now export as a bitmap
         flex_image.prep_string()
 
-        # XXX is size//binning safe here?
-        pil_img = Image.frombytes(
-            "RGB", (flex_image.ex_size2(), flex_image.ex_size1()), flex_image.as_bytes()
-        )
-
-        def draw_resolution_rings(spacings, fill: str, fontsize: int | None):
-            segments, res_labels = calculate_isoresolution_lines(
-                spacings,
-                imageset.get_beam(),
-                detector,
-                flex_image,
-                binning=binning,
-            )
-            draw = ImageDraw.Draw(pil_img)
-            for segment in segments:
-                draw.line(segment, fill=fill, width=2)
-            if fontsize:
-                try:
-                    import math
-
-                    font = ImageFont.truetype(
-                        "arial.ttf",
-                        size=math.ceil(fontsize / binning**0.5),
-                    )
-                except OSError:
-                    # Revert to default bitmap font if we must, but fontsize will not work
-                    font = ImageFont.load_default()
-                for x, y, label in res_labels:
-                    draw.text((x, y), label, fill=fill, font=font)
-
-        if show_resolution_rings or show_ice_rings:
-            beam = imageset.get_beam()
-            d_min = detector.get_max_resolution(beam.get_s0())
-            d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
-
-            if show_resolution_rings:
-                step = d_star_sq_max / (n_resolution_rings + 1)
-                spacings = flex.double(
-                    [
-                        uctbx.d_star_sq_as_d((i + 1) * step)
-                        for i in range(0, n_resolution_rings)
-                    ]
-                )
-                draw_resolution_rings(
-                    spacings,
-                    resolution_rings_fill,
-                    resolution_rings_fontsize,
-                )
-
-            if show_ice_rings:
-                space_group = ice_rings_space_group
-                unit_cell = space_group.average_unit_cell(ice_rings_unit_cell)
-                generator = miller.index_generator(
-                    unit_cell, space_group.type(), False, d_min
-                )
-                indices = generator.to_array()
-                spacings = flex.sorted(unit_cell.d(indices))
-                draw_resolution_rings(spacings, ice_rings_fill, ice_rings_fontsize)
-
-        yield pil_img
+        yield flex_image
 
 
 def image_filter(
@@ -265,3 +199,88 @@ def image_filter(
             _mask.reshape(cv[i].accessor())
 
     return display_data
+
+
+def _draw_resolution_rings_impl(
+    imageset: ImageSet,
+    pil_image: Image.Image,
+    flex_image: FlexImage | FlexImage_d,
+    spacings: flex.double,
+    fill: str,
+    fontsize: int | None,
+    binning: int,
+):
+    segments, res_labels = calculate_isoresolution_lines(
+        spacings,
+        imageset.get_beam(),
+        imageset.get_detector(),
+        flex_image,
+        binning=binning,
+    )
+    draw = ImageDraw.Draw(pil_image)
+    for segment in segments:
+        draw.line(segment, fill=fill, width=2)
+    if fontsize:
+        try:
+            font = ImageFont.truetype(
+                "arial.ttf",
+                size=math.ceil(fontsize / binning**0.5),
+            )
+        except OSError:
+            # Revert to default bitmap font if we must, but fontsize will not work
+            font = ImageFont.load_default()
+        for x, y, label in res_labels:
+            draw.text((x, y), label, fill=fill, font=font)
+
+
+def draw_resolution_rings(
+    imageset: ImageSet,
+    pil_image: Image.Image,
+    flex_image: FlexImage | FlexImage_d,
+    n_rings: int = 5,
+    fill: str = "red",
+    fontsize: int | None = 30,
+    binning: int = 1,
+):
+    d_min = imageset.get_detector().get_max_resolution(imageset.get_beam().get_s0())
+    d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
+
+    step = d_star_sq_max / (n_rings + 1)
+    spacings = flex.double(
+        [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
+    )
+    _draw_resolution_rings_impl(
+        imageset,
+        pil_image,
+        flex_image,
+        spacings,
+        fill,
+        fontsize,
+        binning,
+    )
+
+
+def draw_ice_rings(
+    imageset: ImageSet,
+    pil_image: Image.Image,
+    flex_image: FlexImage | FlexImage_d,
+    unit_cell: uctbx.unit_cell = HEXAGONAL_ICE_UNIT_CELL,
+    space_group: sgtbx.space_group = HEXAGONAL_ICE_SPACE_GROUP,
+    fill: str = "blue",
+    fontsize: int | None = 30,
+    binning: int = 1,
+):
+    d_min = imageset.get_detector().get_max_resolution(imageset.get_beam().get_s0())
+    unit_cell = space_group.average_unit_cell(unit_cell)
+    generator = miller.index_generator(unit_cell, space_group.type(), False, d_min)
+    indices = generator.to_array()
+    spacings = flex.sorted(unit_cell.d(indices))
+    _draw_resolution_rings_impl(
+        imageset,
+        pil_image,
+        flex_image,
+        spacings,
+        fill,
+        fontsize,
+        binning,
+    )

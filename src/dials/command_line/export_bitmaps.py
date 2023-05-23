@@ -3,6 +3,8 @@ from __future__ import annotations
 import pathlib
 import sys
 
+import PIL.Image
+
 import iotbx.phil
 
 from dials.util import export_bitmaps, show_mail_handle_errors
@@ -172,8 +174,8 @@ def imageset_as_bitmaps(imageset, params):
     if params.output.file and len(images) != 1:
         sys.exit("output.file can only be specified if a single image is exported")
 
-    for i_img, pil_img in enumerate(
-        export_bitmaps.imageset_as_bitmaps(
+    for i_img, flex_img in enumerate(
+        export_bitmaps.imageset_as_flex_image(
             imageset,
             images,
             brightness=params.brightness,
@@ -188,17 +190,32 @@ def imageset_as_bitmaps(imageset, params):
             global_threshold=params.global_threshold,
             min_local=params.min_local,
             kernel_size=params.kernel_size,
-            show_resolution_rings=params.resolution_rings.show,
-            n_resolution_rings=params.resolution_rings.number,
-            resolution_rings_fill=params.resolution_rings.fill,
-            resolution_rings_fontsize=params.resolution_rings.fontsize,
-            show_ice_rings=params.ice_rings.show,
-            ice_rings_fill=params.ice_rings.fill,
-            ice_rings_fontsize=params.ice_rings.fontsize,
-            ice_rings_unit_cell=params.ice_rings.unit_cell,
-            ice_rings_space_group=params.ice_rings.space_group.group(),
         )
     ):
+        pil_img = PIL.Image.frombytes(
+            "RGB", (flex_img.ex_size2(), flex_img.ex_size1()), flex_img.as_bytes()
+        )
+        if params.resolution_rings.show:
+            export_bitmaps.draw_resolution_rings(
+                imageset,
+                pil_img,
+                flex_img,
+                n_rings=params.resolution_rings.number,
+                fill=params.resolution_rings.fill,
+                fontsize=params.resolution_rings.fontsize,
+                binning=params.binning,
+            )
+        if params.ice_rings.show:
+            export_bitmaps.draw_ice_rings(
+                imageset,
+                pil_img,
+                flex_img,
+                unit_cell=params.ice_rings.unit_cell,
+                space_group=params.ice_rings.space_group.group(),
+                fill=params.ice_rings.fill,
+                fontsize=params.ice_rings.fontsize,
+                binning=params.binning,
+            )
         if params.output.file:
             path = output_dir / params.output.file
         else:
