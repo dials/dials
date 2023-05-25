@@ -712,7 +712,6 @@ class ReflectionModelState(object):
             if state.is_mosaic_spread_angular:
                 QTMQ = np.einsum("ij,mjk,kl->ilm", self._Q.T, dM_dp, self._Q)
                 self._ds_dp[:, :, n_tot : n_tot + n_M_params] = QTMQ
-                # FIXME need correction for first few bits
             else:
                 self._ds_dp[:, :, n_tot : n_tot + n_M_params] = np.transpose(
                     dM_dp, axes=(1, 2, 0)
