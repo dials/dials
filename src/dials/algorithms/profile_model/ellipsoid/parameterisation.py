@@ -597,9 +597,6 @@ class ModelState(object):
         return labels
 
 
-from copy import copy
-
-
 class ReflectionModelState(object):
     """
     Class to compute basic derivatives of Sigma and r w.r.t parameters
@@ -623,12 +620,11 @@ class ReflectionModelState(object):
         self._Q = None
 
         n_params = 0
-        NUB = 0
         if not self.state.is_orientation_fixed:
             n_params += len(self.state.U_params)
         if not self.state.is_unit_cell_fixed:
             n_params += len(self.state.B_params)
-        NUB = copy(n_params)
+
         if not self.state.is_mosaic_spread_fixed:
             n_params += len(self.state.M_params)
         if not self.state.is_wavelength_spread_fixed:
@@ -638,7 +634,6 @@ class ReflectionModelState(object):
         self._dr_dp = np.zeros(shape=(3, n_params), dtype=np.float64)
         self._ds_dp = np.zeros(shape=(3, 3, n_params), dtype=np.float64)
         self._dl_dp = flex.double(n_params)
-        self._dQ_dp = np.zeros(shape=(3, 3, NUB), dtype=np.float64)
 
         if self.state.is_mosaic_spread_angular:
             norm_r = self._r / norm(self._r)
@@ -650,15 +645,6 @@ class ReflectionModelState(object):
         self._recalc_sigma()
         self._recalc_sigma_lambda()
         self.update()
-
-    def _calc_Q(self, r):
-        norm_r = r / norm(r)
-        q1 = np.cross(norm_r, self._norm_s0)
-        q1 /= norm(q1)
-        q2 = np.cross(norm_r, q1)
-        q2 /= norm(q2)
-        Q = np.array([q1, q2, norm_r], dtype=np.float64).reshape(3, 3)
-        return Q
 
     def _recalc_sigma(self):
         # Compute the covariance matrix
@@ -678,71 +664,6 @@ class ReflectionModelState(object):
             self._sigma = np.matmul(np.matmul(self._Q.T, M), self._Q)
         else:
             self._sigma = M
-
-    def _calc_dQ_dp(self):
-        ntot = 0
-        step = 1e-6
-        if not self.state.is_orientation_fixed:
-            U_params = copy(self.state.U_params)
-            n_U_params = self.state.U_params.size
-            for i in range(n_U_params):
-                # adjust param, calc r, calc Q.
-                U_params[i] += step
-                self.state.U_params = U_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                rplus = np.einsum("ij,j->i", A, self._h)
-                Qplus = self._calc_Q(rplus)
-                U_params[i] += step
-                self.state.U_params = U_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                r2plus = np.einsum("ij,j->i", A, self._h)
-                Q2plus = self._calc_Q(r2plus)
-                U_params[i] -= 4.0 * step
-                self.state.U_params = U_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                r2minus = np.einsum("ij,j->i", A, self._h)
-                Q2minus = self._calc_Q(r2minus)
-                U_params[i] += step
-                self.state.U_params = U_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                rminus = np.einsum("ij,j->i", A, self._h)
-                Qminus = self._calc_Q(rminus)
-                U_params[i] += step
-
-                self._dQ_dp[:, :, i] = ((Q2plus - Q2minus) + 8.0 * (Qplus - Qminus)) / (
-                    12.0 * step
-                )
-            ntot += n_U_params
-        if not self.state.is_unit_cell_fixed:
-            B_params = copy(self.state.B_params)
-            n_B_params = self.state.B_params.size
-            for i in range(n_B_params):
-                # adjust param, calc r, calc Q.
-                B_params[i] += step
-                self.state.B_params = B_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                rplus = np.einsum("ij,j->i", A, self._h)
-                Qplus = self._calc_Q(rplus)
-                B_params[i] += step
-                self.state.B_params = B_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                r2plus = np.einsum("ij,j->i", A, self._h)
-                Q2plus = self._calc_Q(r2plus)
-                B_params[i] -= 4.0 * step
-                self.state.B_params = B_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                r2minus = np.einsum("ij,j->i", A, self._h)
-                Q2minus = self._calc_Q(r2minus)
-                B_params[i] += step
-                self.state.B_params = B_params
-                A = np.matmul(self.state.U_matrix, self.state.B_matrix)
-                rminus = np.einsum("ij,j->i", A, self._h)
-                Qminus = self._calc_Q(rminus)
-                B_params[i] += step
-
-                self._dQ_dp[:, :, i + ntot] = (
-                    (Q2plus - Q2minus) + 8.0 * (Qplus - Qminus)
-                ) / (12.0 * step)
 
     def _recalc_sigma_lambda(self):
         # Get the wavelength spread
@@ -765,14 +686,10 @@ class ReflectionModelState(object):
             self._recalc_sigma_lambda()
         if not self.state.is_mosaic_spread_fixed:
             self._recalc_sigma()
-        # if self.state.is_mosaic_spread_angular:
-        #    self._calc_dQ_dp()
 
         # Compute derivatives w.r.t U parameters
         n_tot = 0
         state = self.state
-        n_U_params = 0
-        n_B_params = 0
         if not state.is_orientation_fixed:
             dU_dp = self.state.dU_dp
             n_U_params = dU_dp.shape[0]
@@ -801,17 +718,7 @@ class ReflectionModelState(object):
                     dM_dp, axes=(1, 2, 0)
                 )
             n_tot += n_M_params
-        """if state.is_mosaic_spread_angular:
-            n_UB_params = n_B_params + n_U_params
-            if n_UB_params:
-                M = self.state.mosaicity_covariance_matrix
-                # dqT = np.transpose(self._dQ_dp, axes=(1,0,2))
-                self._ds_dp[:, :, :n_UB_params] = np.einsum(
-                    "jim,jk,kl->ilm", self._dQ_dp, M, self._Q
-                )
-                self._ds_dp[:, :, :n_UB_params] += np.einsum(
-                    "ji,jk,klm->ilm", self._Q, M, self._dQ_dp
-                )"""
+
         # Compute derivatives   w.r.t L parameters
         if not state.is_wavelength_spread_fixed:
             self._dl_dp[n_tot] = self.state.dL_dp[0]

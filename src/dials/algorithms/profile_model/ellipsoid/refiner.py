@@ -548,7 +548,7 @@ class FisherScoringMaximumLikelihoodBase(object):
 
     """
 
-    def __init__(self, x0, max_iter=100, tolerance=1e-7, LL_tolerance=1e-3):
+    def __init__(self, x0, max_iter=1000, tolerance=1e-7, LL_tolerance=1e-6):
         """
         Configure the algorithm
 
@@ -680,9 +680,9 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         mobs_list,
         sobs_list,
         panel_ids,
-        max_iter=100,
+        max_iter=1000,
         tolerance=1e-7,
-        LL_tolerance=1e-3,
+        LL_tolerance=1e-6,
     ):
         """
         Initialise the algorithm:
@@ -888,7 +888,7 @@ class Refiner(object):
 
     """
 
-    def __init__(self, state, data, max_iter=100, LL_tolerance=1e-3):
+    def __init__(self, state, data, max_iter=1000, LL_tolerance=1e-6):
         """
         Set the data and initial parameters
 

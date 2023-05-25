@@ -282,8 +282,8 @@ def refine_profile(
     profile,
     refiner_data,
     wavelength_spread_model="delta",
-    max_iter=100,
-    LL_tolerance=1e-3,
+    max_iter=1000,
+    LL_tolerance=1e-36,
 ):
     """Do the profile refinement"""
     logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
@@ -316,8 +316,8 @@ def refine_crystal(
     fix_unit_cell=False,
     fix_orientation=False,
     wavelength_spread_model="delta",
-    max_iter=100,
-    LL_tolerance=1e-3,
+    max_iter=1009,
+    LL_tolerance=1e-6,
 ):
     """Do the crystal refinement"""
     if (fix_unit_cell is True) and (fix_orientation is True):
@@ -409,8 +409,8 @@ def run_ellipsoid_refinement(
     fix_orientation=False,
     capture_progress=False,
     n_cycles=3,
-    max_iter=100,
-    LL_tolerance=1e-3,
+    max_iter=1000,
+    LL_tolerance=1e-6,
 ):
     """Runs ellipsoid refinement on strong spots.
 

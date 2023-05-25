@@ -297,19 +297,17 @@ def test_ConditionalDistribution(testdata):
     check(S6, None, fix_wavelength_spread=True, fix_unit_cell=True)
     check(S6, None, fix_wavelength_spread=True, fix_orientation=True)
 
-    # check(A2, None, fix_wavelength_spread=True)
-    # check(A2, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
+    # Note, we cannot use finite difference tests to test the derivatives when
+    # the unit cell and orientation are not fixed for the angular model. This is because
+    # the derivative calculation is under the assumption that the Q matrix is invariant,
+    # however the Q matrix depends on r so there is a small additional term missing (dQ/dp).
+    # So just test the mosaic model minimisation at fixed UB.
     check(
         A2, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
-    # check(A2, None, fix_wavelength_spread=True, fix_orientation=True)
-
-    # check(A4, None, fix_wavelength_spread=True)
-    # check(A4, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
     check(
         A4, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
-    # check(A4, None, fix_wavelength_spread=True, fix_orientation=True)
 
 
 def test_rotate_vec3_double():
@@ -430,19 +428,13 @@ def test_ReflectionLikelihood(testdata):
     check(S6, None, fix_wavelength_spread=True, fix_orientation=True)
     check(S6, None, fix_wavelength_spread=True)
 
-    # check(A2, None, fix_wavelength_spread=True)
-    # check(A2, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
+    # See note at L300 regarding finite difference tests at fixed UB.
     check(
         A2, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
-    # check(A2, None, fix_wavelength_spread=True, fix_orientation=True)
-
-    # check(A4, None, fix_wavelength_spread=True)
-    # check(A4, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
     check(
         A4, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
-    # check(A4, None, fix_wavelength_spread=True, fix_orientation=True)
 
 
 def test_Refiner(testdata, refinerdata_testdata):

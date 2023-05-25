@@ -26,7 +26,6 @@
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/error.h>
-#include <iomanip>
 
 using namespace boost::python;
 
