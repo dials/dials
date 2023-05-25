@@ -182,8 +182,8 @@ class EllipsoidIntegrator(SimpleIntegrator):
         fix_list=None,
         n_cycles=1,
         capture_progress=False,
-        max_iter=100,
-        LL_tolerance=1e-3,
+        max_iter=1000,
+        LL_tolerance=1e-6,
     ):
         fix_unit_cell = False
         fix_orientation = False
