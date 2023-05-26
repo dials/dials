@@ -21,6 +21,7 @@ from dials.algorithms.profile_model.ellipsoid.parameterisation import (
 )
 from dials.array_family import flex
 from dials.util import tabulate
+from dials_algorithms_profile_model_ellipsoid_ext import reflection_statistics, rse
 
 logger = logging.getLogger("dials")
 
@@ -190,6 +191,7 @@ class ReflectionLikelihood(object):
 
         # Compute the change of basis
         self.R = compute_change_of_basis_operation(self.s0, self.sp)  # const
+        self.R_cctbx = matrix.sqr(flex.double(self.R.tolist()))
         s2 = self.s0 + self.modelstate.get_r()
         # Rotate the mean vector
         self.mu = np.matmul(self.R, s2)
@@ -442,39 +444,19 @@ class MaximumLikelihoodTarget(object):
         The RMSD in pixels
 
         """
-        mse = np.array([0.0, 0.0], dtype=np.float64)
+        mse_x = 0.0
+        mse_y = 0.0
         for i in range(len(self.data)):
-            R = self.data[i].R
-            mbar = self.data[i].conditional.mean()
-            xobs = self.data[i].mobs
+            R = self.data[i].R_cctbx
+            mbar = tuple(self.data[i].conditional.mean().flatten())
+            xobs = tuple(self.data[i].mobs.flatten())
             norm_s0 = self.data[i].norm_s0
-
-            s1 = np.matmul(
-                R.T,
-                np.array([mbar[0, 0], mbar[1, 0], norm_s0], dtype=np.float64).reshape(
-                    3, 1
-                ),
-            )
-            s3 = np.matmul(
-                R.T,
-                np.array([xobs[0, 0], xobs[1, 0], norm_s0], dtype=np.float64).reshape(
-                    3, 1
-                ),
-            )
-            s1 = matrix.col(flumpy.from_numpy(s1[:, 0]))
-            s3 = matrix.col(flumpy.from_numpy(s3[:, 0]))
-            panel_id = self.data[i].panel_id
-            xyzcal = self.model.experiment.detector[panel_id].get_ray_intersection_px(
-                s1
-            )
-            xyzobs = self.model.experiment.detector[panel_id].get_ray_intersection_px(
-                s3
-            )
-            r_x = xyzcal[0] - xyzobs[0]
-            r_y = xyzcal[1] - xyzobs[1]
-            mse += np.array([r_x**2, r_y**2])
-        mse /= len(self.data)
-        return np.sqrt(mse)
+            rse_i = rse(R, mbar, xobs, norm_s0, self.model.experiment.detector)
+            mse_x += rse_i[0]
+            mse_y += rse_i[1]
+        mse_x /= len(self.data)
+        mse_y /= len(self.data)
+        return np.sqrt(np.array([mse_x, mse_y]))
 
     def log_likelihood(self):
         """
@@ -566,7 +548,7 @@ class FisherScoringMaximumLikelihoodBase(object):
 
     """
 
-    def __init__(self, x0, max_iter=1000, tolerance=1e-7):
+    def __init__(self, x0, max_iter=1000, tolerance=1e-7, LL_tolerance=1e-6):
         """
         Configure the algorithm
 
@@ -578,6 +560,7 @@ class FisherScoringMaximumLikelihoodBase(object):
         self.x0 = matrix.col(x0)
         self.max_iter = max_iter
         self.tolerance = tolerance
+        self.LL_tolerance = LL_tolerance
 
     def solve(self):
         """
@@ -610,6 +593,8 @@ class FisherScoringMaximumLikelihoodBase(object):
             # Break the loop if the parameters change less than the tolerance
             if (x - x0).length() < self.tolerance:
                 break
+            if self.test_LL_convergence():
+                break
 
             # Update the parameter
             x0 = x
@@ -617,6 +602,16 @@ class FisherScoringMaximumLikelihoodBase(object):
         # Save the parameters
         self.num_iter = it + 1
         self.parameters = x
+
+    def test_LL_convergence(self):
+        try:
+            l1 = self.history[-1]["likelihood"]
+            l2 = self.history[-2]["likelihood"]
+        except IndexError:
+            return False
+
+        test = abs(l1 - l2) < self.LL_tolerance
+        return test
 
     def solve_update_equation(self, S, I):
         """
@@ -687,6 +682,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         panel_ids,
         max_iter=1000,
         tolerance=1e-7,
+        LL_tolerance=1e-6,
     ):
         """
         Initialise the algorithm:
@@ -694,7 +690,10 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         """
         # Initialise the super class
         super(FisherScoringMaximumLikelihood, self).__init__(
-            model.active_parameters, max_iter=max_iter, tolerance=tolerance
+            model.active_parameters,
+            max_iter=max_iter,
+            tolerance=tolerance,
+            LL_tolerance=LL_tolerance,
         )
 
         # Save the parameterisation
@@ -889,7 +888,7 @@ class Refiner(object):
 
     """
 
-    def __init__(self, state, data):
+    def __init__(self, state, data, max_iter=1000, LL_tolerance=1e-6):
         """
         Set the data and initial parameters
 
@@ -903,6 +902,8 @@ class Refiner(object):
         self.panel_ids = data.panel_ids
         self.state = state
         self.history = []
+        self.max_iter = max_iter
+        self.LL_tolerance = LL_tolerance
 
     def refine(self):
         """
@@ -936,6 +937,8 @@ class Refiner(object):
             self.mobs_list,
             self.sobs_list,
             self.panel_ids,
+            max_iter=self.max_iter,
+            LL_tolerance=self.LL_tolerance,
         )
 
         # Solve the maximum likelihood equations
@@ -1035,43 +1038,10 @@ class RefinerData(object):
         for r, (panel_id, xyz) in enumerate(
             zip(reflections["panel"], reflections["xyzobs.px.value"])
         ):
-            # The vector to the pixel centroid
             panel = experiment.detector[panel_id]
-            sp = np.array(
-                panel.get_pixel_lab_coord(xyz[0:2]), dtype=np.float64
-            ).reshape(3, 1)
-            sp *= s0_length / norm(sp)
-
-            # Compute change of basis
-            R = compute_change_of_basis_operation(s0, sp)
-
-            # Get data and compute total counts
-            data = sbox[r].data
-            mask = sbox[r].mask
-            bgrd = sbox[r].background
-
-            # Get array of vectors
-            i0 = sbox[r].bbox[0]
-            j0 = sbox[r].bbox[2]
-            assert data.all()[0] == 1
-            X = np.zeros(shape=(data.all()[1:]) + (2,), dtype=np.float64)
-            C = np.zeros(shape=data.all()[1:], dtype=np.float64)
-            ctot = 0
-            for j in range(data.all()[1]):
-                for i in range(data.all()[2]):
-                    c = data[0, j, i] - bgrd[0, j, i]
-                    if mask[0, j, i] & (1 | 4) == (1 | 4) and c > 0:
-                        ctot += c
-                        ii = i + i0
-                        jj = j + j0
-                        s = np.array(
-                            panel.get_pixel_lab_coord((ii + 0.5, jj + 0.5)),
-                            dtype=np.float64,
-                        ).reshape(3, 1)
-                        s *= s0_length / norm(s)
-                        e = np.matmul(R, s)
-                        X[j, i, :] = e[0:2, 0]
-                        C[j, i] = c
+            sp, ctot, xbar, Sobs = reflection_statistics(
+                panel, xyz, s0_length, experiment.beam.get_s0(), sbox[r]
+            )
 
             # Check we have a sensible number of counts
             if ctot <= 0:
@@ -1079,32 +1049,16 @@ class RefinerData(object):
                     "Strong spot found with <= 0 counts! Check spotfinding results"
                 )
 
-            # Compute the mean vector
-            C = np.expand_dims(C, axis=2)
-            xbar = C * X
-            xbar = xbar.reshape(-1, xbar.shape[-1]).sum(axis=0)
-            xbar /= ctot
-
-            xbar = xbar.reshape(2, 1)
-
-            # Compute the covariance matrix
-            Sobs = np.array([[0.0, 0.0], [0.0, 0.0]], dtype=np.float64)
-            for j in range(X.shape[0]):
-                for i in range(X.shape[1]):
-                    x = np.array(X[j, i], dtype=np.float64).reshape(2, 1)
-                    Sobs += np.matmul(x - xbar, (x - xbar).T) * C[j, i, 0]
-
-            Sobs /= ctot
-            if (Sobs[0, 0] <= 0) or (Sobs[1, 1] <= 0):
+            if (Sobs[0] <= 0) or (Sobs[3] <= 0):
                 raise BadSpotForIntegrationException(
                     "Strong spot variance <= 0. Check spotfinding results"
                 )
 
             # Add to the lists
-            sp_list[:, r] = sp[:, 0]
+            sp_list[:, r] = sp  # [:, 0]
             ctot_list[r] = ctot
-            mobs_list[:, r] = xbar[:, 0]
-            Sobs_list[:, :, r] = Sobs
+            mobs_list[:, r] = xbar  # [:, 0]
+            Sobs_list[:, :, r] = np.array([Sobs[0:2], Sobs[2:]], dtype=np.float64)
 
         # Print some information
         logger.info("")
