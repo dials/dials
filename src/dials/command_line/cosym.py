@@ -282,7 +282,7 @@ class cosym(Subject):
                 del self._reflections[idx]
         # The minimum cell reduction routines can introduce a change of hand for the reference.
         # so check again against the reference in its space group to see if we need a final reindex
-        if self.params.reference:
+        """if self.params.reference:
             from libtbx import Auto
 
             if self.params.d_min not in {Auto, None}:
@@ -316,13 +316,14 @@ class cosym(Subject):
                 ma2, _ = ma.apply_change_of_basis(cb_op)
                 cc = ma2.correlation(ra, assert_is_similar_symmetry=False)
                 vals.append(cc.coefficient())
-            logger.info(cb_ops, vals)
+            logger.info(cb_ops)
+            logger.info(vals)
             idx = vals.index(max(vals))
             logger.info(cb_ops[idx])
             cb_op = sgtbx.change_of_basis_op(cb_ops[idx])
             for expt, refl in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
-                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+                refl["miller_index"] = cb_op.apply(refl["miller_index"])"""
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
