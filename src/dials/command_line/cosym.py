@@ -29,6 +29,7 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.observer import Subject
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.reference import intensities_from_reference_file
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.cosym")
@@ -243,7 +244,7 @@ class cosym(Subject):
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
         if self.params.reference:
-            unique_ids = set(self.cosym_analysis.dataset_ids[:-1])
+            unique_ids = sorted(list(set(self.cosym_analysis.dataset_ids)))[:-1]
             reindexing_ops = reindexing_ops[:-1]
         else:
             unique_ids = set(self.cosym_analysis.dataset_ids)
@@ -279,6 +280,49 @@ class cosym(Subject):
                 )
                 del self._experiments[idx]
                 del self._reflections[idx]
+        # The minimum cell reduction routines can introduce a change of hand for the reference.
+        # so check again against the reference in its space group to see if we need a final reindex
+        if self.params.reference:
+            from libtbx import Auto
+
+            if self.params.d_min not in {Auto, None}:
+                reference_intensities = intensities_from_reference_file(
+                    self.params.reference,
+                    d_min=self.params.d_min,
+                    k_sol=self.params.reference_model.k_sol,
+                    b_sol=self.params.reference_model.b_sol,
+                )
+            else:
+                reference_intensities = intensities_from_reference_file(
+                    self.params.reference
+                )
+            # make a miller array of the data
+            datasets = filtered_arrays_from_experiments_reflections(
+                self._experiments, self._reflections, partiality_threshold=0.4
+            )
+            ma = datasets[0]
+            for d in datasets[1:]:
+                ma = ma.concatenate(d)
+            # ma = ref_arr.as_non_anomalous_array().merge_equivalents().array()
+            ra = (
+                reference_intensities.as_non_anomalous_array()
+                .merge_equivalents()
+                .array()
+            )
+            cb_ops = []
+            vals = []
+            for cb_op in set(reindexing_ops):
+                cb_ops.append(cb_op)
+                ma2, _ = ma.apply_change_of_basis(cb_op)
+                cc = ma2.correlation(ra, assert_is_similar_symmetry=False)
+                vals.append(cc.coefficient())
+            logger.info(cb_ops, vals)
+            idx = vals.index(max(vals))
+            logger.info(cb_ops[idx])
+            cb_op = sgtbx.change_of_basis_op(cb_ops[idx])
+            for expt, refl in zip(self._experiments, self._reflections):
+                expt.crystal = expt.crystal.change_basis(cb_op)
+                refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
