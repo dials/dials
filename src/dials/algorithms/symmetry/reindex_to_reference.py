@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import logging
+
 from cctbx import sgtbx
 from mmtbx.scaling.twin_analyses import twin_laws
 
 import dials.util
 from dials.util import Sorry
+
+logger = logging.getLogger(__name__)
 
 
 def determine_reindex_operator_against_reference(test_miller_set, reference_miller_set):
@@ -41,12 +45,12 @@ reference dataset if both dataset are in the same spacegroup."""
 
     if twin_ops:
         correlations = []
-        print(
+        logger.info(
             "Possible twin operators identified for space group %s:"
             % test_miller_set.space_group().info()
         )
         for op in twin_ops:
-            print(op)
+            logger.info(op)
         # Loop through twin operators, calculating cc between two datasets
         cc = test_miller_set.correlation(
             reference_miller_set, assert_is_similar_symmetry=False
@@ -64,22 +68,22 @@ reference dataset if both dataset are in the same spacegroup."""
         rows = [["a, b, c (no reindex)", f"{correlations[0]:.5f}"]]
         for i, op in enumerate(twin_ops):
             rows.append([str(op), f"{correlations[i + 1]:.5f}"])
-        print(dials.util.tabulate(rows, header))
+        logger.info(dials.util.tabulate(rows, header))
 
         best_solution_idx = correlations.index(max(correlations))
-        print("\nOutcome of analysis against reference dataset:")
+        logger.info("\nOutcome of analysis against reference dataset:")
         if best_solution_idx == 0:
-            print("No reindexing required \n")
+            logger.info("No reindexing required \n")
             change_of_basis_op = sgtbx.change_of_basis_op("a,b,c")
         else:
-            print(
+            logger.info(
                 "Reindexing required with the twin operator:",
                 twin_ops[best_solution_idx - 1].as_hkl(),
                 "\n",
             )
             change_of_basis_op = twin_ops[best_solution_idx - 1]
     else:
-        print("No twin operators found, no reindexing required \n")
+        logger.info("No twin operators found, no reindexing required \n")
         change_of_basis_op = sgtbx.change_of_basis_op("a,b,c")
 
     return change_of_basis_op
