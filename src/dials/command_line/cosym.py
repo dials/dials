@@ -313,7 +313,7 @@ class cosym(Subject):
             )
             for expt, refl in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(change_of_basis_op)
-                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+                refl["miller_index"] = change_of_basis_op.apply(refl["miller_index"])
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
