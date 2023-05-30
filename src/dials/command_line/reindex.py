@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import os
 import sys
 
@@ -15,8 +16,12 @@ import dials.util
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
+from dials.util import log
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
+
+logger = logging.getLogger(__name__)
 
 help_message = """
 
@@ -70,6 +75,8 @@ output {
   reflections = reindexed.refl
     .type = str
     .help = "The filename for reindexed reflections"
+  log = dials.reindex.log
+    .type = str
 }
 """,
     process_includes=True,
@@ -115,7 +122,7 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
     change_of_basis_op = sgtbx.change_of_basis_op(
         sgtbx.rt_mx(sgtbx.rot_mx(r, denominator=denom))
     ).inverse()
-    print(f"discovered change_of_basis_op={change_of_basis_op}")
+    logger.info(f"discovered change_of_basis_op={change_of_basis_op}")
 
     # sanity check that this is the right cb_op
     assert (change_of_basis_op.apply(from_hkl) == to_hkl).count(False) == 0
@@ -173,6 +180,10 @@ def run(args=None):
     )
 
     params, options = parser.parse_args(args, show_diff_phil=True)
+
+    log.config(verbosity=options.verbose, logfile=params.output.log)
+
+    logger.info(dials_version())
 
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
@@ -296,12 +307,15 @@ experiments file must also be specified with the option: reference.experiments= 
             R, axis, angle, change_of_basis_op = difference_rotation_matrix_axis_angle(
                 cryst, reference_crystal
             )
-            print(f"Change of basis op: {change_of_basis_op}")
-            print("Rotation matrix to transform input crystal to reference::")
-            print(R.mathematica_form(format="%.3f", one_row_per_line=True))
-            print(
-                f"Rotation of {angle:.3f} degrees",
-                "about axis (%.3f, %.3f, %.3f)" % axis,
+            Rfmt = R.mathematica_form(format="%.3f", one_row_per_line=True)
+            logger.info(
+                "\n".join(
+                    f"Change of basis op: {change_of_basis_op}",
+                    "Rotation matrix to transform input crystal to reference::",
+                    f"{Rfmt}",
+                    f"Rotation of {angle:.3f} degrees",
+                    f"about axis ({axis[0]:.3f}, {axis[1]:.3f}, {axis[2]:.3f})",
+                )
             )
 
         elif len(reflections):
@@ -346,7 +360,9 @@ experiments file must also be specified with the option: reference.experiments= 
                 )
             raise
 
-        print(f"Saving reindexed experimental models to {params.output.experiments}")
+        logger.info(
+            f"Saving reindexed experimental models to {params.output.experiments}"
+        )
         experiments.as_file(params.output.experiments)
 
     if len(reflections):
@@ -365,9 +381,8 @@ experiments file must also be specified with the option: reference.experiments= 
             miller_indices
         )
         if non_integral_indices.size() > 0:
-            print(
-                "Removing %i/%i reflections (change of basis results in non-integral indices)"
-                % (non_integral_indices.size(), miller_indices.size())
+            logger.info(
+                f"Removing {non_integral_indices.size()}/{miller_indices.size()} reflections (change of basis results in non-integral indices)"
             )
         sel = flex.bool(miller_indices.size(), True)
         sel.set_selected(non_integral_indices, False)
@@ -375,7 +390,7 @@ experiments file must also be specified with the option: reference.experiments= 
         reflections["miller_index"].set_selected(sel, miller_indices_reindexed)
         reflections["miller_index"].set_selected(~sel, (0, 0, 0))
 
-        print(f"Saving reindexed reflections to {params.output.reflections}")
+        logger.info(f"Saving reindexed reflections to {params.output.reflections}")
         reflections.as_file(params.output.reflections)
 
 
