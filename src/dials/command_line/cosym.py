@@ -29,7 +29,6 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.observer import Subject
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
-from dials.util.reference import intensities_from_reference_file
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.cosym")
@@ -100,11 +99,13 @@ class cosym(Subject):
             params = phil_scope.extract()
         self.params = params
 
-        reference_intensities = None
+        self.reference_intensities = None
         if self.params.reference:
-            reference_intensities, space_group_info = extract_reference_intensities(
-                params
-            )
+            (
+                self.reference_intensities,
+                reference_intensities_in_p1,
+                space_group_info,
+            ) = extract_reference_intensities(params)
             if self.params.space_group and (
                 self.params.space_group.type().number()
                 != space_group_info.type().number()
@@ -187,8 +188,8 @@ class cosym(Subject):
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
-        if reference_intensities:
-            datasets.append(reference_intensities)
+        if self.reference_intensities:
+            datasets.append(reference_intensities_in_p1)
             self.cosym_analysis = CosymAnalysis(
                 datasets, self.params, seed_dataset=len(datasets) - 1
             )
@@ -244,7 +245,7 @@ class cosym(Subject):
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
         if self.params.reference:
-            unique_ids = sorted(list(set(self.cosym_analysis.dataset_ids)))[:-1]
+            unique_ids = sorted(set(self.cosym_analysis.dataset_ids))[:-1]
             reindexing_ops = reindexing_ops[:-1]
         else:
             unique_ids = set(self.cosym_analysis.dataset_ids)
@@ -283,19 +284,6 @@ class cosym(Subject):
         # The minimum cell reduction routines can introduce a change of hand for the reference.
         # so check again against the reference in its space group to see if we need a final reindex
         if self.params.reference:
-            from libtbx import Auto
-
-            if self.params.d_min not in {Auto, None}:
-                reference_intensities = intensities_from_reference_file(
-                    self.params.reference,
-                    d_min=self.params.d_min,
-                    k_sol=self.params.reference_model.k_sol,
-                    b_sol=self.params.reference_model.b_sol,
-                )
-            else:
-                reference_intensities = intensities_from_reference_file(
-                    self.params.reference
-                )
             # make a miller array of the data
             datasets = filtered_arrays_from_experiments_reflections(
                 self._experiments, self._reflections, partiality_threshold=0.4
@@ -303,17 +291,20 @@ class cosym(Subject):
             ma = datasets[0]
             for d in datasets[1:]:
                 ma = ma.concatenate(d)
-            # ma = ref_arr.as_non_anomalous_array().merge_equivalents().array()
+            logger.info("Checking indexing mode of solution against reference")
             from dials.algorithms.symmetry.reindex_to_reference import (
                 determine_reindex_operator_against_reference,
             )
 
             change_of_basis_op = determine_reindex_operator_against_reference(
-                ma, reference_intensities
+                ma, self.reference_intensities
             )
-            for expt, refl in zip(self._experiments, self._reflections):
-                expt.crystal = expt.crystal.change_basis(change_of_basis_op)
-                refl["miller_index"] = change_of_basis_op.apply(refl["miller_index"])
+            if change_of_basis_op != sgtbx.change_of_basis_op("a,b,c"):
+                for expt, refl in zip(self._experiments, self._reflections):
+                    expt.crystal = expt.crystal.change_basis(change_of_basis_op)
+                    refl["miller_index"] = change_of_basis_op.apply(
+                        refl["miller_index"]
+                    )
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []

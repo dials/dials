@@ -77,9 +77,7 @@ reference dataset if both dataset are in the same spacegroup."""
             change_of_basis_op = sgtbx.change_of_basis_op("a,b,c")
         else:
             logger.info(
-                "Reindexing required with the twin operator:",
-                twin_ops[best_solution_idx - 1].as_hkl(),
-                "\n",
+                f"Reindexing required with the twin operator:{twin_ops[best_solution_idx - 1].as_hkl()}\n"
             )
             change_of_basis_op = twin_ops[best_solution_idx - 1]
     else:
