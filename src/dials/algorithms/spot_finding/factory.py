@@ -421,18 +421,18 @@ class SpotFinderFactory:
             params = phil_scope.fetch(source=parse("")).extract()
 
         if params.spotfinder.force_2d and params.output.shoeboxes is False:
-            no_shoeboxes_2d = True
+            no_shoeboxes_and_2d = True
         elif experiments is not None and params.output.shoeboxes is False:
-            no_shoeboxes_2d = False
+            no_shoeboxes_and_2d = False
             all_stills = True
             for experiment in experiments:
                 if isinstance(experiment.imageset, ImageSequence):
                     all_stills = False
                     break
             if all_stills:
-                no_shoeboxes_2d = True
+                no_shoeboxes_and_2d = True
         else:
-            no_shoeboxes_2d = False
+            no_shoeboxes_and_2d = False
 
         # Read in the lookup files
         mask = SpotFinderFactory.load_image(params.spotfinder.lookup.mask)
@@ -470,7 +470,7 @@ class SpotFinderFactory:
             mask_generator=mask_generator,
             min_spot_size=params.spotfinder.filter.min_spot_size,
             max_spot_size=params.spotfinder.filter.max_spot_size,
-            no_shoeboxes_2d=no_shoeboxes_2d,
+            no_shoeboxes_and_2d=no_shoeboxes_and_2d,
             min_chunksize=params.spotfinder.mp.min_chunksize,
             is_stills=is_stills,
         )

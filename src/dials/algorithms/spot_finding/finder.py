@@ -376,7 +376,7 @@ class ExtractSpots:
         min_spot_size=1,
         max_spot_size=20,
         filter_spots=None,
-        no_shoeboxes_2d=False,
+        no_shoeboxes_and_2d=False,
         min_chunksize=50,
         write_hot_pixel_mask=False,
     ):
@@ -402,7 +402,7 @@ class ExtractSpots:
         self.min_spot_size = min_spot_size
         self.max_spot_size = max_spot_size
         self.filter_spots = filter_spots
-        self.no_shoeboxes_2d = no_shoeboxes_2d
+        self.no_shoeboxes_and_2d = no_shoeboxes_and_2d
         self.min_chunksize = min_chunksize
         self.write_hot_pixel_mask = write_hot_pixel_mask
 
@@ -413,7 +413,7 @@ class ExtractSpots:
         :param imageset: The imageset to process
         :return: The list of spot shoeboxes
         """
-        if not self.no_shoeboxes_2d:
+        if not self.no_shoeboxes_and_2d:
             return self._find_spots(imageset)
         else:
             return self._find_spots_2d_no_shoeboxes(imageset)
@@ -641,7 +641,7 @@ class SpotFinder:
         hot_mask_prefix="hot_mask",
         min_spot_size=1,
         max_spot_size=20,
-        no_shoeboxes_2d=False,
+        no_shoeboxes_and_2d=False,
         min_chunksize=50,
         is_stills=False,
     ):
@@ -672,7 +672,7 @@ class SpotFinder:
         self.mp_chunksize = mp_chunksize
         self.mp_nproc = mp_nproc
         self.mp_njobs = mp_njobs
-        self.no_shoeboxes_2d = no_shoeboxes_2d
+        self.no_shoeboxes_and_2d = no_shoeboxes_and_2d
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
 
@@ -778,7 +778,7 @@ class SpotFinder:
             min_spot_size=self.min_spot_size,
             max_spot_size=self.max_spot_size,
             filter_spots=self.filter_spots,
-            no_shoeboxes_2d=self.no_shoeboxes_2d,
+            no_shoeboxes_and_2d=self.no_shoeboxes_and_2d,
             min_chunksize=self.min_chunksize,
             write_hot_pixel_mask=self.write_hot_mask,
         )
