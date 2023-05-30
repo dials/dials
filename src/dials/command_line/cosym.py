@@ -12,6 +12,9 @@ from cctbx import sgtbx
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.algorithms.symmetry.cosym import CosymAnalysis, extract_reference_intensities
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
+from dials.algorithms.symmetry.reindex_to_reference import (
+    determine_reindex_operator_against_reference,
+)
 from dials.array_family import flex
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
@@ -283,6 +286,7 @@ class cosym(Subject):
                 del self._reflections[idx]
         # The minimum cell reduction routines can introduce a change of hand for the reference.
         # so check again against the reference in its space group to see if we need a final reindex
+        # This also provides a useful indication of how well the data correlates with the reference.
         if self.params.reference:
             # make a miller array of the data
             filter_logger = logging.getLogger("dials.util.filter_reflections")
@@ -294,10 +298,6 @@ class cosym(Subject):
             for d in datasets[1:]:
                 ma = ma.concatenate(d)
             logger.info("Checking indexing mode of solution against reference")
-            from dials.algorithms.symmetry.reindex_to_reference import (
-                determine_reindex_operator_against_reference,
-            )
-
             change_of_basis_op = determine_reindex_operator_against_reference(
                 ma, self.reference_intensities
             )
