@@ -304,6 +304,9 @@ class cosym(Subject):
                 ma, self.reference_intensities
             )
             if change_of_basis_op != sgtbx.change_of_basis_op("a,b,c"):
+                logger.info(
+                    f"Applying further reindexing of all datasets with operator {change_of_basis_op}"
+                )
                 for expt, refl in zip(self._experiments, self._reflections):
                     expt.crystal = expt.crystal.change_basis(change_of_basis_op)
                     refl["miller_index"] = change_of_basis_op.apply(
