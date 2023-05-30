@@ -61,9 +61,6 @@ reference {
   reflections = None
     .type = path
     .help = "Reference reflections to allow reindexing to consistent index between datasets."
-  model = None
-    .type = path
-    .help = "PDB model for reference"
 }
 output {
   experiments = reindexed.expt
@@ -279,46 +276,6 @@ experiments file must also be specified with the option: reference.experiments= 
         except ValueError:
             raise Sorry("No reflections remain after filtering the reference dataset")
 
-        from dials.algorithms.symmetry.reindex_to_reference import (
-            determine_reindex_operator_against_reference,
-        )
-
-        change_of_basis_op = determine_reindex_operator_against_reference(
-            test_miller_set, reference_miller_set
-        )
-    elif params.reference.model:
-        import numpy as np
-
-        wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
-        from dials.util.reference import intensities_from_reference_file
-
-        reference_miller_set = intensities_from_reference_file(
-            params.reference.model, wavelength=wavelength
-        )
-        test_reflections = reflections[0]
-
-        # Set some flags to allow filtering, if wanting to reindex against
-        # reference with data that has not yet been through integration
-        if (
-            test_reflections.get_flags(test_reflections.flags.integrated_sum).count(
-                True
-            )
-            == 0
-        ):
-            assert (
-                "intensity.sum.value" in test_reflections
-            ), "No 'intensity.sum.value' in reflections"
-            test_reflections.set_flags(
-                flex.bool(test_reflections.size(), True),
-                test_reflections.flags.integrated_sum,
-            )
-        # Make miller array of the two datasets
-        try:
-            test_miller_set = filtered_arrays_from_experiments_reflections(
-                experiments, [test_reflections], partiality_threshold=0.4
-            )[0]
-        except ValueError:
-            raise Sorry("No reflections remain after filtering the test dataset")
         from dials.algorithms.symmetry.reindex_to_reference import (
             determine_reindex_operator_against_reference,
         )
