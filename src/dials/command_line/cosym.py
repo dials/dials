@@ -285,6 +285,8 @@ class cosym(Subject):
         # so check again against the reference in its space group to see if we need a final reindex
         if self.params.reference:
             # make a miller array of the data
+            filter_logger = logging.getLogger("dials.util.filter_reflections")
+            filter_logger.disabled = True
             datasets = filtered_arrays_from_experiments_reflections(
                 self._experiments, self._reflections, partiality_threshold=0.4
             )
