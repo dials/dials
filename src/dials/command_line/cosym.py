@@ -104,11 +104,12 @@ class cosym(Subject):
 
         self.reference_intensities = None
         if self.params.reference:
+            wl = np.mean([expt.beam.get_wavelength() for expt in experiments])
             (
                 self.reference_intensities,
                 reference_intensities_in_p1,
                 space_group_info,
-            ) = extract_reference_intensities(params)
+            ) = extract_reference_intensities(params, wavelength=wl)
             if self.params.space_group and (
                 self.params.space_group.type().number()
                 != space_group_info.type().number()

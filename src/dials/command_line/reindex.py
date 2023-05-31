@@ -179,6 +179,36 @@ def reindex_experiments(experiments, cb_op, space_group=None):
     return reindexed_experiments
 
 
+def change_of_basis_op_against_reference(
+    experiments, reflections, reference_miller_set
+):
+    # Set some flags to allow filtering, if wanting to reindex against
+    # reference with data that has not yet been through integration
+    for table in reflections:
+        if table.get_flags(table.flags.integrated_sum).count(True) == 0:
+            assert (
+                "intensity.sum.value" in table
+            ), "No 'intensity.sum.value' in reflections"
+            table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
+    # Make miller array of the datasets
+    filter_logger = logging.getLogger("dials.util.filter_reflections")
+    filter_logger.disabled = True
+    try:
+        test_miller_sets = filtered_arrays_from_experiments_reflections(
+            experiments, reflections, partiality_threshold=0.4
+        )
+    except ValueError:
+        raise Sorry("No reflections remain after filtering the test dataset")
+    test_miller_set = test_miller_sets[0]
+    for d in test_miller_sets[1:]:
+        test_miller_set = test_miller_set.concatentate(d)
+
+    change_of_basis_op = determine_reindex_operator_against_reference(
+        test_miller_set, reference_miller_set
+    )
+    return change_of_basis_op
+
+
 @dials.util.show_mail_handle_errors()
 def run(args=None):
 
@@ -254,30 +284,6 @@ experiments file must also be specified with the option: reference.experiments= 
         reference_reflections = flex.reflection_table().from_file(
             params.reference.reflections
         )
-
-        test_reflections = flex.reflection_table.concat(reflections)
-
-        if (
-            reference_crystal.get_space_group().type().number()
-            != experiments.crystals()[0].get_space_group().type().number()
-        ):
-            raise Sorry("Space group of input does not match reference")
-
-        # Set some flags to allow filtering, if wanting to reindex against
-        # reference with data that has not yet been through integration
-        if (
-            test_reflections.get_flags(test_reflections.flags.integrated_sum).count(
-                True
-            )
-            == 0
-        ):
-            assert (
-                "intensity.sum.value" in test_reflections
-            ), "No 'intensity.sum.value' in reflections"
-            test_reflections.set_flags(
-                flex.bool(test_reflections.size(), True),
-                test_reflections.flags.integrated_sum,
-            )
         if (
             reference_reflections.get_flags(
                 reference_reflections.flags.integrated_sum
@@ -285,20 +291,17 @@ experiments file must also be specified with the option: reference.experiments= 
             == 0
         ):
             assert (
-                "intensity.sum.value" in test_reflections
+                "intensity.sum.value" in reference_reflections
             ), "No 'intensity.sum.value in reference reflections"
             reference_reflections.set_flags(
                 flex.bool(reference_reflections.size(), True),
                 reference_reflections.flags.integrated_sum,
             )
-
-        # Make miller array of the two datasets
-        try:
-            test_miller_set = filtered_arrays_from_experiments_reflections(
-                experiments, [test_reflections], partiality_threshold=0.4
-            )[0]
-        except ValueError:
-            raise Sorry("No reflections remain after filtering the test dataset")
+        if (
+            reference_crystal.get_space_group().type().number()
+            != experiments.crystals()[0].get_space_group().type().number()
+        ):
+            raise Sorry("Space group of input does not match reference")
         try:
             reference_miller_set = filtered_arrays_from_experiments_reflections(
                 reference_experiments, [reference_reflections]
@@ -306,8 +309,8 @@ experiments file must also be specified with the option: reference.experiments= 
         except ValueError:
             raise Sorry("No reflections remain after filtering the reference dataset")
 
-        change_of_basis_op = determine_reindex_operator_against_reference(
-            test_miller_set, reference_miller_set
+        change_of_basis_op = change_of_basis_op_against_reference(
+            experiments, reflections, reference_miller_set
         )
 
     elif params.reference.file:
@@ -317,33 +320,8 @@ experiments file must also be specified with the option: reference.experiments= 
         reference_miller_set = intensities_from_reference_file(
             params.reference.file, wavelength=wavelength
         )
-        test_reflections = flex.reflection_table.concat(reflections)
-
-        # Set some flags to allow filtering, if wanting to reindex against
-        # reference with data that has not yet been through integration
-        if (
-            test_reflections.get_flags(test_reflections.flags.integrated_sum).count(
-                True
-            )
-            == 0
-        ):
-            assert (
-                "intensity.sum.value" in test_reflections
-            ), "No 'intensity.sum.value' in reflections"
-            test_reflections.set_flags(
-                flex.bool(test_reflections.size(), True),
-                test_reflections.flags.integrated_sum,
-            )
-        # Make miller array of the two datasets
-        try:
-            test_miller_set = filtered_arrays_from_experiments_reflections(
-                experiments, [test_reflections], partiality_threshold=0.4
-            )[0]
-        except ValueError:
-            raise Sorry("No reflections remain after filtering the test dataset")
-
-        change_of_basis_op = determine_reindex_operator_against_reference(
-            test_miller_set, reference_miller_set
+        change_of_basis_op = change_of_basis_op_against_reference(
+            experiments, reflections, reference_miller_set
         )
 
     elif len(experiments) and params.change_of_basis_op is Auto:
