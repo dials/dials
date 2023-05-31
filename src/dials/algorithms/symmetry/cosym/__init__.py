@@ -883,7 +883,7 @@ def extract_reference_intensities(
         * group["cb_op_inp_best"]
     )
 
-    reference_intensities_in_p1 = (
+    reference_intensities = (
         reference_intensities.change_basis(
             ref_cb_op,
         )
@@ -892,10 +892,6 @@ def extract_reference_intensities(
         .merge_equivalents()
         .array()
     )
-    if not reference_intensities_in_p1.sigmas():
-        reference_intensities_in_p1.set_sigmas(
-            reference_intensities_in_p1.data() ** 0.5
-        )
     if not reference_intensities.sigmas():
         reference_intensities.set_sigmas(reference_intensities.data() ** 0.5)
-    return reference_intensities, reference_intensities_in_p1, initial_space_group_info
+    return reference_intensities, initial_space_group_info

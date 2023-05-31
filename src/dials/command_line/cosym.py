@@ -12,9 +12,6 @@ from cctbx import sgtbx
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.algorithms.symmetry.cosym import CosymAnalysis, extract_reference_intensities
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
-from dials.algorithms.symmetry.reindex_to_reference import (
-    determine_reindex_operator_against_reference,
-)
 from dials.array_family import flex
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
@@ -102,14 +99,12 @@ class cosym(Subject):
             params = phil_scope.extract()
         self.params = params
 
-        self.reference_intensities = None
+        reference_intensities = None
         if self.params.reference:
             wl = np.mean([expt.beam.get_wavelength() for expt in experiments])
-            (
-                self.reference_intensities,
-                reference_intensities_in_p1,
-                space_group_info,
-            ) = extract_reference_intensities(params, wavelength=wl)
+            reference_intensities, space_group_info = extract_reference_intensities(
+                params, wavelength=wl
+            )
             if self.params.space_group and (
                 self.params.space_group.type().number()
                 != space_group_info.type().number()
@@ -192,8 +187,10 @@ class cosym(Subject):
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
-        if self.reference_intensities:
-            datasets.append(reference_intensities_in_p1)
+        if reference_intensities:
+            # Note the minimum cell reduction routines can introduce a change of hand for the reference.
+            # The purpose of the reference is to help the clustering, not guarantee the indexing solution.
+            datasets.append(reference_intensities)
             self.cosym_analysis = CosymAnalysis(
                 datasets, self.params, seed_dataset=len(datasets) - 1
             )
@@ -285,34 +282,6 @@ class cosym(Subject):
                 )
                 del self._experiments[idx]
                 del self._reflections[idx]
-        # The minimum cell reduction routines can introduce a change of hand for the reference.
-        # so check again against the reference in its space group to see if we need a final reindex
-        # This also provides a useful indication of how well the data correlates with the reference.
-        if self.params.reference:
-            # make a miller array of the data
-            filter_logger = logging.getLogger("dials.util.filter_reflections")
-            filter_logger.disabled = True
-            datasets = filtered_arrays_from_experiments_reflections(
-                self._experiments,
-                self._reflections,
-                partiality_threshold=self.params.partiality_threshold,
-            )
-            ma = datasets[0]
-            for d in datasets[1:]:
-                ma = ma.concatenate(d)
-            logger.info("Checking indexing mode of solution against reference")
-            change_of_basis_op = determine_reindex_operator_against_reference(
-                ma, self.reference_intensities
-            )
-            if str(change_of_basis_op) != str(sgtbx.change_of_basis_op("a,b,c")):
-                logger.info(
-                    f"Applying further reindexing of all datasets with operator {change_of_basis_op}"
-                )
-                for expt, refl in zip(self._experiments, self._reflections):
-                    expt.crystal = expt.crystal.change_basis(change_of_basis_op)
-                    refl["miller_index"] = change_of_basis_op.apply(
-                        refl["miller_index"]
-                    )
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
