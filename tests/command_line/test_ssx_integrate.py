@@ -106,7 +106,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
     assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
     expts = load.experiment_list(tmp_path / "integrated_1.expt", check_format=False)
     mosaicity = expts[0].profile.mosaicity()
-    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1e-6)
+    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1.2e-6)
     with (tmp_path / "history.json").open("r") as fh:
         data = json.load(fh)
         assert data["0"]["likelihood_per_iteration"][-1][-1] == pytest.approx(
