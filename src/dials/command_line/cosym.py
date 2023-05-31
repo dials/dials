@@ -303,7 +303,7 @@ class cosym(Subject):
             change_of_basis_op = determine_reindex_operator_against_reference(
                 ma, self.reference_intensities
             )
-            if change_of_basis_op != sgtbx.change_of_basis_op("a,b,c"):
+            if str(change_of_basis_op) != str(sgtbx.change_of_basis_op("a,b,c")):
                 logger.info(
                     f"Applying further reindexing of all datasets with operator {change_of_basis_op}"
                 )
