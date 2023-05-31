@@ -93,7 +93,7 @@ output {
     .type = str
     .help = "The filename for reindexed reflections"
   log = dials.reindex.log
-    .type = str
+    .type = path
 }
 """,
     process_includes=True,
