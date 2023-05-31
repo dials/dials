@@ -404,6 +404,15 @@ def test_multi_sweep(dials_regression, tmpdir):
     experiments = load.experiment_list(expts)
     for i, expt in enumerate(experiments):
         expt.identifier = str(100 + i)
+
+    # Patched data file. Original had trusted_range from -1, but now this range
+    # is defined to start from the minimum trusted value. This test should be
+    # updated with new data in dials-data (i.e. not dials_regression).
+    # https://github.com/dials/dials/issues/2200
+    panel = experiments[0].detector[0]
+    max_trusted = panel.get_trusted_range()[1]
+    panel.set_trusted_range((0, max_trusted))
+
     experiments.as_json(tmpdir / "modified_input.json")
 
     refls = os.path.join(
