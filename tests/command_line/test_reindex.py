@@ -251,7 +251,7 @@ def test_reindex_experiments():
         assert cryst.num_scan_points == n_scan_points
 
 
-def test_reindex_cb_op_exit(dials_data):
+def test_reindex_cb_op_exit(dials_data, run_in_tmp_path):
     data_dir = dials_data("insulin_processed", pathlib=True)
 
     # Want a SystemExit, rather than an uncaught exception
@@ -303,3 +303,19 @@ def test_reindex_reference_multi_crystal(dials_data, tmp_path):
     assert not result2.returncode and not result2.stderr
     assert tmp_path.joinpath("reindexed.expt").is_file()
     assert tmp_path.joinpath("reindexed.refl").is_file()
+
+
+def test_reindex_reference_file(dials_data, tmp_path):
+
+    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    ssx_data = dials_data("cunir_serial", pathlib=True)
+    refls = ssx / "integrated.refl"
+    expts = ssx / "integrated.expt"
+
+    result = procrunner.run(
+        ["dials.reindex", expts, refls, f"reference.file={ssx_data / '2BW4.pdb'}"],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "reindexed.expt").is_file()
+    assert (tmp_path / "reindexed.refl").is_file()

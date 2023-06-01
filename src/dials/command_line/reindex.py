@@ -4,19 +4,31 @@
 from __future__ import annotations
 
 import copy
+import logging
 import os
 import sys
 
+import numpy as np
+
 import iotbx.phil
 from cctbx import sgtbx
+from libtbx import Auto
 from rstbx.symmetry.constraints import parameter_reduction
 
 import dials.util
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.algorithms.symmetry.reindex_to_reference import (
+    determine_reindex_operator_against_reference,
+)
 from dials.array_family import flex
+from dials.util import Sorry, log
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.reference import intensities_from_reference_file
+from dials.util.version import dials_version
+
+logger = logging.getLogger("dials.command_line.reindex")
 
 help_message = """
 
@@ -61,6 +73,16 @@ reference {
   reflections = None
     .type = path
     .help = "Reference reflections to allow reindexing to consistent index between datasets."
+  file = None
+    .type = path
+    .help = "A file containing a reference set of intensities e.g. MTZ/cif, or a"
+            "file from which a reference set of intensities can be calculated"
+            "e.g. .pdb or .cif . The space group of the reference file will"
+            "be used and if an indexing ambiguity is present, the input"
+            "data will be reindexed to be consistent with the indexing mode of"
+            "this reference file."
+    .expert_level = 2
+  include scope dials.util.reference.reference_phil_str
 }
 output {
   experiments = reindexed.expt
@@ -70,6 +92,8 @@ output {
   reflections = reindexed.refl
     .type = str
     .help = "The filename for reindexed reflections"
+  log = dials.reindex.log
+    .type = path
 }
 """,
     process_includes=True,
@@ -115,7 +139,7 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
     change_of_basis_op = sgtbx.change_of_basis_op(
         sgtbx.rt_mx(sgtbx.rot_mx(r, denominator=denom))
     ).inverse()
-    print(f"discovered change_of_basis_op={change_of_basis_op}")
+    logger.info(f"discovered change_of_basis_op={change_of_basis_op}")
 
     # sanity check that this is the right cb_op
     assert (change_of_basis_op.apply(from_hkl) == to_hkl).count(False) == 0
@@ -155,11 +179,38 @@ def reindex_experiments(experiments, cb_op, space_group=None):
     return reindexed_experiments
 
 
+def change_of_basis_op_against_reference(
+    experiments, reflections, reference_miller_set
+):
+    # Set some flags to allow filtering, if wanting to reindex against
+    # reference with data that has not yet been through integration
+    for table in reflections:
+        if table.get_flags(table.flags.integrated_sum).count(True) == 0:
+            assert (
+                "intensity.sum.value" in table
+            ), "No 'intensity.sum.value' in reflections"
+            table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
+    # Make miller array of the datasets
+    filter_logger = logging.getLogger("dials.util.filter_reflections")
+    filter_logger.disabled = True
+    try:
+        test_miller_sets = filtered_arrays_from_experiments_reflections(
+            experiments, reflections, partiality_threshold=0.4
+        )
+    except ValueError:
+        raise Sorry("No reflections remain after filtering the test dataset")
+    test_miller_set = test_miller_sets[0]
+    for d in test_miller_sets[1:]:
+        test_miller_set = test_miller_set.concatentate(d)
+
+    change_of_basis_op = determine_reindex_operator_against_reference(
+        test_miller_set, reference_miller_set
+    )
+    return change_of_basis_op
+
+
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    import libtbx.load_env
-
-    from dials.util import Sorry
 
     usage = "dials.reindex [options] indexed.expt indexed.refl"
 
@@ -172,7 +223,16 @@ def run(args=None):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(args, show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=False)
+
+    log.config(verbosity=options.verbose, logfile=params.output.log)
+
+    logger.info(dials_version())
+
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil != "":
+        logger.info("The following parameters have been modified:\n")
+        logger.info(diff_phil)
 
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
@@ -224,30 +284,6 @@ experiments file must also be specified with the option: reference.experiments= 
         reference_reflections = flex.reflection_table().from_file(
             params.reference.reflections
         )
-
-        test_reflections = reflections[0]
-
-        if (
-            reference_crystal.get_space_group().type().number()
-            != experiments.crystals()[0].get_space_group().type().number()
-        ):
-            raise Sorry("Space group of input does not match reference")
-
-        # Set some flags to allow filtering, if wanting to reindex against
-        # reference with data that has not yet been through integration
-        if (
-            test_reflections.get_flags(test_reflections.flags.integrated_sum).count(
-                True
-            )
-            == 0
-        ):
-            assert (
-                "intensity.sum.value" in test_reflections
-            ), "No 'intensity.sum.value' in reflections"
-            test_reflections.set_flags(
-                flex.bool(test_reflections.size(), True),
-                test_reflections.flags.integrated_sum,
-            )
         if (
             reference_reflections.get_flags(
                 reference_reflections.flags.integrated_sum
@@ -255,20 +291,17 @@ experiments file must also be specified with the option: reference.experiments= 
             == 0
         ):
             assert (
-                "intensity.sum.value" in test_reflections
+                "intensity.sum.value" in reference_reflections
             ), "No 'intensity.sum.value in reference reflections"
             reference_reflections.set_flags(
                 flex.bool(reference_reflections.size(), True),
                 reference_reflections.flags.integrated_sum,
             )
-
-        # Make miller array of the two datasets
-        try:
-            test_miller_set = filtered_arrays_from_experiments_reflections(
-                experiments, [test_reflections]
-            )[0]
-        except ValueError:
-            raise Sorry("No reflections remain after filtering the test dataset")
+        if (
+            reference_crystal.get_space_group().type().number()
+            != experiments.crystals()[0].get_space_group().type().number()
+        ):
+            raise Sorry("Space group of input does not match reference")
         try:
             reference_miller_set = filtered_arrays_from_experiments_reflections(
                 reference_experiments, [reference_reflections]
@@ -276,15 +309,22 @@ experiments file must also be specified with the option: reference.experiments= 
         except ValueError:
             raise Sorry("No reflections remain after filtering the reference dataset")
 
-        from dials.algorithms.symmetry.reindex_to_reference import (
-            determine_reindex_operator_against_reference,
+        change_of_basis_op = change_of_basis_op_against_reference(
+            experiments, reflections, reference_miller_set
         )
 
-        change_of_basis_op = determine_reindex_operator_against_reference(
-            test_miller_set, reference_miller_set
+    elif params.reference.file:
+
+        wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
+
+        reference_miller_set = intensities_from_reference_file(
+            params.reference.file, wavelength=wavelength
+        )
+        change_of_basis_op = change_of_basis_op_against_reference(
+            experiments, reflections, reference_miller_set
         )
 
-    elif len(experiments) and params.change_of_basis_op is libtbx.Auto:
+    elif len(experiments) and params.change_of_basis_op is Auto:
         if reference_crystal is not None:
             if len(experiments.crystals()) > 1:
                 raise Sorry("Only one crystal can be processed at a time")
@@ -296,19 +336,22 @@ experiments file must also be specified with the option: reference.experiments= 
             R, axis, angle, change_of_basis_op = difference_rotation_matrix_axis_angle(
                 cryst, reference_crystal
             )
-            print(f"Change of basis op: {change_of_basis_op}")
-            print("Rotation matrix to transform input crystal to reference::")
-            print(R.mathematica_form(format="%.3f", one_row_per_line=True))
-            print(
-                f"Rotation of {angle:.3f} degrees",
-                "about axis (%.3f, %.3f, %.3f)" % axis,
+            Rfmt = R.mathematica_form(format="%.3f", one_row_per_line=True)
+            logger.info(
+                "\n".join(
+                    f"Change of basis op: {change_of_basis_op}",
+                    "Rotation matrix to transform input crystal to reference::",
+                    f"{Rfmt}",
+                    f"Rotation of {angle:.3f} degrees",
+                    f"about axis ({axis[0]:.3f}, {axis[1]:.3f}, {axis[2]:.3f})",
+                )
             )
 
         elif len(reflections):
             assert len(reflections) == 1
 
             # always re-map reflections to reciprocal space
-            refl = reflections.deep_copy()
+            refl = reflections[0].deep_copy()
             refl.centroid_px_to_mm(experiments)
             refl.map_centroids_to_reciprocal_space(experiments)
 
@@ -346,12 +389,13 @@ experiments file must also be specified with the option: reference.experiments= 
                 )
             raise
 
-        print(f"Saving reindexed experimental models to {params.output.experiments}")
+        logger.info(
+            f"Saving reindexed experimental models to {params.output.experiments}"
+        )
         experiments.as_file(params.output.experiments)
 
     if len(reflections):
-        assert len(reflections) == 1
-        reflections = reflections[0]
+        reflections = flex.reflection_table.concat(reflections)
 
         miller_indices = reflections["miller_index"]
 
@@ -365,9 +409,8 @@ experiments file must also be specified with the option: reference.experiments= 
             miller_indices
         )
         if non_integral_indices.size() > 0:
-            print(
-                "Removing %i/%i reflections (change of basis results in non-integral indices)"
-                % (non_integral_indices.size(), miller_indices.size())
+            logger.info(
+                f"Removing {non_integral_indices.size()}/{miller_indices.size()} reflections (change of basis results in non-integral indices)"
             )
         sel = flex.bool(miller_indices.size(), True)
         sel.set_selected(non_integral_indices, False)
@@ -375,7 +418,7 @@ experiments file must also be specified with the option: reference.experiments= 
         reflections["miller_index"].set_selected(sel, miller_indices_reindexed)
         reflections["miller_index"].set_selected(~sel, (0, 0, 0))
 
-        print(f"Saving reindexed reflections to {params.output.reflections}")
+        logger.info(f"Saving reindexed reflections to {params.output.reflections}")
         reflections.as_file(params.output.reflections)
 
 
