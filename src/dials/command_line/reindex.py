@@ -339,11 +339,13 @@ experiments file must also be specified with the option: reference.experiments= 
             Rfmt = R.mathematica_form(format="%.3f", one_row_per_line=True)
             logger.info(
                 "\n".join(
-                    f"Change of basis op: {change_of_basis_op}",
-                    "Rotation matrix to transform input crystal to reference::",
-                    f"{Rfmt}",
-                    f"Rotation of {angle:.3f} degrees",
-                    f"about axis ({axis[0]:.3f}, {axis[1]:.3f}, {axis[2]:.3f})",
+                    [
+                        f"Change of basis op: {change_of_basis_op}",
+                        "Rotation matrix to transform input crystal to reference::",
+                        f"{Rfmt}",
+                        f"Rotation of {angle:.3f} degrees",
+                        f"about axis ({axis[0]:.3f}, {axis[1]:.3f}, {axis[2]:.3f})",
+                    ]
                 )
             )
 
