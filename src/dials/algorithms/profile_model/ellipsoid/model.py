@@ -7,7 +7,7 @@ from numpy.linalg import norm
 
 from dxtbx import flumpy
 from libtbx.phil import parse
-from scitbx import matrix
+from scitbx import linalg, matrix
 from scitbx.linalg import eigensystem, l_l_transpose_cholesky_decomposition_in_place
 
 from dials.algorithms.profile_model.ellipsoid import (
@@ -32,7 +32,7 @@ phil_scope = parse(
     """
 rlp_mosaicity {
 
-    model = simple1 simple6 angular2 *angular4
+    model = simple1 *simple6 angular2 angular4
     .type = choice
 
 }
@@ -195,6 +195,7 @@ class ProfileModelBase(object):
 
         """
         self.params = params
+        self._n_obs = None
 
     def sigma(self):
         """
@@ -202,6 +203,14 @@ class ProfileModelBase(object):
 
         """
         return self.parameterisation().sigma()
+
+    @property
+    def n_obs(self):
+        return self._n_obs
+
+    @n_obs.setter
+    def n_obs(self, n_obs_):
+        self._n_obs = n_obs_
 
     def update_model_state_parameters(self, state):
         """
@@ -236,6 +245,7 @@ class ProfileModelBase(object):
             "__id__": self.__class__.name,
             "parameters": params,
             "sigma": sigma.tolist(),
+            "n_obs": self._n_obs,
         }
 
     @classmethod
@@ -300,10 +310,18 @@ class SimpleProfileModelBase(ProfileModelBase):
         """
         s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
         s0_length = norm(s0)
-        num = reflections.size()
-
-        # Compute the marginal variance for the 000 reflection
-        S00 = experiments[0].crystal.mosaicity.sigma()[2, 2]
+        n_obs = experiments[0].crystal.mosaicity.parameterisation.n_obs
+        assert n_obs is not None
+        ## partiality is defined relative to max possible observation, which is the plane
+        # through the centre of the RLP perpendicular to the min variance
+        # need the min variance, so do decomposition
+        eigen_decomposition = linalg.eigensystem.real_symmetric(
+            matrix.sqr(
+                experiments[0].crystal.mosaicity.sigma().flatten()
+            ).as_flex_double_matrix()
+        )
+        eigen_values = eigen_decomposition.values()
+        S00 = min(eigen_values)
         partiality = flex.double(reflections.size())
         partiality_variance = flex.double(reflections.size())
         for k, s2_vec in enumerate(reflections["s2"]):
@@ -320,7 +338,7 @@ class SimpleProfileModelBase(ProfileModelBase):
             S22 = S[2, 2]
             mu2 = mu.flatten()[2]
             eps = s0_length - mu2
-            var_eps = S22 / num  # FIXME Approximation
+            var_eps = S22 / n_obs  # Approximation
             partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
             partiality_variance[k] = (
                 var_eps * (eps**2 / (S00 * S22)) * exp(eps**2 / S22)
@@ -488,12 +506,20 @@ class AngularProfileModelBase(ProfileModelBase):
         """
         s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
         s0_length = norm(s0)
-        num = reflections.size()
+        n_obs = experiments[0].crystal.mosaicity.parameterisation.n_obs
+        assert n_obs is not None
         sigma = experiments[0].crystal.mosaicity.sigma()
         sigma = np.array(sigma).reshape(3, 3)
         x, y, z = reflections["s2"].parts()
         s2 = np.array([x, y, z])
-
+        ## partiality is defined relative to max possible observation, which is the plane
+        # through the centre of the RLP perpendicular to the min variance
+        # need the min variance, so do decomposition
+        eigen_decomposition = linalg.eigensystem.real_symmetric(
+            matrix.sqr(sigma.flatten()).as_flex_double_matrix()
+        )
+        eigen_values = eigen_decomposition.values()
+        S00 = min(eigen_values)
         r = s2 - s0
         Rs = compute_change_of_basis_operations(s0, s2)
         Qs = compute_change_of_basis_operations(s0, r)
@@ -503,15 +529,9 @@ class AngularProfileModelBase(ProfileModelBase):
         eps = mus[:, 2] - s0_length
         eps2 = np.square(eps)
         S22 = Ss[:, 2, 2]
-        partiality = np.exp(-0.5 * eps2 / S22)
-        partiality_variance = eps2 * np.exp(eps2 / S22) / (num * S22)
-        # shortened versions of the original calculations below:
-        # var_eps = S22 / num  # FIXME Approximation
-        # S00 = S22  # FIXME
-        # partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
-        # partiality_variance[k] = (
-        #    var_eps * (eps**2 / (S00 * S22)) * exp(eps**2 / S22)
-        # )
+
+        partiality = np.exp(-0.5 * eps2 / S22) * np.sqrt(S00 / S22)
+        partiality_variance = eps2 * np.exp(eps2 / S22) / (n_obs * S00)
 
         reflections["partiality"] = flumpy.from_numpy(partiality)
         reflections["partiality.inv.variance"] = flumpy.from_numpy(partiality_variance)
