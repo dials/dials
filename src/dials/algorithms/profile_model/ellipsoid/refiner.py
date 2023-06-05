@@ -821,7 +821,9 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
 
         # Get some matrices
         U = self.model.U_matrix.flatten()
-        M = self.model.mosaicity_covariance_matrix.flatten()
+        M = (
+            self.model._M_parameterisation.sigma().flatten()
+        )  # mosaicity_covariance_matrix.flatten()
 
         # Print some information
         format_string1 = "  Unit cell: (%.3f, %.3f, %.3f, %.3f, %.3f, %.3f)"
@@ -855,6 +857,19 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
                     ]
                 )
             )
+            if self.model.is_mosaic_spread_angular:
+                MA = self.model._M_parameterisation.sigma_A().flatten()
+                logger.info(
+                    "\n".join(
+                        [
+                            "",
+                            "  Sigma M",
+                            format_string3 % tuple(MA[0:3]),
+                            format_string3 % tuple(MA[3:6]),
+                            format_string3 % tuple(MA[6:9]),
+                        ]
+                    )
+                )
 
         logger.info(
             "\n".join(
@@ -965,8 +980,15 @@ class Refiner(object):
         if not self.state.is_mosaic_spread_fixed:
             logger.info("\nDecomposition of Sigma_M:")
             print_eigen_values_and_vectors(
-                matrix.sqr(flumpy.from_numpy(self.state.mosaicity_covariance_matrix))
+                matrix.sqr(
+                    flumpy.from_numpy(self.state._M_parameterisation.sigma().flatten())
+                )
             )
+            if self.state.is_mosaic_spread_angular:
+                logger.info(self.state._M_parameterisation.sigma_A())
+                # print_eigen_values_and_vectors(
+                #    matrix.sqr(flumpy.from_numpy(self.state._M_parameterisation.sigma_A().flatten()))
+                # )
 
         # Save the history
         self.history = self.ml.history

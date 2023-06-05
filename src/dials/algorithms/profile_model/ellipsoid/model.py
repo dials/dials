@@ -21,6 +21,7 @@ from dials.algorithms.profile_model.ellipsoid import (
 from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     Angular2MosaicityParameterisation,
     Angular4MosaicityParameterisation,
+    Simple1Angular1MosaicityParameterisation,
     Simple1MosaicityParameterisation,
     Simple6MosaicityParameterisation,
 )
@@ -32,7 +33,7 @@ phil_scope = parse(
     """
 rlp_mosaicity {
 
-    model = simple1 simple6 angular2 *angular4
+    model = simple1 simple6 *simple1angular1
     .type = choice
 
 }
@@ -149,6 +150,8 @@ class EllipsoidProfileModel(ProfileModelExt):
             return cls(Simple1ProfileModel.from_sigma_d(sigma_d))
         elif model == "simple6":
             return cls(Simple6ProfileModel.from_sigma_d(sigma_d))
+        elif model == "simple1angular1":
+            return cls(Simple1Angular1ProfileModel.from_sigma_d(sigma_d))
         elif model == "angular2":
             return cls(Angular2ProfileModel.from_sigma_d(sigma_d))
         elif model == "angular4":
@@ -162,6 +165,8 @@ class EllipsoidProfileModel(ProfileModelExt):
             return cls(Simple1ProfileModel.from_dict(d))
         if d["parameterisation"] == "simple6":
             return cls(Simple6ProfileModel.from_dict(d))
+        if d["parameterisation"] == "simple1angular1":
+            return cls(Simple1Angular1ProfileModel.from_dict(d))
         if d["parameterisation"] == "angular2":
             return cls(Angular2ProfileModel.from_dict(d))
         if d["parameterisation"] == "angular4":
@@ -464,7 +469,17 @@ class AngularProfileModelBase(ProfileModelBase):
 
         """
         Q = compute_change_of_basis_operation(s0, r)
-        sigma = np.matmul(np.matmul(Q.T, np.array(self.sigma()).reshape(3, 3)), Q)
+        scale = norm(r) ** 2
+        S = np.array([[scale, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0, 0.0]]).reshape(3, 3)
+        sigma = (
+            np.matmul(
+                np.matmul(
+                    Q.T, S * np.array(self.parameterisation().sigma_A()).reshape(3, 3)
+                ),
+                Q,
+            )
+            + self.sigma()
+        )
         return sigma
 
     def predict_reflections(
@@ -475,7 +490,10 @@ class AngularProfileModelBase(ProfileModelBase):
 
         """
         predictor = PredictorAngular(
-            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability
+            experiments[0],
+            matrix.sqr(flumpy.from_numpy(self.sigma())),
+            probability,
+            matrix.sqr(flumpy.from_numpy(self.parameterisation().sigma_A())),
         )
         return predictor.predict(miller_indices)
 
@@ -485,7 +503,11 @@ class AngularProfileModelBase(ProfileModelBase):
 
         """
         calculator = BBoxCalculatorAngular(
-            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability, 4
+            experiments[0],
+            matrix.sqr(flumpy.from_numpy(self.sigma())),
+            probability,
+            4,
+            matrix.sqr(flumpy.from_numpy(self.parameterisation().sigma_A())),
         )
         calculator.compute(reflections)
 
@@ -495,7 +517,10 @@ class AngularProfileModelBase(ProfileModelBase):
 
         """
         calculator = MaskCalculatorAngular(
-            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability
+            experiments[0],
+            matrix.sqr(flumpy.from_numpy(self.sigma())),
+            probability,
+            matrix.sqr(flumpy.from_numpy(self.parameterisation().sigma_A())),
         )
         calculator.compute(reflections)
 
@@ -504,11 +529,11 @@ class AngularProfileModelBase(ProfileModelBase):
         Compute the partiality
 
         """
-        s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
+        """s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
         s0_length = norm(s0)
         n_obs = experiments[0].crystal.mosaicity.parameterisation.n_obs
-        assert n_obs is not None
-        sigma = experiments[0].crystal.mosaicity.sigma()
+        assert n_obs is not None"""
+        """sigma = experiments[0].crystal.mosaicity.sigma()
         sigma = np.array(sigma).reshape(3, 3)
         x, y, z = reflections["s2"].parts()
         s2 = np.array([x, y, z])
@@ -534,7 +559,47 @@ class AngularProfileModelBase(ProfileModelBase):
         partiality_variance = eps2 * np.exp(eps2 / S22) / (n_obs * S00)
 
         reflections["partiality"] = flumpy.from_numpy(partiality)
-        reflections["partiality.inv.variance"] = flumpy.from_numpy(partiality_variance)
+        reflections["partiality.inv.variance"] = flumpy.from_numpy(partiality_variance)"""
+
+        s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
+        s0_length = norm(s0)
+        n_obs = experiments[0].crystal.mosaicity.parameterisation.n_obs
+        assert n_obs is not None
+        ## partiality is defined relative to max possible observation, which is the plane
+        # through the centre of the RLP perpendicular to the min variance at r==0
+        # need the min variance, so do decomposition
+        eigen_decomposition = linalg.eigensystem.real_symmetric(
+            matrix.sqr(self.sigma().flatten()).as_flex_double_matrix()
+        )
+        eigen_values = eigen_decomposition.values()
+        S00 = min(eigen_values)
+        partiality = flex.double(reflections.size())
+        partiality_variance = flex.double(reflections.size())
+        for k, s2_vec in enumerate(reflections["s2"]):
+            s2 = np.array(list(s2_vec), dtype=np.float64).reshape(3, 1)
+            r = s2 - s0
+            sigma = self.sigma_for_reflection(
+                s0, r
+            )  #  experiments[0].crystal.mosaicity.sigma()
+            R = compute_change_of_basis_operation(s0, s2)
+
+            S = np.matmul(R, np.array(sigma).reshape(3, 3))
+            S = np.matmul(S, R.T)
+            mu = np.matmul(R, s2)
+
+            mu_norm = mu / norm(mu)
+            assert abs(1.0 - mu_norm.flatten()[2]) < 1e-7
+            S22 = S[2, 2]
+            mu2 = mu.flatten()[2]
+            eps = s0_length - mu2
+            var_eps = S22 / n_obs  # Approximation
+            partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
+            partiality_variance[k] = (
+                var_eps * (eps**2 / (S00 * S22)) * exp(eps**2 / S22)
+            )
+
+        reflections["partiality"] = partiality
+        reflections["partiality.inv.variance"] = partiality_variance
 
     @classmethod
     def from_params(Class, params):
@@ -543,6 +608,52 @@ class AngularProfileModelBase(ProfileModelBase):
 
         """
         return Class(params)
+
+
+class Simple1Angular1ProfileModel(AngularProfileModelBase):
+
+    name = "simple1angular1"
+
+    def parameterisation(self):
+        """
+        Get the parameterisation
+
+        """
+        return Simple1Angular1MosaicityParameterisation(self.params)
+
+    @classmethod
+    def from_sigma_d(Class, sigma_d):
+        """
+        Create the profile model from sigma_d estimate
+
+        """
+        return Class.from_params(np.array([sigma_d, sigma_d], dtype=np.float64))
+
+    @classmethod
+    def from_sigma(Class, sigma):
+        """
+        Construct the profile model from the sigma
+
+        """
+
+        # Construct triangular matrix
+        LL = flex.double()
+        for j in range(3):
+            for i in range(j + 1):
+                LL.append(sigma[j * 3 + i])
+
+        # Do the cholesky decomposition
+        _ = l_l_transpose_cholesky_decomposition_in_place(LL)
+
+        # Check the sigma is as we expect
+        TINY = 1e-10
+        assert abs(LL[1] - 0) < TINY
+        assert abs(LL[2] - LL[0]) < TINY
+        assert abs(LL[3] - 0) < TINY
+        assert abs(LL[4] - 0) < TINY
+
+        # Setup the parameters
+        return Class.from_params(flex.double((LL[0], LL[5])))
 
 
 class Angular2ProfileModel(AngularProfileModelBase):
