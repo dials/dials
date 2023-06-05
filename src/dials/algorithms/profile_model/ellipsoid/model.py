@@ -23,6 +23,8 @@ from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     Angular4MosaicityParameterisation,
     Simple1Angular1MosaicityParameterisation,
     Simple1MosaicityParameterisation,
+    Simple6Angular1MosaicityParameterisation,
+    Simple6Angular3MosaicityParameterisation,
     Simple6MosaicityParameterisation,
 )
 from dials.array_family import flex
@@ -33,7 +35,7 @@ phil_scope = parse(
     """
 rlp_mosaicity {
 
-    model = simple1 simple6 *simple1angular1
+    model = simple1 simple6 *simple1angular1 simple6angular1 simple6angular3
     .type = choice
 
 }
@@ -152,6 +154,10 @@ class EllipsoidProfileModel(ProfileModelExt):
             return cls(Simple6ProfileModel.from_sigma_d(sigma_d))
         elif model == "simple1angular1":
             return cls(Simple1Angular1ProfileModel.from_sigma_d(sigma_d))
+        elif model == "simple6angular1":
+            return cls(Simple6Angular1ProfileModel.from_sigma_d(sigma_d))
+        elif model == "simple6angular3":
+            return cls(Simple6Angular3ProfileModel.from_sigma_d(sigma_d))
         elif model == "angular2":
             return cls(Angular2ProfileModel.from_sigma_d(sigma_d))
         elif model == "angular4":
@@ -167,6 +173,10 @@ class EllipsoidProfileModel(ProfileModelExt):
             return cls(Simple6ProfileModel.from_dict(d))
         if d["parameterisation"] == "simple1angular1":
             return cls(Simple1Angular1ProfileModel.from_dict(d))
+        if d["parameterisation"] == "simple6angular1":
+            return cls(Simple6Angular1ProfileModel.from_dict(d))
+        if d["parameterisation"] == "simple6angular3":
+            return cls(Simple6Angular3ProfileModel.from_dict(d))
         if d["parameterisation"] == "angular2":
             return cls(Angular2ProfileModel.from_dict(d))
         if d["parameterisation"] == "angular4":
@@ -654,6 +664,107 @@ class Simple1Angular1ProfileModel(AngularProfileModelBase):
 
         # Setup the parameters
         return Class.from_params(flex.double((LL[0], LL[5])))
+
+
+class Simple6Angular1ProfileModel(AngularProfileModelBase):
+
+    name = "simple6angular1"
+
+    def parameterisation(self):
+        """
+        Get the parameterisation
+
+        """
+        return Simple6Angular1MosaicityParameterisation(self.params)
+
+    @classmethod
+    def from_sigma_d(Class, sigma_d):
+        """
+        Create the profile model from sigma_d estimate
+
+        """
+        return Class.from_params(
+            np.array(
+                [sigma_d, 0, sigma_d, 0, 0, sigma_d, sigma_d / 10.0], dtype=np.float64
+            )
+        )
+
+    @classmethod
+    def from_sigma(Class, sigma):
+        """
+        Construct the profile model from the sigma
+
+        """
+
+        # Construct triangular matrix
+        LL = flex.double()
+        for j in range(3):
+            for i in range(j + 1):
+                LL.append(sigma[j * 3 + i])
+
+        # Do the cholesky decomposition
+        _ = l_l_transpose_cholesky_decomposition_in_place(LL)
+
+        # Setup the parameters
+        return Class.from_params(
+            flex.double((LL[0], LL[1], LL[2], LL[3], LL[4], LL[5], LL[5]))
+        )
+
+
+class Simple6Angular3ProfileModel(AngularProfileModelBase):
+
+    name = "simple6angular3"
+
+    def parameterisation(self):
+        """
+        Get the parameterisation
+
+        """
+        return Simple6Angular3MosaicityParameterisation(self.params)
+
+    @classmethod
+    def from_sigma_d(Class, sigma_d):
+        """
+        Create the profile model from sigma_d estimate
+
+        """
+        return Class.from_params(
+            np.array(
+                [
+                    sigma_d,
+                    0,
+                    sigma_d,
+                    0,
+                    0,
+                    sigma_d,
+                    sigma_d / 10.0,
+                    0.0,
+                    sigma_d / 10.0,
+                ],
+                dtype=np.float64,
+            )
+        )
+
+    @classmethod
+    def from_sigma(Class, sigma):
+        """
+        Construct the profile model from the sigma
+
+        """
+
+        # Construct triangular matrix
+        LL = flex.double()
+        for j in range(3):
+            for i in range(j + 1):
+                LL.append(sigma[j * 3 + i])
+
+        # Do the cholesky decomposition
+        _ = l_l_transpose_cholesky_decomposition_in_place(LL)
+
+        # Setup the parameters
+        return Class.from_params(
+            flex.double((LL[0], LL[1], LL[2], LL[3], LL[4], LL[5], LL[5], 0, LL[5]))
+        )
 
 
 class Angular2ProfileModel(AngularProfileModelBase):
