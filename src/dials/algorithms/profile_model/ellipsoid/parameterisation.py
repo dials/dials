@@ -1000,15 +1000,16 @@ class ReflectionModelState(object):
             n_M_params = dM_dp.shape[0]  # state.M_params.size
             if state.is_mosaic_spread_angular:
                 # first add the derivative of the static component
-                QTMQ = np.einsum("ij,mjk,kl->ilm", self._Q.T, dM_dp, self._Q)
-                self._ds_dp[:, :, n_tot : n_tot + n_M_params] = QTMQ
+                self._ds_dp[:, :, n_tot : n_tot + n_M_params] = np.transpose(
+                    dM_dp, axes=(1, 2, 0)
+                )
                 n_tot += n_M_params
                 # now add the derivative of the angular component
                 dM_dp_A = self.state.dM_dp_A
                 n_M_A_params = dM_dp_A.shape[0]
                 normr = norm(self._r)
                 A = np.array(
-                    [[normr**2, 0, 0], [0, normr**2, 0], [0, 0, 1]],
+                    [[normr**2, 0, 0], [0, normr**2, 0], [0, 0, 0]],
                     dtype=np.float64,
                 ).reshape(3, 3)
                 AdM = np.einsum("ij,mjk->mik", A, dM_dp_A)

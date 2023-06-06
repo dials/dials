@@ -685,7 +685,16 @@ class Simple6Angular1ProfileModel(AngularProfileModelBase):
         """
         return Class.from_params(
             np.array(
-                [sigma_d, 0, sigma_d, 0, 0, sigma_d, sigma_d / 10.0], dtype=np.float64
+                [
+                    sigma_d,
+                    sigma_d / 100.0,
+                    sigma_d,
+                    sigma_d / 100.0,
+                    sigma_d / 100.0,
+                    sigma_d,
+                    sigma_d / 100.0,
+                ],
+                dtype=np.float64,
             )
         )
 
@@ -732,14 +741,14 @@ class Simple6Angular3ProfileModel(AngularProfileModelBase):
             np.array(
                 [
                     sigma_d,
-                    0,
+                    sigma_d / 100.0,
                     sigma_d,
-                    0,
-                    0,
+                    sigma_d / 100.0,
+                    sigma_d / 100.0,
                     sigma_d,
-                    sigma_d / 10.0,
-                    0.0,
-                    sigma_d / 10.0,
+                    sigma_d / 100.0,
+                    sigma_d / 100.0,
+                    sigma_d / 100.0,
                 ],
                 dtype=np.float64,
             )
@@ -763,7 +772,7 @@ class Simple6Angular3ProfileModel(AngularProfileModelBase):
 
         # Setup the parameters
         return Class.from_params(
-            flex.double((LL[0], LL[1], LL[2], LL[3], LL[4], LL[5], LL[5], 0, LL[5]))
+            flex.double((LL[0], LL[1], LL[2], LL[3], LL[4], LL[5], LL[5], LL[5], LL[5]))
         )
 
 
