@@ -36,6 +36,7 @@ phil_str = """
         .type = choice
 
       ignore = False
+        .type = bool
         .help = "For advanced use cases, allowing skipping the parameter auto-"
                 "reduction calculation"
         .expert_level = 3
