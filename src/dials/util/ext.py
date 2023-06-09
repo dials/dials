@@ -9,4 +9,5 @@ __all__ = (  # noqa: F405
     "ostream",
     "scale_down_array",
     "streambuf",
+    "BatchArrays",
 )

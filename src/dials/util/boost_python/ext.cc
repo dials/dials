@@ -57,6 +57,37 @@ namespace dials { namespace util { namespace boost_python {
          arg("axis"),
          arg("s0n")));
 
+    class_<BatchArrays>("BatchArrays", no_init)
+      .def(init<int,
+                int,
+                const af::tiny<int, 2>,
+                int,
+                float,
+                float,
+                const af::const_ref<float> &,
+                const af::const_ref<float> &,
+                const af::const_ref<float, af::c_grid<2> > &,
+                const af::const_ref<float, af::c_grid<2> > &,
+                const af::tiny<int, 2>,
+                float,
+                const af::const_ref<float> &,
+                const af::const_ref<float> &>((arg("max_batch_number"),
+                                               arg("dataset_id"),
+                                               arg("image_range"),
+                                               arg("batch_offset"),
+                                               arg("wavelength"),
+                                               arg("mosaic"),
+                                               arg("phi_start"),
+                                               arg("phi_range"),
+                                               arg("cell_array"),
+                                               arg("umat_array"),
+                                               arg("panel_size"),
+                                               arg("panel_distance"),
+                                               arg("axis"),
+                                               arg("source"))))
+      .def("get_floats", &BatchArrays::get_floats)
+      .def("get_ints", &BatchArrays::get_ints);
+
     class_<ResolutionMaskGenerator>("ResolutionMaskGenerator", no_init)
       .def(init<const BeamBase &, const Panel &>())
       .def("apply", &ResolutionMaskGenerator::apply);
