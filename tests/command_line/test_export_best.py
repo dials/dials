@@ -1,42 +1,54 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 
 def test_export_best(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "template="
             + str(dials_data("centroid_test_data", pathlib=True) / "centroid_####.cbf"),
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
-        ["dials.find_spots", "imported.expt", "nproc=1"], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.find_spots"), "imported.expt", "nproc=1"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
-        ["dials.index", "imported.expt", "strong.refl", "space_group=P422"],
-        working_directory=tmp_path,
-    )
-    assert not result.returncode and not result.stderr
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.index"),
+            "imported.expt",
+            "strong.refl",
+            "space_group=P422",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
             "nproc=1",
             "indexed.expt",
             "indexed.refl",
             "prediction.padding=0",
             "sigma_m_algorithm=basic",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
+    result = subprocess.run(
         ["dials.export_best", "integrated.expt", "integrated.refl"],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
