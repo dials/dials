@@ -5,8 +5,8 @@ Test for dials.assign_experiment_identifiers
 from __future__ import annotations
 
 import os
-
-import procrunner
+import shutil
+import subprocess
 
 from dxtbx.serialize import load
 
@@ -15,13 +15,12 @@ from dials.array_family import flex
 
 def run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args):
     command = (
-        ["dials.assign_experiment_identifiers"]
+        [shutil.which("dials.assign_experiment_identifiers")]
         + pickle_path_list
         + sequence_path_list
         + extra_args
     )
-    print(command)
-    procrunner.run(command).check_returncode()
+    subprocess.run(command, capture_output=True).check_returncode()
     assert os.path.exists("assigned.expt")
     assert os.path.exists("assigned.refl")
 
