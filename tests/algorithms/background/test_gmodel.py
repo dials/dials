@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pickle
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 
@@ -31,9 +32,9 @@ def test_simple(dials_data, model, tmpdir):
     reflns_simple.dirpath().ensure(dir=1)
     reflns_g_simple.dirpath().ensure(dir=1)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             experiments,
             "profile.fitting=False",
@@ -41,14 +42,14 @@ def test_simple(dials_data, model, tmpdir):
             "background.simple.outlier.algorithm=null",
             "output.reflections=" + reflns_simple.strpath,
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmpdir.strpath,
     )
     assert not result.returncode and not result.stderr
     assert reflns_simple.check()
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             experiments,
             "profile.fitting=False",
@@ -57,7 +58,7 @@ def test_simple(dials_data, model, tmpdir):
             "background.gmodel.model=model.pickle",
             "output.reflections=" + reflns_g_simple.strpath,
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmpdir.strpath,
     )
     assert not result.returncode and not result.stderr
     assert reflns_g_simple.check()
@@ -92,23 +93,23 @@ def test_robust(dials_data, model, tmpdir):
     reflns_robust.dirpath().ensure(dir=1)
     reflns_g_robust.dirpath().ensure(dir=1)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             experiments,
             "profile.fitting=False",
             "background.algorithm=glm",
             "output.reflections=" + reflns_robust.strpath,
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmpdir.strpath,
     )
     assert not result.returncode and not result.stderr
     assert reflns_robust.check()
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             experiments,
             "profile.fitting=False",
@@ -117,7 +118,7 @@ def test_robust(dials_data, model, tmpdir):
             "background.gmodel.model=model.pickle",
             "output.reflections=" + reflns_g_robust.strpath,
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmpdir.strpath,
     )
     assert not result.returncode and not result.stderr
     assert reflns_g_robust.check()
