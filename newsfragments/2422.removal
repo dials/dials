@@ -1,0 +1,2 @@
+``dials.find_spots``: remove ``force_2d`` option which did not apparently do
+anything useful.

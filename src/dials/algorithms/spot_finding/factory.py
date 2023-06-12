@@ -7,7 +7,6 @@ import time
 
 import numpy as np
 
-from dxtbx.imageset import ImageSequence
 from iotbx.phil import parse
 
 import dials.extensions
@@ -35,10 +34,6 @@ def generate_phil_scope():
     hot_mask_prefix = 'hot_mask'
       .type = str
       .help = "Prefix for the hot mask pickle file"
-
-    force_2d = False
-      .type = bool
-      .help = "Do spot finding in 2D"
 
     scan_range = None
       .help = "The range of images to use in finding spots. The ranges are"
@@ -420,20 +415,6 @@ class SpotFinderFactory:
         if params is None:
             params = phil_scope.fetch(source=parse("")).extract()
 
-        if params.spotfinder.force_2d and params.output.shoeboxes is False:
-            no_shoeboxes_2d = True
-        elif experiments is not None and params.output.shoeboxes is False:
-            no_shoeboxes_2d = False
-            all_stills = True
-            for experiment in experiments:
-                if isinstance(experiment.imageset, ImageSequence):
-                    all_stills = False
-                    break
-            if all_stills:
-                no_shoeboxes_2d = True
-        else:
-            no_shoeboxes_2d = False
-
         # Read in the lookup files
         mask = SpotFinderFactory.load_image(params.spotfinder.lookup.mask)
         params.spotfinder.lookup.mask = mask
@@ -470,7 +451,6 @@ class SpotFinderFactory:
             mask_generator=mask_generator,
             min_spot_size=params.spotfinder.filter.min_spot_size,
             max_spot_size=params.spotfinder.filter.max_spot_size,
-            no_shoeboxes_2d=no_shoeboxes_2d,
             min_chunksize=params.spotfinder.mp.min_chunksize,
             is_stills=is_stills,
         )
