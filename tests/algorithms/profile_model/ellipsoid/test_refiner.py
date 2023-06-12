@@ -16,11 +16,13 @@ from dials.algorithms.profile_model.ellipsoid.model import (
     Simple6ProfileModel,
     compute_change_of_basis_operation,
 )
-from dials.algorithms.profile_model.ellipsoid.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
-    Angular2MosaicityParameterisation,
-    Angular4MosaicityParameterisation,
+from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     ModelState,
+    Simple1Angular1MosaicityParameterisation,
+    Simple1Angular3MosaicityParameterisation,
     Simple1MosaicityParameterisation,
+    Simple6Angular1MosaicityParameterisation,
+    Simple6Angular3MosaicityParameterisation,
     Simple6MosaicityParameterisation,
 )
 from dials.algorithms.profile_model.ellipsoid.refiner import (
@@ -68,16 +70,19 @@ def generate_data(experiments, reflections):
     mobs = np.array([uniform(0, 1e-3), uniform(0, 1e-3)])
     sp = s2.normalize() * s0.length()
 
-    b1, b2, b3, b4, b5, b6 = (
+    b1, b2, b3, b4, b5, b6, b7, b8, b9 = (
         uniform(1e-3, 3e-3),
         uniform(0.0, 1e-3),
         uniform(1e-3, 3e-3),
         uniform(0.0, 1e-3),
         uniform(0.0, 1e-3),
         uniform(1e-3, 3e-3),
+        uniform(0.0, 1e-3),
+        uniform(0.0, 1e-3),
+        uniform(0.0, 1e-3),
     )
 
-    S_param = (b1, b2, b3, b4, b5, b6)
+    S_param = (b1, b2, b3, b4, b5, b6, b7, b8, b9)
     L_param = (uniform(1e-3, 2e-3),)
     ctot = randint(100, 1000)
 
@@ -284,8 +289,16 @@ def test_ConditionalDistribution(testdata):
     S6 = Simple6MosaicityParameterisation(
         np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025])
     )
-    A2 = Angular2MosaicityParameterisation(np.array([0.01, 0.02]))
-    A4 = Angular4MosaicityParameterisation(np.array([0.01, 0.02, 0.03, 0.04]))
+    S1A1 = Simple1Angular1MosaicityParameterisation(np.array([0.01, 0.002]))
+    S6A1 = Simple6Angular1MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002])
+    )
+    S1A3 = Simple1Angular3MosaicityParameterisation(
+        np.array([0.01, 0.002, 0.001, 0.002])
+    )
+    S6A3 = Simple6Angular3MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002, 0.001, 0.003])
+    )
 
     check(S1, None, fix_wavelength_spread=True)
     check(S1, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
@@ -303,10 +316,16 @@ def test_ConditionalDistribution(testdata):
     # however the Q matrix depends on r so there is a small additional term missing (dQ/dp).
     # So just test the mosaic model minimisation at fixed UB.
     check(
-        A2, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+        S1A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
     check(
-        A4, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+        S6A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S1A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S6A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
 
 
@@ -415,8 +434,16 @@ def test_ReflectionLikelihood(testdata):
 
     S1 = Simple1MosaicityParameterisation()
     S6 = Simple6MosaicityParameterisation()
-    A2 = Angular2MosaicityParameterisation()
-    A4 = Angular4MosaicityParameterisation()
+    S1A1 = Simple1Angular1MosaicityParameterisation(np.array([0.01, 0.002]))
+    S6A1 = Simple6Angular1MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002])
+    )
+    S1A3 = Simple1Angular3MosaicityParameterisation(
+        np.array([0.01, 0.002, 0.001, 0.003])
+    )
+    S6A3 = Simple6Angular3MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002, 0.001, 0.003])
+    )
 
     check(S1, None, fix_wavelength_spread=True)
     check(S1, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
@@ -430,10 +457,16 @@ def test_ReflectionLikelihood(testdata):
 
     # See note at L300 regarding finite difference tests at fixed UB.
     check(
-        A2, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+        S1A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
     check(
-        A4, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+        S6A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S1A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S6A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
     )
 
 
@@ -465,8 +498,6 @@ def test_Refiner(testdata, refinerdata_testdata):
 
         refiner = Refiner(state, data)
         refiner.refine()
-
-        print(state.mosaicity_covariance_matrix)
 
     check(S1, fix_mosaic_spread=False, fix_orientation=True, fix_unit_cell=True)
     check(S1, fix_mosaic_spread=True, fix_orientation=False, fix_unit_cell=True)
