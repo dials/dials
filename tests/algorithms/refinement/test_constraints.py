@@ -170,6 +170,7 @@ def test_constrained_refinement(dials_data, tmp_path):
             "scan_varying=False",
         ),
         cwd=tmp_path,
+        capture_output=True,
     )
     assert result.returncode == 0 and not result.stderr
 

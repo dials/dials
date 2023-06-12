@@ -43,6 +43,7 @@ def test_simple(dials_data, model, tmpdir):
             "output.reflections=" + reflns_simple.strpath,
         ],
         cwd=tmpdir.strpath,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert reflns_simple.check()
@@ -59,6 +60,7 @@ def test_simple(dials_data, model, tmpdir):
             "output.reflections=" + reflns_g_simple.strpath,
         ],
         cwd=tmpdir.strpath,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert reflns_g_simple.check()
@@ -103,6 +105,7 @@ def test_robust(dials_data, model, tmpdir):
             "output.reflections=" + reflns_robust.strpath,
         ],
         cwd=tmpdir.strpath,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert reflns_robust.check()
@@ -119,6 +122,7 @@ def test_robust(dials_data, model, tmpdir):
             "output.reflections=" + reflns_g_robust.strpath,
         ],
         cwd=tmpdir.strpath,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert reflns_g_robust.check()

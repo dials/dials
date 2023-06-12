@@ -39,7 +39,7 @@ def test(dials_data, tmpdir):
 
     for cmd in commands:
         # print cmd
-        result = subprocess.run(cmd, cwd=tmpdir)
+        result = subprocess.run(cmd, cwd=tmpdir, capture_output=True)
         assert not result.returncode and not result.stderr
 
     integrated_mtz = tmpdir.join("integrated.mtz")

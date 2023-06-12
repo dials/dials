@@ -23,5 +23,5 @@ def test_cpp_program(executable):
     )
     print(full_path)
 
-    result = subprocess.run([full_path])
+    result = subprocess.run([full_path], capture_output=True)
     assert not result.returncode and not result.stderr

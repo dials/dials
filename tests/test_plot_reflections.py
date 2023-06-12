@@ -13,5 +13,6 @@ def test_run(dials_data, tmp_path):
             "scan_range=0,5",
         ),
         cwd=tmp_path,
+        capture_output=True,
     ).check_returncode()
     assert (tmp_path / "centroids.png").is_file()

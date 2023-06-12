@@ -22,6 +22,7 @@ def test_against_dials_integrate(dials_data, tmp_path):
             "mp.nproc=1",
         ),
         cwd=tmp_path,
+        capture_output=True,
     ).check_returncode()
 
     subprocess.run(
@@ -31,6 +32,7 @@ def test_against_dials_integrate(dials_data, tmp_path):
             dials_data("insulin_processed", pathlib=True) / "refined.refl",
         ),
         cwd=tmp_path,
+        capture_output=True,
     ).check_returncode()
 
     simple_refl = flex.reflection_table.from_msgpack_file(

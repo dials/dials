@@ -23,6 +23,7 @@ def test1(dials_data, tmp_path):
             data_dir / "refine.phil",
         ],
         cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 

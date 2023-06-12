@@ -59,7 +59,7 @@ def run_indexing(
         commands.append(experiment)
     commands.extend(extra_args)
 
-    result = subprocess.run(commands, cwd=working_directory)
+    result = subprocess.run(commands, cwd=working_directory, capture_output=True)
     assert not result.returncode and not result.stderr
 
     out_expts = working_directory / "indexed.expt"
@@ -315,14 +315,14 @@ def insulin_spotfinding(dials_data, tmp_path_factory):
     for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
         command.append(data_dir / image_path)
 
-    result = subprocess.run(command, cwd=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     experiment = tmp_path / "imported.expt"
     assert experiment.is_file()
 
     command = [shutil.which("dials.find_spots"), "nproc=1", experiment]
-    result = subprocess.run(command, cwd=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     reflections = tmp_path / "strong.refl"
@@ -370,14 +370,14 @@ def insulin_spotfinding_stills(dials_data, tmp_path_factory):
         "convert_sequences_to_stills=True",
         data_dir / "insulin_1_001.img",
     ]
-    result = subprocess.run(command, cwd=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     experiment = tmp_path / "imported.expt"
     assert experiment.is_file()
 
     command = [shutil.which("dials.find_spots"), "nproc=1", experiment]
-    result = subprocess.run(command, cwd=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     reflections = tmp_path / "strong.refl"
@@ -573,6 +573,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
             "max_lattices=3",
         ],
         cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.refl").if_file()
@@ -591,6 +592,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
             "max_lattices=2",
         ],
         cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.refl").is_file()
@@ -696,7 +698,7 @@ def test_index_ED_still_low_res_spot_match(
     assert experiment.is_file()
 
     command = [shutil.which("dials.find_spots"), "nproc=1", experiment]
-    result = subprocess.run(command, cwd=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     reflections = tmp_path / "strong.refl"
@@ -774,7 +776,7 @@ def test_real_space_grid_search_no_unit_cell(dials_regression, tmp_path):
         pickle_path,
         "indexing.method=real_space_grid_search",
     ]
-    result = subprocess.run(commands, cwd=tmp_path)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert result.stderr
     assert (
         result.stderr.strip()
@@ -817,6 +819,7 @@ def test_all_expt_ids_have_expts(dials_data, tmp_path):
             "detector.fix=all",
         ],
         cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.expt").is_file()
