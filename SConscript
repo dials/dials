@@ -32,7 +32,7 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
     ]
 
     # Handle cctbx bootstrap builds that pull a fixed msgpack version into modules/
-    msgpack = Path(libtbx.env.dist_path("dials")).parent / "msgpack-3.1.1", "include"
+    msgpack = Path(libtbx.env.dist_path("dials")).parent / "msgpack-3.1.1" / "include"
     if msgpack.is_dir():
         include_paths.append(str(msgpack))
 
