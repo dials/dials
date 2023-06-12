@@ -34,6 +34,12 @@ phil_str = """
                 "still form residuals and will contribute to detector and beam"
                 "refinement."
         .type = choice
+
+      ignore = False
+        .type = bool
+        .help = "For advanced use cases, allowing skipping the parameter auto-"
+                "reduction calculation"
+        .expert_level = 3
 """
 phil_scope = parse(phil_str)
 
@@ -254,6 +260,9 @@ class AutoReduce:
         Returns:
             None
         """
+
+        if self._options.ignore:
+            return
 
         if self._options.action == "fail":
             self.check_and_fail()
