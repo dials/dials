@@ -95,8 +95,7 @@ class Simple1MosaicityParameterisation(BaseParameterisation):
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
         )
-        v = list(mosaicity_from_eigen_decomposition(decomp.values()))
-        return {"spherical": v[0]}
+        return {"spherical": decomp.values()[0] ** 0.5}
 
 
 class Simple6MosaicityParameterisation(BaseParameterisation):
@@ -141,7 +140,8 @@ class Simple6MosaicityParameterisation(BaseParameterisation):
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
         )
-        vals = list(mosaicity_from_eigen_decomposition(decomp.values()))
+        vals = [v**0.5 if v > 0 else 0 for v in decomp.values()]
+        # vals = list(mosaicity_from_eigen_decomposition(decomp.values()))
         min_m = min(vals)
         max_m = max(vals)
         vals.remove(min_m)
@@ -260,8 +260,10 @@ class Simple1Angular1MosaicityParameterisation(BaseParameterisation):
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
         )
-        v = list(mosaicity_from_eigen_decomposition(decomp.values()))
-        mosaicities = {"spherical": v[0]}
+        v = (
+            decomp.values()[0] ** 0.5
+        )  # list(mosaicity_from_eigen_decomposition(decomp.values()))
+        mosaicities = {"spherical": v}
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(list(self.sigma_A()[0:2, 0:2].flatten())).as_flex_double_matrix()
         )
@@ -287,6 +289,80 @@ class Simple1Angular1MosaicityParameterisation(BaseParameterisation):
         ).reshape(1, 3, 3)
 
         return d2
+
+
+class Simple1Angular3MosaicityParameterisation(BaseParameterisation):
+    """
+    A simple1 mosaicity parameterisation plus an angular1 mosaicity parameterisation.
+
+    M0 = | b1 0  0  |    MA = | b2 0  0 |
+         |  0 b1 0  |         |  b3 b4 0 |
+         |  0  0 b1 |         |  0  0 0 |
+
+    S0 = M0*M0^T
+
+    """
+
+    @staticmethod
+    def is_angular() -> bool:
+        return True
+
+    @staticmethod
+    def num_parameters() -> int:
+        return 4
+
+    def sigma(self) -> matrix:
+        """
+        Compute the covariance matrix of the MVN from the parameters
+        """
+        psq = self.params[0] ** 2
+        return np.array(
+            [[psq, 0, 0], [0, psq, 0], [0, 0, psq]],
+            dtype=np.float64,
+        )
+
+    def sigma_A(self) -> matrix:
+        # Covariance of the angular part (before Q rotation)
+        ab = self.params[1] * self.params[2]
+        aa = self.params[1] ** 2
+        bcsq = self.params[2] ** 2 + self.params[3] ** 2
+        return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, 0]], dtype=np.float64)
+
+    def mosaicity(self) -> Dict:
+        """Two unique components of mosaicity"""
+        decomp = linalg.eigensystem.real_symmetric(
+            matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
+        )
+        v = decomp.values()[0] ** 0.5
+        mosaicities = {"spherical": v[0]}
+        decomp = linalg.eigensystem.real_symmetric(
+            matrix.sqr(list(self.sigma_A()[0:2, 0:2].flatten())).as_flex_double_matrix()
+        )
+        v = list(mosaicity_from_eigen_decomposition(decomp.values()))
+        mosaicities["angular1"] = v[0]
+        mosaicities["angular2"] = v[1]
+        return mosaicities
+
+    def first_derivatives(self) -> np.array:
+        """
+        Compute the first derivatives of Sigma w.r.t the parameters
+        """
+        b1 = self.params[0]
+        d1 = np.array(
+            [[[2.0 * b1, 0, 0], [0, 2.0 * b1, 0], [0, 0, 2.0 * b1]]], dtype=np.float64
+        ).reshape(1, 3, 3)
+        return d1
+
+    def first_derivatives_angular(self):
+
+        b1 = self.params[1]
+        b2 = self.params[2]
+        b3 = self.params[3]
+        d1 = np.array([2 * b1, b2, 0, b2, 0, 0, 0, 0, 0]).reshape(1, 3, 3)
+        d2 = np.array([0, b1, 0, b1, 2 * b2, 0, 0, 0, 0]).reshape(1, 3, 3)
+        d3 = np.array([0, 0, 0, 0, 2 * b3, 0, 0, 0, 0]).reshape(1, 3, 3)
+        ds = np.concatenate([d1, d2, d3], axis=0)
+        return ds
 
 
 class Simple6Angular1MosaicityParameterisation(BaseParameterisation):
@@ -325,7 +401,10 @@ class Simple6Angular1MosaicityParameterisation(BaseParameterisation):
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
         )
-        vals = list(mosaicity_from_eigen_decomposition(decomp.values()))
+        # print(list(decomp.values()))
+        vals = [
+            v**0.5 if v > 0 else 0 for v in decomp.values()
+        ]  # potential for v to be -epsilon if zero valued.
         min_m = min(vals)
         max_m = max(vals)
         vals.remove(min_m)
@@ -417,7 +496,7 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
         )
-        vals = list(mosaicity_from_eigen_decomposition(decomp.values()))
+        vals = [v**0.5 if v > 0 else 0 for v in decomp.values()]
         min_m = min(vals)
         max_m = max(vals)
         vals.remove(min_m)
@@ -474,160 +553,6 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         d2 = np.array([0, b1, 0, b1, 2 * b2, 0, 0, 0, 0]).reshape(1, 3, 3)
         d3 = np.array([0, 0, 0, 0, 2 * b3, 0, 0, 0, 0]).reshape(1, 3, 3)
         ds = np.concatenate([d1, d2, d3], axis=0)
-        return ds
-
-        # d1 = [[2 * b1, b2, 0], [b2, 0, 0], [0, 0, 0]]
-        # d2 = [[0, b1, 0], [b1, 2 * b2, 0], [0, 0, 0]]
-        # d3 = [[0, 0, 0], [0, 2 * b3, 0], [0, 0, 0]]
-        # d4 = [[0, 0, 0], [0, 0, 0], [0, 0, 2 * b4]]
-        ds = np.array(
-            [
-                [2 * b1, b2, 0, b2, 0, 0, 0, 0, 0],
-                [0, b1, 0, b1, 2 * b2, 0, 0, 0, 0],
-                [0, 0, 0, 0, 2 * b3, 0, 0, 0, 0],
-            ],
-            dtype=np.float64,
-        ).reshape(3, 3, 3)
-        return ds
-
-
-class Angular2MosaicityParameterisation(BaseParameterisation):
-    """
-    A simple mosaicity parameterisation that uses 2 parameters to describe a
-    multivariate normal angular mosaic spread. Sigma is enforced as positive
-    definite by parameterising using the cholesky decomposition.
-    W = | w1 0  0  |
-        | 0 w1  0  |
-        | 0  0 w2 |
-    S = W*W^T
-    """
-
-    @staticmethod
-    def is_angular() -> bool:
-        return True
-
-    @staticmethod
-    def num_parameters() -> int:
-        return 2
-
-    def sigma(self) -> matrix:
-        """
-        Compute the covariance matrix of the MVN from the parameters
-        """
-        p1sq = self.params[0] ** 2
-        p2sq = self.params[1] ** 2
-        return np.array(
-            [[p1sq, 0, 0], [0, p1sq, 0], [0, 0, p2sq]],
-            dtype=np.float64,
-        )
-
-    def mosaicity(self) -> Dict:
-        """Two unique components of mosaicity"""
-        decomp = linalg.eigensystem.real_symmetric(
-            matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
-        )
-        m = mosaicity_from_eigen_decomposition(decomp.values())
-        v = decomp.vectors()
-        mosaicities = {"radial": 0, "angular": 0}
-        # two values must be same, could have accidental degeneracy where all 3 same:
-        unique_ = list(set(m))
-        if len(unique_) == 1:
-            return {"angular": unique_[0], "radial": unique_[0]}
-        else:
-            assert len(unique_) == 2
-            for i in range(3):
-                vec = (v[i * 3], v[(i * 3) + 1], v[(i * 3) + 2])
-                if vec == (0, 0, 1):
-                    mosaicities["radial"] = m[i]
-                else:
-                    mosaicities["angular"] = m[i]
-        return mosaicities
-
-    def first_derivatives(self) -> np.array:
-        """
-        Compute the first derivatives of Sigma w.r.t the parameters
-        """
-        b1, b2 = self.params
-
-        d1 = np.array(
-            [[2 * b1, 0, 0], [0, 2 * b1, 0], [0, 0, 0]], dtype=np.float64
-        ).reshape(1, 3, 3)
-
-        d2 = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 2 * b2]], dtype=np.float64).reshape(
-            1, 3, 3
-        )
-
-        return np.concatenate([d1, d2], axis=0)
-
-
-class Angular4MosaicityParameterisation(BaseParameterisation):
-    """
-    A simple mosaicity parameterisation that uses 4 parameters to describe a
-    multivariate normal angular mosaic spread. Sigma is enforced as positive
-    definite by parameterising using the cholesky decomposition.
-    W = | w1  0  0  |
-        | w2 w3  0  |
-        | 0   0 w4 |
-    S = W*W^T
-    """
-
-    @staticmethod
-    def is_angular() -> bool:
-        return True
-
-    @staticmethod
-    def num_parameters() -> int:
-        return 4
-
-    def sigma(self) -> np.array:
-        """
-        Compute the covariance matrix of the MVN from the parameters
-        """
-        # M = [[p[0], 0, 0], [p[1], p[2], 0], [0, 0, p[3]]]
-        # return np.matmul(M, M.T)
-        ab = self.params[0] * self.params[1]
-        aa = self.params[0] ** 2
-        bcsq = self.params[1] ** 2 + self.params[2] ** 2
-        dd = self.params[3] ** 2
-        return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, dd]], dtype=np.float64)
-
-    def mosaicity(self) -> Dict:
-        """Three components of mosaicity"""
-        decomp = linalg.eigensystem.real_symmetric(
-            matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
-        )
-        m = mosaicity_from_eigen_decomposition(decomp.values())
-        v = decomp.vectors()
-        mosaicities = {"radial": 0, "angular_0": 0, "angular_1": 0}
-        n_angular = 0
-        for i in range(3):
-            vec = (v[i * 3], v[(i * 3) + 1], v[(i * 3) + 2])
-            if vec == (0, 0, 1):
-                mosaicities["radial"] = m[i]
-            else:
-                mosaicities["angular_" + str(n_angular)] = m[i]
-                n_angular += 1
-        return mosaicities
-
-    def first_derivatives(self) -> np.array:
-        """
-        Compute the first derivatives of Sigma w.r.t the parameters
-        """
-        b1, b2, b3, b4 = self.params
-
-        # d1 = [[2 * b1, b2, 0], [b2, 0, 0], [0, 0, 0]]
-        # d2 = [[0, b1, 0], [b1, 2 * b2, 0], [0, 0, 0]]
-        # d3 = [[0, 0, 0], [0, 2 * b3, 0], [0, 0, 0]]
-        # d4 = [[0, 0, 0], [0, 0, 0], [0, 0, 2 * b4]]
-        ds = np.array(
-            [
-                [2 * b1, b2, 0, b2, 0, 0, 0, 0, 0],
-                [0, b1, 0, b1, 2 * b2, 0, 0, 0, 0],
-                [0, 0, 0, 0, 2 * b3, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 2 * b4],
-            ],
-            dtype=np.float64,
-        ).reshape(4, 3, 3)
         return ds
 
 

@@ -282,26 +282,47 @@ class OutputAggregator:
             for k, v in sigma.items():
                 mosaicities["M_" + k][i] = v
         data = []
+        data_angular = []
         for k, v in mosaicities.items():
-            data.append(
-                {
-                    "x": n,
-                    "y": list(v),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "name": k,
-                }
-            )
+            if "angular" in k:
+                data_angular.append(
+                    {
+                        "x": n,
+                        "y": list(v),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": k,
+                        "yaxis": "y2",
+                    }
+                )
+            else:
+                data.append(
+                    {
+                        "x": n,
+                        "y": list(v),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": k,
+                    }
+                )
         mosaic_plots = {
             "mosaicities": {
                 "data": data,
                 "layout": {
                     "title": "Profile model mosaicities per image",
                     "xaxis": {"title": "image number"},
-                    "yaxis": {"title": "Mosaicity (degrees)"},
+                    "yaxis": {"title": "Invariant crystal mosaicity (Å⁻¹)"},
                 },
             },
         }
+        if data_angular:
+            mosaic_plots["mosaicities"]["layout"]["yaxis2"] = {
+                "anchor": "x",
+                "side": "right",
+                "title": "Angular mosaicity (degrees)",
+                "overlaying": "y",
+            }
+            mosaic_plots["mosaicities"]["data"].extend(data_angular)
         plots_dict.update(mosaic_plots)
 
         return plots_dict

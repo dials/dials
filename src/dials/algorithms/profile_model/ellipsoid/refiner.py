@@ -979,16 +979,23 @@ class Refiner(object):
         # Print the eigen values and vectors of sigma_m
         if not self.state.is_mosaic_spread_fixed:
             logger.info("\nDecomposition of Sigma_M:")
-            print_eigen_values_and_vectors(
+            print_eigen_values_and_vectors_static(
                 matrix.sqr(
                     flumpy.from_numpy(self.state._M_parameterisation.sigma().flatten())
                 )
             )
             if self.state.is_mosaic_spread_angular:
-                logger.info(self.state._M_parameterisation.sigma_A())
-                # print_eigen_values_and_vectors(
-                #    matrix.sqr(flumpy.from_numpy(self.state._M_parameterisation.sigma_A().flatten()))
-                # )
+                logger.info(
+                    print_eigen_values_and_vectors_angular(
+                        matrix.sqr(
+                            flumpy.from_numpy(
+                                self.state._M_parameterisation.sigma_A()[
+                                    :2, :2
+                                ].flatten()
+                            )
+                        )
+                    )
+                )
 
         # Save the history
         self.history = self.ml.history
@@ -1160,7 +1167,34 @@ def print_eigen_values_and_vectors_of_observed_covariance(A, s0):
     logger.info("C2: %.5f degrees" % (sqrt(L[3]) * (180.0 / pi) / s0.length()))
 
 
-def print_eigen_values_and_vectors(A):
+def print_eigen_values_and_vectors_static(A):
+    """
+    Print the eigen values and vectors of a matrix
+
+    """
+
+    # Compute the eigen decomposition of the covariance matrix
+    eigen_decomposition = linalg.eigensystem.real_symmetric(A.as_flex_double_matrix())
+    eigen_values = eigen_decomposition.values()
+
+    # Print the matrix eigen values
+    logger.info(
+        f"\n Eigen Values:\n{print_matrix(matrix.diag(eigen_values), indent=2)}\n"
+    )
+    logger.info(
+        f"\n Eigen Vectors:\n{print_matrix(matrix.sqr(eigen_decomposition.vectors()), indent=2)}\n"
+    )
+    logger.info(
+        f"""
+ Invariant crystal mosaicity:
+ M1 : {eigen_values[0]**0.5:.5f} Å⁻¹
+ M2 : {eigen_values[1]**0.5:.5f} Å⁻¹
+ M3 : {eigen_values[2]**0.5:.5f} Å⁻¹
+"""
+    )
+
+
+def print_eigen_values_and_vectors_angular(A):
     """
     Print the eigen values and vectors of a matrix
 
@@ -1180,12 +1214,9 @@ def print_eigen_values_and_vectors(A):
 
     mosaicity = mosaicity_from_eigen_decomposition(eigen_values)
     logger.info(
-        f"""
- Mosaicity in degrees equivalent units:
- M1 : {mosaicity[0]:.5f} degrees
- M2 : {mosaicity[1]:.5f} degrees
- M3 : {mosaicity[2]:.5f} degrees
-"""
+        """
+ Angular Mosaicity in degrees equivalent units:\n"""
+        + "\n".join(f" M{i+1} : {m:.5f} degrees" for i, m in enumerate(mosaicity))
     )
 
 
