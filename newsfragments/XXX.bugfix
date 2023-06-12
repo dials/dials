@@ -1,0 +1,1 @@
+``dials.import``: Don't print filename template for every image of an ``ImageSequence``
