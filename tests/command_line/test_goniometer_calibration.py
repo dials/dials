@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
-
-import procrunner
+import shutil
+import subprocess
 
 
 def test_goniometer_calibration(dials_regression, tmpdir):
@@ -13,7 +13,7 @@ def test_goniometer_calibration(dials_regression, tmpdir):
     o48_k48_p48 = os.path.join(data_dir, "experiments_o48_k48_p48.json")
 
     command = [
-        "dials.goniometer_calibration",
+        shutil.which("dials.goniometer_calibration"),
         o0_k0_p0,
         o0_k0_p48,
         o0_k48_p48,
@@ -23,7 +23,7 @@ def test_goniometer_calibration(dials_regression, tmpdir):
     ]
 
     print(command)
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = subprocess.run(command, cwd=tmpdir, capture_output=True)
     assert not result.returncode and not result.stderr
 
     expected_output = b"""
