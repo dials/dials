@@ -20,6 +20,8 @@ from dials.algorithms.profile_model.ellipsoid import (
     PredictorSimple,
 )
 from dials.algorithms.profile_model.ellipsoid.parameterisation import (
+    Angular2MosaicityParameterisation,
+    Angular4MosaicityParameterisation,
     Simple1Angular1MosaicityParameterisation,
     Simple1Angular3MosaicityParameterisation,
     Simple1MosaicityParameterisation,
@@ -178,6 +180,11 @@ class EllipsoidProfileModel(ProfileModelExt):
             return cls(Simple6Angular1ProfileModel.from_dict(d))
         if d["parameterisation"] == "simple6angular3":
             return cls(Simple6Angular3ProfileModel.from_dict(d))
+        # next two retained for backwards compatilibty of reading expt files
+        if d["parameterisation"] == "angular2":
+            return cls(Angular2ProfileModel.from_dict(d))
+        if d["parameterisation"] == "angular4":
+            return cls(Angular4ProfileModel.from_dict(d))
         raise RuntimeError(
             f"Unknown profile model parameterisation: {d['parameterisation']}"
         )
@@ -751,3 +758,35 @@ def compute_change_of_basis_operation(s0, s2):
     e3 = s2 / norm(s2)
     R = np.array([e1, e2, e3], dtype=np.float64)
     return R
+
+
+class Angular2ProfileModel(AngularProfileModelBase):
+    """
+    Class to store profile model
+
+    """
+
+    name = "angular2"
+
+    def parameterisation(self):
+        """
+        Get the parameterisation
+
+        """
+        return Angular2MosaicityParameterisation(self.params)
+
+
+class Angular4ProfileModel(AngularProfileModelBase):
+    """
+    Class to store profile model
+
+    """
+
+    name = "angular4"
+
+    def parameterisation(self):
+        """
+        Get the parameterisation
+
+        """
+        return Angular4MosaicityParameterisation(self.params)

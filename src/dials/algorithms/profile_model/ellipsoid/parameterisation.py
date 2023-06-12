@@ -986,3 +986,109 @@ class ReflectionModelState(object):
 
         """
         return self._dl_dp
+
+
+## classes retained for backwards compatibility to enable loading of .expt files.
+
+
+class Angular2MosaicityParameterisation(BaseParameterisation):
+    """
+    A simple mosaicity parameterisation that uses 2 parameters to describe a
+    multivariate normal angular mosaic spread. Sigma is enforced as positive
+    definite by parameterising using the cholesky decomposition.
+    W = | w1 0  0  |
+        | 0 w1  0  |
+        | 0  0 w2 |
+    S = W*W^T
+    """
+
+    @staticmethod
+    def is_angular() -> bool:
+        return True
+
+    @staticmethod
+    def num_parameters() -> int:
+        return 2
+
+    def sigma(self) -> matrix:
+        """
+        Compute the covariance matrix of the MVN from the parameters
+        """
+        p1sq = self.params[0] ** 2
+        p2sq = self.params[1] ** 2
+        return np.array(
+            [[p1sq, 0, 0], [0, p1sq, 0], [0, 0, p2sq]],
+            dtype=np.float64,
+        )
+
+    def mosaicity(self) -> Dict:
+        """Two unique components of mosaicity"""
+        decomp = linalg.eigensystem.real_symmetric(
+            matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
+        )
+        m = mosaicity_from_eigen_decomposition(decomp.values())
+        v = decomp.vectors()
+        mosaicities = {"radial": 0, "angular": 0}
+        # two values must be same, could have accidental degeneracy where all 3 same:
+        unique_ = list(set(m))
+        if len(unique_) == 1:
+            return {"angular": unique_[0], "radial": unique_[0]}
+        else:
+            assert len(unique_) == 2
+            for i in range(3):
+                vec = (v[i * 3], v[(i * 3) + 1], v[(i * 3) + 2])
+                if vec == (0, 0, 1):
+                    mosaicities["radial"] = m[i]
+                else:
+                    mosaicities["angular"] = m[i]
+        return mosaicities
+
+
+class Angular4MosaicityParameterisation(BaseParameterisation):
+    """
+    A simple mosaicity parameterisation that uses 4 parameters to describe a
+    multivariate normal angular mosaic spread. Sigma is enforced as positive
+    definite by parameterising using the cholesky decomposition.
+    W = | w1  0  0  |
+        | w2 w3  0  |
+        | 0   0 w4 |
+    S = W*W^T
+    """
+
+    @staticmethod
+    def is_angular() -> bool:
+        return True
+
+    @staticmethod
+    def num_parameters() -> int:
+        return 4
+
+    def sigma(self) -> np.array:
+        """
+        Compute the covariance matrix of the MVN from the parameters
+        """
+        # M = [[p[0], 0, 0], [p[1], p[2], 0], [0, 0, p[3]]]
+        # return np.matmul(M, M.T)
+        ab = self.params[0] * self.params[1]
+        aa = self.params[0] ** 2
+        bcsq = self.params[1] ** 2 + self.params[2] ** 2
+        dd = self.params[3] ** 2
+        return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, dd]], dtype=np.float64)
+
+    def mosaicity(self) -> Dict:
+        """Three components of mosaicity"""
+        decomp = linalg.eigensystem.real_symmetric(
+            matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
+        )
+        m = mosaicity_from_eigen_decomposition(decomp.values())
+        v = decomp.vectors()
+        mosaicities = {"radial": 0, "angular_0": 0, "angular_1": 0}
+        n_angular = 0
+        for i in range(3):
+            vec = (v[i * 3], v[(i * 3) + 1], v[(i * 3) + 2])
+            if vec == (0, 0, 1):
+                mosaicities["radial"] = m[i]
+            else:
+                mosaicities["angular_" + str(n_angular)] = m[i]
+                n_angular += 1
+        return mosaicities
