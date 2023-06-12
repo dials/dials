@@ -1,1 +1,1 @@
-Bugfix for environments without conda
+More directly support cctbx bootstrap environments without fixed-version dependencies.
