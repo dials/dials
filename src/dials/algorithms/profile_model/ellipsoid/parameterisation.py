@@ -334,7 +334,7 @@ class Simple1Angular3MosaicityParameterisation(BaseParameterisation):
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
         )
         v = decomp.values()[0] ** 0.5
-        mosaicities = {"spherical": v[0]}
+        mosaicities = {"spherical": v}
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(list(self.sigma_A()[0:2, 0:2].flatten())).as_flex_double_matrix()
         )

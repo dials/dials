@@ -50,19 +50,42 @@ import json
 
 expected_simple1 = {
     "likelihood": 171374.17464891364,
-    "mosaicity": [0.020799705597009843],
+    "mosaicity": [0.00036302334611331463],
+}
+expected_s1a1 = {
+    "likelihood": 171374.1740045413,
+    "mosaicity": [0.0003630828987324925, 4.791495711931804e-06],
+}
+expected_s1a3 = {
+    "likelihood": 172378.47458692876,
+    "mosaicity": [0.0003189999519843126, 0.07559499810366903, 2.2915562056795664e-08],
 }
 expected_simple6 = {
     "likelihood": 176234.85494941485,
-    "mosaicity": [0.007835942631996863, 0.02266467599439014, 0.026879730729450498],
+    "mosaicity": [
+        0.00013676299892573563,
+        0.00039557321999982774,
+        0.00046913980327840824,
+    ],
 }
-expected_angular2 = {
-    "likelihood": 171782.58653554777,
-    "mosaicity": [0.024549034458866092, 0.01864434938489629],
+expected_s6a1 = {
+    "likelihood": 177094.36892815138,
+    "mosaicity": [
+        1.9031463306553676e-05,
+        0.0003987602229705104,
+        0.00046360902730780773,
+        0.032456740908481226,
+    ],
 }
-expected_angular4 = {
-    "likelihood": 179074.32947807646,
-    "mosaicity": [0.024550628270576778, 0.025846182907222837, 0.005215268399212766],
+expected_s6a3 = {
+    "likelihood": 175696.41329749255,
+    "mosaicity": [
+        0.00011870174298666728,
+        0.0004429552218934676,
+        0.0005125703788199112,
+        0.0364844215478352,
+        3.5892742428290925e-05,
+    ],
 }
 
 
@@ -71,8 +94,10 @@ expected_angular4 = {
     [
         ("simple1", expected_simple1),
         ("simple6", expected_simple6),
-        ("angular2", expected_angular2),
-        ("angular4", expected_angular4),
+        ("simple1angular1", expected_s1a1),
+        ("simple1angular3", expected_s1a3),
+        ("simple6angular1", expected_s6a1),
+        ("simple6angular3", expected_s6a3),
     ],
 )
 @pytest.mark.xdist_group(name="group1")
@@ -97,6 +122,8 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
             f"ellipsoid.rlp_mosaicity={model}",
             "n_macro_cycles=2",
             f"output.history={tmp_path /'history.json'}",
+            "max_iter=100",
+            "LL_tolerance=1e-6",
         ],
         working_directory=tmp_path,
     )
