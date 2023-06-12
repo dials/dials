@@ -31,10 +31,10 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         env_etc.dials_include,
     ]
 
-    # Handle no-conda builds that pull msgpack as a 'hot' package from bootstrap
-    msgpack = os.path.join(os.path.dirname(libtbx.env.dist_path("dials")), "msgpack-3.1.1", "include")
-    if os.path.exists(str(msgpack)):
-        include_paths.append(msgpack)
+    # Handle cctbx bootstrap builds that pull a fixed msgpack version into modules/
+    msgpack = Path(libtbx.env.dist_path("dials")).parent / "msgpack-3.1.1", "include"
+    if msgpack.is_dir():
+        include_paths.append(str(msgpack))
 
     if libtbx.env.build_options.use_conda:
         boost_python = get_boost_library_with_python_version(
