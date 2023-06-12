@@ -3,8 +3,9 @@ from __future__ import annotations
 import collections
 import os
 import pathlib
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from cctbx import uctbx
@@ -47,7 +48,7 @@ def run_indexing(
     relative_length_tolerance=0.005,
     absolute_angle_tolerance=0.5,
 ):
-    commands = ["dials.index"]
+    commands = [shutil.which("dials.index")]
     if isinstance(reflections, list):
         commands.extend(reflections)
     else:
@@ -58,7 +59,7 @@ def run_indexing(
         commands.append(experiment)
     commands.extend(extra_args)
 
-    result = procrunner.run(commands, working_directory=working_directory)
+    result = subprocess.run(commands, cwd=working_directory)
     assert not result.returncode and not result.stderr
 
     out_expts = working_directory / "indexed.expt"
@@ -310,18 +311,18 @@ def insulin_spotfinding(dials_data, tmp_path_factory):
     data_dir = dials_data("insulin", pathlib=True)
     tmp_path = tmp_path_factory.mktemp("insulin")
 
-    command = ["dials.import"]
+    command = [shutil.which("dials.import")]
     for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
         command.append(data_dir / image_path)
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path)
     assert not result.returncode and not result.stderr
 
     experiment = tmp_path / "imported.expt"
     assert experiment.is_file()
 
-    command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [shutil.which("dials.find_spots"), "nproc=1", experiment]
+    result = subprocess.run(command, cwd=tmp_path)
     assert not result.returncode and not result.stderr
 
     reflections = tmp_path / "strong.refl"
@@ -365,18 +366,18 @@ def insulin_spotfinding_stills(dials_data, tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("insulin")
 
     command = [
-        "dials.import",
+        shutil.which("dials.import"),
         "convert_sequences_to_stills=True",
         data_dir / "insulin_1_001.img",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path)
     assert not result.returncode and not result.stderr
 
     experiment = tmp_path / "imported.expt"
     assert experiment.is_file()
 
-    command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [shutil.which("dials.find_spots"), "nproc=1", experiment]
+    result = subprocess.run(command, cwd=tmp_path)
     assert not result.returncode and not result.stderr
 
     reflections = tmp_path / "strong.refl"
@@ -564,14 +565,14 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
     all existing solutions are also dropped."""
     data_dir = os.path.join(dials_regression, "indexing_test_data", "lattice_failures")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.index",
+            shutil.which("dials.index"),
             os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
             os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
             "max_lattices=3",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.refl").if_file()
@@ -582,14 +583,14 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
     assert len(experiments_list) == 2
 
     # now try to reindex with existing model
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.index",
+            shutil.which("dials.index"),
             tmp_path / "indexed.expt",
             os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
             "max_lattices=2",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.refl").is_file()
@@ -687,15 +688,15 @@ def test_index_ED_still_low_res_spot_match(
         dials_data("image_examples", pathlib=True) / "simtbx_FormatSMVJHSim_001.img"
     )
 
-    command = ["dials.import", image_path]
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [shutil.which("dials.import"), image_path]
+    result = subprocess.run(command, cwd=tmp_path)
     assert not result.returncode and not result.stderr
 
     experiment = tmp_path / "imported.expt"
     assert experiment.is_file()
 
-    command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [shutil.which("dials.find_spots"), "nproc=1", experiment]
+    result = subprocess.run(command, cwd=tmp_path)
     assert not result.returncode and not result.stderr
 
     reflections = tmp_path / "strong.refl"
@@ -768,12 +769,12 @@ def test_real_space_grid_search_no_unit_cell(dials_regression, tmp_path):
     experiments_json = data_dir / "experiments_import.json"
     pickle_path = data_dir / "full.pickle"
     commands = [
-        "dials.index",
+        shutil.which("dials.index"),
         experiments_json,
         pickle_path,
         "indexing.method=real_space_grid_search",
     ]
-    result = procrunner.run(commands, working_directory=tmp_path)
+    result = subprocess.run(commands, cwd=tmp_path)
     assert result.stderr
     assert (
         result.stderr.strip()
@@ -802,9 +803,9 @@ def test_index_known_orientation(dials_data, tmp_path):
 
 
 def test_all_expt_ids_have_expts(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.index",
+            shutil.which("dials.index"),
             dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.expt",
             dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.refl",
             "stills.indexer=sequences",
@@ -815,7 +816,7 @@ def test_all_expt_ids_have_expts(dials_data, tmp_path):
             "beam.fix=all",
             "detector.fix=all",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.expt").is_file()
