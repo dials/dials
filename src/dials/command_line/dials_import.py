@@ -17,6 +17,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
@@ -906,7 +907,13 @@ def do_import(
             start, end = scan.get_image_range()
             unique_templates.add(f"{imgset.get_template()}:{start}:{end}")
         else:
-            unique_templates.add(f"{imgset.reader().paths()[0]}")
+            paths = imgset.reader().paths()
+            if len(paths) == 1:
+                unique_templates.add(paths[0])
+            else:
+                template, _ = template_regex_from_list(paths)
+                unique_templates.add(template)
+
     # Print out some bulk info
     logger.info("-" * 80)
     for fmt in unique_formats:
