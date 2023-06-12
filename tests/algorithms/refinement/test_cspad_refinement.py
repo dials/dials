@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
@@ -14,14 +15,14 @@ def test1(dials_data, tmp_path):
     """
     data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             data_dir / "cspad_refined_experiments_step6_level2_300.json",
             data_dir / "cspad_reflections_step7_300.pickle",
             data_dir / "refine.phil",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
