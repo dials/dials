@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import os
-
-import procrunner
+import shutil
+import subprocess
 
 
 def test_align_crystal(dials_regression, tmpdir):
     path = os.path.join(dials_regression, "experiment_test_data")
-    result = procrunner.run(
-        ("dials.align_crystal", f"{path}/kappa_experiments.json"),
-        working_directory=tmpdir,
+    result = subprocess.run(
+        [shutil.which("dials.align_crystal"), f"{path}/kappa_experiments.json"],
+        cwd=tmpdir,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert result.stdout.replace(b"\r\n", b"\n").endswith(
