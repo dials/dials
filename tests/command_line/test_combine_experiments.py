@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import copy
 import os
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -42,8 +43,10 @@ def test(dials_data, tmp_path):
     )
     tmp_path.joinpath("input.phil").write_text(phil_input)
 
-    result = procrunner.run(
-        ["dials.combine_experiments", "input.phil"], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.combine_experiments"), "input.phil"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -66,9 +69,10 @@ def test(dials_data, tmp_path):
     # test the reflections
     assert len(ref) == 11689
 
-    result = procrunner.run(
-        ["dials.split_experiments", "combined.expt", "combined.refl"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.split_experiments"), "combined.expt", "combined.refl"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -91,9 +95,14 @@ def test(dials_data, tmp_path):
         assert len(ref_single) == len(ref.select(ref["id"] == i))
         assert ref_single["id"].all_eq(0)
 
-    result = procrunner.run(
-        ["dials.split_experiments", "combined.expt", "output.experiments_prefix=test"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.split_experiments"),
+            "combined.expt",
+            "output.experiments_prefix=test",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -110,16 +119,17 @@ def test(dials_data, tmp_path):
         exp[i].detector = detector
     exp.as_json(tmp_path / "modded.expt")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.split_experiments",
+            shutil.which("dials.split_experiments"),
             "modded.expt",
             "combined.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -142,9 +152,10 @@ def test(dials_data, tmp_path):
     reflections.as_file(tmp_path / "assigned.refl")
     explist.as_json(tmp_path / "assigned.expt")
 
-    result = procrunner.run(
-        ["dials.split_experiments", "assigned.expt", "assigned.refl"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.split_experiments"), "assigned.expt", "assigned.refl"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -172,16 +183,17 @@ def test(dials_data, tmp_path):
         exp.identifier = str(i * 2)
     moddedlist.as_json(tmp_path / "modded.expt")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.split_experiments",
+            shutil.which("dials.split_experiments"),
             "modded.expt",
             "assigned.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -218,13 +230,13 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
     if with_identifiers:
         for n, i in enumerate(input_range):
             command = [
-                "dials.assign_experiment_identifiers",
+                shutil.which("dials.assign_experiment_identifiers"),
                 data_dir / f"experiments_{i}.json",
                 data_dir / f"reflections_{i}.pickle",
                 f"output.experiments={n}.expt",
                 f"output.reflections={n}.refl",
             ]
-            procrunner.run(command, working_directory=tmp_path)
+            subprocess.run(command, cwd=tmp_path, capture_output=True)
 
         phil_input = "\n".join(
             (
@@ -243,15 +255,16 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
 
     tmp_path.joinpath("input.phil").write_text(phil_input)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.combine_experiments",
+            shutil.which("dials.combine_experiments"),
             tmp_path / "input.phil",
             "clustering.use=True",
             "threshold=5",
             "max_clusters=2",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     # this should create two clusters:
     #   combined_cluster_1 (2 expts)
@@ -280,13 +293,13 @@ def narrow_wedge_input_with_identifiers(dials_data, tmpdir):
     input_range = [9, 11, 12, 31]
     for n, i in enumerate(input_range):
         command = [
-            "dials.assign_experiment_identifiers",
+            shutil.which("dials.assign_experiment_identifiers"),
             data_dir / ("sweep_%03d_experiments.json" % i),
             data_dir / ("sweep_%03d_reflections.pickle" % i),
             f"output.experiments={n}.expt",
             f"output.reflections={n}.refl",
         ]
-        procrunner.run(command, working_directory=tmpdir)
+        subprocess.run(command, cwd=tmpdir, capture_output=True)
 
     phil_input = "\n".join(
         (
@@ -301,7 +314,6 @@ def narrow_wedge_input_with_identifiers(dials_data, tmpdir):
 @pytest.mark.parametrize("min_refl", ["None", "100"])
 @pytest.mark.parametrize("max_refl", ["None", "150"])
 def test_min_max_reflections_per_experiment(dials_data, tmp_path, min_refl, max_refl):
-
     expected_results = {
         ("None", "None"): 10,
         ("None", "150"): 9,
@@ -318,8 +330,10 @@ def test_min_max_reflections_per_experiment(dials_data, tmp_path, min_refl, max_
     ).format(data_dir, min_refl, max_refl)
     tmp_path.joinpath("input.phil").write_text(input_phil)
 
-    result = procrunner.run(
-        ["dials.combine_experiments", "input.phil"], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.combine_experiments"), "input.phil"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -359,14 +373,15 @@ def test_combine_nsubset(
     with open(tmpdir.join("input.phil").strpath, "w") as phil_file:
         phil_file.writelines(phil_input)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.combine_experiments",
+            shutil.which("dials.combine_experiments"),
             tmpdir.join("input.phil").strpath,
             "n_subset=3",
             f"n_subset_method={method}",
         ],
-        working_directory=tmpdir,
+        cwd=tmpdir,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("combined.refl").check()
