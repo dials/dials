@@ -7,6 +7,8 @@ import pickle
 import sys
 from collections import defaultdict, namedtuple
 
+from orderedset import OrderedSet
+
 import dxtbx.model.compare as compare
 import libtbx.phil
 from dxtbx.imageset import ImageGrid, ImageSequence
@@ -15,6 +17,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
@@ -896,23 +899,27 @@ def do_import(
         num_images += len(e.imageset)
         counted_imagesets.append(e.imageset)
 
-    format_list = {str(e.imageset.get_format_class()) for e in experiments}
-    try:
-        template_list = {
-            str(e.imageset.get_template())
-            + ":{0}:{1}".format(*e.scan.get_image_range())
-            for e in experiments
-        }
-    except AttributeError:
-        # For stills we need a different approach
-        template_list = {}
+    unique_formats = OrderedSet()
+    unique_templates = OrderedSet()
+    for imgset in counted_imagesets:
+        unique_formats.add(imgset.get_format_class())
+        if scan := imgset.get_scan():
+            start, end = scan.get_image_range()
+            unique_templates.add(f"{imgset.get_template()}:{start}:{end}")
+        else:
+            paths = imgset.reader().paths()
+            if len(paths) == 1:
+                unique_templates.add(paths[0])
+            else:
+                template, _ = template_regex_from_list(paths)
+                unique_templates.add(template)
 
     # Print out some bulk info
     logger.info("-" * 80)
-    for f in format_list:
-        logger.info("  format: %s", f)
-    for f in template_list:
-        logger.info("  template: %s", f)
+    for fmt in unique_formats:
+        logger.info("  format: %s", fmt)
+    for template in unique_templates:
+        logger.info("  template: %s", template)
     logger.info("  num images: %d", num_images)
     logger.info("  sequences:")
     logger.info("    still:    %d", num_still_sequences)

@@ -686,3 +686,42 @@ def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
     assert len(experiments.imagesets()) == 1
     assert isinstance(experiments.imagesets()[0], ImageSequence)
     assert len(experiments.scans()) == 1  # only one image example here
+
+
+def test_import_grid_scan(dials_data, tmp_path):
+    data_dir = dials_data("thaumatin_grid_scan")
+    image_path = data_dir / "thau_3_2_*"
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "convert_stills_to_sequences=True",
+            image_path,
+            "output.experiments=lcls.expt",
+        ],
+        capture_output=True,
+        cwd=tmp_path,
+    )
+    assert (
+        result.stdout
+        and f"template: {data_dir}/thau_3_2_####.cbf.bz2:1:19" in result.stdout.decode()
+    )
+    assert result.stdout.count(b"template:") == 1
+
+
+def test_import_stills(dials_data, tmp_path):
+    data_dir = dials_data("4fluoro_cxi") / "lcls_2022_smSFX_workshop_data" / "ten_cbfs"
+    image_path = data_dir / "cxily6520_r0164_*.cbf"
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            image_path,
+            "output.experiments=lcls.expt",
+        ],
+        capture_output=True,
+        cwd=tmp_path,
+    )
+    assert (
+        result.stdout
+        and f"template: {data_dir}/cxily6520_r0164_#####.cbf" in result.stdout.decode()
+    )
+    assert result.stdout.count(b"template:") == 1
