@@ -46,17 +46,17 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session")
-def dials_regression():
+def dials_regression() -> Path:
     """Return the absolute path to the dials_regression module as a string.
     Skip the test if dials_regression is not installed."""
 
     if "DIALS_REGRESSION" in os.environ:
-        return os.environ["DIALS_REGRESSION"]
+        return Path(os.environ["DIALS_REGRESSION"])
 
     try:
         import dials_regression as dr
 
-        return os.path.dirname(dr.__file__)
+        return Path(dr.__file__).parent
     except ImportError:
         pass  # dials_regression not configured
     try:
@@ -68,7 +68,7 @@ def dials_regression():
             and socket.gethostname().endswith(".diamond.ac.uk")
             and os.path.exists(reference_copy)
         ):
-            return reference_copy
+            return Path(reference_copy)
     except ImportError:
         pass  # Cannot tell whether in DLS network or not
     pytest.skip("dials_regression required for this test")
