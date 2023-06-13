@@ -66,7 +66,7 @@ output.composite_output = True
 
 @pytest.mark.xfel
 @pytest.mark.parametrize("composite_output", [True, False])
-def test_cspad_cbf_in_memory(dials_regression, tmp_path, composite_output):
+def test_cspad_cbf_in_memory(dials_regression: Path, tmp_path, composite_output):
     # Check the data files for this test exist
     image_path = Path(
         dials_regression,

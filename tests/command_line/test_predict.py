@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import procrunner
 
@@ -19,7 +20,7 @@ def plausible(table):
     return True
 
 
-def test_static_prediction(dials_regression, tmpdir):
+def test_static_prediction(dials_regression: Path, tmpdir):
     result = procrunner.run(
         [
             "dials.predict",
@@ -38,7 +39,7 @@ def test_static_prediction(dials_regression, tmpdir):
     assert plausible(table)
 
 
-def test_scan_varying_prediction(dials_regression, tmpdir):
+def test_scan_varying_prediction(dials_regression: Path, tmpdir):
     result = procrunner.run(
         [
             "dials.predict",
@@ -57,7 +58,7 @@ def test_scan_varying_prediction(dials_regression, tmpdir):
     assert plausible(table)
 
 
-def test_force_static_prediction(dials_regression, tmpdir):
+def test_force_static_prediction(dials_regression: Path, tmpdir):
     result = procrunner.run(
         [
             "dials.predict",

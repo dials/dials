@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 import procrunner
 
 
-def test_export_mosflm(dials_regression, tmpdir):
+def test_export_mosflm(dials_regression: Path, tmpdir):
     dials_regression_escaped = json.dumps(str(dials_regression)).strip('"')
     with open(
         os.path.join(dials_regression, "experiment_test_data/experiment_1.json")

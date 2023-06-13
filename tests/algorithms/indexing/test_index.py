@@ -111,7 +111,7 @@ def run_indexing(
     return _indexing_result(indexed_reflections, experiments_list, rmsds)
 
 
-def test_index_i04_weak_data_fft3d(dials_regression, tmp_path):
+def test_index_i04_weak_data_fft3d(dials_regression: pathlib.Path, tmp_path):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
@@ -137,7 +137,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmp_path):
     )
 
 
-def test_index_trypsin_four_lattice_P212121(dials_regression, tmp_path):
+def test_index_trypsin_four_lattice_P212121(dials_regression: pathlib.Path, tmp_path):
     # synthetic trypsin multi-lattice dataset (4 lattices)
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "trypsin"
     pickle_path = data_dir / "P1_X6_1_2_3_4.pickle"
@@ -172,7 +172,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmp_path):
     )
 
 
-def test_index_i04_weak_data_fft1d(dials_regression, tmp_path):
+def test_index_i04_weak_data_fft1d(dials_regression: pathlib.Path, tmp_path):
     # thaumatin
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
     pickle_path = data_dir / "full.pickle"
@@ -200,7 +200,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmp_path):
     )
 
 
-def test_index_trypsin_index_assignment_local(dials_regression, tmp_path):
+def test_index_trypsin_index_assignment_local(dials_regression: pathlib.Path, tmp_path):
     # synthetic trypsin multi-lattice dataset (3 lattices)
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "trypsin"
     pickle_path = data_dir / "P1_X6_1_2_3.pickle"
@@ -238,7 +238,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmp_path):
     )
 
 
-def test_index_peak_search_clean(dials_regression, tmp_path):
+def test_index_peak_search_clean(dials_regression: pathlib.Path, tmp_path):
     # test indexing from single image of i04_weak_data
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
     pickle_path = data_dir / "first_image.pickle"
@@ -269,7 +269,9 @@ def test_index_peak_search_clean(dials_regression, tmp_path):
 
 
 @pytest.mark.parametrize("specify_unit_cell", [False, True])
-def test_index_imosflm_tutorial(dials_regression, tmp_path, specify_unit_cell):
+def test_index_imosflm_tutorial(
+    dials_regression: pathlib.Path, tmp_path, specify_unit_cell
+):
     # test on spots derived from imosflm tutorial data:
     # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "imosflm_hg_mar"
@@ -414,7 +416,7 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method
     )
 
 
-def test_multiple_experiments(dials_regression, tmp_path):
+def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
     # Test indexing 4 lysozyme still shots in a single dials.index job
     #   - the first image doesn't index
     #   - the last three images do index
@@ -447,7 +449,7 @@ def test_multiple_experiments(dials_regression, tmp_path):
     )
 
 
-def test_index_4rotation(dials_regression, tmp_path):
+def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "4rotation"
     pickle_path = data_dir / "strong.pickle"
     sequence_path = data_dir / "experiments.json"
@@ -473,7 +475,9 @@ def test_index_4rotation(dials_regression, tmp_path):
     assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_4(dials_regression, tmp_path):
+def test_index_small_molecule_multi_sequence_4(
+    dials_regression: pathlib.Path, tmp_path
+):
     # test for small molecule multi-sequence indexing, 4 sequences with different values
     # of goniometer.fixed_rotation()
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "multi_sweep"
@@ -501,7 +505,9 @@ def test_index_small_molecule_multi_sequence_4(dials_regression, tmp_path):
     assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_3(dials_regression, tmp_path):
+def test_index_small_molecule_multi_sequence_3(
+    dials_regression: pathlib.Path, tmp_path
+):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
     data_dir = pathlib.Path(dials_regression) / "dials-191"
@@ -534,7 +540,7 @@ def test_index_small_molecule_multi_sequence_3(dials_regression, tmp_path):
         assert (result.indexed_reflections["id"] == i).count(True) > 2000
 
 
-def test_index_small_molecule_ice_max_cell(dials_regression, tmp_path):
+def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_path):
     # test for small molecule indexing: presence of ice rings makes max-cell
     # estimation tricky
     data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
@@ -558,7 +564,9 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmp_path):
 
 
 @pytest.mark.xfail
-def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
+def test_refinement_failure_on_max_lattices_a15(
+    dials_regression: pathlib.Path, tmp_path
+):
     """Problem: Sometimes there is enough data to index, but not enough to
     refine. If this happens in the (N>1)th crystal of max_lattices, then
     all existing solutions are also dropped."""
@@ -763,7 +771,7 @@ def test_unconventional_P1_cell(dials_data, tmp_path, cell_params):
     )
 
 
-def test_real_space_grid_search_no_unit_cell(dials_regression, tmp_path):
+def test_real_space_grid_search_no_unit_cell(dials_regression: pathlib.Path, tmp_path):
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
     experiments_json = data_dir / "experiments_import.json"
     pickle_path = data_dir / "full.pickle"

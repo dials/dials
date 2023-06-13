@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import procrunner
 import pytest
 
 
-def test_basic(dials_regression, run_in_tmp_path):
+def test_basic(dials_regression: Path, run_in_tmp_path):
     # Call dials.create_profile_model
     result = procrunner.run(
         [
@@ -40,7 +41,7 @@ def test_basic(dials_regression, run_in_tmp_path):
     assert sigma_m == pytest.approx(0.06833, abs=1e-3)
 
 
-def test_extended(dials_regression, run_in_tmp_path):
+def test_extended(dials_regression: Path, run_in_tmp_path):
     # Call dials.create_profile_model
     result = procrunner.run(
         [

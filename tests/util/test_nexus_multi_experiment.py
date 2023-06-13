@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import os
 import random
+from pathlib import Path
 
 import pytest
 
@@ -183,7 +184,7 @@ def run_single(experiments1, filename):
         "stills",
     ],
 )
-def test_nexus_dump_and_reload(dials_regression, tmpdir, filename):
+def test_nexus_dump_and_reload(dials_regression: Path, tmpdir, filename):
     path = os.path.join(dials_regression, "nexus_test_data", "shared_models")
     filename_in = os.path.join(path, f"{filename}.json")
     filename_out = tmpdir.join(f"{filename}.nxs").strpath

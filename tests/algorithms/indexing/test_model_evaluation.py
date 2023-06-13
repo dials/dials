@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import functools
 import os
+from pathlib import Path
 
 import pytest
 
@@ -149,7 +150,7 @@ def test_ModelRank():
     )
 
 
-def test_ModelEvaluation(dials_regression, tmpdir):
+def test_ModelEvaluation(dials_regression: Path, tmpdir):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")

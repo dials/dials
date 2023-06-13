@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import procrunner
 import pytest
@@ -16,7 +17,7 @@ from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
 
 
-def test_reindex(dials_regression, tmpdir):
+def test_reindex(dials_regression: Path, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -110,7 +111,7 @@ def test_reindex(dials_regression, tmpdir):
     assert not result.returncode and not result.stderr
 
 
-def test_reindex_multi_sequence(dials_regression, tmpdir):
+def test_reindex_multi_sequence(dials_regression: Path, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -151,7 +152,7 @@ def test_reindex_multi_sequence(dials_regression, tmpdir):
     )
 
 
-def test_reindex_against_reference(dials_regression, tmpdir):
+def test_reindex_against_reference(dials_regression: Path, tmpdir):
     """Test the reindexing against a reference dataset functionality."""
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")

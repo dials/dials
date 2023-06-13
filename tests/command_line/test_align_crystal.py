@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import procrunner
 
 
-def test_align_crystal(dials_regression, tmpdir):
+def test_align_crystal(dials_regression: Path, tmpdir):
     path = os.path.join(dials_regression, "experiment_test_data")
     result = procrunner.run(
         ("dials.align_crystal", f"{path}/kappa_experiments.json"),

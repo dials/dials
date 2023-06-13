@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import procrunner
 
 
-def test_goniometer_calibration(dials_regression, tmpdir):
+def test_goniometer_calibration(dials_regression: Path, tmpdir):
     data_dir = os.path.join(dials_regression, "rotation_calibration")
     o0_k0_p0 = os.path.join(data_dir, "experiments_o0_k0_p0.json")
     o0_k0_p48 = os.path.join(data_dir, "experiments_o0_k0_p48.json")
