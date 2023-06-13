@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def test_export_mosflm(dials_regression: Path, tmp_path):
-    dials_regression_escaped = json.dumps(dials_regression).strip('"')
+    dials_regression_escaped = json.dumps(str(dials_regression)).strip('"')
     with open(
         os.path.join(dials_regression, "experiment_test_data/experiment_1.json")
     ) as fi:
