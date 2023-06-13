@@ -1,1 +1,0 @@
-Use bulk solvent model when calculating intensities from a reference file (``dials.scale``, ``dials.cosym``)
