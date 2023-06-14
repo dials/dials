@@ -68,7 +68,7 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     # Now index
     result = subprocess.run(
         [
-            "dials.index",
+            shutil.which("dials.index"),
             strong_refl,
             imported,
             f"output.reflections={indexed_refl.name}",

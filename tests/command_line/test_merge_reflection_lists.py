@@ -31,7 +31,7 @@ def test(tmp_path):
 
     result = subprocess.run(
         [
-            "dials.merge_reflection_lists",
+            shutil.which("dials.merge_reflection_lists"),
             tmp_path / "temp1.refl",
             tmp_path / "temp2.refl",
             "method=extend",
