@@ -46,7 +46,7 @@ def test_export_best(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
     result = subprocess.run(
-        ["dials.export_best", "integrated.expt", "integrated.refl"],
+        [shutil.which("dials.export_best"), "integrated.expt", "integrated.refl"],
         cwd=tmp_path,
         capture_output=True,
     )

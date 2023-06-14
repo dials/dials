@@ -25,7 +25,7 @@ def test(dials_data, tmp_path):
 
     result = subprocess.run(
         [
-            "dials.find_hot_pixels",
+            shutil.which("dials.find_hot_pixels"),
             "input.experiments=spotfinder.expt",
             "input.reflections=spotfinder.refl",
             "output.mask=hot_pixels.mask",

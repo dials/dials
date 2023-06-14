@@ -482,7 +482,11 @@ def test_import_still_sequence_as_experiments(dials_data, tmp_path):
     out = "experiments_as_still.expt"
 
     subprocess.run(
-        ["dials.import", "scan.oscillation=0,0", f"output.experiments={out}"]
+        [
+            shutil.which("dials.import"),
+            "scan.oscillation=0,0",
+            f"output.experiments={out}",
+        ]
         + image_files,
         cwd=tmp_path,
         capture_output=True,
@@ -744,7 +748,8 @@ def test_import_grid_scan(dials_data, tmp_path):
     )
     assert (
         result.stdout
-        and f"template: {data_dir}/thau_3_2_####.cbf.bz2:1:19" in result.stdout.decode()
+        and f"template: {data_dir}{os.sep}thau_3_2_####.cbf.bz2:1:19"
+        in result.stdout.decode()
     )
     assert result.stdout.count(b"template:") == 1
 
@@ -763,6 +768,7 @@ def test_import_stills(dials_data, tmp_path):
     )
     assert (
         result.stdout
-        and f"template: {data_dir}/cxily6520_r0164_#####.cbf" in result.stdout.decode()
+        and f"template: {data_dir}{os.sep}cxily6520_r0164_#####.cbf"
+        in result.stdout.decode()
     )
     assert result.stdout.count(b"template:") == 1
