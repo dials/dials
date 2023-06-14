@@ -36,12 +36,7 @@ def test_rs_mapper(dials_data, tmp_path):
 
 
 def test_multi_panel(dials_regression: pathlib.Path, tmp_path):
-    image = (
-        pathlib.Path(dials_regression)
-        / "image_examples"
-        / "DLS_I23"
-        / "germ_13KeV_0001.cbf"
-    )
+    image = dials_regression / "image_examples" / "DLS_I23" / "germ_13KeV_0001.cbf"
 
     result = procrunner.run(
         [

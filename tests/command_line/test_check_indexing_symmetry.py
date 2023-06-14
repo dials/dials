@@ -5,9 +5,9 @@ from pathlib import Path
 import procrunner
 
 
-def test(dials_regression, tmp_path):
-    experiments_path = Path(dials_regression) / "misc_test_data" / "i04-indexed.json"
-    pickle_path = Path(dials_regression) / "misc_test_data" / "i04-indexed.pickle"
+def test(dials_regression: Path, tmp_path):
+    experiments_path = dials_regression / "misc_test_data" / "i04-indexed.json"
+    pickle_path = dials_regression / "misc_test_data" / "i04-indexed.pickle"
 
     assert experiments_path.is_file()
     assert pickle_path.is_file()
