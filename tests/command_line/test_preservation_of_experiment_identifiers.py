@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 from dxtbx.serialize import load
 
@@ -34,9 +35,11 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
 
     # First import - should set a unique id.
     image_files = dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    result = procrunner.run(
-        ["dials.import", f"output.experiments={imported.name}"] + sorted(image_files),
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.import"), f"output.experiments={imported.name}"]
+        + sorted(image_files),
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -46,14 +49,15 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert import_expt_id != ""
 
     # Now find spots.
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             imported,
             f"output.reflections={strong_refl.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -62,7 +66,7 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert dict(reflections.experiment_identifiers()) == {0: import_expt_id}
 
     # Now index
-    result = procrunner.run(
+    result = subprocess.run(
         [
             "dials.index",
             strong_refl,
@@ -70,7 +74,8 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
             f"output.reflections={indexed_refl.name}",
             f"output.experiments={indexed_expt.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -85,9 +90,10 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
 
     # Now refine bravais setting
-    result = procrunner.run(
-        ["dials.refine_bravais_settings", indexed_refl, indexed_expt],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.refine_bravais_settings"), indexed_refl, indexed_expt],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -96,16 +102,17 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert experiments[0].identifier == indexed_expt_id
 
     # Now reindex
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.reindex",
+            shutil.which("dials.reindex"),
             indexed_refl,
             indexed_expt,
             "change_of_basis_op=b,c,a",
             f"output.reflections={reindexed_refl.name}",
             f"output.experiments={reindexed_expt.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -118,15 +125,16 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
 
     # Now refine
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             reindexed_refl,
             reindexed_expt,
             f"output.reflections={refined_refl.name}",
             f"output.experiments={refined_expt.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -139,16 +147,17 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
 
     # Now integrate
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             refined_refl,
             refined_expt,
             f"output.reflections={integrated_refl.name}",
             f"output.experiments={integrated_expt.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -161,15 +170,16 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
 
     # Now run cosym (symmetry fails due to small amount of data)
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.symmetry",
+            shutil.which("dials.symmetry"),
             integrated_refl,
             integrated_expt,
             f"output.reflections={symmetrized_refl.name}",
             f"output.experiments={symmetrized_expt.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -182,15 +192,16 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
 
     # Now scale
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.scale",
+            shutil.which("dials.scale"),
             symmetrized_refl,
             symmetrized_expt,
             f"output.reflections={scaled_refl.name}",
             f"output.experiments={scaled_expt.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -203,14 +214,15 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
 
     # Now do two-theta refine
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.two_theta_refine",
+            shutil.which("dials.two_theta_refine"),
             scaled_refl,
             scaled_expt,
             f"output.experiments={tt_expt.name}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
