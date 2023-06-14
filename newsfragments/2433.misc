@@ -1,1 +1,2 @@
 Use Python built-in ``subprocess`` in place of external dependency ``procrunner`` for running CLI tests.
+Prefer ``tmp_path`` pytest fixture over ``tmpdir`` (the former uses more modern ``pathlib.Path`` objects).
