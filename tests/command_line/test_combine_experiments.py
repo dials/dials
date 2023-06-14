@@ -287,7 +287,7 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
 
 
 @pytest.fixture
-def narrow_wedge_input_with_identifiers(dials_data, tmpdir):
+def narrow_wedge_input_with_identifiers(dials_data, tmp_path):
     """Make a fixture to avoid multiple runs of assign identifiers."""
     data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
     input_range = [9, 11, 12, 31]
@@ -299,12 +299,12 @@ def narrow_wedge_input_with_identifiers(dials_data, tmpdir):
             f"output.experiments={n}.expt",
             f"output.reflections={n}.refl",
         ]
-        subprocess.run(command, cwd=tmpdir, capture_output=True)
+        subprocess.run(command, cwd=tmp_path, capture_output=True)
 
     phil_input = "\n".join(
         (
-            "  input.experiments=%s\n" % tmpdir.join("%s.expt" % i)
-            + "  input.reflections=%s" % tmpdir.join("%s.refl" % i)
+            "  input.experiments=%s\n" % (tmp_path / f"{i}.expt")
+            + "  input.reflections=%s" % (tmp_path / f"{i}.refl")
         )
         for i, _ in enumerate(input_range)
     )
@@ -349,7 +349,7 @@ def test_min_max_reflections_per_experiment(dials_data, tmp_path, min_refl, max_
 @pytest.mark.parametrize("method", ["random", "n_refl", "significance_filter"])
 def test_combine_nsubset(
     dials_data,
-    tmpdir,
+    tmp_path,
     with_identifiers,
     method,
     narrow_wedge_input_with_identifiers,
@@ -370,28 +370,25 @@ def test_combine_nsubset(
             for i in input_range
         ).format(data_dir)
 
-    with open(tmpdir.join("input.phil").strpath, "w") as phil_file:
-        phil_file.writelines(phil_input)
+    (tmp_path / "input.phil").write_text(phil_input)
 
     result = subprocess.run(
         [
             shutil.which("dials.combine_experiments"),
-            tmpdir.join("input.phil").strpath,
+            tmp_path / "input.phil",
             "n_subset=3",
             f"n_subset_method={method}",
         ],
-        cwd=tmpdir,
+        cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("combined.refl").check()
-    assert tmpdir.join("combined.expt").check()
+    assert (tmp_path / "combined.refl").is_file()
+    assert (tmp_path / "combined.expt").is_file()
 
-    exps = load.experiment_list(
-        tmpdir.join("combined.expt").strpath, check_format=False
-    )
+    exps = load.experiment_list(tmp_path / "combined.expt", check_format=False)
     assert len(exps) == 3
-    refls = flex.reflection_table.from_file(tmpdir.join("combined.refl"))
+    refls = flex.reflection_table.from_file(tmp_path / "combined.refl")
     # Check that order are the same to ensure consistent for historical
     # use of ordered ids to match across datastructures
     assert list(exps.identifiers()) == list(refls.experiment_identifiers().values())

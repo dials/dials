@@ -8,7 +8,7 @@ from cctbx import uctbx
 from libtbx.test_utils import approx_equal
 
 
-def test(dials_data, tmpdir):
+def test(dials_data, tmp_path):
     g = sorted(f for f in dials_data("x4wide", pathlib=True).glob("*"))
     assert len(g) == 90
 
@@ -39,13 +39,13 @@ def test(dials_data, tmpdir):
 
     for cmd in commands:
         # print cmd
-        result = subprocess.run(cmd, cwd=tmpdir, capture_output=True)
+        result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
         assert not result.returncode and not result.stderr
 
-    integrated_mtz = tmpdir.join("integrated.mtz")
-    assert integrated_mtz.check(file=1)
+    integrated_mtz = tmp_path / "integrated.mtz"
+    assert integrated_mtz.is_file()
 
-    mtz_object = iotbx.mtz.object(file_name=integrated_mtz.strpath)
+    mtz_object = iotbx.mtz.object(file_name=str(integrated_mtz))
     assert mtz_object.column_labels()[:14] == [
         "H",
         "K",
