@@ -6,7 +6,7 @@ import shutil
 import subprocess
 
 
-def test_report_integrated_data(dials_data, tmpdir):
+def test_report_integrated_data(dials_data, tmp_path):
     """Simple test to check that dials.report completes when given integrated data."""
     data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     result = subprocess.run(
@@ -15,14 +15,14 @@ def test_report_integrated_data(dials_data, tmpdir):
             data_dir / "20_integrated_experiments.json",
             data_dir / "20_integrated.pickle",
         ],
-        cwd=tmpdir,
+        cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials.report.html").check()
+    assert (tmp_path / "dials.report.html").is_file()
 
 
-def test_report_scaled_data(dials_data, tmpdir):
+def test_report_scaled_data(dials_data, tmp_path):
     """Test that dials.report works on scaled data."""
     data_dir = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     result = subprocess.run(
@@ -30,15 +30,15 @@ def test_report_scaled_data(dials_data, tmpdir):
             shutil.which("dials.report"),
             data_dir / "scaled_30.refl",
             data_dir / "scaled_30.expt",
-            f"json={tmpdir}/report.json",
+            f"json={tmp_path}/report.json",
         ],
-        cwd=tmpdir,
+        cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials.report.html").check()
-    report_json = tmpdir.join("report.json")
-    assert report_json.check()
+    assert (tmp_path / "dials.report.html").is_file()
+    report_json = tmp_path / "report.json"
+    assert report_json.is_file()
     expected_keys = {
         "strong",
         "centroid",

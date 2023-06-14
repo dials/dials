@@ -149,6 +149,6 @@ def test_with_bytesio():
 @pytest.mark.xfail(
     "os.name == 'nt'", reason="crashes python process on Windows", run=False
 )
-def test_with_file(tmpdir):
-    with tmpdir.as_cwd():
-        mere_file_test_case().run()
+def test_with_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mere_file_test_case().run()
