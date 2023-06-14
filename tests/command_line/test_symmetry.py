@@ -512,8 +512,8 @@ def test_few_reflections(dials_data, run_in_tmp_path):
 
     Args:
         dials_data: DIALS custom Pytest fixture for access to test data.
-        run_in_tmpdir: DIALS custom Pytest fixture to run this test in a temporary
-                       directory.
+        run_in_tmp_path: DIALS custom Pytest fixture to run this test in a temporary
+                         directory.
     """
     # Get and use the default parameters for dials.symmetry.
     params = symmetry.phil_scope.fetch(source=parse("")).extract()
