@@ -11,8 +11,8 @@ def test(tmp_path):
     table["hkl"] = flex.miller_index(360)
     table["id"] = flex.int(360)
     table["intensity.sum.value"] = flex.double(360)
-    table.as_file("temp1.refl")
-    table.as_file("temp2.refl")
+    table.as_file(tmp_path / "temp1.refl")
+    table.as_file(tmp_path / "temp2.refl")
 
     result = subprocess.run(
         [
