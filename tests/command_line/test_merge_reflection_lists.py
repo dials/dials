@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 
-def test(run_in_tmp_path):
+def test(tmp_path):
     from dials.array_family import flex
 
     table = flex.reflection_table()
@@ -13,28 +14,32 @@ def test(run_in_tmp_path):
     table.as_file("temp1.refl")
     table.as_file("temp2.refl")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.merge_reflection_lists",
-            "temp1.refl",
-            "temp2.refl",
+            shutil.which("dials.merge_reflection_lists"),
+            tmp_path / "temp1.refl",
+            tmp_path / "temp2.refl",
             "method=update",
-        ]
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    table = flex.reflection_table.from_file("merged.refl")
+    table = flex.reflection_table.from_file(tmp_path / "merged.refl")
     assert len(table) == 360
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
             "dials.merge_reflection_lists",
-            "temp1.refl",
-            "temp2.refl",
+            tmp_path / "temp1.refl",
+            tmp_path / "temp2.refl",
             "method=extend",
-        ]
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    table = flex.reflection_table.from_file("merged.refl")
+    table = flex.reflection_table.from_file(tmp_path / "merged.refl")
     assert len(table) == 720
