@@ -5,11 +5,11 @@ import shutil
 import subprocess
 
 
-def test_align_crystal(dials_regression, tmpdir):
+def test_align_crystal(dials_regression, tmp_path):
     path = os.path.join(dials_regression, "experiment_test_data")
     result = subprocess.run(
         [shutil.which("dials.align_crystal"), f"{path}/kappa_experiments.json"],
-        cwd=tmpdir,
+        cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
