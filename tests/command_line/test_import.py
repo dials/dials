@@ -689,7 +689,7 @@ def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
 
 
 def test_import_grid_scan(dials_data, tmp_path):
-    data_dir = dials_data("thaumatin_grid_scan")
+    data_dir = dials_data("thaumatin_grid_scan", pathlib=True)
     image_path = data_dir / "thau_3_2_*"
     result = subprocess.run(
         [
@@ -703,13 +703,18 @@ def test_import_grid_scan(dials_data, tmp_path):
     )
     assert (
         result.stdout
-        and f"template: {data_dir}/thau_3_2_####.cbf.bz2:1:19" in result.stdout.decode()
+        and f"template: {data_dir}{os.sep}thau_3_2_####.cbf.bz2:1:19"
+        in result.stdout.decode()
     )
     assert result.stdout.count(b"template:") == 1
 
 
 def test_import_stills(dials_data, tmp_path):
-    data_dir = dials_data("4fluoro_cxi") / "lcls_2022_smSFX_workshop_data" / "ten_cbfs"
+    data_dir = (
+        dials_data("4fluoro_cxi", pathlib=True)
+        / "lcls_2022_smSFX_workshop_data"
+        / "ten_cbfs"
+    )
     image_path = data_dir / "cxily6520_r0164_*.cbf"
     result = subprocess.run(
         [
@@ -722,6 +727,7 @@ def test_import_stills(dials_data, tmp_path):
     )
     assert (
         result.stdout
-        and f"template: {data_dir}/cxily6520_r0164_#####.cbf" in result.stdout.decode()
+        and f"template: {data_dir}{os.sep}cxily6520_r0164_#####.cbf"
+        in result.stdout.decode()
     )
     assert result.stdout.count(b"template:") == 1
