@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.serialize import load
@@ -22,9 +23,9 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     dials_data("cunir_serial", pathlib=True)
     pathlib.Path.mkdir(tmp_path / "nuggets")
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.ssx_integrate",
+            shutil.which("dials.ssx_integrate"),
             ssx / "indexed.refl",
             ssx / "indexed.expt",
             "nproc=1",
@@ -33,7 +34,8 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
             "output.nuggets=nuggets",
             "algorithm=stills",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("integrated_1.refl").is_file()
@@ -87,9 +89,9 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
     refls = refls.select_on_experiment_identifiers([expts[3].identifier])
     refls.as_file(tmp_path / "single.refl")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.ssx_integrate",
+            shutil.which("dials.ssx_integrate"),
             tmp_path / "single.refl",
             tmp_path / "single.expt",
             "nproc=1",
@@ -98,7 +100,8 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
             "n_macro_cycles=2",
             f"output.history={tmp_path /'history.json'}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("integrated_1.refl").is_file()

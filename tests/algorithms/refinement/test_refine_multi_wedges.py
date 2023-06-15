@@ -5,7 +5,9 @@ Test refinement of multiple narrow sequences.
 
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -21,9 +23,9 @@ def test(dials_data, tmp_path):
 
     # Combine all the separate sequences
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.combine_experiments",
+            shutil.which("dials.combine_experiments"),
             "reference_from_experiment.beam=0",
             "reference_from_experiment.goniometer=0",
             "reference_from_experiment.detector=0",
@@ -33,7 +35,8 @@ def test(dials_data, tmp_path):
             f"reflections={data_dir}/sweep_%03d_reflections.pickle" % n
             for n in selection
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -41,16 +44,17 @@ def test(dials_data, tmp_path):
 
     # turn off outlier rejection so that test takes about 4s rather than 10s
     # set close_to_spindle_cutoff to old default
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             "combined.expt",
             "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -82,9 +86,9 @@ def test_order_invariance(dials_data, tmp_path):
     selection2 = (2, 3, 4, 6, 5)
 
     # First run
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.combine_experiments",
+            shutil.which("dials.combine_experiments"),
             "reference_from_experiment.beam=0",
             "reference_from_experiment.goniometer=0",
             "reference_from_experiment.detector=0",
@@ -97,12 +101,13 @@ def test_order_invariance(dials_data, tmp_path):
             f"reflections={data_dir}/sweep_%03d_reflections.pickle" % n
             for n in selection1
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             "combined.expt",
             "combined.refl",
             "scan_varying=false",
@@ -111,14 +116,15 @@ def test_order_invariance(dials_data, tmp_path):
             "output.experiments=refined1.expt",
             "output.reflections=refined1.refl",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
     # Second run
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.combine_experiments",
+            shutil.which("dials.combine_experiments"),
             "reference_from_experiment.beam=0",
             "reference_from_experiment.goniometer=0",
             "reference_from_experiment.detector=0",
@@ -131,12 +137,13 @@ def test_order_invariance(dials_data, tmp_path):
             f"reflections={data_dir}/sweep_%03d_reflections.pickle" % n
             for n in selection2
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             "combined.expt",
             "combined.refl",
             "scan_varying=false",
@@ -145,7 +152,8 @@ def test_order_invariance(dials_data, tmp_path):
             "output.experiments=refined2.expt",
             "output.reflections=refined2.refl",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
