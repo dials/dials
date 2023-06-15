@@ -11,7 +11,7 @@ from .test_index import run_indexing
 
 
 @pytest.mark.xfail
-def test_run(dials_regression: Path, tmpdir):
+def test_run(dials_regression: Path, tmp_path):
     expected_unit_cell = uctbx.unit_cell(
         (11.624, 13.550, 30.103, 89.964, 93.721, 90.132)
     )
@@ -81,7 +81,7 @@ def test_run(dials_regression: Path, tmpdir):
     result_old = run_indexing(
         strong_pickle,
         experiments_old,
-        tmpdir,
+        tmp_path,
         extra_args=[],
         expected_unit_cell=expected_unit_cell,
         expected_rmsds=expected_rmsds,
@@ -91,7 +91,7 @@ def test_run(dials_regression: Path, tmpdir):
     result_new = run_indexing(
         strong_pickle,
         experiments_new,
-        tmpdir,
+        tmp_path,
         extra_args=[],
         expected_unit_cell=expected_unit_cell,
         expected_rmsds=expected_rmsds,
@@ -170,7 +170,6 @@ def test_run(dials_regression: Path, tmpdir):
 
 
 def calc_fd_grads(refiner):
-
     p_vals = refiner._pred_param.get_param_vals()
     deltas = [1.0e-7] * len(p_vals)
 

@@ -12,9 +12,10 @@ from __future__ import annotations
 
 import math
 import random
+import shutil
+import subprocess
 
 import numpy as np
-import procrunner
 import pytest
 from annlib_ext import AnnAdaptor
 
@@ -26,14 +27,14 @@ from dials.array_family import flex
 from dials.command_line.refine import _find_disjoint_sets
 
 
-def test1(dials_data, tmp_path):
+def test_i04_weak_data(dials_data, tmp_path):
     data_dir = dials_data("refinement_test_data", pathlib=True)
     experiments_path = data_dir / "i04-weak.json"
     pickle_path = data_dir / "i04-weak.pickle"
 
     # set some old defaults
     cmd = (
-        "dials.refine",
+        shutil.which("dials.refine"),
         "close_to_spindle_cutoff=0.05",
         "reflections_per_degree=100",
         "outlier.separate_blocks=False",
@@ -42,7 +43,7 @@ def test1(dials_data, tmp_path):
         experiments_path,
         pickle_path,
     )
-    result = procrunner.run(cmd, working_directory=tmp_path)
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
@@ -64,7 +65,7 @@ def test1(dials_data, tmp_path):
     assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8063382, abs=1e-6)
 
 
-def test2(dials_data, tmp_path):
+def test_scan_varying_refinement_rmsds(dials_data, tmp_path):
     """Run scan-varying refinement, comparing RMSD table with expected values."""
 
     data_dir = dials_data("refinement_test_data", pathlib=True)
@@ -72,9 +73,9 @@ def test2(dials_data, tmp_path):
     pickle_path = data_dir / "from-xds-all.pickle"
 
     # scan-static refinement first to get refined.expt as start point
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.refine",
+            shutil.which("dials.refine"),
             experiments_path,
             pickle_path,
             "scan_varying=False",
@@ -82,14 +83,15 @@ def test2(dials_data, tmp_path):
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     # NB Requesting corrgram.pdf and history.json exercises
     # https://github.com/dials/dials/issues/1923
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.refine",
+            shutil.which("dials.refine"),
             "refined.expt",
             pickle_path,
             "scan_varying=true",
@@ -103,7 +105,8 @@ def test2(dials_data, tmp_path):
             "set_scan_varying_errors=True",
             "reflections.outlier.nproc=1",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -133,7 +136,9 @@ def test2(dials_data, tmp_path):
     assert uir.count(True) == history["num_reflections"][-1]
 
 
-def test3(dials_data, tmp_path):
+def test_scan_varying_with_automated_outlier_rejection_block_width_interval_width(
+    dials_data, tmp_path
+):
     """Strict check for scan-varying refinement using automated outlier rejection
     block width and interval width setting"""
 
@@ -141,9 +146,9 @@ def test3(dials_data, tmp_path):
     experiments_path = data_dir / "from-xds.json"
     pickle_path = data_dir / "from-xds-all.pickle"
 
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.refine",
+            shutil.which("dials.refine"),
             experiments_path,
             pickle_path,
             "scan_varying=true",
@@ -153,7 +158,8 @@ def test3(dials_data, tmp_path):
             "crystal.unit_cell.smoother.interval_width_degrees=auto",
             "reflections.outlier.nproc=1",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -200,8 +206,10 @@ def test_scan_varying_with_fixed_crystal(fix, dials_data, tmp_path):
     refls = location / "reflections_1.pickle"
     expts = location / "experiments_1.json"
 
-    result = procrunner.run(
-        ("dials.refine", expts, refls, f"crystal.fix={fix}"), working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.refine"), expts, refls, f"crystal.fix={fix}"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -229,8 +237,10 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmp_path):
     trimmed_filename = tmp_path / "indexed_trim.refl"
     trimmed.as_file(trimmed_filename)
 
-    result = procrunner.run(
-        ("dials.refine", expts, trimmed_filename), working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.refine"), expts, trimmed_filename],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -253,9 +263,9 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
     expts = location / "indexed.expt"
 
     # Set options for quick rather than careful refinement
-    result = procrunner.run(
-        (
-            "dials.refine",
+    result = subprocess.run(
+        [
+            shutil.which("dials.refine"),
             expts,
             refls,
             "output.history=history.json",
@@ -264,8 +274,9 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
             "unit_cell.smoother.interval_width_degrees=56",
             "orientation.smoother.interval_width_degrees=56",
             "gradient_calculation_blocksize=" + gcb,
-        ),
-        working_directory=tmp_path,
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -290,7 +301,6 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
 
 
 def test_find_disjoint_sets():
-
     # Create some experiments with a shared Beam
     beam = Beam()
     shared_beam = []
@@ -365,7 +375,6 @@ def test_find_disjoint_sets():
 
 
 def test_refinement_of_disjoint_sets(dials_data, tmp_path):
-
     # Take 22 input experiments that are in 7 disjoint groups
     location = dials_data("polyhedra_narrow_wedges", pathlib=True)
     expts = [
@@ -376,26 +385,28 @@ def test_refinement_of_disjoint_sets(dials_data, tmp_path):
         location / f"sweep_00{i}_reflections.pickle"
         for i in ["2", "3", "4", "5", "6", "7", "9"]
     ]
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.combine_experiments",
+            shutil.which("dials.combine_experiments"),
         ]
         + expts
         + refls,
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
     # Refine treating the disjoint groups separately and calculate final RMSDs
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             "combined.expt",
             "combined.refl",
             "scan_varying=False",
             "output.reflections=separate.refl",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     separate_refl = flex.reflection_table.from_file(tmp_path / "separate.refl")
     separate_refl = separate_refl.select(
@@ -417,16 +428,17 @@ def test_refinement_of_disjoint_sets(dials_data, tmp_path):
         separate_rmsd_z.append(math.sqrt(flex.sum(z_resid2.select(sel)) / n))
 
     # Refine all together in one joint refinement and calculate final RMSDs
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             "combined.expt",
             "combined.refl",
             "scan_varying=False",
             "separate_independent_sets=False",
             "output.reflections=joint.refl",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     joint_refl = flex.reflection_table.from_file(tmp_path / "joint.refl")
     joint_refl = joint_refl.select(

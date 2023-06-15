@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+import scitbx.matrix
 from cctbx import sgtbx, uctbx
 from dxtbx.model import Crystal
 from dxtbx.serialize import load
@@ -150,7 +151,7 @@ def test_ModelRank():
     )
 
 
-def test_ModelEvaluation(dials_regression: Path, tmpdir):
+def test_ModelEvaluation(dials_regression: Path):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
@@ -198,8 +199,6 @@ def test_ModelEvaluation(dials_regression: Path, tmpdir):
 
 
 def test_filter_doubled_cell():
-    import scitbx.matrix
-
     sgi = sgtbx.space_group_info("P1")
     uc1 = sgi.any_compatible_unit_cell(volume=1000)
     params = uc1.parameters()
@@ -210,7 +209,7 @@ def test_filter_doubled_cell():
         fraction_indexed=None,
         hkl_offset=None,
     )
-    for (m1, m2, m3) in (
+    for m1, m2, m3 in (
         (2, 1, 1),
         (1, 2, 1),
         (1, 1, 2),

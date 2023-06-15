@@ -52,7 +52,6 @@ def run_single(experiments1, filename):
     index2 = []
 
     for exp1, exp2 in zip(experiments1, experiments2):
-
         # Check the beam
         b1 = exp1.beam
         b2 = exp2.beam
@@ -184,9 +183,9 @@ def run_single(experiments1, filename):
         "stills",
     ],
 )
-def test_nexus_dump_and_reload(dials_regression: Path, tmpdir, filename):
+def test_nexus_dump_and_reload(dials_regression: Path, tmp_path, filename):
     path = os.path.join(dials_regression, "nexus_test_data", "shared_models")
     filename_in = os.path.join(path, f"{filename}.json")
-    filename_out = tmpdir.join(f"{filename}.nxs").strpath
+    filename_out = str(tmp_path / f"{filename}.nxs")
     experiments = ExperimentListFactory.from_json_file(filename_in)
     run_single(experiments, filename_out)

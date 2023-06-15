@@ -2,27 +2,28 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 from pathlib import Path
 
-import procrunner
 
-
-def test_export_mosflm(dials_regression: Path, tmpdir):
-    dials_regression_escaped = json.dumps(str(dials_regression)).strip('"')
+def test_export_mosflm(dials_regression: Path, tmp_path):
+    dials_regression_escaped = json.dumps(dials_regression).strip('"')
     with open(
         os.path.join(dials_regression, "experiment_test_data/experiment_1.json")
     ) as fi:
-        with (tmpdir / "experiments.json").open("w") as fo:
+        with (tmp_path / "experiments.json").open("w") as fo:
             fo.write(fi.read().replace("$DIALS_REGRESSION", dials_regression_escaped))
 
-    result = procrunner.run(
-        ["dials.export", "format=mosflm", "experiments.json"], working_directory=tmpdir
+    result = subprocess.run(
+        [shutil.which("dials.export"), "format=mosflm", "experiments.json"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    assert os.path.exists(tmpdir / "mosflm" / "index.mat")
-    with open(tmpdir / "mosflm" / "index.mat") as f:
-        lines = f.read()
+    assert (tmp_path / "mosflm" / "index.mat").is_file()
+    lines = (tmp_path / "mosflm" / "index.mat").read_text()
     assert (
         lines
         == """
@@ -39,9 +40,8 @@ def test_export_mosflm(dials_regression: Path, tmpdir):
             "\n"
         )
     )
-    assert os.path.exists(tmpdir / "mosflm" / "mosflm.in")
-    with open(tmpdir / "mosflm" / "mosflm.in") as f:
-        lines = f.read()
+    assert (tmp_path / "mosflm" / "mosflm.in").is_file()
+    lines = (tmp_path / "mosflm" / "mosflm.in").read_text()
     assert (
         lines
         == """

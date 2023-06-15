@@ -13,7 +13,9 @@ from cctbx import sgtbx
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.serialize import load
 
+from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
+from dials.model.data import Shoebox
 
 
 def test_accessing_invalid_key_throws_keyerror():
@@ -757,8 +759,6 @@ def test_copy():
 
 
 def test_extract_shoeboxes():
-    from dials.algorithms.shoebox import MaskCode
-
     random.seed(0)
 
     reflections = flex.reflection_table()
@@ -952,8 +952,6 @@ def test_split_partials():
 
 
 def test_split_partials_with_shoebox():
-    from dials.model.data import Shoebox
-
     r = flex.reflection_table()
     r["value1"] = flex.double()
     r["value2"] = flex.int()
@@ -1097,9 +1095,7 @@ def test_find_overlapping():
             assert is_overlap(b0, b1, i)
 
 
-def test_to_from_msgpack(tmpdir):
-    from dials.model.data import Shoebox
-
+def test_to_from_msgpack(tmp_path):
     def gen_shoebox():
         shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
         shoebox.allocate()
@@ -1171,10 +1167,8 @@ def test_to_from_msgpack(tmpdir):
     assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
     assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
 
-    table.as_msgpack_file(tmpdir.join("reflections.mpack").strpath)
-    new_table = flex.reflection_table.from_msgpack_file(
-        tmpdir.join("reflections.mpack").strpath
-    )
+    table.as_msgpack_file(tmp_path / "reflections.mpack")
+    new_table = flex.reflection_table.from_msgpack_file(tmp_path / "reflections.mpack")
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
     assert new_table.ncols() == 11
@@ -1192,8 +1186,6 @@ def test_to_from_msgpack(tmpdir):
 
 
 def test_experiment_identifiers():
-    from dxtbx.model import Experiment, ExperimentList
-
     table = flex.reflection_table()
     table["id"] = flex.int([0, 1, 2, 3])
 
@@ -1307,7 +1299,6 @@ def test_experiment_identifiers():
 
 
 def test_select_remove_on_experiment_identifiers(caplog):
-
     table = flex.reflection_table()
     table.reset_ids()  # test empty table
     table["id"] = flex.int([0, 1, 2, 3])
@@ -1597,7 +1588,6 @@ def test_match_by_hkle():
 
 
 def test_concat():
-
     table1 = flex.reflection_table()
     table2 = flex.reflection_table()
 

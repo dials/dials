@@ -3,9 +3,9 @@ from __future__ import annotations
 import os
 import pickle
 import shutil
+import subprocess
 from pathlib import Path
 
-import procrunner
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -27,16 +27,17 @@ def _check_expected_results(reflections):
 
 
 def test_find_spots_from_images(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "algorithm=dispersion",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -50,9 +51,9 @@ def test_find_spots_from_images(dials_data, tmp_path):
 
 
 def test_find_spots_from_images_override_maximum(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "maximum_trusted_value=100",
             "output.reflections=spotfinder.refl",
@@ -60,7 +61,8 @@ def test_find_spots_from_images_override_maximum(dials_data, tmp_path):
             "algorithm=dispersion",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -78,8 +80,10 @@ def test_find_spots_from_zero_indexed_cbf(dials_data, tmp_path):
     zero_indexed_cbf = tmp_path / "centroid_0000.cbf"
     shutil.copy(one_indexed_cbf, zero_indexed_cbf)
 
-    result = procrunner.run(
-        ["dials.find_spots", "nproc=1", zero_indexed_cbf], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.find_spots"), "nproc=1", zero_indexed_cbf],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "strong.refl").is_file()
@@ -87,9 +91,9 @@ def test_find_spots_from_zero_indexed_cbf(dials_data, tmp_path):
 
 
 def test_find_spots_from_images_output_experiments(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
@@ -97,7 +101,8 @@ def test_find_spots_from_images_output_experiments(dials_data, tmp_path):
             "output.experiments=spotfinder.expt",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -112,22 +117,24 @@ def test_find_spots_from_images_output_experiments(dials_data, tmp_path):
 
 def test_find_spots_from_imported_experiments(dials_data, tmp_path):
     """First run import to generate an imported.expt and use this."""
-    _ = procrunner.run(
-        ["dials.import"]
+    _ = subprocess.run(
+        [shutil.which("dials.import")]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             tmp_path / "imported.expt",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "algorithm=dispersion",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -142,22 +149,24 @@ def test_find_spots_from_imported_experiments(dials_data, tmp_path):
 
 def test_find_spots_from_imported_as_grid(dials_data, tmp_path):
     """First run import to generate an imported.expt and use this."""
-    _ = procrunner.run(
-        ["dials.import", "oscillation=0,0"]
+    _ = subprocess.run(
+        [shutil.which("dials.import"), "oscillation=0,0"]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             tmp_path / "imported.expt",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "algorithm=dispersion",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -167,9 +176,9 @@ def test_find_spots_from_imported_as_grid(dials_data, tmp_path):
 
 
 def test_find_spots_with_resolution_filter(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=False",
@@ -178,7 +187,8 @@ def test_find_spots_with_resolution_filter(dials_data, tmp_path):
             "filter.d_max=15",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -190,9 +200,9 @@ def test_find_spots_with_resolution_filter(dials_data, tmp_path):
 
 def test_find_spots_with_hot_mask(dials_data, tmp_path):
     # now write a hot mask
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "write_hot_mask=True",
             "output.reflections=spotfinder.refl",
@@ -200,7 +210,8 @@ def test_find_spots_with_hot_mask(dials_data, tmp_path):
             "output.shoeboxes=False",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -218,9 +229,9 @@ def test_find_spots_with_hot_mask(dials_data, tmp_path):
 
 def test_find_spots_with_hot_mask_with_prefix(dials_data, tmp_path):
     # now write a hot mask
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "write_hot_mask=True",
             "hot_mask_prefix=my_hot_mask",
@@ -229,7 +240,8 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmp_path):
             "algorithm=dispersion",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -246,9 +258,9 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmp_path):
 
 def test_find_spots_with_generous_parameters(dials_data, tmp_path):
     # now with more generous parameters
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "min_spot_size=3",
             "max_separation=3",
@@ -256,7 +268,8 @@ def test_find_spots_with_generous_parameters(dials_data, tmp_path):
             "algorithm=dispersion",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -268,9 +281,9 @@ def test_find_spots_with_generous_parameters(dials_data, tmp_path):
 def test_find_spots_with_user_defined_mask(dials_data, tmp_path):
     # Now with a user defined mask
     mask_pickle = dials_data("centroid_test_data", pathlib=True) / "mask.pickle"
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
@@ -278,7 +291,8 @@ def test_find_spots_with_user_defined_mask(dials_data, tmp_path):
             f"lookup.mask={mask_pickle}",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -297,16 +311,17 @@ def test_find_spots_with_user_defined_mask(dials_data, tmp_path):
 
 
 def test_find_spots_with_user_defined_region(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "region_of_interest=800,1200,800,1200",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -320,16 +335,17 @@ def test_find_spots_with_user_defined_region(dials_data, tmp_path):
 
 
 def test_find_spots_with_image_exclusions(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "exclude_images=4:6",
         ]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -343,9 +359,9 @@ def test_find_spots_with_image_exclusions(dials_data, tmp_path):
 
 def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
     # now with XFEL stills
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_spots",
+            shutil.which("dials.find_spots"),
             "nproc=1",
             os.path.join(
                 dials_regression,
@@ -355,7 +371,8 @@ def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
             "output.reflections=spotfinder.refl",
             "algorithm=dispersion",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spotfinder.refl").is_file()
@@ -365,10 +382,11 @@ def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
 
 
 def test_find_spots_with_per_image_statistics(dials_data, tmp_path):
-    result = procrunner.run(
-        ["dials.find_spots", "nproc=1", "per_image_statistics=True"]
+    result = subprocess.run(
+        [shutil.which("dials.find_spots"), "nproc=1", "per_image_statistics=True"]
         + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "strong.refl").is_file()
