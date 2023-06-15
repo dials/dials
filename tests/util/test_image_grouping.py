@@ -390,6 +390,7 @@ grouping:
     assert indices2 == expected_group2_file1
 
 
+@pytest.mark.xfel
 @pytest.mark.xfail(
     os.name == "nt",
     reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
