@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 
 def test(dials_data, tmp_path):
     experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.background",
+            shutil.which("dials.background"),
             "output.plot=background.png",
             "image=1",
             experiments,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "background.png").is_file()
@@ -25,13 +27,14 @@ def test(dials_data, tmp_path):
 
 def test_checkpoints(dials_data, tmp_path):
     experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.background",
+            shutil.which("dials.background"),
             "n_checkpoints=3",
             experiments,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
     assert not result.returncode and not result.stderr
@@ -56,15 +59,16 @@ def test_multiple_imagesets(dials_data, tmp_path):
         sorted(dials_data("centroid_test_data", pathlib=True).glob("centroid_*.cbf"))
     )
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.background",
+            shutil.which("dials.background"),
             "output.plot=background.png",
             "image=1,2",
             "size_inches=16,10",
         ]
         + filenames,
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
     assert not result.returncode and not result.stderr

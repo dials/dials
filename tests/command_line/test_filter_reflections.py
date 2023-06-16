@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dials.array_family import flex
@@ -25,13 +27,14 @@ def reflections(tmp_path_factory):
 
 
 def test_filter_reflections_flag_expression(reflections, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.filter_reflections",
+            shutil.which("dials.filter_reflections"),
             reflections,
             "flag_expression='integrated & ~reference_spot'",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     ref = flex.reflection_table.from_file(tmp_path / "filtered.refl")
@@ -41,8 +44,10 @@ def test_filter_reflections_flag_expression(reflections, tmp_path):
 
 
 def test_filter_reflections_by_experiment_id(reflections, tmp_path):
-    result = procrunner.run(
-        ["dials.filter_reflections", reflections, "id=0"], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.filter_reflections"), reflections, "id=0"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     ref = flex.reflection_table.from_file(tmp_path / "filtered.refl")
@@ -52,8 +57,10 @@ def test_filter_reflections_by_experiment_id(reflections, tmp_path):
 
 
 def test_filter_reflections_by_panel(reflections, tmp_path):
-    result = procrunner.run(
-        ["dials.filter_reflections", reflections, "panel=5"], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.filter_reflections"), reflections, "panel=5"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     ref = flex.reflection_table.from_file(tmp_path / "filtered.refl")
@@ -63,9 +70,15 @@ def test_filter_reflections_by_panel(reflections, tmp_path):
 
 
 def test_filter_reflections_by_resolution(reflections, tmp_path):
-    result = procrunner.run(
-        ["dials.filter_reflections", reflections, "d_max=3.0", "d_min=2.0"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.filter_reflections"),
+            reflections,
+            "d_max=3.0",
+            "d_min=2.0",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     ref = flex.reflection_table.from_file(tmp_path / "filtered.refl")
@@ -75,8 +88,10 @@ def test_filter_reflections_by_resolution(reflections, tmp_path):
 
 
 def test_filter_reflections_printing_analysis(reflections, tmp_path):
-    result = procrunner.run(
-        ["dials.filter_reflections", reflections], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.filter_reflections"), reflections],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -108,14 +123,15 @@ def test_filter_reflections(
     experiment, reflections, args, expected, dials_data, tmp_path
 ):
     dataset = dials_data("centroid_test_data", pathlib=True)
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.filter_reflections",
+            shutil.which("dials.filter_reflections"),
             dataset / experiment,
             dataset / reflections,
         ]
         + args,
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     filtered_refl = flex.reflection_table.from_file(tmp_path / "filtered.refl")
@@ -123,9 +139,14 @@ def test_filter_reflections(
 
 
 def test_filter_reflections_by_reflection_index(reflections, tmp_path):
-    result = procrunner.run(
-        ["dials.filter_reflections", reflections, "remove_by_index=0,3,5"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.filter_reflections"),
+            reflections,
+            "remove_by_index=0,3,5",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     ref = flex.reflection_table.from_file(tmp_path / "filtered.refl")

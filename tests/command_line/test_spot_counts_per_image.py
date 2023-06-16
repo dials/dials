@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 
@@ -9,30 +11,38 @@ def test_spot_counts_per_image(dataset, dials_data, tmp_path):
     path = dials_data(dataset, pathlib=True)
 
     # import the data
-    result = procrunner.run(
-        ["dials.import", "output.experiments=imported.expt"]
+    result = subprocess.run(
+        [shutil.which("dials.import"), "output.experiments=imported.expt"]
         + list(path.glob("*.cbf*")),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("imported.expt").is_file()
 
     # find the spots
-    result = procrunner.run(
-        ["dials.find_spots", "imported.expt", "nproc=1", "min_spot_size=3"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.find_spots"),
+            "imported.expt",
+            "nproc=1",
+            "min_spot_size=3",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("strong.refl").is_file()
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.spot_counts_per_image",
+            shutil.which("dials.spot_counts_per_image"),
             "imported.expt",
             "strong.refl",
             "plot=spot_counts.png",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("spot_counts.png").is_file()
@@ -51,13 +61,14 @@ def test_spot_counts_per_image(dataset, dials_data, tmp_path):
 
 def test_spot_counts_per_image_fails_cleanly_on_indexed(dials_data, tmp_path):
     path = dials_data("insulin_processed", pathlib=True)
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.spot_counts_per_image",
+            shutil.which("dials.spot_counts_per_image"),
             path / "indexed.expt",
             path / "indexed.refl",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert result.returncode
     assert b"Only unindexed reflections are currently supported" in result.stderr

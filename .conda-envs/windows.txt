@@ -29,7 +29,6 @@ conda-forge::pandas
 conda-forge::pillow>=5.4.1
 conda-forge::pint
 conda-forge::pip
-conda-forge::procrunner>=2.2.0
 conda-forge::psutil
 conda-forge::pybind11
 conda-forge::pyrtf

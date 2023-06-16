@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 from dials.algorithms.refinement.engine import Journal
 
@@ -10,16 +11,17 @@ def test_scan_varying_refinement_of_a_multiple_panel_detector(dials_data, tmp_pa
 
     data_dir = dials_data("refinement_test_data", pathlib=True)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             data_dir / "I23_24_panel.json",
             data_dir / "I23_24_panel.pickle",
             "scan_varying=true",
             "history=history.json",
             "outlier.separate_blocks=False",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
