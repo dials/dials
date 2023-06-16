@@ -227,8 +227,15 @@ def _draw_resolution_rings_impl(
                 size=math.ceil(fontsize / binning**0.5),
             )
         except OSError:
-            # Revert to default bitmap font if we must, but fontsize will not work
-            font = ImageFont.load_default()
+            # Different filename on Mac (https://github.com/dials/dials/issues/2440)
+            try:
+                font = ImageFont.truetype(
+                    "Arial.ttf",
+                    size=math.ceil(fontsize / binning**0.5),
+                )
+            except OSError:
+                # Revert to default bitmap font if we must, but fontsize will not work
+                font = ImageFont.load_default()
         for x, y, label in res_labels:
             draw.text((x, y), label, fill=fill, font=font)
 
