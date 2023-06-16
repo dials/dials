@@ -254,7 +254,7 @@ class ProfileModelBase(object):
         if L[0] > 1e-5:
             raise RuntimeError("Mosaicity matrix is unphysically large")
         if min(L) < 1e-12:
-            val = min(L) ** 0.5 if min(L) > 0 else 0
+            val = min(L) ** 0.5 if min(L) > 0 else 0.0
             raise RuntimeError(
                 f"Mosaicity matrix minimum sigma {val:.5} is unphysically small"
             )
