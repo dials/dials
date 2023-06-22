@@ -216,8 +216,7 @@ An example of a short file is shown below.
 Reflection files
 ----------------
 
-The reflection files are saved in python's "pickle" format. This is a binary
-format that is convenient for serializing python classes. The reflection files
+The reflection files are saved in MessagePack format. The reflection files
 will contain a table with some or all of the following columns.
 
 
