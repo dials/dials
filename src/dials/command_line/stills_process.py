@@ -1364,8 +1364,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 graph_verbose=False,
             )
             nv()
-            acceptance_flags_nv = nv.nv_acceptance_flags
-            centroids = centroids.select(acceptance_flags_nv)
+            if self.params.indexing.stills.nv_reject_outliers:
+                acceptance_flags_nv = nv.nv_acceptance_flags
+                centroids = centroids.select(acceptance_flags_nv)
 
         if self.params.output.composite_output:
             if (

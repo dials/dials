@@ -530,8 +530,11 @@ class StillsIndexer(Indexer):
                         graph_verbose=False,
                     )
                     nv0()
-                    acceptance_flags_nv0 = nv0.nv_acceptance_flags
-                    indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
+                    if self.params.indexing.stills.nv_reject_outliers:
+                        acceptance_flags_nv0 = nv0.nv_acceptance_flags
+                        indexed = indexed.select(
+                            acceptance_flags & acceptance_flags_nv0
+                        )
 
                     logger.info(
                         "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection",
@@ -739,8 +742,9 @@ class StillsIndexer(Indexer):
             graph_verbose=False,
         )
         nv0()
-        acceptance_flags_nv0 = nv0.nv_acceptance_flags
-        reflections = reflections.select(acceptance_flags & acceptance_flags_nv0)
+        if self.all_params.indexing.stills.nv_reject_outliers:
+            acceptance_flags_nv0 = nv0.nv_acceptance_flags
+            reflections = reflections.select(acceptance_flags & acceptance_flags_nv0)
 
         R = e_refine(
             params=self.all_params,

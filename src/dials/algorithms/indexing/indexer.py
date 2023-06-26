@@ -289,6 +289,9 @@ indexing {
     set_mosaic_half_deg_value = None
       .type=float
       .help=If specified, will set the mosaic half degree value and override the value determined from nave refinement
+    nv_outlier_rejection = True
+      .type=bool
+      .help=If specified, will reject outliers after Nave parameter refinement that are outside of the mosaic envelope
   }
 }
 """
