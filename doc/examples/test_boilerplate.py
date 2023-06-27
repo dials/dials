@@ -5,10 +5,10 @@ from unittest import mock
 from boilerplate import run
 
 
-def test_boilerplate(dials_data, tmpdir):
+def test_boilerplate(dials_data, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     x4wide = dials_data("x4wide_processed", pathlib=True)
-
-    with tmpdir.as_cwd(), mock.patch("boilerplate.dials.util.log"):
+    with mock.patch("boilerplate.dials.util.log"):
         run(
             args=[
                 str(x4wide / "AUTOMATIC_DEFAULT_scaled.expt"),
@@ -18,4 +18,4 @@ def test_boilerplate(dials_data, tmpdir):
             ]
         )
 
-    assert tmpdir.join("stronger.refl").check()
+    assert (tmp_path / "stronger.refl").is_file()

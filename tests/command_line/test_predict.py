@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
-
-import procrunner
+import shutil
+import subprocess
 
 from dials.array_family import flex
 
@@ -19,48 +19,50 @@ def plausible(table):
     return True
 
 
-def test_static_prediction(dials_regression, tmpdir):
-    result = procrunner.run(
+def test_static_prediction(dials_regression, tmp_path):
+    result = subprocess.run(
         [
-            "dials.predict",
+            shutil.which("dials.predict"),
             os.path.join(
                 dials_regression,
                 "prediction_test_data",
                 "experiments_scan_static_crystal.json",
             ),
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    table = flex.reflection_table.from_file(tmpdir / "predicted.refl")
+    table = flex.reflection_table.from_file(tmp_path / "predicted.refl")
     assert len(table) == 1996
     assert plausible(table)
 
 
-def test_scan_varying_prediction(dials_regression, tmpdir):
-    result = procrunner.run(
+def test_scan_varying_prediction(dials_regression, tmp_path):
+    result = subprocess.run(
         [
-            "dials.predict",
+            shutil.which("dials.predict"),
             os.path.join(
                 dials_regression,
                 "prediction_test_data",
                 "experiments_scan_varying_crystal.json",
             ),
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    table = flex.reflection_table.from_file(tmpdir / "predicted.refl")
+    table = flex.reflection_table.from_file(tmp_path / "predicted.refl")
     assert len(table) == 1934
     assert plausible(table)
 
 
-def test_force_static_prediction(dials_regression, tmpdir):
-    result = procrunner.run(
+def test_force_static_prediction(dials_regression, tmp_path):
+    result = subprocess.run(
         [
-            "dials.predict",
+            shutil.which("dials.predict"),
             os.path.join(
                 dials_regression,
                 "prediction_test_data",
@@ -68,10 +70,10 @@ def test_force_static_prediction(dials_regression, tmpdir):
             ),
             "force_static=True",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
-    table = flex.reflection_table.from_file(tmpdir / "predicted.refl")
+    table = flex.reflection_table.from_file(tmp_path / "predicted.refl")
     assert len(table) == 1996
     assert plausible(table)

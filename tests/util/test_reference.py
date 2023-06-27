@@ -4,6 +4,9 @@ import os
 
 import pytest
 
+from cctbx import crystal
+from mmtbx.command_line import cif_as_mtz
+
 from dials.util.reference import (
     intensities_from_reference_data_file,
     intensities_from_reference_file,
@@ -36,7 +39,7 @@ def test_intensities_from_reference_model(dials_data):
     assert i3.anomalous_flag()
 
 
-def test_intensities_from_reference_data_file(dials_data):
+def test_intensities_from_reference_data_file(dials_data, tmp_path):
     "Test importing from an mtz/cif datafile"
 
     mtz_file = os.fspath(
@@ -59,3 +62,19 @@ def test_intensities_from_reference_data_file(dials_data):
     assert i3.data()
     # In this file, the data is not anomalous
     assert not i3.anomalous_flag()
+
+    mtz_file = os.fspath(tmp_path / "2bw4.mtz")
+    cif_as_mtz.process_files(
+        file_name=cif_file,
+        crystal_symmetry=crystal.symmetry(unit_cell=None, space_group=None),
+        output_file_name=os.fspath(mtz_file),
+        wavelength_id=None,
+        crystal_id=None,
+        show_details_if_error=False,
+        output_r_free_label="FREERFLAG",
+    )
+
+    i4 = intensities_from_reference_file(mtz_file)
+    assert i4.data()
+    # In this file, the data is not anomalous
+    assert not i4.anomalous_flag()

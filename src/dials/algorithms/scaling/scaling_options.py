@@ -173,6 +173,7 @@ phil_scope = iotbx.phil.parse(
               "model file containing a structure that can be used to calculate"
               "intensities (.cif or .pdb)".
       .expert_level = 2
+    include scope dials.util.reference.reference_phil_str
     nproc = 1
       .type = int(value_min=1)
       .help = "Number of blocks to divide the data into for minimisation.
@@ -217,5 +218,6 @@ phil_scope = iotbx.phil.parse(
       .help = "Reject reflections with normalised intensities E^2 > emax^2"
       .expert_level = 2
   }
-  """
+  """,
+    process_includes=True,
 )

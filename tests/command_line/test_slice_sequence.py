@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dxtbx.serialize import load
@@ -16,9 +18,15 @@ def test_slice_sequence_and_compare_with_expected_results(dials_data, tmp_path):
     assert experiments_path.is_file()
     assert pickle_path.is_file()
 
-    result = procrunner.run(
-        ["dials.slice_sequence", experiments_path, pickle_path, "image_range=1 20"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.slice_sequence"),
+            experiments_path,
+            pickle_path,
+            "image_range=1 20",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -41,16 +49,22 @@ def test_slice_sequence_with_first_images_missing(dials_data, tmp_path):
     experiments_path = data_dir / "i04-weak.json"
 
     # first slice
-    result = procrunner.run(
-        ["dials.slice_sequence", experiments_path, "image_range=5,20"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.slice_sequence"), experiments_path, "image_range=5,20"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
     # second slice
-    result = procrunner.run(
-        ["dials.slice_sequence", "i04-weak_5_20.expt", "image_range=10,20"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.slice_sequence"),
+            "i04-weak_5_20.expt",
+            "image_range=10,20",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -66,16 +80,17 @@ def test_slice_sequence_to_degree_blocks(dials_data, tmp_path):
     """Slice data into 10 degree blocks i.e. 17 datasets"""
     expt = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True) / "scaled_30.expt"
     refl = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True) / "scaled_30.refl"
-    procrunner.run(
+    subprocess.run(
         [
-            "dials.slice_sequence",
+            shutil.which("dials.slice_sequence"),
             "block_size=10",
             "output.experiments=sliced.expt",
             "output.reflections=sliced.refl",
             expt,
             refl,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
     sliced_expts = load.experiment_list(tmp_path / "sliced.expt", check_format=False)
@@ -89,14 +104,15 @@ def test_slice_sequence_with_scan_varying_crystal(dials_data, tmp_path):
     """test slicing keeps a scan-varying crystal"""
 
     expt = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True) / "scaled_30.expt"
-    procrunner.run(
+    subprocess.run(
         [
-            "dials.slice_sequence",
+            shutil.which("dials.slice_sequence"),
             "image_range=10,20",
             "output.experiments=sliced.expt",
             expt,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     orig = load.experiment_list(expt, check_format=False)[0]
 

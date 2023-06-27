@@ -12,13 +12,18 @@
 #define DIALS_ARRAY_FAMILY_REFLECTION_TABLE_H
 
 #include <memory>
-#include <dials/array_family/flex_table.h>
+#include <dxtbx/array_family/flex_table.h>
 #include <dials/model/data/shoebox.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/mat3.h>
 #include <scitbx/vec3.h>
 #include <scitbx/vec2.h>
 #include <cctbx/miller.h>
+
+template <>
+inline cctbx::miller::index<> dxtbx::af::init_zero<cctbx::miller::index<> >() {
+  return cctbx::miller::index<>(0, 0, 0);
+}
 
 namespace dials { namespace af {
 
@@ -28,55 +33,32 @@ namespace dials { namespace af {
   using scitbx::vec3;
   using scitbx::af::int6;
 
-  template <>
-  inline vec2<double> init_zero<vec2<double> >() {
-    return vec2<double>(0.0, 0.0);
-  }
-
-  template <>
-  inline vec3<double> init_zero<vec3<double> >() {
-    return vec3<double>(0.0, 0.0, 0.0);
-  }
-
-  template <>
-  inline mat3<double> init_zero<mat3<double> >() {
-    return mat3<double>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-  }
-
-  template <>
-  inline int6 init_zero<int6>() {
-    return int6(0, 0, 0, 0, 0, 0);
-  }
-
-  template <>
-  inline cctbx::miller::index<> init_zero<cctbx::miller::index<> >() {
-    return cctbx::miller::index<>(0, 0, 0);
-  }
-
-  typedef flex_type_generator<bool,
-                              int,
-                              std::size_t,
-                              double,
-                              std::string,
-                              vec2<double>,
-                              vec3<double>,
-                              mat3<double>,
-                              int6,
-                              cctbx::miller::index<>,
-                              Shoebox<> >
+  typedef dxtbx::af::flex_type_generator<bool,
+                                         int,
+                                         std::size_t,
+                                         double,
+                                         std::string,
+                                         vec2<double>,
+                                         vec3<double>,
+                                         mat3<double>,
+                                         int6,
+                                         cctbx::miller::index<>,
+                                         Shoebox<> >
     reflection_table_type_generator;
 
   typedef reflection_table_type_generator::type reflection_table_types;
 
-  class reflection_table : public flex_table<reflection_table_types> {
+  class reflection_table : public dxtbx::af::flex_table<reflection_table_types> {
   public:
-    typedef flex_table<reflection_table_types>::map_type map_type;
-    typedef flex_table<reflection_table_types>::key_type key_type;
-    typedef flex_table<reflection_table_types>::mapped_type mapped_type;
-    typedef flex_table<reflection_table_types>::map_value_type map_value_type;
-    typedef flex_table<reflection_table_types>::iterator iterator;
-    typedef flex_table<reflection_table_types>::const_iterator const_iterator;
-    typedef flex_table<reflection_table_types>::size_type size_type;
+    typedef dxtbx::af::flex_table<reflection_table_types>::map_type map_type;
+    typedef dxtbx::af::flex_table<reflection_table_types>::key_type key_type;
+    typedef dxtbx::af::flex_table<reflection_table_types>::mapped_type mapped_type;
+    typedef dxtbx::af::flex_table<reflection_table_types>::map_value_type
+      map_value_type;
+    typedef dxtbx::af::flex_table<reflection_table_types>::iterator iterator;
+    typedef dxtbx::af::flex_table<reflection_table_types>::const_iterator
+      const_iterator;
+    typedef dxtbx::af::flex_table<reflection_table_types>::size_type size_type;
     typedef std::map<std::size_t, std::string> experiment_map_type;
 
     reflection_table()

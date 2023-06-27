@@ -19,7 +19,7 @@
 #include <dials/model/data/observation.h>
 #include <dials/error.h>
 
-#include "ref_pickle_double_buffered.h"
+#include <dxtbx/array_family/ref_pickle_double_buffered.h>
 
 namespace dials { namespace af { namespace boost_python {
 

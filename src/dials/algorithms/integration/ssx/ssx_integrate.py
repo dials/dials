@@ -161,6 +161,18 @@ class OutputAggregator:
         if collector.data:
             self.data[index] = collector.data
 
+    def make_history_json(self):
+        if not self.data:
+            return {}
+        history = {}
+        for i, d in enumerate(self.data.values()):
+            history[i] = {}
+            if "likelihood" in d:
+                history[i]["likelihood_per_iteration"] = d["likelihood"]
+            if "parameters" in d:
+                history[i]["active_parameters_per_iteration"] = d["parameters"]
+        return history
+
     def make_plots(self):
         # just make some simple plots for now as a test
         if not self.data:
