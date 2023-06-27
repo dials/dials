@@ -36,15 +36,6 @@ if(NOT TARGET Boost::python)
     set_target_properties(Boost::python PROPERTIES INTERFACE_LINK_LIBRARIES Python::Module)
 endif()
 
-# Python 3.8 aliases snprintf and vsnprintf on windows. This causes failures on more
-# recent compilers. Check for this, and set the variable if the symbol is present.
-if(${Python_VERSION} VERSION_LESS "3.9" AND WIN32)
-    check_cxx_symbol_exists(snprintf cstdio HAVE_SNPRINTF)
-    if (HAVE_SNPRINTF)
-        target_compile_definitions(Python::Module INTERFACE HAVE_SNPRINTF)
-    endif()
-endif()
-
 # Put the libraries into lib/ so that we can run this in-place in a TBX install
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  "${CMAKE_BINARY_DIR}/lib")
 
