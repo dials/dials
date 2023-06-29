@@ -7,7 +7,6 @@ import subprocess
 import pytest
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 @pytest.mark.parametrize("filename", ["image_15799_master.h5", "image_15799.nxs"])
 def test_convert_to_cbf(dials_data, filename, tmp_path):
     result = subprocess.run(
@@ -29,7 +28,10 @@ def test_convert_to_cbf(dials_data, filename, tmp_path):
         capture_output=True,
         env={
             **os.environ,
-            "PYTHONWARNINGS": "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
+            "PYTHONWARNINGS": ",".join([
+                "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
+                "ignore:pkg_resources is deprecated as an API.:DeprecationWarning",
+            ])
         },
     )
     result.check_returncode()
