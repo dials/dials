@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import enum
+import logging
 import math
+import sys
 from typing import Iterator, Sequence
 
 from PIL import Image, ImageDraw, ImageFont
@@ -18,6 +20,8 @@ from dials.util.image_viewer.slip_viewer.flex_image import (
     get_flex_image_multipanel,
 )
 from dials.util.image_viewer.spotfinder_frame import calculate_isoresolution_lines
+
+logger = logging.getLogger(__name__)
 
 HEXAGONAL_ICE_UNIT_CELL = uctbx.unit_cell((4.498, 4.498, 7.338, 90, 90, 120))
 HEXAGONAL_ICE_SPACE_GROUP = sgtbx.space_group_info(194).group()
@@ -222,13 +226,26 @@ def _draw_resolution_rings_impl(
         draw.line(segment, fill=fill, width=2)
     if fontsize:
         try:
+            # Only import matplotlib if we absolutely need to, and don't
+            # override the backend if the user has already imported
+            if "matplotlib" not in sys.modules:
+                import matplotlib
+
+                matplotlib.use("Agg")
+            from matplotlib.font_manager import FontProperties, fontManager
+
+            font_filename = fontManager.findfont(
+                FontProperties(size=fontsize / binning**0.5), fontext="ttf"
+            )
             font = ImageFont.truetype(
-                "arial.ttf",
+                font_filename,
                 size=math.ceil(fontsize / binning**0.5),
             )
-        except OSError:
+        except (ImportError, ValueError):
             # Revert to default bitmap font if we must, but fontsize will not work
+            logger.warning("Could not find default font, using fallback")
             font = ImageFont.load_default()
+
         for x, y, label in res_labels:
             draw.text((x, y), label, fill=fill, font=font)
 
