@@ -86,7 +86,10 @@ def test_masked(dials_data, tmp_path):
         capture_output=True,
         env={
             **os.environ,
-            "PYTHONWARNINGS": "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
+            "PYTHONWARNINGS": ",".join([
+                "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
+                "ignore:pkg_resources is deprecated as an API.:DeprecationWarning",
+            ]),
         },
     )
     assert not result.returncode and not result.stderr
@@ -104,7 +107,10 @@ def test_masked(dials_data, tmp_path):
         capture_output=True,
         env={
             **os.environ,
-            "PYTHONWARNINGS": "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
+            "PYTHONWARNINGS": ",".join([
+                "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
+                "ignore:pkg_resources is deprecated as an API.:DeprecationWarning",
+            ]),
         },
     )
     assert not result.returncode and not result.stderr
