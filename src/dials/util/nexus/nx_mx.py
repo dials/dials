@@ -364,12 +364,12 @@ def dump_goniometer(entry, goniometer, scan):
     nx_transformations["phi"].attrs["vector"] = goniometer.get_rotation_axis_datum()
 
 
-def dump_crystal(entry, crystal, scan):
+def dump_crystal(entry, crystal, scan, sample_name="sample"):
     """Export the crystal model."""
     from scitbx.array_family import flex
 
     # Get the sample
-    nx_sample = get_nx_sample(entry, "sample")
+    nx_sample = get_nx_sample(entry, sample_name)
 
     # Set the space group
     nx_sample["unit_cell_group"] = crystal.get_space_group().type().hall_symbol()
@@ -635,13 +635,13 @@ def load_scan(entry):
     return Scan(image_range, oscillation, exposure_time, epochs, deg=True)
 
 
-def load_crystal(entry):
+def load_crystal(entry, sample_name="sample"):
     from cctbx import uctbx
     from dxtbx.model import Crystal
     from scitbx.array_family import flex
 
     # Get the sample
-    nx_sample = get_nx_sample(entry, "sample")
+    nx_sample = get_nx_sample(entry, sample_name)
 
     # Set the space group
     space_group_symbol = nx_sample["unit_cell_group"][()]
