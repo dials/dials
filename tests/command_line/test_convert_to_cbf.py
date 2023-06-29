@@ -31,7 +31,7 @@ def test_convert_to_cbf(dials_data, filename, tmp_path):
             "PYTHONWARNINGS": ",".join([
                 "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
                 "ignore:pkg_resources is deprecated as an API.:DeprecationWarning",
-            ])
+            ]),
         },
     )
     result.check_returncode()
