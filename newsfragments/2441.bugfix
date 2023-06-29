@@ -1,1 +1,0 @@
-``dials.export_bitmaps``: Fix the ``resolution_rings.fontsize=`` feature to work on Mac, and more reliably across platforms.
