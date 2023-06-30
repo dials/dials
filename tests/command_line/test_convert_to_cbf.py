@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 
@@ -26,13 +25,6 @@ def test_convert_to_cbf(dials_data, filename, tmp_path):
         [shutil.which("dials.convert_to_cbf"), "imported.expt"],
         cwd=tmp_path,
         capture_output=True,
-        env={
-            **os.environ,
-            "PYTHONWARNINGS": ",".join([
-                "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
-                "ignore:pkg_resources:DeprecationWarning",
-            ]),
-        },
     )
     result.check_returncode()
     assert not result.stderr

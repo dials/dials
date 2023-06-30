@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import pathlib
 import shutil
 import subprocess
@@ -84,13 +83,6 @@ def test_masked(dials_data, tmp_path):
         [shutil.which("dials.rs_mapper"), "imported.expt", "map_file=masked.ccp4"],
         cwd=tmp_path,
         capture_output=True,
-        env={
-            **os.environ,
-            "PYTHONWARNINGS": ",".join([
-                "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
-                "ignore:pkg_resources:DeprecationWarning",
-            ]),
-        },
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "masked.ccp4").is_file()
@@ -105,13 +97,6 @@ def test_masked(dials_data, tmp_path):
         ],
         cwd=tmp_path,
         capture_output=True,
-        env={
-            **os.environ,
-            "PYTHONWARNINGS": ",".join([
-                "ignore:`product` is deprecated as of NumPy 1.25.0:DeprecationWarning",
-                "ignore:pkg_resources:DeprecationWarning",
-            ]),
-        },
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "unmasked.ccp4").is_file()
