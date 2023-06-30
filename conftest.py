@@ -32,7 +32,7 @@ def _build_filterwarnings_string() -> str:
     for action, regex, category, modregex, line in warnings.filters:
         if action != "ignore":
             continue
-        if category.__name__ not in globals():
+        if category.__module__ != "builtins":
             continue
         this_action = [
             action,
