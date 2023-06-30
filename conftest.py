@@ -32,14 +32,12 @@ def _build_filterwarnings_string() -> str:
     for action, regex, category, modregex, line in warnings.filters:
         if action != "ignore":
             continue
-        # Get the fully qualified class name
-        category_fullname = (
-            f"{category.__module__}." if category.__module__ != "builtins" else ""
-        ) + category.__qualname__
+        if category.__name__ not in globals():
+            continue
         this_action = [
             action,
             regex.pattern if regex else "",
-            category_fullname,
+            category.__name__,
         ]
         if modregex is not None:
             this_action.append(modregex.pattern)
