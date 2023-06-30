@@ -18,7 +18,9 @@ def test_model_background(dials_data, tmp_path):
         cwd=tmp_path,
         capture_output=True,
     )
-    assert not result.returncode and not result.stderr
+    print(result.stderr.decode())
+    result.check_returncode()
+    assert not result.stderr
     for filename in (
         "background.pickle",
         "mean_0.png",
