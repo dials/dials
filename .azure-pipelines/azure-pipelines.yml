@@ -3,58 +3,58 @@ variables:
   isPullRequest: $[startsWith(variables['Build.SourceBranch'], 'refs/pull/')]
 
 stages:
-# - stage: prepare
-#   displayName: Check
-#   jobs:
-#   - job: setup
-#     displayName: static analysis
-#     pool:
-#       vmImage: ubuntu-20.04
-#     timeoutInMinutes: 10
-#     steps:
-#       - checkout: none
+- stage: prepare
+  displayName: Check
+  jobs:
+  - job: setup
+    displayName: static analysis
+    pool:
+      vmImage: ubuntu-20.04
+    timeoutInMinutes: 10
+    steps:
+      - checkout: none
 
-#       # Use Python >=3.9 for syntax validation
-#       - task: UsePythonVersion@0
-#         displayName: Set up python
-#         inputs:
-#           versionSpec: 3.9
+      # Use Python >=3.9 for syntax validation
+      - task: UsePythonVersion@0
+        displayName: Set up python
+        inputs:
+          versionSpec: 3.9
 
-#       # Run syntax validation on a shallow clone
-#       - bash: |
-#           set -eux
-#           mkdir repository
-#           cd repository
-#           echo Checking out $(Build.SourceBranch) from $(Build.Repository.Uri)
-#           git init
-#           git remote add origin $(Build.Repository.Uri)
-#           git fetch --depth 1 --no-recurse-submodules origin $(Build.SourceBranch)
-#           git checkout FETCH_HEAD
-#           python .azure-pipelines/syntax-validation.py
-#         displayName: Syntax validation
+      # Run syntax validation on a shallow clone
+      - bash: |
+          set -eux
+          mkdir repository
+          cd repository
+          echo Checking out $(Build.SourceBranch) from $(Build.Repository.Uri)
+          git init
+          git remote add origin $(Build.Repository.Uri)
+          git fetch --depth 1 --no-recurse-submodules origin $(Build.SourceBranch)
+          git checkout FETCH_HEAD
+          python .azure-pipelines/syntax-validation.py
+        displayName: Syntax validation
 
-#       - bash: |
-#           set -eux
-#           pip install flake8
-#           cd repository
-#           python .azure-pipelines/flake8-validation.py
-#         displayName: Flake8 validation
+      - bash: |
+          set -eux
+          pip install flake8
+          cd repository
+          python .azure-pipelines/flake8-validation.py
+        displayName: Flake8 validation
 
-#       # Set up constants for further build steps
-#       - bash: |
-#           echo "##vso[task.setvariable variable=CURRENT_WEEK;isOutput=true]$(date +W%W)"
-#           echo "##vso[task.setvariable variable=TODAY_ISO;isOutput=true]$(date +%Y%m%d)"
-#           echo
-#           echo "Checking for waiting newsfragments:"
-#           cd repository/newsfragments
-#           \ls -1 --color=never | grep -v "^\([0-9]\+\|README\)\." && {
-#           echo "##vso[task.setvariable variable=NEWSFRAGMENT_WAITING;isOutput=true]true"
-#           } || {
-#           echo "none found"
-#           echo "##vso[task.setvariable variable=NEWSFRAGMENT_WAITING;isOutput=true]false"
-#           }
-#         displayName: Set up build constants
-#         name: constants
+      # Set up constants for further build steps
+      - bash: |
+          echo "##vso[task.setvariable variable=CURRENT_WEEK;isOutput=true]$(date +W%W)"
+          echo "##vso[task.setvariable variable=TODAY_ISO;isOutput=true]$(date +%Y%m%d)"
+          echo
+          echo "Checking for waiting newsfragments:"
+          cd repository/newsfragments
+          \ls -1 --color=never | grep -v "^\([0-9]\+\|README\)\." && {
+          echo "##vso[task.setvariable variable=NEWSFRAGMENT_WAITING;isOutput=true]true"
+          } || {
+          echo "none found"
+          echo "##vso[task.setvariable variable=NEWSFRAGMENT_WAITING;isOutput=true]false"
+          }
+        displayName: Set up build constants
+        name: constants
 
 - stage: build
   ${{ if not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')) }}:
