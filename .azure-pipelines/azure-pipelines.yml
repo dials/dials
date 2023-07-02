@@ -76,44 +76,44 @@ stages:
     strategy:
       matrix:
         python39:
-          PYTHON_VERSION: 3.9
+          PYTHON_VERSION: 3.11
     timeoutInMinutes: 150
     steps:
     # Dependencies required for building gltbx
-    - script: |
-        sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
-      displayName: Install dependencies
+    # - script: |
+    #     sudo apt-get update
+    #     sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
+    #   displayName: Install dependencies
 
-    - template: unix-build.yml
+    - template: unix-build-cmake.yml
       parameters:
         conda_environment: .conda-envs/linux.txt
 
-  - job: macos
-    pool:
-      vmImage: macOS-latest
-    strategy:
-      matrix:
-        python39:
-          PYTHON_VERSION: 3.9
-    timeoutInMinutes: 250
-    steps:
-    - template: unix-build.yml
-      parameters:
-        conda_environment: .conda-envs/macos.txt
+  # - job: macos
+  #   pool:
+  #     vmImage: macOS-latest
+  #   strategy:
+  #     matrix:
+  #       python39:
+  #         PYTHON_VERSION: 3.9
+  #   timeoutInMinutes: 250
+  #   steps:
+  #   - template: unix-build.yml
+  #     parameters:
+  #       conda_environment: .conda-envs/macos.txt
 
-  - job: windows
-    pool:
-      vmImage: windows-latest
-    strategy:
-      matrix:
-        python39:
-          PYTHON_VERSION: 3.9
-    timeoutInMinutes: 150
-    steps:
-    - template: windows-build.yml
-      parameters:
-        conda_environment: .conda-envs/windows.txt
+  # - job: windows
+  #   pool:
+  #     vmImage: windows-latest
+  #   strategy:
+  #     matrix:
+  #       python39:
+  #         PYTHON_VERSION: 3.9
+  #   timeoutInMinutes: 150
+  #   steps:
+  #   - template: windows-build.yml
+  #     parameters:
+  #       conda_environment: .conda-envs/windows.txt
 
   - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/pull/') }}:
     - job: pr
