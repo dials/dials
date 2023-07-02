@@ -75,7 +75,7 @@ stages:
       vmImage: ubuntu-20.04
     strategy:
       matrix:
-        python39:
+        python311:
           PYTHON_VERSION: 3.11
     timeoutInMinutes: 150
     steps:
