@@ -89,18 +89,18 @@ stages:
       parameters:
         conda_environment: .conda-envs/linux.txt
 
-  # - job: macos
-  #   pool:
-  #     vmImage: macOS-latest
-  #   strategy:
-  #     matrix:
-  #       python39:
-  #         PYTHON_VERSION: 3.9
-  #   timeoutInMinutes: 250
-  #   steps:
-  #   - template: unix-build.yml
-  #     parameters:
-  #       conda_environment: .conda-envs/macos.txt
+  - job: macos
+    pool:
+      vmImage: macOS-latest
+    strategy:
+      matrix:
+        python311:
+          PYTHON_VERSION: 3.11
+    timeoutInMinutes: 250
+    steps:
+    - template: unix-build-cmake.yml
+      parameters:
+        conda_environment: .conda-envs/macos.txt
 
   # - job: windows
   #   pool:
