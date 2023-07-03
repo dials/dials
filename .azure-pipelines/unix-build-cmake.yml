@@ -74,6 +74,8 @@ steps:
     cmake ../modules/dials -DCMAKE_UNITY_BUILD=true -GNinja
     cmake --build . --config Release
     cmake --install . --config Release
+    # Until we have worked around the existence of this file, pretend it doesn't exist
+    rm -rf ../modules/dials/src/dials/tests
     pip install ../modules/dials
   displayName: DIALS Build/Install
   workingDirectory: $(Pipeline.Workspace)
