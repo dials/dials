@@ -9,6 +9,7 @@ from __future__ import annotations
 import multiprocessing
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,33 @@ if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
     multiprocessing.set_start_method("forkserver")
 
 collect_ignore = []
+
+
+def _build_filterwarnings_string() -> str:
+    """
+    Given the set of active warnings, build a PYTHONWARNINGS string.
+
+    This lets us set the PYTHONWARNINGS environment variable so that
+    warning filters are passed down to subprocesses.
+    """
+    filter_parts = []
+    for action, regex, category, modregex, line in warnings.filters:
+        if action != "ignore":
+            continue
+        if category.__module__ != "builtins":
+            continue
+        this_action = [
+            action,
+            regex.pattern if regex else "",
+            category.__name__,
+        ]
+        if modregex is not None:
+            this_action.append(modregex.pattern)
+            if line:
+                this_action.append(line)
+        filter_parts.append(":".join(str(x) for x in this_action))
+
+    return ",".join(filter_parts)
 
 
 def pytest_configure(config):
@@ -31,6 +59,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "xfel: Mark test to run xfail if xfel module is missing"
     )
+    # Ensure that subprocesses get the warnings filters
+    os.environ["PYTHONWARNINGS"] = _build_filterwarnings_string()
 
 
 def pytest_collection_modifyitems(config, items):
