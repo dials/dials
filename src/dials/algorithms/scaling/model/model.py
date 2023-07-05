@@ -898,6 +898,9 @@ class PhysicalScalingModel(ScalingModelBase):
                 absorption_correction = True
             else:
                 absorption_correction = False
+            if max(reflection_table["s1"].angle(experiment.beam.get_s0())) < 0.087266:
+                # https://github.com/dials/dials/issues/2316
+                absorption_correction = False
         else:
             absorption_correction = params.absorption_correction
         if absorption_correction or params.absorption_level:
