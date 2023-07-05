@@ -8,6 +8,7 @@ methods to define how these are composed into one model.
 from __future__ import annotations
 
 import logging
+import math
 
 from libtbx import Auto, phil
 
@@ -898,7 +899,9 @@ class PhysicalScalingModel(ScalingModelBase):
                 absorption_correction = True
             else:
                 absorption_correction = False
-            if max(reflection_table["s1"].angle(experiment.beam.get_s0())) < 0.087266:
+            if max(reflection_table["s1"].angle(experiment.beam.get_s0())) < math.acos(
+                0.999
+            ):
                 # https://github.com/dials/dials/issues/2316
                 absorption_correction = False
         else:
