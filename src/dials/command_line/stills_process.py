@@ -1391,6 +1391,28 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         return experiments, centroids
 
     def integrate(self, experiments, indexed):
+
+        if self.params.profile.algorithm == "ellipsoid":
+            from dials.command_line.ssx_integrate import (
+                EllipsoidIntegrator,
+                process_one_image,
+            )
+
+            experiment, integrated, _ = process_one_image(
+                experiments[0], indexed, self.params, EllipsoidIntegrator
+            )
+            experiments = ExperimentList([experiment])
+            if self.params.output.integrated_experiments_filename:
+
+                experiments.as_json(self.params.output.integrated_experiments_filename)
+
+            if self.params.output.integrated_filename:
+                # Save the reflections
+                self.save_reflections(
+                    integrated, self.params.output.integrated_filename
+                )
+
+            return integrated
         st = time.time()
 
         logger.info("*" * 80)

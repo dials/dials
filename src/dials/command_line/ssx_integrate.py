@@ -171,7 +171,8 @@ loggers_to_disable_for_stills = loggers_to_disable + [
 
 
 def process_one_image(experiment, table, params, integrator_class):
-    collect_data = params.output.html or params.output.json
+    # collect_data = params.output.html or params.output.json
+    collect_data = False
     integrator = integrator_class(params, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
