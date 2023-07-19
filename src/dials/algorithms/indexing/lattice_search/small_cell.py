@@ -77,9 +77,13 @@ class SmallCell(Strategy):
                 The experimental geometry models
         """
 
-        max_clique_len, indexed_experiments, refls = small_cell_index_detail(
+        small_cell_result = small_cell_index_detail(
             experiments, reflections, self._params, write_output=False
         )
+        if not small_cell_result:
+            return []
+
+        max_clique_len, indexed_experiments, refls = zip(*small_cell_result)
 
         # FIXME small_cell_index_detail creates an indexed reflections list, but
         # we don't use that in dials.index...
