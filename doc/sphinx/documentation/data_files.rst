@@ -211,13 +211,19 @@ An example of a short file is shown below.
     ]
   }
 
+Opening an experiment list file from Python can be done like this:
+
+.. code-block:: python
+
+  from dxtbx.model.experiment_list import ExperimentList
+  experiments = ExperimentList.from_file("indexed.expt")
+
 .. _reflection_pickle:
 
 Reflection files
 ----------------
 
-The reflection files are saved in python's "pickle" format. This is a binary
-format that is convenient for serializing python classes. The reflection files
+The reflection files are saved in MessagePack format. The reflection files
 will contain a table with some or all of the following columns.
 
 
@@ -282,3 +288,10 @@ will contain a table with some or all of the following columns.
 +-------------------------------+------------------------------------------------------+
 | shoebox                       | shoebox data/mask/background struct                  |
 +-------------------------------+------------------------------------------------------+
+
+Opening a reflection file in Python looks like this:
+
+.. code-block:: python
+
+  from dials.array_family import flex
+  reflections = flex.reflection_table.from_file("indexed.refl")
