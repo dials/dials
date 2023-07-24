@@ -642,7 +642,7 @@ class Simple1Angular3ProfileModel(AngularProfileModelBase):
         """
         return Class.from_params(
             np.array(
-                [sigma_d, sigma_d / 10.0, sigma_d / 100.0, sigma_d / 10.0],
+                [sigma_d, sigma_d, 0.0, sigma_d],
                 dtype=np.float64,
             )
         )
@@ -669,12 +669,12 @@ class Simple6Angular1ProfileModel(AngularProfileModelBase):
             np.array(
                 [
                     sigma_d,
-                    sigma_d / 100.0,
+                    0.0,
                     sigma_d,
-                    sigma_d / 100.0,
-                    sigma_d / 100.0,
+                    0.0,
+                    0.0,
                     sigma_d,
-                    sigma_d / 100.0,
+                    sigma_d,
                 ],
                 dtype=np.float64,
             )
@@ -702,14 +702,14 @@ class Simple6Angular3ProfileModel(AngularProfileModelBase):
             np.array(
                 [
                     sigma_d,
-                    sigma_d / 100.0,
+                    0.0,
                     sigma_d,
-                    sigma_d / 100.0,
-                    sigma_d / 100.0,
+                    0.0,
+                    0.0,
                     sigma_d,
-                    sigma_d / 100.0,
-                    sigma_d / 100.0,
-                    sigma_d / 100.0,
+                    sigma_d,
+                    0.0,
+                    sigma_d,
                 ],
                 dtype=np.float64,
             )

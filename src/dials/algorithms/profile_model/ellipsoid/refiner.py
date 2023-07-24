@@ -863,7 +863,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
                     "\n".join(
                         [
                             "",
-                            "  Sigma M",
+                            "  Sigma M angular",
                             format_string3 % tuple(MA[0:3]),
                             format_string3 % tuple(MA[3:6]),
                             format_string3 % tuple(MA[6:9]),
@@ -985,14 +985,10 @@ class Refiner(object):
                 )
             )
             if self.state.is_mosaic_spread_angular:
-                logger.info(
-                    print_eigen_values_and_vectors_angular(
-                        matrix.sqr(
-                            flumpy.from_numpy(
-                                self.state._M_parameterisation.sigma_A()[
-                                    :2, :2
-                                ].flatten()
-                            )
+                print_eigen_values_and_vectors_angular(
+                    matrix.sqr(
+                        flumpy.from_numpy(
+                            self.state._M_parameterisation.sigma_A()[:2, :2].flatten()
                         )
                     )
                 )
@@ -1215,7 +1211,7 @@ def print_eigen_values_and_vectors_angular(A):
     mosaicity = mosaicity_from_eigen_decomposition(eigen_values)
     logger.info(
         """
- Angular Mosaicity in degrees equivalent units:\n"""
+ Angular mosaicity in degrees equivalent units:\n"""
         + "\n".join(f" M{i+1} : {m:.5f} degrees" for i, m in enumerate(mosaicity))
     )
 
