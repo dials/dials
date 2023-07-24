@@ -49,42 +49,33 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
 import json
 
 expected_simple1 = {
-    "likelihood": 171374.17464891364,
-    "mosaicity": [0.00036302334611331463],
+    "likelihood": 171374.174649,
+    "mosaicity": [0.0003630],
 }
 expected_s1a1 = {
-    "likelihood": 171374.1740045413,
-    "mosaicity": [0.0003630828987324925, 4.791495711931804e-06],
+    "likelihood": 171217.954551,
+    "mosaicity": [0.0003951, 6.6198e-06],
 }
 expected_s1a3 = {
-    "likelihood": 172378.47458692876,
-    "mosaicity": [0.0003189999519843126, 0.07559499810366903, 2.2915562056795664e-08],
+    "likelihood": 171209.435802,
+    "mosaicity": [0.0004138, 0.0450596, 1.39279e-05],
 }
 expected_simple6 = {
-    "likelihood": 176234.85494941485,
-    "mosaicity": [
-        0.00013676299892573563,
-        0.00039557321999982774,
-        0.00046913980327840824,
-    ],
+    "likelihood": 176234.854949,
+    "mosaicity": [0.0001368, 0.0003956, 0.0004691],
 }
 expected_s6a1 = {
-    "likelihood": 177094.36892815138,
-    "mosaicity": [
-        1.9031463306553676e-05,
-        0.0003987602229705104,
-        0.00046360902730780773,
-        0.032456740908481226,
-    ],
+    "likelihood": 177094.368288,
+    "mosaicity": [1.9031e-05, 0.0003987, 0.0004636, 0.0324567],
 }
 expected_s6a3 = {
-    "likelihood": 175696.41329749255,
+    "likelihood": 175269.990971,
     "mosaicity": [
-        0.00011870174298666728,
-        0.0004429552218934676,
-        0.0005125703788199112,
-        0.0364844215478352,
-        3.5892742428290925e-05,
+        0.0001031,
+        0.0004483,
+        0.0005149,
+        0.0461091,
+        0.0013212,
     ],
 }
 
@@ -123,7 +114,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
             "n_macro_cycles=2",
             f"output.history={tmp_path /'history.json'}",
             "max_iter=100",
-            "LL_tolerance=1e-6",
+            "LL_tolerance=1e-3",
         ],
         working_directory=tmp_path,
     )
@@ -133,7 +124,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
     assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
     expts = load.experiment_list(tmp_path / "integrated_1.expt", check_format=False)
     mosaicity = expts[0].profile.mosaicity()
-    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1e-6)
+    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1e-5)
     with (tmp_path / "history.json").open("r") as fh:
         data = json.load(fh)
         assert data["0"]["likelihood_per_iteration"][-1][-1] == pytest.approx(

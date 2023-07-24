@@ -92,7 +92,7 @@ refinement {
         .type = int
         .help = "Max number of iterations per refinement cycle"
 
-    LL_tolerance=1e-2
+    LL_tolerance=1e-3
         .type = float
         .help = "Convergence tolerance for log likelihood during refinement"
 
