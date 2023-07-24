@@ -403,7 +403,7 @@ def run_ellipsoid_refinement(
     experiments,
     reflection_table,
     sigma_d,
-    profile_model="angular2",
+    profile_model="simple6",
     wavelength_model="delta",
     fix_unit_cell=False,
     fix_orientation=False,
