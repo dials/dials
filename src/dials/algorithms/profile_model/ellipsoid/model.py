@@ -88,11 +88,11 @@ refinement {
     min_n_reflections=10
         .type = int
 
-    max_iter=1000
+    max_iter=100
         .type = int
         .help = "Max number of iterations per refinement cycle"
 
-    LL_tolerance=1e-6
+    LL_tolerance=1e-2
         .type = float
         .help = "Convergence tolerance for log likelihood during refinement"
 

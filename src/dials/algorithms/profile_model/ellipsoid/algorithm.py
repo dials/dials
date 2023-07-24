@@ -283,7 +283,7 @@ def refine_profile(
     refiner_data,
     wavelength_spread_model="delta",
     max_iter=1000,
-    LL_tolerance=1e-36,
+    LL_tolerance=1e-6,
 ):
     """Do the profile refinement"""
     logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
