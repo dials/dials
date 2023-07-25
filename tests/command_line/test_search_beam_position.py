@@ -140,7 +140,7 @@ def test_index_after_search(dials_data, run_in_tmp_path):
     )
 
 
-def test_search_single(run_in_tmp_path, dials_regression):
+def test_search_single(dials_data, run_in_tmp_path):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
@@ -152,11 +152,11 @@ def test_search_single(run_in_tmp_path, dials_regression):
     in detector origin.
     """
 
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "phi_scan")
-    pickle_path = os.path.join(data_dir, "strong.pickle")
-    experiments_path = os.path.join(data_dir, "datablock.json")
+    insulin = dials_data("insulin_processed", pathlib=True)
+    refl_path = insulin / "strong.refl"
+    experiments_path = insulin / "imported.expt"
 
-    search_beam_position.run([experiments_path, pickle_path])
+    search_beam_position.run([str(experiments_path), str(refl_path)])
     assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = load.experiment_list(experiments_path, check_format=False)
@@ -167,7 +167,7 @@ def test_search_single(run_in_tmp_path, dials_regression):
     shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
         detector_2[0].get_origin()
     )
-    assert shift.elems == pytest.approx((-0.976, 2.497, 0.0), abs=1e-1)
+    assert shift.elems == pytest.approx((-0.165, -0.380, 0.0), abs=1e-1)
 
 
 def test_search_small_molecule(dials_data, run_in_tmp_path):
