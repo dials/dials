@@ -44,7 +44,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2023.1"  # February 2023 release
+_prebuilt_cctbx_base = "2023.5"  # June 2023 release
 
 
 def make_executable(filepath):
@@ -1272,7 +1272,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.10",
-        choices=("3.8", "3.9", "3.10", "3.11"),
+        choices=("3.9", "3.10", "3.11"),
     )
     parser.add_argument(
         "--branch",

@@ -94,6 +94,9 @@ phil_scope = iotbx.phil.parse(
       .type = path
       .help = "Specify a directory to which a per-image summary json will be saved"
               "during processing, as each image is integrated, to enable live monitoring."
+    history = None
+      .type = str
+      .help = "Output refinement history to json"
   }
 
   ellipsoid {
@@ -464,6 +467,11 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         # now generate plots using the aggregated data.
         plots = aggregator.make_plots()
         plots.update(cluster_plots)
+
+    if params.output.history:
+        history = aggregator.make_history_json()
+        with open(params.output.history, "w") as outfile:
+            json.dump(history, outfile, indent=2)
 
     if params.output.html and plots:
         logger.info(f"Writing html report to {params.output.html}")

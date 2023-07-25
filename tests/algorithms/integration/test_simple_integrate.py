@@ -1,35 +1,38 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dials.array_family import flex
 
 
 def test_against_dials_integrate(dials_data, tmp_path):
-
     ## ensure insulin folder exists
     dials_data("insulin", pathlib=True)
 
     # Run as a single job to avoid splitting reflections
-    procrunner.run(
+    subprocess.run(
         (
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             dials_data("insulin_processed", pathlib=True) / "refined.expt",
             dials_data("insulin_processed", pathlib=True) / "refined.refl",
             "mp.njobs=1",
             "mp.nproc=1",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     ).check_returncode()
 
-    procrunner.run(
+    subprocess.run(
         (
-            "dev.dials.simple_integrate",
+            shutil.which("dev.dials.simple_integrate"),
             dials_data("insulin_processed", pathlib=True) / "refined.expt",
             dials_data("insulin_processed", pathlib=True) / "refined.refl",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     ).check_returncode()
 
     simple_refl = flex.reflection_table.from_msgpack_file(

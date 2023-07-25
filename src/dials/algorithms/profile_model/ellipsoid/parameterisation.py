@@ -207,7 +207,7 @@ class WavelengthSpreadParameterisation(BaseParameterisation):
         The normal distribution sigma
 
         """
-        return flex.double([self.params[0]])
+        return flex.double([self.params[0] ** 2])
 
     def first_derivatives(self) -> flex.double:
         """
@@ -426,11 +426,15 @@ class ModelState(object):
 
     @property
     def U_matrix(self) -> np.array:
-        return np.array([self.crystal.get_U()], dtype=np.float64).reshape(3, 3)
+        return np.array(
+            [self._U_parameterisation.get_state()], dtype=np.float64
+        ).reshape(3, 3)
 
     @property
     def B_matrix(self) -> np.array:
-        return np.array([self.crystal.get_B()], dtype=np.float64).reshape(3, 3)
+        return np.array(
+            [self._B_parameterisation.get_state()], dtype=np.float64
+        ).reshape(3, 3)
 
     @property
     def A_matrix(self) -> np.array:
@@ -607,7 +611,8 @@ class ReflectionModelState(object):
 
         # Compute the reciprocal lattice vector
         self._h = np.array(h, dtype=np.float64)
-        self._r = np.einsum("ij,j->i", state.A_matrix, self._h)
+        A = np.matmul(state.U_matrix, state.B_matrix)
+        self._r = np.einsum("ij,j->i", A, self._h)
         self._s0 = np.array(s0, dtype=np.float64)
         self._norm_s0 = (self._s0 / norm(self._s0)).flatten()
 
@@ -619,6 +624,7 @@ class ReflectionModelState(object):
             n_params += len(self.state.U_params)
         if not self.state.is_unit_cell_fixed:
             n_params += len(self.state.B_params)
+
         if not self.state.is_mosaic_spread_fixed:
             n_params += len(self.state.M_params)
         if not self.state.is_wavelength_spread_fixed:
@@ -657,7 +663,7 @@ class ReflectionModelState(object):
                 self._Q = np.array([q1, q2, norm_r], dtype=np.float64).reshape(3, 3)
             self._sigma = np.matmul(np.matmul(self._Q.T, M), self._Q)
         else:
-            self._sigma = M  #
+            self._sigma = M
 
     def _recalc_sigma_lambda(self):
         # Get the wavelength spread
@@ -674,7 +680,8 @@ class ReflectionModelState(object):
 
         # Set the reciprocal lattice vector
         if (not self.state.is_orientation_fixed) or (not self.state.is_unit_cell_fixed):
-            self._r = np.matmul(self.state.A_matrix, self._h)
+            A = np.matmul(self.state.U_matrix, self.state.B_matrix)
+            self._r = np.matmul(A, self._h)
         if not self.state.is_wavelength_spread_fixed:
             self._recalc_sigma_lambda()
         if not self.state.is_mosaic_spread_fixed:
@@ -710,6 +717,7 @@ class ReflectionModelState(object):
                     dM_dp, axes=(1, 2, 0)
                 )
             n_tot += n_M_params
+
         # Compute derivatives   w.r.t L parameters
         if not state.is_wavelength_spread_fixed:
             self._dl_dp[n_tot] = self.state.dL_dp[0]

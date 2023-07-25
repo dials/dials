@@ -6,7 +6,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import procrunner
 import pytest
 
 from dxtbx.imageset import ImageSequence
@@ -16,8 +15,7 @@ from dxtbx.serialize import load
 @pytest.mark.parametrize("use_beam", ["True", "False"])
 @pytest.mark.parametrize("use_gonio", ["True", "False"])
 @pytest.mark.parametrize("use_detector", ["True", "False"])
-def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detector):
-
+def test_reference_individual(dials_data, tmp_path, use_beam, use_gonio, use_detector):
     expected_beam = {"True": 3, "False": 0.9795}
     expected_gonio = {
         "True": (7, 8, 9, 4, 5, 6, 1, 2, 3),
@@ -38,14 +36,19 @@ def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detec
         goniometer.fixed_rotation = 7,8,9,4,5,6,1,2,3
       }
   """
-    tmpdir.join("fake.phil").write(fake_phil)
-    fake_result = procrunner.run(
-        ["dials.import", "fake.phil", "output.experiments=fake_geometry.expt"]
+    (tmp_path / "fake.phil").write_text(fake_phil)
+    fake_result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "fake.phil",
+            "output.experiments=fake_geometry.expt",
+        ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not fake_result.returncode and not fake_result.stderr
-    assert tmpdir.join("fake_geometry.expt").check(file=1)
+    assert (tmp_path / "fake_geometry.expt").is_file()
 
     # Write an import phil file
     import_phil = f"""
@@ -57,21 +60,22 @@ def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detec
         use_detector_reference = {use_detector}
       }}
   """
-    tmpdir.join("test_reference_individual.phil").write(import_phil)
+    (tmp_path / "test_reference_individual.phil").write_text(import_phil)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "test_reference_individual.phil",
             "output.experiments=reference_geometry.expt",
         ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("reference_geometry.expt").check(file=1)
+    assert (tmp_path / "reference_geometry.expt").is_file()
 
-    experiments = load.experiment_list(tmpdir.join("reference_geometry.expt"))
+    experiments = load.experiment_list(tmp_path / "reference_geometry.expt")
     assert experiments[0].identifier != ""
     imgset = experiments[0].imageset
 
@@ -84,68 +88,72 @@ def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detec
     assert detector[0].get_name() == expected_detector[use_detector]
 
 
-def test_multiple_sequence_import_fails_when_not_allowed(dials_data, tmpdir):
+def test_multiple_sequence_import_fails_when_not_allowed(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
     del image_files[4]  # Delete filename to force two sequences
 
     # run without allowing multiple sequences
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "output.experiments=experiments_multiple_sequences.expt",
             "allow_multiple_sequence=False",
         ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert result.returncode == 1
     assert b"ore than 1 sequence" in result.stderr
-    assert not tmpdir.join("experiments_multiple_sequences.expt").check()
+    assert not (tmp_path / "experiments_multiple_sequences.expt").exists()
 
 
-def test_can_import_multiple_sequences(dials_data, tmpdir):
+def test_can_import_multiple_sequences(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
     del image_files[4]  # Delete filename to force two sequences
 
-    result = procrunner.run(
-        ["dials.import", "output.experiments=experiments_multiple_sequences.expt"]
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=experiments_multiple_sequences.expt",
+        ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("experiments_multiple_sequences.expt").check(file=1)
+    assert (tmp_path / "experiments_multiple_sequences.expt").is_file()
 
-    experiments = load.experiment_list(
-        tmpdir.join("experiments_multiple_sequences.expt")
-    )
+    experiments = load.experiment_list(tmp_path / "experiments_multiple_sequences.expt")
     assert len(experiments) == 2
     for experiment in experiments:
         assert experiment.identifier != ""
 
 
-def test_with_mask(dials_data, tmpdir):
+def test_with_mask(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
     mask_filename = dials_data("centroid_test_data", pathlib=True) / "mask.pickle"
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             f"mask={mask_filename}",
             "output.experiments=experiments_with_mask.expt",
         ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("experiments_with_mask.expt").check(file=1)
+    assert (tmp_path / "experiments_with_mask.expt").is_file()
 
-    experiments = load.experiment_list(tmpdir.join("experiments_with_mask.expt"))
+    experiments = load.experiment_list(tmp_path / "experiments_with_mask.expt")
     assert experiments[0].identifier != ""
     assert (
         pathlib.Path(experiments[0].imageset.external_lookup.mask.filename)
@@ -153,13 +161,13 @@ def test_with_mask(dials_data, tmpdir):
     )
 
 
-def test_override_geometry(dials_data, tmpdir):
+def test_override_geometry(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
 
     # Write a geometry phil file
-    tmpdir.join("geometry.phil").write(
+    (tmp_path / "geometry.phil").write_text(
         """
       geometry {
         beam {
@@ -193,15 +201,20 @@ def test_override_geometry(dials_data, tmpdir):
   """
     )
 
-    result = procrunner.run(
-        ["dials.import", "geometry.phil", "output.experiments=override_geometry.expt"]
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "geometry.phil",
+            "output.experiments=override_geometry.expt",
+        ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("override_geometry.expt").check(file=1)
+    assert (tmp_path / "override_geometry.expt").is_file()
 
-    experiments = load.experiment_list(tmpdir.join("override_geometry.expt"))
+    experiments = load.experiment_list(tmp_path / "override_geometry.expt")
     assert experiments[0].identifier != ""
     imgset = experiments[0].imageset
 
@@ -229,49 +242,51 @@ def test_override_geometry(dials_data, tmpdir):
     assert scan.get_oscillation() == pytest.approx((1, 2))
 
 
-def test_import_beam_centre(dials_data, tmpdir):
+def test_import_beam_centre(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
 
     # provide mosflm beam centre to dials.import
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "mosflm_beam_centre=100,200",
             "output.experiments=mosflm_beam_centre.expt",
         ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("mosflm_beam_centre.expt").check(file=1)
+    assert (tmp_path / "mosflm_beam_centre.expt").is_file()
 
-    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.expt"))
+    experiments = load.experiment_list(tmp_path / "mosflm_beam_centre.expt")
     imgset = experiments[0].imageset
     assert experiments[0].identifier != ""
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
 
     # provide an alternative models.expt to get geometry from
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "reference_geometry=mosflm_beam_centre.expt",
             "output.experiments=mosflm_beam_centre2.expt",
         ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("mosflm_beam_centre2.expt").check(file=1)
-    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre2.expt"))
+    assert (tmp_path / "mosflm_beam_centre2.expt").is_file()
+    experiments = load.experiment_list(tmp_path / "mosflm_beam_centre2.expt")
     imgset = experiments[0].imageset
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression, run_in_tmp_path):
+def test_fast_slow_beam_centre(dials_regression, tmp_path):
     # test slow_fast_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,
@@ -279,18 +294,20 @@ def test_fast_slow_beam_centre(dials_regression, run_in_tmp_path):
         "LCLS_cspad_nexus",
         "idx-20130301060858401.cbf",
     )
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "fast_slow_beam_centre=42,134,18",
             "output.experiments=fast_slow_beam_centre.expt",
             impath,
-        ]
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert os.path.exists("fast_slow_beam_centre.expt")
+    assert (tmp_path / "fast_slow_beam_centre.expt").is_file()
 
-    experiments = load.experiment_list("fast_slow_beam_centre.expt")
+    experiments = load.experiment_list(tmp_path / "fast_slow_beam_centre.expt")
     imgset = experiments[0].imageset
     assert experiments[0].identifier != ""
     # beam centre on 18th panel
@@ -307,13 +324,15 @@ def test_fast_slow_beam_centre(dials_regression, run_in_tmp_path):
         intra_pnl = o - matrix.col(p.get_origin())
         offsets.append(intra_pnl.length())
 
-    result = procrunner.run(
-        ["dials.import", "output.experiments=reference.expt", impath]
+    result = subprocess.run(
+        [shutil.which("dials.import"), "output.experiments=reference.expt", impath],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert os.path.exists("reference.expt")
+    assert (tmp_path / "reference.expt").is_file()
 
-    ref_exp = load.experiment_list("reference.expt")
+    ref_exp = load.experiment_list(tmp_path / "reference.expt")
     ref_imset = ref_exp[0].imageset
     o = matrix.col(ref_imset.get_detector()[0].get_origin())
     ref_offsets = []
@@ -323,24 +342,26 @@ def test_fast_slow_beam_centre(dials_regression, run_in_tmp_path):
     assert offsets == pytest.approx(ref_offsets)
 
 
-def test_from_image_files(dials_data, tmpdir):
+def test_from_image_files(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
 
     # Import from the image files
-    result = procrunner.run(
-        ["dials.import", "output.experiments=imported.expt"] + image_files,
-        working_directory=tmpdir,
+    result = subprocess.run(
+        [shutil.which("dials.import"), "output.experiments=imported.expt"]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode
-    assert tmpdir.join("imported.expt").check(file=1)
+    assert (tmp_path / "imported.expt").is_file()
     # check that an experiment identifier is assigned
-    exp = load.experiment_list(tmpdir.join("imported.expt"))
+    exp = load.experiment_list(tmp_path / "imported.expt")
     assert exp[0].identifier != ""
 
 
-def test_from_template(dials_data, tmpdir):
+def test_from_template(dials_data, tmp_path):
     # Find the image files
     templates = [
         dials_data("centroid_test_data", pathlib=True) / "centroid_####.cbf",
@@ -349,40 +370,42 @@ def test_from_template(dials_data, tmpdir):
 
     for template in templates:
         # Import from the image files
-        result = procrunner.run(
+        result = subprocess.run(
             [
-                "dials.import",
+                shutil.which("dials.import"),
                 f"template={template}",
                 "output.experiments=imported.expt",
             ],
-            working_directory=tmpdir,
+            cwd=tmp_path,
+            capture_output=True,
         )
 
         assert not result.returncode
-        assert tmpdir.join("imported.expt").check(file=1)
+        assert (tmp_path / "imported.expt").is_file()
         # check that an experiment identifier is assigned
-        exp = load.experiment_list(tmpdir.join("imported.expt"))
+        exp = load.experiment_list(tmp_path / "imported.expt")
         assert exp[0].identifier != ""
 
 
-def test_extrapolate_scan(dials_data, tmpdir):
+def test_extrapolate_scan(dials_data, tmp_path):
     # First image file
     image = dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             image,
             "output.experiments=import_extrapolate.expt",
             "geometry.scan.image_range=1,900",
             "geometry.scan.extrapolate_scan=True",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode
-    assert tmpdir.join("import_extrapolate.expt").check(file=1)
+    assert (tmp_path / "import_extrapolate.expt").is_file()
     # check that an experiment identifier is assigned
-    exp = load.experiment_list(tmpdir.join("import_extrapolate.expt"))
+    exp = load.experiment_list(tmp_path / "import_extrapolate.expt")
     assert exp[0].identifier != ""
 
 
@@ -414,10 +437,14 @@ def centroid_test_data_with_missing_image(dials_data, tmp_path):
 def test_template_with_missing_image_fails(centroid_test_data_with_missing_image):
     # This should fail because image #4 is missing
     for image_range in (None, (3, 5)):
-        result = procrunner.run(
-            ["dials.import", f"template={centroid_test_data_with_missing_image}"]
+        result = subprocess.run(
+            [
+                shutil.which("dials.import"),
+                f"template={centroid_test_data_with_missing_image}",
+            ]
             + (["image_range=%i,%i" % image_range] if image_range else []),
-            working_directory=centroid_test_data_with_missing_image.parent,
+            cwd=centroid_test_data_with_missing_image.parent,
+            capture_output=True,
         )
         assert result.returncode
         assert b"Missing image 4 from imageset" in result.stderr
@@ -428,14 +455,15 @@ def test_template_with_missing_image_outside_of_image_range(
 ):
     # Explicitly pass an image_range that doesn't include the missing image
     for image_range in ((1, 3), (5, 9)):
-        result = procrunner.run(
+        result = subprocess.run(
             [
-                "dials.import",
+                shutil.which("dials.import"),
                 f"template={centroid_test_data_with_missing_image}",
                 "image_range=%i,%i" % image_range,
                 "output.experiments=imported_%i_%i.expt" % image_range,
             ],
-            working_directory=centroid_test_data_with_missing_image.parent,
+            cwd=centroid_test_data_with_missing_image.parent,
+            capture_output=True,
         )
         assert not result.returncode
         expts = load.experiment_list(
@@ -453,11 +481,16 @@ def test_import_still_sequence_as_experiments(dials_data, tmp_path):
 
     out = "experiments_as_still.expt"
 
-    procrunner.run(
-        ["dials.import", "scan.oscillation=0,0", f"output.experiments={out}"]
+    subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "scan.oscillation=0,0",
+            f"output.experiments={out}",
+        ]
         + image_files,
-        working_directory=tmp_path,
-    )
+        cwd=tmp_path,
+        capture_output=True,
+    ).check_returncode()
 
     imported_exp = load.experiment_list(tmp_path / out)
     assert len(imported_exp) == len(image_files)
@@ -472,20 +505,25 @@ def test_import_still_sequence_as_experiments(dials_data, tmp_path):
     assert all(exp.goniometer is not None for exp in imported_exp)
 
 
-def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
+def test_import_still_sequence_as_experiments_subset(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )[3:6]
 
-    out = "experiments_as_still.expt"
+    out = tmp_path / "experiments_as_still.expt"
 
-    procrunner.run(
-        ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
+    subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "scan.oscillation=10,0",
+            f"output.experiments={out}",
+        ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
-    imported_exp = load.experiment_list(tmpdir.join(out))
+    imported_exp = load.experiment_list(out)
     assert len(imported_exp) == len(image_files)
     for exp in imported_exp:
         assert exp.identifier != ""
@@ -505,15 +543,16 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
 
     out = tmp_path / "experiments_as_still.expt"
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "scan.oscillation=10,0",
             "image_range=3,5",
             f"output.experiments={out}",
             *image_files,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
     assert result.returncode == 0
@@ -534,21 +573,26 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
     assert all(exp.goniometer is not None for exp in imported_exp)
 
 
-def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
+def test_import_still_sequence_as_experiments_split_subset(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
     image_files = image_files[:3] + image_files[6:]
 
-    out = "experiments_as_still.expt"
+    out = tmp_path / "experiments_as_still.expt"
 
-    procrunner.run(
-        ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
+    subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "scan.oscillation=10,0",
+            f"output.experiments={out}",
+        ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
 
-    imported_exp = load.experiment_list(tmpdir.join(out))
+    imported_exp = load.experiment_list(out)
     assert len(imported_exp) == len(image_files)
     for exp in imported_exp:
         assert exp.identifier != ""
@@ -557,23 +601,24 @@ def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
     assert len(iset) == 2
 
 
-def test_with_convert_sequences_to_stills(dials_data, tmpdir):
+def test_with_convert_sequences_to_stills(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "convert_sequences_to_stills=True",
             "output.experiments=experiments_as_stills.expt",
         ]
         + image_files,
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("experiments_as_stills.expt").check(file=1)
+    assert (tmp_path / "experiments_as_stills.expt").is_file()
 
-    experiments = load.experiment_list(tmpdir.join("experiments_as_stills.expt"))
+    experiments = load.experiment_list(tmp_path / "experiments_as_stills.expt")
     for exp in experiments:
         assert exp.identifier != ""
 
@@ -686,3 +731,48 @@ def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
     assert len(experiments.imagesets()) == 1
     assert isinstance(experiments.imagesets()[0], ImageSequence)
     assert len(experiments.scans()) == 1  # only one image example here
+
+
+def test_import_grid_scan(dials_data, tmp_path):
+    data_dir = dials_data("thaumatin_grid_scan", pathlib=True)
+    image_path = data_dir / "thau_3_2_*"
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "convert_stills_to_sequences=True",
+            image_path,
+            "output.experiments=lcls.expt",
+        ],
+        capture_output=True,
+        cwd=tmp_path,
+    )
+    assert (
+        result.stdout
+        and f"template: {data_dir}{os.sep}thau_3_2_####.cbf.bz2:1:19"
+        in result.stdout.decode()
+    )
+    assert result.stdout.count(b"template:") == 1
+
+
+def test_import_stills(dials_data, tmp_path):
+    data_dir = (
+        dials_data("4fluoro_cxi", pathlib=True)
+        / "lcls_2022_smSFX_workshop_data"
+        / "ten_cbfs"
+    )
+    image_path = data_dir / "cxily6520_r0164_*.cbf"
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            image_path,
+            "output.experiments=lcls.expt",
+        ],
+        capture_output=True,
+        cwd=tmp_path,
+    )
+    assert (
+        result.stdout
+        and f"template: {data_dir}{os.sep}cxily6520_r0164_#####.cbf"
+        in result.stdout.decode()
+    )
+    assert result.stdout.count(b"template:") == 1

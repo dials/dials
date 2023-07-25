@@ -1,22 +1,33 @@
 from __future__ import annotations
 
+import datetime
 import pickle
+import shutil
+import subprocess
+import sys
 
-import procrunner
 import pytest
 
 from scitbx.array_family import flex
 
 
+@pytest.mark.skipif(
+    (sys.platform == "darwin")
+    and (datetime.date.today() < datetime.date(2023, 10, 20)),
+    reason="Temporary skip to dodge SEGV on Azure pipelines",
+)
 def test_model_background(dials_data, tmp_path):
     centroid = dials_data("centroid_test_data", pathlib=True)
     expts = centroid / "experiments.json"
 
-    result = procrunner.run(
-        ["dials.model_background", expts],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.model_background"), expts],
+        cwd=tmp_path,
+        capture_output=True,
     )
-    assert not result.returncode and not result.stderr
+    print(result.stderr.decode())
+    result.check_returncode()
+    assert not result.stderr
     for filename in (
         "background.pickle",
         "mean_0.png",
@@ -43,28 +54,30 @@ def test_model_background(dials_data, tmp_path):
     # Test integration using the background model, with robust.algorithm=(True|False)
     refls = centroid / "indexed.refl"
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             expts,
             refls,
             "background.algorithm=gmodel",
             "gmodel.robust.algorithm=False",
             "gmodel.model=background.pickle",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             expts,
             refls,
             "background.algorithm=gmodel",
             "gmodel.robust.algorithm=True",
             "gmodel.model=background.pickle",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr

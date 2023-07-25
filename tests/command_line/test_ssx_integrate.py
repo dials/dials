@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.serialize import load
@@ -22,9 +23,9 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     dials_data("cunir_serial", pathlib=True)
     pathlib.Path.mkdir(tmp_path / "nuggets")
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.ssx_integrate",
+            shutil.which("dials.ssx_integrate"),
             ssx / "indexed.refl",
             ssx / "indexed.expt",
             "nproc=1",
@@ -33,7 +34,8 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
             "output.nuggets=nuggets",
             "algorithm=stills",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("integrated_1.refl").is_file()
@@ -46,8 +48,37 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
         assert tmp_path.joinpath(f"nuggets/nugget_integrated_{i}.json").is_file()
 
 
+import json
+
+expected_simple1 = {
+    "likelihood": 171374.17464891364,
+    "mosaicity": [0.020799705597009843],
+}
+expected_simple6 = {
+    "likelihood": 176234.85494941485,
+    "mosaicity": [0.007835942631996863, 0.02266467599439014, 0.026879730729450498],
+}
+expected_angular2 = {
+    "likelihood": 171782.58653554777,
+    "mosaicity": [0.024549034458866092, 0.01864434938489629],
+}
+expected_angular4 = {
+    "likelihood": 179074.32947807646,
+    "mosaicity": [0.024550628270576778, 0.025846182907222837, 0.005215268399212766],
+}
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
+        ("simple1", expected_simple1),
+        ("simple6", expected_simple6),
+        ("angular2", expected_angular2),
+        ("angular4", expected_angular4),
+    ],
+)
 @pytest.mark.xdist_group(name="group1")
-def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
+def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expected):
     # Download data set and the internally referenced images
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     dials_data("cunir_serial", pathlib=True)
@@ -58,16 +89,19 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
     refls = refls.select_on_experiment_identifiers([expts[3].identifier])
     refls.as_file(tmp_path / "single.refl")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.ssx_integrate",
+            shutil.which("dials.ssx_integrate"),
             tmp_path / "single.refl",
             tmp_path / "single.expt",
             "nproc=1",
             "algorithm=ellipsoid",
+            f"ellipsoid.rlp_mosaicity={model}",
             "n_macro_cycles=2",
+            f"output.history={tmp_path /'history.json'}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("integrated_1.refl").is_file()
@@ -75,9 +109,12 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path):
     assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
     expts = load.experiment_list(tmp_path / "integrated_1.expt", check_format=False)
     mosaicity = expts[0].profile.mosaicity()
-    assert mosaicity["radial"] < 0.0250 and mosaicity["radial"] > 0.0240
-    assert mosaicity["angular_0"] < 0.0265 and mosaicity["angular_0"] > 0.0255
-    assert mosaicity["angular_1"] < 0.006 and mosaicity["angular_1"] > 0.004
+    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1e-6)
+    with (tmp_path / "history.json").open("r") as fh:
+        data = json.load(fh)
+        assert data["0"]["likelihood_per_iteration"][-1][-1] == pytest.approx(
+            expected["likelihood"], abs=1.5e-6
+        )
 
 
 @pytest.mark.parametrize("algorithm,expected_n_refls", [("stills", 614)])

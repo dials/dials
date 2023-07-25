@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import socket
 import subprocess
 import sys
@@ -8,7 +9,6 @@ import timeit
 import urllib.request
 from xml.dom import minidom
 
-import procrunner
 import pytest
 
 
@@ -46,8 +46,9 @@ def test_server_return_codes(dials_data, server_port):
         with pytest.raises(urllib.error.HTTPError):
             urllib.request.urlopen(f"http://127.0.0.1:{server_port}/some/junk/filename")
     finally:
-        result = procrunner.run(
-            ["dials.find_spots_client", f"port={server_port}", "stop"]
+        result = subprocess.run(
+            [shutil.which("dials.find_spots_client"), f"port={server_port}", "stop"],
+            capture_output=True,
         )
         assert not result.returncode and not result.stderr
 
@@ -57,8 +58,10 @@ def test_find_spots_server_client(dials_data, tmp_path, server_port):
     try:
         exercise_client(server_port=server_port, filenames=filenames)
     finally:
-        result = procrunner.run(
-            ["dials.find_spots_client", f"port={server_port}", "stop"]
+        result = subprocess.run(
+            [shutil.which("dials.find_spots_client"), f"port={server_port}", "stop"],
+            cwd=tmp_path,
+            capture_output=True,
         )
         assert not result.returncode and not result.stderr
 
@@ -89,7 +92,7 @@ def wait_for_server(port, max_wait=20):
 def exercise_client(server_port, filenames):
     assert filenames
     client_command = [
-        "dials.find_spots_client",
+        shutil.which("dials.find_spots_client"),
         f"port={server_port}",
         "min_spot_size=3",
         "algorithm=dispersion",
@@ -103,7 +106,7 @@ def exercise_client(server_port, filenames):
         "max_refine=10",
     ]
     print(index_client_command)
-    result = procrunner.run(index_client_command)
+    result = subprocess.run(index_client_command, capture_output=True)
     assert not result.returncode and not result.stderr
     out = f"<document>{result.stdout}</document>"
 
@@ -127,7 +130,7 @@ def exercise_client(server_port, filenames):
     )
 
     client_command = client_command + filenames[1:]
-    result = procrunner.run(client_command)
+    result = subprocess.run(client_command, capture_output=True)
     assert not result.returncode and not result.stderr
     out = f"<document>{result.stdout}</document>"
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 
 def test_merge_cbf(dials_data, tmp_path):
@@ -9,15 +10,15 @@ def test_merge_cbf(dials_data, tmp_path):
     g = sorted(data_dir.glob("*.cbf"))
     assert len(g) == 9
 
-    cmd = ["dials.merge_cbf", "merge_n_images=3"] + g
-    result = procrunner.run(cmd, working_directory=tmp_path)
+    cmd = [shutil.which("dials.merge_cbf"), "merge_n_images=3"] + g
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     g = sorted(tmp_path.glob("sum_*.cbf"))
     assert len(g) == 3
 
     # test alternate mode of accessing image data
     cmd += ["image_prefix=sum2_", "get_raw_data_from_imageset=false"]
-    result = procrunner.run(cmd, working_directory=tmp_path)
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     g2 = sorted(tmp_path.glob("sum2_*.cbf"))

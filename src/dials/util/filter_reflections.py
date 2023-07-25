@@ -54,7 +54,7 @@ from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.batch_handling import assign_batches_to_reflections
 
-logger = logging.getLogger("dials")
+logger = logging.getLogger(__name__)
 
 
 class NoProfilesException(Exception):

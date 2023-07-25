@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dials.array_family import flex
@@ -76,19 +77,26 @@ def test_passing_still_images_raises_sysexit(dials_data, run_in_tmp_path):
     path = dials_data("thaumatin_grid_scan", pathlib=True)
 
     # Import the data
-    result = procrunner.run(
-        ["dials.import", "output.experiments=imported.expt"]
+    result = subprocess.run(
+        [shutil.which("dials.import"), "output.experiments=imported.expt"]
         + list(path.glob("*.cbf*")),
-        working_directory=run_in_tmp_path,
+        cwd=run_in_tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     expts_file = run_in_tmp_path / "imported.expt"
     assert expts_file.is_file()
 
     # Find the spots
-    result = procrunner.run(
-        ["dials.find_spots", "imported.expt", "min_spot_size=3", "nproc=1"],
-        working_directory=run_in_tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.find_spots"),
+            "imported.expt",
+            "min_spot_size=3",
+            "nproc=1",
+        ],
+        cwd=run_in_tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     refl_file = run_in_tmp_path / "strong.refl"

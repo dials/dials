@@ -171,7 +171,7 @@ indexing {
       .help = "refine_shells: refine in increasing resolution cutoffs after indexing."
               "repredict_only: do not refine after indexing, just update spot"
               "predictions."
-              "None: turns off all forms of refinement (currently only applies to stills_indexer)"
+              "None: do not refine and do not update spot predictions."
     n_macro_cycles = 5
       .type = int(value_min=1)
       .help = "Maximum number of macro cycles of refinement, reindexing all"
@@ -642,6 +642,11 @@ class Indexer:
                         spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model,
                     )
                     ref_predictor(refined_reflections)
+                elif self.params.refinement_protocol.mode is None:
+                    refined_experiments, refined_reflections = (
+                        experiments,
+                        reflections_for_refinement,
+                    )
                 else:
                     try:
                         refined_experiments, refined_reflections = self.refine(

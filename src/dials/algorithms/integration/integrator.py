@@ -616,6 +616,8 @@ class ProfileModellerExecutor(Executor):
     The class to do profile modelling calculations
     """
 
+    __getstate_manages_dict__ = 1
+
     def __init__(self, experiments, profile_fitter):
         """
         Initialise the executor
@@ -719,6 +721,8 @@ class ProfileValidatorExecutor(Executor):
     The class to do profile validation calculations
     """
 
+    __getstate_manages_dict__ = 1
+
     def __init__(self, experiments, profile_fitter):
         """
         Initialise the executor
@@ -821,6 +825,8 @@ class IntegratorExecutor(Executor):
     """
     The class to process the integration data
     """
+
+    __getstate_manages_dict__ = 1
 
     def __init__(
         self, experiments, profile_fitter=None, valid_foreground_threshold=0.75

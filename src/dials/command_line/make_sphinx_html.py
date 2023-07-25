@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
 import sys
 from pathlib import Path
-
-import procrunner
 
 import dials.util
 
@@ -81,7 +80,7 @@ def run(args=None):
         shutil.rmtree(output_dir)
     print(f"Generating documentation into {output_dir}")
 
-    command = ["libtbx.sphinx-build", "-b", "html", ".", output_dir]
+    command = [shutil.which("libtbx.sphinx-build"), "-b", "html", ".", output_dir]
     if options.parallel:
         command.extend(["-j", "auto"])
     if options.strict:
@@ -111,9 +110,7 @@ def run(args=None):
         )
 
     env = {}
-    result = procrunner.run(
-        command, environment_override=env, working_directory=sphinx_dir
-    )
+    result = subprocess.run(command, env=env, cwd=sphinx_dir)
     if result.returncode:
         sys.exit(f"Sphinx build failed with exit code {result.returncode}")
 

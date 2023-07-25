@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
-
-import procrunner
+import subprocess
 
 from dxtbx.serialize import load
 
@@ -12,8 +11,10 @@ from dials.command_line.show import model_connectivity, run
 
 def test_dials_show(dials_regression):
     path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
-    result = procrunner.run(
-        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+    result = subprocess.run(
+        [shutil.which("dials.show"), path],
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     output = result.stdout.decode("latin-1")
@@ -87,8 +88,10 @@ def test_dials_show_i04_weak_data(dials_regression):
         "i04_weak_data",
         "experiments_import.json",
     )
-    result = procrunner.run(
-        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+    result = subprocess.run(
+        [shutil.which("dials.show"), path],
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     output = result.stdout.decode("latin-1")
@@ -142,10 +145,11 @@ Goniometer:
 
 
 def test_dials_show_centroid_test_data(dials_data):
-    result = procrunner.run(
-        ["dials.show"]
+    result = subprocess.run(
+        [shutil.which("dials.show")]
         + sorted(dials_data("centroid_test_data", pathlib=True).glob("centroid_*.cbf")),
-        environment_override={"DIALS_NOBANNER": "1"},
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     output = result.stdout.decode("latin-1")
@@ -205,8 +209,10 @@ def test_dials_show_multi_panel_i23(dials_regression):
     path = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )
-    result = procrunner.run(
-        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+    result = subprocess.run(
+        [shutil.which("dials.show"), path],
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     output = result.stdout.decode("latin-1")
@@ -290,12 +296,13 @@ Goniometer:
 
 def test_dials_show_reflection_table(dials_data):
     """Test the output of dials.show on a reflection_table pickle file"""
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.show",
+            shutil.which("dials.show"),
             dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
         ],
-        environment_override={"DIALS_NOBANNER": "1"},
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     output = result.stdout.decode("latin-1")
@@ -343,7 +350,7 @@ def test_dials_show_reflection_table(dials_data):
         "xyzobs.px.variance",
         "zeta",
     ]
-    for (name, out) in zip(row_names, output[8:-1]):
+    for name, out in zip(row_names, output[8:-1]):
         assert name in out
 
 
@@ -352,9 +359,10 @@ def test_dials_show_image_statistics(dials_regression):
     path = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )
-    result = procrunner.run(
-        ["dials.show", "image_statistics.show_raw=true", path],
-        environment_override={"DIALS_NOBANNER": "1"},
+    result = subprocess.run(
+        [shutil.which("dials.show"), "image_statistics.show_raw=true", path],
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     output = result.stdout.decode("latin-1")
@@ -370,9 +378,10 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
     path = os.path.join(
         dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
     )
-    result = procrunner.run(
-        ["dials.show", "image_statistics.show_raw=true", path],
-        environment_override={"DIALS_NOBANNER": "1"},
+    result = subprocess.run(
+        [shutil.which("dials.show"), "image_statistics.show_raw=true", path],
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert result.returncode == 1 and result.stderr
 
@@ -383,7 +392,9 @@ def test_dials_show_on_scaled_data(dials_data):
     refl = location / "scaled_30.refl"
     expt = location / "scaled_30.expt"
 
-    result = procrunner.run(["dials.show", refl, expt])
+    result = subprocess.run(
+        [shutil.which("dials.show"), refl, expt], capture_output=True
+    )
     assert not result.returncode and not result.stderr
 
 
@@ -428,16 +439,20 @@ def test_dials_show_shared_models(dials_data, capsys):
     assert "Experiment / Models" in stdout
 
 
-def test_dials_show_centroid_test_data_image_zero(dials_data, tmpdir):
+def test_dials_show_centroid_test_data_image_zero(dials_data, tmp_path):
     """Integration test: import image 0; show import / show works"""
 
     im1 = dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"
-    im0 = tmpdir.join("centroid_0000.cbf").strpath
+    im0 = tmp_path / "centroid_0000.cbf"
 
     shutil.copyfile(im1, im0)
 
-    result = procrunner.run(("dials.import", im0), working_directory=tmpdir)
+    result = subprocess.run(
+        [shutil.which("dials.import"), im0], cwd=tmp_path, capture_output=True
+    )
     assert not result.returncode and not result.stderr
 
-    result = procrunner.run(("dials.show", "imported.expt"), working_directory=tmpdir)
+    result = subprocess.run(
+        [shutil.which("dials.show"), "imported.expt"], cwd=tmp_path, capture_output=True
+    )
     assert not result.returncode and not result.stderr

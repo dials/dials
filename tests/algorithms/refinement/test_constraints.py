@@ -4,9 +4,9 @@ Tests for the constraints system used in refinement
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 from copy import deepcopy
-
-import procrunner
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.test_utils import approx_equal
@@ -22,7 +22,6 @@ from dials.array_family import flex
 
 
 def test_contraints_manager_simple_test():
-
     x = flex.random_double(10)
 
     # constrain parameters 2 and 4 and 6, 7 and 8
@@ -159,9 +158,9 @@ def test_constrained_refinement(dials_data, tmp_path):
     # Set up refinement, constraining the "Dist" parameter. We have to also
     # fix the tilt and twist type parameters to ensure this actually constrains
     # the distance between the models.
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.refine",
+            shutil.which("dials.refine"),
             "foo.expt",
             "foo.refl",
             "history=history.json",
@@ -170,7 +169,8 @@ def test_constrained_refinement(dials_data, tmp_path):
             "refinement.reflections.outlier.algorithm=null",
             "scan_varying=False",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert result.returncode == 0 and not result.stderr
 
