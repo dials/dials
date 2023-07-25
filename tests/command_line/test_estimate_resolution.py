@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dials.command_line import estimate_resolution as cmdline
@@ -83,8 +84,10 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmp_path, capsys):
     assert run_in_tmp_path.joinpath("dials.estimate_resolution.html").is_file()
 
 
-def test_dispatcher_name():
-    result = procrunner.run(["dials.estimate_resolution"])
+def test_dispatcher_name(tmp_path):
+    result = subprocess.run(
+        [shutil.which("dials.estimate_resolution")], cwd=tmp_path, capture_output=True
+    )
     assert not result.returncode
     assert not result.stderr
 

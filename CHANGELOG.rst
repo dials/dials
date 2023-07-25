@@ -1,3 +1,52 @@
+DIALS 3.15.1 (2023-06-29)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.export_bitmaps``: Fix the ``resolution_rings.fontsize=`` feature to work on Mac, and more reliably across platforms. (`#2441 <https://github.com/dials/dials/issues/2441>`_)
+
+
+DIALS 3.15.0 (2023-06-13)
+=========================
+
+Features
+--------
+
+- ``dials.refine``: Independent groups of experiments are now refined separately by default. This may not then produce identical output, but results are believed to be of equivalent quality. The previous behaviour can be selected by using ``separate_independent_sets=False``. (`#2336 <https://github.com/dials/dials/issues/2336>`_)
+- Python 3.11 is now supported as a bootstrap target. (`#2338 <https://github.com/dials/dials/issues/2338>`_)
+- Support ``IOBS/SIGIOBS`` and ``FOBS/SIGFOBS`` columns when reading reference intensities from MTZ files. (`#2386 <https://github.com/dials/dials/issues/2386>`_)
+- ``dials.export_bitmaps``: Optionally overlay ice rings. (`#2393 <https://github.com/dials/dials/issues/2393>`_)
+- ``export_bitmaps`` API code has been separated out of CLI script into the new ``dials.util.export_bitmaps`` module. (`#2417 <https://github.com/dials/dials/issues/2417>`_)
+- ``dials.reindex``: Allow reindexing against a reference file (mtz, pdb, cif) from which intensities can be extracted/generated (`#2420 <https://github.com/dials/dials/issues/2420>`_)
+- ``dials.refine``: new option ``auto_reduction.ignore=True`` allows avoiding the parameter auto-reduction procedure for special cases. (`#2431 <https://github.com/dials/dials/issues/2431>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.export_bitmaps``: Correctly display the requested number of resolution rings. (`#2397 <https://github.com/dials/dials/issues/2397>`_)
+- More directly support cctbx bootstrap environments without fixed-version dependencies. (`#2409 <https://github.com/dials/dials/issues/2409>`_)
+- ``dials.scale``: Fix crash in html plotting for scaling and filtering when R-pim/R-merge values contain 'None' values (`#2410 <https://github.com/dials/dials/issues/2410>`_)
+- ``dials.scale``, ``dials.cosym``: Use bulk solvent model when calculating intensities from a reference file. (`#2414 <https://github.com/dials/dials/issues/2414>`_)
+- ``dials.integrate``: Fix multiprocessing on Windows with Python 3.11. (`#2426 <https://github.com/dials/dials/issues/2426>`_)
+- ``dials.ssx_integrate``: Fix error in partiality calculation for ellipsoid integration algorithm. (`#2429 <https://github.com/dials/dials/issues/2429>`_)
+- ``dials.import``: Don't print filename template for every image of an ``ImageSequence``. (`#2432 <https://github.com/dials/dials/issues/2432>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- Moved ``dials::af::flex_table`` and associated tooling to dxtbx. Functions that are specific to ``reflection_table`` have been moved to ``reflection_table_suite.h``. (`#2113 <https://github.com/dials/dials/issues/2113>`_)
+- ``dials.find_spots``: Remove ``force_2d=`` option, which did not work as expected. (`#2422 <https://github.com/dials/dials/issues/2422>`_)
+
+
+Misc
+----
+
+- `#2402 <https://github.com/dials/dials/issues/2402>`_, `#2403 <https://github.com/dials/dials/issues/2403>`_, `#2419 <https://github.com/dials/dials/issues/2419>`_, `#2424 <https://github.com/dials/dials/issues/2424>`_, `#2425 <https://github.com/dials/dials/issues/2425>`_, `#2427 <https://github.com/dials/dials/issues/2427>`_, `#2428 <https://github.com/dials/dials/issues/2428>`_
+
+
 DIALS 3.14.2 (2023-05-16)
 =========================
 

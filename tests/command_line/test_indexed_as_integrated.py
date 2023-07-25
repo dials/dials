@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 import iotbx.merging_statistics
 
@@ -11,30 +12,30 @@ def test_indexed_as_integrated(dials_data, tmp_path):
     expt = data_dir / "indexed.expt"
 
     command = [
-        "dials.indexed_as_integrated",
+        shutil.which("dials.indexed_as_integrated"),
         refl,
         expt,
         "output.reflections=output.refl",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "output.refl").is_file()
 
     # now make sure we can run dials.symmetry and dials.scale successfully
-    sym_command = ["dials.symmetry", tmp_path / "output.refl", expt]
-    result = procrunner.run(sym_command, working_directory=tmp_path)
+    sym_command = [shutil.which("dials.symmetry"), tmp_path / "output.refl", expt]
+    result = subprocess.run(sym_command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "symmetrized.refl").is_file()
     assert (tmp_path / "symmetrized.expt").is_file()
 
     scale_command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         tmp_path / "symmetrized.refl",
         tmp_path / "symmetrized.expt",
         "unmerged_mtz=scaled.mtz",
         "d_min=2.0",
     ]
-    result = procrunner.run(scale_command, working_directory=tmp_path)
+    result = subprocess.run(scale_command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()

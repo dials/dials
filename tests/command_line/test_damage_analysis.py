@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.serialize import load
@@ -91,8 +92,8 @@ def test_damage_analysis_on_scaled_mtz(dials_data, run_in_tmp_path):
     expts = str(location / "scaled_20_25.expt")
 
     # First export the data
-    command = ["dials.export", refls, expts]
-    result = procrunner.run(command, working_directory=run_in_tmp_path)
+    command = [shutil.which("dials.export"), refls, expts]
+    result = subprocess.run(command, cwd=run_in_tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert os.path.isfile("scaled.mtz")
 
@@ -113,8 +114,8 @@ def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmp_path):
     expts = location / "scaled_20_25.expt"
 
     # First export the data
-    command = ["dials.export", refls, expts]
-    result = procrunner.run(command, working_directory=run_in_tmp_path)
+    command = [shutil.which("dials.export"), refls, expts]
+    result = subprocess.run(command, cwd=run_in_tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert os.path.isfile("scaled.mtz")
 

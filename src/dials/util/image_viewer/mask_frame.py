@@ -447,14 +447,9 @@ class MaskSettingsPanel(wx.Panel):
         grid.Add(self.mode_polygon_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(wx.EVT_TOGGLEBUTTON, self.OnUpdate, self.mode_polygon_button)
 
-        # show/save mask controls
+        # save mask controls
         grid = wx.FlexGridSizer(cols=3, rows=2, vgap=0, hgap=0)
         sizer.Add(grid)
-
-        self.show_mask_ctrl = wx.CheckBox(self, -1, "Show mask")
-        self.show_mask_ctrl.SetValue(self.params.show_mask)
-        grid.Add(self.show_mask_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_mask_ctrl)
 
         self.save_mask_button = wx.Button(self, -1, "Save mask")
         grid.Add(self.save_mask_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -495,7 +490,6 @@ class MaskSettingsPanel(wx.Panel):
     def OnUpdate(self, event):
         image_viewer_frame = self.GetParent().GetParent()
 
-        self.params.show_mask = self.show_mask_ctrl.GetValue()
         # untidy
         image_viewer_frame.settings.show_mask = self.params.show_mask
         image_viewer_frame.params.show_mask = self.params.show_mask

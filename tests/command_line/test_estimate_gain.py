@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 
 def test(dials_data, tmp_path):
@@ -8,9 +9,10 @@ def test(dials_data, tmp_path):
         dials_data("centroid_test_data", pathlib=True) / "imported_experiments.json"
     )
 
-    result = procrunner.run(
-        ["dials.estimate_gain", f"input.experiments={input_filename}"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.estimate_gain"), f"input.experiments={input_filename}"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert b"Estimated gain: 1.0" in result.stdout

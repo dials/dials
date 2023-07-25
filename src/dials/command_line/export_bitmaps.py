@@ -69,6 +69,8 @@ resolution_rings {
     .type = bool
   number = 5
     .type = int(value_min=1)
+  d_spacings = None
+    .type = floats(value_min=0)
   fontsize = 30
     .type = int
     .optional = True
@@ -201,6 +203,7 @@ def imageset_as_bitmaps(imageset, params):
                 pil_img,
                 flex_img,
                 n_rings=params.resolution_rings.number,
+                spacings=params.resolution_rings.d_spacings,
                 fill=params.resolution_rings.fill,
                 fontsize=params.resolution_rings.fontsize,
                 binning=params.binning,
