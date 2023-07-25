@@ -302,7 +302,7 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
                 i + 1 + batch_offset,
             )
         )
-
+    input_iterable = sorted(input_iterable, key=lambda i: i.table.size(), reverse=True)
     with manage_loggers(
         configuration["params"].individual_log_verbosity,
         configuration["loggers_to_disable"],
