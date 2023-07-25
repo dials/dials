@@ -486,6 +486,7 @@ def export_mtz(
     force_static_model=False,
     crystal_name=None,
     project_name=None,
+    wavelength_tolerance=1e-4,
 ):
     """Export data from reflection_table corresponding to experiment_list to an
     MTZ file hklout."""
@@ -527,7 +528,7 @@ def export_mtz(
         if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
             raise ValueError("Experiments do not have a unique space group")
 
-        wavelengths = match_wavelengths(experiment_list)
+        wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
         if len(wavelengths) > 1:
             logger.info(
                 "Multiple wavelengths found: \n%s",
