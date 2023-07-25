@@ -10,8 +10,6 @@ import pytest
 from scitbx import matrix
 
 from dials.algorithms.profile_model.ellipsoid.parameterisation import (
-    Angular2MosaicityParameterisation,
-    Angular4MosaicityParameterisation,
     ModelState,
     ReflectionModelState,
     Simple1MosaicityParameterisation,
@@ -124,115 +122,6 @@ def test_WavelengthSpreadParameterisation():
     assert p.first_derivatives()[0] == pytest.approx(2 * params[0])
 
 
-def test_Angular2MosaicityParameterisation():
-    params = np.array([1e-3, 2e-3])
-
-    A2 = Angular2MosaicityParameterisation(params=params)
-
-    assert A2.is_angular() is True
-    assert A2.num_parameters() == 2
-    assert A2.parameters[0] == pytest.approx(params[0])
-    assert A2.parameters[1] == pytest.approx(params[1])
-
-    params = np.array([2e-3, 3e-3])
-    A2.parameters = params
-    assert A2.parameters[0] == pytest.approx(params[0])
-    assert A2.parameters[1] == pytest.approx(params[1])
-
-    b1, b2 = params
-    assert list(A2.sigma().flatten()) == pytest.approx(
-        [b1**2, 0, 0, 0, b1**2, 0, 0, 0, b2**2]
-    )
-
-    dSdb = [(2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0, 0, 2 * b2)]
-
-    d = A2.first_derivatives()
-    assert d.shape[0] == 2
-    for i in range(d.shape[0]):
-        a = dSdb[i]
-        b = d[i, :, :]
-        for j in range(9):
-            assert b.flatten()[j] == pytest.approx(a[j])
-
-    step = 1e-6
-    dm_num = []
-    for i in range(len(params)):
-
-        def f(x):
-            ps = copy(params)
-            ps[i] = x
-            A2.params = ps
-            return A2.sigma()
-
-        dm_num.append(first_derivative(f, params[i], step))
-
-    for i in range(len(params)):
-        for n, c in zip(dm_num[i], d[i, :, :]):
-            for nn, cc in zip(list(n), list(c)):
-                print(nn)
-                print(cc)
-                assert abs(nn - cc) < 1e-7
-
-
-def test_Angular4MosaicityParameterisation():
-    params = np.array([1e-3, 2e-3, 3e-3, 4e-3])
-
-    A4 = Angular4MosaicityParameterisation(params=params)
-
-    assert A4.is_angular() is True
-    assert A4.num_parameters() == 4
-    assert list(A4.parameters) == pytest.approx(list(params))
-
-    params = np.array([2e-3, 3e-3, 4e-3, 5e-3])
-    A4.parameters = params
-    assert list(A4.parameters) == pytest.approx(list(params))
-
-    b1, b2, b3, b4 = params
-    assert A4.sigma()[0, 0] == pytest.approx(b1**2)
-    assert A4.sigma()[0, 1] == pytest.approx(b1 * b2)
-    assert A4.sigma()[0, 2] == pytest.approx(0)
-    assert A4.sigma()[1, 0] == pytest.approx(b1 * b2)
-    assert A4.sigma()[1, 1] == pytest.approx(b2**2 + b3 * b3)
-    assert A4.sigma()[1, 2] == pytest.approx(0)
-    assert A4.sigma()[2, 0] == pytest.approx(0)
-    assert A4.sigma()[2, 1] == pytest.approx(0)
-    assert A4.sigma()[2, 2] == pytest.approx(b4**2)
-
-    dSdb = [
-        (2 * b1, b2, 0, b2, 0, 0, 0, 0, 0),
-        (0, b1, 0, b1, 2 * b2, 0, 0, 0, 0),
-        (0, 0, 0, 0, 2 * b3, 0, 0, 0, 0),
-        (0, 0, 0, 0, 0, 0, 0, 0, 2 * b4),
-    ]
-
-    d = A4.first_derivatives()
-    assert d.shape[0] == 4
-    for i in range(d.shape[0]):
-        a = dSdb[i]
-        b = d[i, ::, :]
-        for j in range(9):
-            assert b.flatten()[j] == pytest.approx(a[j])
-
-    step = 1e-6
-    dm_num = []
-    for i in range(len(params)):
-
-        def f(x):
-            ps = copy(params)
-            ps[i] = x
-            A4.params = ps
-            return A4.sigma()
-
-        dm_num.append(first_derivative(f, params[i], step))
-
-    for i in range(len(params)):
-        for n, c in zip(dm_num[i], d[i, :, :]):
-            for nn, cc in zip(list(n), list(c)):
-                print(nn)
-                print(cc)
-                assert abs(nn - cc) < 1e-7
-
-
 def check_model_state_with_fixed(
     experiment,
     mosaicity_parameterisation,
@@ -261,7 +150,7 @@ def check_model_state_with_fixed(
     U = state.U_matrix
     B = state.B_matrix
     A = state.A_matrix
-    M = state.mosaicity_covariance_matrix
+    M = state._M_parameterisation.sigma()
     L = state.wavelength_spread
 
     assert U.shape == (3, 3)
@@ -319,8 +208,6 @@ def test_ModelState(test_experiment):
     S6 = Simple6MosaicityParameterisation(
         np.array([0.01, 0.02, 0.03, 0.04, 0.05, 0.06])
     )
-    A2 = Angular2MosaicityParameterisation(np.array([0.01, 0.02]))
-    A4 = Angular4MosaicityParameterisation(np.array([0.01, 0.02, 0.03, 0.04]))
     W = WavelengthSpreadParameterisation(np.array([0.01]))
 
     with pytest.raises(AssertionError):
@@ -346,30 +233,6 @@ def test_ModelState(test_experiment):
     check_model_state_with_fixed(experiments[0], S6, W, fix_wavelength_spread=True)
     check_model_state_with_fixed(experiments[0], S6, W, fix_unit_cell=True)
     check_model_state_with_fixed(experiments[0], S6, W, fix_orientation=True)
-
-    with pytest.raises(AssertionError):
-        check_model_state_with_fixed(experiments[0], A2, None, fix_mosaic_spread=True)
-    with pytest.raises(AssertionError):
-        check_model_state_with_fixed(experiments[0], A2, None, fix_unit_cell=True)
-    with pytest.raises(AssertionError):
-        check_model_state_with_fixed(experiments[0], A2, None, fix_orientation=True)
-    check_model_state_with_fixed(experiments[0], A2, None, fix_wavelength_spread=True)
-    check_model_state_with_fixed(experiments[0], A2, W, fix_mosaic_spread=True)
-    check_model_state_with_fixed(experiments[0], A2, W, fix_wavelength_spread=True)
-    check_model_state_with_fixed(experiments[0], A2, W, fix_unit_cell=True)
-    check_model_state_with_fixed(experiments[0], A2, W, fix_orientation=True)
-
-    with pytest.raises(AssertionError):
-        check_model_state_with_fixed(experiments[0], A4, None, fix_mosaic_spread=True)
-    with pytest.raises(AssertionError):
-        check_model_state_with_fixed(experiments[0], A4, None, fix_unit_cell=True)
-    with pytest.raises(AssertionError):
-        check_model_state_with_fixed(experiments[0], A4, None, fix_orientation=True)
-    check_model_state_with_fixed(experiments[0], A4, None, fix_wavelength_spread=True)
-    check_model_state_with_fixed(experiments[0], A4, W, fix_mosaic_spread=True)
-    check_model_state_with_fixed(experiments[0], A4, W, fix_wavelength_spread=True)
-    check_model_state_with_fixed(experiments[0], A4, W, fix_unit_cell=True)
-    check_model_state_with_fixed(experiments[0], A4, W, fix_orientation=True)
 
 
 def check_reflection_model_state_with_fixed(
@@ -526,8 +389,6 @@ def test_ReflectionModelState(test_experiment):
         np.array([0.01, 0.001, 0.02, 0.002, 0.03, 0.003])
     )
     W = WavelengthSpreadParameterisation([0.01])
-    A2 = Angular2MosaicityParameterisation(np.array([0.02, 0.03]))
-    A4 = Angular4MosaicityParameterisation(np.array([0.02, 0.03, 0.01, 0.04]))
 
     check_reflection_model_state_with_fixed(
         experiments[0], S1, None, fix_wavelength_spread=True
@@ -550,55 +411,6 @@ def test_ReflectionModelState(test_experiment):
     check_reflection_model_state_with_fixed(
         experiments[0], S6, W, fix_wavelength_spread=True
     )
-
-    check_reflection_model_state_with_fixed(
-        experiments[0],
-        A2,
-        W,
-        fix_unit_cell=True,
-        fix_orientation=True,
-        fix_wavelength_spread=True,
-    )
-    check_reflection_model_state_with_fixed(
-        experiments[0],
-        A4,
-        W,
-        fix_unit_cell=True,
-        fix_orientation=True,
-        fix_wavelength_spread=True,
-    )
-
-    check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_orientation=True)
-
-    check_reflection_model_state_with_fixed(
-        experiments[0], A2, None, fix_wavelength_spread=True
-    )
-    A2 = Angular2MosaicityParameterisation(np.array([0.02, 0.03]))
-    check_reflection_model_state_with_fixed(
-        experiments[0], A2, W, fix_mosaic_spread=True, fix_wavelength_spread=True
-    )
-    check_reflection_model_state_with_fixed(
-        experiments[0], A2, W, fix_wavelength_spread=True
-    )
-    check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_unit_cell=True)
-    check_reflection_model_state_with_fixed(experiments[0], A2, W, fix_orientation=True)
-
-    check_reflection_model_state_with_fixed(
-        experiments[0], A4, W, fix_unit_cell=True, fix_wavelength_spread=True
-    )
-    check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_orientation=True)
-
-    check_reflection_model_state_with_fixed(
-        experiments[0], A4, None, fix_wavelength_spread=True
-    )
-    check_reflection_model_state_with_fixed(
-        experiments[0], A4, W, fix_mosaic_spread=True
-    )
-    check_reflection_model_state_with_fixed(
-        experiments[0], A4, W, fix_wavelength_spread=True
-    )
-    check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_unit_cell=True)
-    check_reflection_model_state_with_fixed(experiments[0], A4, W, fix_orientation=True)
 
 
 def generate_data(experiments, reflections):
