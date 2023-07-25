@@ -1,3 +1,12 @@
+DIALS 3.15.1 (2023-06-29)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.export_bitmaps``: Fix the ``resolution_rings.fontsize=`` feature to work on Mac, and more reliably across platforms. (`#2441 <https://github.com/dials/dials/issues/2441>`_)
+
+
 DIALS 3.15.0 (2023-06-13)
 =========================
 
