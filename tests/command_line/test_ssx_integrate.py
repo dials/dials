@@ -68,16 +68,6 @@ expected_s6a1 = {
     "likelihood": 177094.368288,
     "mosaicity": [1.9031e-05, 0.0003987, 0.0004636, 0.0324567],
 }
-expected_s6a3 = {
-    "likelihood": 175269.990971,
-    "mosaicity": [
-        0.0001031,
-        0.0004483,
-        0.0005149,
-        0.0461091,
-        0.0013212,
-    ],
-}
 
 
 @pytest.mark.parametrize(
@@ -88,7 +78,6 @@ expected_s6a3 = {
         ("simple1angular1", expected_s1a1),
         ("simple1angular3", expected_s1a3),
         ("simple6angular1", expected_s6a1),
-        ("simple6angular3", expected_s6a3),
     ],
 )
 @pytest.mark.xdist_group(name="group1")

@@ -38,7 +38,7 @@ phil_scope = parse(
     """
 rlp_mosaicity {
 
-    model = simple1 *simple6 simple1angular1 simple1angular3 simple6angular1 simple6angular3
+    model = simple1 *simple6 simple1angular1 simple1angular3 simple6angular1
     .type = choice
 
 }
