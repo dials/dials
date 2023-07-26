@@ -733,6 +733,22 @@ def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
     assert len(experiments.scans()) == 1  # only one image example here
 
 
+def test_import_still_sequence(dials_data, tmp_path):
+    ssx = dials_data("cunir_serial", pathlib=True)
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            os.fspath(ssx / "merlin0047_1700*.cbf"),
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    experiments = load.experiment_list(tmp_path / "imported.expt")
+    assert len(experiments) == 5
+    assert len(experiments.imagesets()) == 1
+
+
 def test_import_grid_scan(dials_data, tmp_path):
     data_dir = dials_data("thaumatin_grid_scan", pathlib=True)
     image_path = data_dir / "thau_3_2_*"
