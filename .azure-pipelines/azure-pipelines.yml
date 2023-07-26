@@ -72,7 +72,7 @@ stages:
     TODAY_ISO: $[ stageDependencies.prepare.setup.outputs['constants.TODAY_ISO'] ]
 
   jobs:
-  - job: linux-bootstrap
+  - job: linux_bootstrap
     pool:
       vmImage: ubuntu-20.04
     strategy:
