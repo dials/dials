@@ -5,7 +5,7 @@ import time
 from collections import Counter
 from copy import deepcopy
 from math import isclose
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 
@@ -528,18 +528,25 @@ def export_mtz(
         if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
             raise ValueError("Experiments do not have a unique space group")
 
-        wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
-        if len(wavelengths) > 1:
-            logger.info(
-                "Multiple wavelengths found: \n%s",
-                "\n".join(
-                    "  Wavlength: %.5f, experiment numbers: %s "
-                    % (k, ",".join(map(str, v)))
-                    for k, v in wavelengths.items()
-                ),
-            )
-    else:
-        wavelengths = {experiment_list[0].beam.get_wavelength(): [0]}
+    wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
+    for w in wavelengths.values():
+        w.calculate_weighted_mean([reflection_table])
+
+    if len(wavelengths) > 1:
+        identifiers_list = [e.identifier for e in experiment_list]
+        logger.info(
+            "Multiple wavelengths found: \n%s",
+            "\n".join(
+                "  Wavlength: %.5f, experiment numbers: %s "
+                % (
+                    k,
+                    ",".join(
+                        map(str, [identifiers_list.index(i) for i in v.identifiers])
+                    ),
+                )
+                for k, v in wavelengths.items()
+            ),
+        )
 
     # also only work correctly with one panel (for the moment)
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
@@ -604,15 +611,18 @@ def export_mtz(
             expids_in_table[id_]
         )  # get strid and use to find loc in list
         experiment = experiment_list[loc]
+        identifier = experiment.identifier
+
         if len(wavelengths) > 1:
-            for i, (wl, exps) in enumerate(wavelengths.items()):
-                if loc in exps:
-                    wavelength = wl
+            for i, wl in enumerate(wavelengths.values()):
+                if identifier in wl.identifiers:
+                    wavelength = wl.weighted_mean
                     dataset_id = i + 1
                     break
         else:
-            wavelength = list(wavelengths.keys())[0]
+            wavelength = list(wavelengths.values())[0].weighted_mean
             dataset_id = 1
+        print(wavelength)
         reflections = reflection_table.select(reflection_table["id"] == id_)
         batch_offset = batch_offsets[loc]
         image_range = image_ranges[loc]
@@ -653,8 +663,8 @@ def export_mtz(
     # For multi-wave unmerged mtz, we add an empty dataset for each wavelength,
     # but only write the data into the final dataset (for unmerged the batches
     # link the unmerged data to the individual wavelengths).
-    for wavelength in wavelengths:
-        mtz_writer.add_empty_dataset(wavelength)
+    for wavelength in wavelengths.values():
+        mtz_writer.add_empty_dataset(wavelength.weighted_mean)
 
     # Combine all of the experiment data columns before writing
     combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
@@ -679,17 +689,49 @@ def export_mtz(
     return mtz_file
 
 
+from dataclasses import dataclass, field
+
+
+@dataclass
+class WavelengthGroup:
+    min_wl: float
+    max_possible: float
+    identifiers: list[str] = field(default_factory=list)
+    exp_nos: list[int] = field(default_factory=list)
+    wavelengths: list[float] = field(default_factory=list)
+    weighted_mean: float = 0
+
+    def add_experiment(self, identifier: str, loc_in_list: int, wl: float) -> None:
+        self.identifiers.append(identifier)
+        self.exp_nos.append(loc_in_list)
+        self.wavelengths.append(wl)
+
+    def calculate_weighted_mean(
+        self, reflection_tables: List[flex.reflection_table]
+    ) -> None:
+        n, nw = (0, 0)
+        for i, w in zip(self.identifiers, self.wavelengths):
+            for table in reflection_tables:
+                n_this = table.select_on_experiment_identifiers([i]).size()
+                if n_this:
+                    n += n_this
+                    nw += n_this * w
+                    break
+        if n:
+            self.weighted_mean = nw / n
+
+
 def match_wavelengths(experiments, absolute_tolerance=1e-4):
-    """Create a dictionary matching wavelength to experiments (index in list)"""
     wavelengths = {}
     for i, x in enumerate(experiments):
         w = x.beam.get_wavelength()
         matches = [isclose(w, k, abs_tol=absolute_tolerance) for k in wavelengths]
         if not any(matches):
-            wavelengths[w] = [i]
+            wavelengths[w] = WavelengthGroup(w, w + absolute_tolerance)
+            wavelengths[w].add_experiment(x.identifier, i, w)
         else:
             match_w = list(wavelengths.keys())[matches.index(True)]
-            wavelengths[match_w].append(i)
+            wavelengths[match_w].add_experiment(x.identifier, i, w)
     return wavelengths
 
 

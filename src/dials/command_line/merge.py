@@ -180,10 +180,14 @@ def merge_data_to_mtz(
         experiments,
         absolute_tolerance=params.wavelength_tolerance,
     )  # wavelengths is an ordered dict
+    for wl in wavelengths.values():
+        wl.calculate_weighted_mean(reflections)
 
     mtz_datasets = [
-        MTZDataClass(wavelength=w, project_name=params.output.project_name)
-        for w in wavelengths.keys()
+        MTZDataClass(
+            wavelength=wlg.weighted_mean, project_name=params.output.project_name
+        )
+        for wlg in wavelengths.values()
     ]
     dataset_names = params.output.dataset_names
     crystal_names = params.output.crystal_names
@@ -207,11 +211,17 @@ def merge_data_to_mtz(
         expt.crystal.unit_cell = best_unit_cell
 
     if len(wavelengths) > 1:
+        identifiers_list = list(experiments.identifiers())
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
                 "  Wavlength: %.5f, experiment numbers: %s "
-                % (k, ",".join(map(str, v)))
+                % (
+                    k,
+                    ",".join(
+                        map(str, [identifiers_list.index(i) for i in v.identifiers])
+                    ),
+                )
                 for k, v in wavelengths.items()
             ),
         )
@@ -230,14 +240,16 @@ def merge_data_to_mtz(
         for dataset, dname, cname in zip(mtz_datasets, dataset_names, crystal_names):
             dataset.dataset_name = dname
             dataset.crystal_name = cname
-        for exp_nos in wavelengths.values():
-            expids = [experiments[i].identifier for i in exp_nos]
+        for wlg in wavelengths.values():
             experiments_subsets.append(
-                ExperimentList([experiments[i] for i in exp_nos])
+                ExperimentList([experiments[i] for i in wlg.exp_nos])
             )
             reflections_subsets.append(
                 flex.reflection_table.concat(
-                    [r.select_on_experiment_identifiers(expids) for r in reflections]
+                    [
+                        r.select_on_experiment_identifiers(wlg.identifiers)
+                        for r in reflections
+                    ]
                 )
             )
     else:
