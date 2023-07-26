@@ -1,1 +1,1 @@
-Revert imageset slicing operations to use 0-based indices.
+Imageset slicing now uses 0-based indices. Previously, the slice had to be accessed with the original image indices.
