@@ -134,6 +134,31 @@ def test_can_import_multiple_sequences(dials_data, tmp_path):
         assert experiment.identifier != ""
 
 
+def test_invert_axis_with_two_sequences_sharing_a_goniometer(dials_data, tmp_path):
+    # Test for regression of https://github.com/dials/dials/issues/2467
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+    del image_files[4]  # Delete filename to force two sequences
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=experiments_multiple_sequences.expt",
+            "invert_rotation_axis=True",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "experiments_multiple_sequences.expt").is_file()
+
+    experiments = load.experiment_list(tmp_path / "experiments_multiple_sequences.expt")
+    assert len(experiments.goniometers()) == 1
+    assert experiments.goniometers()[0].get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+
 def test_with_mask(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
