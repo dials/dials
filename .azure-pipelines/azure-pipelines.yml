@@ -77,7 +77,7 @@ stages:
       vmImage: ubuntu-20.04
     strategy:
       matrix:
-        python${{ replace(variables.PYTHON_MINIMUM_VERSION, ".", "") }}:
+        python${{ replace(variables.PYTHON_MINIMUM_VERSION, '.', '') }}:
           PYTHON_VERSION: ${{ variables.PYTHON_MINIMUM_VERSION }}
     timeoutInMinutes: 150
     steps:
@@ -96,7 +96,7 @@ stages:
       vmImage: ubuntu-20.04
     strategy:
       matrix:
-        python${{ replace(variables.PYTHON_TESTING_VERSION, ".", "") }}:
+        python${{ replace(variables.PYTHON_TESTING_VERSION, '.', '') }}:
           PYTHON_VERSION: ${{ variables.PYTHON_TESTING_VERSION }}
     timeoutInMinutes: 150
     steps:
@@ -110,7 +110,7 @@ stages:
       vmImage: macOS-latest
     strategy:
       matrix:
-        python${{ replace(variables.PYTHON_TESTING_VERSION, ".", "") }}:
+        python${{ replace(variables.PYTHON_TESTING_VERSION, '.', '') }}:
           PYTHON_VERSION: ${{ variables.PYTHON_TESTING_VERSION }}
     timeoutInMinutes: 150
     steps:
