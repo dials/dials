@@ -81,7 +81,7 @@ def dials_regression():
     Skip the test if dials_regression is not installed."""
 
     if "DIALS_REGRESSION" in os.environ:
-        return os.environ["DIALS_REGRESSION"]
+        return os.environ["DIALS_REGRESSION"].rstrip("/")
 
     try:
         import dials_regression as dr
