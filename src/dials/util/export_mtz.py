@@ -622,7 +622,7 @@ def export_mtz(
         else:
             wavelength = list(wavelengths.values())[0].weighted_mean
             dataset_id = 1
-        print(wavelength)
+
         reflections = reflection_table.select(reflection_table["id"] == id_)
         batch_offset = batch_offsets[loc]
         image_range = image_ranges[loc]
@@ -712,7 +712,10 @@ class WavelengthGroup:
         n, nw = (0, 0)
         for i, w in zip(self.identifiers, self.wavelengths):
             for table in reflection_tables:
-                n_this = table.select_on_experiment_identifiers([i]).size()
+                refls = table.select_on_experiment_identifiers([i])
+                n_this = refls.select(
+                    refls.get_flags(refls.flags.integrated, all=False)
+                ).size()
                 if n_this:
                     n += n_this
                     nw += n_this * w
