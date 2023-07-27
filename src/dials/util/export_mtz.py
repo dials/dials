@@ -540,12 +540,12 @@ def export_mtz(
             "\n".join(
                 "  Wavlength: %.5f, experiment numbers: %s "
                 % (
-                    k,
+                    v.weighted_mean,
                     ",".join(
                         map(str, [identifiers_list.index(i) for i in v.identifiers])
                     ),
                 )
-                for k, v in wavelengths.items()
+                for v in wavelengths.values()
             ),
         )
 
