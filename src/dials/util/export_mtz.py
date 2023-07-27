@@ -693,7 +693,7 @@ def export_mtz(
 @dataclass
 class WavelengthGroup:
     min_wl: float
-    max_possible: float
+    max_possible_wl: float
     identifiers: list[str] = field(default_factory=list)
     exp_nos: list[int] = field(default_factory=list)
     wavelengths: list[float] = field(default_factory=list)
