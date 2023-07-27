@@ -1175,7 +1175,9 @@ def _get_base_python():
 
 def _get_cmake_exe():
     if os.name == "nt":
-        return os.path.abspath(os.path.join("conda_base", "cmake.exe"))
+        return os.path.abspath(
+            os.path.join("conda_base", "Library", "bin", "cmake.exe")
+        )
     else:
         return os.path.abspath(os.path.join("conda_base", "bin", "cmake"))
 
