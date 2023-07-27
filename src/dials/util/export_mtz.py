@@ -4,6 +4,7 @@ import logging
 import time
 from collections import Counter
 from copy import deepcopy
+from dataclasses import dataclass, field
 from math import isclose
 from typing import List, Optional
 
@@ -687,9 +688,6 @@ def export_mtz(
     mtz_file.write(filename)
 
     return mtz_file
-
-
-from dataclasses import dataclass, field
 
 
 @dataclass
