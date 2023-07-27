@@ -33,6 +33,12 @@ try:  # Python 3
 except ImportError:  # Python 2
     from urllib2 import HTTPError, Request, URLError, urlopen
 
+try:
+    # On windows, sometimes the python install is missing certificates
+    import certifi  # noqa: F401
+except ImportError:
+    pass
+
 # Clean environment for subprocesses
 clean_env = {
     key: value
@@ -1169,9 +1175,9 @@ def _get_base_python():
 
 def _get_cmake_exe():
     if os.name == "nt":
-        return os.path.join("..", "conda_base", "cmake.exe")
+        return os.path.abspath(os.path.join("conda_base", "cmake.exe"))
     else:
-        return os.path.join("..", "conda_base", "bin", "cmake")
+        return os.path.abspath(os.path.join("conda_base", "bin", "cmake"))
 
 
 def refresh_build_cmake():
