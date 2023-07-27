@@ -1318,7 +1318,10 @@ def make_build(prebuilt_cctbx):
 
 def make_build_cmake():
     cmake_exe = _get_cmake_exe()
-    run_indirect_command(cmake_exe, ["--build", "."])
+    if os.name == "nt":
+        run_indirect_command(cmake_exe, ["--build", ".", "--config", "RelWithDebInfo"])
+    else:
+        run_indirect_command(cmake_exe, ["--build", "."])
 
 
 def repository_at_tag(string):
