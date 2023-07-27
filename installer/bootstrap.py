@@ -55,7 +55,7 @@ def make_executable(filepath):
         os.chmod(filepath, mode)
 
 
-def install_micromamba(python, include_cctbx):
+def install_micromamba(python, include_cctbx, cmake):
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
@@ -136,10 +136,13 @@ def install_micromamba(python, include_cctbx):
         "--channel",
         "conda-forge",
         "--override-channels",
+        "mamba",
         python_requirement,
     ]
-    if include_cctbx:
+    if include_cctbx or cmake:
         command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
+    if cmake:
+        command_list.extend(["pycbf", "cmake"])
 
     print(
         "{text} dials environment from {filename} with Python {python}".format(
@@ -222,7 +225,7 @@ def install_miniconda(location):
     run_command(command=command, workdir=".")
 
 
-def install_conda(python, include_cctbx):
+def install_conda(python, include_cctbx, cmake):
     # Find relevant conda base installation
     conda_base = os.path.realpath("miniconda")
     if os.name == "nt":
@@ -331,8 +334,10 @@ environments exist and are working.
         "--override-channels",
         python_requirement,
     ]
-    if include_cctbx:
+    if include_cctbx or cmake:
         command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
+    if cmake:
+        command_list.extend(["pycbf", "cmake"])
     if os.name == "nt":
         command_list = [
             "cmd.exe",
@@ -995,31 +1000,42 @@ def update_sources(options):
         except OSError:
             pass
 
-    repositories = {
-        source.split("/")[1]: {"base-repository": source, "branch-local": branch}
-        for source, branch in (
-            ("cctbx/annlib_adaptbx", "master"),
-            ("cctbx/cctbx_project", "master"),
-            ("cctbx/dxtbx", "main"),
-            ("dials/annlib", "master"),
-            ("dials/cbflib", "main"),
-            ("dials/ccp4io", "master"),
-            ("dials/ccp4io_adaptbx", "master"),
-            ("dials/dials", "main"),
-            ("dials/gui_resources", "master"),
-            ("xia2/xia2", "main"),
-        )
-    }
-    if options.prebuilt_cctbx:
-        repositories["cctbx_project"]["branch-local"] = (
-            "releases/" + _prebuilt_cctbx_base
-        )
+    if not options.cmake:
+        repositories = {
+            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            for source, branch in (
+                ("cctbx/annlib_adaptbx", "master"),
+                ("cctbx/cctbx_project", "master"),
+                ("cctbx/dxtbx", "main"),
+                ("dials/annlib", "master"),
+                ("dials/cbflib", "main"),
+                ("dials/ccp4io", "master"),
+                ("dials/ccp4io_adaptbx", "master"),
+                ("dials/dials", "main"),
+                ("dials/gui_resources", "master"),
+                ("xia2/xia2", "main"),
+            )
+        }
+        if options.prebuilt_cctbx:
+            repositories["cctbx_project"]["branch-local"] = (
+                "releases/" + _prebuilt_cctbx_base
+            )
+        else:
+            repositories["cctbx_project"] = {
+                "base-repository": "cctbx/cctbx_project",
+                "effective-repository": "dials/cctbx",
+                "branch-remote": "master",
+                "branch-local": "stable",
+            }
     else:
-        repositories["cctbx_project"] = {
-            "base-repository": "cctbx/cctbx_project",
-            "effective-repository": "dials/cctbx",
-            "branch-remote": "master",
-            "branch-local": "stable",
+        # Only what we need for CMake
+        repositories = {
+            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            for source, branch in (
+                ("cctbx/dxtbx", "main"),
+                ("dials/dials", "main"),
+                ("xia2/xia2", "main"),
+            )
         }
 
     for source, setting in options.branch:
@@ -1118,15 +1134,28 @@ def refresh_build(prebuilt_cctbx):
     )
 
 
-def install_precommit():
+def install_precommit(cmake=False):
     print("Installing precommits")
-    run_indirect_command(
-        os.path.join("bin", "libtbx.precommit"),
-        args=["install"],
-    )
+    if cmake:
+        # Just find all repository directories under modules, since we
+        # don't have a central registry
+        subdirs = []
+        for sub in os.listdir("modules"):
+            if os.path.isdir(os.path.join("modules", sub, ".git")):
+                subdirs.append(os.path.join("..", "modules", sub))
+
+        run_indirect_command(
+            os.path.join("..", "conda_base", "bin", "libtbx.precommit"),
+            args=["install"] + subdirs,
+        )
+    else:
+        run_indirect_command(
+            os.path.join("bin", "libtbx.precommit"),
+            args=["install"],
+        )
 
 
-def configure_build(config_flags, prebuilt_cctbx):
+def _get_base_python():
     if os.name == "nt":
         conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
     elif sys.platform.startswith("darwin"):
@@ -1135,6 +1164,68 @@ def configure_build(config_flags, prebuilt_cctbx):
         )
     else:
         conda_python = os.path.join("..", "conda_base", "bin", "python")
+    return conda_python
+
+
+def _get_cmake_exe():
+    if os.name == "nt":
+        return os.path.join("..", "conda_base", "cmake.exe")
+    else:
+        return os.path.join("..", "conda_base", "bin", "cmake")
+
+
+def refresh_build_cmake():
+    conda_python = _get_base_python()
+    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dxtbx"])
+    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dials"])
+    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/xia2"])
+
+
+def configure_build_cmake():
+    cmake_exe = _get_cmake_exe()
+    # write a new-style environment setup script
+    with open(("dials.bat" if os.name == "nt" else "dials"), "w") as f:
+        f.write(
+            """\
+export DIALS_DIST_ROOT={dist_root}
+export PYTHONPATH={build_lib}
+
+# enable conda environment
+source {dist_root}/conda_base/etc/profile.d/conda.sh
+conda activate {dist_root}/conda_base
+""".format(
+                dist_root=os.getcwd(),
+                build_lib=os.path.join(os.getcwd(), "build", "lib"),
+            )
+        )
+
+    # Write a compound CMakeLists.txt, if one doesn't exist
+    if not os.path.isfile("modules/CMakeLists.txt"):
+        with open("modules/CMakeLists.txt", "w") as f:
+            f.write(
+                """\
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+project(dials)
+
+add_subdirectory(dxtbx)
+add_subdirectory(dials)
+"""
+            )
+
+    # run_indirect runs inside the build folder with an activated environment
+    conda_base_root = os.path.join(os.path.abspath("."), "conda_base")
+    assert os.path.isdir(conda_base_root)
+    run_indirect_command(
+        cmake_exe,
+        [
+            "../modules",
+            "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
+        ],
+    )
+
+
+def configure_build(config_flags, prebuilt_cctbx):
+    conda_python = _get_base_python()
 
     # write a new-style environment setup script
     with open(("dials.bat" if os.name == "nt" else "dials"), "w"):
@@ -1197,6 +1288,11 @@ def make_build(prebuilt_cctbx):
     if not prebuilt_cctbx:
         # run build again to make sure everything is built
         run_indirect_command(command, args=["-j", str(nproc)])
+
+
+def make_build_cmake():
+    cmake_exe = _get_cmake_exe()
+    run_indirect_command(cmake_exe, ["--build", "."])
 
 
 def repository_at_tag(string):
@@ -1304,6 +1400,11 @@ be passed separately with quotes to avoid confusion (e.g
         default=False,
         action="store_true",
     )
+    parser.add_argument(
+        "--cmake",
+        help="Use the CMake build system. Implies --prebuilt-cctbx.",
+        action="store_true",
+    )
 
     options = parser.parse_args()
 
@@ -1316,20 +1417,33 @@ be passed separately with quotes to avoid confusion (e.g
     # Build base packages
     if "base" in options.actions:
         if options.conda:
-            install_conda(options.python, include_cctbx=options.prebuilt_cctbx)
+            install_conda(
+                options.python,
+                include_cctbx=options.prebuilt_cctbx,
+                cmake=options.cmake,
+            )
             if options.clean:
                 shutil.rmtree(os.path.realpath("miniconda"))
         else:
-            install_micromamba(options.python, include_cctbx=options.prebuilt_cctbx)
+            install_micromamba(
+                options.python,
+                include_cctbx=options.prebuilt_cctbx,
+                cmake=options.cmake,
+            )
             if options.clean:
                 shutil.rmtree(os.path.realpath("micromamba"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:
-        configure_build(options.config_flags, prebuilt_cctbx=options.prebuilt_cctbx)
-        make_build(prebuilt_cctbx=options.prebuilt_cctbx)
-        refresh_build(prebuilt_cctbx=options.prebuilt_cctbx)
-        install_precommit()
+        if options.cmake:
+            refresh_build_cmake()
+            configure_build_cmake()
+            make_build_cmake()
+        else:
+            configure_build(options.config_flags, prebuilt_cctbx=options.prebuilt_cctbx)
+            make_build(prebuilt_cctbx=options.prebuilt_cctbx)
+            refresh_build(prebuilt_cctbx=options.prebuilt_cctbx)
+        install_precommit(options.cmake)
 
     # Tests, tests
     if "test" in options.actions:
