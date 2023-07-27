@@ -1160,11 +1160,11 @@ def _get_base_python():
         conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
     elif sys.platform.startswith("darwin"):
         conda_python = os.path.join(
-            "..", "conda_base", "python.app", "Contents", "MacOS", "python"
+            "conda_base", "python.app", "Contents", "MacOS", "python"
         )
     else:
-        conda_python = os.path.join("..", "conda_base", "bin", "python")
-    return conda_python
+        conda_python = os.path.join("conda_base", "bin", "python")
+    return os.path.abspath(conda_python)
 
 
 def _get_cmake_exe():
@@ -1183,13 +1183,31 @@ def refresh_build_cmake():
 
 def configure_build_cmake():
     cmake_exe = _get_cmake_exe()
+    python_exe = _get_base_python()
+
+    # Get the location of site-packages
+    site_path = subprocess.check_output(
+        [
+            python_exe,
+            "-c",
+            "import os, site; print(os.path.abspath(site.getsitepackages()[0]))",
+        ]
+    ).strip()
+    if not isinstance(site_path, str):
+        site_path = site_path.decode()
+
+    # Write a .pth file here pointing to the build/lib folder. This
+    # is a somewhat "clever" convenience such that the PYTHONPATH doesn't
+    # need to be explicitly set before running code.
+    lib_pth = os.path.join(site_path, "__bootstrap__.dials.pth")
+    print("Writing libdir .pth file to: " + lib_pth)
+    with open(lib_pth, "w") as f:
+        f.write(os.path.join(os.getcwd(), "build", "lib"))
+
     # write a new-style environment setup script
     with open(("dials.bat" if os.name == "nt" else "dials"), "w") as f:
         f.write(
             """\
-export DIALS_DIST_ROOT={dist_root}
-export PYTHONPATH={build_lib}
-
 # enable conda environment
 source {dist_root}/conda_base/etc/profile.d/conda.sh
 conda activate {dist_root}/conda_base
