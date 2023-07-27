@@ -811,6 +811,9 @@ class SpotFinder:
 
             logger.info("\nFinding spots in image %s to %s...", j0, j1)
             j0 -= 1
+            if isinstance(imageset, ImageSequence):
+                j0 -= imageset.get_array_range()[0]
+                j1 -= imageset.get_array_range()[0]
             if len(imageset) == 1:
                 r, h = extract_spots(imageset)
             else:

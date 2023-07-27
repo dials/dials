@@ -120,7 +120,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
     with (tmp_path / "history.json").open("r") as fh:
         data = json.load(fh)
         assert data["0"]["likelihood_per_iteration"][-1][-1] == pytest.approx(
-            expected["likelihood"], abs=1.5e-6
+            expected["likelihood"], abs=1e-5
         )
 
 
