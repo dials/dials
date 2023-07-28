@@ -1241,12 +1241,16 @@ add_subdirectory(dials)
     # run_indirect runs inside the build folder with an activated environment
     conda_base_root = os.path.join(os.path.abspath("."), "conda_base")
     assert os.path.isdir(conda_base_root)
+    extra_args = []
+    if os.name == "nt":
+        extra_args.append("-DPython_ROOT_DIR=" + conda_base_root)
     run_indirect_command(
         cmake_exe,
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
-        ],
+        ]
+        + extra_args,
     )
 
 
