@@ -1229,17 +1229,26 @@ def configure_build_cmake():
         f.write(build_lib_dir)
 
     # write a new-style environment setup script
-    with open(("dials.bat" if os.name == "nt" else "dials"), "w") as f:
-        f.write(
-            """\
+    if os.name == "nt":
+        with open("dials.bat", "w") as f:
+            f.write(
+                """\
+rem enable conda environment
+call %~dp0conda_base\\condabin\\activate.bat
+"""
+            )
+    else:
+        with open("dials", "w") as f:
+            f.write(
+                """\
 # enable conda environment
 source {dist_root}/conda_base/etc/profile.d/conda.sh
 conda activate {dist_root}/conda_base
 """.format(
-                dist_root=os.getcwd(),
-                build_lib=os.path.join(os.getcwd(), "build", "lib"),
+                    dist_root=os.getcwd(),
+                    build_lib=os.path.join(os.getcwd(), "build", "lib"),
+                )
             )
-        )
 
     # Write a compound CMakeLists.txt, if one doesn't exist
     if not os.path.isfile("modules/CMakeLists.txt"):
