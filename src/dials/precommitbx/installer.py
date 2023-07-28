@@ -171,6 +171,21 @@ def _version_check(package, version, minimum):
 
 
 def main():
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print(
+            """Usage: libtbx.precommit [-h|--help] [install] [TARGET [TARGET ...]]
+
+Installs pre-commit into any development repositories known by libtbx.
+Pass "install" to actually do the installation; otherwise, will only
+list what would be done.
+
+Arguments:
+
+    TARGET      Add extra candidates, beyond those known by cctbx.
+"""
+        )
+        sys.exit(0)
+
     install_things = "install" in sys.argv
 
     install_precommit = False
