@@ -149,6 +149,9 @@ def install_micromamba(python, include_cctbx, cmake):
         command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
         command_list.extend(["pycbf", "cmake"])
+    if os.name == "nt":
+        # Installing pre-commit via precommittbx does not work on windows
+        command_list.append("pre-commit")
 
     print(
         "{text} dials environment from {filename} with Python {python}".format(
