@@ -1,22 +1,11 @@
 from __future__ import annotations
 
-# import copy
 import logging
 
-# import math
-# import operator
-#
 import iotbx.phil
-
-# from cctbx import miller
 from dxtbx.model import Crystal
-
-# from dials.array_family import flex
 from xfel.small_cell.small_cell import small_cell_index_lattice_detail
 
-# from scitbx import matrix
-# from scitbx.math import least_squares_plane, superpose
-#
 from dials.algorithms.indexing import DialsIndexError
 
 from .strategy import Strategy
