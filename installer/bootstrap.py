@@ -1236,8 +1236,10 @@ def configure_build_cmake():
                 """\
 rem enable conda environment
 call {}
+conda activate {}
 """.format(
-                    activate
+                    activate,
+                    os.path.join(os.getcwd(), "conda_base"),
                 )
             )
     else:
