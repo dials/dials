@@ -195,7 +195,7 @@ def test_fast_mcd_small():
     assert approx_equal(fast_mcd._finite_samp_fac, 1.12792118859)
 
 
-def test_fast_mcd_large(dials_regression):
+def test_fast_mcd_large(dials_data):
     # set random seeds to try to avoid assertion errors due to occasionally
     # finding less common solutions
     import random
@@ -208,10 +208,8 @@ def test_fast_mcd_large(dials_regression):
     flex.set_random_seed(42)
 
     # test large dataset algorithm
-    import os
-
-    data_pth = os.path.join(
-        dials_regression, "refinement_test_data", "outlier_rejection", "residuals.dat"
+    data_pth = (
+        dials_data("refinement_test_data", pathlib=True) / "residuals-with-outliers.dat"
     )
 
     with open(data_pth) as f:

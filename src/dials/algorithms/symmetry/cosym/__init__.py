@@ -21,7 +21,6 @@ from cctbx import miller, sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from scitbx import matrix
-from scitbx.array_family import flex
 
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -854,14 +853,25 @@ class ScoreSubGroup:
         }
 
 
-def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.array:
+def extract_reference_intensities(
+    params: iotbx.phil.scope_extract, wavelength: float
+) -> miller.array:
     # Extract/calculate a set of intensities from a reference.
     if params.d_min not in {Auto, None}:
         reference_intensities = intensities_from_reference_file(
-            params.reference, d_min=params.d_min
+            params.reference,
+            d_min=params.d_min,
+            wavelength=wavelength,
+            k_sol=params.reference_model.k_sol,
+            b_sol=params.reference_model.b_sol,
         )
     else:
-        reference_intensities = intensities_from_reference_file(params.reference)
+        reference_intensities = intensities_from_reference_file(
+            params.reference,
+            wavelength=wavelength,
+            k_sol=params.reference_model.k_sol,
+            b_sol=params.reference_model.b_sol,
+        )
     initial_space_group_info = reference_intensities.space_group_info()
     group = metric_subgroups(
         reference_intensities.crystal_symmetry(),
@@ -883,5 +893,5 @@ def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.ar
         .array()
     )
     if not reference_intensities.sigmas():
-        reference_intensities.set_sigmas(flex.double(reference_intensities.size(), 1))
+        reference_intensities.set_sigmas(reference_intensities.data() ** 0.5)
     return reference_intensities, initial_space_group_info

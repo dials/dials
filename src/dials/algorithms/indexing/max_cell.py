@@ -54,14 +54,17 @@ def find_max_cell(
             % len(reflections)
         )
 
-    NN = NeighborAnalysis(
-        reflections,
-        step_size=step_size,
-        max_height_fraction=max_height_fraction,
-        tolerance=max_cell_multiplier,
-        percentile=nearest_neighbor_percentile,
-        histogram_binning=histogram_binning,
-        nn_per_bin=nn_per_bin,
-    )
+    try:
+        NN = NeighborAnalysis(
+            reflections,
+            step_size=step_size,
+            max_height_fraction=max_height_fraction,
+            tolerance=max_cell_multiplier,
+            percentile=nearest_neighbor_percentile,
+            histogram_binning=histogram_binning,
+            nn_per_bin=nn_per_bin,
+        )
+    except AssertionError as e:
+        raise DialsIndexError("Failure in nearest neighbour analysis:\n" + str(e))
 
     return NN

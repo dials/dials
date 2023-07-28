@@ -20,8 +20,10 @@ from __future__ import annotations
 import copy
 import logging
 import sys
+from collections import namedtuple
 
 import libtbx.phil
+from dxtbx.model.experiment_list import ExperimentList
 from libtbx import Auto
 
 import dials.util
@@ -89,6 +91,11 @@ phil_scope = libtbx.phil.parse(
   n_static_macrocycles = 1
     .type = int(value_min=1)
     .help = "Number of macro-cycles of static refinement to perform"
+
+  separate_independent_sets = True
+    .type = bool
+    .help = "If true, the experiment list will be separated into independent groups"
+            "that do not share models, and these groups will be refined separately."
 
   include scope dials.algorithms.refinement.refiner.phil_scope
 """,
@@ -190,12 +197,9 @@ def run_macrocycle(params, reflections, experiments):
     """
     # Get the refiner
     logger.info("Configuring refiner")
-    try:
-        refiner = RefinerFactory.from_parameters_data_experiments(
-            params, reflections, experiments
-        )
-    except DialsRefineConfigError as e:
-        sys.exit(str(e))
+    refiner = RefinerFactory.from_parameters_data_experiments(
+        params, reflections, experiments
+    )
 
     # Refine the geometry
     nexp = len(experiments)
@@ -205,10 +209,7 @@ def run_macrocycle(params, reflections, experiments):
         logger.info(f"Performing refinement of {nexp} Experiments...")
 
     # Refine and get the refinement history
-    try:
-        history = refiner.run()
-    except DialsRefineRuntimeError as e:
-        sys.exit(str(e))
+    history = refiner.run()
 
     # Update predictions for all indexed reflections
     logger.info("Updating predictions for indexed reflections")
@@ -255,6 +256,71 @@ def run_macrocycle(params, reflections, experiments):
     return refiner, reflections, history
 
 
+def _find_disjoint_sets(experiments):
+
+    # Extract parameterisable models from the experiments
+    models = []
+    for experiment in experiments:
+        models.append(
+            [
+                m
+                for m in [
+                    experiment.beam,
+                    experiment.crystal,
+                    experiment.detector,
+                    experiment.goniometer,
+                ]
+                if m is not None
+            ]
+        )
+
+    # Record first set of models
+    sets = [set(models[0])]
+    ids = [
+        [0],
+    ]
+
+    # Go through all other models, matching to previous sets
+    for i, m in enumerate(models[1:]):
+        new_set = set(m)
+        disj = [new_set.isdisjoint(s) for s in sets]
+        if all(disj):
+            # no shared models, so form a new set
+            sets.append(new_set)
+            ids.append([i + 1])
+        else:
+            # models shared with at least one existing set
+            for j, d in enumerate(disj):
+                if d:
+                    continue
+                sets[j].update(new_set)
+                ids[j].append(i + 1)
+
+    # Now combine lists in ids if any are not unique (https://stackoverflow.com/a/4842897)
+    accepted = []
+    while len(ids) > 0:
+        first, *rest = ids
+        first = set(first)
+
+        lf = -1
+        while len(first) > lf:
+            lf = len(first)
+
+            rest2 = []
+            for r in rest:
+                if len(first.intersection(set(r))) > 0:
+                    first |= set(r)
+                else:
+                    rest2.append(r)
+            rest = rest2
+
+        accepted.append(first)
+        ids = rest
+    accepted = [sorted(s) for s in accepted]
+
+    return accepted
+
+
 def run_dials_refine(experiments, reflections, params):
     """Functional interface to tasks performed by the program dials.refine.
 
@@ -278,6 +344,31 @@ def run_dials_refine(experiments, reflections, params):
 
     """
 
+    # Warn about potentially unhelpful options
+    if params.refinement.mp.nproc > 1:
+        logger.warning(
+            "Setting nproc > 1 is only helpful in rare "
+            "circumstances. It is not recommended for typical data processing "
+            "tasks."
+        )
+
+    if params.refinement.parameterisation.scan_varying is not False:
+        # duplicate crystal if necessary for scan varying - will need
+        # to compare the scans with crystals - if not 1:1 will need to
+        # split the crystals
+
+        crystal_has_scan = {}
+        for j, e in enumerate(experiments):
+            if e.crystal in crystal_has_scan:
+                if e.scan is not crystal_has_scan[e.crystal]:
+                    logger.info(
+                        "Duplicating crystal model for scan-varying refinement of experiment %d",
+                        j,
+                    )
+                    e.crystal = copy.deepcopy(e.crystal)
+            else:
+                crystal_has_scan[e.crystal] = e.scan
+
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:
         params.refinement.refinery.journal.track_parameter_correlation = True
@@ -291,24 +382,161 @@ def run_dials_refine(experiments, reflections, params):
     # Similarly, keep track of sparse to reset that for scan-varying macrocycle
     sparse = params.refinement.parameterisation.sparse
 
-    if params.n_static_macrocycles == 1:
-        refiner, reflections, history = run_macrocycle(params, reflections, experiments)
-        experiments = refiner.get_experiments()
+    # Look for disjoint sets of experiments
+    disjoint_sets = _find_disjoint_sets(experiments)
+
+    # Look for "hidden" links between experiments from constraints or restraints
+    bp = params.refinement.parameterisation.beam
+    ucp = params.refinement.parameterisation.crystal.unit_cell
+    op = params.refinement.parameterisation.crystal.orientation
+    dp = params.refinement.parameterisation.detector
+    gp = params.refinement.parameterisation.goniometer
+    crosslinks = any(
+        (
+            bp.constraints,
+            ucp.constraints,
+            ucp.restraints.tie_to_group,
+            op.constraints,
+            dp.constraints,
+            gp.constraints,
+        )
+    )
+
+    RefinementSet = namedtuple(
+        "RefinementSet", ["experiments", "reflections", "params", "original_ids"]
+    )
+    if len(disjoint_sets) == 1 or not params.separate_independent_sets:
+        # No splitting required, this is one interdependent refinement job
+        refinement_sets = [
+            RefinementSet(experiments, reflections, params, disjoint_sets[0])
+        ]
+    elif crosslinks:
+        # Refuse to split because there are restraints or constraints present
+        logger.warning(
+            "The experiments contain disjoint subsets that do not share models. "
+            "However, these will not be refined independently, because restraints "
+            "or constraints may link models between the subsets."
+        )
+        refinement_sets = [
+            RefinementSet(experiments, reflections, params, disjoint_sets[0])
+        ]
     else:
-        for i in range(params.n_static_macrocycles):
-            logger.info("\nStatic refinement macrocycle %s", i + 1)
+        # If outlier rejection is meant to be done across all experiments then
+        # do that once here
+        if not params.refinement.reflections.outlier.separate_experiments:
+            reflections = RefinerFactory.reflections_after_outlier_rejection(
+                params, reflections, experiments
+            )
+            params.refinement.reflections.outlier.algorithm = "null"
+
+        # Set large objects in params to None for copying
+        params.input.reflections = None
+        params.input.experiments = None
+
+        # Split into independent refinement jobs
+        refinement_sets = []
+        for ids in disjoint_sets:
+            el = ExperimentList()
+            for i in ids:
+                el.append(experiments[i])
+
+            refl = flex.reflection_table()
+            new_id = 0
+            for i in ids:
+                refl_one_experiment = reflections.select(reflections["id"] == i)
+                refl_one_experiment["id"] = flex.int(len(refl_one_experiment), new_id)
+                new_id += 1
+                refl.extend(refl_one_experiment)
+            refinement_sets.append(RefinementSet(el, refl, copy.deepcopy(params), ids))
+
+        # Report on independent refinement sets
+        logger.info(
+            "The experiments have been separated into independent groups that "
+            "do not share models.\nRefinement will occur separately for each group:"
+        )
+        header = ["Group", "Experiment ids"]
+        rows = []
+        for i, ids in enumerate(disjoint_sets):
+            rows.append([str(i), " ".join(str(e) for e in ids)])
+        logger.info(dials.util.tabulate(rows, header))
+
+    refinement_results = []
+    for rs in refinement_sets:
+        experiments = rs.experiments
+        reflections = rs.reflections
+        params = rs.params
+        if len(refinement_sets) > 1:
+            logger.info(
+                "\nSelected group of experiments to refine with original ids: "
+                + " ".join([str(i) for i in rs.original_ids])
+            )
+        if params.n_static_macrocycles == 1:
+            refiner, reflections, history = run_macrocycle(
+                params, reflections, experiments
+            )
+            experiments = refiner.get_experiments()
+        else:
+            for i in range(params.n_static_macrocycles):
+                logger.info("\nStatic refinement macrocycle %s", i + 1)
+                refiner, reflections, history = run_macrocycle(
+                    params, reflections, experiments
+                )
+                experiments = refiner.get_experiments()
+
+        # Scan-varying macrocycle, if appropriate
+        if scan_varying is Auto and refiner.experiment_type == "scans":
+            logger.info("\nScan-varying refinement")
+            params.refinement.parameterisation.scan_varying = True
+            params.refinement.parameterisation.sparse = sparse
             refiner, reflections, history = run_macrocycle(
                 params, reflections, experiments
             )
             experiments = refiner.get_experiments()
 
-    # Scan-varying macrocycle, if appropriate
-    if scan_varying is Auto and refiner.experiment_type == "scans":
-        logger.info("\nScan-varying refinement")
-        params.refinement.parameterisation.scan_varying = True
-        params.refinement.parameterisation.sparse = sparse
-        refiner, reflections, history = run_macrocycle(params, reflections, experiments)
-        experiments = refiner.get_experiments()
+        refinement_results.append((experiments, reflections, refiner, history))
+
+    if len(refinement_results) == 1:
+        experiments, reflections, refiner, history = refinement_results[0]
+    else:
+        # Rejoin results in the expected order of experiments
+        experiments = {}
+        reflections = flex.reflection_table()
+        table_headers = []
+        table_rows = {}
+        for (el, refl, refiner, _), ids in zip(refinement_results, disjoint_sets):
+            header, rows = refiner.calc_exp_rmsd_table()
+            id_col = flex.int(len(refl))
+            for new_id, orig_id in enumerate(ids):
+                experiments[orig_id] = el[new_id]
+                id_col.set_selected(refl["id"] == new_id, orig_id)
+                rows[new_id][0] = str(orig_id)
+                table_rows[orig_id] = rows[new_id]
+            refl["id"] = id_col
+            reflections.extend(refl)
+            table_headers.append(header)
+
+        experiments = ExperimentList([experiments[i] for i in range(len(experiments))])
+
+        logger.info(
+            "\nIndependently-refined groups of experiments have been recombined"
+        )
+
+        # There are multiple refiners and history objects. We don't have a way
+        # to combine these usefully, so return None to avoid misleading the
+        # caller that these are relevant for the full refinement
+        refiner = None
+        history = None
+
+        # Report on RMSD by experiments after joining
+        rows = [table_rows[i] for i in range(len(table_rows))]
+        header = table_headers[0]
+        if not (h == header for h in table_headers[1:]):
+            logger.warning(
+                "Cannot calculate RMSDs by experiment as units are inconsistent"
+            )
+        else:
+            logger.info("\nRMSDs by experiment:")
+            logger.info(dials.util.tabulate(rows, header))
 
     return experiments, reflections, refiner, history
 
@@ -379,35 +607,13 @@ def run(args=None, phil=working_phil):
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
-    # Warn about potentially unhelpful options
-    if params.refinement.mp.nproc > 1:
-        logger.warning(
-            "Setting nproc > 1 is only helpful in rare "
-            "circumstances. It is not recommended for typical data processing "
-            "tasks."
-        )
-
-    if params.refinement.parameterisation.scan_varying is not False:
-        # duplicate crystal if necessary for scan varying - will need
-        # to compare the scans with crystals - if not 1:1 will need to
-        # split the crystals
-
-        crystal_has_scan = {}
-        for j, e in enumerate(experiments):
-            if e.crystal in crystal_has_scan:
-                if e.scan is not crystal_has_scan[e.crystal]:
-                    logger.info(
-                        "Duplicating crystal model for scan-varying refinement of experiment %d",
-                        j,
-                    )
-                    e.crystal = copy.deepcopy(e.crystal)
-            else:
-                crystal_has_scan[e.crystal] = e.scan
-
     # Run refinement
-    experiments, reflections, refiner, history = run_dials_refine(
-        experiments, reflections, params
-    )
+    try:
+        experiments, reflections, refiner, history = run_dials_refine(
+            experiments, reflections, params
+        )
+    except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
+        sys.exit(str(e))
 
     # For the usual case of refinement of one crystal, print that model for information
     crystals = experiments.crystals()
@@ -418,8 +624,13 @@ def run(args=None, phil=working_phil):
 
     # Write table of centroids to file, if requested
     if params.output.centroids:
-        logger.info(f"Writing table of centroids to '{params.output.centroids}'")
-        write_centroids_table(refiner, params.output.centroids)
+        if not refiner:
+            logger.warning(
+                "Cannot write table of centroids as a single refiner object is not available"
+            )
+        else:
+            logger.info(f"Writing table of centroids to '{params.output.centroids}'")
+            write_centroids_table(refiner, params.output.centroids)
 
     # Write scan-varying parameters to file, if there were any
     if params.output.parameter_table:
@@ -428,6 +639,10 @@ def run(args=None, phil=working_phil):
             logger.info(
                 "Writing a scan-varying parameter table is only supported "
                 "for refinement of a single scan"
+            )
+        elif not refiner:
+            logger.warning(
+                "Cannot write scan-varying parameter table as a single refiner object is not available"
             )
         else:
             scan = scans[0]
@@ -447,20 +662,36 @@ def run(args=None, phil=working_phil):
 
     # Save matches to file for debugging
     if params.output.matches:
-        matches = refiner.get_matches()
-        logger.info(
-            "Saving matches (use for debugging purposes) to %s", params.output.matches
-        )
-        matches.as_file(params.output.matches)
+        if not refiner:
+            logger.warning(
+                "Cannot write matches to file as a single refiner object is not available"
+            )
+        else:
+            matches = refiner.get_matches()
+            logger.info(
+                "Saving matches (use for debugging purposes) to %s",
+                params.output.matches,
+            )
+            matches.as_file(params.output.matches)
 
     # Create correlation plots
     if params.output.correlation_plot.filename is not None:
-        create_correlation_plots(refiner, params.output)
+        if not refiner:
+            logger.warning(
+                "Cannot create correlation plots as a single refiner object is not available"
+            )
+        else:
+            create_correlation_plots(refiner, params.output)
 
     # Save refinement history
     if params.output.history:
-        logger.info(f"Saving refinement step history to {params.output.history}")
-        history.to_json_file(params.output.history)
+        if not history:
+            logger.warning(
+                "Cannot write refinement step history as a single history object is not available"
+            )
+        else:
+            logger.info(f"Saving refinement step history to {params.output.history}")
+            history.to_json_file(params.output.history)
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments

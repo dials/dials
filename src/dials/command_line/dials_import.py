@@ -7,6 +7,8 @@ import pickle
 import sys
 from collections import defaultdict, namedtuple
 
+from orderedset import OrderedSet
+
 import dxtbx.model.compare as compare
 import libtbx.phil
 from dxtbx.imageset import ImageGrid, ImageSequence
@@ -15,6 +17,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
@@ -293,6 +296,7 @@ class ReferenceGeometryUpdater:
         # Load reference geometry
         reference_detector = None
         reference_beam = None
+        reference_goniometer = None
         if params.input.reference_geometry is not None:
             from dxtbx.serialize import load
 
@@ -302,20 +306,23 @@ class ReferenceGeometryUpdater:
             )
             assert experiments, "Could not import reference geometry"
             assert len(experiments.detectors()) >= 1
-            assert len(experiments.beams()) >= 1
             if len(experiments.detectors()) > 1:
                 raise Sorry(
                     "The reference geometry file contains %d detector definitions, but only a single definition is allowed."
                     % len(experiments.detectors())
                 )
-            if len(experiments.beams()) > 1:
-                raise Sorry(
-                    "The reference geometry file contains %d beam definitions, but only a single definition is allowed."
-                    % len(experiments.beams())
-                )
             reference_detector = experiments.detectors()[0]
-            reference_beam = experiments.beams()[0]
-            reference_goniometer = experiments.goniometers()[0]
+            if self.params.input.use_beam_reference:
+                assert len(experiments.beams()) >= 1
+                if len(experiments.beams()) > 1:
+                    raise Sorry(
+                        "The reference geometry file contains %d beam definitions, but only a single definition is allowed."
+                        % len(experiments.beams())
+                    )
+                reference_beam = experiments.beams()[0]
+            if self.params.input.use_gonio_reference:
+                assert len(experiments.goniometers()) >= 1
+                reference_goniometer = experiments.goniometers()[0]
         Reference = namedtuple("Reference", ["detector", "beam", "goniometer"])
         return Reference(
             detector=reference_detector,
@@ -515,12 +522,12 @@ class MetaDataUpdater:
                     # that these are in people numbers (1...) and are inclusive
                     if self.params.geometry.scan.image_range:
                         user_start, user_end = self.params.geometry.scan.image_range
-                        offset = imageset.get_scan().get_array_range()[0]
                         start, end = user_start - 1, user_end
                     else:
                         start, end = imageset.get_scan().get_array_range()
-                        offset = 0
 
+                    # offset to get 0-based indexing into the imageset
+                    offset = imageset.get_scan().get_array_range()[0]
                     for j in range(start, end):
                         subset = imageset[j - offset : j - offset + 1]
                         experiments.append(
@@ -892,12 +899,27 @@ def do_import(
         num_images += len(e.imageset)
         counted_imagesets.append(e.imageset)
 
-    format_list = {str(e.imageset.get_format_class()) for e in experiments}
+    unique_formats = OrderedSet()
+    unique_templates = OrderedSet()
+    for imgset in counted_imagesets:
+        unique_formats.add(imgset.get_format_class())
+        if scan := imgset.get_scan():
+            start, end = scan.get_image_range()
+            unique_templates.add(f"{imgset.get_template()}:{start}:{end}")
+        else:
+            paths = imgset.reader().paths()
+            if len(paths) == 1:
+                unique_templates.add(paths[0])
+            else:
+                template, _ = template_regex_from_list(paths)
+                unique_templates.add(template)
 
     # Print out some bulk info
     logger.info("-" * 80)
-    for f in format_list:
-        logger.info("  format: %s", f)
+    for fmt in unique_formats:
+        logger.info("  format: %s", fmt)
+    for template in unique_templates:
+        logger.info("  template: %s", template)
     logger.info("  num images: %d", num_images)
     logger.info("  sequences:")
     logger.info("    still:    %d", num_still_sequences)

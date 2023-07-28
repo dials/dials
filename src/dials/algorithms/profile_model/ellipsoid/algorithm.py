@@ -18,11 +18,9 @@ from math import pi
 import numpy as np
 from numpy.linalg import inv, norm
 
-from dxtbx import flumpy
 from libtbx.phil import parse
-from scitbx import matrix
 
-from dials.algorithms.profile_model.ellipsoid import chisq_pdf
+from dials.algorithms.profile_model.ellipsoid import calc_s1_s2, chisq_pdf
 from dials.algorithms.profile_model.ellipsoid.model import ProfileModelFactory
 from dials.algorithms.profile_model.ellipsoid.parameterisation import ModelState
 from dials.algorithms.profile_model.ellipsoid.refiner import Refiner as ProfileRefiner
@@ -64,23 +62,7 @@ ellipsoid_algorithm_phil_scope = parse(
 
   debug {
     output {
-
-      strong_spots = False
-        .type = bool
-
       shoeboxes = False
-        .type = bool
-
-      profile_model = True
-        .type = bool
-
-      history = True
-        .type = bool
-
-      plots = False
-        .type = bool
-
-      print_shoeboxes = False
         .type = bool
     }
   }
@@ -102,9 +84,11 @@ include scope dials.algorithms.profile_model.ellipsoid.model.phil_scope
 def _compute_beam_vector(experiment, reflection_table):
     """Compute the obseved beam vector"""
     s1_obs = flex.vec3_double(len(reflection_table))
-    for i in range(len(s1_obs)):
-        x, y, _ = reflection_table["xyzobs.px.value"][i]
-        s1_obs[i] = experiment.detector[0].get_pixel_lab_coord((x, y))
+    for i, (panel_id, xyzobs) in enumerate(
+        zip(reflection_table["panel"], reflection_table["xyzobs.px.value"])
+    ):
+        x, y, _ = xyzobs
+        s1_obs[i] = experiment.detector[panel_id].get_pixel_lab_coord((x, y))
     return s1_obs
 
 
@@ -207,6 +191,8 @@ def initial_integrator(experiments, reflection_table):
         strong_refls["panel"], strong_refls["bbox"], allocate=True
     )
     strong_refls.extract_shoeboxes(experiment.imageset)
+    reflection_table.is_overloaded(experiments)
+    reflection_table.contains_invalid_pixels()
 
     _compute_mask(experiment, strong_refls, sigma_d, "s1_obs", strong_shoeboxes)
 
@@ -251,14 +237,22 @@ def final_integrator(
 
     # Select reflections within detector
     x0, x1, y0, y1, _, _ = reflection_table["bbox"].parts()
-    xsize, ysize = experiment.detector[0].get_image_size()
-    selection = (x1 > 0) & (y1 > 0) & (x0 < xsize) & (y0 < ysize)
-    reflection_table = reflection_table.select(selection)
+    sel = flex.bool(reflection_table.size(), False)
+    panel_id = reflection_table["panel"]
+    for i in range(len(experiment.detector)):
+        panel_sel = panel_id == i
+        xsize, ysize = experiment.detector[i].get_image_size()
+        selection = panel_sel & (x1 > 0) & (y1 > 0) & (x0 < xsize) & (y0 < ysize)
+        sel |= selection
+    reflection_table = reflection_table.select(sel)
 
     reflection_table["shoebox"] = flex.shoebox(
         reflection_table["panel"], reflection_table["bbox"], allocate=True
     )
     reflection_table.extract_shoeboxes(experiment.imageset)
+
+    reflection_table.is_overloaded(experiments)
+    reflection_table.contains_invalid_pixels()
 
     if use_crude_shoebox_mask:
         _compute_mask(experiment, reflection_table, sigma_d, "s1")
@@ -283,7 +277,14 @@ def final_integrator(
     return reflection_table
 
 
-def refine_profile(experiment, profile, refiner_data, wavelength_spread_model="delta"):
+def refine_profile(
+    experiment,
+    profile,
+    refiner_data,
+    wavelength_spread_model="delta",
+    max_iter=1000,
+    LL_tolerance=1e-6,
+):
     """Do the profile refinement"""
     logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
 
@@ -297,7 +298,7 @@ def refine_profile(experiment, profile, refiner_data, wavelength_spread_model="d
     )
 
     # Create the refiner and refine
-    refiner = ProfileRefiner(state, refiner_data)
+    refiner = ProfileRefiner(state, refiner_data, max_iter, LL_tolerance)
     refiner.refine()
 
     # Set the profile parameters
@@ -315,6 +316,8 @@ def refine_crystal(
     fix_unit_cell=False,
     fix_orientation=False,
     wavelength_spread_model="delta",
+    max_iter=1009,
+    LL_tolerance=1e-6,
 ):
     """Do the crystal refinement"""
     if (fix_unit_cell is True) and (fix_orientation is True):
@@ -333,7 +336,7 @@ def refine_crystal(
     )
 
     # Create the refiner and refine
-    refiner = ProfileRefiner(state, refiner_data)
+    refiner = ProfileRefiner(state, refiner_data, max_iter, LL_tolerance)
     refiner.refine()
 
     return refiner
@@ -344,32 +347,24 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
     Predict the position of the spots
 
     """
-    # Get some stuff from experiment
-    A = np.array(experiment.crystal.get_A(), dtype=np.float64).reshape((3, 3))
-    s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
-    s0_length = norm(s0)
 
     # Compute the vector to the reciprocal lattice point
     # since this is not on the ewald sphere, lets call it s2
-    h = reflection_table["miller_index"]
-    s1 = flex.vec3_double(len(h))
-    s2 = flex.vec3_double(len(h))
-    for i in range(len(reflection_table)):
-        r = np.matmul(A, np.array([h[i]], dtype=np.float64).reshape(3, 1))
-        s2_i = r + s0
-        s2[i] = matrix.col(flumpy.from_numpy(s2_i))
-        s1[i] = matrix.col(flumpy.from_numpy(s2_i * s0_length / norm(s2_i)))
+    s1, s2 = calc_s1_s2(
+        reflection_table["miller_index"],
+        experiment.crystal.get_A(),
+        experiment.beam.get_s0(),
+    )
     reflection_table["s1"] = s1
     reflection_table["s2"] = s2
-    reflection_table["entering"] = flex.bool(len(h), False)
+    reflection_table["entering"] = flex.bool(reflection_table.size(), False)
 
     # Compute the ray intersections
     xyzpx = flex.vec3_double()
     xyzmm = flex.vec3_double()
-    for i in range(len(s2)):
-        ss = s1[i]
-        mm = experiment.detector[0].get_ray_intersection(ss)
-        px = experiment.detector[0].millimeter_to_pixel(mm)
+    for ss, panel_id in zip(s1, reflection_table["panel"]):
+        mm = experiment.detector[panel_id].get_ray_intersection(ss)
+        px = experiment.detector[panel_id].millimeter_to_pixel(mm)
         xyzpx.append(px + (0,))
         xyzmm.append(mm + (0,))
     reflection_table["xyzcal.mm"] = xyzmm
@@ -408,12 +403,14 @@ def run_ellipsoid_refinement(
     experiments,
     reflection_table,
     sigma_d,
-    profile_model="angular2",
+    profile_model="simple6",
     wavelength_model="delta",
     fix_unit_cell=False,
     fix_orientation=False,
     capture_progress=False,
     n_cycles=3,
+    max_iter=1000,
+    LL_tolerance=1e-6,
 ):
     """Runs ellipsoid refinement on strong spots.
 
@@ -436,7 +433,7 @@ def run_ellipsoid_refinement(
 
     # Construct the profile refiner data
     refiner_data = RefinerData.from_reflections(experiments[0], reflection_table)
-
+    profile.parameterisation.n_obs = len(refiner_data.h_list)
     # Do the refinement
     for _ in range(n_cycles):
         # refine the profile
@@ -445,6 +442,8 @@ def run_ellipsoid_refinement(
             profile,
             refiner_data,
             wavelength_spread_model=wavelength_model,
+            max_iter=max_iter,
+            LL_tolerance=LL_tolerance,
         )
         if capture_progress:
             # Save some data for plotting later.
@@ -453,14 +452,21 @@ def run_ellipsoid_refinement(
             output_data["refiner_output"]["labels"] = refiner.labels()
 
         # refine the crystal
-        _ = refine_crystal(
+        refinerc = refine_crystal(
             experiments[0],
             profile,
             refiner_data,
             fix_unit_cell=fix_unit_cell,
             fix_orientation=fix_orientation,
             wavelength_spread_model=wavelength_model,
+            max_iter=max_iter,
+            LL_tolerance=LL_tolerance,
         )
+        if capture_progress:
+            # Save some data for plotting later.
+            output_data["refiner_output"]["history"].append(refinerc.history)
+            output_data["refiner_output"]["correlation"] = refinerc.correlation()
+            output_data["refiner_output"]["labels"] = refinerc.labels()
 
     experiments[0].profile = profile
 

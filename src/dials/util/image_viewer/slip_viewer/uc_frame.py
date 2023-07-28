@@ -364,7 +364,7 @@ class UCSettingsPanel(wx.Panel):
         dc.SetBrush(wx.Brush(colour, wx.TRANSPARENT))
         for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
             (x, y) = self._pyslip.ConvertGeo2View((lon, lat))
-            dc.DrawCircle(x, y, radius * scale)
+            dc.DrawCircle(int(x), int(y), int(radius * scale))
 
     def DrawRings(self):
         frame = self.GetParent().GetParent()

@@ -15,14 +15,37 @@ from pathlib import Path
 import pytest
 from _pytest.outcomes import Skipped
 
-# https://stackoverflow.com/a/40846742
-warnings.filterwarnings("ignore", message="numpy.dtype size changed")
-warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
-
 if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
     multiprocessing.set_start_method("forkserver")
 
 collect_ignore = []
+
+
+def _build_filterwarnings_string() -> str:
+    """
+    Given the set of active warnings, build a PYTHONWARNINGS string.
+
+    This lets us set the PYTHONWARNINGS environment variable so that
+    warning filters are passed down to subprocesses.
+    """
+    filter_parts = []
+    for action, regex, category, modregex, line in warnings.filters:
+        if action != "ignore":
+            continue
+        if category.__module__ != "builtins":
+            continue
+        this_action = [
+            action,
+            regex.pattern if regex else "",
+            category.__name__,
+        ]
+        if modregex is not None:
+            this_action.append(modregex.pattern)
+            if line:
+                this_action.append(line)
+        filter_parts.append(":".join(str(x) for x in this_action))
+
+    return ",".join(filter_parts)
 
 
 def pytest_configure(config):
@@ -36,6 +59,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "xfel: Mark test to run xfail if xfel module is missing"
     )
+    # Ensure that subprocesses get the warnings filters
+    os.environ["PYTHONWARNINGS"] = _build_filterwarnings_string()
 
 
 def pytest_collection_modifyitems(config, items):
@@ -56,7 +81,7 @@ def dials_regression():
     Skip the test if dials_regression is not installed."""
 
     if "DIALS_REGRESSION" in os.environ:
-        return os.environ["DIALS_REGRESSION"]
+        return os.environ["DIALS_REGRESSION"].rstrip("/")
 
     try:
         import dials_regression as dr

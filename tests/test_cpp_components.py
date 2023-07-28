@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
+import subprocess
 
-import procrunner
 import pytest
 
 cpp_tests = [
@@ -23,5 +23,5 @@ def test_cpp_program(executable):
     )
     print(full_path)
 
-    result = procrunner.run([full_path])
+    result = subprocess.run([full_path], capture_output=True)
     assert not result.returncode and not result.stderr

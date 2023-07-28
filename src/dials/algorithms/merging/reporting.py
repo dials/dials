@@ -53,6 +53,8 @@ class MergingStatisticsData:
     ] = None  # only needed if using this class like a script when making batch plots
     merging_statistics_result: Optional[Type[dataset_statistics]] = None
     anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
+    cut_merging_statistics_result: Optional[Type[dataset_statistics]] = None
+    cut_anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
     anomalous_amplitudes: Optional[miller.array] = None
     Wilson_B_iso: Optional[float] = None
 
@@ -60,9 +62,21 @@ class MergingStatisticsData:
         if not self.merging_statistics_result:
             return ""
         stats_summary = make_merging_statistics_summary(self.merging_statistics_result)
+        if self.cut_merging_statistics_result:
+            d_min = self.cut_merging_statistics_result.bins[-1].d_min
+            stats_summary += (
+                "\n"
+                "Resolution limit suggested from CC"
+                + "\u00BD"
+                + " fit (limit CC"
+                + "\u00BD"
+                + f"=0.3): {d_min:.2f}\n"
+            )
         stats_summary += table_1_summary(
             self.merging_statistics_result,
             self.anom_merging_statistics_result,
+            self.cut_merging_statistics_result,
+            self.cut_anom_merging_statistics_result,
             Wilson_B_iso=self.Wilson_B_iso,
         )
         return stats_summary
@@ -72,6 +86,8 @@ class MergingStatisticsData:
             table_1_stats(
                 self.merging_statistics_result,
                 self.anom_merging_statistics_result,
+                self.cut_merging_statistics_result,
+                self.cut_anom_merging_statistics_result,
                 Wilson_B_iso=self.Wilson_B_iso,
             )
         )

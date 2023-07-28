@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
 from pathlib import Path
-
-import procrunner
 
 
 def test(dials_regression, tmp_path):
@@ -12,15 +12,16 @@ def test(dials_regression, tmp_path):
     assert experiments_path.is_file()
     assert pickle_path.is_file()
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.check_indexing_symmetry",
+            shutil.which("dials.check_indexing_symmetry"),
             experiments_path,
             pickle_path,
             "d_min=4",
             "d_max=10",
             "symop_threshold=0.6",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr

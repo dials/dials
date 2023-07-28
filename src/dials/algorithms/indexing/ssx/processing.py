@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from multiprocessing import Pool
 from typing import Any, List, Optional, Tuple, Union
 
+import numpy as np
+
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from libtbx import Auto, phil
 
@@ -227,7 +229,7 @@ def index_all_concurrent(
                 expt = experiments[refl_index]
                 scan = iset.get_scan()
                 if scan:
-                    idx_0 = i + iset.get_scan().get_batch_offset()  # slicing index
+                    idx_0 = i  # slicing index
                     new_iset = iset[idx_0 : idx_0 + 1]
                     expt.imageset = new_iset
                 input_iterable.append(
@@ -235,7 +237,9 @@ def index_all_concurrent(
                         reflection_table=reflections[refl_index],
                         experiment=expt,
                         parameters=params,
-                        image_identifier=iset.get_image_identifier(i).split("/")[-1],
+                        image_identifier=pathlib.Path(
+                            iset.get_image_identifier(i)
+                        ).name,
                         image_no=refl_index,
                         method_list=method_list,
                     )
@@ -243,7 +247,7 @@ def index_all_concurrent(
             else:  # experiments that have already been filtered
                 results_summary[refl_index].append(
                     {
-                        "Image": iset.get_image_identifier(i).split("/")[-1],
+                        "Image": pathlib.Path(iset.get_image_identifier(i)).name,
                         "n_indexed": 0,
                         "n_strong": 0,
                     }
@@ -403,9 +407,18 @@ def preprocess(
                 except (DialsIndexError, AssertionError):
                     pass
         if not max_cells:
-            raise ValueError("Unable to find a max cell for any images")
-        logger.info(f"Setting max cell to {max(max_cells):.1f} " + "\u212B")
-        params.indexing.max_cell = max(max_cells)
+            raise DialsIndexError("Unable to find a max cell for any images")
+
+        sorted_cells = np.sort(np.array(max_cells))
+        n_cells = len(sorted_cells)
+        if n_cells > 20:
+            centile_95_pos = int(math.floor(0.95 * n_cells))
+            limit = sorted_cells[centile_95_pos]
+            logger.info(f"Setting max cell to {limit:.1f} " + "\u212B")
+            params.indexing.max_cell = limit
+        else:
+            params.indexing.max_cell = sorted_cells[-1]
+            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212B")
 
     # Determine which methods to try
     method_list = params.method
@@ -446,13 +459,9 @@ def index(
         method_list,
     )
 
-    # combine beam and detector models if not already
-    if (len(indexed_experiments.detectors())) > 1 or (
-        len(indexed_experiments.beams())
-    ) > 1:
-        combine = CombineWithReference(
-            detector=indexed_experiments[0].detector, beam=indexed_experiments[0].beam
-        )
+    # combine detector models if not already
+    if (len(indexed_experiments.detectors())) > 1:
+        combine = CombineWithReference(detector=indexed_experiments[0].detector)
         elist = ExperimentList()
         for expt in indexed_experiments:
             elist.append(combine(expt))

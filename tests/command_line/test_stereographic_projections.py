@@ -2,23 +2,24 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 from pathlib import Path
-
-import procrunner
 
 from dials.command_line import stereographic_projection
 
 
 def test_stereographic_projection(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.stereographic_projection",
+            shutil.which("dials.stereographic_projection"),
             dials_data("centroid_test_data", pathlib=True) / "experiments.json",
             "hkl_limit=4",
             "plot.filename=proj.png",
             "json.filename=proj.json",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("projections.txt").is_file()

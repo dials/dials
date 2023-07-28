@@ -1,29 +1,29 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-import procrunner
+import shutil
+import subprocess
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 
 
-def test1(dials_regression, tmp_path):
+def test1(dials_data, tmp_path):
     """
     Refinement test of 300 CSPAD images, testing auto_reduction, parameter
     fixing, constraints, SparseLevMar, and sauter_poon outlier rejection. See
     README in the regression folder for more details.
     """
-    data_dir = Path(dials_regression) / "refinement_test_data" / "cspad_refinement"
+    data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             data_dir / "cspad_refined_experiments_step6_level2_300.json",
             data_dir / "cspad_reflections_step7_300.pickle",
             data_dir / "refine.phil",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 

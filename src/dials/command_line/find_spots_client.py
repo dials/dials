@@ -14,10 +14,10 @@ from multiprocessing.pool import ThreadPool
 import libtbx.phil
 from dxtbx.model.crystal import CrystalFactory
 from dxtbx.util import get_url_scheme
-from libtbx.introspection import number_of_processors
 from scitbx.array_family import flex
 
 import dials.util
+from dials.util.mp import available_cores
 
 
 def work(host, port, filename, params):
@@ -30,7 +30,7 @@ def work(host, port, filename, params):
 
 
 def _nproc():
-    return number_of_processors(return_value_if_unknown=-1)
+    return available_cores()
 
 
 def response_to_xml(d):

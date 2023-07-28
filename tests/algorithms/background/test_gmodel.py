@@ -1,83 +1,72 @@
 from __future__ import annotations
 
 import pickle
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
-from dxtbx.serialize import load
+from dials.algorithms.background.gmodel import StaticBackgroundModel
+from dials.array_family import flex
 
 
 @pytest.fixture
-def model(tmpdir):
-    from dials.algorithms.background.gmodel import StaticBackgroundModel
-    from dials.array_family import flex
-
+def model(tmp_path):
     ysize = 2527
     xsize = 2463
     data = flex.double(flex.grid(ysize, xsize), 1)
     model = StaticBackgroundModel()
     model.add(data)
 
-    model_file = tmpdir.join("model.pickle")
+    model_file = tmp_path / "model.pickle"
     with model_file.open("wb") as fh:
         pickle.dump(model, fh, pickle.HIGHEST_PROTOCOL)
     return model_file
 
 
-def test_simple(dials_data, model, tmpdir):
+def test_simple(dials_data, model, tmp_path):
     experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
-    reflns_simple = tmpdir.join("simple").join("observations.refl")
-    reflns_g_simple = tmpdir.join("gmodel_simple").join("observations.refl")
-    reflns_simple.dirpath().ensure(dir=1)
-    reflns_g_simple.dirpath().ensure(dir=1)
+    reflns_simple = tmp_path / "simple" / "observations.refl"
+    reflns_g_simple = tmp_path / "gmodel_simple" / "observations.refl"
+    reflns_simple.parent.mkdir()
+    reflns_g_simple.parent.mkdir()
 
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    exp = load.experiment_list(experiments)
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-    exp.as_json(tmpdir.join("trusted_range_patch.expt"))
-
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
-            "trusted_range_patch.expt",
+            experiments,
             "profile.fitting=False",
             "background.algorithm=simple",
             "background.simple.outlier.algorithm=null",
-            "output.reflections=" + reflns_simple.strpath,
+            f"output.reflections={reflns_simple}",
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert reflns_simple.check()
+    assert reflns_simple.is_file()
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
-            "trusted_range_patch.expt",
+            experiments,
             "profile.fitting=False",
             "background.algorithm=gmodel",
             "background.gmodel.robust.algorithm=False",
             "background.gmodel.model=model.pickle",
-            "output.reflections=" + reflns_g_simple.strpath,
+            f"output.reflections={reflns_g_simple}",
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert reflns_g_simple.check()
+    assert reflns_g_simple.is_file()
 
-    from dials.array_family import flex
-
-    reflections1 = flex.reflection_table.from_file(reflns_simple.strpath)
-    reflections3 = flex.reflection_table.from_file(reflns_g_simple.strpath)
+    reflections1 = flex.reflection_table.from_file(reflns_simple)
+    reflections3 = flex.reflection_table.from_file(reflns_g_simple)
     assert len(reflections1) == len(reflections3)
 
     flag = flex.reflection_table.flags.integrated_sum
@@ -96,58 +85,48 @@ def test_simple(dials_data, model, tmpdir):
     assert (diff1 < 1e-5).count(False) == 0
 
 
-def test_robust(dials_data, model, tmpdir):
+def test_robust(dials_data, model, tmp_path):
     experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
-    reflns_robust = tmpdir.join("robust").join("observations.refl")
-    reflns_g_robust = tmpdir.join("gmodel_robust").join("observations.refl")
-    reflns_robust.dirpath().ensure(dir=1)
-    reflns_g_robust.dirpath().ensure(dir=1)
+    reflns_robust = tmp_path / "robust" / "observations.refl"
+    reflns_g_robust = tmp_path / "gmodel_robust" / "observations.refl"
+    reflns_robust.parent.mkdir()
+    reflns_g_robust.parent.mkdir()
 
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data.
-    # https://github.com/dials/dials/issues/2200
-    exp = load.experiment_list(experiments)
-    panel = exp[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-    exp.as_json(tmpdir.join("trusted_range_patch.expt"))
-
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
-            "trusted_range_patch.expt",
+            experiments,
             "profile.fitting=False",
             "background.algorithm=glm",
-            "output.reflections=" + reflns_robust.strpath,
+            f"output.reflections={reflns_robust}",
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert reflns_robust.check()
+    assert reflns_robust.is_file()
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
-            "trusted_range_patch.expt",
+            experiments,
             "profile.fitting=False",
             "background.algorithm=gmodel",
             "background.gmodel.robust.algorithm=True",
             "background.gmodel.model=model.pickle",
-            "output.reflections=" + reflns_g_robust.strpath,
+            f"output.reflections={reflns_g_robust}",
         ],
-        working_directory=tmpdir.strpath,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert reflns_g_robust.check()
+    assert reflns_g_robust.is_file()
 
-    from dials.array_family import flex
-
-    reflections2 = flex.reflection_table.from_file(reflns_robust.strpath)
-    reflections4 = flex.reflection_table.from_file(reflns_g_robust.strpath)
+    reflections2 = flex.reflection_table.from_file(reflns_robust)
+    reflections4 = flex.reflection_table.from_file(reflns_g_robust)
     assert len(reflections2) == len(reflections4)
 
     flag = flex.reflection_table.flags.integrated_sum

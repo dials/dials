@@ -13,7 +13,6 @@
 #include <cmath>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
-#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <cctbx/miller.h>
 #include <dials/model/data/shoebox.h>
@@ -22,6 +21,8 @@
 #include <dials/algorithms/image/connected_components/connected_components.h>
 #include <dials/algorithms/spot_prediction/pixel_to_miller_index.h>
 #include <dials/config.h>
+
+#include <dxtbx/array_family/ref_pickle_double_buffered.h>
 
 namespace dials { namespace af { namespace boost_python {
 

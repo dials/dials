@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
@@ -20,14 +18,12 @@ from dials.array_family import flex
         ),
     ],
 )
-def test_centroid_outlier(dials_regression, method, colnames, expected_nout):
+def test_centroid_outlier(dials_data, method, colnames, expected_nout):
 
     flex.set_random_seed(42)
-    data_dir = os.path.join(
-        dials_regression, "refinement_test_data", "centroid_outlier"
-    )
+    data_dir = dials_data("refinement_test_data", pathlib=True)
     residuals = flex.reflection_table.from_file(
-        os.path.join(data_dir, "residuals.refl")
+        data_dir / "centroid_outlier_residuals.refl"
     )
     params = phil_scope.extract()
     params.outlier.algorithm = method

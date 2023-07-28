@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -14,7 +14,7 @@ from dials.algorithms.refinement.refiner import phil_scope as refiner_phil_scope
 from dials.array_family import flex
 
 
-def test_joint_refinement(dials_regression, tmp_path):
+def test_joint_refinement(dials_data, tmp_path):
     """A basic test of joint refinement of the CS-PAD detector at hierarchy level 2
     with 300 crystals."""
 
@@ -22,18 +22,19 @@ def test_joint_refinement(dials_regression, tmp_path):
     if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
         pytest.skip("Skipping test as SparseLevMar engine not available")
 
-    data_dir = Path(dials_regression) / "refinement_test_data" / "xfel_metrology"
+    data_dir = dials_data("cspad_metrology", pathlib=True)
 
     # Do refinement and load the history
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             data_dir / "benchmark_level2d.json",
             data_dir / "benchmark_level2d.pickle",
             data_dir / "refine.phil",
             "history=history.json",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -51,7 +52,7 @@ def test_joint_refinement(dials_regression, tmp_path):
     assert uir.count(True) == history["num_reflections"][-1]
 
 
-def test_constrained_refinement(dials_regression, tmp_path):
+def test_constrained_refinement(dials_data, tmp_path):
     """Do constrained refinement, checking that a panel group with no data
     on it still moves with its partners in the constraint.
     See https://github.com/dials/dials/issues/990"""
@@ -60,7 +61,7 @@ def test_constrained_refinement(dials_regression, tmp_path):
     if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
         pytest.skip("Skipping test as SparseLevMar engine not available")
 
-    data_dir = Path(dials_regression) / "refinement_test_data" / "xfel_metrology"
+    data_dir = dials_data("cspad_metrology", pathlib=True)
 
     # Load experiments and reflections
     refl = flex.reflection_table.from_file(data_dir / "benchmark_level2d.pickle")
@@ -71,7 +72,7 @@ def test_constrained_refinement(dials_regression, tmp_path):
         assert (refl["panel"] == i).count(True) == 0
 
     # Get parameters, combining refine.phil with constraints that enforce distances to move in lockstep
-    refine_phil = phil.parse(data_dir.joinpath("refine.phil").read_text())
+    refine_phil = phil.parse((data_dir / "refine.phil").read_text())
     constraint_phil = phil.parse(
         """
 refinement {

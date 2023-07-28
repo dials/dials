@@ -3,9 +3,12 @@ from __future__ import annotations
 import logging
 
 import scitbx.matrix
+from cctbx.uctbx.reduction_base import iteration_limit_exceeded
 from rstbx.dps_core.cell_assessment import unit_cell_too_small
 from rstbx.indexing_api import tools
 from scitbx.array_family import flex
+
+from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +31,10 @@ def correct(experiments, reflections, assign_indices, threshold=0.9):
         crystal_model.set_A(new_direct_matrix.inverse())
 
         unit_cell_too_small(crystal_model.get_unit_cell())
-        cb_op = crystal_model.get_unit_cell().change_of_basis_op_to_niggli_cell()
+        try:
+            cb_op = crystal_model.get_unit_cell().change_of_basis_op_to_niggli_cell()
+        except iteration_limit_exceeded as e:
+            raise DialsIndexError(e)
         crystal_model.update(crystal_model.change_basis(cb_op))
 
         reflections["id"] = flex.int(len(reflections), -1)

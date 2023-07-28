@@ -14,11 +14,12 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
-#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/observation.h>
 #include <dials/error.h>
+
+#include <dxtbx/array_family/ref_pickle_double_buffered.h>
 
 namespace dials { namespace af { namespace boost_python {
 

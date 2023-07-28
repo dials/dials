@@ -8,11 +8,10 @@ import json
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
-
-import procrunner
 
 import dials.util
 import dials_data.download
@@ -31,8 +30,11 @@ def _command_runner(
         store_command.parent.mkdir(parents=True, exist_ok=True)
         store_command.write_text(" ".join(str(e) for e in command))
     start = time.perf_counter()
-    result = procrunner.run(
-        command, environment_override={"DIALS_NOBANNER": "1"}, **kwargs
+    result = subprocess.run(
+        command,
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        **kwargs,
+        capture_output=True,
     )
     print(f"running command took {time.perf_counter() - start:.1f} seconds\n")
     assert not result.returncode, "Command execution failed"
@@ -48,9 +50,7 @@ def generate_processing_detail_text_thaumatin(options):
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "thaumatin"
     outdir.mkdir(parents=True, exist_ok=True)
-    runcmd = functools.partial(
-        _command_runner, output_directory=outdir, working_directory=tmpdir
-    )
+    runcmd = functools.partial(_command_runner, output_directory=outdir, cwd=tmpdir)
 
     df = dials_data.download.DataFetcher()
     runcmd(["dials.import", df("thaumatin_i04", pathlib=True) / "th_8_2_0*cbf"])
@@ -90,9 +90,7 @@ def generate_processing_detail_text_mpro_x0692(options):
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "mpro_x0692"
     outdir.mkdir(parents=True, exist_ok=True)
-    runcmd = functools.partial(
-        _command_runner, output_directory=outdir, working_directory=tmpdir
-    )
+    runcmd = functools.partial(_command_runner, output_directory=outdir, cwd=tmpdir)
 
     # Find/validate the data input - until we've decided to integrate this
     # into the main release, have a DLS default or otherwise let it be
@@ -165,9 +163,7 @@ def generate_processing_detail_text_betalactamase(options):
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "betalactamase"
     outdir.mkdir(parents=True, exist_ok=True)
-    runcmd = functools.partial(
-        _command_runner, output_directory=outdir, working_directory=tmpdir
-    )
+    runcmd = functools.partial(_command_runner, output_directory=outdir, cwd=tmpdir)
 
     # Find/validate the data input - until we've decided to integrate this
     # into the main release, have a DLS default or otherwise let it be
@@ -230,9 +226,7 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "multi_crystal"
     outdir.mkdir(parents=True, exist_ok=True)
-    runcmd = functools.partial(
-        _command_runner, output_directory=outdir, working_directory=tmpdir
-    )
+    runcmd = functools.partial(_command_runner, output_directory=outdir, cwd=tmpdir)
 
     df = dials_data.download.DataFetcher()
     experiment_files = sorted(

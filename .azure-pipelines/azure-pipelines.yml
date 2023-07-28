@@ -14,11 +14,11 @@ stages:
     steps:
       - checkout: none
 
-      # Use Python >=3.8 for syntax validation
+      # Use Python >=3.9 for syntax validation
       - task: UsePythonVersion@0
         displayName: Set up python
         inputs:
-          versionSpec: 3.8
+          versionSpec: 3.9
 
       # Run syntax validation on a shallow clone
       - bash: |
@@ -75,8 +75,8 @@ stages:
       vmImage: ubuntu-20.04
     strategy:
       matrix:
-        python38:
-          PYTHON_VERSION: 3.8
+        python39:
+          PYTHON_VERSION: 3.9
     timeoutInMinutes: 150
     steps:
     # Dependencies required for building gltbx
@@ -94,9 +94,9 @@ stages:
       vmImage: macOS-latest
     strategy:
       matrix:
-        python38:
-          PYTHON_VERSION: 3.8
-    timeoutInMinutes: 150
+        python39:
+          PYTHON_VERSION: 3.9
+    timeoutInMinutes: 250
     steps:
     - template: unix-build.yml
       parameters:
@@ -107,10 +107,8 @@ stages:
       vmImage: windows-latest
     strategy:
       matrix:
-        python38:
-          PYTHON_VERSION: 3.8
-      # python39:
-      #   PYTHON_VERSION: 3.9
+        python39:
+          PYTHON_VERSION: 3.9
     timeoutInMinutes: 150
     steps:
     - template: windows-build.yml

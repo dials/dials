@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H
-#define DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H
+#ifndef DIALS_ALGORITHMS_IMAGE_THRESHOLD_LOCAL_H
+#define DIALS_ALGORITHMS_IMAGE_THRESHOLD_LOCAL_H
 
 #include <cmath>
 #include <vector>
@@ -1441,4 +1441,4 @@ namespace dials { namespace algorithms {
 
 }}  // namespace dials::algorithms
 
-#endif /* DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H */
+#endif /* DIALS_ALGORITHMS_IMAGE_THRESHOLD_LOCAL_H */

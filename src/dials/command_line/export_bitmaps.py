@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-import os
+import pathlib
 import sys
 
-from PIL import Image
+import PIL.Image
 
 import iotbx.phil
-from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 
-from dials.algorithms.image.threshold import DispersionThresholdDebug
-from dials.array_family import flex
-from dials.util import Sorry, show_mail_handle_errors
-from dials.util.image_viewer.slip_viewer.flex_image import (
-    get_flex_image,
-    get_flex_image_multipanel,
-)
+from dials.util import export_bitmaps, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
@@ -71,6 +64,38 @@ saturation = 0
   .type = int
 show_mask = False
   .type = bool
+resolution_rings {
+  show = False
+    .type = bool
+  number = 5
+    .type = int(value_min=1)
+  d_spacings = None
+    .type = floats(value_min=0)
+  fontsize = 30
+    .type = int
+    .optional = True
+  fill = red
+    .type = str
+    .help = "Colour of the resolution rings and labels"
+}
+ice_rings {
+  show = False
+    .type = bool
+  fontsize = None
+    .type = int
+    .optional = True
+  unit_cell = 4.498,4.498,7.338,90,90,120
+    .type = unit_cell
+    .help = "The unit cell to generate d_spacings for powder rings."
+    .expert_level = 1
+  space_group = 194
+    .type = space_group
+    .help = "The space group used to generate d_spacings for powder rings."
+    .expert_level = 1
+  fill = blue
+    .type = str
+    .help = "Colour of the ice rings and labels"
+}
 png {
   compress_level = 1
     .type = int(value_min=0, value_max=9)
@@ -130,188 +155,89 @@ def run(args=None):
 
 
 def imageset_as_bitmaps(imageset, params):
-    brightness = params.brightness / 100
-    vendortype = "made up"
-    # check that binning is a power of 2
-    binning = params.binning
-    if not (binning > 0 and ((binning & (binning - 1)) == 0)):
-        raise Sorry("binning must be a power of 2")
-    output_dir = params.output.directory
-    if output_dir is None:
-        output_dir = "."
-    elif not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if params.output.directory is None:
+        params.output.directory = "."
+    output_dir = pathlib.Path(params.output.directory)
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
+
     output_files = []
 
-    detector = imageset.get_detector()
+    images = params.imageset_index
+    if not images:
+        if (
+            scan := imageset.get_scan()
+        ) is not None and not scan.is_still():  # and not images:
+            start, end = scan.get_image_range()
+        else:
+            start, end = 1, len(imageset)
+        images = list(range(start, end + 1))
 
-    # Furnish detector with 2D projection axes
-    detector.projected_2d = get_detector_projection_2d_axes(detector)
-    detector.projection = params.projection
-
-    panel = detector[0]
-    scan = imageset.get_scan()
-    # XXX is this inclusive or exclusive?
-    saturation = panel.get_trusted_range()[1]
-    if params.saturation:
-        saturation = params.saturation
-    if scan is not None and not scan.is_still() and not params.imageset_index:
-        start, end = scan.get_image_range()
-    else:
-        start, end = 1, len(imageset)
-    # If the user specified an image range index, only export those
-    image_range = [
-        i
-        for i in range(start, end + 1)
-        if not params.imageset_index or i in params.imageset_index
-    ]
-    if params.output.file and len(image_range) != 1:
+    if params.output.file and len(images) != 1:
         sys.exit("output.file can only be specified if a single image is exported")
-    for i_image in image_range:
-        image = imageset.get_raw_data(i_image - start)
 
-        mask = imageset.get_mask(i_image - start)
-        if mask is None:
-            mask = [p.get_trusted_range_mask(im) for im, p in zip(image, detector)]
-
-        if params.show_mask:
-            for rd, m in zip(image, mask):
-                rd.set_selected(~m, -2)
-
-        image = image_filter(
-            image,
-            mask,
-            display=params.display,
-            gain_value=params.gain,
+    for i_img, flex_img in enumerate(
+        export_bitmaps.imageset_as_flex_image(
+            imageset,
+            images,
+            brightness=params.brightness,
+            binning=params.binning,
+            projection=export_bitmaps.Projection(params.projection),
+            saturation=params.saturation,
+            show_mask=params.show_mask,
+            display=export_bitmaps.Display(params.display),
+            colour_scheme=export_bitmaps.ColourScheme[params.colour_scheme.upper()],
+            gain=params.gain,
             nsigma_b=params.nsigma_b,
-            nsigma_s=params.nsigma_s,
             global_threshold=params.global_threshold,
             min_local=params.min_local,
             kernel_size=params.kernel_size,
         )
-
-        show_untrusted = params.show_mask
-        if len(detector) > 1:
-            # FIXME This doesn't work properly, as flex_image.size2() is incorrect
-            # also binning doesn't work
-            flex_image = get_flex_image_multipanel(
-                brightness=brightness,
-                detector=detector,
-                image_data=image,
-                binning=binning,
-                beam=imageset.get_beam(),
-                show_untrusted=show_untrusted,
-            )
-        else:
-            flex_image = get_flex_image(
-                brightness=brightness,
-                data=image[0],
-                binning=binning,
-                saturation=saturation,
-                vendortype=vendortype,
-                show_untrusted=show_untrusted,
-            )
-
-        flex_image.setWindow(0, 0, 1)
-        flex_image.adjust(color_scheme=colour_schemes.get(params.colour_scheme))
-
-        # now export as a bitmap
-        flex_image.prep_string()
-
-        # XXX is size//binning safe here?
-        pil_img = Image.frombytes(
-            "RGB", (flex_image.ex_size2(), flex_image.ex_size1()), flex_image.as_bytes()
+    ):
+        pil_img = PIL.Image.frombytes(
+            "RGB", (flex_img.ex_size2(), flex_img.ex_size1()), flex_img.as_bytes()
         )
+        if params.resolution_rings.show:
+            export_bitmaps.draw_resolution_rings(
+                imageset,
+                pil_img,
+                flex_img,
+                n_rings=params.resolution_rings.number,
+                spacings=params.resolution_rings.d_spacings,
+                fill=params.resolution_rings.fill,
+                fontsize=params.resolution_rings.fontsize,
+                binning=params.binning,
+            )
+        if params.ice_rings.show:
+            export_bitmaps.draw_ice_rings(
+                imageset,
+                pil_img,
+                flex_img,
+                unit_cell=params.ice_rings.unit_cell,
+                space_group=params.ice_rings.space_group.group(),
+                fill=params.ice_rings.fill,
+                fontsize=params.ice_rings.fontsize,
+                binning=params.binning,
+            )
         if params.output.file:
-            path = os.path.join(output_dir, params.output.file)
+            path = output_dir / params.output.file
         else:
-            path = os.path.join(
-                output_dir,
-                "{prefix}{image:0{padding}}.{format}".format(
-                    image=i_image,
-                    prefix=params.output.prefix,
-                    padding=params.padding,
-                    format=params.output.format,
-                ),
+            path = (
+                output_dir
+                / f"{params.output.prefix}{images[i_img]:0{params.padding}}.{params.output.format}"
             )
 
         print(f"Exporting {path}")
         output_files.append(path)
-        with open(path, "wb") as tmp_stream:
-            pil_img.save(
-                tmp_stream,
-                format=params.output.format,
-                compress_level=params.png.compress_level,
-                quality=params.jpeg.quality,
-            )
+
+        pil_img.save(
+            path,
+            format=params.output.format,
+            compress_level=params.png.compress_level,
+            quality=params.jpeg.quality,
+        )
 
     return output_files
-
-
-def image_filter(
-    raw_data,
-    mask,
-    display,
-    gain_value,
-    nsigma_b,
-    nsigma_s,
-    global_threshold,
-    min_local,
-    kernel_size,
-):
-
-    if display == "image":
-        return raw_data
-
-    assert gain_value > 0
-    gain_map = [flex.double(rd.accessor(), gain_value) for rd in raw_data]
-
-    kabsch_debug_list = [
-        DispersionThresholdDebug(
-            data.as_double(),
-            mask[i_panel],
-            gain_map[i_panel],
-            kernel_size,
-            nsigma_b,
-            nsigma_s,
-            global_threshold,
-            min_local,
-        )
-        for i_panel, data in enumerate(raw_data)
-    ]
-
-    if display == "mean":
-        display_data = [kabsch.mean() for kabsch in kabsch_debug_list]
-    elif display == "variance":
-        display_data = [kabsch.variance() for kabsch in kabsch_debug_list]
-    elif display == "dispersion":
-        display_data = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-    elif display == "sigma_b":
-        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = (kabsch.cv_mask() for kabsch in kabsch_debug_list)
-        display_data = [_mask.as_1d().as_double() for _mask in display_data]
-        for i, _mask in enumerate(display_data):
-            _mask.reshape(cv[i].accessor())
-    elif display == "sigma_s":
-        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = (kabsch.value_mask() for kabsch in kabsch_debug_list)
-        display_data = [_mask.as_1d().as_double() for _mask in display_data]
-        for i, _mask in enumerate(display_data):
-            _mask.reshape(cv[i].accessor())
-    elif display == "global_threshold":
-        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = (kabsch.global_mask() for kabsch in kabsch_debug_list)
-        display_data = [_mask.as_1d().as_double() for _mask in display_data]
-        for i, _mask in enumerate(display_data):
-            _mask.reshape(cv[i].accessor())
-    elif display == "threshold":
-        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = (kabsch.final_mask() for kabsch in kabsch_debug_list)
-        display_data = [_mask.as_1d().as_double() for _mask in display_data]
-        for i, _mask in enumerate(display_data):
-            _mask.reshape(cv[i].accessor())
-
-    return display_data
 
 
 if __name__ == "__main__":

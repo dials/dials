@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from cctbx import sgtbx, uctbx
@@ -16,9 +17,9 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine_bravais_settings",
+            shutil.which("dials.refine_bravais_settings"),
             pickle_path,
             experiments_path,
             "reflections_per_degree=5",
@@ -27,7 +28,8 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression, tmp_path):
             "detector.fix=all",
             "prefix=tst_",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     for i in range(1, 10):
@@ -64,9 +66,10 @@ def test_refine_bravais_settings_multi_sweep(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
-        ["dials.refine_bravais_settings", pickle_path, experiments_path],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.refine_bravais_settings"), pickle_path, experiments_path],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     for i in range(1, 10):
@@ -101,14 +104,15 @@ def test_refine_bravais_settings_trypsin(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine_bravais_settings",
+            shutil.which("dials.refine_bravais_settings"),
             pickle_path,
             experiments_path,
             "crystal_id=1",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     for i in range(1, 10):
@@ -145,9 +149,10 @@ def test_refine_bravais_settings_554(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "dials-554")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
+    result = subprocess.run(
         ["dials.refine_bravais_settings", pickle_path, experiments_path],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     for i in range(1, 5):
@@ -205,14 +210,15 @@ def test_setting_c2_vs_i2(
     data_dir = dials_data("mpro_x0305_processed", pathlib=True)
     refl_path = data_dir / "indexed.refl"
     experiments_path = data_dir / "indexed.expt"
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine_bravais_settings",
+            shutil.which("dials.refine_bravais_settings"),
             os.fspath(experiments_path),
             os.fspath(refl_path),
             f"best_monoclinic_beta={best_monoclinic_beta}",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     expts_orig = load.experiment_list(experiments_path, check_format=False)
@@ -254,13 +260,14 @@ def test_refine_bravais_settings_non_primitive_input(dials_data, tmp_path):
     data_dir = dials_data("insulin_processed", pathlib=True)
     refl_path = data_dir / "indexed.refl"
     expt_path = data_dir / "indexed.expt"
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine_bravais_settings",
+            shutil.which("dials.refine_bravais_settings"),
             expt_path,
             refl_path,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     for i in range(1, 22):

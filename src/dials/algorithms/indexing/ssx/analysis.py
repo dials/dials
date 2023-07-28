@@ -114,10 +114,10 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
     return cluster_plots
 
 
-def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
+def report_on_crystal_clusters(crystal_symmetries, make_plots=True, threshold=5000):
     clustering = cluster_unit_cells(
         crystal_symmetries,
-        threshold=5000,
+        threshold=threshold,
     )
     cluster_plots = {}
     large_clusters = []

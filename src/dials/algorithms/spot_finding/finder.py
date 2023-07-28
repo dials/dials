@@ -93,7 +93,9 @@ class ExtractPixelsFromImage:
         num_strong = 0
         average_background = 0
         for i_panel, (im, mk) in enumerate(zip(image, mask)):
-            if self.region_of_interest is not None:
+            if self.imageset.is_marked_for_rejection(index):
+                threshold_mask = flex.bool(im.accessor(), False)
+            elif self.region_of_interest is not None:
                 x0, x1, y0, y1 = self.region_of_interest
                 height, width = im.all()
                 assert x0 < x1, "x0 < x1"
@@ -809,6 +811,9 @@ class SpotFinder:
 
             logger.info("\nFinding spots in image %s to %s...", j0, j1)
             j0 -= 1
+            if isinstance(imageset, ImageSequence):
+                j0 -= imageset.get_array_range()[0]
+                j1 -= imageset.get_array_range()[0]
             if len(imageset) == 1:
                 r, h = extract_spots(imageset)
             else:

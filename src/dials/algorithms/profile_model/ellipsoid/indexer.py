@@ -10,7 +10,7 @@ from cctbx.array_family import flex
 from dxtbx import flumpy
 from scitbx import matrix
 
-from dials.algorithms.profile_model.ellipsoid import chisq_quantile
+from dials.algorithms.profile_model.ellipsoid import calc_s1_s2, chisq_quantile
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 
 logger = logging.getLogger("dials")
@@ -33,13 +33,14 @@ def _index(reflection_table, experiment, fail_on_bad_index=False):
     miller_index = reflection_table["miller_index"]
     selection = flex.size_t()
     num_reindexed = 0
-    for i, xyz in enumerate(reflection_table["xyzobs.px.value"]):
+    for i, (panel_id, xyz) in enumerate(
+        zip(reflection_table["panel"], reflection_table["xyzobs.px.value"])
+    ):
         # Get the observed pixel coordinate
         x, y, _ = xyz
-
         # Get the lab coord
         s1 = np.array(
-            detector[0].get_pixel_lab_coord((x, y)), dtype=np.float64
+            detector[panel_id].get_pixel_lab_coord((x, y)), dtype=np.float64
         ).reshape(3, 1)
         s1_norm = norm(s1)
         s1 *= s0_length / s1_norm
@@ -86,20 +87,13 @@ def _predict(reflection_table, experiment):
 
     """
 
-    # Get some stuff from experiment
-    A = np.array(experiment.crystal.get_A(), dtype=np.float64).reshape((3, 3))
-    s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
-    s0_length = norm(s0)
-
     # Compute the vector to the reciprocal lattice point
     # since this is not on the ewald sphere, lets call it s2
-    s1 = flex.vec3_double(reflection_table.size())
-    s2 = flex.vec3_double(reflection_table.size())
-    for i, h in enumerate(reflection_table["miller_index"]):
-        r = np.matmul(A, np.array([h], dtype=np.float64).reshape(3, 1))
-        s2_i = r + s0
-        s2[i] = matrix.col(flumpy.from_numpy(s2_i))
-        s1[i] = matrix.col(flumpy.from_numpy(s2_i * s0_length / norm(s2_i)))
+    s1, s2 = calc_s1_s2(
+        reflection_table["miller_index"],
+        experiment.crystal.get_A(),
+        experiment.beam.get_s0(),
+    )
     reflection_table["s1"] = s1
     reflection_table["s2"] = s2
     reflection_table["entering"] = flex.bool(reflection_table.size(), False)
@@ -107,9 +101,9 @@ def _predict(reflection_table, experiment):
     # Compute the ray intersections
     xyzpx = flex.vec3_double()
     xyzmm = flex.vec3_double()
-    for ss in s1:
-        mm = experiment.detector[0].get_ray_intersection(ss)
-        px = experiment.detector[0].millimeter_to_pixel(mm)
+    for panel_id, ss in zip(reflection_table["panel"], s1):
+        mm = experiment.detector[panel_id].get_ray_intersection(ss)
+        px = experiment.detector[panel_id].millimeter_to_pixel(mm)
         xyzpx.append(px + (0,))
         xyzmm.append(mm + (0,))
     reflection_table["xyzcal.mm"] = xyzmm

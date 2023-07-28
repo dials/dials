@@ -14,7 +14,7 @@
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <dials/util/python_streambuf.h>
 #include <numeric>
-#include <dials/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/reflection.h>
 #include <dials/array_family/reflection_table_msgpack_adapter.h>
@@ -26,6 +26,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/vec2.h>
 #include <cctbx/miller.h>
+#include <dials/array_family/boost_python/reflection_table_suite.h>
 
 namespace dials { namespace af { namespace boost_python {
 
@@ -34,11 +35,11 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::Observation;
   using dials::model::Shoebox;
   using dials::util::streambuf;
-  using flex_table_suite::column_to_object_visitor;
-  using flex_table_suite::flex_table_wrapper;
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
+
+  using namespace dxtbx::af;
 
   /**
    * Construct a reflection table from a list of observations and shoeboxes
@@ -584,75 +585,6 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
-   * Select a number of rows from the table via an index array
-   * @param self The current table
-   * @param index The index array
-   * @returns The new table with the requested rows
-   */
-  template <typename T>
-  T reflection_table_select_rows_index(const T &self,
-                                       const af::const_ref<std::size_t> &index) {
-    T result = flex_table_suite::select_rows_index<T>(self, index);
-    return result;
-  }
-
-  /**
-   * Select a number of rows from the table via an index array
-   * @param self The current table
-   * @param flags The flag array
-   * @returns The new table with the requested rows
-   */
-  template <typename T>
-  T reflection_table_select_rows_flags(const T &self,
-                                       const af::const_ref<bool> &flags) {
-    T result = flex_table_suite::select_rows_flags<T>(self, flags);
-    return result;
-  }
-
-  /**
-   * Select a number of columns from the table via an key array
-   * @param self The current table
-   * @param keys The key array
-   * @returns The new table with the requested columns
-   */
-  template <typename T>
-  T reflection_table_select_cols_keys(const T &self,
-                                      const af::const_ref<std::string> &keys) {
-    T result = flex_table_suite::select_cols_keys<T>(self, keys);
-    flex_table_suite::reflection_table_extend_identifiers(result, self);
-    return result;
-  }
-
-  /**
-   * Select a number of columns from the table via an key array
-   * @param self The current table
-   * @param keys The key array
-   * @returns The new table with the requested columns
-   */
-  template <typename T>
-  T reflection_table_select_cols_tuple(const T &self, boost::python::tuple keys) {
-    T result = flex_table_suite::select_cols_tuple<T>(self, keys);
-    flex_table_suite::reflection_table_extend_identifiers(result, self);
-    return result;
-  }
-
-  /**
-   * Extend the reflection table
-   */
-  void reflection_table_extend(reflection_table &self, const reflection_table &other) {
-    flex_table_suite::reflection_table_extend_identifiers(self, other);
-    flex_table_suite::extend(self, other);
-  }
-
-  /**
-   * Update the reflection table
-   */
-  void reflection_table_update(reflection_table &self, const reflection_table &other) {
-    flex_table_suite::reflection_table_extend_identifiers(self, other);
-    flex_table_suite::update(self, other);
-  }
-
-  /**
    * A visitor to convert an item to an object
    */
   struct item_to_object_visitor : public boost::static_visitor<object> {
@@ -884,7 +816,7 @@ namespace dials { namespace af { namespace boost_python {
 
       // Get the columns as a dictionary
       dict columns;
-      column_to_object_visitor visitor;
+      flex_table_suite::column_to_object_visitor visitor;
       for (const_iterator it = self.begin(); it != self.end(); ++it) {
         columns[it->first] = it->second.apply_visitor(visitor);
       }
@@ -968,8 +900,9 @@ namespace dials { namespace af { namespace boost_python {
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
-  struct flex_reflection_table_wrapper : public flex_table_wrapper<T> {
-    typedef flex_table_wrapper<T> base_type;
+  struct flex_reflection_table_wrapper
+      : public flex_table_suite::flex_table_wrapper<T> {
+    typedef flex_table_suite::flex_table_wrapper<T> base_type;
     typedef typename base_type::flex_table_type flex_table_type;
     typedef typename base_type::class_type class_type;
 
@@ -1006,12 +939,18 @@ namespace dials { namespace af { namespace boost_python {
         .def("from_msgpack", &reflection_table_from_msgpack)
         .staticmethod("from_msgpack")
         .def("experiment_identifiers", &T::experiment_identifiers)
-        .def("select", &reflection_table_select_rows_index<flex_table_type>)
-        .def("select", &reflection_table_select_rows_flags<flex_table_type>)
-        .def("select", &reflection_table_select_cols_keys<flex_table_type>)
-        .def("select", &reflection_table_select_cols_tuple<flex_table_type>)
-        .def("extend", reflection_table_extend)
-        .def("update", reflection_table_update)
+        .def("select", &reflection_table_suite::select_rows_index<flex_table_type>)
+        .def("select", &reflection_table_suite::select_rows_flags<flex_table_type>)
+        .def("select", &reflection_table_suite::select_cols_keys<flex_table_type>)
+        .def("select", &reflection_table_suite::select_cols_tuple<flex_table_type>)
+        .def("select",
+             &reflection_table_suite::select_using_experiment<flex_table_type>)
+        .def("select",
+             &reflection_table_suite::select_using_experiments<flex_table_type>)
+        .def("__getitem__", &reflection_table_suite::getitem_slice<flex_table_type>)
+        .def("extend", &reflection_table_suite::extend<flex_table_type>)
+        .def("update", &reflection_table_suite::update<flex_table_type>)
+        .def("__deepcopy__", &reflection_table_suite::deepcopy<flex_table_type>)
         .def_pickle(flex_reflection_table_pickle_suite());
 
       // Create the flags enum in the reflection table scope
@@ -1197,8 +1136,6 @@ namespace dials { namespace af { namespace boost_python {
       .def("keys", &experiment_map_type_detail::keys)
       .def("values", &experiment_map_type_detail::values)
       .def("__iter__", experiment_map_type_detail::make_iterator::range());
-    ;
-    ;
 
     // Export the reflection table
     flex_reflection_table_wrapper<reflection_table>::wrap("reflection_table");
