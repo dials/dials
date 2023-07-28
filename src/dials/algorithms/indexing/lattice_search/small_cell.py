@@ -6,7 +6,7 @@ import logging
 # import math
 # import operator
 #
-import libtbx.phil
+import iotbx.phil
 
 # from dials.array_family import flex
 from xfel.small_cell.small_cell import small_cell_index_detail
@@ -39,7 +39,7 @@ class SmallCell(Strategy):
         "indices based on a known unit cell and space group."
     )
 
-    phil_scope = libtbx.phil.parse(small_cell_phil_str)
+    phil_scope = iotbx.phil.parse(small_cell_phil_str)
 
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
