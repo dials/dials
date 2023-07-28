@@ -112,6 +112,38 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
         stats_plots["unit_cell_plots"] = cluster_plotter.plot_uc_histograms(
             uc_params, scatter_style="heatmap"
         )
+        stats_plots["orientation_graphs"] = {}
+        if len(stats.experiments) > 1:
+            from collections import OrderedDict
+
+            orientation_graphs = OrderedDict()
+            # now make stereo projections
+            from dials.command_line.stereographic_projection import (
+                calculate_projections,
+                phil_scope,
+                projections_as_dict,
+            )
+
+            params = phil_scope.extract()
+            for i, hkl in enumerate([(1, 0, 0), (0, 1, 0), (0, 0, 1)]):
+                params.hkl = [hkl]
+                projections_all, _ = calculate_projections(stats.experiments, params)
+                d = projections_as_dict(projections_all, labels=None)
+                d["layout"]["title"] = "Stereographic projection (hkl=%i%i%i)" % hkl
+                d["help"] = (
+                    """\
+Stereographic projections of hkl=%i%i%i directions (and symmetry equivalents) for each
+crystal in the laboratory frame perpendicular to the beam. Directions that are close to
+the centre are close to parallel with the beam vector, whereas directions at the edge of
+the circle are perpendicular with the beam vector. A random distribution of points
+within the circle would suggest a random distribution of crystal orientations, whereas
+any systematic grouping of points may suggest a preferential crystal orientation.
+"""
+                    % hkl
+                )
+                key = "stereo_%s%s%s" % hkl
+                orientation_graphs[key] = d
+            stats_plots["orientation_graphs"] = orientation_graphs
         json_data[wl_key] = stats_plots
         if stats.anomalous_amplitudes:
             json_data[wl_key]["resolution_plots"].update(
@@ -278,13 +310,21 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
 
 def generate_html_report(json_data, filename):
     multi_data = None
+    styles = {}
     if "multi_data" in json_data:
         multi_data = json_data.pop("multi_data")
     for wl, v in json_data.items():
         str_wl = wl.replace(".", "_")
-        for plot_cat in ["resolution_plots", "misc_plots"]:
+        for plot_cat in [
+            "resolution_plots",
+            "misc_plots",
+            "unit_cell_plots",
+            "orientation_graphs",
+        ]:
             for name in list(v[plot_cat].keys()):
                 v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
+                if plot_cat == "orientation_graphs":
+                    styles[name + "_" + str_wl] = "square-plot"
 
     loader = ChoiceLoader(
         [
@@ -298,6 +338,7 @@ def generate_html_report(json_data, filename):
         page_title="DIALS merge report",
         individual_reports=json_data,
         multi_data=multi_data,
+        styles=styles,
     )
     logger.info("Writing html report to %s", filename)
     with open(filename, "wb") as f:
