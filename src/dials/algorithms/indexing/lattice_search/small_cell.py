@@ -39,7 +39,7 @@ class SmallCell(Strategy):
 
             max_lattices (int): The maximum number of lattice models to find
         """
-        super().__init__(params=params, *args, **kwargs)
+        super().__init__(params=None, *args, **kwargs)
         self._target_symmetry_primitive = target_symmetry_primitive
         self._max_lattices = max_lattices
 
@@ -48,10 +48,12 @@ class SmallCell(Strategy):
                 "Target unit cell and space group must be provided for small_cell"
             )
 
-        params.small_cell.powdercell = (
+        self._params.small_cell.powdercell = (
             target_symmetry_primitive.unit_cell().parameters()
         )
-        params.small_cell.spacegroup = str(target_symmetry_primitive.space_group_info())
+        self._params.small_cell.spacegroup = str(
+            target_symmetry_primitive.space_group_info()
+        )
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
