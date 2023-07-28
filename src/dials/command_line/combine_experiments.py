@@ -718,31 +718,6 @@ class Script:
             experiments = subset_exp
             reflections = subset_refls
 
-        def save_in_batches(
-            experiments, reflections, exp_name, refl_name, batch_size=1000
-        ):
-            for i, indices in enumerate(
-                _split_equal_parts_of_length(
-                    list(range(len(experiments))), (len(experiments) // batch_size) + 1
-                )
-            ):
-                batch_expts = ExperimentList()
-                batch_refls = flex.reflection_table()
-                if reflections.experiment_identifiers().keys():
-                    for sub_idx in indices:
-                        batch_expts.append(experiments[sub_idx])
-                    batch_refls = reflections.select(batch_expts)
-                    batch_refls.reset_ids()
-                else:
-                    for sub_id, sub_idx in enumerate(indices):
-                        batch_expts.append(experiments[sub_idx])
-                        sub_refls = reflections.select(reflections["id"] == sub_idx)
-                        sub_refls["id"] = flex.int(len(sub_refls), sub_id)
-                        batch_refls.extend(sub_refls)
-                exp_filename = os.path.splitext(exp_name)[0] + "_%03d.expt" % i
-                ref_filename = os.path.splitext(refl_name)[0] + "_%03d.refl" % i
-                self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
-
         # cluster the resulting experiments if requested
         if params.clustering.use and len(experiments) > 1:
             if params.clustering.max_clusters == 0:
@@ -753,7 +728,6 @@ class Script:
                 dendrogram=params.clustering.dendrogram,
                 threshold=params.clustering.threshold,
             )
-            n_clusters = len(clustered)
             clusters = sorted(clustered.clusters, key=len, reverse=True)
             if params.clustering.max_clusters is not None:
                 clusters = clusters[: params.clustering.max_clusters]
@@ -773,57 +747,57 @@ class Script:
                 reflections.select_on_experiment_identifiers(cluster.lattice_ids)
                 for cluster in clusters
             ]
-            for i_cluster, (expts, refl) in enumerate(
-                zip(clustered_experiments, clustered_reflections)
-            ):
+            expt_refl_zip = zip(clustered_experiments, clustered_reflections)
+            for i_cluster, (expts, refl) in enumerate(expt_refl_zip):
                 refl.reset_ids()
-                exp_name = os.path.splitext(params.output.experiments_filename)[0] + (
-                    "_cluster%d.expt" % (n_clusters - i_cluster)
-                )
-                refl_name = os.path.splitext(params.output.reflections_filename)[0] + (
-                    "_cluster%d.refl" % (n_clusters - i_cluster)
-                )
-                if params.output.max_batch_size is None:
-                    self._save_output(
-                        expts,
-                        refl,
-                        exp_name,
-                        refl_name,
-                    )
-                else:
-                    save_in_batches(
-                        expts,
-                        refl,
-                        exp_name,
-                        refl_name,
-                        batch_size=params.output.max_batch_size,
-                    )
+                ebase = os.path.splitext(params.output.experiments_filename)[0]
+                rbase = os.path.splitext(params.output.reflections_filename)[0]
+                expt_name = f"{ebase}_cluster{i_cluster:d}.expt"
+                refl_name = f"{rbase}_cluster{i_cluster:d}.refl"
+                max_bsize = params.output.max_batch_size
+                self._save_output(expts, refl, expt_name, refl_name, max_bsize)
 
         else:
-            if params.output.max_batch_size is None:
-                self._save_output(
-                    experiments,
-                    reflections,
-                    params.output.experiments_filename,
-                    params.output.reflections_filename,
-                )
+            self._save_output(
+                experiments,
+                reflections,
+                params.output.experiments_filename,
+                params.output.reflections_filename,
+                params.output.max_batch_size,
+            )
+
+    @staticmethod
+    def _save_output(
+        expt: ExperimentList,
+        refl: flex.reflection_table,
+        expt_name: str,
+        refl_name: str,
+        batch_size: int = None,
+    ):
+        batch_count = len(expt) // batch_size + 1 if batch_size else 1
+        expt_ids = list(range(len(expt)))
+        expt_ids_batched = _split_equal_parts_of_length(expt_ids, batch_count)
+        for batch_i, batch_expt_ids in enumerate(expt_ids_batched):
+            batch_expts = ExperimentList()
+            batch_refls = flex.reflection_table()
+            if refl.experiment_identifiers().keys():
+                for expt_id in batch_expt_ids:
+                    batch_expts.append(expt[expt_id])
+                batch_refls = refl.select(batch_expts)
+                batch_refls.reset_ids()
             else:
-                save_in_batches(
-                    experiments,
-                    reflections,
-                    params.output.experiments_filename,
-                    params.output.reflections_filename,
-                    batch_size=params.output.max_batch_size,
-                )
-        return
-
-    def _save_output(self, experiments, reflections, exp_name, refl_name):
-        # save output
-
-        print(f"Saving combined experiments to {exp_name}")
-        experiments.as_file(exp_name)
-        print(f"Saving combined reflections to {refl_name}")
-        reflections.as_file(refl_name)
+                for sub_id, expt_id in enumerate(batch_expt_ids):
+                    batch_expts.append(expt[expt_id])
+                    sub_refls = refl.select(refl["id"] == expt_id)
+                    sub_refls["id"] = flex.int(len(sub_refls), sub_id)
+                    batch_refls.extend(sub_refls)
+            name_suffix = f"_{batch_i:03d}" if batch_size else ""
+            expt_name = os.path.splitext(expt_name)[0] + name_suffix + ".expt"
+            refl_name = os.path.splitext(refl_name)[0] + name_suffix + ".refl"
+            print(f"Saving combined experiments to {expt_name}")
+            batch_expts.as_file(expt_name)
+            print(f"Saving combined reflections to {refl_name}")
+            batch_refls.as_file(refl_name)
 
 
 @dials.util.show_mail_handle_errors()
