@@ -1148,10 +1148,17 @@ def install_precommit(cmake=False):
         subdirs = []
         for sub in os.listdir("modules"):
             if os.path.isdir(os.path.join("modules", sub, ".git")):
-                subdirs.append(os.path.join("..", "modules", sub))
+                subdirs.append(os.path.abspath(os.path.join("modules", sub)))
 
+        conda_base_root = os.path.join(os.path.abspath("."), "conda_base")
+        if os.name == "nt":
+            precommit_command = os.path.join(
+                conda_base_root, "Scripts", "libtbx.precommit.exe"
+            )
+        else:
+            precommit_command = os.path.join(conda_base_root, "bin", "libtbx.precommit")
         run_indirect_command(
-            os.path.join("..", "conda_base", "bin", "libtbx.precommit"),
+            precommit_command,
             args=["install"] + subdirs,
         )
     else:
