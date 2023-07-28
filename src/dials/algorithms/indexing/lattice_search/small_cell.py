@@ -12,10 +12,7 @@ from .strategy import Strategy
 
 logger = logging.getLogger(__name__)
 
-
-small_cell_phil_str = """\
-include scope xfel.small_cell.command_line.small_cell_index.small_cell_phil_str
-"""
+from xfel.small_cell.command_line.small_cell_index import small_cell_phil_str
 
 
 class SmallCell(Strategy):
