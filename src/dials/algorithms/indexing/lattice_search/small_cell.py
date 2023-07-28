@@ -8,11 +8,12 @@ import logging
 #
 import iotbx.phil
 
-# from dials.array_family import flex
-from xfel.small_cell.small_cell import small_cell_index_detail
-
 # from cctbx import miller
-# from dxtbx.model import Crystal
+from dxtbx.model import Crystal
+
+# from dials.array_family import flex
+from xfel.small_cell.small_cell import small_cell_index_lattice_detail
+
 # from scitbx import matrix
 # from scitbx.math import least_squares_plane, superpose
 #
@@ -77,18 +78,21 @@ class SmallCell(Strategy):
                 The experimental geometry models
         """
 
-        small_cell_result = small_cell_index_detail(
-            experiments, reflections, self._params, write_output=False
+        small_cell_result = small_cell_index_lattice_detail(
+            experiments, reflections, self._params
         )
         if not small_cell_result:
             return []
 
-        max_clique_len, indexed_experiments, refls = zip(*small_cell_result)
-
-        # FIXME small_cell_index_detail creates an indexed reflections list, but
-        # we don't use that in dials.index...
-
-        candidate_crystal_models = []
+        ori = small_cell_result[2]
+        direct_matrix = ori.direct_matrix()
+        real_a = direct_matrix[0:3]
+        real_b = direct_matrix[3:6]
+        real_c = direct_matrix[6:9]
+        crystal = Crystal(real_a, real_b, real_c, self._params.small_cell.spacegroup)
+        candidate_crystal_models = [
+            crystal,
+        ]
 
         self.candidate_crystal_models = candidate_crystal_models
         return self.candidate_crystal_models
