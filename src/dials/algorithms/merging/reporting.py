@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import List, Optional, Type
 
@@ -14,6 +15,9 @@ from dials.algorithms.clustering import plots as cluster_plotter
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.array_family import flex
+from dials.command_line.stereographic_projection import calculate_projections
+from dials.command_line.stereographic_projection import phil_scope as stereo_phil_scope
+from dials.command_line.stereographic_projection import projections_as_dict
 from dials.report.analysis import (
     format_statistics,
     make_merging_statistics_summary,
@@ -96,6 +100,32 @@ class MergingStatisticsData:
         return self.__str__()
 
 
+def make_stereo_plots(experiments):
+
+    orientation_graphs = OrderedDict()
+    # now make stereo projections
+    params = stereo_phil_scope.extract()
+    for hkl in [(1, 0, 0), (0, 1, 0), (0, 0, 1)]:
+        params.hkl = [hkl]
+        projections_all, _ = calculate_projections(experiments, params)
+        d = projections_as_dict(projections_all, labels=None)
+        d["layout"]["title"] = "Stereographic projection (hkl=%i%i%i)" % hkl
+        d["help"] = (
+            """\
+Stereographic projections of hkl=%i%i%i directions (and symmetry equivalents) for each
+crystal in the laboratory frame perpendicular to the beam. Directions that are close to
+the centre are close to parallel with the beam vector, whereas directions at the edge of
+the circle are perpendicular with the beam vector. A random distribution of points
+within the circle would suggest a random distribution of crystal orientations, whereas
+any systematic grouping of points may suggest a preferential crystal orientation.
+"""
+            % hkl
+        )
+        key = "stereo_%s%s%s" % hkl
+        orientation_graphs[key] = d
+    return orientation_graphs
+
+
 def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
     json_data = {}
     for wl, stats in data.items():
@@ -114,36 +144,7 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
         )
         stats_plots["orientation_graphs"] = {}
         if len(stats.experiments) > 1:
-            from collections import OrderedDict
-
-            orientation_graphs = OrderedDict()
-            # now make stereo projections
-            from dials.command_line.stereographic_projection import (
-                calculate_projections,
-                phil_scope,
-                projections_as_dict,
-            )
-
-            params = phil_scope.extract()
-            for i, hkl in enumerate([(1, 0, 0), (0, 1, 0), (0, 0, 1)]):
-                params.hkl = [hkl]
-                projections_all, _ = calculate_projections(stats.experiments, params)
-                d = projections_as_dict(projections_all, labels=None)
-                d["layout"]["title"] = "Stereographic projection (hkl=%i%i%i)" % hkl
-                d["help"] = (
-                    """\
-Stereographic projections of hkl=%i%i%i directions (and symmetry equivalents) for each
-crystal in the laboratory frame perpendicular to the beam. Directions that are close to
-the centre are close to parallel with the beam vector, whereas directions at the edge of
-the circle are perpendicular with the beam vector. A random distribution of points
-within the circle would suggest a random distribution of crystal orientations, whereas
-any systematic grouping of points may suggest a preferential crystal orientation.
-"""
-                    % hkl
-                )
-                key = "stereo_%s%s%s" % hkl
-                orientation_graphs[key] = d
-            stats_plots["orientation_graphs"] = orientation_graphs
+            stats_plots["orientation_graphs"] = make_stereo_plots(stats.experiments)
         json_data[wl_key] = stats_plots
         if stats.anomalous_amplitudes:
             json_data[wl_key]["resolution_plots"].update(
