@@ -1230,12 +1230,15 @@ def configure_build_cmake():
 
     # write a new-style environment setup script
     if os.name == "nt":
+        activate = os.path.join(os.getcwd(), "conda_base", "condabin", "activate.bat")
         with open("dials.bat", "w") as f:
             f.write(
                 """\
 rem enable conda environment
-call %~dp0conda_base\\condabin\\activate.bat
-"""
+call {}
+""".format(
+                    activate
+                )
             )
     else:
         with open("dials", "w") as f:
