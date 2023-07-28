@@ -1219,8 +1219,14 @@ def configure_build_cmake():
     # need to be explicitly set before running code.
     lib_pth = os.path.join(site_path, "__bootstrap__.dials.pth")
     print("Writing libdir .pth file to: " + lib_pth)
+    # Best-guess work out where the libraries are put by the build
+    if os.name == "nt":
+        build_lib_dir = os.path.join(os.getcwd(), "build", "lib", "RelWithDebInfo")
+    else:
+        build_lib_dir = os.path.join(os.getcwd(), "build", "lib")
+
     with open(lib_pth, "w") as f:
-        f.write(os.path.join(os.getcwd(), "build", "lib"))
+        f.write(build_lib_dir)
 
     # write a new-style environment setup script
     with open(("dials.bat" if os.name == "nt" else "dials"), "w") as f:
