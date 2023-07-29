@@ -368,6 +368,8 @@ class ManualGeometryUpdater:
         goniometer = imageset.get_goniometer()
         scan = imageset.get_scan()
 
+        # Create a new model with updated geometry for each model that is not
+        # already in the touched set
         if isinstance(imageset, ImageSequence):
             if beam and beam not in self.touched:
                 beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
@@ -421,6 +423,8 @@ class ManualGeometryUpdater:
                 imageset.set_goniometer(goniometer, i)
                 imageset.set_scan(scan, i)
 
+        # Add the models from this imageset to the touched set, so they will not
+        # have their geometry updated again
         if beam:
             self.touched.add(beam)
         if detector:
