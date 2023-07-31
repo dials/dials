@@ -191,6 +191,45 @@ def run(args=None):
             % (len(params.plot.labels), len(experiments))
         )
 
+    projections_all, miller_indices = calculate_projections(experiments, params)
+
+    if params.save_coordinates:
+        with open("projections.txt", "w") as f:
+            f.write("crystal h k l x y" + os.linesep)
+            for i_cryst, projections in enumerate(projections_all):
+                for hkl, proj in zip(miller_indices, projections):
+                    f.write("%i " % (i_cryst + 1))
+                    f.write("%i %i %i " % hkl)
+                    f.write(("%f %f" + os.linesep) % proj)
+
+    if params.plot.filename:
+        epochs = None
+        if params.plot.colour_map is not None:
+            if experiments[0].scan is not None:
+                epochs = [expt.scan.get_epochs()[0] for expt in experiments]
+            else:
+                epochs = [i for i, expt in enumerate(experiments)]
+        plot_projections(
+            projections_all,
+            filename=params.plot.filename,
+            colours=params.plot.colours,
+            marker_size=params.plot.marker_size,
+            font_size=params.plot.font_size,
+            gridsize=params.plot.gridsize,
+            label_indices=miller_indices if params.plot.label_indices else False,
+            epochs=epochs,
+            colour_map=params.plot.colour_map,
+        )
+
+    if params.json.filename:
+        projections_as_json(
+            projections_all, filename=params.json.filename, labels=params.plot.labels
+        )
+
+
+def calculate_projections(experiments, params):
+    assert params.hkl or params.hkl_limit
+
     if params.hkl is not None and len(params.hkl):
         miller_indices = flex.miller_index(params.hkl)
     elif params.hkl_limit is not None:
@@ -294,38 +333,7 @@ def run(args=None):
             )
             projections_all.append(projections)
 
-    if params.save_coordinates:
-        with open("projections.txt", "w") as f:
-            f.write("crystal h k l x y" + os.linesep)
-            for i_cryst, projections in enumerate(projections_all):
-                for hkl, proj in zip(miller_indices, projections):
-                    f.write("%i " % (i_cryst + 1))
-                    f.write("%i %i %i " % hkl)
-                    f.write(("%f %f" + os.linesep) % proj)
-
-    if params.plot.filename:
-        epochs = None
-        if params.plot.colour_map is not None:
-            if experiments[0].scan is not None:
-                epochs = [expt.scan.get_epochs()[0] for expt in experiments]
-            else:
-                epochs = [i for i, expt in enumerate(experiments)]
-        plot_projections(
-            projections_all,
-            filename=params.plot.filename,
-            colours=params.plot.colours,
-            marker_size=params.plot.marker_size,
-            font_size=params.plot.font_size,
-            gridsize=params.plot.gridsize,
-            label_indices=miller_indices if params.plot.label_indices else False,
-            epochs=epochs,
-            colour_map=params.plot.colour_map,
-        )
-
-    if params.json.filename:
-        projections_as_json(
-            projections_all, filename=params.json.filename, labels=params.plot.labels
-        )
+    return projections_all, miller_indices
 
 
 def plot_projections(
