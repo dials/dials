@@ -1,0 +1,1 @@
+Prevent dials_regression fixture from passing paths with trailing slash.
