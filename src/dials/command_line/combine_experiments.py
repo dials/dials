@@ -13,6 +13,7 @@ from libtbx.phil import parse
 import dials.util
 from dials.array_family import flex
 from dials.util import log
+from dials.util.combine_experiments import CombineWithReference  # noqa
 from dials.util.combine_experiments import (
     combine_experiments,
     combine_experiments_no_reflections,
