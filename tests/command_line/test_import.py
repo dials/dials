@@ -9,7 +9,11 @@ from pathlib import Path
 import pytest
 
 from dxtbx.imageset import ImageSequence
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
+
+from dials.command_line.dials_import import ManualGeometryUpdater
+from dials.util.options import geometry_phil_scope
 
 
 @pytest.mark.parametrize("use_beam", ["True", "False"])
@@ -157,6 +161,67 @@ def test_invert_axis_with_two_sequences_sharing_a_goniometer(dials_data, tmp_pat
     experiments = load.experiment_list(tmp_path / "experiments_multiple_sequences.expt")
     assert len(experiments.goniometers()) == 1
     assert experiments.goniometers()[0].get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+
+def test_ManualGeometryUpdater_inverts_axis(dials_data):
+    # Test behaviour of inverting axes with multiple imagesets as suggested in
+    # https://github.com/dials/dials/pull/2469#discussion_r1278264665
+
+    # Create four imagesets, first two share a goniometer model, second two
+    # have independent inverted goniometer models
+    filenames = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+    experiments = ExperimentListFactory.from_filenames(filenames[0:3])
+    experiments.extend(ExperimentListFactory.from_filenames(filenames[2:5]))
+    experiments.extend(ExperimentListFactory.from_filenames(filenames[4:7]))
+    experiments.extend(ExperimentListFactory.from_filenames(filenames[7:9]))
+    imagesets = experiments.imagesets()
+    imagesets[1].set_goniometer(imagesets[0].get_goniometer())
+    imagesets[2].get_goniometer().set_rotation_axis((-1.0, 0, 0))
+    imagesets[3].get_goniometer().set_rotation_axis((-1.0, 0, 0))
+
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Set the manual geometry parameters. The hierarchy.group should be unset
+    # here, to model how the scope_extract appears to the ManualGeometryUpdater
+    # during a dials.import run.
+    params = geometry_phil_scope.extract()
+    params.geometry.goniometer.invert_rotation_axis = True
+    params.geometry.detector.hierarchy.group = []
+
+    mgu = ManualGeometryUpdater(params=params)
+
+    # Update the first imageset (affects first two, which share a gonio)
+    mgu(imagesets[0])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Run the updater on the second (should not invert again)
+    mgu(imagesets[1])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Run on the third (should invert only that one)
+    mgu(imagesets[2])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Run on the fourth (should invert only that one)
+    mgu(imagesets[3])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
 
 
 def test_with_mask(dials_data, tmp_path):
