@@ -92,6 +92,9 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
         if self.settings.beam_centre is not None:
             self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+        else:
+            self.settings_panel.beam_fast_ctrl.Disable()
+            self.settings_panel.beam_slow_ctrl.Disable()
         if self.settings.marker_size is Auto:
             max_radius = max(self.reflections["rlp"].norms())
             volume = 4 / 3 * pi * max_radius**3
@@ -176,7 +179,10 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
             )
 
     def update_settings(self, *args, **kwds):
-        self.set_beam_centre(self.settings.beam_centre_panel, self.settings.beam_centre)
+        if self.settings.beam_centre:
+            self.set_beam_centre(
+                self.settings.beam_centre_panel, self.settings.beam_centre
+            )
         self.map_points_to_reciprocal_space()
         self.set_points()
         self.viewer.update_settings(*args, **kwds)
@@ -450,10 +456,13 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         old_beam_panel = self.settings.beam_centre_panel
         old_beam_centre = self.settings.beam_centre
         self.settings.beam_centre_panel = self.beam_panel_ctrl.GetValue()
-        self.settings.beam_centre = (
-            self.beam_fast_ctrl.GetValue(),
-            self.beam_slow_ctrl.GetValue(),
-        )
+        if self.beam_fast_ctrl.IsEnabled() and self.beam_slow_ctrl.IsEnabled():
+            self.settings.beam_centre = (
+                self.beam_fast_ctrl.GetValue(),
+                self.beam_slow_ctrl.GetValue(),
+            )
+        else:
+            self.settings.beam_centre = None
         self.settings.reverse_phi = self.reverse_phi_ctrl.GetValue()
         self.settings.crystal_frame = self.crystal_frame_ctrl.GetValue()
         self.settings.marker_size = self.marker_size_ctrl.GetValue()
