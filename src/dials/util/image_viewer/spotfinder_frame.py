@@ -2059,7 +2059,6 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.show_predictions = self.params.show_predictions
         self.settings.show_miller_indices = self.params.show_miller_indices
         self.settings.fontsize = 10
-        self.settings.basis_vector_scale = self.params.basis_vector_scale
         self.settings.show_mask = self.params.show_mask
         self.settings.show_rotation_axis = self.params.show_rotation_axis
         self.settings.display = self.params.display
@@ -2142,7 +2141,7 @@ class SpotSettingsPanel(wx.Panel):
         self.brightness_ctrl.SetTickFreq(25)
         box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
-        grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         s.Add(grid)
         # Font size control
         txt = wx.StaticText(self, -1, "Font size:")
@@ -2157,19 +2156,6 @@ class SpotSettingsPanel(wx.Panel):
             style=wx.TE_PROCESS_ENTER,
         )
         grid.Add(self.fontsize_ctrl, 0, wx.ALL, 5)
-
-        # Basis vector scale control
-        txt = wx.StaticText(self, -1, "Basis scale:")
-        grid.Add(txt, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.basis_vector_scale_ctrl = IntCtrl(
-            self,
-            value=self.settings.basis_vector_scale,
-            min=1,
-            max=20,
-            name="Basis scale",
-            style=wx.TE_PROCESS_ENTER,
-        )
-        grid.Add(self.basis_vector_scale_ctrl, 0, wx.ALL, 5)
 
         grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
         s.Add(grid)
@@ -2474,8 +2460,6 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdate, self.fontsize_ctrl)
         self.fontsize_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdate)
-        self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdate, self.basis_vector_scale_ctrl)
-        self.basis_vector_scale_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdate)
 
         # Brightness-related events
         self.Bind(wx.EVT_SCROLL_CHANGED, self.OnUpdateBrightness, self.brightness_ctrl)
@@ -2548,7 +2532,6 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_predictions = self.predictions.GetValue()
             self.settings.show_miller_indices = self.miller_indices.GetValue()
             self.settings.fontsize = self.fontsize_ctrl.GetValue()
-            self.settings.basis_vector_scale = self.basis_vector_scale_ctrl.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
             self.settings.threshold_algorithm = self.threshold_algorithm_types[
