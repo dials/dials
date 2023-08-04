@@ -341,6 +341,7 @@ class ManualGeometryUpdater:
         Save the params
         """
         self.params = params
+        self.touched = set()
 
     def __call__(self, imageset):
         """
@@ -361,17 +362,29 @@ class ManualGeometryUpdater:
             for j in range(len(imageset)):
                 imageset.set_scan(None, j)
                 imageset.set_goniometer(None, j)
+
+        beam = imageset.get_beam()
+        detector = imageset.get_detector()
+        goniometer = imageset.get_goniometer()
+        scan = imageset.get_scan()
+
+        # Create a new model with updated geometry for each model that is not
+        # already in the touched set
         if isinstance(imageset, ImageSequence):
-            beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
-            detector = DetectorFactory.from_phil(
-                self.params.geometry, imageset.get_detector(), beam
-            )
-            goniometer = GoniometerFactory.from_phil(
-                self.params.geometry, imageset.get_goniometer()
-            )
-            scan = ScanFactory.from_phil(
-                self.params.geometry, deepcopy(imageset.get_scan())
-            )
+            if beam and beam not in self.touched:
+                beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
+            if detector and detector not in self.touched:
+                detector = DetectorFactory.from_phil(
+                    self.params.geometry, imageset.get_detector(), beam
+                )
+            if goniometer and goniometer not in self.touched:
+                goniometer = GoniometerFactory.from_phil(
+                    self.params.geometry, imageset.get_goniometer()
+                )
+            if scan and scan not in self.touched:
+                scan = ScanFactory.from_phil(
+                    self.params.geometry, deepcopy(imageset.get_scan())
+                )
             i0, i1 = scan.get_array_range()
             j0, j1 = imageset.get_scan().get_array_range()
             if i0 < j0 or i1 > j1:
@@ -389,18 +402,37 @@ class ManualGeometryUpdater:
                 imageset.set_scan(scan)
         else:
             for i in range(len(imageset)):
-                beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam(i))
-                detector = DetectorFactory.from_phil(
-                    self.params.geometry, imageset.get_detector(i), beam
-                )
-                goniometer = GoniometerFactory.from_phil(
-                    self.params.geometry, imageset.get_goniometer(i)
-                )
-                scan = ScanFactory.from_phil(self.params.geometry, imageset.get_scan(i))
+                if beam and beam not in self.touched:
+                    beam = BeamFactory.from_phil(
+                        self.params.geometry, imageset.get_beam(i)
+                    )
+                if detector and detector not in self.touched:
+                    detector = DetectorFactory.from_phil(
+                        self.params.geometry, imageset.get_detector(i), beam
+                    )
+                if goniometer and goniometer not in self.touched:
+                    goniometer = GoniometerFactory.from_phil(
+                        self.params.geometry, imageset.get_goniometer(i)
+                    )
+                if scan and scan not in self.touched:
+                    scan = ScanFactory.from_phil(
+                        self.params.geometry, imageset.get_scan(i)
+                    )
                 imageset.set_beam(beam, i)
                 imageset.set_detector(detector, i)
                 imageset.set_goniometer(goniometer, i)
                 imageset.set_scan(scan, i)
+
+        # Add the models from this imageset to the touched set, so they will not
+        # have their geometry updated again
+        if beam:
+            self.touched.add(beam)
+        if detector:
+            self.touched.add(detector)
+        if goniometer:
+            self.touched.add(goniometer)
+        if scan:
+            self.touched.add(scan)
         return imageset
 
     def extrapolate_imageset(
