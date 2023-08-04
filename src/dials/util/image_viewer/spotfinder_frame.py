@@ -1952,7 +1952,9 @@ class SpotFrame(XrayFrame):
             if "DXTBX_ASSERT(w_max > 0)" in str(e):
                 # direct beam didn't hit a panel
                 panel = 0
-                beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+                beam_centre = detector[panel].get_bidirectional_ray_intersection(
+                    beam.get_s0()
+                )
             else:
                 raise
         beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
