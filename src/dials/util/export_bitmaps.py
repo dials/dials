@@ -255,17 +255,22 @@ def draw_resolution_rings(
     pil_image: Image.Image,
     flex_image: FlexImage | FlexImage_d,
     n_rings: int = 5,
+    spacings: list | None = None,
     fill: str = "red",
     fontsize: int | None = 30,
     binning: int = 1,
 ):
-    d_min = imageset.get_detector().get_max_resolution(imageset.get_beam().get_s0())
-    d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
+    if not spacings:
+        d_min = imageset.get_detector().get_max_resolution(imageset.get_beam().get_s0())
+        d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
 
-    step = d_star_sq_max / (n_rings + 1)
-    spacings = flex.double(
-        [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
-    )
+        step = d_star_sq_max / (n_rings + 1)
+        spacings = flex.double(
+            [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
+        )
+    else:
+        spacings = flex.double(spacings)
+
     _draw_resolution_rings_impl(
         imageset,
         pil_image,
