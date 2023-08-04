@@ -772,37 +772,84 @@ class Script:
 
                 if rank == 0:
                     # server process
-                    def sendit(item):
-                        print("Getting next available process")
-                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print(f"Process {rankreq} is ready, sending {item[0]}\n")
-                        comm.send(item, dest=rankreq)
-
+                    rankreq = None
                     if params.dispatch.image_mode == "multi":
                         count = 0
-                        for filetag, filename in iterable:
-                            experiments = do_import(filename, load_models=False)
-                            for item_num in range(len(experiments)):
-                                tag = filetag + "_%05d" % item_num
-                                if process_fractions and not process_this_event(
-                                    item_num + count
+
+                        file_counters = {}
+                        rank_assignments = {}
+
+                        while True:
+                            if params.input.show_image_tags:
+                                rankreq = 0  # no communication
+                            elif rankreq is None:
+                                print("Getting next available process")
+                                rankreq = comm.recv(source=MPI.ANY_SOURCE)
+
+                            print(rankreq, file_counters, rank_assignments)
+                            next_item = None
+                            next_item_assignees_count = None
+                            assigned = False
+                            for key in rank_assignments:
+                                assignments = rank_assignments[key]
+                                if rankreq in assignments:
+                                    assigned = True
+                                    break
+                                elif (
+                                    not next_item
+                                    or len(assignments) < next_item_assignees_count
                                 ):
-                                    continue
-                                if (
-                                    params.input.max_images
-                                    and item_num + count >= params.input.max_images
-                                ):
-                                    continue
+                                    next_item = key
+                                    next_item_assignees_count = len(assignments)
+
+                            if not assigned:
+                                if iterable:
+                                    key = iterable.pop()
+                                    experiments = do_import(filename, load_models=False)
+                                    n_experiments = len(experiments)
+                                    file_counters[key] = [0, n_experiments]
+                                    rank_assignments[key] = [rankreq]
+                                    item_num = 0
+                                elif file_counters:
+                                    key = next_item
+                                    rank_assignments[next_item].append(rankreq)
+                                else:
+                                    break  # no more work
+                            item_num, n_experiments = file_counters[key]
+
+                            filetag, filename = key
+                            tag = filetag + "_%05d" % item_num
+
+                            if not (
+                                process_fractions and not process_this_event(count)
+                            ):
                                 if params.input.show_image_tags:
                                     print(tag)
-                                    continue
-                                print(
-                                    "Processing %s, %d / %d shots"
-                                    % (tag, item_num, len(experiments)),
-                                    flush=True,
-                                )
-                                sendit((tag, filename, item_num))
-                            count += len(experiments)
+                                else:
+                                    print(
+                                        "Processing %s, %d / %d shots"
+                                        % (tag, item_num, n_experiments),
+                                        flush=True,
+                                    )
+                                    print(
+                                        f"Process {rankreq} is ready, sending {tag}\n"
+                                    )
+                                    comm.send((tag, filename, item_num), dest=rankreq)
+                                    rankreq = None
+
+                                if item_num + 1 >= n_experiments:
+                                    del file_counters[key]
+                                    del rank_assignments[key]
+                                else:
+                                    file_counters[key][0] += 1
+
+                            count += 1
+
+                            if (
+                                params.input.max_images
+                                and count >= params.input.max_images
+                            ):
+                                break
                     else:
                         num_iter = len(iterable)
                         for item_num, item in enumerate(iterable):
@@ -812,36 +859,46 @@ class Script:
                             )
                             if process_fractions and not process_this_event(item_num):
                                 continue
-                            sendit(item)
-                    # send a stop command to each process
-                    print("MPI DONE, sending stops\n")
-                    for rankreq in range(size - 1):
-                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Sending stop to %d\n" % rankreq)
-                        comm.send("endrun", dest=rankreq)
-                    print("All stops sent.")
+                            print("Getting next available process")
+                            rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                            print(f"Process {rankreq} is ready, sending {item[0]}\n")
+                            comm.send(item, dest=rankreq)
+                    if not params.input.show_image_tags:
+                        # send a stop command to each process
+                        print("MPI DONE, sending stops\n")
+                        for i in range(size - 1):
+                            if rankreq is None:
+                                rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                            print("Sending stop to %d\n" % rankreq)
+                            comm.send("endrun", dest=rankreq)
+                            rankreq = None
+                        print("All stops sent.")
 
                 else:
                     # client process
-                    while True:
-                        # inform the server this process is ready for an event
-                        print("Rank %d getting next task" % rank)
-                        comm.send(rank, dest=0)
-                        print("Rank %d waiting for response" % rank)
-                        item = comm.recv(source=0)
-                        if item == "endrun":
-                            print("Rank %d received endrun" % rank)
-                            break
-                        print("Rank %d beginning processing" % rank)
-                        try:
-                            processor = do_work(rank, [item], processor, finalize=False)
-                        except Exception as e:
-                            print(
-                                "Rank %d unhandled exception processing event" % rank,
-                                str(e),
-                            )
-                            raise
-                        print("Rank %d event processed" % rank)
+                    if not params.input.show_image_tags:
+                        while True:
+                            # inform the server this process is ready for an event
+                            print("Rank %d getting next task" % rank)
+                            comm.send(rank, dest=0)
+                            print("Rank %d waiting for response" % rank)
+                            item = comm.recv(source=0)
+                            if item == "endrun":
+                                print("Rank %d received endrun" % rank)
+                                break
+                            print("Rank %d beginning processing" % rank)
+                            try:
+                                processor = do_work(
+                                    rank, [item], processor, finalize=False
+                                )
+                            except Exception as e:
+                                print(
+                                    "Rank %d unhandled exception processing event"
+                                    % rank,
+                                    str(e),
+                                )
+                                raise
+                            print("Rank %d event processed" % rank)
                 processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
