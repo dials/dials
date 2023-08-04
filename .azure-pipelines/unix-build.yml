@@ -18,12 +18,6 @@ steps:
 - bash: |
     set -eux
     python modules/dials/installer/bootstrap.py update
-    rm -rf modules/dxtbx
-    cd modules
-    git clone https://github.com/dials/dxtbx
-    cd dxtbx
-    git checkout 575-beam-model-should-state-probe-type
-    cd ../..
   displayName: Repository checkout
   workingDirectory: $(Pipeline.Workspace)
 

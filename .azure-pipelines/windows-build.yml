@@ -47,10 +47,7 @@ steps:
 
 # Build and install dxtbx
 - script: |
-    git clone https://github.com/dials/dxtbx ./modules/dxtbx
-    cd ./modules/dxtbx
-    git checkout 575-beam-model-should-state-probe-type
-    cd ../../
+    git clone https://github.com/cctbx/dxtbx ./modules/dxtbx
     call activate conda_base/
     mkdir build_dxtbx
     cd build_dxtbx
