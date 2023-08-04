@@ -105,10 +105,10 @@ working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def _index_experiments(
-    experiments, reflections, params, known_crystal_models=None, exp_idx_to_log=None
+    experiments, reflections, params, known_crystal_models=None, log_text=None
 ):
-    if exp_idx_to_log is not None:
-        logger.info(f"Indexing experiment {exp_idx_to_log}")
+    if log_text:
+        logger.info(log_text)
     idxr = indexer.Indexer.from_parameters(
         reflections,
         experiments,
@@ -186,7 +186,7 @@ def index(experiments, reflections, params):
                         refl,
                         copy.deepcopy(params),
                         known_crystal_models=known_crystal_models,
-                        exp_idx_to_log=i_expt,
+                        log_text=f"Indexing experiment {i_expt + 1} / {len(experiments)}",
                     )
                 )
             tables_list = []
