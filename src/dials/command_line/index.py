@@ -186,7 +186,7 @@ def index(experiments, reflections, params):
                         refl,
                         copy.deepcopy(params),
                         known_crystal_models=known_crystal_models,
-                        log_text=f"Indexing experiment {i_expt + 1} / {len(experiments)}",
+                        log_text=f"Indexing experiment id {i_expt} ({i_expt + 1}/{len(experiments)})",
                     )
                 )
             tables_list = []
