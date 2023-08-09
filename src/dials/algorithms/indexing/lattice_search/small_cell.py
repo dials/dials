@@ -4,6 +4,9 @@ import logging
 
 import iotbx.phil
 from dxtbx.model import Crystal
+from scitbx import matrix
+from scitbx.array_family import flex
+from scitbx.math import superpose
 from xfel.small_cell.small_cell import small_cell_index_lattice_detail
 
 from dials.algorithms.indexing import DialsIndexError
@@ -86,6 +89,21 @@ class SmallCell(Strategy):
         # This is a workaround for https://github.com/dials/dials/issues/2485
         reflections["id"] *= 0
         reflections["id"] -= 1
+
+        # Additional refinement of the crystal orientation using the spots indexed
+        # by small_cell by superposing ideal relp positions over the observed relps
+        indexed = small_cell_result[3]
+        Bmat = matrix.sqr(crystal.get_B())
+        observed_relps = [(0.0, 0.0, 0.0)]
+        predicted_relps = [(0.0, 0.0, 0.0)]
+        for spot in indexed:
+            predicted_relps.append(Bmat * spot.hkl.ohkl)
+            observed_relps.append(spot.xyz)
+        fit = superpose.least_squares_fit(
+            flex.vec3_double(observed_relps), flex.vec3_double(predicted_relps)
+        )
+        Umat = fit.r
+        crystal.set_A(Umat * Bmat)
 
         self.candidate_crystal_models = candidate_crystal_models
         return self.candidate_crystal_models
