@@ -82,5 +82,10 @@ class SmallCell(Strategy):
             crystal,
         ]
 
+        # Reset id column to ensure that index assignment later will work properly.
+        # This is a workaround for https://github.com/dials/dials/issues/2485
+        reflections["id"] *= 0
+        reflections["id"] -= 1
+
         self.candidate_crystal_models = candidate_crystal_models
         return self.candidate_crystal_models
