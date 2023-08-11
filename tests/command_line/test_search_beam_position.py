@@ -213,7 +213,7 @@ def test_multi_sweep_fixed_rotation(dials_data, run_in_tmp_path):
     experiments_path = data / "imported.expt"
     refl_path = data / "strong.refl"
 
-    search_beam_position.run([os.fspath(experiments_path), os.fspath(refl_path)])
+    search_beam_position.run([str(experiments_path), str(refl_path)])
     assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = load.experiment_list(experiments_path, check_format=False)
