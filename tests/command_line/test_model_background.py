@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import datetime
 import pickle
 import shutil
 import subprocess
+import sys
 
 import pytest
 
 from scitbx.array_family import flex
 
 
+@pytest.mark.skipif(
+    (sys.platform == "darwin")
+    and (datetime.date.today() < datetime.date(2023, 10, 20)),
+    reason="Temporary skip to dodge SEGV on Azure pipelines",
+)
 def test_model_background(dials_data, tmp_path):
     centroid = dials_data("centroid_test_data", pathlib=True)
     expts = centroid / "experiments.json"

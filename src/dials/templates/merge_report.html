@@ -9,6 +9,9 @@
     <div class="panel-group">
         {{ macros.panel('Analysis by resolution', 'resolution_plots_'+ indiv_id, item['resolution_plots']) }}
         {{ macros.panel('Unit cell plots', 'unit_cell_plots_'+ indiv_id, item['unit_cell_plots']) }}
+        {% if item['orientation_graphs'] | length %}
+            {{ macros.panel('Orientation plots', 'orientation_graphs_'+ indiv_id, item['orientation_graphs'], styles=styles) }}
+        {% endif %}
         {{ macros.panel('Miscellaneous plots', 'misc_plots_'+ indiv_id, item['misc_plots']) }}
     </div>
 </div>
