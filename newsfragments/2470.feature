@@ -1,1 +1,1 @@
-``dials.index``: Log the experiment number when indexing multiple experiments.
+``dials.index``: Now logs the experiment number when indexing multiple experiments.
