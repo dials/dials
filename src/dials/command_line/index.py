@@ -104,7 +104,11 @@ refinement {
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
-def _index_experiments(experiments, reflections, params, known_crystal_models=None):
+def _index_experiments(
+    experiments, reflections, params, known_crystal_models=None, log_text=None
+):
+    if log_text:
+        logger.info(log_text)
     idxr = indexer.Indexer.from_parameters(
         reflections,
         experiments,
@@ -182,6 +186,7 @@ def index(experiments, reflections, params):
                         refl,
                         copy.deepcopy(params),
                         known_crystal_models=known_crystal_models,
+                        log_text=f"Indexing experiment id {i_expt} ({i_expt + 1}/{len(experiments)})",
                     )
                 )
             tables_list = []
