@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -13,7 +14,7 @@ from dxtbx.serialize import load
 from dials.command_line import refine_bravais_settings
 
 
-def test_refine_bravais_settings_i04_weak_data(dials_regression, tmp_path):
+def test_refine_bravais_settings_i04_weak_data(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -62,7 +63,7 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression, tmp_path):
     assert bravais_summary["9"]["rmsd"] == pytest.approx(0.047, abs=1e-2)
 
 
-def test_refine_bravais_settings_multi_sweep(dials_regression, tmp_path):
+def test_refine_bravais_settings_multi_sweep(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -100,7 +101,7 @@ def test_refine_bravais_settings_multi_sweep(dials_regression, tmp_path):
     assert bravais_summary["9"]["recommended"] is True
 
 
-def test_refine_bravais_settings_trypsin(dials_regression, tmp_path):
+def test_refine_bravais_settings_trypsin(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -145,7 +146,7 @@ def test_refine_bravais_settings_trypsin(dials_regression, tmp_path):
     assert bravais_summary["9"]["recommended"] is False
 
 
-def test_refine_bravais_settings_554(dials_regression, tmp_path):
+def test_refine_bravais_settings_554(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "dials-554")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")

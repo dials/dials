@@ -376,7 +376,7 @@ def test_import_beam_centre(dials_data, tmp_path):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression, tmp_path):
+def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
     # test slow_fast_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,
@@ -795,7 +795,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     assert len(experiments3.scans()) == 5  # four for sacla stills, 1 for centroid data
 
 
-def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
+def test_convert_stills_to_sequences_nonh5(dials_regression: pathlib.Path, tmp_path):
     image_path = Path(
         dials_regression,
         "image_examples",

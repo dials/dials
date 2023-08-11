@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 
-def test_goniometer_calibration(dials_regression, tmp_path):
+def test_goniometer_calibration(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "rotation_calibration")
     o0_k0_p0 = os.path.join(data_dir, "experiments_o0_k0_p0.json")
     o0_k0_p48 = os.path.join(data_dir, "experiments_o0_k0_p48.json")
