@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -16,13 +17,13 @@ from dials.array_family import flex
 def test1(dials_data, tmp_path):
     data_dir = dials_data("refinement_test_data", pathlib=True)
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             data_dir / "multi_stills_combined.json",
             data_dir / "multi_stills_combined.pickle",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
@@ -68,22 +69,22 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
 ):
     data_dir = dials_data("refinement_test_data", pathlib=True)
     cmd = [
-        "dials.refine",
+        shutil.which("dials.refine"),
         data_dir / "multi_stills_combined.json",
         data_dir / "multi_stills_combined.pickle",
         "outlier.algorithm=null",
         "engine=LBFGScurvs",
         "output.reflections=None",
     ]
-    result = procrunner.run(
+    result = subprocess.run(
         cmd + ["output.experiments=refined_nproc4.expt", "nproc=4"],
-        working_directory=tmp_path,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
-    result = procrunner.run(
+    result = subprocess.run(
         cmd + ["output.experiments=refined_nproc1.expt", "nproc=1"],
-        working_directory=tmp_path,
+        cwd=tmp_path,
     )
     assert not result.returncode and not result.stderr
 

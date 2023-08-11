@@ -56,8 +56,8 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
 )
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
-from dials.command_line.combine_experiments import CombineWithReference
 from dials.util import log, show_mail_handle_errors
+from dials.util.combine_experiments import CombineWithReference
 from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
@@ -94,6 +94,9 @@ phil_scope = iotbx.phil.parse(
       .type = path
       .help = "Specify a directory to which a per-image summary json will be saved"
               "during processing, as each image is integrated, to enable live monitoring."
+    history = None
+      .type = str
+      .help = "Output refinement history to json"
   }
 
   ellipsoid {
@@ -299,7 +302,7 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
                 i + 1 + batch_offset,
             )
         )
-
+    input_iterable = sorted(input_iterable, key=lambda i: i.table.size(), reverse=True)
     with manage_loggers(
         configuration["params"].individual_log_verbosity,
         configuration["loggers_to_disable"],
@@ -464,6 +467,11 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         # now generate plots using the aggregated data.
         plots = aggregator.make_plots()
         plots.update(cluster_plots)
+
+    if params.output.history:
+        history = aggregator.make_history_json()
+        with open(params.output.history, "w") as outfile:
+            json.dump(history, outfile, indent=2)
 
     if params.output.html and plots:
         logger.info(f"Writing html report to {params.output.html}")

@@ -7,6 +7,8 @@ import pickle
 import sys
 from collections import defaultdict, namedtuple
 
+from orderedset import OrderedSet
+
 import dxtbx.model.compare as compare
 import libtbx.phil
 from dxtbx.imageset import ImageGrid, ImageSequence
@@ -15,6 +17,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
@@ -338,6 +341,7 @@ class ManualGeometryUpdater:
         Save the params
         """
         self.params = params
+        self.touched = set()
 
     def __call__(self, imageset):
         """
@@ -358,17 +362,29 @@ class ManualGeometryUpdater:
             for j in range(len(imageset)):
                 imageset.set_scan(None, j)
                 imageset.set_goniometer(None, j)
+
+        beam = imageset.get_beam()
+        detector = imageset.get_detector()
+        goniometer = imageset.get_goniometer()
+        scan = imageset.get_scan()
+
+        # Create a new model with updated geometry for each model that is not
+        # already in the touched set
         if isinstance(imageset, ImageSequence):
-            beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
-            detector = DetectorFactory.from_phil(
-                self.params.geometry, imageset.get_detector(), beam
-            )
-            goniometer = GoniometerFactory.from_phil(
-                self.params.geometry, imageset.get_goniometer()
-            )
-            scan = ScanFactory.from_phil(
-                self.params.geometry, deepcopy(imageset.get_scan())
-            )
+            if beam and beam not in self.touched:
+                beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
+            if detector and detector not in self.touched:
+                detector = DetectorFactory.from_phil(
+                    self.params.geometry, imageset.get_detector(), beam
+                )
+            if goniometer and goniometer not in self.touched:
+                goniometer = GoniometerFactory.from_phil(
+                    self.params.geometry, imageset.get_goniometer()
+                )
+            if scan and scan not in self.touched:
+                scan = ScanFactory.from_phil(
+                    self.params.geometry, deepcopy(imageset.get_scan())
+                )
             i0, i1 = scan.get_array_range()
             j0, j1 = imageset.get_scan().get_array_range()
             if i0 < j0 or i1 > j1:
@@ -386,18 +402,37 @@ class ManualGeometryUpdater:
                 imageset.set_scan(scan)
         else:
             for i in range(len(imageset)):
-                beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam(i))
-                detector = DetectorFactory.from_phil(
-                    self.params.geometry, imageset.get_detector(i), beam
-                )
-                goniometer = GoniometerFactory.from_phil(
-                    self.params.geometry, imageset.get_goniometer(i)
-                )
-                scan = ScanFactory.from_phil(self.params.geometry, imageset.get_scan(i))
+                if beam and beam not in self.touched:
+                    beam = BeamFactory.from_phil(
+                        self.params.geometry, imageset.get_beam(i)
+                    )
+                if detector and detector not in self.touched:
+                    detector = DetectorFactory.from_phil(
+                        self.params.geometry, imageset.get_detector(i), beam
+                    )
+                if goniometer and goniometer not in self.touched:
+                    goniometer = GoniometerFactory.from_phil(
+                        self.params.geometry, imageset.get_goniometer(i)
+                    )
+                if scan and scan not in self.touched:
+                    scan = ScanFactory.from_phil(
+                        self.params.geometry, imageset.get_scan(i)
+                    )
                 imageset.set_beam(beam, i)
                 imageset.set_detector(detector, i)
                 imageset.set_goniometer(goniometer, i)
                 imageset.set_scan(scan, i)
+
+        # Add the models from this imageset to the touched set, so they will not
+        # have their geometry updated again
+        if beam:
+            self.touched.add(beam)
+        if detector:
+            self.touched.add(detector)
+        if goniometer:
+            self.touched.add(goniometer)
+        if scan:
+            self.touched.add(scan)
         return imageset
 
     def extrapolate_imageset(
@@ -519,12 +554,12 @@ class MetaDataUpdater:
                     # that these are in people numbers (1...) and are inclusive
                     if self.params.geometry.scan.image_range:
                         user_start, user_end = self.params.geometry.scan.image_range
-                        offset = imageset.get_scan().get_array_range()[0]
                         start, end = user_start - 1, user_end
                     else:
                         start, end = imageset.get_scan().get_array_range()
-                        offset = 0
 
+                    # offset to get 0-based indexing into the imageset
+                    offset = imageset.get_scan().get_array_range()[0]
                     for j in range(start, end):
                         subset = imageset[j - offset : j - offset + 1]
                         experiments.append(
@@ -896,23 +931,27 @@ def do_import(
         num_images += len(e.imageset)
         counted_imagesets.append(e.imageset)
 
-    format_list = {str(e.imageset.get_format_class()) for e in experiments}
-    try:
-        template_list = {
-            str(e.imageset.get_template())
-            + ":{0}:{1}".format(*e.scan.get_image_range())
-            for e in experiments
-        }
-    except AttributeError:
-        # For stills we need a different approach
-        template_list = {}
+    unique_formats = OrderedSet()
+    unique_templates = OrderedSet()
+    for imgset in counted_imagesets:
+        unique_formats.add(imgset.get_format_class())
+        if scan := imgset.get_scan():
+            start, end = scan.get_image_range()
+            unique_templates.add(f"{imgset.get_template()}:{start}:{end}")
+        else:
+            paths = imgset.reader().paths()
+            if len(paths) == 1:
+                unique_templates.add(paths[0])
+            else:
+                template, _ = template_regex_from_list(paths)
+                unique_templates.add(template)
 
     # Print out some bulk info
     logger.info("-" * 80)
-    for f in format_list:
-        logger.info("  format: %s", f)
-    for f in template_list:
-        logger.info("  template: %s", f)
+    for fmt in unique_formats:
+        logger.info("  format: %s", fmt)
+    for template in unique_templates:
+        logger.info("  template: %s", template)
     logger.info("  num images: %d", num_images)
     logger.info("  sequences:")
     logger.info("    still:    %d", num_still_sequences)

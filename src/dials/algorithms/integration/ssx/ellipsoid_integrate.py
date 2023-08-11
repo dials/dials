@@ -41,6 +41,14 @@ class EllipsoidOutputCollector(OutputCollector):
         # also record some model info:
         self.data["profile_model"] = experiment.profile.to_dict()
         self.data["profile_model_mosaicity"] = experiment.profile.mosaicity()
+        if "likelihood" not in self.data:
+            self.data["likelihood"] = []
+        if "parameters" not in self.data:
+            self.data["parameters"] = []
+        lh_this_cycle = [i["likelihood"] for d in refiner_output for i in d]
+        parameters_per_cycle = [i["parameters"] for d in refiner_output for i in d]
+        self.data["likelihood"].append(lh_this_cycle)
+        self.data["parameters"].append(parameters_per_cycle)
 
     def collect_after_preprocess(self, experiment, reflection_table):
         self.data["n_strong_after_preprocess"] = reflection_table.size()
@@ -117,6 +125,8 @@ class EllipsoidIntegrator(SimpleIntegrator):
                         capture_progress=isinstance(
                             self.collector, EllipsoidOutputCollector
                         ),
+                        max_iter=self.params.profile.ellipsoid.refinement.max_iter,
+                        LL_tolerance=self.params.profile.ellipsoid.refinement.LL_tolerance,
                     )
                 except BadSpotForIntegrationException as e:
                     raise RuntimeError(e)
@@ -172,6 +182,8 @@ class EllipsoidIntegrator(SimpleIntegrator):
         fix_list=None,
         n_cycles=1,
         capture_progress=False,
+        max_iter=1000,
+        LL_tolerance=1e-6,
     ):
         fix_unit_cell = False
         fix_orientation = False
@@ -190,6 +202,8 @@ class EllipsoidIntegrator(SimpleIntegrator):
             fix_orientation=fix_orientation,
             n_cycles=n_cycles,
             capture_progress=capture_progress,
+            max_iter=max_iter,
+            LL_tolerance=LL_tolerance,
         )
         return expts[0], refls, output_data
 

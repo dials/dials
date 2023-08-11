@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -23,15 +25,16 @@ def test_joint_refinement(dials_data, tmp_path):
     data_dir = dials_data("cspad_metrology", pathlib=True)
 
     # Do refinement and load the history
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             data_dir / "benchmark_level2d.json",
             data_dir / "benchmark_level2d.pickle",
             data_dir / "refine.phil",
             "history=history.json",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 

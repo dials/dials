@@ -32,7 +32,7 @@ YELLOW = "\033[1;33m"
 
 minimum_conda_version = "4.8.0"
 minimum_precommit_version = "2.16"
-minimum_python_version = "3.8.0"
+minimum_python_version = "3.9.0"
 
 repo_prefix = "  {:.<15}:"
 repo_no_precommit = "(no pre-commit hooks)"
@@ -171,6 +171,21 @@ def _version_check(package, version, minimum):
 
 
 def main():
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print(
+            """Usage: libtbx.precommit [-h|--help] [install] [TARGET [TARGET ...]]
+
+Installs pre-commit into any development repositories known by libtbx.
+Pass "install" to actually do the installation; otherwise, will only
+list what would be done.
+
+Arguments:
+
+    TARGET      Add extra candidates, beyond those known by cctbx.
+"""
+        )
+        sys.exit(0)
+
     install_things = "install" in sys.argv
 
     install_precommit = False

@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 import os.path
 import pathlib
-
-import procrunner
+import shutil
+import subprocess
 
 from dxtbx.serialize import load
 
@@ -16,9 +16,16 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     expts = ssx / "imported_with_ref_5.expt"
     refls = ssx / "strong_5.refl"
     pathlib.Path.mkdir(tmp_path / "nuggets")
-    result = procrunner.run(
-        ["dials.ssx_index", expts, refls, "output.nuggets=nuggets", "min_spots=72"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.ssx_index"),
+            expts,
+            refls,
+            "output.nuggets=nuggets",
+            "min_spots=72",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.refl").is_file()
@@ -42,9 +49,10 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path):
     expts = ssx / "imported_no_ref_5.expt"
     refls = ssx / "strong_5.refl"
 
-    result = procrunner.run(
-        ["dials.ssx_index", expts, refls, "-vv"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.ssx_index"), expts, refls, "-vv"],
+        cwd=tmp_path,
+        capture_output=True,
     )
 
     assert not result.returncode and not result.stderr

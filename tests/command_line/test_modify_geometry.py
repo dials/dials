@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
 from os import path
 
-import procrunner
 import pytest
 
 from dxtbx.serialize import load
@@ -20,9 +21,10 @@ def test_run(dials_regression, tmp_path):
     orig_gonio = orig_expt.goniometers()[0]
     assert orig_gonio.get_angles() == pytest.approx([0, 180, 0])
 
-    result = procrunner.run(
-        ["dials.modify_geometry", orig_expt_json, "angles=10,20,30"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.modify_geometry"), orig_expt_json, "angles=10,20,30"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -36,7 +38,6 @@ def test_run(dials_regression, tmp_path):
 
 
 def test_update(dials_data):
-
     orig_expt = dials_data("aluminium_standard", pathlib=True) / "imported.expt"
     assert orig_expt.is_file()
 

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 from pathlib import Path
 
-import procrunner
 import pytest
 
 import dxtbx
@@ -180,9 +181,9 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
             "mp.method=mpi mp.composite_stride=4 output.logging_dir=.",
         ]
     else:
-        command = ["dials.stills_process"]
+        command = [shutil.which("dials.stills_process")]
     command += [image_path, "process_sacla.phil"]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     def test_refl_table(result_filename, ranges, ids=None):
@@ -239,15 +240,16 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
 
 
 def test_pseudo_scan(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.stills_process",
+            shutil.which("dials.stills_process"),
             dials_data("centroid_test_data", pathlib=True) / "centroid_000[1-2].cbf",
             "convert_sequences_to_stills=True",
             "squash_errors=False",
             "composite_output=True",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -79,17 +81,17 @@ def test_kapton(tmp_path, dials_data):
     )
 
     command_without_kapton = (
-        "dials.stills_process",
+        shutil.which("dials.stills_process"),
         image_file,
         "params_without_kapton.phil",
     )
     command_with_kapton = (
-        "dials.stills_process",
+        shutil.which("dials.stills_process"),
         image_file,
         "params_with_kapton.phil",
     )
-    procrunner.run(command_without_kapton, working_directory=tmp_path)
-    procrunner.run(command_with_kapton, working_directory=tmp_path)
+    subprocess.run(command_without_kapton, cwd=tmp_path, capture_output=True)
+    subprocess.run(command_with_kapton, cwd=tmp_path, capture_output=True)
 
     # Now compare the 2 experimental results
     # Currently just comparing the median values to get a sense of the effect if the kapton and whether it is being applied correctly

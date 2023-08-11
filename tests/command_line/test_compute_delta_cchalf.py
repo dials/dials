@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dials.command_line.compute_delta_cchalf import CCHalfFromMTZ, phil_scope, run
@@ -39,14 +40,14 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmp_path):
 
     # set cutoff to 0.0 to force one to be 'rejected'
     command = [
-        "dials.compute_delta_cchalf",
+        shutil.which("dials.compute_delta_cchalf"),
         refls,
         expts,
         "stdcutoff=0.0",
         "output.reflections=filtered.refl",
         "output.experiments=filtered.expt",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "filtered.expt").is_file()
     assert (tmp_path / "filtered.refl").is_file()
@@ -63,18 +64,18 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmp_path):
     expts = location / "scaled_20_25.expt"
 
     # First export the data
-    command = ["dials.export", refls, expts, "partiality_threshold=0.99"]
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [shutil.which("dials.export"), refls, expts, "partiality_threshold=0.99"]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.mtz").is_file()
 
     # set cutoff to 0.0 to force one to be 'rejected'
     command = [
-        "dials.compute_delta_cchalf",
+        shutil.which("dials.compute_delta_cchalf"),
         f"mtzfile={tmp_path / 'scaled.mtz'}",
         "stdcutoff=0.0",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "delta_cchalf.dat").is_file()
     assert (tmp_path / "compute_delta_cchalf.html").is_file()

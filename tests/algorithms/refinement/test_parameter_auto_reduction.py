@@ -196,3 +196,28 @@ def test_check_and_remove():
     assert xl_ori_params[0].num_free() == 0
     assert xl_uc_params[0].num_free() == 0
     assert len(test.refman.get_obs()) == 823 - 792
+
+
+def test_ignore(tc):
+
+    n_det = tc.det_param.num_free()
+    n_beam = tc.s0_param.num_free()
+    n_xlo = tc.xlo_param.num_free()
+    n_xluc = tc.xluc_param.num_free()
+
+    options = ar_phil_scope.extract()
+    options.ignore = True
+    ar = AutoReduce(options, pred_param=tc.pred_param, reflection_manager=tc.refman)
+
+    ar()
+
+    # All parameters should remain free, and all reflections still present
+    det_params = tc.pred_param.get_detector_parameterisations()
+    beam_params = tc.pred_param.get_beam_parameterisations()
+    xl_ori_params = tc.pred_param.get_crystal_orientation_parameterisations()
+    xl_uc_params = tc.pred_param.get_crystal_unit_cell_parameterisations()
+    assert det_params[0].num_free() == n_det
+    assert beam_params[0].num_free() == n_beam
+    assert xl_ori_params[0].num_free() == n_xlo
+    assert xl_uc_params[0].num_free() == n_xluc
+    assert len(tc.refman.get_matches()) == 823

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pickle
-
-import procrunner
+import shutil
+import subprocess
 
 
 def return_locations():
@@ -35,16 +35,16 @@ def return_locations():
 
 
 def test_find_bad_pixels(dials_data, tmp_path):
-
     image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))
     image_files = image_files[:10] + image_files[-10:]
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_bad_pixels",
+            shutil.which("dials.find_bad_pixels"),
             "mask=pixels.mask",
         ]
         + image_files,
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -75,12 +75,13 @@ def test_find_bad_pixels(dials_data, tmp_path):
 
     # check that this mask can be used in import
     image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))[:3]
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "mask=pixels.mask",
         ]
         + image_files,
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr

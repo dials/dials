@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 import libtbx
@@ -72,17 +73,19 @@ def test_dynamic_shadowing(
 
 @pytest.mark.xfail(reason="Failing due to deprecation warning in output")
 def test_shadow_plot(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.import",
+            shutil.which("dials.import"),
             dials_data("image_examples", pathlib=True) / "DLS_I03_smargon_0001.cbf.gz",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
+    result = subprocess.run(
         ("dials.shadow_plot", "imported.expt", "json=shadow.json"),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("scan_shadow_plot.png").is_file()
@@ -90,9 +93,10 @@ def test_shadow_plot(dials_data, tmp_path):
     d = json.loads(tmp_path.joinpath("shadow.json").read_text())
     assert set(d) == {"fraction_shadowed", "scan_points"}
     assert d["fraction_shadowed"] == pytest.approx([0.003016, 0.003141], 2e-4)
-    result = procrunner.run(
+    result = subprocess.run(
         ("dials.shadow_plot", "imported.expt", "mode=2d", "plot=shadow_2d.png"),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("shadow_2d.png").is_file()

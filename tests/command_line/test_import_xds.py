@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 from dials.array_family import flex
 
 
 def test_import_integrate_hkl(dials_data, tmp_path):
     data = dials_data("centroid_test_data", pathlib=True)
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import_xds",
+            shutil.which("dials.import_xds"),
             "input.method=reflections",
             data / "INTEGRATE.HKL",
             data / "experiments.json",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -30,13 +32,14 @@ def test_import_integrate_hkl(dials_data, tmp_path):
 
 
 def test_import_spot_xds(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import_xds",
+            shutil.which("dials.import_xds"),
             "input.method=reflections",
             dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -50,14 +53,15 @@ def test_import_spot_xds(dials_data, tmp_path):
 
 
 def test_import_spot_xds_with_filtering(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import_xds",
+            shutil.which("dials.import_xds"),
             "input.method=reflections",
             dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS",
             "remove_invalid=True",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -72,14 +76,15 @@ def test_import_spot_xds_with_filtering(dials_data, tmp_path):
 
 def test_from_xds_files(dials_data, tmp_path):
     # Import from the image files
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import_xds",
+            shutil.which("dials.import_xds"),
             "input.method=experiment",
             "output.filename=import_xds.expt",
             dials_data("centroid_test_data", pathlib=True),
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 

@@ -57,7 +57,7 @@ reference = None
             "data will be reindexed to be consistent with the indexing mode of"
             "this reference file."
     .expert_level = 2
-
+include scope dials.util.reference.reference_phil_str
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
 relative_length_tolerance = 0.05
@@ -101,8 +101,9 @@ class cosym(Subject):
 
         reference_intensities = None
         if self.params.reference:
+            wl = np.mean([expt.beam.get_wavelength() for expt in experiments])
             reference_intensities, space_group_info = extract_reference_intensities(
-                params
+                params, wavelength=wl
             )
             if self.params.space_group and (
                 self.params.space_group.type().number()
@@ -187,6 +188,8 @@ class cosym(Subject):
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
         if reference_intensities:
+            # Note the minimum cell reduction routines can introduce a change of hand for the reference.
+            # The purpose of the reference is to help the clustering, not guarantee the indexing solution.
             datasets.append(reference_intensities)
             self.cosym_analysis = CosymAnalysis(
                 datasets, self.params, seed_dataset=len(datasets) - 1
@@ -243,7 +246,7 @@ class cosym(Subject):
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
         if self.params.reference:
-            unique_ids = set(self.cosym_analysis.dataset_ids[:-1])
+            unique_ids = sorted(set(self.cosym_analysis.dataset_ids))[:-1]
             reindexing_ops = reindexing_ops[:-1]
         else:
             unique_ids = set(self.cosym_analysis.dataset_ids)
