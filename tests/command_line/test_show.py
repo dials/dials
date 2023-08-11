@@ -44,6 +44,7 @@ Panel:
 Max resolution (at corners): 1.008178
 Max resolution (inscribed):  1.204283
 Beam:
+    probe: x-ray
     wavelength: 0.9795
     sample to source direction : {0,0,1}
     divergence: 0
@@ -120,6 +121,7 @@ Panel:
 Max resolution (at corners): 1.161261
 Max resolution (inscribed):  1.509475
 Beam:
+    probe: x-ray
     wavelength: 0.97625
     sample to source direction : {0,0,1}
     divergence: 0
@@ -180,6 +182,7 @@ Panel:
 Max resolution (at corners): 1.008375
 Max resolution (inscribed):  1.204621
 Beam:
+    probe: x-ray
     wavelength: 0.9795
     sample to source direction : {0,0,1}
     divergence: 0
@@ -243,7 +246,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-44:])
+        "\n".join(output[-45:])
         == """
 Panel:
   name: row-23
@@ -267,6 +270,7 @@ Panel:
 Max resolution (at corners): 0.624307
 Max resolution (inscribed):  0.829324
 Beam:
+    probe: x-ray
     wavelength: 0.95373
     sample to source direction : {0,0,1}
     divergence: 0
