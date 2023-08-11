@@ -1,0 +1,1 @@
+Remove xfel-module skip behaviour from tests that no longer need it.
