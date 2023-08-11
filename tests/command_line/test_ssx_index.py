@@ -6,14 +6,11 @@ import pathlib
 import shutil
 import subprocess
 
-import pytest
-
 from dxtbx.serialize import load
 
 from dials.command_line.ssx_index import run
 
 
-@pytest.mark.xfel
 def test_ssx_index_reference_geometry(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = ssx / "imported_with_ref_5.expt"
@@ -47,7 +44,6 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     assert data["filtered_images"] == [4]
 
 
-@pytest.mark.xfel
 def test_ssx_index_no_reference_geometry(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = ssx / "imported_no_ref_5.expt"
@@ -81,7 +77,6 @@ def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
     assert len(experiments) == 0
 
 
-@pytest.mark.xfel
 def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = str(ssx / "imported_with_ref_5.expt")
