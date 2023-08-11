@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 
-def test_for_overlaps(dials_regression):
+def test_for_overlaps(dials_regression: Path):
     from cctbx.array_family import flex
 
     from dials.algorithms.shoebox import MaskCode

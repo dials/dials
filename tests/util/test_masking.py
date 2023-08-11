@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -102,7 +103,7 @@ def test_shadow_plot(dials_data, tmp_path):
     assert tmp_path.joinpath("shadow_2d.png").is_file()
 
 
-def test_filter_shadowed_reflections(dials_regression):
+def test_filter_shadowed_reflections(dials_regression: Path):
     experiments_json = os.path.join(
         dials_regression, "shadow_test_data", "DLS_I04_SmarGon", "experiments.json"
     )
