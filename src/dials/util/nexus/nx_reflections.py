@@ -196,36 +196,59 @@ def write(handle, key, data):
         dsc = "Profile rmsd"
         make_float(handle, "prf_rmsd", col, dsc)
     else:
-        raise KeyError(f"Column {key} not written to file")
+        if isinstance(data, type(flex.int())):
+            col = data
+            dsc = "DIALS-specific column"
+            make_int(handle, key, col, dsc)
+        elif isinstance(data, type(flex.double())):
+            col = data
+            dsc = "DIALS-specific column"
+            make_float(handle, key, col, dsc)
+        elif isinstance(data, type(flex.size_t())):
+            col = data
+            dsc = "DIALS-specific column"
+            make_uint(handle, key, col, dsc)
+        elif isinstance(data, type(flex.vec3_double())):
+            col1, col2, col3 = data.parts()
+            dsc = "DIALS-specific column"
+            make_float(handle, key + "_col1", col1, dsc)
+            make_float(handle, key + "_col2", col2, dsc)
+            make_float(handle, key + "_col3", col3, dsc)
+        else:
+            print(key, type(data))
+            raise KeyError(f"Column {key} not written to file")
 
 
-def read(handle, key):
+def read_known_column(handle, key):
     from dxtbx.format.nexus import convert_units
 
     if key == "miller_index":
         h = flex.int(handle["h"][:].astype(np.int32))
         k = flex.int(handle["k"][:].astype(np.int32))
         l = flex.int(handle["l"][:].astype(np.int32))
-        return flex.miller_index(h, k, l)
+        return flex.miller_index(h, k, l), ("h", "k", "l")
     elif key == "id":
-        return flex.int(handle["id"][:].astype(int))
+        return flex.int(handle["id"][:].astype(int)), ("id",)
     elif key == "partial_id":
-        return flex.size_t(handle["reflection_id"][:].astype(int))
+        return flex.size_t(handle["reflection_id"][:].astype(int)), ("reflection_id",)
     elif key == "entering":
-        return flex.bool(handle["entering"][:].astype(bool))
+        return flex.bool(handle["entering"][:].astype(bool)), ("entering",)
     elif key == "flags":
-        return flex.size_t(handle["flags"][:].astype(int))
+        return flex.size_t(handle["flags"][:].astype(int)), ("flags",)
     elif key == "panel":
-        return flex.size_t(handle["det_module"][:].astype(int))
+        return flex.size_t(handle["det_module"][:].astype(int)), ("det_module",)
     elif key == "d":
-        return flex.double(handle["d"][:])
+        return flex.double(handle["d"][:]), ("d",)
     elif key == "partiality":
-        return flex.double(handle["partiality"][:])
+        return flex.double(handle["partiality"][:]), ("partiality",)
     elif key == "xyzcal.px":
         x = flex.double(handle["predicted_px_x"][:])
         y = flex.double(handle["predicted_px_y"][:])
         z = flex.double(handle["predicted_frame"][:])
-        return flex.vec3_double(x, y, z)
+        return (
+            flex.vec3_double(x, y, z),
+            ("predicted_px_x", "predicted_px_y", "predicted_frame"),
+        )
     elif key == "xyzcal.mm":
         x = convert_units(
             flex.double(handle["predicted_x"][:]),
@@ -242,20 +265,29 @@ def read(handle, key):
             handle["predicted_phi"].attrs["units"],
             "rad",
         )
-        return flex.vec3_double(x, y, z)
+        return (
+            flex.vec3_double(x, y, z),
+            ("predicted_x", "predicted_y", "predicted_phi"),
+        )
     elif key == "bbox":
         b = flex.int(handle["bounding_box"][:].astype(np.int32))
-        return flex.int6(b.as_1d())
+        return flex.int6(b.as_1d()), ("bounding_box",)
     elif key == "xyzobs.px.value":
         x = flex.double(handle["observed_px_x"][:])
         y = flex.double(handle["observed_px_y"][:])
         z = flex.double(handle["observed_frame"][:])
-        return flex.vec3_double(x, y, z)
+        return (
+            flex.vec3_double(x, y, z),
+            ("observed_px_x", "observed_px_y", "observed_frame"),
+        )
     elif key == "xyzobs.px.variance":
         x = flex.double(handle["observed_px_x_var"][:])
         y = flex.double(handle["observed_px_y_var"][:])
         z = flex.double(handle["observed_frame_var"][:])
-        return flex.vec3_double(x, y, z)
+        return (
+            flex.vec3_double(x, y, z),
+            ("observed_px_x_var", "observed_px_y_var", "observed_frame_var"),
+        )
     elif key == "xyzobs.mm.value":
         x = convert_units(
             flex.double(handle["observed_x"][:]),
@@ -272,7 +304,7 @@ def read(handle, key):
             handle["observed_phi"].attrs["units"],
             "rad",
         )
-        return flex.vec3_double(x, y, z)
+        return flex.vec3_double(x, y, z), ("observed_x", "observed_y", "observed_phi")
     elif key == "xyzobs.mm.variance":
         x = convert_units(
             flex.double(handle["observed_x_var"][:]),
@@ -289,32 +321,58 @@ def read(handle, key):
             handle["observed_phi_var"].attrs["units"],
             "rad",
         )
-        return flex.vec3_double(x, y, z)
+        return (
+            flex.vec3_double(x, y, z),
+            ("observed_x_var", "observed_y_var", "observed_phi_var"),
+        )
     elif key == "background.mean":
-        return flex.double(handle["background_mean"][:])
+        return flex.double(handle["background_mean"][:]), ("background_mean",)
     elif key == "intensity.sum.value":
-        return flex.double(handle["int_sum"][:])
+        return flex.double(handle["int_sum"][:]), ("int_sum",)
     elif key == "intensity.sum.variance":
-        return flex.double(handle["int_sum_var"][:])
+        return flex.double(handle["int_sum_var"][:]), ("int_sum_var",)
     elif key == "intensity.prf.value":
-        return flex.double(handle["int_prf"][:])
+        return flex.double(handle["int_prf"][:]), ("int_prf",)
     elif key == "intensity.prf.variance":
-        return flex.double(handle["int_prf_var"][:])
+        return flex.double(handle["int_prf_var"][:]), ("int_prf_var",)
     elif key == "profile.correlation":
-        return flex.double(handle["prf_cc"][:])
+        return flex.double(handle["prf_cc"][:]), ("prf_cc",)
     elif key == "lp":
-        return flex.double(handle["lp"][:])
+        return flex.double(handle["lp"][:]), ("lp",)
     elif key == "num_pixels.background":
-        return flex.int(handle["num_bg"][:].astype(np.int32))
+        return flex.int(handle["num_bg"][:].astype(np.int32)), ("num_bg",)
     elif key == "num_pixels.background_used":
-        return flex.int(handle["num_bg_used"][:].astype(np.int32))
+        return flex.int(handle["num_bg_used"][:].astype(np.int32)), ("num_bg_used",)
     elif key == "num_pixels.foreground":
-        return flex.int(handle["num_fg"][:].astype(np.int32))
+        return flex.int(handle["num_fg"][:].astype(np.int32)), ("num_fg",)
     elif key == "num_pixels.valid":
-        return flex.int(handle["num_valid"][:].astype(np.int32))
+        return flex.int(handle["num_valid"][:].astype(np.int32)), ("num_valid",)
     elif key == "profile.rmsd":
-        return flex.double(handle["prf_rmsd"][:])
+        return flex.double(handle["prf_rmsd"][:]), ("prf_rmsd",)
     else:
+        raise KeyError(f"Column {key} not read from file")
+
+
+def read_unknown_column(handle, key):
+    if key.endswith("_col1"):
+        k = key.split("_col1")[0]
+        col1 = flex.double(handle[k + "_col1"][:])
+        col2 = flex.double(handle[k + "_col2"][:])
+        col3 = flex.double(handle[k + "_col3"][:])
+        return flex.vec3_double(col1, col2, col3)
+    elif np.issubdtype(handle[key].dtype, np.floating):
+        return flex.double(handle[key][:])
+    elif np.issubdtype(handle[key].dtype, np.signedinteger):
+        return flex.int(handle[key][:])
+    elif np.issubdtype(handle[key].dtype, np.unsignedinteger):
+        return flex.size_t(handle[key][:])
+    else:
+        print(
+            key,
+            handle,
+            handle[key].dtype,
+            np.issubdtype(handle[key].dtype, np.floating),
+        )
         raise KeyError(f"Column {key} not read from file")
 
 
@@ -414,15 +472,33 @@ def load(entry):
         "profile.rmsd",
     ]
 
+    refls_columns = list(refls.keys())
+
     # The reflection table
     table = None
 
-    # For each column in the reflection table dump to file
+    # For each column in the reflection table read from file
     for key in columns:
         try:
-            col = read(refls, key)
+            col, read_key = read_known_column(refls, key)
         except KeyError:
             continue
+        for rk in read_key:
+            refls_columns.pop(refls_columns.index(rk))
+        if table is None:
+            table = flex.reflection_table()
+        table[key] = col
+
+    # try to read any other data in the file
+    for key in refls_columns:
+        if key.endswith("_col2") or key.endswith("_col3"):
+            continue
+        try:
+            col = read_unknown_column(refls, key)
+        except KeyError:
+            continue
+        if key.endswith("_col1"):
+            key = key.split("_col1")[0]
         if table is None:
             table = flex.reflection_table()
         table[key] = col
