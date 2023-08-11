@@ -164,7 +164,7 @@ class Script:
             for i, wl in enumerate(sorted(wavelengths.keys())):
                 expids = []
                 new_exps = ExperimentList()
-                exp_nos = wavelengths[wl]
+                exp_nos = wavelengths[wl].exp_nos
                 imageset_ids = []  # record imageset ids to set in refl table
                 imagesets_found = OrderedSet()
                 for j in exp_nos:
