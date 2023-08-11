@@ -388,8 +388,11 @@ namespace dials { namespace algorithms { namespace boost_python {
      * @param experiment The experiment
      * @param sigma The covariance matrix
      */
-    PredictorAngular(Experiment experiment, mat3<double> sigma, double probability)
-        : PredictorBase(experiment, probability), sigma_(sigma) {}
+    PredictorAngular(Experiment experiment,
+                     mat3<double> sigma,
+                     double probability,
+                     mat3<double> sigma_A)
+        : PredictorBase(experiment, probability), sigma_(sigma), sigma_A_(sigma_A) {}
 
   protected:
     /**
@@ -400,10 +403,13 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat3<double> Q = compute_change_of_basis_operation2(s0, r);
       vec3<double> zaxis(0, 0, 1);
       DIALS_ASSERT(std::abs(((Q * r.normalize()) * zaxis) - 1) < TINY);
-      return (Q.transpose() * sigma_ * Q);
+      double r_scale = std::pow(r.length(), 2);
+      mat3<double> A(r_scale, 0, 0, 0, r_scale, 0, 0, 0, 0.0);
+      return (Q.transpose() * A * sigma_A_ * Q) + sigma_;
     }
 
     mat3<double> sigma_;
+    mat3<double> sigma_A_;
   };
 
   /**
@@ -600,8 +606,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     BBoxCalculatorAngular(Experiment experiment,
                           mat3<double> sigma,
                           double probability,
-                          int border)
-        : BBoxCalculatorBase(experiment, probability, border), sigma_(sigma) {}
+                          int border,
+                          mat3<double> sigma_A)
+        : BBoxCalculatorBase(experiment, probability, border),
+          sigma_(sigma),
+          sigma_A_(sigma_A) {}
 
   protected:
     /**
@@ -612,10 +621,13 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat3<double> Q = compute_change_of_basis_operation2(s0, r);
       vec3<double> zaxis(0, 0, 1);
       DIALS_ASSERT(std::abs(((Q * r.normalize()) * zaxis) - 1) < TINY);
-      return (Q.transpose() * sigma_ * Q);
+      double r_scale = std::pow(r.length(), 2);
+      mat3<double> A(r_scale, 0, 0, 0, r_scale, 0, 0, 0, 0.0);
+      return (Q.transpose() * A * sigma_A_ * Q) + sigma_;
     }
 
     mat3<double> sigma_;
+    mat3<double> sigma_A_;
   };
 
   /**
@@ -823,8 +835,13 @@ namespace dials { namespace algorithms { namespace boost_python {
      * @param experiment The experiment
      * @param sigma The covariance matrix
      */
-    MaskCalculatorAngular(Experiment experiment, mat3<double> sigma, double probability)
-        : MaskCalculatorBase(experiment, probability), sigma_(sigma) {}
+    MaskCalculatorAngular(Experiment experiment,
+                          mat3<double> sigma,
+                          double probability,
+                          mat3<double> sigma_A)
+        : MaskCalculatorBase(experiment, probability),
+          sigma_(sigma),
+          sigma_A_(sigma_A) {}
 
   protected:
     /**
@@ -835,10 +852,13 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat3<double> Q = compute_change_of_basis_operation2(s0, r);
       vec3<double> zaxis(0, 0, 1);
       DIALS_ASSERT(std::abs(((Q * r.normalize()) * zaxis) - 1) < TINY);
-      return (Q.transpose() * sigma_ * Q);
+      double r_scale = std::pow(r.length(), 2);
+      mat3<double> A(r_scale, 0, 0, 0, r_scale, 0, 0, 0, 0.0);
+      return (Q.transpose() * A * sigma_A_ * Q) + sigma_;
     }
 
     mat3<double> sigma_;
+    mat3<double> sigma_A_;
   };
 
   vec2<double> rse(const mat3<double> &R,
@@ -877,7 +897,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<Experiment, mat3<double>, double>());
 
     class_<PredictorAngular, bases<PredictorBase>>("PredictorAngular", no_init)
-      .def(init<Experiment, mat3<double>, double>());
+      .def(init<Experiment, mat3<double>, double, mat3<double>>());
 
     class_<BBoxCalculatorBase>("BBoxCalculatorBase", no_init)
       .def("compute", &BBoxCalculatorBase::compute);
@@ -888,7 +908,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<BBoxCalculatorAngular, bases<BBoxCalculatorBase>>("BBoxCalculatorAngular",
                                                              no_init)
-      .def(init<Experiment, mat3<double>, double, int>());
+      .def(init<Experiment, mat3<double>, double, int, mat3<double>>());
 
     class_<MaskCalculatorBase>("MaskCalculatorBase", no_init)
       .def("compute", &MaskCalculatorBase::compute);
@@ -899,7 +919,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<MaskCalculatorAngular, bases<MaskCalculatorBase>>("MaskCalculatorAngular",
                                                              no_init)
-      .def(init<Experiment, mat3<double>, double>());
+      .def(init<Experiment, mat3<double>, double, mat3<double>>());
   }
 
 }}}  // namespace dials::algorithms::boost_python

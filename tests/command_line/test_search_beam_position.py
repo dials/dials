@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -13,7 +14,9 @@ from dials.command_line import search_beam_position
 from ..algorithms.indexing.test_index import run_indexing
 
 
-def test_search_i04_weak_data_image_range(mocker, run_in_tmp_path, dials_regression):
+def test_search_i04_weak_data_image_range(
+    mocker, run_in_tmp_path, dials_regression: Path
+):
     """Perform a beam-centre search and check that the output is sane."""
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
@@ -51,7 +54,7 @@ def test_search_i04_weak_data_image_range(mocker, run_in_tmp_path, dials_regress
     assert shift.elems == pytest.approx((0.27, -0.12, 0.0), abs=1e-1)
 
 
-def test_search_multiple(run_in_tmp_path, dials_regression):
+def test_search_multiple(run_in_tmp_path, dials_regression: Path):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:

@@ -3,13 +3,14 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from dxtbx.serialize import load
 
 from dials.command_line.show import model_connectivity, run
 
 
-def test_dials_show(dials_regression):
+def test_dials_show(dials_regression: Path):
     path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
     result = subprocess.run(
         [shutil.which("dials.show"), path],
@@ -43,6 +44,7 @@ Panel:
 Max resolution (at corners): 1.008178
 Max resolution (inscribed):  1.204283
 Beam:
+    probe: x-ray
     wavelength: 0.9795
     sample to source direction : {0,0,1}
     divergence: 0
@@ -80,7 +82,7 @@ Crystal:
     )
 
 
-def test_dials_show_i04_weak_data(dials_regression):
+def test_dials_show_i04_weak_data(dials_regression: Path):
     path = os.path.join(
         dials_regression,
         "indexing_test_data",
@@ -119,6 +121,7 @@ Panel:
 Max resolution (at corners): 1.161261
 Max resolution (inscribed):  1.509475
 Beam:
+    probe: x-ray
     wavelength: 0.97625
     sample to source direction : {0,0,1}
     divergence: 0
@@ -179,6 +182,7 @@ Panel:
 Max resolution (at corners): 1.008375
 Max resolution (inscribed):  1.204621
 Beam:
+    probe: x-ray
     wavelength: 0.9795
     sample to source direction : {0,0,1}
     divergence: 0
@@ -203,7 +207,7 @@ Goniometer:
     )
 
 
-def test_dials_show_multi_panel_i23(dials_regression):
+def test_dials_show_multi_panel_i23(dials_regression: Path):
     path = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )
@@ -242,7 +246,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-44:])
+        "\n".join(output[-45:])
         == """
 Panel:
   name: row-23
@@ -266,6 +270,7 @@ Panel:
 Max resolution (at corners): 0.624307
 Max resolution (inscribed):  0.829324
 Beam:
+    probe: x-ray
     wavelength: 0.95373
     sample to source direction : {0,0,1}
     divergence: 0
@@ -352,7 +357,7 @@ def test_dials_show_reflection_table(dials_data):
         assert name in out
 
 
-def test_dials_show_image_statistics(dials_regression):
+def test_dials_show_image_statistics(dials_regression: Path):
     # Run on one multi-panel image
     path = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
@@ -371,7 +376,7 @@ def test_dials_show_image_statistics(dials_regression):
     )
 
 
-def test_dials_show_image_statistics_with_no_image_data(dials_regression):
+def test_dials_show_image_statistics_with_no_image_data(dials_regression: Path):
     # Example where image data doesn't exist
     path = os.path.join(
         dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"

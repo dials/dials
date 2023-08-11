@@ -378,7 +378,13 @@ class XrayFrame(XFBaseClass):
                 if res > lowest_res:
                     panel_id = p_id
                     lowest_res = res
-            x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_s0())
+            try:
+                x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_s0())
+            except RuntimeError:
+                # cope with cases like https://github.com/dials/dials/issues/2478
+                x_mm, y_mm = detector[panel_id].get_bidirectional_ray_intersection(
+                    beam.get_s0()
+                )
 
         beam_pixel_fast, beam_pixel_slow = detector[panel_id].millimeter_to_pixel(
             (x_mm, y_mm)

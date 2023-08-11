@@ -19,7 +19,7 @@ from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.indexer import Indexer
 from dials.algorithms.indexing.max_cell import find_max_cell
 from dials.array_family import flex
-from dials.command_line.combine_experiments import CombineWithReference
+from dials.util.combine_experiments import CombineWithReference
 
 RAD2DEG = 180 / math.pi
 
@@ -229,7 +229,7 @@ def index_all_concurrent(
                 expt = experiments[refl_index]
                 scan = iset.get_scan()
                 if scan:
-                    idx_0 = i + iset.get_scan().get_batch_offset()  # slicing index
+                    idx_0 = i  # slicing index
                     new_iset = iset[idx_0 : idx_0 + 1]
                     expt.imageset = new_iset
                 input_iterable.append(

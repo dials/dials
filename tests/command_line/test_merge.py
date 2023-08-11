@@ -240,7 +240,7 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     m = mtz.object(str(tmp_path / "merged.mtz"))
     arrays = m.as_miller_arrays()
-    assert arrays[1].info().wavelength == pytest.approx(0.7)
+    assert arrays[1].info().wavelength == pytest.approx(0.69441, abs=1e-5)
     assert len(arrays) == 8
     assert abs(arrays[1].size() - 1538) < 10
 

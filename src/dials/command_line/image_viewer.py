@@ -62,12 +62,8 @@ show_integrated = False
   .type = bool
 show_mask = False
   .type = bool
-show_basis_vectors = True
-  .type = bool
 show_rotation_axis = False
   .type = bool
-basis_vector_scale = 10
-  .type = int(value_min=1, value_max=20)
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice

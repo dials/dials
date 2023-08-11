@@ -15,8 +15,12 @@ import pytest
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
-import dials.command_line.combine_experiments as combine_experiments
 from dials.array_family import flex
+from dials.command_line.combine_experiments import (
+    combine_experiments,
+    combine_experiments_no_reflections,
+    phil_scope,
+)
 
 
 def test(dials_data, tmp_path):
@@ -218,8 +222,11 @@ def test(dials_data, tmp_path):
     assert not tmp_path.joinpath("test_by_detector_002.refl").is_file()
 
 
-@pytest.mark.parametrize("with_identifiers", ["True", "False"])
-def test_combine_clustering(dials_data, tmp_path, with_identifiers):
+@pytest.mark.parametrize(
+    "with_identifiers,with_reflections",
+    [("True", "True"), ("False", "True"), ("True", "False")],
+)
+def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflections):
     """Test with the clustering.use=True option.
 
     Need to use an integrated dataset for this option.
@@ -242,14 +249,19 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
             (
                 f"  input.experiments={tmp_path / f'{i}.expt'}\n"
                 + f"  input.reflections={tmp_path / f'{i}.refl'}"
+                if with_reflections
+                else ""
             )
             for i in [0, 1, 2, 3, 4]
         )
+
     else:
         phil_input = "\n".join(
             (
                 f"  input.experiments={data_dir}/experiments_{i}.json\n"
                 + f"  input.reflections={data_dir}/reflections_{i}.pickle"
+                if with_reflections
+                else ""
             )
         )
 
@@ -271,19 +283,21 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers):
     #   combined_cluster_2 (3 expts)
 
     assert not result.returncode and not result.stderr
-    assert tmp_path.joinpath("combined_cluster2.refl").is_file()
     assert tmp_path.joinpath("combined_cluster2.expt").is_file()
-    assert tmp_path.joinpath("combined_cluster1.refl").is_file()
     assert tmp_path.joinpath("combined_cluster1.expt").is_file()
+    if with_reflections:
+        assert tmp_path.joinpath("combined_cluster2.refl").is_file()
+        assert tmp_path.joinpath("combined_cluster1.refl").is_file()
 
     exps = load.experiment_list(tmp_path / "combined_cluster1.expt", check_format=False)
     assert len(exps) == 2
-    refls = flex.reflection_table.from_file(tmp_path / "combined_cluster1.refl")
-    assert list(set(refls["id"])) == [0, 1]
     exps = load.experiment_list(tmp_path / "combined_cluster2.expt", check_format=False)
     assert len(exps) == 3
-    refls = flex.reflection_table.from_file(tmp_path / "combined_cluster2.refl")
-    assert list(set(refls["id"])) == [0, 1, 2]
+    if with_reflections:
+        refls = flex.reflection_table.from_file(tmp_path / "combined_cluster1.refl")
+        assert list(set(refls["id"])) == [0, 1]
+        refls = flex.reflection_table.from_file(tmp_path / "combined_cluster2.refl")
+        assert list(set(refls["id"])) == [0, 1, 2]
 
 
 @pytest.fixture
@@ -397,6 +411,7 @@ def test_combine_nsubset(
 
 
 def test_failed_tolerance_error(dials_data, monkeypatch):
+
     """Test that we get a sensible error message on tolerance failures"""
     # Select some experiments to use for combining
     data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
@@ -404,47 +419,51 @@ def test_failed_tolerance_error(dials_data, monkeypatch):
         data_dir,
         "sweep_{:03d}_{}",
     )
-    files = [
-        jsons.format(2, "experiments.json"),
-        jsons.format(2, "reflections.pickle"),
-        jsons.format(3, "experiments.json"),
-        jsons.format(3, "reflections.pickle"),
+    list_of_elists = [
+        load.experiment_list(jsons.format(2, "experiments.json"), check_format=False),
+        load.experiment_list(jsons.format(3, "experiments.json"), check_format=False),
+    ]
+    list_of_elists[0][0].identifier = "0"
+    list_of_elists[1][0].identifier = "1"
+    list_of_tables = [
+        flex.reflection_table.from_file(jsons.format(2, "reflections.pickle")),
+        flex.reflection_table.from_file(jsons.format(4, "reflections.pickle")),
     ]
 
-    # Use the combine script
-    script = combine_experiments.Script()
-    # Disable writing output
-    monkeypatch.setattr(script, "_save_output", lambda *args: None)
-    # Parse arguments and configure
-    params, options = script.parser.parse_args(files)
+    params = phil_scope.extract()
     params.reference_from_experiment.beam = 0
 
     # Validate that these pass
-    script.run_with_preparsed(params, options)
+    combine_experiments(params, list_of_elists, list_of_tables)
 
     # Now, alter the beam to check it doesn't pass
-    exp_2 = params.input.experiments[1].data[0]
-    exp_2.beam.set_wavelength(exp_2.beam.get_wavelength() * 2)
+    expt2 = list_of_elists[1][0]
+    expt2.beam.set_wavelength(expt2.beam.get_wavelength() * 2)
 
     with pytest.raises(SystemExit) as exc:
-        script.run_with_preparsed(params, options)
+        combine_experiments(params, list_of_elists, list_of_tables)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)
 
 
 def test_combine_imagesets(dials_data, tmp_path):
     data = dials_data("l_cysteine_dials_output", pathlib=True)
-    args = [
-        *sorted(data.glob("*_integrated.pickle")),
-        *sorted(data.glob("*_integrated_experiments.json")),
-        f"experiments_filename={tmp_path}/combined.expt",
-        f"reflections_file={tmp_path}/combined.refl",
+    list_of_elists = [
+        load.experiment_list(f, check_format=False)
+        for f in sorted(data.glob("*_integrated_experiments.json"))
     ]
-    combine_experiments.run([str(x) for x in args])
-
-    comb = flex.reflection_table.from_file(tmp_path / "combined.refl")
-
-    assert set(comb["imageset_id"]) == {0, 1, 2, 3}
+    list_of_tables = [
+        flex.reflection_table.from_file(f)
+        for f in sorted(data.glob("*_integrated.pickle"))
+    ]
+    params = phil_scope.extract()
+    expts, refls = combine_experiments(params, list_of_elists, list_of_tables)
+    assert set(refls["imageset_id"]) == {0, 1, 2, 3}
 
     # Check that we have preserved unindexed reflections for all of these
-    assert set(comb.select(comb["id"] == -1)["imageset_id"]) == {0, 1, 2, 3}
+    assert set(refls.select(refls["id"] == -1)["imageset_id"]) == {0, 1, 2, 3}
+
+    # test combining without reflections
+    expts2 = combine_experiments_no_reflections(params, list_of_elists)
+    assert len(expts2) == 4
+    assert expts2.identifiers() == expts.identifiers()

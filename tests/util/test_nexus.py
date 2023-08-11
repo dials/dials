@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
 
-def test_run(dials_regression, run_in_tmp_path):
+
+def test_run(dials_regression: Path, run_in_tmp_path):
     from os.path import join
 
     from dxtbx.model.experiment_list import ExperimentListFactory

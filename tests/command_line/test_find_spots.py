@@ -4,6 +4,7 @@ import os
 import pickle
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -356,7 +357,7 @@ def test_find_spots_with_image_exclusions(dials_data, tmp_path):
     assert len(z.select((z > 3) & (z < 6.5))) == 0
 
 
-def test_find_spots_with_xfel_stills(dials_regression, tmp_path):
+def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
     # now with XFEL stills
     result = subprocess.run(
         [
