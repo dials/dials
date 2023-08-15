@@ -622,7 +622,11 @@ class MetaDataUpdater:
 
                 new_experiments = ExperimentList()
                 for i, (file, n) in enumerate(files_to_indiv.items()):
-                    first, last = (1, n)
+                    if self.params.geometry.scan.image_range:
+                        user_start, user_end = self.params.geometry.scan.image_range
+                        first, last = user_start, user_end
+                    else:
+                        first, last = 1, n
                     iset_params[i].update({"lazy": False})
                     sequence = ImageSetFactory.make_sequence(
                         template=file,
@@ -637,7 +641,7 @@ class MetaDataUpdater:
                         format_kwargs=iset_params[i],
                     )
                     sequence = self.update_lookup(sequence, lookup)  # for mask etc
-                    for j in range(first - 1, last):
+                    for j in range(len(sequence)):
                         subset = sequence[j : j + 1]
                         new_experiments.append(
                             Experiment(
