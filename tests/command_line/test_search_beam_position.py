@@ -58,10 +58,10 @@ def test_search_multiple(run_in_tmp_path, dials_regression: Path):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
-    1. Run dials.search_beam_centre on two datablocks and two pickled
+    1. Run dials.search_beam_centre on two experiments and two pickled
     reflection tables, as output by dials.find_spots;
       a) Check that the program exits correctly;
-      b) Check that it produces the expected output datablock.
+      b) Check that it produces the expected output experiment.
     2. Check that the beam centre search has resulted in the expected shift
     in detector origin.
     """
@@ -145,10 +145,10 @@ def test_search_single(dials_data, run_in_tmp_path):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
-    1. Run dials.search_beam_centre on a single datablock and pickled
+    1. Run dials.search_beam_centre on a single experiment and pickled
     reflection table, as output by dials.find_spots;
       a) Check that the program exits correctly;
-      b) Check that it produces the expected output datablock.
+      b) Check that it produces the expected output experiment.
     2. Check that the beam centre search has resulted in the expected shift
     in detector origin.
     """
@@ -175,11 +175,11 @@ def test_search_small_molecule(dials_data, run_in_tmp_path):
     """Perform a beam-centre search on a multi-sequence data set..
 
     Do the following:
-    1. Run dials.search_beam_centre on a single datablock and pickled
+    1. Run dials.search_beam_centre on a single experiment and pickled
     reflection table containing multiple experiment IDs, as output by
     dials.find_spots;
       a) Check that the program exits correctly;
-      b) Check that it produces the expected output datablock.
+      b) Check that it produces the expected output experiment.
     2. Check that the beam centre search has resulted in the expected shift
     in detector origin.
     """
