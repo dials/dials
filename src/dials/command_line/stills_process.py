@@ -778,11 +778,24 @@ class Script:
                         print(f"Process {rankreq} is ready, sending {item[0]}\n")
                         comm.send(item, dest=rankreq)
 
+                    from threading import Thread
+                    from queue import Queue
+
+                    n_images = Queue()
+
+                    def file_counter():
+                        for filetag, filename in iterable:
+                            experiments = do_import(filename, load_models=False)
+                            n_images.put(len(experiments))
+
+                    counter = Thread(target=file_counter)
+                    counter.start()
+
                     if params.dispatch.image_mode == "multi":
                         count = 0
                         for filetag, filename in iterable:
-                            experiments = do_import(filename, load_models=False)
-                            for item_num in range(len(experiments)):
+                            n_experiments = n_images.get()
+                            for item_num in range(n_experiments):
                                 tag = filetag + "_%05d" % item_num
                                 if process_fractions and not process_this_event(
                                     item_num + count
