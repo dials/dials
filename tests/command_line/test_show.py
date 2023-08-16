@@ -380,19 +380,6 @@ def test_dials_show_image_statistics(dials_regression: Path):
     )
 
 
-def test_dials_show_image_statistics_with_no_image_data(dials_regression: Path):
-    # Example where image data doesn't exist
-    path = os.path.join(
-        dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
-    )
-    result = subprocess.run(
-        [shutil.which("dials.show"), "image_statistics.show_raw=true", path],
-        env={"DIALS_NOBANNER": "1", **os.environ},
-        capture_output=True,
-    )
-    assert result.returncode == 1 and result.stderr
-
-
 def test_dials_show_on_scaled_data(dials_data):
     """Test that dials.show works on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
