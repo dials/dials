@@ -35,20 +35,6 @@ steps:
 - bash: echo "##vso[task.prependpath]$CONDA/bin"
   displayName: Add conda to PATH
 
-# Copy GL/GLU/KHR headers into a place where they can be found during the
-# build. We don't include system headers so that we don't accidentally
-# pick up libc and friends
-# - bash: |
-#     set -eux
-#     mkdir -p modules/lib build/include
-#     cp -av /usr/include/GL build/include
-#     cp -av /usr/include/KHR build/include
-#     cp -av /usr/lib/x86_64-linux-gnu/libGL.so* modules/lib
-#     cp -av /usr/lib/x86_64-linux-gnu/libGLU.so* modules/lib
-#   displayName: Set up GL/GLU libraries and headers
-#   workingDirectory: $(Pipeline.Workspace)
-#   condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
-
 # Build and install dxtbx
 - script: |
     source activate conda_base/
@@ -129,49 +115,6 @@ steps:
   continueOnError: True
   timeoutInMinutes: 2
   workingDirectory: $(Pipeline.Workspace)/modules/dials
-
-# # Expand test environment to allow running xfel tests
-# - bash: |
-#     set -e
-#     . dials
-#     rm -rf tests &  # this will be overwritten with xfel tests
-#     conda install -y bash distro git-lfs mpi4py openmpi pandas
-#     cd modules
-#     git clone https://gitlab.com/cctbx/xfel_regression.git
-#     cd xfel_regression
-#     git lfs install --local
-#     git lfs pull
-#     libtbx.configure xfel_regression
-#     wait
-#   displayName: Prepare xfel_regression tests
-#   condition: and(eq(variables.isPullRequest, true), succeeded())
-#   workingDirectory: $(Pipeline.Workspace)
-
-# # Finally, run the full regression test suite
-# - bash: |
-#     set -e
-#     . dials
-#     mkdir -p tests/workdir
-#     cd tests/workdir
-#     libtbx.run_tests_parallel module=xfel_regression nproc=auto && {
-#       echo "XFEL regression tests passed on Python $(PYTHON_VERSION) $(Agent.OS)" > ../xfel-regression.output
-#     } || {
-#       echo "##vso[task.complete result=Failed;]XFEL regression tests failed" > ../xfel-regression.output
-#       echo "##[error]XFEL regression tests failed on Python $(PYTHON_VERSION) $(Agent.OS)" >> ../xfel-regression.output
-#     }
-#     mv run_tests_parallel_zlog ../xfel-regression.txt
-#     cd ..
-#     rm -rf workdir
-#   displayName: Run xfel_regression tests
-#   condition: and(eq(variables.isPullRequest, true), succeeded())
-#   workingDirectory: $(Pipeline.Workspace)
-
-# - task: PublishPipelineArtifact@1
-#   displayName: Store xfel_regression results
-#   condition: and(eq(variables.isPullRequest, true), succeeded())
-#   inputs:
-#     targetPath: $(Pipeline.Workspace)/tests
-#     artifactName: xfel-regression - Python $(PYTHON_VERSION) $(Agent.OS) - Run $(System.JobAttempt)
 
 # Reclaim disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create the dials-data cache archive
