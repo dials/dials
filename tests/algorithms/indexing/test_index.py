@@ -586,7 +586,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert (tmp_path / "indexed.refl").if_file()
+    assert (tmp_path / "indexed.refl").is_file()
     assert (tmp_path / "indexed.expt").is_file()
     experiments_list = load.experiment_list(
         tmp_path / "indexed.expt", check_format=False
