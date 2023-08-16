@@ -53,6 +53,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
@@ -131,6 +132,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: (210.76,205.28)
     px: (1225.35,1193.47)
@@ -192,6 +194,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
@@ -248,7 +251,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-45:])
+        "\n".join(output[-46:])
         == """
 Panel:
   name: row-23
@@ -281,6 +284,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: panel 12, (191.95,7.22)
     px: panel 12, (1116.00,41.96)
