@@ -1,33 +1,30 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 import pytest
 
 from cctbx import uctbx
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+from dxtbx.serialize import load
+from libtbx.phil import parse
+
+from dials.algorithms.refinement.refiner import RefinerFactory, phil_scope
 
 from .test_index import run_indexing
 
 
-@pytest.mark.xfail
-def test_run(dials_regression: Path, tmp_path):
+def test_run(dials_data, tmp_path):
     expected_unit_cell = uctbx.unit_cell(
         (11.624, 13.550, 30.103, 89.964, 93.721, 90.132)
     )
     expected_rmsds = (0.039, 0.035, 0.002)
 
-    experiments_old = os.path.join(
-        dials_regression, "indexing_test_data", "phi_scan", "datablock_old.json"
+    experiments_old = (
+        dials_data("indexing_test_data", pathlib=True) / "phi_scan_old.expt"
     )
-    experiments_new = os.path.join(
-        dials_regression, "indexing_test_data", "phi_scan", "datablock.json"
+    experiments_new = dials_data("indexing_test_data", pathlib=True) / "phi_scan.expt"
+    strong_pickle = (
+        dials_data("indexing_test_data", pathlib=True) / "phi_scan_strong.pickle"
     )
-    strong_pickle = os.path.join(
-        dials_regression, "indexing_test_data", "phi_scan", "strong.pickle"
-    )
-
-    from dxtbx.serialize import load
 
     imageset_old = load.experiment_list(
         experiments_old, check_format=False
@@ -106,8 +103,6 @@ def test_run(dials_regression: Path, tmp_path):
     )
 
     # Now test refinement gradients are correct
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-
     old_exps = ExperimentList(
         [
             Experiment(
@@ -133,12 +128,7 @@ def test_run(dials_regression: Path, tmp_path):
         ]
     )
 
-    from libtbx.phil import parse
-
-    from dials.algorithms.refinement.refiner import phil_scope
-
     params = phil_scope.fetch(source=parse("")).extract()
-    from dials.algorithms.refinement.refiner import RefinerFactory
 
     refiner_old = RefinerFactory.from_parameters_data_experiments(
         params, result_old.indexed_reflections, old_exps
