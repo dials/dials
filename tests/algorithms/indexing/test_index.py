@@ -562,20 +562,24 @@ def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_p
     assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
 
 
-@pytest.mark.xfail
-def test_refinement_failure_on_max_lattices_a15(
-    dials_regression: pathlib.Path, tmp_path
-):
+def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
     """Problem: Sometimes there is enough data to index, but not enough to
     refine. If this happens in the (N>1)th crystal of max_lattices, then
     all existing solutions are also dropped."""
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "lattice_failures")
+    lpe4_expt = (
+        dials_data("indexing_test_data", pathlib=True)
+        / "lattice_failure-lpe4-2-a15.expt"
+    )
+    lpe4_pickle = (
+        dials_data("indexing_test_data", pathlib=True)
+        / "lattice_failure-lpe4-2-a15_strong.pickle"
+    )
 
     result = subprocess.run(
         [
             shutil.which("dials.index"),
-            os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
-            os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
+            lpe4_pickle,
+            lpe4_expt,
             "max_lattices=3",
         ],
         cwd=tmp_path,
@@ -594,7 +598,7 @@ def test_refinement_failure_on_max_lattices_a15(
         [
             shutil.which("dials.index"),
             tmp_path / "indexed.expt",
-            os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
+            lpe4_pickle,
             "max_lattices=2",
         ],
         cwd=tmp_path,
