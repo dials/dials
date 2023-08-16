@@ -645,40 +645,50 @@ class Script:
                         copy.deepcopy(params), composite_tag="%04d" % i, rank=i
                     )
 
-                for tag, filename, item_num in item_list:
+                for item in item_list:
+                    filetag, filename = item
                     if not (
                         processor.current_experiments
                         and item_num < len(processor.current_experiments)
-                        and processor.current_experiments[item_num].imageset.paths()[0] == filename
+                        and processor.current_experiments[item_num].imageset.paths()[0]
+                        == filename
                     ):
-                        processor.current_experiments = do_import(filename, load_models=False)
+                        processor.current_experiments = do_import(
+                            filename, load_models=False
+                        )
                     experiments = processor.current_experiments
-                    expts = experiments[item_num : item_num + 1]
-                    try:
-                        experiment = expts[0]
-                        experiment.load_models()
-                        imageset = experiment.imageset
-                        update_geometry(imageset)
-                        experiment.beam = imageset.get_beam()
-                        experiment.detector = imageset.get_detector()
-                    except RuntimeError as e:
-                        logger.warning("Error updating geometry on item %s, %s", tag, e)
-                        continue
-
-                    if self.reference_detector is not None:
-                        experiment = expts[0]
-                        if self.params.input.sync_reference_geom:
+                    for item_num in range(len(experiments)):
+                        tag = filename + "_%05d" % item_num
+                        expts = experiments[item_num : item_num + 1]
+                        try:
+                            experiment = expts[0]
+                            experiment.load_models()
                             imageset = experiment.imageset
-                            sync_geometry(
-                                self.reference_detector.hierarchy(),
-                                imageset.get_detector().hierarchy(),
-                            )
+                            update_geometry(imageset)
+                            experiment.beam = imageset.get_beam()
                             experiment.detector = imageset.get_detector()
-                        else:
-                            experiment.detector = copy.deepcopy(self.reference_detector)
+                        except RuntimeError as e:
+                            logger.warning(
+                                "Error updating geometry on item %s, %s", tag, e
+                            )
+                            continue
 
-                    processor.process_experiments(tag, expts)
-                    imageset.clear_cache()
+                        if self.reference_detector is not None:
+                            experiment = expts[0]
+                            if self.params.input.sync_reference_geom:
+                                imageset = experiment.imageset
+                                sync_geometry(
+                                    self.reference_detector.hierarchy(),
+                                    imageset.get_detector().hierarchy(),
+                                )
+                                experiment.detector = imageset.get_detector()
+                            else:
+                                experiment.detector = copy.deepcopy(
+                                    self.reference_detector
+                                )
+
+                        processor.process_experiments(tag, expts)
+                        imageset.clear_cache()
                 if finalize:
                     processor.finalize()
                 return processor
@@ -761,7 +771,7 @@ class Script:
 
         # Process the data
         if params.mp.method == "mpi":
-            if size <= 2:  # client/server only makes sense for n>2
+            if True:  # size <= 2:  # client/server only makes sense for n>2
                 subset = [
                     item for i, item in enumerate(iterable) if (i + rank) % size == 0
                 ]
@@ -884,7 +894,7 @@ class Processor:
     def __init__(self, params, composite_tag=None, rank=0):
         self.params = params
         self.composite_tag = composite_tag
-        self.current_experiments = None # used as a cache
+        self.current_experiments = None  # used as a cache
 
         # The convention is to put %s in the phil parameter to add a tag to
         # each output datafile. Save the initial templates here.
