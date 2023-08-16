@@ -1,3 +1,51 @@
+DIALS 3.16.0 (2023-08-14)
+=========================
+
+Features
+--------
+
+- ``dials.scale``: Absorption correction is now switched off if all scattering angles are small (cos(2ϑ) ~ 1). (`#2455 <https://github.com/dials/dials/issues/2455>`_)
+- ``dials.export_bitmaps``: Set ``resolution_rings.d_spacings`` to manually specify the size of resolution rings. (`#2461 <https://github.com/dials/dials/issues/2461>`_)
+- ``dials.index``: Experiment number is now shown when indexing multiple experiments. (`#2470 <https://github.com/dials/dials/issues/2470>`_)
+- ``dials.export``: You can now specifying a wavelength tolerance when exporting multi-wavelength data to mtz. (`#2471 <https://github.com/dials/dials/issues/2471>`_)
+- Support for building a CMake developer environment with ``bootstrap.py --cmake``. This should be considered experimental, for now. (`#2474 <https://github.com/dials/dials/issues/2474>`_)
+- ``dials.merge``: Added stereographic projections to the html report, if merging more than one experiment. (`#2476 <https://github.com/dials/dials/issues/2476>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.combine_experiments``: No longer requires reflection data. (`#2323 <https://github.com/dials/dials/issues/2323>`_)
+- ``dials.model_background``: Works again for data sets that do not start from image "1". (`#2405 <https://github.com/dials/dials/issues/2405>`_)
+- Updated DIALS to imageset slicing properly using 0-based indices. Previously, the slice had to be accessed with the original image indices. (`#2411 <https://github.com/dials/dials/issues/2411>`_)
+- ``dials.reindex``: Fix crash reindexing against a reference file, for more than one input file. (`#2439 <https://github.com/dials/dials/issues/2439>`_)
+- ``dials.index``: ``indexing.refinement_protocol.mode=None`` now applies to both the scans and stills indexers. (`#2456 <https://github.com/dials/dials/issues/2456>`_)
+- ``dials.index``: Now fails with a useful error message when there are too few spots for indexing. (`#2457 <https://github.com/dials/dials/issues/2457>`_)
+- ``dials.ssx_integrate``: Address issue with ellipsoid angular models by replacing with new, correct, r-dependent models. (`#2463 <https://github.com/dials/dials/issues/2463>`_)
+- ``dials.import``: Now ensures manual geometry updates are only applied once to each model. This ensures ``invert_rotation_axis=True`` will only invert the rotation axis once. (`#2469 <https://github.com/dials/dials/issues/2469>`_)
+- ``dials.image_viewer``: Fix crash when the detector is rotated more than 90° from the beam direction. (`#2479 <https://github.com/dials/dials/issues/2479>`_)
+- ``dials.reciprocal_lattice_viewer``: Handle cases where a beam centre cannot be calculated, such as a detector with a high 2θ swing angle. (`#2483 <https://github.com/dials/dials/issues/2483>`_)
+
+
+Improved Documentation
+----------------------
+
+- Update data files documentation to refer to MessagePack rather than pickle format. (`#2444 <https://github.com/dials/dials/issues/2444>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- ``dials.image_viewer``: The non-functional "Show mask" checkbox has been removed from the Mask tool. (`#2458 <https://github.com/dials/dials/issues/2458>`_)
+- ``dials.image_viewer``: The basis vector display has been removed. (`#2484 <https://github.com/dials/dials/issues/2484>`_)
+
+
+Misc
+----
+
+- `#2390 <https://github.com/dials/dials/issues/2390>`_, `#2433 <https://github.com/dials/dials/issues/2433>`_, `#2434 <https://github.com/dials/dials/issues/2434>`_, `#2435 <https://github.com/dials/dials/issues/2435>`_, `#2437 <https://github.com/dials/dials/issues/2437>`_, `#2438 <https://github.com/dials/dials/issues/2438>`_, `#2445 <https://github.com/dials/dials/issues/2445>`_, `#2462 <https://github.com/dials/dials/issues/2462>`_, `#2466 <https://github.com/dials/dials/issues/2466>`_, `#2472 <https://github.com/dials/dials/issues/2472>`_, `#2482 <https://github.com/dials/dials/issues/2482>`_, `#2489 <https://github.com/dials/dials/issues/2489>`_
+
+
 DIALS 3.15.1 (2023-06-29)
 =========================
 
