@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from cctbx import crystal, miller, sgtbx
+from cctbx import crystal, miller, sgtbx, uctbx
 from scitbx.array_family import flex
 
 from dials.algorithms.merging.merge import (
@@ -33,8 +33,9 @@ def test_dano_over_sigdano():
 
 def test_generate_r_free_flags():
     ms = miller.build_set(
-        crystal_symmetry=sgtbx.space_group_info("P422").any_compatible_crystal_symmetry(
-            volume=1e5
+        crystal_symmetry=crystal.symmetry(
+            space_group_symbol="P4222",
+            unit_cell=uctbx.unit_cell((50.0, 50.0, 120.0, 90, 90, 90)),
         ),
         anomalous_flag=False,
         d_min=2,
