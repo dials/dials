@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -83,7 +84,7 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmp_path):
         check_cchalf_result(f)
 
 
-def test_compute_delta_cchalf(dials_regression):
+def test_compute_delta_cchalf(dials_regression: Path):
     """Test compute delta cchalf on an integrated mtz."""
 
     filename = os.path.join(

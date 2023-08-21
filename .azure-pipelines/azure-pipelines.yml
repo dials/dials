@@ -1,6 +1,8 @@
 variables:
   CACHE_VERSION: 20201102
   isPullRequest: $[startsWith(variables['Build.SourceBranch'], 'refs/pull/')]
+  PYTHON_MINIMUM_VERSION: "3.9"
+  PYTHON_TESTING_VERSION: "3.11"
 
 stages:
 - stage: prepare
@@ -14,11 +16,11 @@ stages:
     steps:
       - checkout: none
 
-      # Use Python >=3.9 for syntax validation
+      # Use Earliest Python for syntax validation
       - task: UsePythonVersion@0
         displayName: Set up python
         inputs:
-          versionSpec: 3.9
+          versionSpec: ${{ variables.PYTHON_MINIMUM_VERSION }}
 
       # Run syntax validation on a shallow clone
       - bash: |
@@ -70,13 +72,13 @@ stages:
     TODAY_ISO: $[ stageDependencies.prepare.setup.outputs['constants.TODAY_ISO'] ]
 
   jobs:
-  - job: linux
+  - job: linux_bootstrap
     pool:
       vmImage: ubuntu-20.04
     strategy:
       matrix:
-        python39:
-          PYTHON_VERSION: 3.9
+        python${{ replace(variables.PYTHON_MINIMUM_VERSION, '.', '') }}:
+          PYTHON_VERSION: ${{ variables.PYTHON_MINIMUM_VERSION }}
     timeoutInMinutes: 150
     steps:
     # Dependencies required for building gltbx
@@ -89,16 +91,30 @@ stages:
       parameters:
         conda_environment: .conda-envs/linux.txt
 
+  - job: linux
+    pool:
+      vmImage: ubuntu-20.04
+    strategy:
+      matrix:
+        python${{ replace(variables.PYTHON_TESTING_VERSION, '.', '') }}:
+          PYTHON_VERSION: ${{ variables.PYTHON_TESTING_VERSION }}
+    timeoutInMinutes: 150
+    steps:
+
+    - template: unix-build-cmake.yml
+      parameters:
+        conda_environment: .conda-envs/linux.txt
+
   - job: macos
     pool:
       vmImage: macOS-latest
     strategy:
       matrix:
-        python39:
-          PYTHON_VERSION: 3.9
-    timeoutInMinutes: 250
+        python${{ replace(variables.PYTHON_TESTING_VERSION, '.', '') }}:
+          PYTHON_VERSION: ${{ variables.PYTHON_TESTING_VERSION }}
+    timeoutInMinutes: 150
     steps:
-    - template: unix-build.yml
+    - template: unix-build-cmake.yml
       parameters:
         conda_environment: .conda-envs/macos.txt
 
@@ -108,7 +124,7 @@ stages:
     strategy:
       matrix:
         python39:
-          PYTHON_VERSION: 3.9
+          PYTHON_VERSION: ${{ variables.PYTHON_TESTING_VERSION }}
     timeoutInMinutes: 150
     steps:
     - template: windows-build.yml
@@ -132,8 +148,6 @@ stages:
       displayName: XFEL regression tests
       dependsOn:
       - linux
-      - macos
-      - windows
       condition: and(eq(variables.isPullRequest, true), succeededOrFailed())
       pool:
         vmImage: ubuntu-20.04

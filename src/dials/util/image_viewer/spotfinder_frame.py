@@ -8,7 +8,7 @@ import types
 import wx
 from wx.lib.intctrl import IntCtrl
 
-from cctbx import crystal, uctbx
+from cctbx import uctbx
 from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
 from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
@@ -1926,81 +1926,6 @@ class SpotFrame(XrayFrame):
             "miller_indices_data": miller_indices_data,
         }
 
-    def _basis_vector_overlay_data(self, i_expt, i_frame, experiment):
-        imageset = self.images.selected.image_set
-        detector = self.pyslip.tiles.raw_image.get_detector()
-        crystal_model = experiment.crystal
-        cs = crystal.symmetry(
-            unit_cell=crystal_model.get_unit_cell(),
-            space_group=crystal_model.get_space_group(),
-        )
-        cb_op = cs.change_of_basis_op_to_reference_setting()
-        crystal_model = crystal_model.change_basis(cb_op)
-        A = matrix.sqr(crystal_model.get_A())
-        scan = imageset.get_scan()
-        beam = imageset.get_beam()
-        gonio = imageset.get_goniometer()
-        still = scan is None or gonio is None
-        if not still:
-            phi = scan.get_angle_from_array_index(
-                i_frame - imageset.get_array_range()[0], deg=True
-            )
-            axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
-        try:
-            panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
-        except RuntimeError as e:
-            if "DXTBX_ASSERT(w_max > 0)" in str(e):
-                # direct beam didn't hit a panel
-                panel = 0
-                beam_centre = detector[panel].get_bidirectional_ray_intersection(
-                    beam.get_s0()
-                )
-            else:
-                raise
-        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-        beam_x, beam_y = self.map_coords(beam_x, beam_y, panel)
-
-        vector_data = []
-        label_data = []
-        for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
-            r = A * matrix.col(h) * self.settings.basis_vector_scale
-
-            if still:
-                s1 = matrix.col(beam.get_s0()) + r
-            else:
-                r_phi = r.rotate_around_origin(axis, phi, deg=True)
-                s1 = matrix.col(beam.get_s0()) + r_phi
-            panel = detector.get_panel_intersection(s1)
-            if panel < 0:
-                continue
-            x, y = detector[panel].get_ray_intersection_px(s1)
-            x, y = self.map_coords(x, y, panel)
-
-            vector_data.append(
-                (
-                    ((beam_x, beam_y), (x, y)),
-                    {
-                        "width": 4,
-                        "color": self.prediction_colours[i_expt],
-                        "closed": False,
-                    },
-                ),
-            )
-
-            label_data.append(
-                (
-                    x,
-                    y,
-                    ("a*", "b*", "c*")[i],
-                    {
-                        "placement": "ne",
-                        "fontsize": self.settings.fontsize,
-                        "textcolor": self.prediction_colours[i_expt],
-                    },
-                )
-            )
-        return vector_data, label_data
-
     def get_spotfinder_data(self):
 
         self.prediction_colours = [
@@ -2032,21 +1957,6 @@ class SpotFrame(XrayFrame):
             if axis_data:
                 vector_data.append(axis_data[0])
                 vector_text_data.append(axis_data[1])
-
-        if (
-            self.settings.show_basis_vectors
-            and self.crystals is not None
-            and self.crystals[0] is not None
-        ):
-            for experiments in self.experiments:
-                for i_expt, experiment in enumerate(experiments):
-                    if experiment.imageset != imageset:
-                        continue
-                    basis_vector_data = self._basis_vector_overlay_data(
-                        i_expt, i_frame, experiment
-                    )
-                    vector_data.extend(basis_vector_data[0])
-                    vector_text_data.extend(basis_vector_data[1])
 
         return SpotfinderData(
             all_pix_data=refl_data["all_pix_data"],
@@ -2149,9 +2059,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.show_predictions = self.params.show_predictions
         self.settings.show_miller_indices = self.params.show_miller_indices
         self.settings.fontsize = 10
-        self.settings.basis_vector_scale = self.params.basis_vector_scale
         self.settings.show_mask = self.params.show_mask
-        self.settings.show_basis_vectors = self.params.show_basis_vectors
         self.settings.show_rotation_axis = self.params.show_rotation_axis
         self.settings.display = self.params.display
         if self.settings.display == "global_threshold":
@@ -2233,7 +2141,7 @@ class SpotSettingsPanel(wx.Panel):
         self.brightness_ctrl.SetTickFreq(25)
         box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
-        grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         s.Add(grid)
         # Font size control
         txt = wx.StaticText(self, -1, "Font size:")
@@ -2249,20 +2157,7 @@ class SpotSettingsPanel(wx.Panel):
         )
         grid.Add(self.fontsize_ctrl, 0, wx.ALL, 5)
 
-        # Basis vector scale control
-        txt = wx.StaticText(self, -1, "Basis scale:")
-        grid.Add(txt, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.basis_vector_scale_ctrl = IntCtrl(
-            self,
-            value=self.settings.basis_vector_scale,
-            min=1,
-            max=20,
-            name="Basis scale",
-            style=wx.TE_PROCESS_ENTER,
-        )
-        grid.Add(self.basis_vector_scale_ctrl, 0, wx.ALL, 5)
-
-        grid = wx.FlexGridSizer(cols=2, rows=9, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
         s.Add(grid)
 
         # Resolution rings control
@@ -2319,11 +2214,6 @@ class SpotSettingsPanel(wx.Panel):
         self.show_mask = wx.CheckBox(self, -1, "Show mask")
         self.show_mask.SetValue(self.settings.show_mask)
         grid.Add(self.show_mask, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-
-        # Toggle basis vector display
-        self.show_basis_vectors = wx.CheckBox(self, -1, "Basis vectors")
-        self.show_basis_vectors.SetValue(self.settings.show_basis_vectors)
-        grid.Add(self.show_basis_vectors, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         # Integration shoeboxes only
         self.indexed = wx.CheckBox(self, -1, "Indexed only")
@@ -2570,8 +2460,6 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdate, self.fontsize_ctrl)
         self.fontsize_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdate)
-        self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdate, self.basis_vector_scale_ctrl)
-        self.basis_vector_scale_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdate)
 
         # Brightness-related events
         self.Bind(wx.EVT_SCROLL_CHANGED, self.OnUpdateBrightness, self.brightness_ctrl)
@@ -2601,7 +2489,6 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.miller_indices)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.indexed)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.integrated)
-        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_basis_vectors)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_rotation_axis)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
@@ -2645,9 +2532,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_predictions = self.predictions.GetValue()
             self.settings.show_miller_indices = self.miller_indices.GetValue()
             self.settings.fontsize = self.fontsize_ctrl.GetValue()
-            self.settings.basis_vector_scale = self.basis_vector_scale_ctrl.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
-            self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
             self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
             self.settings.threshold_algorithm = self.threshold_algorithm_types[
                 self.threshold_algorithm_ctrl.GetSelection()
@@ -2716,7 +2601,6 @@ class SpotSettingsPanel(wx.Panel):
             self.predictions,
             self.miller_indices,
             self.show_mask,
-            self.show_basis_vectors,
             self.show_rotation_axis,
             self.ice_rings_ctrl,
             self.resolution_rings_ctrl,

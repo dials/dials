@@ -37,13 +37,8 @@ def test_rs_mapper(dials_data, tmp_path):
     assert flex.mean(m.data) == pytest.approx(0.01892407052218914, abs=1e-6)
 
 
-def test_multi_panel(dials_regression, tmp_path):
-    image = (
-        pathlib.Path(dials_regression)
-        / "image_examples"
-        / "DLS_I23"
-        / "germ_13KeV_0001.cbf"
-    )
+def test_multi_panel(dials_regression: pathlib.Path, tmp_path):
+    image = dials_regression / "image_examples" / "DLS_I23" / "germ_13KeV_0001.cbf"
 
     result = subprocess.run(
         [

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import pathlib
 import shutil
 import subprocess
 
@@ -408,7 +409,7 @@ def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
     assert prf_and_zero.count(True) == 0
 
 
-def test_multi_sweep(dials_regression, tmp_path):
+def test_multi_sweep(dials_regression: pathlib.Path, tmp_path):
     expts = os.path.join(
         dials_regression, "integration_test_data", "multi_sweep", "experiments.json"
     )
@@ -473,7 +474,7 @@ def test_multi_sweep(dials_regression, tmp_path):
     assert flex.abs(I1 - I2) < 1e-6
 
 
-def test_multi_lattice(dials_regression, tmp_path):
+def test_multi_lattice(dials_regression: pathlib.Path, tmp_path):
     expts = os.path.join(
         dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
     )
@@ -564,7 +565,7 @@ def test_output_rubbish(dials_data, tmp_path):
     assert list(table.experiment_identifiers().values())  # not empty
 
 
-def test_integrate_with_kapton(dials_regression, tmp_path):
+def test_integrate_with_kapton(dials_regression: pathlib.Path, tmp_path):
     pickle_name = "idx-20161021225550223_indexed.pickle"
     json_name = "idx-20161021225550223_refined_experiments.json"
     image_name = "20161021225550223.pickle"

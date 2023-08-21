@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import glob
 import os
+from pathlib import Path
 
 import pytest
 
 import scitbx
 from cctbx import uctbx
-from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
 
 from dials.command_line import search_beam_position
@@ -15,7 +14,9 @@ from dials.command_line import search_beam_position
 from ..algorithms.indexing.test_index import run_indexing
 
 
-def test_search_i04_weak_data_image_range(mocker, run_in_tmp_path, dials_regression):
+def test_search_i04_weak_data_image_range(
+    mocker, run_in_tmp_path, dials_regression: Path
+):
     """Perform a beam-centre search and check that the output is sane."""
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
@@ -53,14 +54,14 @@ def test_search_i04_weak_data_image_range(mocker, run_in_tmp_path, dials_regress
     assert shift.elems == pytest.approx((0.27, -0.12, 0.0), abs=1e-1)
 
 
-def test_search_multiple(run_in_tmp_path, dials_regression):
+def test_search_multiple(run_in_tmp_path, dials_regression: Path):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
-    1. Run dials.search_beam_centre on two datablocks and two pickled
+    1. Run dials.search_beam_centre on two experiments and two pickled
     reflection tables, as output by dials.find_spots;
       a) Check that the program exits correctly;
-      b) Check that it produces the expected output datablock.
+      b) Check that it produces the expected output experiment.
     2. Check that the beam centre search has resulted in the expected shift
     in detector origin.
     """
@@ -140,23 +141,23 @@ def test_index_after_search(dials_data, run_in_tmp_path):
     )
 
 
-def test_search_single(run_in_tmp_path, dials_regression):
+def test_search_single(dials_data, run_in_tmp_path):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
-    1. Run dials.search_beam_centre on a single datablock and pickled
+    1. Run dials.search_beam_centre on a single experiment and pickled
     reflection table, as output by dials.find_spots;
       a) Check that the program exits correctly;
-      b) Check that it produces the expected output datablock.
+      b) Check that it produces the expected output experiment.
     2. Check that the beam centre search has resulted in the expected shift
     in detector origin.
     """
 
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "phi_scan")
-    pickle_path = os.path.join(data_dir, "strong.pickle")
-    experiments_path = os.path.join(data_dir, "datablock.json")
+    insulin = dials_data("insulin_processed", pathlib=True)
+    refl_path = insulin / "strong.refl"
+    experiments_path = insulin / "imported.expt"
 
-    search_beam_position.run([experiments_path, pickle_path])
+    search_beam_position.run([str(experiments_path), str(refl_path)])
     assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = load.experiment_list(experiments_path, check_format=False)
@@ -167,18 +168,18 @@ def test_search_single(run_in_tmp_path, dials_regression):
     shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
         detector_2[0].get_origin()
     )
-    assert shift.elems == pytest.approx((-0.976, 2.497, 0.0), abs=1e-1)
+    assert shift.elems == pytest.approx((-0.165, -0.380, 0.0), abs=1e-1)
 
 
 def test_search_small_molecule(dials_data, run_in_tmp_path):
     """Perform a beam-centre search on a multi-sequence data set..
 
     Do the following:
-    1. Run dials.search_beam_centre on a single datablock and pickled
+    1. Run dials.search_beam_centre on a single experiment and pickled
     reflection table containing multiple experiment IDs, as output by
     dials.find_spots;
       a) Check that the program exits correctly;
-      b) Check that it produces the expected output datablock.
+      b) Check that it produces the expected output experiment.
     2. Check that the beam centre search has resulted in the expected shift
     in detector origin.
     """
@@ -207,28 +208,20 @@ def test_search_small_molecule(dials_data, run_in_tmp_path):
         assert shift.elems == pytest.approx((0.091, -1.11, 0), abs=1e-2)
 
 
-def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
-    reflection_files = sorted(
-        glob.glob(os.path.join(data_dir, "SWEEP[1,2]", "index", "*_strong.pickle"))
-    )
-    experiment_files = sorted(
-        glob.glob(
-            os.path.join(data_dir, "SWEEP[1,2]", "index", "*_datablock_import.json")
-        )
-    )
+def test_multi_sweep_fixed_rotation(dials_data, run_in_tmp_path):
+    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    experiments_path = data / "imported.expt"
+    refl_path = data / "strong.refl"
 
-    search_beam_position.run(reflection_files + experiment_files)
+    search_beam_position.run([str(experiments_path), str(refl_path)])
     assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
-    experiments = ExperimentList()
-    for path in experiment_files:
-        experiments.extend(load.experiment_list(path, check_format=False))
-
+    experiments = load.experiment_list(experiments_path, check_format=False)
     optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
+
     for orig_expt, new_expt in zip(experiments, optimised_experiments):
         shift = scitbx.matrix.col(
             orig_expt.detector[0].get_origin()
         ) - scitbx.matrix.col(new_expt.detector[0].get_origin())
         print(shift)
-        assert shift.elems == pytest.approx((2.293, -0.399, 0), abs=1e-2)
+        assert shift.elems == pytest.approx((0.096, -1.111, 0), abs=1e-2)

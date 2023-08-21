@@ -3,13 +3,14 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from dxtbx.serialize import load
 
 from dials.command_line.show import model_connectivity, run
 
 
-def test_dials_show(dials_regression):
+def test_dials_show(dials_regression: Path):
     path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
     result = subprocess.run(
         [shutil.which("dials.show"), path],
@@ -52,6 +53,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
@@ -81,7 +83,7 @@ Crystal:
     )
 
 
-def test_dials_show_i04_weak_data(dials_regression):
+def test_dials_show_i04_weak_data(dials_regression: Path):
     path = os.path.join(
         dials_regression,
         "indexing_test_data",
@@ -129,6 +131,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: (210.76,205.28)
     px: (1225.35,1193.47)
@@ -190,6 +193,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
@@ -206,7 +210,7 @@ Goniometer:
     )
 
 
-def test_dials_show_multi_panel_i23(dials_regression):
+def test_dials_show_multi_panel_i23(dials_regression: Path):
     path = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )
@@ -245,7 +249,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-45:])
+        "\n".join(output[-46:])
         == """
 Panel:
   name: row-23
@@ -278,6 +282,7 @@ Beam:
     polarization fraction: 0.999
     flux: 0
     transmission: 1
+    sample to source distance: 0
 Beam centre:
     mm: panel 12, (191.95,7.22)
     px: panel 12, (1116.00,41.96)
@@ -356,7 +361,7 @@ def test_dials_show_reflection_table(dials_data):
         assert name in out
 
 
-def test_dials_show_image_statistics(dials_regression):
+def test_dials_show_image_statistics(dials_regression: Path):
     # Run on one multi-panel image
     path = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
@@ -373,19 +378,6 @@ def test_dials_show_image_statistics(dials_regression):
         output[-1]
         == "germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
     )
-
-
-def test_dials_show_image_statistics_with_no_image_data(dials_regression):
-    # Example where image data doesn't exist
-    path = os.path.join(
-        dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
-    )
-    result = subprocess.run(
-        [shutil.which("dials.show"), "image_statistics.show_raw=true", path],
-        env={"DIALS_NOBANNER": "1", **os.environ},
-        capture_output=True,
-    )
-    assert result.returncode == 1 and result.stderr
 
 
 def test_dials_show_on_scaled_data(dials_data):

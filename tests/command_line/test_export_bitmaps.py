@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -102,7 +103,7 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
         )
 
 
-def test_export_still_image(dials_regression, tmp_path):
+def test_export_still_image(dials_regression: Path, tmp_path):
     image = os.path.join(
         dials_regression,
         "image_examples",
@@ -126,7 +127,7 @@ def test_export_still_image(dials_regression, tmp_path):
         True,
     ],
 )
-def test_export_multi_panel(dials_regression, tmp_path, show_resolution_rings):
+def test_export_multi_panel(dials_regression: Path, tmp_path, show_resolution_rings):
     image = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )

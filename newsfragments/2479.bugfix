@@ -1,1 +1,0 @@
-``dials.image_viewer``: Fix crash when the detector is rotated more than 90° from the beam direction.

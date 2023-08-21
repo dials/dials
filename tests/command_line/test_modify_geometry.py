@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 from os import path
+from pathlib import Path
 
 import pytest
 
@@ -11,7 +12,7 @@ from dxtbx.serialize import load
 from dials.command_line.modify_geometry import phil_scope, update
 
 
-def test_run(dials_regression, tmp_path):
+def test_run(dials_regression: Path, tmp_path):
     orig_expt_json = path.join(
         dials_regression, "experiment_test_data", "kappa_experiments.json"
     )
