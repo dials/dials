@@ -7,6 +7,9 @@ import math
 import pickle
 import random
 
+from cctbx.crystal_orientation import crystal_orientation
+from scitbx import matrix
+
 import dials.extensions
 from dials.algorithms.integration import TimingInfo, processor
 from dials.algorithms.integration.filtering import IceRingFilter
@@ -533,6 +536,42 @@ def _finalize_rotation(reflections, experiments, params):
     return reflections, experiments
 
 
+def calculate_stills_rs_partiality(reflections, experiments):
+    if len(experiments) > 1:
+        tables = reflections.split_by_experiment_id()
+        assert len(tables) == len(experiments)
+        for table, experiment in zip(tables, experiments):
+            table = stills_rs_partiality(table, experiment)
+        return flex.reflection_table.concat(tables)
+    else:
+        return stills_rs_partiality(reflections, experiments[0])
+
+
+def stills_rs_partiality(reflection_table, experiment):
+    ORI = crystal_orientation(experiment.crystal.get_A(), True)
+    DEFF = 2.0 * experiment.crystal.get_domain_size_ang()
+    # ETA = 2.0 * experiment.crystal.get_half_mosaicity_deg() * math.pi / 180.0
+    # DVEC = ORI.unit_cell().d(reflection_table["miller_index"])
+
+    eff_Astar = matrix.sqr(ORI.reciprocal_matrix())
+    Beam = matrix.col((0.0, 0.0, -1.0 / experiment.beam.get_wavelength()))
+    h = reflection_table["miller_index"].as_vec3_double()
+    x = flex.mat3_double(reflection_table.size(), eff_Astar) * h
+    Svec = x + Beam
+    Rh = Svec.norms() - (1.0 / experiment.beam.get_wavelength())
+
+    Rs = flex.double(
+        reflection_table.size(), 1.0 / DEFF
+    )  # +flex.double(reflection_table.size(),ETA/2.)/DVEC
+    Rs_sq = Rs * Rs
+    Rh_sq = Rh * Rh
+    numerator = Rs_sq
+    denominator = (2.0 * Rh_sq) + Rs_sq
+    partiality = numerator / denominator
+    reflection_table["partiality"] = partiality
+    return reflection_table
+
+
 def _finalize_stills(reflections, experiments, params):
     """
     A post-processing function for stills data.
@@ -607,6 +646,7 @@ def _finalize_stills(reflections, experiments, params):
         ] *= params.integration.summation.detector_gain
 
     reflections = integrated
+    reflections = calculate_stills_rs_partiality(reflections, experiments)
 
     return reflections, experiments
 
