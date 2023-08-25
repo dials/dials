@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import numpy as np
+
+from dxtbx import flumpy
 from dxtbx.model import ExperimentList
 
 from dials.algorithms.integration.integrator import (
@@ -21,9 +24,17 @@ class StillsOutputCollector(OutputCollector):
     def collect_after_integration(self, experiment, reflection_table):
         super().collect_after_integration(experiment, reflection_table)
         self.data["profile_model"] = experiment.profile.to_dict()
+
+        invD = 1.0 / experiment.crystal.get_domain_size_ang()
+        e = experiment.crystal.get_half_mosaicity_deg()
         self.data["profile_model_mosaicity"] = {
-            "b": experiment.profile.sigma_b(deg=True)
+            "inv_mosaic_domain_size": invD,
+            "angular_half_mosaicity": e,
         }
+        p = flumpy.to_numpy(reflection_table["partiality"])
+        bins = np.linspace(0, 1, 11)
+        hist = np.histogram(p, bins)
+        self.data["partiality"] = hist[0]
 
 
 class StillsIntegrator(SimpleIntegrator):

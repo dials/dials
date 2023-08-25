@@ -190,6 +190,11 @@ class OutputAggregator:
             d["strong_rmsd_preprocessed"] for d in self.data.values()
         ]
 
+        hist = np.zeros((10,))
+        for d in self.data.values():
+            hist += d["partiality"]
+        bins = np.linspace(0.05, 0.95, 10)
+
         plots_dict = {
             "I_over_sigma_overall": {
                 "data": [
@@ -269,6 +274,23 @@ class OutputAggregator:
                     "title": "Rmsds of strong (indexed) reflections per image",
                     "xaxis": {"title": "image number"},
                     "yaxis": {"title": "RMSD (px)"},
+                },
+            },
+            "partiality": {
+                "data": [
+                    (
+                        {
+                            "x": list(bins),
+                            "y": list(hist),
+                            "type": "scatter",
+                            "mode": "markers",
+                        }
+                    )
+                ],
+                "layout": {
+                    "title": "Partiality distribution",
+                    "xaxis": {"title": "Partiality bin centre"},
+                    "yaxis": {"title": "Number of reflections"},
                 },
             },
         }
