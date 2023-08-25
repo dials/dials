@@ -153,7 +153,8 @@ class symmetry_base:
             normalise = self.ml_iso_normalisation
         elif method == "ml_aniso":
             normalise = self.ml_aniso_normalisation
-
+        bad_datasets = []
+        normalised_intensities = None
         for i in range(int(flex.max(self.dataset_ids) + 1)):
             logger.info("\n" + "-" * 80 + "\n")
             logger.info("Normalising intensities for dataset %i\n", i + 1)
@@ -171,12 +172,22 @@ class symmetry_base:
                     method,
                     exc_info=True,
                 )
-                return
-            if i == 0:
-                normalised_intensities = intensities
+                bad_datasets.append(i)
             else:
-                normalised_intensities = normalised_intensities.concatenate(intensities)
+                if not normalised_intensities:
+                    normalised_intensities = intensities
+                else:
+                    normalised_intensities = normalised_intensities.concatenate(
+                        intensities
+                    )
 
+        if bad_datasets:
+            sel = flex.bool(self.dataset_ids.size(), True)
+            for i in bad_datasets:
+                bad_sel = self.dataset_ids == i
+                sel.set_selected(bad_sel, False)
+            self.dataset_ids = self.dataset_ids.select(sel)
+        assert self.dataset_ids.size() == normalised_intensities.size()
         self.intensities = normalised_intensities.set_info(
             self.intensities.info()
         ).set_observation_type_xray_intensity()
@@ -243,11 +254,15 @@ class symmetry_base:
             normalisation = absolute_scaling.ml_aniso_absolute_scaling(
                 intensities, n_residues=n_residues
             )
+            if not normalisation.p_scale:
+                raise RuntimeError("Unsuccessful normalisation")
             u_star = normalisation.u_star
         else:
             normalisation = absolute_scaling.ml_iso_absolute_scaling(
                 intensities, n_residues=n_residues
             )
+            if not (normalisation.b_wilson and normalisation.p_scale):
+                raise RuntimeError("Unsuccessful normalisation")
             u_star = adptbx.b_as_u(
                 adptbx.u_iso_as_u_star(intensities.unit_cell(), normalisation.b_wilson)
             )
