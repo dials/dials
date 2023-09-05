@@ -1,3 +1,12 @@
+DIALS 3.16.1 (2023-09-05)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.merge``: Fix potential for crash with ``r_free_flags.extend=True``, if there is no new flags to extend. (`#2491 <https://github.com/dials/dials/issues/2491>`_)
+
+
 DIALS 3.16.0 (2023-08-14)
 =========================
 
