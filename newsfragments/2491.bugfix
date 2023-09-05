@@ -1,1 +1,0 @@
-``dials.merge``: Fix potential for crash with ``r_free_flags.extend=True``, if there is no new flags to extend.
