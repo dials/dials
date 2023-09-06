@@ -253,12 +253,12 @@ class cosym(Subject):
         for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
-                "Applying reindexing op %s to dataset %i", cb_op.as_xyz(), dataset_id
+                "Applying reindexing op %s to dataset %i", cb_op.as_abc(), dataset_id
             )
             expt = self._experiments[dataset_id]
             refl = self._reflections[dataset_id]
             if subgroup is not None:
-                cb_op = subgroup["cb_op_inp_best"] * cb_op
+                cb_op = cb_op * subgroup["cb_op_inp_best"]
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 expt.crystal.set_space_group(
                     subgroup["best_subsym"].space_group().build_derived_acentric_group()
