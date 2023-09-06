@@ -549,7 +549,7 @@ def calculate_stills_rs_partiality(reflections, experiments):
 
 def stills_rs_partiality(reflection_table, experiment):
     ORI = crystal_orientation(experiment.crystal.get_A(), True)
-    DEFF = 2.0 * experiment.crystal.get_domain_size_ang()
+    DEFF = experiment.crystal.get_domain_size_ang()
     # ETA = 2.0 * experiment.crystal.get_half_mosaicity_deg() * math.pi / 180.0
     # DVEC = ORI.unit_cell().d(reflection_table["miller_index"])
 
