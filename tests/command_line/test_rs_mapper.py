@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from iotbx import ccp4_map
@@ -10,14 +11,15 @@ from scitbx.array_family import flex
 
 
 def test_rs_mapper(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.rs_mapper",
+            shutil.which("dials.rs_mapper"),
             dials_data("centroid_test_data", pathlib=True)
             / "imported_experiments.json",
             'map_file="junk.ccp4"',
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "junk.ccp4").is_file()
@@ -35,21 +37,17 @@ def test_rs_mapper(dials_data, tmp_path):
     assert flex.mean(m.data) == pytest.approx(0.01892407052218914, abs=1e-6)
 
 
-def test_multi_panel(dials_regression, tmp_path):
-    image = (
-        pathlib.Path(dials_regression)
-        / "image_examples"
-        / "DLS_I23"
-        / "germ_13KeV_0001.cbf"
-    )
+def test_multi_panel(dials_regression: pathlib.Path, tmp_path):
+    image = dials_regression / "image_examples" / "DLS_I23" / "germ_13KeV_0001.cbf"
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.rs_mapper",
+            shutil.which("dials.rs_mapper"),
             image,
             'map_file="junk.ccp4"',
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "junk.ccp4").is_file()
@@ -68,29 +66,32 @@ def test_multi_panel(dials_regression, tmp_path):
 
 
 def test_masked(dials_data, tmp_path):
-    procrunner.run(
+    subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             dials_data("image_examples", pathlib=True) / "dectris_eiger_master.h5",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
-    result = procrunner.run(
-        ["dials.rs_mapper", "imported.expt", "map_file=masked.ccp4"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.rs_mapper"), "imported.expt", "map_file=masked.ccp4"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "masked.ccp4").is_file()
 
     # Also check the ignore case (regressions here may indicate changes in mask handling)
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.rs_mapper",
+            shutil.which("dials.rs_mapper"),
             "imported.expt",
             "map_file=unmasked.ccp4",
             "ignore_mask=True",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "unmasked.ccp4").is_file()

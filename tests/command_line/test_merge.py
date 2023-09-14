@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from cctbx import uctbx
@@ -60,7 +61,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     mtz_file = tmp_path / f"merge-{anomalous}-{truncate}.mtz"
 
     command = [
-        "dials.merge",
+        shutil.which("dials.merge"),
         refls,
         expts,
         f"truncate={truncate}",
@@ -73,7 +74,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
         "json=dials.merge.json",
         "additional_stats=True",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "dials.merge.html").is_file()
     merge_json = tmp_path / "dials.merge.json"
@@ -119,7 +120,7 @@ def test_merge_dmin_dmax(dials_data, tmp_path, best_unit_cell):
     mtz_file = tmp_path / "merge.mtz"
 
     command = [
-        "dials.merge",
+        shutil.which("dials.merge"),
         refls,
         expts,
         "truncate=False",
@@ -133,7 +134,7 @@ def test_merge_dmin_dmax(dials_data, tmp_path, best_unit_cell):
         f"best_unit_cell={best_unit_cell}",
         "output.html=None",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     # check the unit cell was correctly set if using best_unit_cell
@@ -196,8 +197,14 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     reflections1.as_file(tmp_refl)
 
     # Can now run after creating our 'fake' multiwavelength dataset
-    command = ["dials.merge", tmp_refl, tmp_expt, "truncate=True", "anomalous=True"]
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [
+        shutil.which("dials.merge"),
+        tmp_refl,
+        tmp_expt,
+        "truncate=True",
+        "anomalous=True",
+    ]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "merged.mtz").is_file()
     assert (tmp_path / "dials.merge.html").is_file()
@@ -222,18 +229,18 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
     # test changing the wavelength tolerance such that data is combined under
     # one wavelength. Check the number of reflections to confirm this.
     command = [
-        "dials.merge",
+        shutil.which("dials.merge"),
         tmp_refl,
         tmp_expt,
         "truncate=True",
         "anomalous=True",
         "wavelength_tolerance=0.02",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     m = mtz.object(str(tmp_path / "merged.mtz"))
     arrays = m.as_miller_arrays()
-    assert arrays[1].info().wavelength == pytest.approx(0.7)
+    assert arrays[1].info().wavelength == pytest.approx(0.69441, abs=1e-5)
     assert len(arrays) == 8
     assert abs(arrays[1].size() - 1538) < 10
 
@@ -242,13 +249,13 @@ def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmp_path):
     location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
     command = [
-        "dials.merge",
+        shutil.which("dials.merge"),
         location / "experiments_0.json",
         location / "reflections_0.pickle",
     ]
 
     # unscaled data
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert result.returncode
     assert (
         result.stderr.replace(b"\r", b"")
@@ -264,7 +271,7 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
     command = [
-        "dials.merge",
+        shutil.which("dials.merge"),
         location / "experiments_0.json",
         location / "reflections_0.pickle",
         location / "experiments_1.json",
@@ -272,7 +279,7 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     ]
 
     # more than one reflection table.
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert result.returncode
     assert (
         result.stderr.replace(b"\r", b"")
@@ -292,14 +299,14 @@ def test_merge_exclude_images(dials_data, tmp_path):
     mtz_file = tmp_path / "merge-exclude.mtz"
 
     command = [
-        "dials.merge",
+        shutil.which("dials.merge"),
         refls,
         expts,
         f"output.mtz={str(mtz_file)}",
         "exclude_images=0:851:1700",
         "d_min=0.59",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     # all the data together is 75% complete

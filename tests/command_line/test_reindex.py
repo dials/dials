@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
+from pathlib import Path
 
-import procrunner
 import pytest
 
 import scitbx.matrix
@@ -16,29 +18,27 @@ from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
 
 
-def test_reindex(dials_regression, tmpdir):
+def test_reindex(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         pickle_path,
         experiments_path,
         "change_of_basis_op=2a,b,c",
         "space_group=P1",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     old_reflections = flex.reflection_table.from_file(pickle_path)
-    assert tmpdir.join("reindexed.refl").check()
-    new_reflections = flex.reflection_table.from_file(
-        tmpdir.join("reindexed.refl").strpath
-    )
+    assert (tmp_path / "reindexed.refl").is_file()
+    new_reflections = flex.reflection_table.from_file(tmp_path / "reindexed.refl")
     old_experiments = load.experiment_list(experiments_path, check_format=False)
-    assert tmpdir.join("reindexed.expt").check()
+    assert (tmp_path / "reindexed.expt").is_file()
     new_experiments = load.experiment_list(
-        tmpdir.join("reindexed.expt").strpath, check_format=False
+        tmp_path / "reindexed.expt", check_format=False
     )
     h1, k1, l1 = old_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = new_reflections["miller_index"].as_vec3_double().parts()
@@ -55,30 +55,30 @@ def test_reindex(dials_regression, tmpdir):
     # set space group P4
     cb_op = sgtbx.change_of_basis_op("a,b,c")
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         experiments_path,
         "space_group=P4",
         f"change_of_basis_op={cb_op}",
         "output.experiments=P4.expt",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("P4.expt").check()
+    assert (tmp_path / "P4.expt").is_file()
 
     # apply one of the symops from the space group
     cb_op = sgtbx.change_of_basis_op("-x,-y,z")
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         "P4.expt",
         f"change_of_basis_op={cb_op}",
         "output.experiments=P4_reindexed.expt",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("P4_reindexed.expt").check()
+    assert (tmp_path / "P4_reindexed.expt").is_file()
 
     new_experiments1 = load.experiment_list(
-        tmpdir.join("P4_reindexed.expt").strpath, check_format=False
+        tmp_path / "P4_reindexed.expt", check_format=False
     )
     assert new_experiments1[0].crystal.get_A() == pytest.approx(
         old_experiments[0].crystal.change_basis(cb_op).get_A(), abs=1e-5
@@ -86,16 +86,16 @@ def test_reindex(dials_regression, tmpdir):
 
     cb_op = sgtbx.change_of_basis_op("-x,-y,z")
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         "P4.expt",
         "change_of_basis_op=auto",
         "reference.experiments=P4_reindexed.expt",
         "output.experiments=P4_reindexed2.expt",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     new_experiments2 = load.experiment_list(
-        tmpdir.join("P4_reindexed2.expt").strpath, check_format=False
+        tmp_path / "P4_reindexed2.expt", check_format=False
     )
     assert new_experiments1[0].crystal.get_A() == pytest.approx(
         new_experiments2[0].crystal.get_A()
@@ -103,36 +103,34 @@ def test_reindex(dials_regression, tmpdir):
 
     # verify that the file can be read by dials.show
     commands = [
-        "dials.show",
-        tmpdir.join("reindexed.refl").strpath,
+        shutil.which("dials.show"),
+        tmp_path / "reindexed.refl",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
 
-def test_reindex_multi_sequence(dials_regression, tmpdir):
+def test_reindex_multi_sequence(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         pickle_path,
         experiments_path,
         "change_of_basis_op=x+y,x-z,y-z",
     ]
 
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("reindexed.refl").check()
-    assert tmpdir.join("reindexed.expt").check()
+    assert (tmp_path / "reindexed.refl").is_file()
+    assert (tmp_path / "reindexed.expt").is_file()
 
     old_reflections = flex.reflection_table.from_file(pickle_path)
-    new_reflections = flex.reflection_table.from_file(
-        tmpdir.join("reindexed.refl").strpath
-    )
+    new_reflections = flex.reflection_table.from_file(tmp_path / "reindexed.refl")
     assert len(old_reflections) == len(new_reflections)
     new_experiments = load.experiment_list(
-        tmpdir.join("reindexed.expt").strpath, check_format=False
+        tmp_path / "reindexed.expt", check_format=False
     )
     new_cs = new_experiments[0].crystal.get_crystal_symmetry()
     assert new_cs.unit_cell().parameters() == pytest.approx(
@@ -151,14 +149,14 @@ def test_reindex_multi_sequence(dials_regression, tmpdir):
     )
 
 
-def test_reindex_against_reference(dials_regression, tmpdir):
+def test_reindex_against_reference(dials_regression: Path, tmp_path):
     """Test the reindexing against a reference dataset functionality."""
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
 
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         pickle_path,
         experiments_path,
         "change_of_basis_op=a,b,c",
@@ -167,48 +165,42 @@ def test_reindex_against_reference(dials_regression, tmpdir):
         "output.experiments=P4.expt",
     ]
 
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
-    assert os.path.exists(tmpdir / "P4.refl")
-    assert os.path.exists(tmpdir / "P4.expt")
-    new_experiments = load.experiment_list(
-        tmpdir.join("P4.expt").strpath, check_format=False
-    )
+    assert (tmp_path / "P4.refl").is_file()
+    assert (tmp_path / "P4.expt").is_file()
+    new_experiments = load.experiment_list(tmp_path / "P4.expt", check_format=False)
     assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == " P 4"
 
     # Now have something in P4, get another dataset in a different indexing scheme
 
     cb_op = sgtbx.change_of_basis_op("a,-b,-c")
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         "P4.refl",
         "P4.expt",
         f"change_of_basis_op={cb_op}",
         "output.experiments=P4_reindexed.expt",
         "output.reflections=P4_reindexed.refl",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     # now run reference reindexing
     commands = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         "P4.refl",
         "P4.expt",
         "reference.experiments=P4_reindexed.expt",
         "reference.reflections=P4_reindexed.refl",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = subprocess.run(commands, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     # expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
-    reindexed_reflections = flex.reflection_table.from_file(
-        tmpdir.join("reindexed.refl").strpath
-    )
-    P4_reindexed = flex.reflection_table.from_file(
-        tmpdir.join("P4_reindexed.refl").strpath
-    )
-    P4_reflections = flex.reflection_table.from_file(tmpdir.join("P4.refl").strpath)
+    reindexed_reflections = flex.reflection_table.from_file(tmp_path / "reindexed.refl")
+    P4_reindexed = flex.reflection_table.from_file(tmp_path / "P4_reindexed.refl")
+    P4_reflections = flex.reflection_table.from_file(tmp_path / "P4.refl")
 
     h1, k1, l1 = reindexed_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = P4_reindexed["miller_index"].as_vec3_double().parts()
@@ -269,17 +261,17 @@ def test_reindex_cb_op_exit(dials_data, run_in_tmp_path):
 
 def test_reindex_reference_multi_crystal(dials_data, tmp_path):
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
-    args = ["dials.cosym", "space_group=P4"]
+    args = [shutil.which("dials.cosym"), "space_group=P4"]
     for i in [1, 2, 3, 4]:
         args.append(mcp / f"experiments_{i}.json")
         args.append(mcp / f"reflections_{i}.pickle")
-    result = procrunner.run(args, working_directory=tmp_path)
+    result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("symmetrized.refl").is_file()
     assert tmp_path.joinpath("symmetrized.expt").is_file()
 
     args1 = [
-        "dials.cosym",
+        shutil.which("dials.cosym"),
         "space_group=P4",
         "output.experiments=sub_1.expt",
         "output.reflections=sub_1.refl",
@@ -287,34 +279,39 @@ def test_reindex_reference_multi_crystal(dials_data, tmp_path):
     for i in [5, 7, 8, 10]:
         args1.append(mcp / f"experiments_{i}.json")
         args1.append(mcp / f"reflections_{i}.pickle")
-    result1 = procrunner.run(args1, working_directory=tmp_path)
+    result1 = subprocess.run(args1, cwd=tmp_path, capture_output=True)
     assert not result1.returncode and not result1.stderr
     assert tmp_path.joinpath("sub_1.expt").is_file()
     assert tmp_path.joinpath("sub_1.refl").is_file()
 
     args2 = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         "symmetrized.refl",
         "symmetrized.expt",
         "reference.experiments=sub_1.expt",
         "reference.reflections=sub_1.refl",
     ]
-    result2 = procrunner.run(args2, working_directory=tmp_path)
+    result2 = subprocess.run(args2, cwd=tmp_path, capture_output=True)
     assert not result2.returncode and not result2.stderr
     assert tmp_path.joinpath("reindexed.expt").is_file()
     assert tmp_path.joinpath("reindexed.refl").is_file()
 
 
 def test_reindex_reference_file(dials_data, tmp_path):
-
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     ssx_data = dials_data("cunir_serial", pathlib=True)
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
 
-    result = procrunner.run(
-        ["dials.reindex", expts, refls, f"reference.file={ssx_data / '2BW4.pdb'}"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.reindex"),
+            expts,
+            refls,
+            f"reference.file={ssx_data / '2BW4.pdb'}",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "reindexed.expt").is_file()

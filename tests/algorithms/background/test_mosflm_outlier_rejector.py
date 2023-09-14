@@ -3,9 +3,10 @@ from __future__ import annotations
 import math
 import os
 import pickle
+from pathlib import Path
 
 
-def test_run(dials_regression):
+def test_run(dials_regression: Path):
     from dials.algorithms.background.simple import (
         Linear2dModeller,
         MosflmOutlierRejector,

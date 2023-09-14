@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -31,9 +33,9 @@ def test_refinement_and_compare_with_known_truth(dials_data, tmp_path):
     assert pickle_path.is_file()
 
     # Run refinement and load models
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.refine",
+            shutil.which("dials.refine"),
             experiments_path,
             pickle_path,
             "scan_varying=True",
@@ -42,7 +44,8 @@ def test_refinement_and_compare_with_known_truth(dials_data, tmp_path):
             "beam.force_static=False",
             "beam.fix=wavelength",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     exp = ExperimentListFactory.from_json_file(

@@ -201,7 +201,7 @@ def change_of_basis_op_against_reference(
         raise Sorry("No reflections remain after filtering the test dataset")
     test_miller_set = test_miller_sets[0]
     for d in test_miller_sets[1:]:
-        test_miller_set = test_miller_set.concatentate(d)
+        test_miller_set = test_miller_set.concatenate(d)
 
     change_of_basis_op = determine_reindex_operator_against_reference(
         test_miller_set, reference_miller_set

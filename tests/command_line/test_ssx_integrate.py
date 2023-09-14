@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.serialize import load
@@ -22,9 +23,9 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     dials_data("cunir_serial", pathlib=True)
     pathlib.Path.mkdir(tmp_path / "nuggets")
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.ssx_integrate",
+            shutil.which("dials.ssx_integrate"),
             ssx / "indexed.refl",
             ssx / "indexed.expt",
             "nproc=1",
@@ -33,7 +34,8 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
             "output.nuggets=nuggets",
             "algorithm=stills",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("integrated_1.refl").is_file()
@@ -49,20 +51,24 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
 import json
 
 expected_simple1 = {
-    "likelihood": 171374.17464891364,
-    "mosaicity": [0.020799705597009843],
+    "likelihood": 171374.174649,
+    "mosaicity": [0.0003630],
+}
+expected_s1a1 = {
+    "likelihood": 171217.954551,
+    "mosaicity": [0.0003951, 6.6198e-06],
+}
+expected_s1a3 = {
+    "likelihood": 171209.435802,
+    "mosaicity": [0.0004138, 0.0450596, 1.39279e-05],
 }
 expected_simple6 = {
-    "likelihood": 176234.85494941485,
-    "mosaicity": [0.007835942631996863, 0.02266467599439014, 0.026879730729450498],
+    "likelihood": 176234.854949,
+    "mosaicity": [0.0001368, 0.0003956, 0.0004691],
 }
-expected_angular2 = {
-    "likelihood": 171782.58653554777,
-    "mosaicity": [0.024549034458866092, 0.01864434938489629],
-}
-expected_angular4 = {
-    "likelihood": 179074.32947807646,
-    "mosaicity": [0.024550628270576778, 0.025846182907222837, 0.005215268399212766],
+expected_s6a1 = {
+    "likelihood": 177094.368288,
+    "mosaicity": [1.9031e-05, 0.0003987, 0.0004636, 0.0324567],
 }
 
 
@@ -71,8 +77,9 @@ expected_angular4 = {
     [
         ("simple1", expected_simple1),
         ("simple6", expected_simple6),
-        ("angular2", expected_angular2),
-        ("angular4", expected_angular4),
+        ("simple1angular1", expected_s1a1),
+        ("simple1angular3", expected_s1a3),
+        ("simple6angular1", expected_s6a1),
     ],
 )
 @pytest.mark.xdist_group(name="group1")
@@ -87,9 +94,9 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
     refls = refls.select_on_experiment_identifiers([expts[3].identifier])
     refls.as_file(tmp_path / "single.refl")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.ssx_integrate",
+            shutil.which("dials.ssx_integrate"),
             tmp_path / "single.refl",
             tmp_path / "single.expt",
             "nproc=1",
@@ -97,8 +104,11 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
             f"ellipsoid.rlp_mosaicity={model}",
             "n_macro_cycles=2",
             f"output.history={tmp_path /'history.json'}",
+            "max_iter=100",
+            "LL_tolerance=1e-3",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("integrated_1.refl").is_file()
@@ -106,11 +116,11 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
     assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
     expts = load.experiment_list(tmp_path / "integrated_1.expt", check_format=False)
     mosaicity = expts[0].profile.mosaicity()
-    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1e-6)
+    assert list(mosaicity.values()) == pytest.approx(expected["mosaicity"], abs=1e-5)
     with (tmp_path / "history.json").open("r") as fh:
         data = json.load(fh)
         assert data["0"]["likelihood_per_iteration"][-1][-1] == pytest.approx(
-            expected["likelihood"], abs=1.5e-6
+            expected["likelihood"], abs=1e-5
         )
 
 

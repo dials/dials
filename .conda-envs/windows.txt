@@ -7,7 +7,7 @@ conda-forge::c-compiler
 conda-forge::colorlog
 conda-forge::conda
 conda-forge::cxx-compiler
-conda-forge::dials-data>=2.4.58
+conda-forge::dials-data>=2.4.72
 conda-forge::docutils
 conda-forge::eigen
 conda-forge::future
@@ -29,7 +29,6 @@ conda-forge::pandas
 conda-forge::pillow>=5.4.1
 conda-forge::pint
 conda-forge::pip
-conda-forge::procrunner>=2.2.0
 conda-forge::psutil
 conda-forge::pybind11
 conda-forge::pyrtf

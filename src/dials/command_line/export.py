@@ -142,6 +142,10 @@ phil_scope = parse(
             "and as the overall unit cell in the exported mtz. If None, the median"
             "cell will be used."
 
+    wavelength_tolerance=1e-4
+      .type = float
+      .help = "An absolute tolerance on the wavelength (in A)"
+
   }
 
   sadabs {
@@ -373,6 +377,7 @@ def export_mtz(params, experiments, reflections):
         force_static_model=params.mtz.force_static_model,
         crystal_name=params.mtz.crystal_name,
         project_name=params.mtz.project_name,
+        wavelength_tolerance=params.mtz.wavelength_tolerance,
     )
 
     summary = StringIO()

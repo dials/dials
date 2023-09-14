@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
+from pathlib import Path
 
-import procrunner
 
-
-def test_goniometer_calibration(dials_regression, tmpdir):
+def test_goniometer_calibration(dials_regression: Path, tmp_path):
     data_dir = os.path.join(dials_regression, "rotation_calibration")
     o0_k0_p0 = os.path.join(data_dir, "experiments_o0_k0_p0.json")
     o0_k0_p48 = os.path.join(data_dir, "experiments_o0_k0_p48.json")
@@ -13,7 +14,7 @@ def test_goniometer_calibration(dials_regression, tmpdir):
     o48_k48_p48 = os.path.join(data_dir, "experiments_o48_k48_p48.json")
 
     command = [
-        "dials.goniometer_calibration",
+        shutil.which("dials.goniometer_calibration"),
         o0_k0_p0,
         o0_k0_p48,
         o0_k48_p48,
@@ -23,7 +24,7 @@ def test_goniometer_calibration(dials_regression, tmpdir):
     ]
 
     print(command)
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     expected_output = b"""
@@ -56,11 +57,11 @@ loop_
 """
     assert result.stdout.replace(b"\r\n", b"\n").endswith(expected_output)
 
-    assert tmpdir.join("xoalign_config.py").check()
+    assert (tmp_path / "xoalign_config.py").is_file()
     expected_xoalign_config = """\
 GONIOMETER_AXES_NAMES = ('GON_OMEGA', 'GON_KAPPA', 'GON_PHI')
 GONIOMETER_AXES = [(-0.00092, 0.00000, 1.00000), (0.29597, 0.27943, 0.91341), (0.00494, -0.00588, 0.99997)]
 GONIOMETER_DATUM = (0,0,0) # in degrees
 """
-    xoalign_config = tmpdir.join("xoalign_config.py").read()
+    xoalign_config = (tmp_path / "xoalign_config.py").read_text()
     assert xoalign_config == expected_xoalign_config

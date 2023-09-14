@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dxtbx.model import Beam, Experiment, ExperimentList
@@ -20,8 +22,7 @@ def generate_exp(wavelength=1):
 
 @pytest.mark.parametrize("with_identifiers", ["True", "False"])
 @pytest.mark.parametrize("option", ["chunk_size=2", 'chunk_sizes="2 2 1"'])
-def test_split_chunk_sizes(tmpdir, option, with_identifiers):
-
+def test_split_chunk_sizes(tmp_path, option, with_identifiers):
     ids = list(range(0, 5))
     experiments = ExperimentList()
     reflections = flex.reflection_table()
@@ -35,34 +36,35 @@ def test_split_chunk_sizes(tmpdir, option, with_identifiers):
             reflections.experiment_identifiers()[i] = str(i)
         experiments.append(exp)
 
-    experiments.as_json(tmpdir.join("tmp.expt").strpath)
-    reflections.as_file(tmpdir.join("tmp.refl").strpath)
+    experiments.as_json(tmp_path / "tmp.expt")
+    reflections.as_file(tmp_path / "tmp.refl")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.split_experiments",
-            tmpdir.join("tmp.expt").strpath,
-            tmpdir.join("tmp.refl").strpath,
+            shutil.which("dials.split_experiments"),
+            tmp_path / "tmp.expt",
+            tmp_path / "tmp.refl",
             option,
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
     for j, n, intensities in zip(
         [0, 1, 2], [2, 2, 1], [[100.0, 200.0], [300.0, 400.0], [500.0]]
     ):
-        assert tmpdir.join(f"split_{j}.refl").check()
-        assert tmpdir.join(f"split_{j}.expt").check()
-        expts = load.experiment_list(tmpdir.join(f"split_{j}.expt"), check_format=False)
+        assert (tmp_path / f"split_{j}.refl").is_file()
+        assert (tmp_path / f"split_{j}.expt").is_file()
+        expts = load.experiment_list(tmp_path / f"split_{j}.expt", check_format=False)
         assert len(expts) == n
-        refls = flex.reflection_table.from_file(tmpdir.join(f"split_{j}.refl"))
+        refls = flex.reflection_table.from_file(tmp_path / f"split_{j}.refl")
         assert list(set(refls["id"])) == list(range(0, n))
         assert list(refls["intensity"]) == intensities
         refls.assert_experiment_identifiers_are_consistent(expts)
 
 
-def test_split_by_wavelength(tmpdir):
+def test_split_by_wavelength(tmp_path):
     """Test the split_by_wavelength option of dials.split_experiments"""
     experiments = ExperimentList()
     exp = generate_exp(wavelength=1.0)
@@ -78,26 +80,30 @@ def test_split_by_wavelength(tmpdir):
     reflections.experiment_identifiers()[0] = "0"
     reflections.experiment_identifiers()[1] = "1"
 
-    experiments.as_json(tmpdir.join("tmp.expt").strpath)
-    reflections.as_file(tmpdir.join("tmp.refl").strpath)
+    experiments.as_json(tmp_path / "tmp.expt")
+    reflections.as_file(tmp_path / "tmp.refl")
 
-    result = procrunner.run(
-        ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
-        working_directory=tmpdir,
+    result = subprocess.run(
+        [
+            shutil.which("dials.split_experiments"),
+            "tmp.expt",
+            "tmp.refl",
+            "by_wavelength=True",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
     for i, (wl, ids, intensity) in enumerate(
         zip([0.5, 1.0], ["1", "0"], [200.0, 100.0])
     ):
-        assert tmpdir.join("split_%d.expt" % i).check()
-        assert tmpdir.join("split_%d.refl" % i).check()
+        assert (tmp_path / f"split_{i}.expt").is_file()
+        assert (tmp_path / f"split_{i}.refl").is_file()
         exp_single = load.experiment_list(
-            tmpdir.join("split_%d.expt" % i).strpath, check_format=False
+            tmp_path / f"split_{i}.expt", check_format=False
         )
-        ref_single = flex.reflection_table.from_file(
-            tmpdir.join("split_%d.refl" % i).strpath
-        )
+        ref_single = flex.reflection_table.from_file(tmp_path / f"split_{i}.refl")
         assert exp_single[0].beam.get_wavelength() == wl
         assert exp_single[0].identifier == ids
         id_ = ref_single["id"][0]
@@ -107,10 +113,16 @@ def test_split_by_wavelength(tmpdir):
     # Now test for successful error handling if no identifiers set.
     experiments[0].identifier = ""
     experiments[1].identifier = ""
-    experiments.as_json(tmpdir.join("tmp.expt").strpath)
-    result = procrunner.run(
-        ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
-        working_directory=tmpdir,
+    experiments.as_json(tmp_path / "tmp.expt")
+    result = subprocess.run(
+        [
+            shutil.which("dials.split_experiments"),
+            "tmp.expt",
+            "tmp.refl",
+            "by_wavelength=True",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert result.returncode == 1
     assert result.stderr.startswith(b"Sorry")
@@ -119,11 +131,17 @@ def test_split_by_wavelength(tmpdir):
     experiments[1].identifier = "1"
     del reflections.experiment_identifiers()[0]
     del reflections.experiment_identifiers()[1]
-    experiments.as_json(tmpdir.join("tmp.expt").strpath)
-    reflections.as_file(tmpdir.join("tmp.refl").strpath)
-    result = procrunner.run(
-        ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
-        working_directory=tmpdir,
+    experiments.as_json(tmp_path / "tmp.expt")
+    reflections.as_file(tmp_path / "tmp.refl")
+    result = subprocess.run(
+        [
+            shutil.which("dials.split_experiments"),
+            "tmp.expt",
+            "tmp.refl",
+            "by_wavelength=True",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert result.returncode == 1
     assert result.stderr.startswith(b"Sorry")

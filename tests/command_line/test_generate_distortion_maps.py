@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pickle
+from pathlib import Path
 
 import pytest
 
@@ -51,7 +52,7 @@ def make_detector():
     return d
 
 
-def test_translate(dials_regression, run_in_tmp_path):
+def test_translate(dials_regression: Path, run_in_tmp_path):
     """Test as written in https://github.com/dials/dials/issues/471. This
     is pretty slow!"""
 

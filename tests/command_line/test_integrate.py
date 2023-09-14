@@ -5,8 +5,8 @@ import math
 import os
 import pathlib
 import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dxtbx.serialize import load
@@ -15,32 +15,33 @@ from dials.algorithms.integration.processor import _average_bbox_size
 from dials.array_family import flex
 
 
-def test_basic_integrate(dials_data, tmpdir):
+def test_basic_integrate(dials_data, tmp_path):
     # Call dials.integrate
 
     exp = load.experiment_list(
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-    exp.as_json(tmpdir.join("modified_input.json"))
+    exp.as_json(tmp_path / "modified_input.json")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     assert experiments[0].identifier == "foo"
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1666
     assert mask.count(True) == 1666
@@ -52,9 +53,7 @@ def test_basic_integrate(dials_data, tmpdir):
 
     originaltable = table
 
-    tmpdir.join("integrated.refl").remove()
-
-    tmp_path = pathlib.Path(tmpdir)
+    (tmp_path / "integrated.refl").unlink()
     for i in range(1, 10):
         source = dials_data("centroid_test_data", pathlib=True) / f"centroid_000{i}.cbf"
         destination = tmp_path / f"centroid_001{i}.cbf"
@@ -72,27 +71,28 @@ def test_basic_integrate(dials_data, tmpdir):
     assert j["scan"][0]["oscillation"] == [0.0, 0.2]
     j["scan"][0]["oscillation"] = [360.0, 0.2]
     j["experiment"][0]["identifier"] = "bar"
-    with tmpdir.join("models.expt").open("w") as fh:
+    with (tmp_path / "models.expt").open("w") as fh:
         json.dump(j, fh)
 
     # Call dials.integrate
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "models.expt",
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     assert experiments[0].identifier == "bar"
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     assert dict(table.experiment_identifiers()) == {0: "bar"}
     mask1 = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1666
@@ -132,13 +132,13 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
-    args = ["dials.integrate", "modified_input.json", "nproc=2"]
+    args = [shutil.which("dials.integrate"), "modified_input.json", "nproc=2"]
     if block_size:
         args.append(f"block.size={block_size}")
     if block_units:
         args.append(f"block.units={block_units}")
 
-    result = procrunner.run(args, working_directory=tmp_path)
+    result = subprocess.run(args, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
 
@@ -148,9 +148,9 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
     expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
     refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "integration.integrator=3d_threaded",
             "background.algorithm=glm",
@@ -159,7 +159,8 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
             refls,
             expts,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("integrated.refl").is_file()
@@ -171,17 +172,16 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
     assert table.select(table["id"] == 0).size() == 3526
 
 
-def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
-
+def test_basic_integrate_output_integrated_only(dials_data, tmp_path):
     exp = load.experiment_list(
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "bar"
-    exp.as_json(tmpdir.join("modified_input.json"))
+    exp.as_json(tmp_path / "modified_input.json")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
@@ -189,14 +189,15 @@ def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
             "output_unintegrated_reflections=False",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     assert experiments[0].identifier == "bar"
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1666
     assert mask.count(False) == 0
@@ -207,17 +208,16 @@ def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
     assert dict(table.experiment_identifiers()) == {0: "bar"}
 
 
-def test_integration_with_sampling(dials_data, tmpdir):
-
+def test_integration_with_sampling(dials_data, tmp_path):
     exp = load.experiment_list(
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-    exp.as_json(tmpdir / "modified_input.json")
+    exp.as_json(tmp_path / "modified_input.json")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
@@ -225,13 +225,14 @@ def test_integration_with_sampling(dials_data, tmpdir):
             "sampling.random_seed=42",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     assert experiments[0].identifier == "foo"
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
 
     # account for random number generator in sampling
     assert len(table) == 839
@@ -239,16 +240,16 @@ def test_integration_with_sampling(dials_data, tmpdir):
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
-def test_integration_with_sample_size(dials_data, tmpdir):
+def test_integration_with_sample_size(dials_data, tmp_path):
     exp = load.experiment_list(
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-    exp.as_json(tmpdir / "modified_input.json")
+    exp.as_json(tmp_path / "modified_input.json")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
@@ -257,27 +258,27 @@ def test_integration_with_sample_size(dials_data, tmpdir):
             "sampling.minimum_sample_size=500",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     assert experiments[0].identifier == "foo"
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     assert len(table) == 415
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
-def test_integration_with_image_exclusions(dials_data, tmpdir):
-
+def test_integration_with_image_exclusions(dials_data, tmp_path):
     exp = load.experiment_list(
         dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-    exp.as_json(tmpdir / "modified_input.json")
+    exp.as_json(tmp_path / "modified_input.json")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
@@ -285,13 +286,14 @@ def test_integration_with_image_exclusions(dials_data, tmpdir):
             "sampling.random_seed=42",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     assert experiments[0].identifier == "foo"
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
 
     assert len(table) == 91
 
@@ -309,31 +311,40 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     images1 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_01_000*.cbf"
     images2 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_02_000*.cbf"
 
-    result = procrunner.run(
-        ["dials.import", images1, images2], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.import"), images1, images2],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
-        ["dials.find_spots", tmp_path / "imported.expt", "nproc=1"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [shutil.which("dials.find_spots"), tmp_path / "imported.expt", "nproc=1"],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    result = procrunner.run(
-        ["dials.index", tmp_path / "imported.expt", tmp_path / "strong.refl"],
-        working_directory=tmp_path,
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            tmp_path / "imported.expt",
+            tmp_path / "strong.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             tmp_path / "indexed.expt",
             tmp_path / "indexed.refl",
             "profile.fitting=False",
             "gaussian_rs.min_spots.overall=0",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
@@ -346,9 +357,9 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     assert (n1 / n > 0.4) and (n1 / n < 0.6)
 
     # now try again with adding unintegrated reflections
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             tmp_path / "indexed.expt",
             tmp_path / "indexed.refl",
@@ -356,7 +367,8 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
             "gaussian_rs.min_spots.overall=0",
             "output_unintegrated_reflections=False",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
@@ -369,12 +381,12 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     assert (n1 / n > 0.4) and (n1 / n < 0.6)
 
 
-def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
+def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
     expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
     refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             expts,
             refls,
@@ -384,10 +396,11 @@ def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
             "sampling.minimum_sample_size=500",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     assert len(table) == 436
 
     prf = table.get_flags(table.flags.integrated_prf)
@@ -396,7 +409,7 @@ def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
     assert prf_and_zero.count(True) == 0
 
 
-def test_multi_sweep(dials_regression, tmpdir):
+def test_multi_sweep(dials_regression: pathlib.Path, tmp_path):
     expts = os.path.join(
         dials_regression, "integration_test_data", "multi_sweep", "experiments.json"
     )
@@ -413,31 +426,32 @@ def test_multi_sweep(dials_regression, tmpdir):
     max_trusted = panel.get_trusted_range()[1]
     panel.set_trusted_range((0, max_trusted))
 
-    experiments.as_json(tmpdir / "modified_input.json")
+    experiments.as_json(tmp_path / "modified_input.json")
 
     refls = os.path.join(
         dials_regression, "integration_test_data", "multi_sweep", "indexed.pickle"
     )
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "modified_input.json",
             refls,
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert (tmpdir / "integrated.refl").check()
-    assert (tmpdir / "integrated.expt").check()
+    assert (tmp_path / "integrated.refl").is_file()
+    assert (tmp_path / "integrated.expt").is_file()
 
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     for i, expt in enumerate(experiments):
         assert expt.identifier == str(100 + i)
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     assert len(table) == 3530
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
 
@@ -460,7 +474,7 @@ def test_multi_sweep(dials_regression, tmpdir):
     assert flex.abs(I1 - I2) < 1e-6
 
 
-def test_multi_lattice(dials_regression, tmpdir):
+def test_multi_lattice(dials_regression: pathlib.Path, tmp_path):
     expts = os.path.join(
         dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
     )
@@ -468,11 +482,11 @@ def test_multi_lattice(dials_regression, tmpdir):
     experiments = load.experiment_list(expts)
     for i, expt in enumerate(experiments):
         expt.identifier = str(100 + i)
-    experiments.as_json(tmpdir / "modified_input.json")
+    experiments.as_json(tmp_path / "modified_input.json")
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "modified_input.json",
             os.path.join(
@@ -483,17 +497,18 @@ def test_multi_lattice(dials_regression, tmpdir):
             ),
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.refl").check()
-    assert tmpdir.join("integrated.expt").check()
+    assert (tmp_path / "integrated.refl").is_file()
+    assert (tmp_path / "integrated.expt").is_file()
 
-    experiments = load.experiment_list(tmpdir / "integrated.expt")
+    experiments = load.experiment_list(tmp_path / "integrated.expt")
     for i, expt in enumerate(experiments):
         assert expt.identifier == str(100 + i)
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     assert len(table) == 4962
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
     # both should only have the imageset_id of zero as they share an imageset
@@ -511,30 +526,32 @@ def test_multi_lattice(dials_regression, tmpdir):
 
 
 def test_output_rubbish(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.index",
+            shutil.which("dials.index"),
             dials_data("centroid_test_data", pathlib=True)
             / "imported_experiments.json",
             dials_data("centroid_test_data", pathlib=True) / "strong.pickle",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "indexed.expt").is_file()
     assert (tmp_path / "indexed.refl").is_file()
 
     # Call dials.integrate
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.integrate",
+            shutil.which("dials.integrate"),
             "nproc=1",
             "indexed.expt",
             "indexed.refl",
             "profile.fitting=False",
             "prediction.padding=0",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "integrated.refl").is_file()
@@ -548,7 +565,7 @@ def test_output_rubbish(dials_data, tmp_path):
     assert list(table.experiment_identifiers().values())  # not empty
 
 
-def test_integrate_with_kapton(dials_regression, tmpdir):
+def test_integrate_with_kapton(dials_regression: pathlib.Path, tmp_path):
     pickle_name = "idx-20161021225550223_indexed.pickle"
     json_name = "idx-20161021225550223_refined_experiments.json"
     image_name = "20161021225550223.pickle"
@@ -564,11 +581,13 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     assert os.path.exists(pickle_path)
     assert os.path.exists(json_path)
-    shutil.copy(pickle_path, tmpdir)
-    shutil.copy(image_path, tmpdir)
+    shutil.copy(pickle_path, tmp_path)
+    shutil.copy(image_path, tmp_path)
 
-    with open(tmpdir / json_name, "w") as w, open(json_path) as r:
-        w.write(r.read() % tmpdir.strpath.replace("\\", "\\\\"))
+    with open(json_path) as r:
+        (tmp_path / json_name).write_text(
+            r.read() % os.fspath(tmp_path).replace("\\", "\\\\")
+        )
 
     templ_phil = """
       output {
@@ -614,24 +633,23 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
         "True",
     )
 
-    with open(tmpdir / "integrate_without_kapton.phil", "w") as f:
-        f.write(without_kapton_phil)
+    (tmp_path / "integrate_without_kapton.phil").write_text(without_kapton_phil)
 
-    with open(tmpdir / "integrate_with_kapton.phil", "w") as f:
-        f.write(with_kapton_phil)
+    (tmp_path / "integrate_with_kapton.phil").write_text(with_kapton_phil)
 
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
-        result = procrunner.run(
+        result = subprocess.run(
             ["dials.integrate", "nproc=1", pickle_name, json_name, phil],
-            working_directory=tmpdir,
+            cwd=tmp_path,
+            capture_output=True,
         )
         assert not result.returncode and not result.stderr
 
     results = []
     for mode in "kapton", "nokapton":
         table = flex.reflection_table.from_file(
-            tmpdir / f"idx-20161021225550223_integrated_{mode}.refl"
+            tmp_path / f"idx-20161021225550223_integrated_{mode}.refl"
         )
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
