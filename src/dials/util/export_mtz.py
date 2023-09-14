@@ -621,7 +621,50 @@ def add_batch_list(
     print(
         f"Batch arrays have {len(ba.get_ints())} integers and {len(ba.get_floats())} floats"
     )
-    # mtz.add_batch_arrays()
+
+    batch_offset += image_range[0] - 1
+    if max_batch_number > batch_offset:
+        batch_offset = max_batch_number
+
+    batch = gemmi.Mtz.Batch()
+
+    # Setting fields that are the same for all batches
+    batch.dataset_id = dataset_id
+    batch.wavelength = wavelength
+    batch.ints[12] = 1  # ncryst
+    batch.ints[14] = 2  # ldtype 3D
+    batch.ints[15] = 1  # jsaxs - goniostat scan axis number
+    batch.ints[17] = 1  # ngonax - number of goniostat axes
+    batch.ints[19] = 1  # ndet
+
+    batch.floats[21] = mosaic  # crydat[0]
+    for j in range(3):
+        batch.floats[38 + j] = axis[j]  # scanax
+    batch.floats[43] = 1.0  # bscale (batch scale)
+    for j in range(3):
+        batch.floats[59 + j] = axis[j]  # e1
+    batch.floats[80 + flex.min_index(source)] = -1.0  # idealised source vector
+    for j in range(3):
+        batch.floats[83 + j] = source[j]  # source including tilts
+    batch.floats[111] = panel_distance  # dx
+    batch.floats[114] = panel_size[0]  # NX
+    batch.floats[116] = panel_size[1]  # NY
+    batch.axes = ["AXIS"]  # gonlab[0]
+
+    # Setting fields that differ
+    for i_batch in range(n_batches):
+        batch.number = batch_offset + i_batch + 1
+        batch.title = f"Batch {batch.number}"
+        for j in range(6):
+            batch.floats[j] = cell_array[i_batch, j]  # cell
+        for j in range(9):
+            batch.floats[6 + j] = umat_array[i_batch, j]  # Umat
+        batch.floats[36] = phi_start[i_batch]  # phistt
+        batch.floats[37] = phi_start[i_batch] + phi_range[i_batch]  # phiend
+        batch.floats[47] = phi_range[i_batch]  # phirange
+
+        # Append this batch
+        mtz.batches.append(batch)
 
     return
 
