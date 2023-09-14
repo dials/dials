@@ -691,13 +691,6 @@ def write_columns(mtz, reflection_table):
         "QE": "R",
     }
 
-    # derive index columns from original indices with
-    #
-    # from m.replace_original_index_miller_indices
-    #
-    # so all that is needed now is to make space for the reflections - fill with
-    # zeros...
-
     # mtz.nreflections = nref
     # dataset = self.current_dataset
 
@@ -709,13 +702,6 @@ def write_columns(mtz, reflection_table):
 
     # H, K, L are in the base dataset, but we have to add M/ISYM
     mtz.add_column("M/ISYM", type_table["M_ISYM"])
-
-    # FIXME in the gemmi version the next step will be done by calling mtz.switch_to_asu_hkl()
-    # once the data are written and the batches are set
-    # self.mtz_file.replace_original_index_miller_indices(
-    #    reflection_table["miller_index"]
-    # )
-
     mtz.add_column("BATCH", type_table["BATCH"])
     mtz_data.insert(
         4, "BATCH", flumpy.to_numpy(reflection_table["batch"]).astype("float32")
@@ -1077,6 +1063,7 @@ def export_mtz(
         ds = mtz.add_dataset("FROMDIALS")
         ds.crystal_name = crystal_name
         ds.project_name = project_name
+        ds.wavelength = wavelength.weighted_mean
 
     # Combine all of the experiment data columns before writing
     combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
@@ -1093,11 +1080,18 @@ def export_mtz(
     mtz_writer.write_columns(combined_data)
     write_columns(mtz, combined_data)
 
+    # FIXME: this is not working right yet
+    mtz.switch_to_asu_hkl()
+
     logger.info(
         "Saving %s integrated reflections to %s", len(combined_data["id"]), filename
     )
     mtz_file = mtz_writer.mtz_file
     mtz_file.write(filename)
+
+    # Standard sort order
+    mtz.sort(5)
+    mtz.write_to_file(filename.replace(".mtz", "_gemmi.mtz"))
 
     return mtz_file
 
