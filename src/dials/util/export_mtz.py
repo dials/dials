@@ -600,28 +600,6 @@ def add_batch_list(
         if b.number > max_batch_number:
             max_batch_number = b.number
 
-    ba = dials.util.ext.BatchArrays(
-        max_batch_number,
-        dataset_id,
-        image_range,
-        batch_offset,
-        wavelength,
-        mosaic,
-        phi_start,
-        phi_range,
-        cell_array,
-        umat_array,
-        panel_size,
-        panel_distance,
-        axis,
-        source,
-    )
-
-    # FIXME TODO
-    print(
-        f"Batch arrays have {len(ba.get_ints())} integers and {len(ba.get_floats())} floats"
-    )
-
     batch_offset += image_range[0] - 1
     if max_batch_number > batch_offset:
         batch_offset = max_batch_number
