@@ -841,6 +841,7 @@ def write_columns(mtz, reflection_table):
         mtz.add_column("QE", type_table["QE"])
         mtz_data.insert(len(mtz_data.columns), "QE", np.ones(nref).astype("float32"))
 
+    mtz.switch_to_original_hkl()
     mtz.set_data(mtz_data)
 
 
