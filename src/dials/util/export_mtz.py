@@ -594,11 +594,9 @@ def add_batch_list(
     except AttributeError:
         mosaic = 0.0
 
-    # FIXME this should be moved to a gemmi function to get the current max batch number
     max_batch_number = 0
-    for b in mtz.batches:
-        if b.number > max_batch_number:
-            max_batch_number = b.number
+    if mtz.batches:
+        max_batch_number = mtz.batches[-1].number
 
     batch_offset += image_range[0] - 1
     if max_batch_number > batch_offset:
