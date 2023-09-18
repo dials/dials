@@ -109,7 +109,7 @@ def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
     captured = capsys.readouterr()
 
     expected_output = (
-        "Resolution fit against cc_half failed: No reflections left for fitting",
+        "Resolution fit against cc_half failed: Not enough reflections for fitting",
         "Resolution Mn(I/sig):     0.62",
     )
     for line in expected_output:
