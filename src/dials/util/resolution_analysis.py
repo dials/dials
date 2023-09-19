@@ -66,7 +66,9 @@ def tanh_inzspace(x, r, s0):
     yprime = 0.5 * (1 - np.tanh(xprime))
     # avoid math errors if y>=1.
     delta = 1e-9
-    zprime = np.array([math.atanh(yp) if yp < 1 else 1.0 - delta for yp in yprime])
+    zprime = np.array(
+        [math.atanh(yp) if abs(yp) < 1 else yp * (1.0 - delta) for yp in yprime]
+    )
     return zprime
 
 
@@ -92,7 +94,7 @@ def tanh_fit(x, y, degree=None, n_obs=None):
     x = np.array(x)
     # avoid math errors if y>=1.
     delta = 1e-9
-    yinz = np.array([math.atanh(yi) if yi < 1 else (1 - delta) for yi in y])
+    yinz = np.array([math.atanh(yi) if abs(yi) < 1 else yi * (1 - delta) for yi in y])
 
     result = scipy.optimize.curve_fit(tanh_inzspace, x, yinz, p0, sigma=sigma)
 
