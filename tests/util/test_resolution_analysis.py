@@ -43,8 +43,9 @@ def test_log_inv_fit():
 def test_tanh_fit():
     x = flex.double(range(0, 100)) * 0.01
     f = curve_fitting.tanh(0.5, 1.5)
+    n_obs = flex.double(100, 100)
     yo = f(x)
-    yf = resolution_analysis.tanh_fit(x, yo)
+    yf = resolution_analysis.tanh_fit(x, yo, n_obs=n_obs)
     assert yo == pytest.approx(yf, abs=1e-5)
 
 
@@ -68,9 +69,10 @@ def merging_stats(dials_data):
 
 def test_resolution_fit(merging_stats):
     d_star_sq = flex.double(uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins)
+    n_obs = None
     y_obs = flex.double(b.r_merge for b in merging_stats.bins)
     result = resolution_analysis.resolution_fit(
-        d_star_sq, y_obs, resolution_analysis.log_inv_fit, 0.6
+        d_star_sq, y_obs, resolution_analysis.log_inv_fit, 0.6, n_obs
     )
     assert result.d_min == pytest.approx(1.278, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.05
@@ -78,7 +80,7 @@ def test_resolution_fit(merging_stats):
 
 def test_resolution_cc_half(merging_stats):
     result = resolution_analysis.resolution_cc_half(merging_stats, limit=0.82)
-    assert result.d_min == pytest.approx(1.242, abs=1e-3)
+    assert result.d_min == pytest.approx(1.272, abs=1e-3)
     result = resolution_analysis.resolution_cc_half(
         merging_stats,
         limit=0.82,
