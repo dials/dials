@@ -69,10 +69,9 @@ def merging_stats(dials_data):
 
 def test_resolution_fit(merging_stats):
     d_star_sq = flex.double(uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins)
-    n_obs = None
     y_obs = flex.double(b.r_merge for b in merging_stats.bins)
     result = resolution_analysis.resolution_fit(
-        d_star_sq, y_obs, resolution_analysis.log_inv_fit, 0.6, n_obs
+        d_star_sq, y_obs, resolution_analysis.log_inv_fit, 0.6, n_obs=None
     )
     assert result.d_min == pytest.approx(1.278, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.05
