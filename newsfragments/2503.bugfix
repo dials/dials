@@ -1,3 +1,1 @@
-For dials.cosym, fix a bug affecting refinement weights for dataset pairs with
-1 or 2 common reflections. This improves the handling of sparse data, e.g.
-serial stills.
+``dials.cosym``: Fix a bug affecting refinement weights for sparse data with a low number of common reflections. This improves the handling of serial still data.
