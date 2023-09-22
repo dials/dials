@@ -1,1 +1,1 @@
-Refactor code not have a circular dependency between DIALS and cctbx.xfel
+Remove circular dependencies between DIALS and ``cctbx.xfel`` by using the new ``serialtbx``.
