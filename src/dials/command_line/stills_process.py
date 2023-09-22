@@ -156,9 +156,10 @@ def _control_phil_str():
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
-    integration_pickle = int-%d-%s.pickle
+    integration_pickle = None
       .type = str
-      .help = Filename for cctbx.xfel-style integration pickle files
+      .expert_level = 3
+      .help = Filename for legacy cxi.merge integration pickle files. Example: int-%d-%s.pickle
   }
 
   mp {
