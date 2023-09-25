@@ -1096,7 +1096,7 @@ def export_mtz(
 
     # Standard sort order
     mtz.sort(5)
-    mtz.write_to_file(filename.replace(".mtz", "_gemmi.mtz"))
+    mtz.write_to_file(filename)
 
     return mtz_file
 
