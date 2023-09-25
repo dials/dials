@@ -750,7 +750,7 @@ def write_columns(mtz, reflection_table):
             mtz_data.insert(
                 len(mtz_data.columns),
                 col_names[0],
-                flumpy.to_numpy(I_profile.as_float).astype("float32"),
+                flumpy.to_numpy(I_profile.as_float()).astype("float32"),
             )
             mtz.add_column(col_names[1], type_table["SIGI"])
             mtz_data.insert(
