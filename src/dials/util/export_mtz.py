@@ -828,9 +828,7 @@ def write_columns(mtz, reflection_table):
             flumpy.to_numpy(reflection_table["qe"]).astype("float32"),
         )
     elif "dqe" in reflection_table:
-        mtz.add_column("QE", type_table["QE"]).set_values(
-            reflection_table["dqe"].as_float()
-        )
+        mtz.add_column("QE", type_table["QE"])
         mtz_data.insert(
             len(mtz_data.columns),
             "QE",
