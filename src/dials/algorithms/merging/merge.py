@@ -502,7 +502,13 @@ def merge_scaled_array_to_mtz_with_report_collection(
         process_merged_data(
             params, mtz_dataset, merged, merged_anomalous, stats_summary
         )
-        mtz = make_merged_mtz_file([mtz_dataset])
+        if params.r_free_flags.reference:
+            r_free_array = r_free_flags_from_reference(params, [mtz_dataset])
+        elif params.r_free_flags.generate:
+            r_free_array = generate_r_free_flags(params, [mtz_dataset])
+        else:
+            r_free_array = None
+        mtz = make_merged_mtz_file([mtz_dataset], r_free_array=r_free_array)
         json_data = collector.create_json()
     return mtz, json_data
 
