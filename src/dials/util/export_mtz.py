@@ -36,6 +36,7 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
 )
+from dials.util.reindex import reindex_experiments, reindex_reflections
 from dials.util.version import dials_version
 
 logger = logging.getLogger(__name__)
@@ -874,9 +875,6 @@ def export_mtz(
     reflection_table.assert_experiment_identifiers_are_consistent(experiment_list)
     expids_in_list = list(experiment_list.identifiers())
 
-    # Convert geometry to the Cambridge frame
-    experiment_list = convert_to_cambridge(experiment_list)
-
     # Convert experiment_list to a real python list or else identity assumptions
     # fail like:
     #   assert experiment_list[0] is experiment_list[0]
@@ -896,6 +894,19 @@ def export_mtz(
         # At least, all experiments must have the same space group
         if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
             raise ValueError("Experiments do not have a unique space group")
+
+    # Reindex to a tabulated setting if necessary
+    sg = experiment_list[0].crystal.get_space_group()
+    if sg.match_tabulated_settings().number() == 0:
+        logger.warning(
+            "The data will be reindexed to a tabulated setting of the space group"
+        )
+        cb_op = sg.info().change_of_basis_op_to_reference_setting()
+        experiment_list = reindex_experiments(experiment_list, cb_op)
+        reflections = reindex_reflections(reflections, cb_op)
+
+    # Convert geometry to the Cambridge frame
+    experiment_list = convert_to_cambridge(experiment_list)
 
     wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
     for w in wavelengths.values():
