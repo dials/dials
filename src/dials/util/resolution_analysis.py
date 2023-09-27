@@ -60,16 +60,10 @@ def polynomial_fit(x, y, degree=5, n_obs=None):
     return f(x)
 
 
-def tanh_inzspace(x, r, s0):
-    # from the x's, calculate y and then transform into fisher z-space.
+def tanh_cchalf(x, r, s0):
     xprime = (x - s0) / r
     yprime = 0.5 * (1 - np.tanh(xprime))
-    # avoid math errors if y>=1.
-    delta = 1e-9
-    zprime = np.array(
-        [math.atanh(yp) if abs(yp) < 1 else yp * (1.0 - delta) for yp in yprime]
-    )
-    return zprime
+    return yprime
 
 
 def tanh_fit(x, y, degree=None, n_obs=None):
@@ -83,20 +77,22 @@ def tanh_fit(x, y, degree=None, n_obs=None):
     if (n_obs > 3).count(True) < 3:
         raise RuntimeError("Not enough reflections for fitting")
 
-    # To do a weighted tanh_fit to cc1/2, first use the fisher Z-transformation
-    # which has the convenient property of having symmetric errors. So do the
-    # cc1/2 fit in z-space
+    # Do some approximate weighting to avoid overweighting noisy data at high res.
+    # This is technically wrong, as the confidence intervals are highly asymmetric
+    # for cc close to 1. However, the main purpose of the fit is to capture the sharp
+    # fall off in cc to determine cc1/2 of 0.3, and here we want to make sure we have
+    # some weighting to downweight noise, so it actually helps.
+    # A fisher transform was investigated, but this plaecs too much emphasis on fitting
+    # the data well at low res, which doesn't matter, and the true form of cc1/2 is not
+    # tanh anyway....
     standard_errors = [
         1 / math.sqrt(n - 3.0) if n > 4 else 100 for n in n_obs
-    ]  # 100 or another large number.
+    ]  # 100 or another large number. Error formula inspired from fisher z-transform.
     p0 = np.array([0.2, 0.4])  # starting parameter estimates
     sigma = np.array(standard_errors)
     x = np.array(x)
-    # avoid math errors if y>=1.
-    delta = 1e-9
-    yinz = np.array([math.atanh(yi) if abs(yi) < 1 else yi * (1 - delta) for yi in y])
 
-    result = scipy.optimize.curve_fit(tanh_inzspace, x, yinz, p0, sigma=sigma)
+    result = scipy.optimize.curve_fit(tanh_cchalf, x, y, p0, sigma=sigma)
 
     r = result[0][0]
     s0 = result[0][1]

@@ -79,7 +79,7 @@ def test_resolution_fit(merging_stats):
 
 def test_resolution_cc_half(merging_stats):
     result = resolution_analysis.resolution_cc_half(merging_stats, limit=0.82)
-    assert result.d_min == pytest.approx(1.272, abs=1e-3)
+    assert result.d_min == pytest.approx(1.242, abs=1e-3)
     result = resolution_analysis.resolution_cc_half(
         merging_stats,
         limit=0.82,
