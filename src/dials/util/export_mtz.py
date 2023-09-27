@@ -13,7 +13,6 @@ import numpy as np
 import pandas as pd
 
 from cctbx import uctbx
-from cctbx.sgtbx import space_group_symbols
 from dxtbx import flumpy
 from iotbx import mtz
 from libtbx import env
@@ -974,13 +973,11 @@ def export_mtz(
         f"From {dials_version()}, run on {date_str}",
     ]
 
-    # Create the right gemmi spacegroup from the crystal's cctbx space_group.
-    # We need to get an extended Hermann-Maugin symbol from the space_group,
-    # which is surprisingly convoluted
-    symbols = space_group_symbols(
-        experiment_list[0].crystal.get_space_group().type().lookup_symbol()
-    )
-    mtz.spacegroup = gemmi.find_spacegroup_by_name(symbols.universal_hermann_mauguin())
+    # Create the right gemmi spacegroup from the crystal's cctbx space_group
+    # via a Hall symbol
+    hall = experiment_list[0].crystal.get_space_group().type().hall_symbol()
+    ops = gemmi.symops_from_hall(hall)
+    mtz.spacegroup = gemmi.find_spacegroup_by_ops(ops)
     mtz_writer = UnmergedMTZWriter(experiment_list[0].crystal.get_space_group())
 
     # FIXME TODO for more than one experiment into an MTZ file:
