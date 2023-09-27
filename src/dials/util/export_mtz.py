@@ -906,7 +906,7 @@ def export_mtz(
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavlength: %.5f, experiment numbers: %s "
+                "  Wavelength: %.5f, experiment numbers: %s "
                 % (
                     v.weighted_mean,
                     ",".join(
