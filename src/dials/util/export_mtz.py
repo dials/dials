@@ -875,6 +875,9 @@ def export_mtz(
     reflection_table.assert_experiment_identifiers_are_consistent(experiment_list)
     expids_in_list = list(experiment_list.identifiers())
 
+    # Convert geometry to the Cambridge frame
+    experiment_list = convert_to_cambridge(experiment_list)
+
     # Convert experiment_list to a real python list or else identity assumptions
     # fail like:
     #   assert experiment_list[0] is experiment_list[0]
@@ -904,9 +907,6 @@ def export_mtz(
         cb_op = sg.info().change_of_basis_op_to_reference_setting()
         experiment_list = reindex_experiments(experiment_list, cb_op)
         reflections = reindex_reflections(reflections, cb_op)
-
-    # Convert geometry to the Cambridge frame
-    experiment_list = convert_to_cambridge(experiment_list)
 
     wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
     for w in wavelengths.values():
