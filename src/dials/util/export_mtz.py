@@ -878,12 +878,6 @@ def export_mtz(
     # Convert geometry to the Cambridge frame
     experiment_list = convert_to_cambridge(experiment_list)
 
-    # Convert experiment_list to a real python list or else identity assumptions
-    # fail like:
-    #   assert experiment_list[0] is experiment_list[0]
-    # And assumptions about added attributes break
-    experiment_list = list(experiment_list)
-
     # Validate multi-experiment assumptions
     if len(experiment_list) > 1:
         # All experiments should match crystals, or else we need multiple crystals/datasets
@@ -906,7 +900,13 @@ def export_mtz(
         )
         cb_op = sg.info().change_of_basis_op_to_reference_setting()
         experiment_list = reindex_experiments(experiment_list, cb_op)
-        reflections = reindex_reflections(reflections, cb_op)
+        reflection_table = reindex_reflections(reflection_table, cb_op)
+
+    # Convert experiment_list to a real python list or else identity assumptions
+    # fail like:
+    #   assert experiment_list[0] is experiment_list[0]
+    # And assumptions about added attributes break
+    experiment_list = list(experiment_list)
 
     wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
     for w in wavelengths.values():
