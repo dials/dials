@@ -13,7 +13,6 @@ import warnings
 from pathlib import Path
 
 import pytest
-from _pytest.outcomes import Skipped
 
 if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
     multiprocessing.set_start_method("forkserver")
@@ -56,23 +55,9 @@ def pytest_configure(config):
             pytest.skip("This test requires the dials_data package to be installed")
 
         globals()["dials_data"] = dials_data
-    config.addinivalue_line(
-        "markers", "xfel: Mark test to run xfail if xfel module is missing"
-    )
+
     # Ensure that subprocesses get the warnings filters
     os.environ["PYTHONWARNINGS"] = _build_filterwarnings_string()
-
-
-def pytest_collection_modifyitems(config, items):
-    # Attempt to import xfel
-    try:
-        import xfel  # noqa: F401
-    except (Skipped, ModuleNotFoundError):
-        # We don't have XFEL
-        xfail_marker = pytest.mark.xfail(reason="XFEL module not present")
-        for item in items:
-            if item.get_closest_marker("xfel"):
-                item.add_marker(xfail_marker)
 
 
 @pytest.fixture(scope="session")

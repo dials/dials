@@ -50,7 +50,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2023.7"  # August 2023 release
+_prebuilt_cctbx_base = "2023"  # Latest Nightly release
 
 
 def make_executable(filepath):
@@ -146,7 +146,7 @@ def install_micromamba(python, include_cctbx, cmake):
         python_requirement,
     ]
     if include_cctbx or cmake:
-        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
+        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
         command_list.extend(["pycbf", "cmake"])
     if os.name == "nt":
@@ -344,7 +344,7 @@ environments exist and are working.
         python_requirement,
     ]
     if include_cctbx or cmake:
-        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
+        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
         command_list.extend(["pycbf", "cmake"])
     if os.name == "nt":

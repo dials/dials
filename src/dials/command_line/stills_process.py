@@ -1004,9 +1004,9 @@ class Processor:
         if not self.params.mp.debug.output_debug_logs:
             return
 
-        from xfel.cxi.cspad_ana import cspad_tbx  # XXX move to common timestamp format
+        from serialtbx.util.time import timestamp  # XXX move to common timestamp format
 
-        ts = cspad_tbx.evt_timestamp()  # Now
+        ts = timestamp()  # Now
         debug_file_handle = open(self.debug_file_path, "a")
         if string == "":
             debug_file_handle.write("\n")
@@ -1407,7 +1407,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     )
 
         if self.params.dispatch.coset:
-            from xfel.util.sublattice_helper import integrate_coset
+            from dials.algorithms.integration.sublattice_helper import integrate_coset
 
             integrate_coset(self, experiments, indexed)
 
@@ -1604,7 +1604,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             return
 
         if self.params.output.integration_pickle is not None:
-            from xfel.command_line.frame_extractor import ConstructFrame
+            from serialtbx.util.construct_frame import ConstructFrame
 
             # Split everything into separate experiments for pickling
             for e_number, experiment in enumerate(experiments):
