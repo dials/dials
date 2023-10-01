@@ -1,14 +1,17 @@
-from __future__ import division, print_function, absolute_import
-from scitbx.matrix import sqr, row
-from rstbx.sublattice_support.change_basis import sublattice_change_of_basis
+from __future__ import annotations
+
+import copy
+import logging
+
+from cctbx.crystal import symmetry
 
 # for debug: from cctbx.crystal_orientation import crystal_orientation
 from cctbx.miller import set as miller_set
-from cctbx.crystal import symmetry
-import copy
-import logging
-from dials.array_family import flex
+from rstbx.sublattice_support.change_basis import sublattice_change_of_basis
+from scitbx.matrix import row, sqr
+
 from dials.algorithms.indexing.stills_indexer import calc_2D_rmsd_and_displacements
+from dials.array_family import flex
 
 SL = sublattice_change_of_basis(max_modulus=2)
 SLT = list(SL.yield_transformations_ascending_modulus())
@@ -35,8 +38,8 @@ def integrate_coset(self, experiments, indexed):
     logger.info("*" * 80)
     logger.info("Coset Reflections for modeling or validating the background")
     logger.info("*" * 80)
-    from dials.algorithms.profile_model.factory import ProfileModelFactory
     from dials.algorithms.integration.integrator import create_integrator
+    from dials.algorithms.profile_model.factory import ProfileModelFactory
 
     # XXX Fixme later implement support for non-primitive lattices NKS
     base_set = miller_set(
