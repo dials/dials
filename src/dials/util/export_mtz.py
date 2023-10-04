@@ -1108,8 +1108,54 @@ def export_mtz(
     # Standard sort order
     mtz.sort(5)
     mtz.write_to_file(filename)
+    log_summary(mtz)
 
     return mtz_file
+
+
+def log_summary(mtz):
+    """Log a summary of an MTZ object, based on the output of `gemmi mtz --dump`"""
+
+    logger.info("Title: " + mtz.title)
+    logger.info(f"Total Number of Datasets = {len(mtz.datasets)}\n")
+    for ds in mtz.datasets:
+        logger.info(
+            f"Dataset {ds.id:4d}   {ds.project_name} > {ds.crystal_name} > {ds.dataset_name}:"
+        )
+        logger.info(
+            "        cell  {:7g} {:7g} {:7g}  {:6g} {:6g} {:6g}".format(
+                *ds.cell.parameters
+            )
+        )
+        logger.info(f"  wavelength  {ds.wavelength:g}")
+    logger.info(f"\nNumber of Columns = {len(mtz.columns)}")
+    logger.info(
+        f"Number of Reflections = {mtz.nreflections}",
+    )
+    logger.info(f"Number of Batches = {len(mtz.batches)}")
+    logger.info(f"Missing values marked as: {mtz.valm}")
+    logger.info(
+        "Global Cell (obsolete): {:7g} {:7g} {:7g}  {:6g} {:6g} {:6g}".format(
+            *mtz.cell.parameters
+        )
+    )
+    mtz.update_reso()
+    logger.info(
+        f"Resolution: {mtz.resolution_high():.2f} - {mtz.resolution_low():.2f} A"
+    )
+    logger.info("Sort Order: {:d} {:d} {:d} {:d} {:d}".format(*mtz.sort_order))
+    logger.info(f"Space Group: {mtz.spacegroup.hm}")
+    logger.info(f"Space Group Number: {mtz.spacegroup.ccp4}")
+    logger.info("Header info:")
+    logger.info("Column    Type  Dataset    Min        Max")
+    for col in mtz.columns:
+        # col.min_value and col.max_value are not set, so we have to calculate them here
+        logger.info(
+            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {col.array.min():12.6g} {col.array.max():10.6g}"
+        )
+    logger.info(f"History ({len(mtz.history)} lines):")
+    for line in mtz.history:
+        logger.info(line)
 
 
 @dataclass
