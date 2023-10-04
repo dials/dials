@@ -230,18 +230,24 @@ def expand_exclude_multiples(experiments, exclude_images_multiple, exclude_image
         first_exclude = first_image + exclude_images_multiple - 1
         excludes = list(range(first_exclude, last_image, exclude_images_multiple))
         exclude_str = ",".join([f"{i}:{e}:{e}" for e in excludes])
-        extra_excludes.append(exclude_str)
+        extra_excludes.append(
+            [
+                exclude_str,
+            ]
+        )
     if extra_excludes:
         logger.info(
             f"The exclude_images_multiple={exclude_images_multiple} parameter has been expanded to:"
         )
-        for line in extra_excludes:
-            logger.info(f"  exclude_images={line}")
+        for e in extra_excludes:
+            logger.info(f"  exclude_images={e[0]}")
 
     if exclude_images is None:
         exclude_images = []
 
     exclude_images.extend(extra_excludes)
+
+    return exclude_images
 
 
 """
