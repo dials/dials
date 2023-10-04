@@ -900,7 +900,12 @@ def export_mtz(
         )
         cb_op = sg.info().change_of_basis_op_to_reference_setting()
         experiment_list = reindex_experiments(experiment_list, cb_op)
-        reflection_table = reindex_reflections(reflection_table, cb_op)
+        reflection_table = reindex_reflections(
+            [
+                reflection_table,
+            ],
+            cb_op,
+        )
 
     # Convert experiment_list to a real python list or else identity assumptions
     # fail like:
