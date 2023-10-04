@@ -1096,7 +1096,6 @@ def export_mtz(
     mtz_writer.write_columns(combined_data)
     write_columns(mtz, combined_data)
 
-    # FIXME: this is not working right yet
     mtz.switch_to_asu_hkl()
 
     logger.info(
