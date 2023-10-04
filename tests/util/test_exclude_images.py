@@ -16,6 +16,7 @@ from dials.util.exclude_images import (
     _parse_exclude_images_commands,
     exclude_image_ranges_for_scaling,
     exclude_image_ranges_from_scans,
+    expand_exclude_multiples,
     get_selection_for_valid_image_ranges,
     get_valid_image_ranges,
     set_initial_valid_image_ranges,
@@ -62,6 +63,21 @@ def test_parse_exclude_images_commands():
         _ = _parse_exclude_images_commands([["1:101-200"]], [mock_exp], tables)
     with pytest.raises(ValueError):
         _ = _parse_exclude_images_commands([["1:101:a"]], [], tables)
+
+
+def test_expand_exclude_multiples():
+    """Test for namesake function"""
+    explist = ExperimentList(
+        [make_scan_experiment(expid="0"), make_scan_experiment(expid="1")]
+    )
+    exclude_images_multiple = 20
+    exclude_images = []
+    exclude_images = expand_exclude_multiples(
+        explist, exclude_images_multiple, exclude_images
+    )
+    assert len(exclude_images) == 2
+    assert exclude_images[0][0] == "0:20:20,0:40:40,0:60:60,0:80:80"
+    assert exclude_images[1][0] == "1:20:20,1:40:40,1:60:60,1:80:80"
 
 
 def test_set_get_initial_valid_image_ranges():
