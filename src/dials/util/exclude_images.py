@@ -227,7 +227,9 @@ def expand_exclude_multiples(experiments, exclude_images_multiple, exclude_image
         if not experiment.scan:
             continue
         first_image, last_image = experiment.scan.get_image_range()
-        first_exclude = first_image + exclude_images_multiple - 1
+        first_exclude = (
+            (first_image - 1) // exclude_images_multiple + 1
+        ) * exclude_images_multiple
         excludes = list(range(first_exclude, last_image + 1, exclude_images_multiple))
         exclude_str = ",".join([f"{i}:{e}:{e}" for e in excludes])
         extra_excludes.append(
