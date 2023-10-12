@@ -127,6 +127,7 @@ class EllipsoidIntegrator(SimpleIntegrator):
                         ),
                         max_iter=self.params.profile.ellipsoid.refinement.max_iter,
                         LL_tolerance=self.params.profile.ellipsoid.refinement.LL_tolerance,
+                        mosaicity_max_limit=self.params.profile.ellipsoid.refinement.mosaicity_max_limit,
                     )
                 except BadSpotForIntegrationException as e:
                     raise RuntimeError(e)
@@ -184,6 +185,7 @@ class EllipsoidIntegrator(SimpleIntegrator):
         capture_progress=False,
         max_iter=1000,
         LL_tolerance=1e-6,
+        mosaicity_max_limit=0.004,
     ):
         fix_unit_cell = False
         fix_orientation = False
@@ -204,6 +206,7 @@ class EllipsoidIntegrator(SimpleIntegrator):
             capture_progress=capture_progress,
             max_iter=max_iter,
             LL_tolerance=LL_tolerance,
+            mosaicity_max_limit=mosaicity_max_limit,
         )
         return expts[0], refls, output_data
 

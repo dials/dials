@@ -411,6 +411,7 @@ def run_ellipsoid_refinement(
     n_cycles=3,
     max_iter=1000,
     LL_tolerance=1e-6,
+    mosaicity_max_limit=0.004,
 ):
     """Runs ellipsoid refinement on strong spots.
 
@@ -430,7 +431,7 @@ def run_ellipsoid_refinement(
         profile = ProfileModelFactory.from_sigma_d(profile_model, sigma_d)
     else:
         profile = experiments[0].crystal.mosaicity
-
+    profile.parameterisation.mosaicity_max_limit = mosaicity_max_limit
     # Construct the profile refiner data
     refiner_data = RefinerData.from_reflections(experiments[0], reflection_table)
     profile.parameterisation.n_obs = len(refiner_data.h_list)
