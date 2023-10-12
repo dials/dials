@@ -16,12 +16,14 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from scitbx import matrix
 
+import dials.util.log
 from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictorFactory,
 )
 from dials.array_family import flex
 from dials.model.data import Shoebox
 from dials.util import show_mail_handle_errors
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.sequence_to_stills")
@@ -44,6 +46,8 @@ output {
     .type = float
     .help = "Override for mosaic angle. If None, use the crystal's mosaic angle, if"
             "available"
+  log = dials.sequence_to_stills.log
+    .type = str
 }
 max_scan_points = None
   .type = int
@@ -106,9 +110,13 @@ def sequence_to_stills(experiments, reflections, params):
         # the crystal model at the start of each image applies to the whole
         # image and ignores the final scan-point.
         start, stop = experiment.scan.get_array_range()
+        if params.max_scan_points:
+            stop = min(params.max_scan_points, stop)
+        logger.info(
+            f"Converting experiment {expt_id} images {start} to {stop} to stills"
+        )
         for i_array in range(start, stop):
-            if params.max_scan_points and i_array >= params.max_scan_points:
-                break
+
             # Shift array position to scan-point index
             i_scan_point = i_array - start
 
@@ -201,12 +209,14 @@ def sequence_to_stills(experiments, reflections, params):
                 for key in new_refl:
                     new_reflections[key][-1] = new_refl[key]
 
+    logger.info("Re-predicting reflection centroids")
     # Re-predict using the reflection slices and the stills predictors
     ref_predictor = ExperimentsPredictorFactory.from_experiments(
         new_experiments, force_stills=new_experiments.all_stills()
     )
     new_reflections = ref_predictor(new_reflections)
-    from dials.util.multi_dataset_handling import generate_experiment_identifiers
+
+    logger.info("Generating experiment identifiers")
 
     generate_experiment_identifiers(new_experiments)
     identifiers = new_experiments.identifiers()
@@ -238,6 +248,9 @@ def run(args=None, phil=phil_scope):
     )
     params, options = parser.parse_args(args=args, show_diff_phil=True)
 
+    # Configure the logging
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
+
     # Try to load the models and data
     if not params.input.experiments or not params.input.reflections:
         parser.print_help()
@@ -251,6 +264,8 @@ def run(args=None, phil=phil_scope):
         experiments, reflections, params
     )
     # Write out the output experiments, reflections
+    logger.info(f"Saving stills experiments to {params.output.experiments}")
+    logger.info(f"Saving stills reflections to {params.output.reflections}")
     new_experiments.as_file(params.output.experiments)
     new_reflections.as_file(params.output.reflections)
 
