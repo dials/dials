@@ -196,7 +196,12 @@ def sequence_to_stills(experiments, reflections, params):
         new_experiments, force_stills=new_experiments.all_stills()
     )
     new_reflections = ref_predictor(new_reflections)
+    from dials.util.multi_dataset_handling import generate_experiment_identifiers
 
+    generate_experiment_identifiers(new_experiments)
+    identifiers = new_experiments.identifiers()
+    for i, identifier in enumerate(identifiers):
+        new_reflections.experiment_identifiers()[i] = identifier
     return (new_experiments, new_reflections)
 
 
