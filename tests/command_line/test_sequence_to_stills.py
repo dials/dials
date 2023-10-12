@@ -30,3 +30,28 @@ def test_sequence_to_stills(dials_data, tmp_path):
         tmp_path / "stills.expt", check_format=False
     )
     assert len(experiments) == 10
+    assert len(experiments.identifiers()) == 10
+
+
+def test_data_with_static_model(dials_data, tmp_path):
+    # test for regression of https://github.com/dials/dials/issues/2516
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    input_experiments = data_dir / "indexed.expt"
+    input_reflections = data_dir / "indexed.refl"
+    result = subprocess.run(
+        [
+            shutil.which("dials.sequence_to_stills"),
+            input_experiments,
+            input_reflections,
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+
+    assert (tmp_path / "stills.expt").is_file()
+    assert (tmp_path / "stills.refl").is_file()
+
+    experiments = ExperimentListFactory.from_json_file(
+        tmp_path / "stills.expt", check_format=False
+    )
+    assert len(experiments) == 45
