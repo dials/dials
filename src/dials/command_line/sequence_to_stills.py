@@ -112,7 +112,17 @@ def sequence_to_stills(experiments, reflections, params):
             # Shift array position to scan-point index
             i_scan_point = i_array - start
 
-            # The A matrix is the goniometer setting matrix for this scan point
+            # Obtain the A matrix at this scan point, or fallback to the static
+            # A matrix if there are no scan points.
+            try:
+                A_at_scan_point = matrix.sqr(
+                    experiment.crystal.get_A_at_scan_point(i_array)
+                )
+            except RuntimeError:
+                # Handle scan-static input
+                A_at_scan_point = matrix.sqr(experiment.crystal.get_A())
+
+            # The full A matrix is the goniometer setting matrix for this scan point
             # times the scan varying A matrix at this scan point. Note, the
             # goniometer setting matrix for scan point zero will be the identity
             # matrix and represents the beginning of the oscillation.
@@ -126,7 +136,7 @@ def sequence_to_stills(experiments, reflections, params):
                     deg=True,
                 )
                 * goniometer_setting_matrix
-                * matrix.sqr(experiment.crystal.get_A_at_scan_point(i_array))
+                * A_at_scan_point
             )
             crystal = MosaicCrystalSauter2014(experiment.crystal)
             crystal.set_A(A)
