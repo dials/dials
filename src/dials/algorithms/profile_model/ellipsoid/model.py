@@ -96,6 +96,11 @@ refinement {
         .type = float
         .help = "Convergence tolerance for log likelihood during refinement"
 
+    mosaicity_max_limit = 0.004
+      .type = float
+      .help = "Mosaicity values above this limit are considered unphysical"
+              "and processing will stop for the given image. Units are inverse angstroms"
+
 }
 
 prediction {
@@ -208,6 +213,8 @@ class ProfileModelBase(object):
 
     """
 
+    mosaicity_max_limit = 0.004
+
     def __init__(self, params):
         """
         Initialise the class
@@ -246,19 +253,20 @@ class ProfileModelBase(object):
 
         # Compute the eigen decomposition of the covariance matrix and check
         # largest eigen value
-        sqr_mat = matrix.sqr(flumpy.from_numpy(self.sigma()))
+        sqr_mat = matrix.sqr(flumpy.from_numpy(state._M_parameterisation.sigma()))
         eigen_decomposition = eigensystem.real_symmetric(
             sqr_mat.as_flex_double_matrix()
         )
         L = eigen_decomposition.values()
-        if L[0] > 1e-5:
-            raise RuntimeError("Mosaicity matrix is unphysically large")
+        if max(L) > (self.mosaicity_max_limit**2):
+            raise RuntimeError(
+                f"Mosaicity matrix is unphysically large {max(L)**0.5:.6f} > {self.mosaicity_max_limit} (mosaicity_max_limit)"
+            )
         if min(L) < 1e-12:
             val = min(L) ** 0.5 if min(L) > 0 else 0.0
             raise RuntimeError(
                 f"Mosaicity matrix minimum sigma {val:.5} is unphysically small"
             )
-
         self.params = state.M_params
 
     def to_dict(self):
