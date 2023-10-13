@@ -253,13 +253,15 @@ class ProfileModelBase(object):
 
         # Compute the eigen decomposition of the covariance matrix and check
         # largest eigen value
-        sqr_mat = matrix.sqr(flumpy.from_numpy(self.sigma()))
+        sqr_mat = matrix.sqr(flumpy.from_numpy(state._M_parameterisation.sigma()))
         eigen_decomposition = eigensystem.real_symmetric(
             sqr_mat.as_flex_double_matrix()
         )
         L = eigen_decomposition.values()
         if max(L) > (self.mosaicity_max_limit**2):
-            raise RuntimeError("Mosaicity matrix is unphysically large")
+            raise RuntimeError(
+                f"Mosaicity matrix is unphysically large {max(L)**0.5:.6f} > {self.mosaicity_max_limit} (mosaicity_max_limit)"
+            )
         if min(L) < 1e-12:
             val = min(L) ** 0.5 if min(L) > 0 else 0.0
             raise RuntimeError(

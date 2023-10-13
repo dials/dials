@@ -302,7 +302,7 @@ def refine_profile(
     refiner.refine()
 
     # Set the profile parameters
-    profile.parameterisation.update_model(state)
+    profile.parameterisation.update_model(refiner.state)
     # Set the mosaicity
     experiment.crystal.mosaicity = profile
 
