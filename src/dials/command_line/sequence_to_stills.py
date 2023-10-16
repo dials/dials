@@ -109,16 +109,16 @@ def sequence_to_stills(experiments, reflections, params):
         # between images, including the scan extrema. This code assumes that
         # the crystal model at the start of each image applies to the whole
         # image and ignores the final scan-point.
-        start, stop = experiment.scan.get_array_range()
+        i_start, i_stop = experiment.scan.get_array_range()
         if params.max_scan_points:
-            stop = min(params.max_scan_points, stop)
+            i_stop = min(params.max_scan_points, i_stop)
         logger.info(
-            f"Converting experiment {expt_id} images {start} to {stop} to stills"
+            f"Converting experiment {expt_id} images {i_start} to {i_stop} to stills"
         )
-        for i_array in range(start, stop):
+        for i_array in range(i_start, i_stop):
 
             # Shift array position to scan-point index
-            i_scan_point = i_array - start
+            i_scan_point = i_array - i_start
 
             # Obtain the A matrix at this scan point, or fallback to the static
             # A matrix if there are no scan points.
