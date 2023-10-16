@@ -101,6 +101,11 @@ refinement {
       .help = "Mosaicity values above this limit are considered unphysical"
               "and processing will stop for the given image. Units are inverse angstroms"
 
+    max_cell_volume_change_fraction = 0.2
+      .type = float
+      .help = "Processing will be stopped for a given image if the fractional volume change is"
+              "greater than this amount during a cycle of cell refinement."
+
 }
 
 prediction {

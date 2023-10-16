@@ -318,11 +318,13 @@ def refine_crystal(
     wavelength_spread_model="delta",
     max_iter=1009,
     LL_tolerance=1e-6,
+    max_cell_volume_change_fraction=0.2,
 ):
     """Do the crystal refinement"""
     if (fix_unit_cell is True) and (fix_orientation is True):
         return
 
+    initial_cell_volume = experiment.crystal.get_unit_cell().volume()
     logger.info("\n" + "=" * 80 + "\nRefining crystal parmameters")
 
     # Create the parameterisation
@@ -338,6 +340,16 @@ def refine_crystal(
     # Create the refiner and refine
     refiner = ProfileRefiner(state, refiner_data, max_iter, LL_tolerance)
     refiner.refine()
+
+    end_cell_volume = refiner.state.crystal.get_unit_cell().volume()
+    volume_change_fraction = (
+        abs(end_cell_volume - initial_cell_volume) / initial_cell_volume
+    )
+    if volume_change_fraction > max_cell_volume_change_fraction:
+        raise RuntimeError(
+            f"Cell volume change fraction ({volume_change_fraction:.2}) greater than {max_cell_volume_change_fraction} (max_cell_volume_change_fraction) in this cycle"
+            + f"\n  Initial cell volume {initial_cell_volume:.2f}, final cell volume {end_cell_volume:.2f}"
+        )
 
     return refiner
 
@@ -412,6 +424,7 @@ def run_ellipsoid_refinement(
     max_iter=1000,
     LL_tolerance=1e-6,
     mosaicity_max_limit=0.004,
+    max_cell_volume_change_fraction=0.2,
 ):
     """Runs ellipsoid refinement on strong spots.
 
@@ -462,6 +475,7 @@ def run_ellipsoid_refinement(
             wavelength_spread_model=wavelength_model,
             max_iter=max_iter,
             LL_tolerance=LL_tolerance,
+            max_cell_volume_change_fraction=max_cell_volume_change_fraction,
         )
         if capture_progress:
             # Save some data for plotting later.
