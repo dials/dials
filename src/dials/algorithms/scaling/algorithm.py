@@ -61,6 +61,12 @@ def prepare_input(params, experiments, reflections):
 
     #### First exclude any datasets, before the dataset is split into
     #### individual reflection tables and expids set.
+    if (params.dataset_selection.include_datasets is not None) and (
+        params.dataset_selection.use_datasets is None
+    ):
+        params.dataset_selection.use_datasets = (
+            params.dataset_selection.include_datasets
+        )
     if (
         params.dataset_selection.exclude_datasets
         or params.dataset_selection.use_datasets
