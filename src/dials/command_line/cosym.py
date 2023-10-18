@@ -397,6 +397,10 @@ def run(args=None):
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
+    if len(experiments) == 1:
+        raise Sorry(
+            "dials.cosym not recommended for symmetry analysis on a single dataset: please use dials.symmetry"
+        )
     try:
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
         cosym_instance = cosym(
