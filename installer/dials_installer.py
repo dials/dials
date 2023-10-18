@@ -80,7 +80,7 @@ class installer(install_distribution.installer):
             traceback.print_exc()
             print("\n")
             sys.exit(
-                "Please report this installation error to dials-support@lists.sourceforge.net"
+                "Please report this installation error at https://github.com/dials/dials/issues"
             )
 
     def reconfigure_as_libtbx_does(self, log):
