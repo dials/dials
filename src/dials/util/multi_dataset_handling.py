@@ -27,6 +27,10 @@ phil_scope = iotbx.phil.parse(
       .help = "Choose a subset of datasets, based on the dataset id (as defined
                in the reflection table), to use from a multi-dataset input."
       .expert_level = 2
+    include_datasets = None
+      .type = ints
+      .help = "An alias for use_datasets option"
+      .expert_level = 3
     exclude_datasets = None
       .type = ints
       .help = "Choose a subset of datasets, based on the dataset id (as defined
