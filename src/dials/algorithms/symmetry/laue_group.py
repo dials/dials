@@ -354,9 +354,11 @@ class LaueGroupAnalysis(symmetry_base):
             "\nBest solution: %s"
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
-        output.append(
-            f"Unit cell: {self.best_solution.subgroup['best_subsym'].unit_cell()}"
+        cell = (
+            "%.3f, %.3f, %.3f, %.1f, %.1f, %.1f"
+            % self.best_solution.subgroup["best_subsym"].unit_cell().parameters()
         )
+        output.append(f"Unit cell: {cell}")
         output.append(
             f"Reindex operator: {self.best_solution.subgroup['cb_op_inp_best']}"
         )
