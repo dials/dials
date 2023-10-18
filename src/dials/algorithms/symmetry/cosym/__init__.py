@@ -595,6 +595,7 @@ class SymmetryAnalysis:
     @staticmethod
     def summary_table(d):
         best_subgroup = d["subgroup_scores"][0]
+        cell = ", ".join(f"{i:.3f}" for i in best_subgroup["unit_cell"])
         return (
             (
                 "Best solution",
@@ -604,10 +605,7 @@ class SymmetryAnalysis:
                     ).info()
                 ),
             ),
-            (
-                "Unit cell",
-                "%.3f %.3f %.3f %.1f %.1f %.1f" % tuple(best_subgroup["unit_cell"]),
-            ),
+            ("Unit cell", cell),
             ("Reindex operator", best_subgroup["cb_op"]),
             ("Laue group probability", f"{best_subgroup['likelihood']:.3f}"),
             ("Laue group confidence", f"{best_subgroup['confidence']:.3f}"),
@@ -631,9 +629,11 @@ class SymmetryAnalysis:
             "Best solution: %s"
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
-        output.append(
-            f"Unit cell: {str(self.best_solution.subgroup['best_subsym'].unit_cell())}"
+        cell = ", ".join(
+            f"{i:.3f}"
+            for i in self.best_solution.subgroup["best_subsym"].unit_cell().parameters()
         )
+        output.append(f"Unit cell: {cell}")
         output.append(
             "Reindex operator: %s"
             % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)

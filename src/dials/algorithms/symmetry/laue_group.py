@@ -354,9 +354,9 @@ class LaueGroupAnalysis(symmetry_base):
             "\nBest solution: %s"
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
-        cell = (
-            "%.3f, %.3f, %.3f, %.1f, %.1f, %.1f"
-            % self.best_solution.subgroup["best_subsym"].unit_cell().parameters()
+        cell = ", ".join(
+            f"{i:.3f}"
+            for i in self.best_solution.subgroup["best_subsym"].unit_cell().parameters()
         )
         output.append(f"Unit cell: {cell}")
         output.append(
