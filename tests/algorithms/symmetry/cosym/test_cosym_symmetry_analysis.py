@@ -125,7 +125,7 @@ Scoring all possible sub-groups
 | C 1 2/m 1         |     |        0     |    -5.24 |   1.96 |   7.21 |       0 | -a-c,-a+c,b        |
 +-------------------+-----+--------------+----------+--------+--------+---------+--------------------+
 Best solution: R -3 :H
-Unit cell: (98.33, 98.33, 135.99, 90, 90, 120)
+Unit cell: 98.330, 98.330, 135.990, 90.000, 90.000, 120.000
 Reindex operator: b-c,-a+c,a+b+c
 Laue group probability: 0.995
 Laue group confidence: 0.994"""
