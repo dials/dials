@@ -72,9 +72,36 @@ class BackgroundAlgorithm:
 
         :param reflections: The list of reflections
         """
+        import os
+
         from dials.array_family import flex
 
         # Do the background subtraction
+        if "COMPUTE_BACKGROUND" in os.environ:
+            from dials.algorithms.shoebox import MaskCode
+
+            shoebox = reflections["shoebox"]
+            print(
+                "sbox size Background BackgroundUsed Foreground Overlapped Strong Valid"
+            )
+            for i, s in enumerate(shoebox):
+                sz = len(s.data)
+                b = s.count_mask_values(MaskCode.Background)
+                bu = s.count_mask_values(MaskCode.BackgroundUsed)
+                f = s.count_mask_values(MaskCode.Foreground)
+                o = s.count_mask_values(MaskCode.Overlapped)
+                st = s.count_mask_values(MaskCode.Strong)
+                v = s.count_mask_values(MaskCode.Valid)
+                print(
+                    f"{i:4d} {sz:4d}       {b:4d}           {bu:4d}       {f:4d}       {o:4d}   {st:4d}  {v:4d}"
+                )
+                if i == 100:
+                    break
+            from dials.util.command_line import interactive_console
+
+            interactive_console()
+            1 / 0  # XXXXX DEBUG
+
         if image_volume is None:
             reflections["background.mse"] = flex.double(len(reflections))
             reflections["background.dispersion"] = flex.double(len(reflections))
@@ -86,6 +113,7 @@ class BackgroundAlgorithm:
             reflections["background.mean"] = reflections["shoebox"].mean_background()
         else:
             success = self._creator(reflections, image_volume)
+
         reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success
 

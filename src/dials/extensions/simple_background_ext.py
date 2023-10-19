@@ -140,6 +140,7 @@ class SimpleBackgroundExt:
             kwargs["upper"] = params.outlier.tukey.upper
 
         # Create the algorithm
+        print("DGW creating a simple BackgroundAlgorithm with", kwargs)
         self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
 
     def compute_background(self, reflections, image_volume=None):

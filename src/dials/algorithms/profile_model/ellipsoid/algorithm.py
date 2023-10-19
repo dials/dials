@@ -266,6 +266,9 @@ def final_integrator(
     logger.info(
         f"Computing background, intensity, corrections for {len(reflection_table)} reflections"
     )
+    import os
+
+    os.environ["COMPUTE_BACKGROUND"] = "1"
     reflection_table.compute_background(experiments)
     reflection_table.compute_summed_intensity()
     reflection_table.compute_corrections(experiments)
