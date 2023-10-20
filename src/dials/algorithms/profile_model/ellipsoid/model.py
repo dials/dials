@@ -332,6 +332,13 @@ class SimpleProfileModelBase(ProfileModelBase):
             experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability
         )
         calculator.compute(reflections)
+        import os
+
+        if "COMPUTE_BACKGROUND" in os.environ:
+            from dials.util.command_line import interactive_console
+
+            interactive_console()
+            1 / 0  # XXXXX DEBUG
 
     def sigma_for_reflection(self, s0, r):
         """

@@ -26,6 +26,7 @@
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/error.h>
+#include <iostream>
 
 using namespace boost::python;
 
@@ -662,6 +663,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       // Compute mask for all reflections
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         compute_single(s1[i], s2[i], sbox[i], D);
+        // quit early
+        break;
       }
     }
 
@@ -786,6 +789,12 @@ namespace dials { namespace algorithms { namespace boost_python {
           double d2 = detail::AT_B_A(x2 - mubar, Sbar_inv);
           double d3 = detail::AT_B_A(x3 - mubar, Sbar_inv);
           double d4 = detail::AT_B_A(x4 - mubar, Sbar_inv);
+
+          std::cout << "d1 " << d1 << std::endl;
+          std::cout << "d2 " << d2 << std::endl;
+          std::cout << "d3 " << d3 << std::endl;
+          std::cout << "d4 " << d4 << std::endl;
+          std::cout << "D  " << D << std::endl << std::endl;
 
           // The minimum distance
           if (std::min(std::min(d1, d2), std::min(d3, d4)) < D) {

@@ -254,6 +254,9 @@ def final_integrator(
     reflection_table.is_overloaded(experiments)
     reflection_table.contains_invalid_pixels()
 
+    import os
+
+    os.environ["COMPUTE_BACKGROUND"] = "1"
     if use_crude_shoebox_mask:
         _compute_mask(experiment, reflection_table, sigma_d, "s1")
     else:
@@ -266,9 +269,7 @@ def final_integrator(
     logger.info(
         f"Computing background, intensity, corrections for {len(reflection_table)} reflections"
     )
-    import os
 
-    os.environ["COMPUTE_BACKGROUND"] = "1"
     reflection_table.compute_background(experiments)
     reflection_table.compute_summed_intensity()
     reflection_table.compute_corrections(experiments)
