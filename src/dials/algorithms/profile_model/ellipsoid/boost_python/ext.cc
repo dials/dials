@@ -707,6 +707,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat3<double> R = compute_change_of_basis_operation(s0, s2);
 
       // Rotate the covariance matrix and s2 vector
+
       mat3<double> S = R * get_sigma(s0, r) * R.transpose();
       vec3<double> mu = R * s2;
       vec3<double> zaxis(0, 0, 1);
@@ -757,6 +758,10 @@ namespace dials { namespace algorithms { namespace boost_python {
       // Get the panel model
       Panel panel = detector[sbox.panel];
 
+      // Print some debugging stuff
+      std::cout << "MaskCalculatorBase::compute_single: reflection at x0=" << x0
+                << ", y0=" << y0 << ". sigma=" << get_sigma(s0, r) << std::endl;
+
       // Set the mask value for each pixel
       DIALS_ASSERT(mask.accessor()[0] == 1);
       bool do_print = true;
@@ -802,8 +807,9 @@ namespace dials { namespace algorithms { namespace boost_python {
             mask(0, j, i) |= Foreground;
           } else {
             mask(0, j, i) |= Background;
-            std::cout << "pixel ii=" << ii << ", jj=" << jj << " marked as background"
-                      << std::endl;
+            // std::cout << "pixel ii=" << ii << ", jj=" << jj << " marked as
+            // background"
+            //           << std::endl;
           }
         }
       }
