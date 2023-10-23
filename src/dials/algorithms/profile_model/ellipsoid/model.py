@@ -335,10 +335,11 @@ class SimpleProfileModelBase(ProfileModelBase):
         import os
 
         if "COMPUTE_BACKGROUND" in os.environ:
-            from dials.util.command_line import interactive_console
-
-            interactive_console()
-            1 / 0  # XXXXX DEBUG
+            # from dials.util.command_line import interactive_console
+            #
+            # interactive_console()
+            # 1 / 0  # XXXXX DEBUG
+            print("compute_mask completed")
 
     def sigma_for_reflection(self, s0, r):
         """

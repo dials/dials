@@ -663,8 +663,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       // Compute mask for all reflections
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         compute_single(s1[i], s2[i], sbox[i], D);
-        // quit early
-        break;
       }
     }
 
@@ -761,6 +759,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
       // Set the mask value for each pixel
       DIALS_ASSERT(mask.accessor()[0] == 1);
+      bool do_print = true;
       for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
           int ii = x0 + ((int)i);
@@ -790,17 +789,21 @@ namespace dials { namespace algorithms { namespace boost_python {
           double d3 = detail::AT_B_A(x3 - mubar, Sbar_inv);
           double d4 = detail::AT_B_A(x4 - mubar, Sbar_inv);
 
-          std::cout << "d1 " << d1 << std::endl;
-          std::cout << "d2 " << d2 << std::endl;
-          std::cout << "d3 " << d3 << std::endl;
-          std::cout << "d4 " << d4 << std::endl;
-          std::cout << "D  " << D << std::endl << std::endl;
+          // if (do_print) {
+          //   std::cout << "print data for pixel ii=" << ii << ", jj=" << jj <<
+          //   std::endl; std::cout << "d1 " << d1 << std::endl; std::cout << "d2 " <<
+          //   d2 << std::endl; std::cout << "d3 " << d3 << std::endl; std::cout << "d4
+          //   " << d4 << std::endl; std::cout << "D  " << D << std::endl << std::endl;
+          // }
+          do_print = false;
 
           // The minimum distance
           if (std::min(std::min(d1, d2), std::min(d3, d4)) < D) {
             mask(0, j, i) |= Foreground;
           } else {
             mask(0, j, i) |= Background;
+            std::cout << "pixel ii=" << ii << ", jj=" << jj << " marked as background"
+                      << std::endl;
           }
         }
       }
