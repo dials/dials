@@ -77,14 +77,12 @@ class BackgroundAlgorithm:
         from dials.array_family import flex
 
         # Do the background subtraction
-        if "COMPUTE_BACKGROUND" in os.environ:
+        def print_mask_codes():
             from dials.algorithms.shoebox import MaskCode
 
             shoebox = reflections["shoebox"]
             nref = 20
-            print(
-                f"Shoebox information for the first {nref} reflections before computing background"
-            )
+            print(f"Shoebox information for the first {nref} reflections.")
             print(
                 "sbox size Background BackgroundUsed Foreground Overlapped Strong Valid"
             )
@@ -101,6 +99,12 @@ class BackgroundAlgorithm:
                 )
                 if i == nref:
                     break
+
+        if "COMPUTE_BACKGROUND" in os.environ:
+            print(
+                "In BackgroundAlgorithm.compute_background *before* background calculation"
+            )
+            print_mask_codes()
 
         if image_volume is None:
             reflections["background.mse"] = flex.double(len(reflections))
@@ -115,29 +119,13 @@ class BackgroundAlgorithm:
             success = self._creator(reflections, image_volume)
 
         if "COMPUTE_BACKGROUND" in os.environ:
-            from dials.algorithms.shoebox import MaskCode
-
-            shoebox = reflections["shoebox"]
-            nref = 20
             print(
-                f"Shoebox information for the first {nref} reflections after computing background"
+                f"Background calculation success for {success.count(True)} of {len(reflections)} reflections"
             )
             print(
-                "sbox size Background BackgroundUsed Foreground Overlapped Strong Valid"
+                "In BackgroundAlgorithm.compute_background *after* background calculation"
             )
-            for i, s in enumerate(shoebox):
-                sz = len(s.data)
-                b = s.count_mask_values(MaskCode.Background)
-                bu = s.count_mask_values(MaskCode.BackgroundUsed)
-                f = s.count_mask_values(MaskCode.Foreground)
-                o = s.count_mask_values(MaskCode.Overlapped)
-                st = s.count_mask_values(MaskCode.Strong)
-                v = s.count_mask_values(MaskCode.Valid)
-                print(
-                    f"{i:4d} {sz:4d}       {b:4d}           {bu:4d}       {f:4d}       {o:4d}   {st:4d}  {v:4d}"
-                )
-                if i == nref:
-                    break
+            print_mask_codes()
 
         reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success
