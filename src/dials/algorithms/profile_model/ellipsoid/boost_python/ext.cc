@@ -735,7 +735,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat2<double> S12_S21;
       multiply_transpose(&S12[0], &S21[0], 2, 1, 2, &S12_S21[0]);
       mat2<double> Sbar = S11 - S12_S21 * S22_inv;
-      mat2<double> Sbar_inv = Sbar.inverse();
+      mat2<double> Sbar_inv = Sbar.inverse();  // 5.12 in JMP's thesis
 
       // Get the mask array
       af::ref<int, af::c_grid<3>> mask = sbox.mask.ref();
@@ -758,13 +758,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       // Get the panel model
       Panel panel = detector[sbox.panel];
 
-      // Print some debugging stuff
-      std::cout << "MaskCalculatorBase::compute_single: reflection at x0=" << x0
-                << ", y0=" << y0 << ". sigma=" << get_sigma(s0, r) << std::endl;
-
       // Set the mask value for each pixel
       DIALS_ASSERT(mask.accessor()[0] == 1);
-      bool do_print = true;
       for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
           int ii = x0 + ((int)i);
@@ -783,24 +778,24 @@ namespace dials { namespace algorithms { namespace boost_python {
           vec3<double> sp4 = panel.get_pixel_lab_coord(p4).normalize() * s0_length;
 
           // The coordinates in kabsch space
-          vec2<double> x1 = cs.from_beam_vector(sp1);
-          vec2<double> x2 = cs.from_beam_vector(sp2);
-          vec2<double> x3 = cs.from_beam_vector(sp3);
-          vec2<double> x4 = cs.from_beam_vector(sp4);
+          // XXX!!! multiplying by s0_length is a partial fix for short wavelengths (ED)
+          // but we don't fully understand why it is required. We believe that the
+          // underlying issues may be in the CoordinateSystem2D class
+          // (to/from_beam_vector). However, modifying there causes profile model
+          // refinement to break.
+          vec2<double> x1 = cs.from_beam_vector(sp1) * s0_length;
+          vec2<double> x2 = cs.from_beam_vector(sp2) * s0_length;
+          vec2<double> x3 = cs.from_beam_vector(sp3) * s0_length;
+          vec2<double> x4 = cs.from_beam_vector(sp4) * s0_length;
+          vec3<double> sp1_new = cs.to_beam_vector(x1);
+          std::cout << "x1=" << x1 << " sp1=" << sp1 << " sp1_new=" << sp1_new
+                    << std::endl;
 
           // The distance from the mean
           double d1 = detail::AT_B_A(x1 - mubar, Sbar_inv);
           double d2 = detail::AT_B_A(x2 - mubar, Sbar_inv);
           double d3 = detail::AT_B_A(x3 - mubar, Sbar_inv);
           double d4 = detail::AT_B_A(x4 - mubar, Sbar_inv);
-
-          // if (do_print) {
-          //   std::cout << "print data for pixel ii=" << ii << ", jj=" << jj <<
-          //   std::endl; std::cout << "d1 " << d1 << std::endl; std::cout << "d2 " <<
-          //   d2 << std::endl; std::cout << "d3 " << d3 << std::endl; std::cout << "d4
-          //   " << d4 << std::endl; std::cout << "D  " << D << std::endl << std::endl;
-          // }
-          do_print = false;
 
           // The minimum distance
           if (std::min(std::min(d1, d2), std::min(d3, d4)) < D) {

@@ -265,6 +265,8 @@ def final_integrator(
         profile.parameterisation.compute_mask(
             experiments, reflection_table, shoebox_probability
         )
+        # Dump the reflection table so we can look at the shoeboxes in the image viewer
+        reflection_table.as_file("temp.refl")
 
     logger.info(
         f"Computing background, intensity, corrections for {len(reflection_table)} reflections"
