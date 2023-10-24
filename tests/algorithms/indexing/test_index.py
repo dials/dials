@@ -536,6 +536,9 @@ def test_index_small_molecule_multi_sequence_3(
     # expect at least indexed 2000 reflections per experiment
     for i in range(3):
         assert (result.indexed_reflections["id"] == i).count(True) > 2000
+    n_indexed_run1 = result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True)
     # reindex with known orientations
     result = run_indexing(
         tmp_path / "indexed.refl",
@@ -550,7 +553,7 @@ def test_index_small_molecule_multi_sequence_3(
         result.indexed_reflections.get_flags(
             result.indexed_reflections.flags.indexed
         ).count(True)
-        > 12000
+        > n_indexed_run1
     )
 
 
