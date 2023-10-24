@@ -776,10 +776,15 @@ namespace dials { namespace algorithms { namespace boost_python {
           vec3<double> sp4 = panel.get_pixel_lab_coord(p4).normalize() * s0_length;
 
           // The coordinates in kabsch space
-          vec2<double> x1 = cs.from_beam_vector(sp1);
-          vec2<double> x2 = cs.from_beam_vector(sp2);
-          vec2<double> x3 = cs.from_beam_vector(sp3);
-          vec2<double> x4 = cs.from_beam_vector(sp4);
+          // NB multiplying by s0_length here is an empirical fix for short
+          // wavelengths (i.e. SerialED data) but we don't fully understand yet
+          // why it is required. The underlying issues might be in the
+          // CoordinateSystem2D class to/from_beam_vector). However, moving the
+          // change there causes profile model refinement to break.
+          vec2<double> x1 = cs.from_beam_vector(sp1) * s0_length;
+          vec2<double> x2 = cs.from_beam_vector(sp2) * s0_length;
+          vec2<double> x3 = cs.from_beam_vector(sp3) * s0_length;
+          vec2<double> x4 = cs.from_beam_vector(sp4) * s0_length;
 
           // The distance from the mean
           double d1 = detail::AT_B_A(x1 - mubar, Sbar_inv);
