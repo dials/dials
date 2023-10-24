@@ -60,14 +60,6 @@ ellipsoid_algorithm_phil_scope = parse(
 
   }
 
-  debug {
-    output {
-      shoeboxes = False
-        .type = bool
-    }
-  }
-
-
 """
     % FULL_PARTIALITY
 )
