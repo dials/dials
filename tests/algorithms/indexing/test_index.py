@@ -536,6 +536,25 @@ def test_index_small_molecule_multi_sequence_3(
     # expect at least indexed 2000 reflections per experiment
     for i in range(3):
         assert (result.indexed_reflections["id"] == i).count(True) > 2000
+    n_indexed_run1 = result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True)
+    # reindex with known orientations
+    result = run_indexing(
+        tmp_path / "indexed.refl",
+        tmp_path / "indexed.expt",
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+    assert (
+        result.indexed_reflections.get_flags(
+            result.indexed_reflections.flags.indexed
+        ).count(True)
+        > n_indexed_run1
+    )
 
 
 def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_path):
