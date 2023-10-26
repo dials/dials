@@ -518,7 +518,7 @@ class Indexer:
             if had_refinement_error or have_similar_crystal_models:
                 break
             max_lattices = self.params.multiple_lattice_search.max_lattices
-            if max_lattices is not None and len(experiments) >= max_lattices:
+            if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
                 cutoff_fraction = (
@@ -658,17 +658,22 @@ class Indexer:
                         had_refinement_error = True
                         logger.info("Refinement failed:")
                         logger.info(e)
-                        del experiments[-1]
-
-                        # remove experiment id from the reflections associated
-                        # with this deleted experiment - indexed flag removed
-                        # below
-                        last = len(experiments)
-                        sel = refined_reflections["id"] == last
-                        logger.info(
-                            "Removing %d reflections with id %d", sel.count(True), last
+                        # need to remove crystals - may be shared!
+                        models_to_remove = experiments.where(
+                            crystal=experiments[-1].crystal
                         )
-                        refined_reflections["id"].set_selected(sel, -1)
+                        for model_id in sorted(models_to_remove, reverse=True):
+                            del experiments[model_id]
+                            # remove experiment id from the reflections associated
+                            # with this deleted experiment - indexed flag removed
+                            # below
+                            sel = refined_reflections["id"] == model_id
+                            logger.info(
+                                "Removing %d reflections with id %d",
+                                sel.count(True),
+                                model_id,
+                            )
+                            refined_reflections["id"].set_selected(sel, -1)
 
                         break
 
@@ -794,14 +799,12 @@ class Indexer:
             )
             min_angle = self.params.multiple_lattice_search.minimum_angular_separation
             if abs(angle) < min_angle:  # degrees
+                # account for potential shared crystal model
+                models_to_reject = experiments.where(crystal=cryst_b)
+                reject = len(experiments.crystals())
+                logger.info(f"Crystal models too similar, rejecting crystal {reject}")
                 logger.info(
-                    "Crystal models too similar, rejecting crystal %i:",
-                    len(experiments),
-                )
-                logger.info(
-                    "Rotation matrix to transform crystal %i to crystal %i",
-                    i_a + 1,
-                    len(experiments),
+                    f"Rotation matrix to transform crystal {i_a + 1} to crystal {reject}"
                 )
                 logger.info(R_ab)
                 logger.info(
@@ -809,7 +812,8 @@ class Indexer:
                     + " about axis (%.3f, %.3f, %.3f)" % axis
                 )
                 have_similar_crystal_models = True
-                del experiments[-1]
+                for id_ in sorted(models_to_reject, reverse=True):
+                    del experiments[id_]
                 break
         return have_similar_crystal_models
 

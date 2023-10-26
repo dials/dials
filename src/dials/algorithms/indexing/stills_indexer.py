@@ -109,7 +109,7 @@ class StillsIndexer(Indexer):
         while True:
             self.d_min = self.params.refinement_protocol.d_min_start
             max_lattices = self.params.multiple_lattice_search.max_lattices
-            if max_lattices is not None and len(experiments) >= max_lattices:
+            if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
                 cutoff_fraction = (
@@ -363,7 +363,18 @@ class StillsIndexer(Indexer):
                         raise DialsIndexRefineError(e)
                     logger.info("Refinement failed:")
                     logger.info(s)
-                    del experiments[-1]
+                    # need to remove crystals - may be shared?!
+                    models_to_remove = experiments.where(
+                        crystal=experiments[-1].crystal
+                    )
+                    for model_id in sorted(models_to_remove, reverse=True):
+                        del experiments[model_id]
+                        # remove experiment id from the reflections associated
+                        # with this deleted experiment - indexed flag removed
+                        # below
+                        sel = refined_reflections["id"] == model_id
+                        refined_reflections["id"].set_selected(sel, -1)
+
                     break
 
             self._unit_cell_volume_sanity_check(experiments, refined_experiments)

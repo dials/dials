@@ -856,3 +856,52 @@ def test_all_expt_ids_have_expts(dials_data, tmp_path):
     expt = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
 
     assert flex.max(refl["id"]) + 1 == len(expt)
+
+
+def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
+    # this test data is not really multi-lattice, but we can force it to find multiple
+    # lattices by setting a very low minimum_angular_separation=0.001
+    # A test to demonstrate a fix for https://github.com/dials/dials/issues/1821
+
+    # first check that all is well if we don't find the extra lattice
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            "max_lattices=2",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 1
+    refls.assert_experiment_identifiers_are_consistent(expts)
+
+    # now force it to find a second shared lattice
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            "max_lattices=2",
+            "minimum_angular_separation=0.001",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    assert len(expts) == 8
+    assert len(expts.crystals()) == 2
+    refls.assert_experiment_identifiers_are_consistent(expts)
