@@ -110,7 +110,6 @@ def _index_experiments(
     params,
     known_crystal_models=None,
     log_text=None,
-    original_iset_id=0,
 ):
     if log_text:
         logger.info(log_text)
@@ -123,7 +122,7 @@ def _index_experiments(
     idxr.index()
     idx_refl = copy.deepcopy(idxr.refined_reflections)
     idx_refl.extend(idxr.unindexed_reflections)
-    return idxr.refined_experiments, idx_refl, original_iset_id
+    return idxr.refined_experiments, idx_refl
 
 
 def index(experiments, reflections, params):
@@ -169,7 +168,7 @@ def index(experiments, reflections, params):
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
     if len(experiments) == 1 or params.indexing.joint_indexing:
-        indexed_experiments, indexed_reflections, _ = _index_experiments(
+        indexed_experiments, indexed_reflections = _index_experiments(
             experiments,
             reflections,
             copy.deepcopy(params),
@@ -181,7 +180,7 @@ def index(experiments, reflections, params):
         with concurrent.futures.ProcessPoolExecutor(
             max_workers=params.indexing.nproc
         ) as pool:
-            futures = []
+            futures = {}
             # we might have multiple lattices per imageset, so need to select on imageset rather than experiment
             for iset_id, imgset in enumerate(experiments.imagesets()):
                 refl = reflections.select(reflections["imageset_id"] == iset_id)
@@ -195,7 +194,7 @@ def index(experiments, reflections, params):
                 refl["imageset_id"] = flex.int(
                     len(refl), 0
                 )  # _index_experiments functions requires ids numbered from 0
-                futures.append(
+                futures[
                     pool.submit(
                         _index_experiments,
                         elist,
@@ -203,22 +202,21 @@ def index(experiments, reflections, params):
                         copy.deepcopy(params),
                         known_crystal_models=known_crystal_models_this,
                         log_text=f"Indexing imageset id {iset_id} ({iset_id + 1}/{len(experiments.imagesets())})",
-                        original_iset_id=iset_id,
                     )
-                )
+                ] = iset_id
+
             tables_list = []
             for future in concurrent.futures.as_completed(futures):
                 try:
-                    idx_expts, idx_refl, original_iset_id = future.result()
+                    iset_id = futures[future]
+                    idx_expts, idx_refl = future.result()
                 except Exception as e:
                     print(e)
                 else:
                     if idx_expts is None:
                         continue
                     # reset the imageset id to the original
-                    idx_refl["imageset_id"] = flex.int(
-                        idx_refl.size(), original_iset_id
-                    )
+                    idx_refl["imageset_id"] = flex.int(idx_refl.size(), iset_id)
                     tables_list.append(idx_refl)
                     indexed_experiments.extend(idx_expts)
         indexed_reflections = flex.reflection_table.concat(tables_list)
