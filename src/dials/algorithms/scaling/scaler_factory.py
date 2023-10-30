@@ -175,7 +175,12 @@ class SingleScalerFactory(ScalerFactory):
             )
 
         if params.reflection_selection.method == "intensity_ranges":
-            reflection_table = quasi_normalisation(reflection_table, experiment)
+            try:
+                reflection_table = quasi_normalisation(reflection_table, experiment)
+            except AssertionError:
+                raise BadDatasetForScalingException(
+                    """Unable to use this dataset for scaling with the option reflection_selection.method=intensity_ranges"""
+                )
         if (
             params.reflection_selection.method in (None, Auto, "auto", "quasi_random")
         ) or (
