@@ -854,6 +854,10 @@ def test_all_expt_ids_have_expts(dials_data, tmp_path):
 
     refl = flex.reflection_table.from_file(tmp_path / "indexed.refl")
     expt = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert (refl["id"] != -1).count(True) == refl.get_flags(refl.flags.indexed).count(
+        True
+    )
+    refl.assert_experiment_identifiers_are_consistent(expt)
 
     assert flex.max(refl["id"]) + 1 == len(expt)
 
