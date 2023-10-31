@@ -1279,6 +1279,7 @@ add_subdirectory(dials)
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
+            "-DHDF5_ROOT=" + conda_base_root,
         ]
         + extra_args,
     )
