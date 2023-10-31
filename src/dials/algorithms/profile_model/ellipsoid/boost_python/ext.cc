@@ -776,11 +776,9 @@ namespace dials { namespace algorithms { namespace boost_python {
           vec3<double> sp4 = panel.get_pixel_lab_coord(p4).normalize() * s0_length;
 
           // The coordinates in kabsch space
-          // NB multiplying by s0_length here is an empirical fix for short
-          // wavelengths (i.e. SerialED data) but we don't fully understand yet
-          // why it is required. The underlying issues might be in the
-          // CoordinateSystem2D class to/from_beam_vector). However, moving the
-          // change there causes profile model refinement to break.
+          // Scale the unitless reciprocal space coordinates
+          // as |mu| == |s0| i.e. xi should be in A-1 here (this is different
+          // to the gaussian_rs model)
           vec2<double> x1 = cs.from_beam_vector(sp1) * s0_length;
           vec2<double> x2 = cs.from_beam_vector(sp2) * s0_length;
           vec2<double> x3 = cs.from_beam_vector(sp3) * s0_length;
