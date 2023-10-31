@@ -346,7 +346,7 @@ environments exist and are working.
     if include_cctbx or cmake:
         command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
-        command_list.extend(["pycbf", "cmake"])
+        command_list.extend(["pycbf", "cmake", "pre-commit"])
     if os.name == "nt":
         command_list = [
             "cmd.exe",
