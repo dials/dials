@@ -631,6 +631,47 @@ def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
     assert len(experiments_list) == 2
 
 
+@pytest.mark.parametrize(
+    "indexer_type,expected_n_lattices",
+    (("sequences", 3), ("stills", 1)),
+)
+def test_indexers_dont_lose_reflections(
+    dials_data, tmp_path, indexer_type, expected_n_lattices
+):
+    refl = flex.reflection_table.from_file(
+        dials_data("cunir_serial_processed") / "strong_1.refl"
+    )
+    expts = load.experiment_list(
+        dials_data("cunir_serial_processed") / "imported_with_ref_5.expt",
+        check_format=False,
+    )[0:1]
+    refl["imageset_id"] = flex.int(refl.size(), 0)  # needed for centroid_px_to_mm
+    refl.centroid_px_to_mm(expts)
+    refl.map_centroids_to_reciprocal_space(expts)
+
+    from cctbx import sgtbx, uctbx
+
+    from dials.algorithms.indexing.indexer import Indexer
+    from dials.command_line.ssx_index import phil_scope as ssx_index_phil_scope
+
+    params = ssx_index_phil_scope.extract()
+    params.indexing.known_symmetry.space_group = sgtbx.space_group_info("P 21 3")
+    params.indexing.known_symmetry.unit_cell = uctbx.unit_cell(
+        (96.4, 96.4, 96.4, 90, 90, 90)
+    )
+    params.indexing.multiple_lattice_search.max_lattices = 5
+    params.indexing.method = "real_space_grid_search"
+    params.indexing.stills.indexer = indexer_type
+    idxr = Indexer.from_parameters(refl, expts, params=params)
+    idxr.index()
+    assert len(idxr.refined_experiments) == expected_n_lattices
+    assert (
+        idxr.refined_reflections.size() + idxr.unindexed_reflections.size()
+    ) == refl.size()
+    refined = idxr.refined_reflections
+    assert (refined.get_flags(refined.flags.indexed)).count(True) == refined.size()
+
+
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path):
     """Problem: In stills_indexer, before calling the refine function, the
     experiment list contains a list of dxtbx crystal models (that are not
