@@ -617,13 +617,20 @@ class Indexer:
                 self.indexed_reflections = self.reflections["id"] > -1
 
                 sel = flex.bool(len(self.reflections), False)
+                # Note, anything below d_min doesn't get indexed so has an id of -1
+                # so code below is redundant?
                 lengths = 1 / self.reflections["rlp"].norms()
                 if self.d_min is not None:
                     isel = (lengths <= self.d_min).iselection()
                     sel.set_selected(isel, True)
+
                 sel.set_selected(self.reflections["id"] == -1, True)
                 self.reflections.unset_flags(sel, self.reflections.flags.indexed)
-                self.unindexed_reflections = self.reflections.select(sel)
+                # N.B. we don't set self.unindexed_reflections here, as we don't want to overwrite yet
+                # if the refinement cycle below fails
+                unindexed_reflections = self.reflections.select(
+                    sel
+                )  # reflections that have an id of -1
 
                 reflections_for_refinement = self.reflections.select(
                     self.indexed_reflections
@@ -687,15 +694,31 @@ class Indexer:
                                 self.refined_reflections.unset_flags(
                                     sel, self.refined_reflections.flags.indexed
                                 )
+                                self.unindexed_reflections.extend(
+                                    self.refined_reflections.select(sel)
+                                )
+                                self.refined_reflections = self.refined_reflections.select(
+                                    ~sel
+                                )
+                                self.refined_reflections.clean_experiment_identifiers_map()
                         break
 
                 self._unit_cell_volume_sanity_check(experiments, refined_experiments)
 
                 self.refined_reflections = refined_reflections
+                # id can be -1 if some were determined as outliers in self.refine
                 self.refined_reflections.unset_flags(
                     self.refined_reflections["id"] < 0,
                     self.refined_reflections.flags.indexed,
                 )
+                self.refined_reflections.clean_experiment_identifiers_map()
+                unindexed_reflections.extend(
+                    self.refined_reflections.select(self.refined_reflections["id"] < 0)
+                )
+                self.refined_reflections = self.refined_reflections.select(
+                    self.refined_reflections["id"] >= 0
+                )
+                self.unindexed_reflections = unindexed_reflections
 
                 for i, expt in enumerate(self.experiments):
                     ref_sel = self.refined_reflections.select(
@@ -725,7 +748,7 @@ class Indexer:
 
                 logger.info("\nRefined crystal models:")
                 self.show_experiments(
-                    self.refined_experiments, self.reflections, d_min=self.d_min
+                    self.refined_experiments, self.refined_reflections, d_min=self.d_min
                 )
 
                 if (
