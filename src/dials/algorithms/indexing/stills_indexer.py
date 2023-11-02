@@ -397,6 +397,7 @@ class StillsIndexer(Indexer):
                 flex.bool(unindexed_reflections.size(), True),
                 unindexed_reflections.flags.indexed,
             )
+            unindexed_reflections["id"] = flex.int(unindexed_reflections.size(), -1)
             unindexed_reflections["miller_index"] = flex.miller_index(
                 unindexed_reflections.size(), (0, 0, 0)
             )
