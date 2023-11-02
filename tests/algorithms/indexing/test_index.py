@@ -670,6 +670,10 @@ def test_indexers_dont_lose_reflections(
     ) == refl.size()
     refined = idxr.refined_reflections
     assert (refined.get_flags(refined.flags.indexed)).count(True) == refined.size()
+    assert (refined["miller_index"] == (0, 0, 0)).count(True) == 0
+    unindexed = idxr.unindexed_reflections
+    assert unindexed.get_flags(unindexed.flags.indexed).count(True) == 0
+    assert (unindexed["miller_index"] != (0, 0, 0)).count(True) == 0
 
 
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path):

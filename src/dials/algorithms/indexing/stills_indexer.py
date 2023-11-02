@@ -393,6 +393,13 @@ class StillsIndexer(Indexer):
                 unindexed_reflections.extend(refined_reflections.select(sel))
                 refined_reflections.del_selected(sel)
             self.refined_reflections = refined_reflections
+            unindexed_reflections.unset_flags(
+                flex.bool(unindexed_reflections.size(), True),
+                unindexed_reflections.flags.indexed,
+            )
+            unindexed_reflections["miller_index"] = flex.miller_index(
+                unindexed_reflections.size(), (0, 0, 0)
+            )
             self.unindexed_reflections = unindexed_reflections
 
             for i, expt in enumerate(self.experiments):

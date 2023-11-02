@@ -707,17 +707,18 @@ class Indexer:
 
                 self.refined_reflections = refined_reflections
                 # id can be -1 if some were determined as outliers in self.refine
-                self.refined_reflections.unset_flags(
-                    self.refined_reflections["id"] < 0,
-                    self.refined_reflections.flags.indexed,
-                )
+                sel = self.refined_reflections["id"] < 0
+                if sel.count(True):
+                    self.refined_reflections.unset_flags(
+                        sel,
+                        self.refined_reflections.flags.indexed,
+                    )
+                    self.refined_reflections["miller_index"].set_selected(
+                        sel, (0, 0, 0)
+                    )
+                    unindexed_reflections.extend(self.refined_reflections.select(sel))
                 self.refined_reflections.clean_experiment_identifiers_map()
-                unindexed_reflections.extend(
-                    self.refined_reflections.select(self.refined_reflections["id"] < 0)
-                )
-                self.refined_reflections = self.refined_reflections.select(
-                    self.refined_reflections["id"] >= 0
-                )
+                self.refined_reflections = self.refined_reflections.select(~sel)
                 self.unindexed_reflections = unindexed_reflections
 
                 for i, expt in enumerate(self.experiments):
