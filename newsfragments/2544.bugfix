@@ -1,1 +1,0 @@
-Bootstrap ``--cmake``: Fix configuration when CCP4 is already loaded. Previously, this could cause a failure as it tried to resolve the CCP4 copy of HDF5 in order to determine version.
