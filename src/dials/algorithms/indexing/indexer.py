@@ -680,10 +680,6 @@ class Indexer:
                             refined_reflections.unset_flags(
                                 sel, refined_reflections.flags.indexed
                             )
-                            self.unindexed_reflections.extend(
-                                refined_reflections.select(sel)
-                            )
-                            refined_reflections.del_selected(sel)
 
                         break
 

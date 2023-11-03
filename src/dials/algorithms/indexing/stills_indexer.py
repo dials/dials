@@ -369,22 +369,6 @@ class StillsIndexer(Indexer):
                     )
                     for model_id in sorted(models_to_remove, reverse=True):
                         del experiments[model_id]
-                        # remove experiment id from the reflections associated
-                        # with this deleted experiment - indexed flag removed
-                        # below
-                        sel = refined_reflections["id"] == model_id
-                        refined_reflections["id"].set_selected(sel, -1)
-                        # N.B. Need to unset the flags here as the break below means we
-                        # don't enter the code after
-                        del refined_reflections.experiment_identifiers()[model_id]
-                        refined_reflections.unset_flags(
-                            sel, refined_reflections.flags.indexed
-                        )
-                        self.unindexed_reflections.extend(
-                            refined_reflections.select(sel)
-                        )
-                        refined_reflections.del_selected(sel)
-
                     break
 
             self._unit_cell_volume_sanity_check(experiments, refined_experiments)
