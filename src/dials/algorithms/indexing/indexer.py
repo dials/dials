@@ -667,20 +667,26 @@ class Indexer:
                             # remove experiment id from the reflections associated
                             # with this deleted experiment - indexed flag removed
                             # below
-                            sel = refined_reflections["id"] == model_id
-                            logger.info(
-                                "Removing %d reflections with id %d",
-                                sel.count(True),
-                                model_id,
-                            )
-                            refined_reflections["id"].set_selected(sel, -1)
-                            # N.B. Need to unset the flags here as the break below means we
-                            # don't enter the code after
-                            del refined_reflections.experiment_identifiers()[model_id]
-                            refined_reflections.unset_flags(
-                                sel, refined_reflections.flags.indexed
-                            )
-
+                            # note here we are acting on the table from the last macrocycle
+                            # This is guaranteed to exist due to the check if len(experiments) == 1: above
+                            sel = self.refined_reflections["id"] == model_id
+                            if sel.count(
+                                True
+                            ):  # not the case if failure on first cycle of refinement of new xtal
+                                logger.info(
+                                    "Removing %d reflections with id %d",
+                                    sel.count(True),
+                                    model_id,
+                                )
+                                self.refined_reflections["id"].set_selected(sel, -1)
+                                # N.B. Need to unset the flags here as the break below means we
+                                # don't enter the code after
+                                del self.refined_reflections.experiment_identifiers()[
+                                    model_id
+                                ]
+                                self.refined_reflections.unset_flags(
+                                    sel, self.refined_reflections.flags.indexed
+                                )
                         break
 
                 self._unit_cell_volume_sanity_check(experiments, refined_experiments)
