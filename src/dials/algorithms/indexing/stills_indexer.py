@@ -374,8 +374,12 @@ class StillsIndexer(Indexer):
                     )
                     for model_id in sorted(models_to_remove, reverse=True):
                         del experiments[model_id]
+                    # no need to update self.unindexed_reflections, self.refined_reflections,
+                    # as they hold the state from the previous refinement with one fewer lattice.
                     break
                 else:
+                    # extend the unindexed reflections table with any data that was
+                    # rejected during refinement.
                     sel = flex.bool(reflections_for_refinement.size(), True)
                     sel.set_selected(refined_reflections["_reflection_id"], False)
                     del refined_reflections["_reflection_id"]
@@ -384,12 +388,14 @@ class StillsIndexer(Indexer):
 
             self._unit_cell_volume_sanity_check(experiments, refined_experiments)
 
+            # Processing was successful, so set/update self.refined_reflections, self.unindexed_reflections
             if -1 in set(refined_reflections["id"]):  # is this ever the case?
                 sel = refined_reflections["id"] < 0
                 refined_reflections.unset_flags(
                     sel,
                     refined_reflections.flags.indexed,
                 )
+                refined_reflections["miller_index"].set_selected(sel, (0, 0, 0))
                 unindexed_reflections.extend(refined_reflections.select(sel))
                 refined_reflections.del_selected(sel)
             self.refined_reflections = refined_reflections

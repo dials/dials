@@ -694,11 +694,14 @@ class Indexer:
                                 self.refined_reflections.unset_flags(
                                     sel, self.refined_reflections.flags.indexed
                                 )
+                                self.refined_reflections["miller_index"].set_selected(
+                                    sel, (0, 0, 0)
+                                )
                                 self.unindexed_reflections.extend(
                                     self.refined_reflections.select(sel)
                                 )
-                                self.refined_reflections = self.refined_reflections.select(
-                                    ~sel
+                                self.refined_reflections = (
+                                    self.refined_reflections.select(~sel)
                                 )
                                 self.refined_reflections.clean_experiment_identifiers_map()
                         break
@@ -717,8 +720,8 @@ class Indexer:
                         sel, (0, 0, 0)
                     )
                     unindexed_reflections.extend(self.refined_reflections.select(sel))
+                    self.refined_reflections = self.refined_reflections.select(~sel)
                 self.refined_reflections.clean_experiment_identifiers_map()
-                self.refined_reflections = self.refined_reflections.select(~sel)
                 self.unindexed_reflections = unindexed_reflections
 
                 for i, expt in enumerate(self.experiments):
