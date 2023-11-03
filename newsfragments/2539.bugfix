@@ -1,0 +1,1 @@
+``dials.index``: Fix lattice counting when indexing with >1 sweep and >1 lattice
