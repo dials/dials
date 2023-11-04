@@ -1,0 +1,1 @@
+Always use configured environment when bootstrapping CCTBX. This fixes building on MacOS Sonoma; for which the default libtbx configuration fails.
