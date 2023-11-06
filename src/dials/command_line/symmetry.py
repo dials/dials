@@ -231,6 +231,92 @@ def change_of_basis_ops_to_minimum_cell(
     return cb_ops
 
 
+def change_of_basis_ops_to_best_cell(
+    experiments,
+    max_delta,
+    relative_length_tolerance,
+    absolute_angle_tolerance,
+    subgroup,
+):
+    """
+    Compute change of basis ops to map experiments to the best cell
+    """
+
+    median_cell = median_unit_cell(experiments)
+    unit_cells_are_similar = unit_cells_are_similar_to(
+        experiments, median_cell, relative_length_tolerance, absolute_angle_tolerance
+    )
+    centring_symbols = [
+        bravais_lattice(group=expt.crystal.get_space_group()).centring_symbol
+        for expt in experiments
+    ]
+    if unit_cells_are_similar and len(set(centring_symbols)) == 1:
+        # FIXME use median cell rather than experiments[0]?
+        groups = metric_subgroups(
+            experiments[0]
+            .crystal.get_crystal_symmetry()
+            .customized_copy(unit_cell=median_cell),
+            max_delta,
+            enforce_max_delta_for_generated_two_folds=True,
+        )
+        best = None
+        for g in groups.result_groups:
+            # FIXME what are correct tolerances to use?
+            if (
+                g["best_subsym"]
+                .unit_cell()
+                .is_similar_to(
+                    subgroup["best_subsym"].unit_cell(),
+                    relative_length_tolerance=relative_length_tolerance,
+                    absolute_angle_tolerance=absolute_angle_tolerance,
+                )
+            ):
+                # FIXME assert subgroup is actually a subgroup of, or same as, g?
+                best = g
+                break
+        if not best:
+            raise RuntimeError(
+                "Unable to determine reindexing operator from minumum cells to best cell."
+            )
+        cb_ops = [best["cb_op_inp_best"]] * len(experiments)
+    else:
+        groups = [
+            metric_subgroups(
+                expt.crystal.get_crystal_symmetry(),
+                max_delta,
+                best_monoclinic_beta=False,
+                enforce_max_delta_for_generated_two_folds=True,
+            )
+            for expt in experiments
+        ]
+        counter = collections.Counter(
+            g.result_groups[0]["best_subsym"].space_group() for g in groups
+        )
+        target_group = counter.most_common()[0][0]
+        cb_ops = []
+        for expt in experiments:
+            groups = metric_subgroups(
+                expt.crystal.get_crystal_symmetry(),
+                max_delta,
+                best_monoclinic_beta=False,
+                enforce_max_delta_for_generated_two_folds=True,
+            )
+            group = None
+            for g in groups.result_groups:
+                if g["best_subsym"].space_group() == target_group:
+                    group = g
+            if group:
+                cb_ops.append(group["cb_op_inp_best"])
+            else:
+                cb_ops.append(None)
+                logger.info(
+                    f"Couldn't match unit cell to target symmetry:\n"
+                    f"{expt.crystal.get_crystal_symmetry()}\n"
+                    f"Target symmetry: {target_group.info()}"
+                )
+    return cb_ops
+
+
 def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
     """
     Apply the given change of basis ops to the input experiments and reflections

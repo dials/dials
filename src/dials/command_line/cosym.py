@@ -15,6 +15,7 @@ from dials.algorithms.symmetry.cosym.observers import register_default_cosym_obs
 from dials.array_family import flex
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
+    change_of_basis_ops_to_best_cell,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
 )
@@ -250,6 +251,8 @@ class cosym(Subject):
             reindexing_ops = reindexing_ops[:-1]
         else:
             unique_ids = set(self.cosym_analysis.dataset_ids)
+
+        # first apply the reindexing operators to the input cell (not the best cell).
         for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
@@ -257,20 +260,48 @@ class cosym(Subject):
             )
             expt = self._experiments[dataset_id]
             refl = self._reflections[dataset_id]
-            if subgroup is not None:
-                cb_op = subgroup["cb_op_inp_best"] * cb_op
+            expt.crystal = expt.crystal.change_basis(cb_op)
+            refl["miller_index"] = cb_op.apply(refl["miller_index"])
+
+        # now map the input cell to best
+        if (
+            subgroup["cb_op_inp_best"].as_xyz()
+            != sgtbx.change_of_basis_op("a,b,c").as_xyz()
+        ):
+            # if the input cell is not in the same setting as the best cell, need to find the
+            # reindexing operator(s)
+            cbs = change_of_basis_ops_to_best_cell(
+                self._experiments,
+                self.params.lattice_symmetry_max_delta,
+                self.params.relative_length_tolerance,
+                self.params.absolute_angle_tolerance,
+                subgroup,
+            )
+            for (expt, refl, cb_op) in zip(self._experiments, self._reflections, cbs):
                 expt.crystal = expt.crystal.change_basis(cb_op)
+                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+                # now we can set the space group and 'symmetrize' the unit cell/
                 expt.crystal.set_space_group(
                     subgroup["best_subsym"].space_group().build_derived_acentric_group()
                 )
-            else:
-                expt.crystal = expt.crystal.change_basis(cb_op)
-            expt.crystal.set_unit_cell(
-                expt.crystal.get_space_group().average_unit_cell(
-                    expt.crystal.get_unit_cell()
+                expt.crystal.set_unit_cell(
+                    expt.crystal.get_space_group().average_unit_cell(
+                        expt.crystal.get_unit_cell()
+                    )
                 )
-            )
-            refl["miller_index"] = cb_op.apply(refl["miller_index"])
+        else:
+            # we are in the same setting as the best cell, so can set the space group and
+            # 'symmetrize' the cell
+            for expt in self._experiments:
+                expt.crystal.set_space_group(
+                    subgroup["best_subsym"].space_group().build_derived_acentric_group()
+                )
+                expt.crystal.set_unit_cell(
+                    expt.crystal.get_space_group().average_unit_cell(
+                        expt.crystal.get_unit_cell()
+                    )
+                )
+
         # Allow for the case where some datasets are filtered out.
         if len(reindexing_ops) < len(self._experiments):
             to_delete = [
@@ -397,10 +428,10 @@ def run(args=None):
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
-    if len(experiments) == 1:
+    """if len(experiments) == 1:
         raise Sorry(
             "dials.cosym not recommended for symmetry analysis on a single dataset: please use dials.symmetry"
-        )
+        )"""
     try:
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
         cosym_instance = cosym(
