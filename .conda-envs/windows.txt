@@ -9,7 +9,7 @@ conda-forge::dials-data>=2.4.72
 conda-forge::docutils
 conda-forge::eigen
 conda-forge::future
-conda-forge::gemmi
+conda-forge::gemmi>=0.6.3
 conda-forge::h5py>=3.1.0
 conda-forge::hdf5<1.13
 conda-forge::hdf5plugin
