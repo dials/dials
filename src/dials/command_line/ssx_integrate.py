@@ -457,11 +457,12 @@ def run(args: List[str] = None, phil=working_phil) -> None:
             ]
         )
 
-    plots = {}
-    cluster_plots, _ = report_on_crystal_clusters(
-        integrated_crystal_symmetries,
-        make_plots=(params.output.html or params.output.json),
-    )
+    plots, cluster_plots = ({}, {})
+    if integrated_crystal_symmetries:
+        cluster_plots, _ = report_on_crystal_clusters(
+            integrated_crystal_symmetries,
+            make_plots=(params.output.html or params.output.json),
+        )
 
     if params.output.html or params.output.json:
         # now generate plots using the aggregated data.

@@ -80,7 +80,10 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
 def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=10.0):
     # first calculate normalised intensities and set in the Ih_table.
     intensities = Ih_table.as_miller_array(experiment.crystal.get_unit_cell())
-    normalised_intensities = quasi_normalisation(intensities)
+    try:
+        normalised_intensities = quasi_normalisation(intensities)
+    except AssertionError:
+        return [np.array([], dtype=np.uint64)] * Ih_table.n_datasets
 
     sel = normalised_intensities.data() > (emax**2)
     n_e2_outliers = sel.count(True)

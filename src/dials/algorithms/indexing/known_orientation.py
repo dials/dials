@@ -12,13 +12,17 @@ class IndexerKnownOrientation(Indexer):
 
     def find_lattices(self):
         experiments = ExperimentList()
-        for cm, expt in zip(self.known_orientations, self.experiments):
-            # indexer expects crystals to be in primitive setting
+        # Note that the code below cannot be refactored into a single loop
+        # as the known orientations may be a shared model between multiple experiments
+        for cm in set(self.known_orientations):
             space_group = cm.get_space_group()
             cb_op_to_primitive = (
                 space_group.info().change_of_basis_op_to_primitive_setting()
             )
             cm = cm.change_basis(cb_op_to_primitive)
+        assert len(self.known_orientations) == len(self.experiments)
+        for cm, expt in zip(self.known_orientations, self.experiments):
+            # indexer expects crystals to be in primitive setting
             experiments.append(
                 Experiment(
                     imageset=expt.imageset,

@@ -38,7 +38,7 @@ from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
-from dials.util.exclude_images import set_invalid_images
+from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
@@ -476,6 +476,12 @@ def run_integration(params, experiments, reference=None):
         )
 
     # Modify experiment list if exclude_images is set
+    if params.exclude_images_multiple:
+        params.exclude_images = expand_exclude_multiples(
+            experiments,
+            params.exclude_images_multiple,
+            params.exclude_images,
+        )
     if params.exclude_images:
         try:
             experiments = set_invalid_images(experiments, params.exclude_images)

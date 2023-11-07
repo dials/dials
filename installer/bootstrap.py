@@ -146,7 +146,7 @@ def install_micromamba(python, include_cctbx, cmake):
         python_requirement,
     ]
     if include_cctbx or cmake:
-        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
+        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
         command_list.extend(["pycbf", "cmake"])
     if os.name == "nt":
@@ -346,7 +346,7 @@ environments exist and are working.
     if include_cctbx or cmake:
         command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
-        command_list.extend(["pycbf", "cmake"])
+        command_list.extend(["pycbf", "cmake", "pre-commit"])
     if os.name == "nt":
         command_list = [
             "cmd.exe",
@@ -1279,6 +1279,7 @@ add_subdirectory(dials)
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
+            "-DHDF5_ROOT=" + conda_base_root,
         ]
         + extra_args,
     )
@@ -1326,6 +1327,7 @@ def configure_build(config_flags, prebuilt_cctbx):
         "xia2",
         "prime",
         "--skip_phenix_dispatchers",
+        "--use_environment",
     ] + config_flags
 
     run_indirect_command(

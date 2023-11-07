@@ -142,7 +142,8 @@ def index(experiments, reflections, params):
         dials.algorithms.indexing.DialsIndexError: Indexing failed.
     """
     if experiments.crystals()[0] is not None:
-        known_crystal_models = experiments.crystals()
+        # note not just experiments.crystals(), as models may be shared.
+        known_crystal_models = [expt.crystal for expt in experiments]
     else:
         known_crystal_models = None
 

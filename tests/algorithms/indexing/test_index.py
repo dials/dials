@@ -536,6 +536,25 @@ def test_index_small_molecule_multi_sequence_3(
     # expect at least indexed 2000 reflections per experiment
     for i in range(3):
         assert (result.indexed_reflections["id"] == i).count(True) > 2000
+    n_indexed_run1 = result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True)
+    # reindex with known orientations
+    result = run_indexing(
+        tmp_path / "indexed.refl",
+        tmp_path / "indexed.expt",
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+    assert (
+        result.indexed_reflections.get_flags(
+            result.indexed_reflections.flags.indexed
+        ).count(True)
+        > n_indexed_run1
+    )
 
 
 def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_path):
@@ -835,5 +854,58 @@ def test_all_expt_ids_have_expts(dials_data, tmp_path):
 
     refl = flex.reflection_table.from_file(tmp_path / "indexed.refl")
     expt = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert (refl["id"] != -1).count(True) == refl.get_flags(refl.flags.indexed).count(
+        True
+    )
+    refl.assert_experiment_identifiers_are_consistent(expt)
 
     assert flex.max(refl["id"]) + 1 == len(expt)
+
+
+def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
+    # this test data is not really multi-lattice, but we can force it to find multiple
+    # lattices by setting a very low minimum_angular_separation=0.001
+    # A test to demonstrate a fix for https://github.com/dials/dials/issues/1821
+
+    # first check that all is well if we don't find the extra lattice
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            "max_lattices=2",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 1
+    refls.assert_experiment_identifiers_are_consistent(expts)
+
+    # now force it to find a second shared lattice
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            "max_lattices=2",
+            "minimum_angular_separation=0.001",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    assert len(expts) == 8
+    assert len(expts.crystals()) == 2
+    refls.assert_experiment_identifiers_are_consistent(expts)

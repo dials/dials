@@ -1,7 +1,5 @@
 conda-forge::alabaster
 conda-forge::biopython
-conda-forge::boost
-conda-forge::boost-cpp
 conda-forge::bzip2
 conda-forge::c-compiler
 conda-forge::colorlog
@@ -18,6 +16,8 @@ conda-forge::hdf5plugin
 conda-forge::iota
 conda-forge::jinja2
 conda-forge::jpeg
+conda-forge::libboost-devel
+conda-forge::libboost-python-devel
 conda-forge::matplotlib-base>=3.0.2
 conda-forge::mrcfile
 conda-forge::msgpack-cxx
@@ -32,10 +32,10 @@ conda-forge::pip
 conda-forge::psutil
 conda-forge::pybind11
 conda-forge::pyrtf
+conda-forge::pytest
 conda-forge::pytest-forked
 conda-forge::pytest-mock
 conda-forge::pytest-xdist
-conda-forge::pytest
 conda-forge::python-dateutil>=2.7.0
 conda-forge::reportlab
 conda-forge::requests
