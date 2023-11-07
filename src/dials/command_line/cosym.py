@@ -302,15 +302,6 @@ class cosym(Subject):
             for (expt, refl) in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
-                # now we can set the space group and 'symmetrize' the unit cell/
-                expt.crystal.set_space_group(
-                    subgroup["best_subsym"].space_group().build_derived_acentric_group()
-                )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
-                )
         elif (
             subgroup["cb_op_inp_best"].as_xyz()
             != sgtbx.change_of_basis_op("a,b,c").as_xyz()
@@ -319,27 +310,22 @@ class cosym(Subject):
             for (expt, refl) in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
-                # now we can set the space group and 'symmetrize' the unit cell/
+        # if either of the above are not true, then we are already in the best cell.
+
+        # we are now in the same setting as the best cell, so can set the space group and
+        # 'symmetrize' the cell
+        for expt in self._experiments:
+            if not self.params.space_group:
                 expt.crystal.set_space_group(
                     subgroup["best_subsym"].space_group().build_derived_acentric_group()
                 )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
+            else:
+                expt.crystal.set_space_group(self.params.space_group.group())
+            expt.crystal.set_unit_cell(
+                expt.crystal.get_space_group().average_unit_cell(
+                    expt.crystal.get_unit_cell()
                 )
-        else:
-            # we are in the same setting as the best cell, so can set the space group and
-            # 'symmetrize' the cell
-            for expt in self._experiments:
-                expt.crystal.set_space_group(
-                    subgroup["best_subsym"].space_group().build_derived_acentric_group()
-                )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
-                )
+            )
 
         # Allow for the case where some datasets are filtered out.
         if len(reindexing_ops) < len(self._experiments):
