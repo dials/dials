@@ -928,8 +928,10 @@ def change_of_basis_op_to_best_cell(
                 absolute_angle_tolerance=absolute_angle_tolerance,
             )
         ) and (
-            g["best_subsym"].space_group().build_derived_acentric_group()
-            == best_subgroup["best_subsym"].space_group().build_derived_acentric_group()
+            sgtbx.lattice_symmetry_group(g["best_subsym"].unit_cell(), max_delta=0)
+            == sgtbx.lattice_symmetry_group(
+                best_subgroup["best_subsym"].unit_cell(), max_delta=0
+            )
         ):
             match = g
             break
