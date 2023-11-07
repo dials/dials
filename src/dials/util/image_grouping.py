@@ -900,7 +900,7 @@ class GroupingImageTemplates(object):
 class GroupingImageFiles(GroupingImageTemplates):
 
     """This class provides specific implementations for when the images are h5 files.
-    The main difference from tempaltes is getting the image index.
+    The main difference from templates is getting the image index.
     """
 
     @staticmethod

@@ -101,7 +101,7 @@ class manage_loggers(object):
                 logging.getLogger(name).setLevel(logging.INFO)
 
     def __exit__(self, ex_type, ex_value, ex_traceback):
-        # Reenable the disabled loggers or reset logging levels.
+        # Re-enable the disabled loggers or reset logging levels.
         if self.individual_log_verbosity < 2:
             for logname in self.loggers:
                 logging.getLogger(logname).disabled = False

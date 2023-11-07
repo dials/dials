@@ -7,7 +7,7 @@ Features
 - Circular dependencies have been removed between DIALS and ``cctbx.xfel`` by using the new ``serialtbx``. (`#2404 <https://github.com/dials/dials/issues/2404>`_)
 - ``dials.import``: Enable use of an image range selection when importing a still sequence. (`#2490 <https://github.com/dials/dials/issues/2490>`_)
 - ``dials.estimate_resolution``: Improved CC½ fitting by using a weighted tanh fit. (`#2499 <https://github.com/dials/dials/issues/2499>`_)
-- ``dials.find_spots`` and ``dials.integrate`` now accept ``exclude_images_multiple=N``, which will be expanded to the appropriate ``exclude_images=`` definition that excludes every Nth image from the data set. This is intended for the sitation where a scan of diffraction images is regularly interrupted by calibration images. (`#2511 <https://github.com/dials/dials/issues/2511>`_)
+- ``dials.find_spots`` and ``dials.integrate`` now accept ``exclude_images_multiple=N``, which will be expanded to the appropriate ``exclude_images=`` definition that excludes every Nth image from the data set. This is intended for the situation where a scan of diffraction images is regularly interrupted by calibration images. (`#2511 <https://github.com/dials/dials/issues/2511>`_)
 - ``dials.ssx_integrate``: Add ``mosaicity_max_limit=`` setting, to control what mosaicity limit is considered unphysically large. (`#2518 <https://github.com/dials/dials/issues/2518>`_)
 - ``dials.ssx_integrate``: Add ``max_cell_volume_change_fraction=`` parameter to catch highly divergent cell refinements (`#2521 <https://github.com/dials/dials/issues/2521>`_)
 
@@ -49,7 +49,7 @@ Features
 - Remove circular dependencies between DIALS and ``cctbx.xfel`` by using the new ``serialtbx``. (`#2404 <https://github.com/dials/dials/issues/2404>`_)
 - ``dials.import``: Enable use of an image range selection when importing a still sequence (`#2490 <https://github.com/dials/dials/issues/2490>`_)
 - ``dials.estimate_resolution``: Improved cc1/2 fitting by using a weighted tanh fit (`#2499 <https://github.com/dials/dials/issues/2499>`_)
-- ``dials.find_spots`` and ``dials.integrate`` now accept a parameter ``exclude_images_multiple=N``, which will be expanded to the appropriate ``exclude_images`` definition that excludes every Nth image from the data set. This is intended for the sitation where a scan of diffraction images is regularly interrupted by calibration images. (`#2511 <https://github.com/dials/dials/issues/2511>`_)
+- ``dials.find_spots`` and ``dials.integrate`` now accept a parameter ``exclude_images_multiple=N``, which will be expanded to the appropriate ``exclude_images`` definition that excludes every Nth image from the data set. This is intended for the situation where a scan of diffraction images is regularly interrupted by calibration images. (`#2511 <https://github.com/dials/dials/issues/2511>`_)
 - ``dials.ssx_integrate``: Allow setting of the mosaicity limit that is considered unphysically large, with mosaicity_max_limit option (`#2518 <https://github.com/dials/dials/issues/2518>`_)
 
 
@@ -260,10 +260,10 @@ Features
 --------
 
 - ``dev.dials.napari_rlv``: A reciprocal lattice viewer based on napari. This currently requires the ``napari`` module to be manually added into your DIALS installation. (`#2229 <https://github.com/dials/dials/issues/2229>`_)
-- ``dials.stills_process``: Adds ``suppressed_logging=`` option, and minimial progress feedback. (`#2263 <https://github.com/dials/dials/issues/2263>`_)
+- ``dials.stills_process``: Adds ``suppressed_logging=`` option, and minimal progress feedback. (`#2263 <https://github.com/dials/dials/issues/2263>`_)
 - ``dials.refine``: Use an overall ``interval_width_degrees=`` parameter to set the default smoothness in scan-varying refinement for all models. This does not affect which models will be parameterised as scan-varying, which is controlled by their individual ``force_static=`` parameters. (`#2268 <https://github.com/dials/dials/issues/2268>`_)
 - Use Python 3.10 by default when running bootstrap. (`#2272 <https://github.com/dials/dials/issues/2272>`_)
-- ``dials.stills_process``: Added reflection subsampling. If ``reflection_subsampling.enable=True``, and an image fails to index, the reflections will be randomly subsampled, and indexing tried again. Reflections will be randomly subsampled in smaller amounts until a threshold is reached or the image succesfully indexes. (`#2275 <https://github.com/dials/dials/issues/2275>`_)
+- ``dials.stills_process``: Added reflection subsampling. If ``reflection_subsampling.enable=True``, and an image fails to index, the reflections will be randomly subsampled, and indexing tried again. Reflections will be randomly subsampled in smaller amounts until a threshold is reached or the image successfully indexes. (`#2275 <https://github.com/dials/dials/issues/2275>`_)
 - ``dials.merge``: Allow ``exclude_images=`` parameter, as in ``dials.scale``. (`#2280 <https://github.com/dials/dials/issues/2280>`_)
 - ``dials.scale``: Add ability to use a precalculated analytical correction as part of scaling models. (`#2313 <https://github.com/dials/dials/issues/2313>`_)
 - Add ``additional_stats`` option to generate R-split statistic for stills data in ``dials.merge`` and ``dials.scale``. (`#2314 <https://github.com/dials/dials/issues/2314>`_)

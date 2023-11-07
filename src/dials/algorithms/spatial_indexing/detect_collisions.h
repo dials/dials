@@ -410,7 +410,7 @@ namespace dials { namespace algorithms {
      * Next partition the data such that all elements with their upper bound
      * greater than the split are to the right and all those less than to the
      * less. This will move some elements from the previous partition but is
-     * necessary to ensure that those elements that are not wholely within a
+     * necessary to ensure that those elements that are not wholly within a
      * single partition are properly accounted for. Then partition along the
      * next axis recursively.
      *

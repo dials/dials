@@ -267,7 +267,7 @@ class _Tiles:
         return pic
 
     def get_flex_pixel_coordinates(self, lon, lat):
-        # get pixel coordintes. Note 0,0 is the center of pixel 0,0
+        # get pixel coordinates. Note 0,0 is the center of pixel 0,0
         (
             fast_picture_coord_pixel_scale,
             slow_picture_coord_pixel_scale,
