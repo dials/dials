@@ -24,7 +24,7 @@ from scitbx import matrix
 
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
-from dials.algorithms.symmetry import symmetry_base
+from dials.algorithms.symmetry import median_unit_cell, symmetry_base
 from dials.algorithms.symmetry.cosym import engine as cosym_engine
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
@@ -895,3 +895,48 @@ def extract_reference_intensities(
     if not reference_intensities.sigmas():
         reference_intensities.set_sigmas(reference_intensities.data() ** 0.5)
     return reference_intensities, initial_space_group_info
+
+
+def change_of_basis_op_to_best_cell(
+    experiments,
+    max_delta,
+    relative_length_tolerance,
+    absolute_angle_tolerance,
+    best_subgroup,
+):
+    """
+    Compute change of basis op to map experiments from P1 cell to the best cell
+    that matches the best subgroup
+    """
+
+    median_cell = median_unit_cell(experiments)
+    groups = metric_subgroups(
+        experiments[0]
+        .crystal.get_crystal_symmetry()
+        .customized_copy(unit_cell=median_cell),
+        max_delta,
+        enforce_max_delta_for_generated_two_folds=True,
+    )
+    match = None
+    for g in groups.result_groups:
+        if (
+            g["best_subsym"]
+            .unit_cell()
+            .is_similar_to(
+                best_subgroup["best_subsym"].unit_cell(),
+                relative_length_tolerance=relative_length_tolerance,
+                absolute_angle_tolerance=absolute_angle_tolerance,
+            )
+        ) and (
+            g["best_subsym"].space_group().build_derived_acentric_group()
+            == best_subgroup["best_subsym"].space_group().build_derived_acentric_group()
+        ):
+            match = g
+            break
+    if not match:
+        raise RuntimeError(
+            "Unable to determine reindexing operator from minumum cells to best cell.\n"
+            + "This may be fixed by increasing relative_length_tolerance or absolute_angle_tolerance."
+        )
+    cb_op = match["cb_op_inp_best"]
+    return cb_op

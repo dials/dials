@@ -9,7 +9,7 @@ import random
 import sys
 
 import iotbx.phil
-from cctbx import sgtbx, uctbx
+from cctbx import sgtbx
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dxtbx.model import ExperimentList
@@ -17,7 +17,10 @@ from libtbx import Auto
 
 import dials.util
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
-from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
+from dials.algorithms.symmetry import (
+    median_unit_cell,
+    resolution_filter_from_reflections_experiments,
+)
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
@@ -127,14 +130,6 @@ output {
 )
 
 
-def median_unit_cell(experiments):
-    uc_params = [flex.double() for i in range(6)]
-    for c in experiments.crystals():
-        for i, p in enumerate(c.get_unit_cell().parameters()):
-            uc_params[i].append(p)
-    return uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
-
-
 def unit_cells_are_similar_to(
     experiments, unit_cell, relative_length_tolerance, absolute_angle_tolerance
 ):
@@ -228,92 +223,6 @@ def change_of_basis_ops_to_minimum_cell(
             .change_of_basis_op_to_minimum_cell()
         )
         cb_ops = [cb_op_ref_min * cb_op if cb_op else None for cb_op in cb_ops]
-    return cb_ops
-
-
-def change_of_basis_ops_to_best_cell(
-    experiments,
-    max_delta,
-    relative_length_tolerance,
-    absolute_angle_tolerance,
-    subgroup,
-):
-    """
-    Compute change of basis ops to map experiments to the best cell
-    """
-
-    median_cell = median_unit_cell(experiments)
-    unit_cells_are_similar = unit_cells_are_similar_to(
-        experiments, median_cell, relative_length_tolerance, absolute_angle_tolerance
-    )
-    centring_symbols = [
-        bravais_lattice(group=expt.crystal.get_space_group()).centring_symbol
-        for expt in experiments
-    ]
-    if unit_cells_are_similar and len(set(centring_symbols)) == 1:
-        # FIXME use median cell rather than experiments[0]?
-        groups = metric_subgroups(
-            experiments[0]
-            .crystal.get_crystal_symmetry()
-            .customized_copy(unit_cell=median_cell),
-            max_delta,
-            enforce_max_delta_for_generated_two_folds=True,
-        )
-        best = None
-        for g in groups.result_groups:
-            # FIXME what are correct tolerances to use?
-            if (
-                g["best_subsym"]
-                .unit_cell()
-                .is_similar_to(
-                    subgroup["best_subsym"].unit_cell(),
-                    relative_length_tolerance=relative_length_tolerance,
-                    absolute_angle_tolerance=absolute_angle_tolerance,
-                )
-            ):
-                # FIXME assert subgroup is actually a subgroup of, or same as, g?
-                best = g
-                break
-        if not best:
-            raise RuntimeError(
-                "Unable to determine reindexing operator from minumum cells to best cell."
-            )
-        cb_ops = [best["cb_op_inp_best"]] * len(experiments)
-    else:
-        groups = [
-            metric_subgroups(
-                expt.crystal.get_crystal_symmetry(),
-                max_delta,
-                best_monoclinic_beta=False,
-                enforce_max_delta_for_generated_two_folds=True,
-            )
-            for expt in experiments
-        ]
-        counter = collections.Counter(
-            g.result_groups[0]["best_subsym"].space_group() for g in groups
-        )
-        target_group = counter.most_common()[0][0]
-        cb_ops = []
-        for expt in experiments:
-            groups = metric_subgroups(
-                expt.crystal.get_crystal_symmetry(),
-                max_delta,
-                best_monoclinic_beta=False,
-                enforce_max_delta_for_generated_two_folds=True,
-            )
-            group = None
-            for g in groups.result_groups:
-                if g["best_subsym"].space_group() == target_group:
-                    group = g
-            if group:
-                cb_ops.append(group["cb_op_inp_best"])
-            else:
-                cb_ops.append(None)
-                logger.info(
-                    f"Couldn't match unit cell to target symmetry:\n"
-                    f"{expt.crystal.get_crystal_symmetry()}\n"
-                    f"Target symmetry: {target_group.info()}"
-                )
     return cb_ops
 
 

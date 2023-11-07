@@ -7,17 +7,21 @@ import sys
 import numpy as np
 
 import iotbx.phil
-from cctbx import sgtbx
+from cctbx import crystal, sgtbx
 
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
-from dials.algorithms.symmetry.cosym import CosymAnalysis, extract_reference_intensities
+from dials.algorithms.symmetry.cosym import (
+    CosymAnalysis,
+    change_of_basis_op_to_best_cell,
+    extract_reference_intensities,
+)
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.array_family import flex
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
-    change_of_basis_ops_to_best_cell,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
+    median_unit_cell,
 )
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
@@ -252,7 +256,9 @@ class cosym(Subject):
         else:
             unique_ids = set(self.cosym_analysis.dataset_ids)
 
-        # first apply the reindexing operators to the input cell (not the best cell).
+        input_cell = median_unit_cell(self._experiments)
+        # first apply the reindexing operators to the input cell (P1, not the best cell), to get
+        # all datasets consistently indexed.
         for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
@@ -263,21 +269,54 @@ class cosym(Subject):
             expt.crystal = expt.crystal.change_basis(cb_op)
             refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
-        # now map the input cell to best
-        if (
-            subgroup["cb_op_inp_best"].as_xyz()
-            != sgtbx.change_of_basis_op("a,b,c").as_xyz()
-        ):
-            # if the input cell is not in the same setting as the best cell, need to find the
-            # reindexing operator(s)
-            cbs = change_of_basis_ops_to_best_cell(
+        # cosym reindexing may change the cell setting, so in some cases we need to
+        # redetermine the cb_op from the current cell to the best cell.
+        # This is an issue when the reindexing operators of the lattice symmetry changes the
+        # cell settings, e.g. if the lattice has a higher symmetry.
+
+        input_cs = crystal.symmetry(
+            space_group=sgtbx.space_group("P1"),
+            unit_cell=input_cell,
+        )
+        # Determine if there is the potential for the cell setting to change.
+        new_cells = []
+        for cb in reindexing_ops:
+            new = input_cs.change_basis(sgtbx.change_of_basis_op(cb))
+            new_cells.append(new.unit_cell())
+        reindex_changes_cell = any(
+            not input_cell.is_similar_to(
+                new, relative_length_tolerance=0.0001, absolute_angle_tolerance=0.0001
+            )
+            for new in new_cells
+        )
+
+        if reindex_changes_cell:
+            # need to find the new reindexing operator to transform to the best cell.
+            cb_op = change_of_basis_op_to_best_cell(
                 self._experiments,
                 self.params.lattice_symmetry_max_delta,
                 self.params.relative_length_tolerance,
                 self.params.absolute_angle_tolerance,
                 subgroup,
             )
-            for (expt, refl, cb_op) in zip(self._experiments, self._reflections, cbs):
+            for (expt, refl) in zip(self._experiments, self._reflections):
+                expt.crystal = expt.crystal.change_basis(cb_op)
+                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+                # now we can set the space group and 'symmetrize' the unit cell/
+                expt.crystal.set_space_group(
+                    subgroup["best_subsym"].space_group().build_derived_acentric_group()
+                )
+                expt.crystal.set_unit_cell(
+                    expt.crystal.get_space_group().average_unit_cell(
+                        expt.crystal.get_unit_cell()
+                    )
+                )
+        elif (
+            subgroup["cb_op_inp_best"].as_xyz()
+            != sgtbx.change_of_basis_op("a,b,c").as_xyz()
+        ):
+            cb_op = subgroup["cb_op_inp_best"]
+            for (expt, refl) in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
                 # now we can set the space group and 'symmetrize' the unit cell/
