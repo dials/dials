@@ -67,7 +67,7 @@ class Script:
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
-            check_format=True,
+            check_format=False,
             read_experiments=True,
         )
 
