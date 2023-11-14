@@ -631,6 +631,58 @@ def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
     assert len(experiments_list) == 2
 
 
+def test_index_multi_lattice_multi_sweep(dials_data, tmp_path):
+    loc = dials_data("semisynthetic_multilattice", pathlib=True)
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            loc / "ag_imported_1_50.expt",
+            loc / "ag_strong_1_50.refl",
+            loc / "bh_imported_1_50.expt",
+            loc / "bh_strong_1_50.refl",
+            "max_lattices=2",
+            "joint_indexing=False",
+            "n_macro_cycles=2",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.refl").is_file()
+    assert (tmp_path / "indexed.expt").is_file()
+    expts = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 4
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    refls.assert_experiment_identifiers_are_consistent(expts)
+    assert set(refls["imageset_id"]) == {0, 1}
+    n_indexed_first = refls.get_flags(refls.flags.indexed).count(True)
+
+    # now try to reindex with existing model
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            tmp_path / "indexed.expt",
+            tmp_path / "indexed.refl",
+            "max_lattices=2",
+            "joint_indexing=False",
+            "n_macro_cycles=2",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.refl").is_file()
+    assert (tmp_path / "indexed.expt").is_file()
+    expts = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 4
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    refls.assert_experiment_identifiers_are_consistent(expts)
+    assert set(refls["imageset_id"]) == {0, 1}
+    assert refls.get_flags(refls.flags.indexed).count(True) >= n_indexed_first
+
+
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path):
     """Problem: In stills_indexer, before calling the refine function, the
     experiment list contains a list of dxtbx crystal models (that are not
