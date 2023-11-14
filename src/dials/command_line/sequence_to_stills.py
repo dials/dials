@@ -174,13 +174,15 @@ def sequence_to_stills(experiments, reflections, params):
                     i_scan_point : i_scan_point + 1
                 ],
             )
-            new_experiments.append(new_experiment)
 
             # Each reflection in a 3D shoebox can be found on multiple images.
             # Slice the reflections such that any reflection on this scan point
             # is included with this image
-            new_id = len(new_experiments) - 1
             subrefls = refls.select((i_scan_point >= z1) & (i_scan_point < z2))
+            if len(subrefls) == 0:
+                continue
+            new_experiments.append(new_experiment)
+            new_id = len(new_experiments) - 1
             for refl in subrefls.rows():
                 assert i_scan_point in range(*refl["bbox"][4:6])
 
