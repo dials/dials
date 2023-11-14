@@ -105,7 +105,11 @@ working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def _index_experiments(
-    experiments, reflections, params, known_crystal_models=None, log_text=None
+    experiments,
+    reflections,
+    params,
+    known_crystal_models=None,
+    log_text=None,
 ):
     if log_text:
         logger.info(log_text)
@@ -176,34 +180,43 @@ def index(experiments, reflections, params):
         with concurrent.futures.ProcessPoolExecutor(
             max_workers=params.indexing.nproc
         ) as pool:
-            futures = []
-            for i_expt, expt in enumerate(experiments):
-                refl = reflections.select(reflections["imageset_id"] == i_expt)
-                refl["imageset_id"] = flex.size_t(len(refl), 0)
-                futures.append(
+            futures = {}
+            # we might have multiple lattices per imageset, so need to select on imageset rather than experiment
+            for iset_id, imgset in enumerate(experiments.imagesets()):
+                refl = reflections.select(reflections["imageset_id"] == iset_id)
+                i_expts = experiments.where(imageset=imgset)
+                elist = ExperimentList([experiments[i] for i in i_expts])
+                known_crystal_models_this = None
+                if known_crystal_models:
+                    known_crystal_models_this = [
+                        known_crystal_models[i] for i in i_expts
+                    ]
+                refl["imageset_id"] = flex.int(
+                    len(refl), 0
+                )  # _index_experiments functions requires ids numbered from 0
+                futures[
                     pool.submit(
                         _index_experiments,
-                        ExperimentList([expt]),
+                        elist,
                         refl,
                         copy.deepcopy(params),
-                        known_crystal_models=known_crystal_models,
-                        log_text=f"Indexing experiment id {i_expt} ({i_expt + 1}/{len(experiments)})",
+                        known_crystal_models=known_crystal_models_this,
+                        log_text=f"Indexing imageset id {iset_id} ({iset_id + 1}/{len(experiments.imagesets())})",
                     )
-                )
+                ] = iset_id
+
             tables_list = []
             for future in concurrent.futures.as_completed(futures):
                 try:
+                    iset_id = futures[future]
                     idx_expts, idx_refl = future.result()
                 except Exception as e:
                     print(e)
                 else:
                     if idx_expts is None:
                         continue
-                    # Update the experiment ids by incrementing by the number of indexed
-                    # experiments already in the list
-                    ##FIXME below, is i_expt correct - or should it be the
-                    # index of the 'future'?
-                    idx_refl["imageset_id"] = flex.size_t(idx_refl.size(), i_expt)
+                    # reset the imageset id to the original
+                    idx_refl["imageset_id"] = flex.int(idx_refl.size(), iset_id)
                     tables_list.append(idx_refl)
                     indexed_experiments.extend(idx_expts)
         indexed_reflections = flex.reflection_table.concat(tables_list)
