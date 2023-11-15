@@ -675,7 +675,7 @@ def test_indexers_dont_lose_reflections(
     assert unindexed.get_flags(unindexed.flags.indexed).count(True) == 0
     assert (unindexed["miller_index"] != (0, 0, 0)).count(True) == 0
 
-    
+
 def test_index_multi_lattice_multi_sweep(dials_data, tmp_path):
     loc = dials_data("semisynthetic_multilattice", pathlib=True)
     result = subprocess.run(
