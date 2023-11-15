@@ -146,7 +146,7 @@ def install_micromamba(python, include_cctbx, cmake):
         python_requirement,
     ]
     if include_cctbx or cmake:
-        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
+        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
         command_list.extend(["pycbf", "cmake"])
     if os.name == "nt":
@@ -1327,6 +1327,7 @@ def configure_build(config_flags, prebuilt_cctbx):
         "xia2",
         "prime",
         "--skip_phenix_dispatchers",
+        "--use_environment",
     ] + config_flags
 
     run_indirect_command(
