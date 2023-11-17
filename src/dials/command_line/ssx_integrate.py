@@ -360,9 +360,7 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     n_integrated = 0
     for result in results:
         if result.table:
-            logger.info(result.experiment.profile)
             if identifiers_to_scans:
-
                 result.experiment.scan = identifiers_to_scans[
                     result.experiment.identifier
                 ]
