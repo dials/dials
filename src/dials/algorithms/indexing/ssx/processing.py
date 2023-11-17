@@ -35,6 +35,8 @@ class InputToIndex:
     image_no: int = 0
     method_list: List[str] = field(default_factory=list)
     known_crystal_models: Optional[List[Crystal]] = None
+    imageset_no: int = 0
+    image_index: int = 0
 
 
 @dataclass
@@ -49,6 +51,9 @@ class IndexingResult:
     rmsd_x: List[float] = field(default_factory=list)
     rmsd_y: List[float] = field(default_factory=list)
     rmsd_dpsi: List[float] = field(default_factory=list)
+    imageset_no: int = 0
+    image_index: int = 0
+    unindexed_experiment: Experiment = None
 
 
 loggers_to_disable = [
@@ -137,17 +142,17 @@ def index_one(
                 f"Image {image_no+1}: Failed to index with {method} method, error: {e}"
             )
             if method == method_list[-1]:
-                return None, None
+                return None, None, experiment
         else:
             logger.info(
                 f"Image {image_no+1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
             )
-            return idxr.refined_experiments, idxr.refined_reflections
+            return idxr.refined_experiments, idxr.refined_reflections, experiment
 
 
 def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
     # First unpack the input and run the function
-    expts, table = index_one(
+    expts, table, input_expt = index_one(
         input_to_index.experiment,
         input_to_index.reflection_table,
         input_to_index.parameters,
@@ -167,6 +172,9 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             table,
             expts,
             n_strong=n_strong,
+            imageset_no=input_to_index.imageset_no,
+            image_index=input_to_index.image_index,
+            unindexed_experiment=input_expt,
         )
         for id_, identifier in table.experiment_identifiers():
             selr = table.select(table["id"] == id_)
@@ -187,6 +195,9 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             input_to_index.image_identifier,
             input_to_index.image_no,
             n_strong=n_strong,
+            imageset_no=input_to_index.imageset_no,
+            image_index=input_to_index.image_index,
+            unindexed_experiment=input_expt,
         )
 
     # If chosen, output a message to json to show live progress
@@ -222,16 +233,19 @@ def index_all_concurrent(
 
     # Create a suitable iterable for passing to pool.map
     n = 0
-    for iset in experiments.imagesets():
+    original_isets = list(experiments.imagesets())
+    identifiers_to_scans = {expt.identifier: expt.scan for expt in experiments}
+    for n_iset, iset in enumerate(experiments.imagesets()):
         for i in range(len(iset)):
             refl_index = i + n
             if reflections[refl_index]:
                 expt = experiments[refl_index]
                 scan = iset.get_scan()
-                if scan:
+                offset = scan.get_image_range()[0]
+                """if scan:
                     idx_0 = i  # slicing index
                     new_iset = iset[idx_0 : idx_0 + 1]
-                    expt.imageset = new_iset
+                    expt.imageset = new_iset"""
                 input_iterable.append(
                     InputToIndex(
                         reflection_table=reflections[refl_index],
@@ -242,6 +256,8 @@ def index_all_concurrent(
                         ).name,
                         image_no=refl_index,
                         method_list=method_list,
+                        imageset_no=n_iset,
+                        image_index=i + offset,
                     )
                 )
             else:  # experiments that have already been filtered
@@ -273,7 +289,9 @@ def index_all_concurrent(
 
     sys.stdout = sys.__stdout__
     # prepare tables for output
-    indexed_experiments, indexed_reflections = _join_indexing_results(results)
+    indexed_experiments, indexed_reflections = _join_indexing_results(
+        results, experiments, original_isets, identifiers_to_scans
+    )
 
     results_summary = _add_results_to_summary_dict(results_summary, results)
 
@@ -282,12 +300,33 @@ def index_all_concurrent(
 
 def _join_indexing_results(
     results: List[IndexingResult],
+    experiments,
+    original_isets,
+    identifiers_to_scans,
 ) -> Tuple[ExperimentList, flex.reflection_table]:
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
+
+    use_beam = None
+    use_gonio = None
+    if len(experiments.beams()) == 1:
+        use_beam = experiments.beams()[0]
+    if len(experiments.goniometers()) == 1:
+        use_gonio = experiments.goniometers()[0]
+
     n_tot = 0
     for res in results:
         if res.n_indexed:
+            identifier = res.unindexed_experiment.identifier
+            scan = identifiers_to_scans[identifier]
+            for expt in res.experiments:
+                expt.scan = scan
+                expt.imageset = original_isets[res.imageset_no]
+                if use_beam:
+                    expt.beam = use_beam
+                if use_gonio:
+                    expt.goniometer = use_gonio
+
             indexed_experiments.extend(res.experiments)
             table = res.reflection_table
             ids_map = dict(table.experiment_identifiers())
