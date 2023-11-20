@@ -60,6 +60,7 @@ Beam centre:
 Scan:
     number of images:   9
     image range:   {1,9}
+    epoch: 1.36032e+09
     oscillation:   {0,0.2}
     exposure time: 0.2
 Goniometer:
@@ -200,8 +201,9 @@ Beam centre:
 Scan:
     number of images:   9
     image range:   {1,9}
+    epoch:    1.36032e+09
+    exposure time:    0.2
     oscillation:   {0,0.2}
-    exposure time: 0.2
 Goniometer:
     Rotation axis:   {1,0,0}
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
