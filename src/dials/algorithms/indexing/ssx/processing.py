@@ -36,7 +36,6 @@ class InputToIndex:
     method_list: List[str] = field(default_factory=list)
     known_crystal_models: Optional[List[Crystal]] = None
     imageset_no: int = 0
-    image_index: int = 0
 
 
 @dataclass
@@ -52,7 +51,6 @@ class IndexingResult:
     rmsd_y: List[float] = field(default_factory=list)
     rmsd_dpsi: List[float] = field(default_factory=list)
     imageset_no: int = 0
-    image_index: int = 0
     unindexed_experiment: Experiment = None
 
 
@@ -173,7 +171,6 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             expts,
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
-            image_index=input_to_index.image_index,
             unindexed_experiment=input_expt,
         )
         for id_, identifier in table.experiment_identifiers():
@@ -196,7 +193,6 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             input_to_index.image_no,
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
-            image_index=input_to_index.image_index,
             unindexed_experiment=input_expt,
         )
 
@@ -240,12 +236,6 @@ def index_all_concurrent(
             refl_index = i + n
             if reflections[refl_index]:
                 expt = experiments[refl_index]
-                scan = iset.get_scan()
-                offset = scan.get_image_range()[0]
-                """if scan:
-                    idx_0 = i  # slicing index
-                    new_iset = iset[idx_0 : idx_0 + 1]
-                    expt.imageset = new_iset"""
                 input_iterable.append(
                     InputToIndex(
                         reflection_table=reflections[refl_index],
@@ -257,7 +247,6 @@ def index_all_concurrent(
                         image_no=refl_index,
                         method_list=method_list,
                         imageset_no=n_iset,
-                        image_index=i + offset,
                     )
                 )
             else:  # experiments that have already been filtered
