@@ -311,7 +311,11 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
         if expt.scan:  # backcompatibility for indexed.expt without scans
             iset = expt.imageset
             if isinstance(iset, ImageSequence):
-                idx = expt.scan.get_image_range()[0]
+                # note, need to subtract imageset offset, as imageset may no longer start from same
+                # index as the imported scan
+                idx = (
+                    expt.scan.get_array_range()[0] - iset.get_scan().get_batch_offset()
+                )
                 n_iset = original_isets.index(iset)
                 subset = iset[idx : idx + 1]
                 expt.imageset = ImageSet(
