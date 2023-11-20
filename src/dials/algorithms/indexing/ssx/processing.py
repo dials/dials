@@ -140,17 +140,17 @@ def index_one(
                 f"Image {image_no+1}: Failed to index with {method} method, error: {e}"
             )
             if method == method_list[-1]:
-                return None, None, experiment
+                return None, None
         else:
             logger.info(
                 f"Image {image_no+1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
             )
-            return idxr.refined_experiments, idxr.refined_reflections, experiment
+            return idxr.refined_experiments, idxr.refined_reflections
 
 
 def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
     # First unpack the input and run the function
-    expts, table, input_expt = index_one(
+    expts, table = index_one(
         input_to_index.experiment,
         input_to_index.reflection_table,
         input_to_index.parameters,
@@ -171,7 +171,7 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             expts,
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
-            unindexed_experiment=input_expt,
+            unindexed_experiment=input_to_index.experiment,
         )
         for id_, identifier in table.experiment_identifiers():
             selr = table.select(table["id"] == id_)
@@ -193,7 +193,7 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             input_to_index.image_no,
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
-            unindexed_experiment=input_expt,
+            unindexed_experiment=input_to_index.experiment,
         )
 
     # If chosen, output a message to json to show live progress
