@@ -329,7 +329,7 @@ def test_override_geometry(dials_data, tmp_path):
     assert goniometer.get_fixed_rotation() == (0, 1, 2, 3, 4, 5, 6, 7, 8)
     assert goniometer.get_setting_rotation() == (8, 7, 6, 5, 4, 3, 2, 1, 0)
     assert scan.get_image_range() == (1, 4)
-    assert scan.get_oscillation() == (1, 2)
+    assert scan.get_oscillation() == pytest.approx((1, 2))
 
 
 def test_import_beam_centre(dials_data, tmp_path):

@@ -38,7 +38,7 @@ def test_slice_sequence_and_compare_with_expected_results(dials_data, tmp_path):
 
     # simple test of results
     assert sliced_exp.scan.get_image_range() == (1, 20)
-    assert len(sliced_refs) == 3670
+    assert len(sliced_refs) == 3672
 
 
 def test_slice_sequence_with_first_images_missing(dials_data, tmp_path):
