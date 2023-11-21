@@ -977,10 +977,7 @@ class Refiner:
         images_per_rad = None
         if scan:
             if scan.get_oscillation(deg=False)[1] != 0.0:
-                try:
-                    images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
-                except AttributeError:
-                    pass
+                images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
 
         for idetector, detector in enumerate(self._experiments.detectors()):
             if len(detector) == 1:
