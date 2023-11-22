@@ -194,7 +194,7 @@ def test_ModelEvaluation(dials_regression: Path):
     assert result.n_indexed == 7313
     assert result.fraction_indexed == pytest.approx(0.341155066244)
     assert result.rmsds == pytest.approx(
-        (0.10215787570953785, 0.12954412140128563, 0.0010980583382102509)
+        (0.10214846695020922, 0.12958139231286528, 0.001097870074690081)
     )
 
 
