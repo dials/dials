@@ -60,9 +60,9 @@ Beam centre:
 Scan:
     number of images:   9
     image range:   {1,9}
-    epoch: 1.36032e+09
+    epoch:    1.36032e+09
+    exposure time:    0.2
     oscillation:   {0,0.2}
-    exposure time: 0.2
 Goniometer:
     Rotation axis:   {1,0,0}
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
@@ -139,8 +139,9 @@ Beam centre:
 Scan:
     number of images:   540
     image range:   {1,540}
+    epoch:    1.37284e+09
+    exposure time:    0.067
     oscillation:   {82,0.15}
-    exposure time: 0.067
 Goniometer:
     Rotation axis:   {1,0,0}
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
@@ -251,7 +252,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-46:])
+        "\n".join(output[-47:])
         == """
 Panel:
   name: row-23
@@ -293,8 +294,9 @@ Beam centre:
 Scan:
     number of images:   1
     image range:   {1,1}
+    epoch:    1.41893e+09
+    exposure time:    0.2
     oscillation:   {0,0.1}
-    exposure time: 0.2
 Goniometer:
     Rotation axis:   {-1,0,0}
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
