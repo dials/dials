@@ -362,13 +362,16 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
         use_detector = sub_expts.detectors()[0]
 
     n_integrated = 0
-    for result in results:
+    for result in sorted(results, key=lambda result: result.crystalno):
         if result.table:
             if identifiers_to_scans:
                 result.experiment.scan = identifiers_to_scans[
                     result.experiment.identifier
                 ]
                 result.experiment.imageset = original_isets[result.imageset_index]
+                result.table["imageset_id"] = flex.int(
+                    result.table.size(), result.imageset_index
+                )
                 if use_beam:
                     result.experiment.beam = use_beam
                 if use_gonio:

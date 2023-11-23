@@ -311,6 +311,9 @@ def _join_indexing_results(
             for expt in res.experiments:
                 expt.scan = scan
                 expt.imageset = original_isets[res.imageset_no]
+                res.reflection_table["imageset_id"] = flex.int(
+                    res.reflection_table.size(), res.imageset_no
+                )
                 if use_beam:
                     expt.beam = use_beam
                 if use_gonio:
