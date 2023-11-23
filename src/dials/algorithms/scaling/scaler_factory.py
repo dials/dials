@@ -187,7 +187,7 @@ class SingleScalerFactory(ScalerFactory):
             experiment.scaling_model.id_ == "physical"
             and "absorption" in experiment.scaling_model.components
         ):
-            if experiment.scan:
+            if experiment.scan and (experiment.scan.get_oscillation()[1] != 0.0):
                 reflection_table = calc_crystal_frame_vectors(
                     reflection_table, experiment
                 )

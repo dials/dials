@@ -455,15 +455,15 @@ grouping:
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
     assert len(expts1) == 2
-    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17002.cbf"
-    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17004.cbf"
+    assert expts1[0].scan.get_image_range() == (17002, 17002)
+    assert expts1[1].scan.get_image_range() == (17004, 17004)
     filelist_2 = fd["group_2"]
     assert len(filelist_2) == 1
     expts2 = load.experiment_list(filelist_2[0].expt)
     assert len(expts2) == 3
-    assert expts2[0].imageset.get_path(0).split("_")[-1] == "17001.cbf"
-    assert expts2[1].imageset.get_path(0).split("_")[-1] == "17001.cbf"
-    assert expts2[2].imageset.get_path(0).split("_")[-1] == "17003.cbf"
+    assert expts2[0].scan.get_image_range() == (17001, 17001)
+    assert expts2[1].scan.get_image_range() == (17001, 17001)
+    assert expts2[2].scan.get_image_range() == (17003, 17003)
 
     # Now test on imported data. Here, we have one imagesequence, expect
     # images 17000-17004, to be split into alternating groups.
@@ -511,19 +511,19 @@ grouping:
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
     assert len(expts1) == 2
-    assert expts1[0].imageset.get_path(0).split("_")[-1] == "17001.cbf"
-    assert expts1[1].imageset.get_path(0).split("_")[-1] == "17001.cbf"
+    assert expts1[0].scan.get_image_range()[0] == 17001
+    assert expts1[1].scan.get_image_range()[0] == 17001
     filelist_2 = fd["group_2"]
     assert len(filelist_2) == 1
     expts2 = load.experiment_list(filelist_2[0].expt)
     assert len(expts2) == 2
-    assert expts2[0].imageset.get_path(0).split("_")[-1] == "17002.cbf"
-    assert expts2[1].imageset.get_path(0).split("_")[-1] == "17003.cbf"
+    assert expts2[0].scan.get_image_range()[0] == 17002
+    assert expts2[1].scan.get_image_range()[0] == 17003
     filelist_3 = fd["group_3"]
     assert len(filelist_3) == 1
     expts3 = load.experiment_list(filelist_3[0].expt)
     assert len(expts3) == 1
-    assert expts3[0].imageset.get_path(0).split("_")[-1] == "17004.cbf"
+    assert expts3[0].scan.get_image_range()[0] == 17004
 
     # Check writing the group ids to the file. Don't overwrite dials_data files though
     fps_copy = [

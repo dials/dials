@@ -937,7 +937,11 @@ class _:
 
         compute = CorrectionsMulti()
         for experiment in experiments:
-            if experiment.goniometer is not None:
+            if (
+                experiment.goniometer is not None
+                and experiment.scan is not None
+                and (experiment.scan.get_oscillation()[1] != 0.0)
+            ):
                 compute.append(
                     Corrections(
                         experiment.beam, experiment.goniometer, experiment.detector
