@@ -240,6 +240,7 @@ class InputToIntegrate:
     table: flex.reflection_table
     params: Any
     crystalno: int
+    imageset_index: int = 0
 
 
 @dataclass
@@ -248,6 +249,7 @@ class IntegrationResult:
     table: flex.reflection_table
     collector: Any
     crystalno: int
+    imageset_index: int = 0
 
 
 def wrap_integrate_one(input_to_integrate: InputToIntegrate):
@@ -258,7 +260,13 @@ def wrap_integrate_one(input_to_integrate: InputToIntegrate):
         input_to_integrate.integrator_class,
     )
 
-    result = IntegrationResult(expt, refls, collector, input_to_integrate.crystalno)
+    result = IntegrationResult(
+        expt,
+        refls,
+        collector,
+        input_to_integrate.crystalno,
+        input_to_integrate.imageset_index,
+    )
     if expt and refls:
         if not input_to_integrate.params.debug.output.shoeboxes:
             del result.table["shoebox"]
@@ -292,7 +300,28 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
 
     # create iterable
     input_iterable: List[InputToIntegrate] = []
+    from dxtbx.imageset import ImageSequence, ImageSet
+
+    original_isets = list(sub_expts.imagesets())
+    identifiers_to_scans = {}
+    n_iset = 0
+    if any(sub_expts.scans()):
+        identifiers_to_scans = {expt.identifier: expt.scan for expt in sub_expts}
     for i, (table, expt) in enumerate(zip(sub_tables, sub_expts)):
+        if expt.scan:  # backcompatibility for indexed.expt without scans
+            iset = expt.imageset
+            if isinstance(iset, ImageSequence):
+                # note, need to subtract imageset offset, as imageset may no longer start from same
+                # index as the imported scan
+                idx = (
+                    expt.scan.get_array_range()[0] - iset.get_scan().get_batch_offset()
+                )
+                n_iset = original_isets.index(iset)
+                subset = iset[idx : idx + 1]
+                expt.imageset = ImageSet(
+                    subset.data(), subset.indices()
+                )  # Needed for stills integration code
+                expt.scan = None  # Needed for some aspect of integration code, unclear what exactly.
         input_iterable.append(
             InputToIntegrate(
                 configuration["process"],
@@ -300,6 +329,7 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
                 table,
                 configuration["params"],
                 i + 1 + batch_offset,
+                imageset_index=n_iset,
             )
         )
     input_iterable = sorted(input_iterable, key=lambda i: i.table.size(), reverse=True)
@@ -321,9 +351,33 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     integrated_reflections = flex.reflection_table()
     integrated_experiments = []
 
+    use_beam = None
+    use_gonio = None
+    use_detector = None
+    if len(sub_expts.beams()) == 1:
+        use_beam = sub_expts.beams()[0]
+    if len(sub_expts.goniometers()) == 1:
+        use_gonio = sub_expts.goniometers()[0]
+    if len(sub_expts.detectors()) == 1:
+        use_detector = sub_expts.detectors()[0]
+
     n_integrated = 0
-    for result in results:
+    for result in sorted(results, key=lambda result: result.crystalno):
         if result.table:
+            if identifiers_to_scans:
+                result.experiment.scan = identifiers_to_scans[
+                    result.experiment.identifier
+                ]
+                result.experiment.imageset = original_isets[result.imageset_index]
+                result.table["imageset_id"] = flex.int(
+                    result.table.size(), result.imageset_index
+                )
+                if use_beam:
+                    result.experiment.beam = use_beam
+                if use_gonio:
+                    result.experiment.goniometer = use_gonio
+                if use_detector:
+                    result.experiment.detector = use_detector
             ids_map = dict(result.table.experiment_identifiers())
             del result.table.experiment_identifiers()[list(ids_map.keys())[0]]
             result.table["id"] = flex.int(result.table.size(), n_integrated)

@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import itertools
 
+from dxtbx.model import Scan
+
 from dials.util.batch_handling import calculate_batch_offsets
 
 
@@ -29,26 +31,12 @@ def offset_ranges(offsets, ranges):
 class TestBatchRangeCalculations:
     "Test the calculation of non-overlapping batch ranges"
 
-    class MockScan:
-        def __init__(self, image_range):
-            self._batch_offset = 0
-            self._image_range = image_range
-
-        def get_batch_offset(self):
-            return self._batch_offset
-
-        def set_batch_offset(self, batch_offset):
-            self._batch_offset = batch_offset
-
-        def get_image_range(self):
-            return self._image_range
-
     class MockExperiment:
         def __init__(self, image_range, scan=True):
             assert len(image_range) == 2
             self.scaling_model = None
             if scan:
-                self.scan = TestBatchRangeCalculations.MockScan(image_range)
+                self.scan = Scan(image_range=image_range, oscillation=(0, 1.0))
             else:
                 self.scan = []
 

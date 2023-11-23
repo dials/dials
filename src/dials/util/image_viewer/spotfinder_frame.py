@@ -257,9 +257,17 @@ class SpotFrame(XrayFrame):
                 detector.projection = self.params.projection
 
         self.viewing_stills = True
+        self.viewing_still_scans = True
         for experiment_list in self.experiments:
             if any(exp.scan or exp.goniometer for exp in experiment_list):
                 self.viewing_stills = False
+                break
+        for experiment_list in self.experiments:
+            if any(
+                exp.scan and (exp.scan.get_oscillation()[1] != 0.0)
+                for exp in experiment_list
+            ):
+                self.viewing_still_scans = False
                 break
 
         if self.viewing_stills:
@@ -1715,6 +1723,15 @@ class SpotFrame(XrayFrame):
                 n = self.params.stack_images - 1
                 if self.viewing_stills:
                     selected = ref_list
+                elif self.viewing_still_scans:
+                    identifiers = []
+                    for elist in self.experiments:
+                        for scan in elist.scans():
+                            if scan.get_array_range()[0] == i_frame:
+                                sel_expts = elist.where(scan=scan)
+                                for i in sel_expts:
+                                    identifiers.append(elist[i].identifier)
+                    selected = ref_list.select_on_experiment_identifiers(identifiers)
                 else:
                     bbox_sel = ~((i_frame >= z1) | ((i_frame + n) < z0))
                     selected = ref_list.select(bbox_sel)
@@ -1858,15 +1875,33 @@ class SpotFrame(XrayFrame):
                     scan = self.pyslip.tiles.raw_image.get_scan()
                     frame_numbers = scan.get_array_index_from_angle(math.degrees(phi))
                 n = self.params.stack_images
-                for i_expt in range(flex.max(ref_list["id"]) + 1):
+                for i_expt in set(ref_list["id"]):
                     expt_sel = ref_list["id"] == i_expt
                     frame_predictions_sel = (frame_numbers >= (i_frame)) & (
                         frame_numbers < (i_frame + n)
                     )
 
                     sel = expt_sel
-                    if not self.viewing_stills:
+                    if not (self.viewing_stills or self.viewing_still_scans):
                         sel = frame_predictions_sel & expt_sel
+                    elif self.viewing_still_scans:
+                        if i_expt not in ref_list.experiment_identifiers():
+                            sel = flex.bool(ref_list.size(), False)
+                            break
+                        identifier = ref_list.experiment_identifiers()[i_expt]
+                        for expt_list in self.experiments:
+                            if identifier in expt_list.identifiers():
+                                idx = (
+                                    expt_list.identifiers() == identifier
+                                ).iselection()[0]
+                                scan = expt_list[idx].scan.get_array_range()
+                                if scan[0] == i_frame:
+                                    # this scan corresponds to this frame: good!
+                                    if not expt_list[idx].crystal:
+                                        sel = flex.bool(ref_list.size(), False)
+                                else:
+                                    sel = flex.bool(ref_list.size(), False)
+                                break
                     selected = ref_list.select(sel)
                     for reflection in selected.rows():
                         if (
