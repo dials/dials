@@ -180,6 +180,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             space_group=expt.crystal.get_space_group(),
         )
         for expt in indexed_experiments
+        if expt.crystal
     ]
     if crystal_symmetries:
         cluster_plots, _ = report_on_crystal_clusters(
@@ -192,7 +193,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     logger.info(f"Saving indexed reflections to {params.output.reflections}")
     indexed_reflections.as_file(params.output.reflections)
 
-    if (params.output.html or params.output.json) and indexed_experiments:
+    if (params.output.html or params.output.json) and crystal_symmetries:
         summary_plots = generate_plots(summary_data)
         if cluster_plots:
             summary_plots.update(cluster_plots)

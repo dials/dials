@@ -385,6 +385,10 @@ class StillsIndexer(Indexer):
                     del refined_reflections["_reflection_id"]
                     del reflections_for_refinement["_reflection_id"]
                     unindexed_reflections.extend(reflections_for_refinement.select(sel))
+                    unindexed_reflections.unset_flags(
+                        flex.bool(unindexed_reflections.size(), True),
+                        unindexed_reflections.flags.predicted,
+                    )
 
             self._unit_cell_volume_sanity_check(experiments, refined_experiments)
 
