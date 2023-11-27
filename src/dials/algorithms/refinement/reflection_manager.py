@@ -613,7 +613,7 @@ class ReflectionManager:
                         approx_nref_1_turn = int(math.ceil(nrefs / turns))
                         sample_size = int(max(approx_nref_1_turn, 100.0 * width))
                 else:
-                    sample_size = int(self._nref_per_degree * width)
+                    sample_size = int(self._nref_per_degree * max(round(width), 1.0))
 
             # adjust sample size if below the chosen limit
             sample_size = max(sample_size, self._min_sample_size)
