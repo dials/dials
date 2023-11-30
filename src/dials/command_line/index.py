@@ -9,7 +9,7 @@ import logging
 import sys
 
 import iotbx.phil
-from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
@@ -111,6 +111,8 @@ def _index_experiments(
     known_crystal_models=None,
     log_text=None,
 ):
+    # general input of experiments:
+    # [no-xtal1, xtal1, xtal2, no-xtal2, xtal3,xtal4,..]
     if log_text:
         logger.info(log_text)
     idxr = indexer.Indexer.from_parameters(
@@ -167,13 +169,53 @@ def index(experiments, reflections, params):
     if params.indexing.image_range:
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
-    if len(experiments) == 1 or params.indexing.joint_indexing:
+    # if we only have one imageset, or joint_indexing
+    if len(experiments.imagesets()) == 1 or params.indexing.joint_indexing:
+        print("here")
+        # we want to retain an unindexed experiment per imageset.
+        unindexed = [i for i in experiments if not i.crystal]
+        # handle legacy cases where no unindexed experiments:
+        if not unindexed:  # i.e. all have crstals
+            unindexed = []
+            for iset in experiments.imagesets():
+                i_expt = experiments.where(imageset=iset)
+                expt_to_copy = experiments[i_expt[0]]
+                unindexed.append(
+                    Experiment(
+                        identifier=expt_to_copy.identifier,
+                        crystal=None,
+                        beam=expt_to_copy.beam,
+                        detector=expt_to_copy.detector,
+                        goniometer=expt_to_copy.goniometer,
+                        scan=expt_to_copy.scan,
+                        imageset=expt_to_copy.imageset,
+                        profile=expt_to_copy.profile,
+                        scaling_model=expt_to_copy.scaling_model,
+                    )
+                )
+            input_expts = experiments
+            known_crystal_models = [expt.crystal for expt in experiments]
+        else:
+            input_expts = ExperimentList([i for i in experiments if i.crystal])
+            known_crystal_models = [expt.crystal for expt in input_expts]
+
+        # reflections["id"] = copy.deepcopy(reflections["imageset_id"])
         indexed_experiments, indexed_reflections = _index_experiments(
-            experiments,
+            input_expts,
             reflections,
             copy.deepcopy(params),
             known_crystal_models=known_crystal_models,
         )
+        unindexed[0].beam = indexed_experiments[0].beam
+        unindexed[0].detector = indexed_experiments[0].detector
+        unindexed[0].goniometer = indexed_experiments[0].goniometer
+
+        print(id(unindexed[0].beam))
+        print(unindexed[0].identifier)
+        print(list(indexed_experiments.identifiers()))
+        print(id(indexed_experiments[0].beam))
+        # unindexed.extend(indexed_experiments)
+        # indexed_experiments = unindexed
     else:
         indexed_experiments = ExperimentList()
 
@@ -187,6 +229,10 @@ def index(experiments, reflections, params):
                 i_expts = experiments.where(imageset=imgset)
                 elist = ExperimentList([experiments[i] for i in i_expts])
                 known_crystal_models_this = None
+                """if any(elist.crystals()):
+                    known_crystal_models_this = e
+                else:"""
+
                 if known_crystal_models:
                     known_crystal_models_this = [
                         known_crystal_models[i] for i in i_expts
