@@ -752,7 +752,10 @@ class Indexer:
 
                 logger.info("\nRefined crystal models:")
                 self.show_experiments(
-                    self.refined_experiments, self.refined_reflections, d_min=self.d_min
+                    self.refined_experiments,
+                    self.refined_reflections,
+                    d_min=self.d_min,
+                    unindexed_reflections=self.unindexed_reflections,
                 )
 
                 if (
@@ -882,11 +885,18 @@ class Indexer:
             xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
             reflections["xyzcal.px"].set_selected(imgset_sel, xyzcal_px)
 
-    def show_experiments(self, experiments, reflections, d_min=None):
+    def show_experiments(
+        self, experiments, reflections, d_min=None, unindexed_reflections=None
+    ):
         if d_min is not None:
             reciprocal_lattice_points = reflections["rlp"]
             d_spacings = 1 / reciprocal_lattice_points.norms()
             reflections = reflections.select(d_spacings > d_min)
+            if unindexed_reflections:
+                reciprocal_lattice_points = unindexed_reflections["rlp"]
+                d_spacings = 1 / reciprocal_lattice_points.norms()
+                unindexed_reflections = unindexed_reflections.select(d_spacings > d_min)
+
         for i_expt, expt in enumerate(experiments):
             logger.info(
                 "model %i (%i reflections):",
@@ -902,6 +912,9 @@ class Indexer:
             imageset_indexed_flags = indexed_flags.select(imageset_id == i)
             indexed_count = imageset_indexed_flags.count(True)
             unindexed_count = imageset_indexed_flags.count(False)
+            if unindexed_reflections:
+                sel = unindexed_reflections["imageset_id"] == i
+                unindexed_count += sel.count(True)
             rows.append(
                 [
                     str(i),
