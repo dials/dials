@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from unittest import mock
-
 import pytest
 
 from cctbx import miller
-from dxtbx.model import Crystal
+from dxtbx.model import Beam, Crystal, Experiment, Scan
 from dxtbx.serialize import load
 
 from dials.algorithms.scaling.scaling_library import (
@@ -118,10 +116,9 @@ def test_reflections_to_batch_properties(
     reflections.set_flags(flex.bool(9, True), reflections.flags.integrated)
     reflections.set_flags(flex.bool(9, True), reflections.flags.scaled)
 
-    experiments = [mock.Mock()]
-    experiments[0].scan.get_image_range.return_value = [1, 10]
-    experiments[0].crystal = example_crystal
-    experiments[0].beam.get_wavelength.return_value = 1
+    scan = Scan(image_range=[1, 10], oscillation=[0.0, 1.0])
+    beam = Beam((0, 0, 1), 1.0)
+    experiments = [Experiment(scan=scan, crystal=example_crystal, beam=beam)]
 
     (
         bins,
@@ -145,13 +142,10 @@ def test_reflections_to_batch_properties(
     reflections_2 = copy.deepcopy(reflections)
     reflections_2["id"] = flex.int(9, 2)
     reflections.extend(reflections_2)
-    experiments = [mock.Mock(), mock.Mock()]
-    experiments[0].scan.get_image_range.return_value = [1, 10]
-    experiments[0].crystal = example_crystal
-    experiments[0].beam.get_wavelength.return_value = 1
-    experiments[1].scan.get_image_range.return_value = [1, 10]
-    experiments[1].crystal = example_crystal
-    experiments[1].beam.get_wavelength.return_value = 1
+    experiments = [
+        Experiment(scan=scan, crystal=example_crystal, beam=beam),
+        Experiment(scan=scan, crystal=example_crystal, beam=beam),
+    ]
 
     (
         bins,

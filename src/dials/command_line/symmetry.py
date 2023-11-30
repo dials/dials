@@ -163,7 +163,7 @@ def change_of_basis_ops_to_minimum_cell(
 
     Returns: The experiments and reflections mapped to the minimum cell
     """
-
+    logger.info("Mapping all input cells to a common minimum cell")
     median_cell = median_unit_cell(experiments)
     unit_cells_are_similar = unit_cells_are_similar_to(
         experiments, median_cell, relative_length_tolerance, absolute_angle_tolerance
@@ -184,6 +184,19 @@ def change_of_basis_ops_to_minimum_cell(
         cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
         cb_ops = [cb_op_best_to_min * group["cb_op_inp_best"]] * len(experiments)
     else:
+        if len(set(centring_symbols)) > 1:
+            logger.info(
+                f"Multiple lattice centerings in input cells: {', '.join(list(set(centring_symbols)))}.\n"
+                + "Attempting to map to a common minimum cell through the most common lattice group."
+            )
+        else:
+            median_params = ", ".join(f"{i:.2f}" for i in median_cell.parameters())
+            logger.info(
+                f"Some input cells are not sufficiently similar to the median cell:\n  {median_params}\n"
+                + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
+                + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}.\n"
+                + "Attempting to map to a common minimum cell through the most common lattice group."
+            )
         groups = [
             metric_subgroups(
                 expt.crystal.get_crystal_symmetry(),
@@ -198,6 +211,7 @@ def change_of_basis_ops_to_minimum_cell(
         )
         target_group = counter.most_common()[0][0]
         cb_ops = []
+        best_cell = None
         for expt in experiments:
             groups = metric_subgroups(
                 expt.crystal.get_crystal_symmetry(),
@@ -211,6 +225,28 @@ def change_of_basis_ops_to_minimum_cell(
                     group = g
             if group:
                 cb_ops.append(group["cb_op_inp_best"])
+                if not best_cell:
+                    best_cell = group["best_subsym"].unit_cell()
+                else:
+                    this_best_cell = group["best_subsym"].unit_cell()
+                    if not best_cell.is_similar_to(
+                        this_best_cell,
+                        relative_length_tolerance,
+                        absolute_angle_tolerance,
+                    ):
+                        best_params = ", ".join(
+                            f"{i:.2f}" for i in best_cell.parameters()
+                        )
+                        this_params = ", ".join(
+                            f"{i:.2f}" for i in this_best_cell.parameters()
+                        )
+                        raise ValueError(
+                            "Exiting symmetry analysis: Unable to map input cells to a minimum cell through\n"
+                            + f"a consistent best cell in space group {target_group.info()}.\n"
+                            + f"Incompatible best cells:\n  {best_params},\n  {this_params},\n"
+                            + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
+                            + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}"
+                        )
             else:
                 cb_ops.append(None)
                 logger.info(
@@ -329,6 +365,14 @@ def symmetry(experiments, reflection_tables, params=None):
             params.relative_length_tolerance,
             params.absolute_angle_tolerance,
         )
+        if None in cb_ops:
+            indices = [str(i + 1) for i, v in enumerate(cb_ops) if v is None]
+            raise ValueError(
+                "Exiting symmetry analysis: Unable to match all cells to target symmetry.\n"
+                + "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
+                + "if the cells are similar enough.\n"
+                + f"Alternatively, remove dataset number{'s' if len(indices) > 1 else ''} {', '.join(indices)} from the input"
+            )
         reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
         experiments, reflection_tables = apply_change_of_basis_ops(
             experiments, reflection_tables, cb_ops
