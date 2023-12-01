@@ -11,6 +11,7 @@ import logging
 
 from orderedset import OrderedSet
 
+from dxtbx.model import ExperimentList
 from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
@@ -39,6 +40,84 @@ phil_scope = iotbx.phil.parse(
   }
 """
 )
+
+
+class Expeditor(object):
+    def __init__(self, experiments, reflection_table):
+        self.experiments = experiments
+        self.reflection_table = reflection_table
+        self.crystal_locs = [
+            i for i, expt in enumerate(self.experiments) if expt.crystal
+        ]
+        self.input_has_crystalless_expts = bool(
+            len(self.crystal_locs) != len(self.experiments)
+        )
+        self.crystalless_reflection_tables = []
+
+    def filter_experiments_with_crystals(self):
+        if not self.input_has_crystalless_expts:
+            return self.experiments, self.reflection_table
+
+        expts_with_crystals = ExperimentList(
+            [expt for expt in self.experiments if expt.crystal]
+        )
+        reflection_table = self.reflection_table.select_on_experiment_identifiers(
+            expts_with_crystals.identifiers()
+        )
+        reflection_table.reset_ids()
+
+        # record some quantities to help later when recombining
+        self.crystalless_reflection_tables = [
+            self.reflection_table.select_on_experiment_identifiers([expt.identifier])
+            if not expt.crystal
+            else None
+            for expt in self.experiments
+        ]
+        return expts_with_crystals, reflection_table
+
+    def combine_experiments_for_output(self, experiments, reflection_table):
+        if not self.input_has_crystalless_expts:
+            return experiments, reflection_table
+
+        if -1 in set(reflection_table["id"]):
+            # need to match it up to the right imageset
+            reflection_table = reflection_table.select(reflection_table["id"] >= 0)
+
+        # if we have a model for a gonio, detector or beam which belongs to a scan, update
+        # all experiments that share that scan
+        tables = reflection_table.split_by_experiment_id()
+        for i, expt, table in zip(self.crystal_locs, experiments, tables):
+            other_expts_sharing_scan = self.experiments.where(scan=expt.scan)
+            for j in other_expts_sharing_scan:
+                self.experiments[j].beam = expt.beam
+                self.experiments[j].detector = expt.detector
+                self.experiments[j].goniometer = expt.goniometer
+            self.experiments[i] = expt
+            self.crystalless_reflection_tables[i] = table
+        reflections = flex.reflection_table.concat(self.crystalless_reflection_tables)
+        reflections.assert_experiment_identifiers_are_consistent(self.experiments)
+        return self.experiments, reflections
+
+    def generate_experiments_with_updated_crystal(self, experiments, crystal_id):
+        # special function to handle the awkward case of dials.rbs
+        crystals = [
+            expt.crystal for expt in self.experiments if expt.crystal is not None
+        ]
+        crystal = crystals[crystal_id]
+        expts_ids = self.experiments.where(crystal=crystal)
+        # make a copy
+        elist = copy.copy(self.experiments)
+
+        for id_, new_expt in zip(expts_ids, experiments):
+            elist[id_].crystal = new_expt.crystal
+            # also copy across beam, detector and gonio for anything sharing those models
+            scan = elist[id_].scan
+            j_expt = elist.where(scan=scan)
+            for j in j_expt:
+                elist[j].beam = new_expt.beam
+                elist[j].goniometer = new_expt.goniometer
+                elist[j].detector = new_expt.detector
+        return elist
 
 
 def generate_experiment_identifiers(experiments, identifier_type="uuid"):

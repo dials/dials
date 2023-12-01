@@ -747,6 +747,10 @@ def run(args=None, phil=working_phil):
     if reference and "shoebox" not in reference:
         sys.exit("Error: shoebox data missing from reflection table")
 
+    from dials.util.multi_dataset_handling import Expeditor
+
+    expeditor = Expeditor(experiments, reference)
+    experiments, reference = expeditor.filter_experiments_with_crystals()
     try:
         experiments, reflections, report = run_integration(
             params, experiments, reference
@@ -760,6 +764,9 @@ def run(args=None, phil=working_phil):
 
         logger.info(
             "Saving %d reflections to %s", reflections.size(), params.output.reflections
+        )
+        experiments, reflections = expeditor.combine_experiments_for_output(
+            experiments, reflections
         )
         reflections.as_file(params.output.reflections)
         logger.info("Saving the experiments to %s", params.output.experiments)

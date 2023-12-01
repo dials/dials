@@ -35,6 +35,7 @@ from dials.algorithms.refinement import (
 )
 from dials.algorithms.refinement.corrgram import create_correlation_plots
 from dials.array_family import flex
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -608,12 +609,18 @@ def run(args=None, phil=working_phil):
         logger.info(diff_phil)
 
     # Run refinement
+    expeditor = Expeditor(experiments, reflections)
+    experiments, reflections = expeditor.filter_experiments_with_crystals()
     try:
         experiments, reflections, refiner, history = run_dials_refine(
             experiments, reflections, params
         )
     except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
         sys.exit(str(e))
+    else:
+        experiments, reflections = expeditor.combine_experiments_for_output(
+            experiments, reflections
+        )
 
     # For the usual case of refinement of one crystal, print that model for information
     crystals = experiments.crystals()
