@@ -180,7 +180,9 @@ class StillsIndexer(Indexer):
                 isel = (lengths >= self.d_min).iselection()
                 sel.set_selected(isel, True)
                 sel.set_selected(self.reflections["id"] > -1, False)
-            self.unindexed_reflections = self.reflections.select(sel)
+            # N.B. we don't set self.unindexed_reflections here, as we don't want to overwrite yet
+            # if the refinement below fails
+            unindexed_reflections = self.reflections.select(sel)
 
             reflections_for_refinement = self.reflections.select(
                 self.indexed_reflections
@@ -353,6 +355,9 @@ class StillsIndexer(Indexer):
                 )
 
             else:
+                reflections_for_refinement["_reflection_id"] = flex.size_t(
+                    range(reflections_for_refinement.size())
+                )
                 try:
                     refined_experiments, refined_reflections = self.refine(
                         experiments, reflections_for_refinement
@@ -369,13 +374,40 @@ class StillsIndexer(Indexer):
                     )
                     for model_id in sorted(models_to_remove, reverse=True):
                         del experiments[model_id]
+                    # no need to update self.unindexed_reflections, self.refined_reflections,
+                    # as they hold the state from the previous refinement with one fewer lattice.
                     break
+                else:
+                    # extend the unindexed reflections table with any data that was
+                    # rejected during refinement.
+                    sel = flex.bool(reflections_for_refinement.size(), True)
+                    sel.set_selected(refined_reflections["_reflection_id"], False)
+                    del refined_reflections["_reflection_id"]
+                    del reflections_for_refinement["_reflection_id"]
+                    unindexed_reflections.extend(reflections_for_refinement.select(sel))
 
             self._unit_cell_volume_sanity_check(experiments, refined_experiments)
 
-            self.refined_reflections = refined_reflections.select(
-                refined_reflections["id"] > -1
+            # Processing was successful, so set/update self.refined_reflections, self.unindexed_reflections
+            if -1 in set(refined_reflections["id"]):  # is this ever the case?
+                sel = refined_reflections["id"] < 0
+                refined_reflections.unset_flags(
+                    sel,
+                    refined_reflections.flags.indexed,
+                )
+                refined_reflections["miller_index"].set_selected(sel, (0, 0, 0))
+                unindexed_reflections.extend(refined_reflections.select(sel))
+                refined_reflections.del_selected(sel)
+            self.refined_reflections = refined_reflections
+            unindexed_reflections.unset_flags(
+                flex.bool(unindexed_reflections.size(), True),
+                unindexed_reflections.flags.indexed,
             )
+            unindexed_reflections["id"] = flex.int(unindexed_reflections.size(), -1)
+            unindexed_reflections["miller_index"] = flex.miller_index(
+                unindexed_reflections.size(), (0, 0, 0)
+            )
+            self.unindexed_reflections = unindexed_reflections
 
             for i, expt in enumerate(self.experiments):
                 ref_sel = self.refined_reflections.select(
@@ -433,7 +465,7 @@ class StillsIndexer(Indexer):
         for i, crystal_model in enumerate(self.refined_experiments.crystals()):
             n_indexed = 0
             for _ in experiments.where(crystal=crystal_model):
-                n_indexed += (self.reflections["id"] == i).count(True)
+                n_indexed += (self.refined_reflections["id"] == i).count(True)
             logger.info("model %i (%i reflections):", i + 1, n_indexed)
             logger.info(crystal_model)
 
