@@ -237,19 +237,22 @@ def _index_joint_indexing(experiments, reflections, params):
     # now want to split up so that the output is in imageset order
     indexed_experiments = ExperimentList([])
     indexed_reflections = flex.reflection_table()
+    n_id = 0
     for i, iset in enumerate(original_imagesets):
         # first sort out the unindexed
         identifier = unindexed[i].identifier
         sel = idxr.unindexed_reflections["original_id"] == i
         unindexed_refl = idxr.unindexed_reflections.select(sel)
-        unindexed_refl["id"] = flex.int(unindexed_refl.size(), i)
+        unindexed_refl["id"] = flex.int(unindexed_refl.size(), n_id)
         del unindexed_refl["original_id"]
-        unindexed_refl.experiment_identifiers()[i] == identifier
+        unindexed_refl.experiment_identifiers()[n_id] == identifier
+        n_id += 1
         indexed_reflections.extend(unindexed_refl)
         # now get the indexed
         i_expts = idxr.refined_experiments.where(imageset=iset)
         identifiers = [idxr.refined_experiments[i].identifier for i in i_expts]
         refls = idxr.refined_reflections.select_on_experiment_identifiers(identifiers)
+        # now reset the ids in the refls
 
     pass
     # FIXME

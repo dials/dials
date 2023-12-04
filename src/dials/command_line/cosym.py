@@ -23,7 +23,6 @@ from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
-    parse_multiple_datasets,
     select_datasets_on_identifiers,
     update_imageset_ids,
 )
@@ -390,8 +389,13 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    from dials.util.multi_dataset_handling import Expeditor
 
-    reflections = parse_multiple_datasets(reflections)
+    expeditor = Expeditor(experiments, reflections)
+    experiments, reflections = expeditor.filter_experiments_with_crystals()
+    reflections = reflections.split_by_experiment_id()
+
+    # reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         raise Sorry(
             "Mismatched number of experiments and reflection tables found: %s & %s."
@@ -412,7 +416,14 @@ def run(args=None):
     if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
     cosym_instance.run()
-    cosym_instance.export()
+    experiments, reflections = expeditor.combine_experiments_for_output(
+        cosym_instance._experiments, cosym_instance._reflections
+    )
+    logger.info("Saving reindexed experiments to %s", params.output.experiments)
+    experiments.as_file(params.output.experiments)
+    logger.info("Saving reindexed reflections to %s", params.output.reflections)
+    reflections.as_file(params.output.reflections)
+    # cosym_instance.export()
 
 
 if __name__ == "__main__":

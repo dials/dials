@@ -43,9 +43,26 @@ phil_scope = iotbx.phil.parse(
 
 
 class Expeditor(object):
-    def __init__(self, experiments, reflection_table):
+    def __init__(self, experiments, reflection_tables=None):
+
+        # dict of file : elist, refls
+
+        # FIXME - allow passing in multiple tables and experiment list
+        # FIXME allow not having reflection tables
+
+        # FIXME how to handle old datasets with -1 in id column? e.g. for anvil_correction
         self.experiments = experiments
-        self.reflection_table = reflection_table
+        self.reflection_table = None
+        self.reflections_with_id_minus_1 = flex.reflection_table()
+        if reflection_tables:
+            if len(reflection_tables) > 1:
+                self.reflection_table = flex.reflection_table.concat(reflection_tables)
+            else:
+                self.reflection_table = reflection_tables[0]
+            if -1 in set(self.reflection_table["id"]):
+                sel = self.reflection_table["id"] == -1
+                self.reflections_with_id_minus_1 = self.reflection_table.select(sel)
+                self.reflection_table.del_selected(sel)
         self.crystal_locs = [
             i for i, expt in enumerate(self.experiments) if expt.crystal
         ]
@@ -54,6 +71,9 @@ class Expeditor(object):
         )
         self.crystalless_reflection_tables = []
 
+    def get_unindexed(self):
+        return self.reflections_with_id_minus_1
+
     def filter_experiments_with_crystals(self):
         if not self.input_has_crystalless_expts:
             return self.experiments, self.reflection_table
@@ -61,31 +81,51 @@ class Expeditor(object):
         expts_with_crystals = ExperimentList(
             [expt for expt in self.experiments if expt.crystal]
         )
-        reflection_table = self.reflection_table.select_on_experiment_identifiers(
-            expts_with_crystals.identifiers()
-        )
-        reflection_table.reset_ids()
+        reflection_table = None
+        if self.reflection_table:
+            reflection_table = self.reflection_table.select_on_experiment_identifiers(
+                expts_with_crystals.identifiers()
+            )
+            reflection_table.reset_ids()
 
-        # record some quantities to help later when recombining
-        self.crystalless_reflection_tables = [
-            self.reflection_table.select_on_experiment_identifiers([expt.identifier])
-            if not expt.crystal
-            else None
-            for expt in self.experiments
-        ]
+            # record some quantities to help later when recombining
+            self.crystalless_reflection_tables = [
+                self.reflection_table.select_on_experiment_identifiers(
+                    [expt.identifier]
+                )
+                if not expt.crystal
+                else None
+                for expt in self.experiments
+            ]
         return expts_with_crystals, reflection_table
 
-    def combine_experiments_for_output(self, experiments, reflection_table):
+    def combine_experiments_for_output(self, experiments, reflection_tables=None):
+        assert len(experiments) == len(
+            reflection_tables
+        ), f"{len(experiments)} != {len(reflection_tables)}"
+        imagesets = self.experiments.imagesets()
         if not self.input_has_crystalless_expts:
-            return experiments, reflection_table
+            if reflection_tables:
+                for expt, table in zip(experiments, reflection_tables):
+                    if "imageset_id" in table:
+                        table["imageset_id"] = flex.int(
+                            table.size(), imagesets.index(expt.imageset)
+                        )
+                return experiments, flex.reflection_table.concat(reflection_tables)
+            return experiments, None
 
-        if -1 in set(reflection_table["id"]):
-            # need to match it up to the right imageset
-            reflection_table = reflection_table.select(reflection_table["id"] >= 0)
+        # if -1 in set(reflection_table["id"]):
+        #    # need to match it up to the right imageset
+        #    reflection_table = reflection_table.select(reflection_table["id"] >= 0)
 
         # if we have a model for a gonio, detector or beam which belongs to a scan, update
         # all experiments that share that scan
+        if len(reflection_tables) > 1:
+            reflection_table = flex.reflection_table.concat(reflection_tables)
+        else:
+            reflection_table = reflection_tables[0]
         tables = reflection_table.split_by_experiment_id()
+
         for i, expt, table in zip(self.crystal_locs, experiments, tables):
             other_expts_sharing_scan = self.experiments.where(scan=expt.scan)
             for j in other_expts_sharing_scan:
@@ -94,6 +134,14 @@ class Expeditor(object):
                 self.experiments[j].goniometer = expt.goniometer
             self.experiments[i] = expt
             self.crystalless_reflection_tables[i] = table
+
+        for expt, table in zip(self.experiments, self.crystalless_reflection_tables):
+            if "imageset_id" in table:
+                table["imageset_id"] = flex.int(
+                    table.size(), imagesets.index(expt.imageset)
+                )
+
+        # self._reflections = update_imageset_ids(self._experiments, self._reflections)
         reflections = flex.reflection_table.concat(self.crystalless_reflection_tables)
         reflections.assert_experiment_identifiers_are_consistent(self.experiments)
         return self.experiments, reflections
