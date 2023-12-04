@@ -742,15 +742,16 @@ def run(args=None, phil=working_phil):
     elif len(reference) != 1:
         sys.exit("More than 1 reflection file was given")
     else:
-        reference = reference[0]
+        reference = reference  # [0]
 
-    if reference and "shoebox" not in reference:
+    if reference and "shoebox" not in reference[0]:
         sys.exit("Error: shoebox data missing from reflection table")
 
     from dials.util.multi_dataset_handling import Expeditor
 
     expeditor = Expeditor(experiments, reference)
     experiments, reference = expeditor.filter_experiments_with_crystals()
+    reference = flex.reflection_table.concat(reference)
     try:
         experiments, reflections, report = run_integration(
             params, experiments, reference
@@ -766,7 +767,7 @@ def run(args=None, phil=working_phil):
             "Saving %d reflections to %s", reflections.size(), params.output.reflections
         )
         experiments, reflections = expeditor.combine_experiments_for_output(
-            experiments, reflections
+            experiments, [reflections]
         )
         reflections.as_file(params.output.reflections)
         logger.info("Saving the experiments to %s", params.output.experiments)

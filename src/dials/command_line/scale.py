@@ -227,6 +227,10 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    from dials.util.multi_dataset_handling import Expeditor
+
+    expeditor = Expeditor(experiments, reflections)
+    experiments, reflections = expeditor.filter_experiments_with_crystals()
 
     log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())
@@ -242,20 +246,23 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     else:
         # Note, cross validation mode does not produce scaled datafiles
         if scaled_experiments and joint_table:
+            experiments, reflections = expeditor.combine_experiments_for_output(
+                scaled_experiments, [joint_table]
+            )
             logger.info(
                 "Saving the scaled experiments to %s", params.output.experiments
             )
-            scaled_experiments.as_file(params.output.experiments)
+            experiments.as_file(params.output.experiments)
             logger.info(
                 "Saving the scaled reflections to %s", params.output.reflections
             )
-            joint_table.as_file(params.output.reflections)
+            reflections.as_file(params.output.reflections)
 
             if params.output.unmerged_mtz:
-                _export_unmerged_mtz(params, scaled_experiments, joint_table)
+                _export_unmerged_mtz(params, experiments, reflections)
 
             if params.output.merged_mtz:
-                _export_merged_mtz(params, scaled_experiments, joint_table)
+                _export_merged_mtz(params, experiments, reflections)
 
     logger.info(
         "See dials.github.io/dials_scale_user_guide.html for more info on scaling options"

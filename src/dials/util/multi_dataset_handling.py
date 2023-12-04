@@ -53,6 +53,7 @@ class Expeditor(object):
         # FIXME how to handle old datasets with -1 in id column? e.g. for anvil_correction
         self.experiments = experiments
         self.reflection_table = None
+
         self.reflections_with_id_minus_1 = flex.reflection_table()
         if reflection_tables:
             if len(reflection_tables) > 1:
@@ -76,7 +77,10 @@ class Expeditor(object):
 
     def filter_experiments_with_crystals(self):
         if not self.input_has_crystalless_expts:
-            return self.experiments, self.reflection_table
+            tables = parse_multiple_datasets([self.reflection_table])
+            if not self.experiments.identifiers():
+                assign_unique_identifiers(tables, self.experiments)
+            return self.experiments, tables
 
         expts_with_crystals = ExperimentList(
             [expt for expt in self.experiments if expt.crystal]
@@ -97,12 +101,21 @@ class Expeditor(object):
                 else None
                 for expt in self.experiments
             ]
-        return expts_with_crystals, reflection_table
+        return expts_with_crystals, reflection_table.split_by_experiment_id()
 
     def combine_experiments_for_output(self, experiments, reflection_tables=None):
-        assert len(experiments) == len(
-            reflection_tables
-        ), f"{len(experiments)} != {len(reflection_tables)}"
+        # When reflection tables exist, handle two types of input.
+        # Either the program returns a list of reflections tables, one for each experiment,
+        # or a combined table for all experiments.
+        if reflection_tables:
+            if len(experiments) != len(reflection_tables):
+                if len(reflection_tables) == 1:
+                    reflection_tables = reflection_tables[0].split_by_experiment_id()
+                    assert len(reflection_tables) == len(
+                        experiments
+                    ), f"{len(reflection_tables)} != {len(experiments)}"
+                else:
+                    raise ValueError("Mismatch")
         imagesets = self.experiments.imagesets()
         if not self.input_has_crystalless_expts:
             if reflection_tables:
@@ -120,13 +133,13 @@ class Expeditor(object):
 
         # if we have a model for a gonio, detector or beam which belongs to a scan, update
         # all experiments that share that scan
-        if len(reflection_tables) > 1:
-            reflection_table = flex.reflection_table.concat(reflection_tables)
-        else:
-            reflection_table = reflection_tables[0]
-        tables = reflection_table.split_by_experiment_id()
+        # if len(reflection_tables) > 1:
+        #    reflection_table = flex.reflection_table.concat(reflection_tables)
+        # else:
+        #    reflection_table = reflection_tables[0]
+        # tables = reflection_table.split_by_experiment_id()
 
-        for i, expt, table in zip(self.crystal_locs, experiments, tables):
+        for i, expt, table in zip(self.crystal_locs, experiments, reflection_tables):
             other_expts_sharing_scan = self.experiments.where(scan=expt.scan)
             for j in other_expts_sharing_scan:
                 self.experiments[j].beam = expt.beam

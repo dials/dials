@@ -609,8 +609,9 @@ def run(args=None, phil=working_phil):
         logger.info(diff_phil)
 
     # Run refinement
-    expeditor = Expeditor(experiments, reflections)
+    expeditor = Expeditor(experiments, [reflections])
     experiments, reflections = expeditor.filter_experiments_with_crystals()
+    reflections = flex.reflection_table.concat(reflections)
     try:
         experiments, reflections, refiner, history = run_dials_refine(
             experiments, reflections, params
@@ -619,7 +620,7 @@ def run(args=None, phil=working_phil):
         sys.exit(str(e))
     else:
         experiments, reflections = expeditor.combine_experiments_for_output(
-            experiments, reflections
+            experiments, [reflections]
         )
 
     # For the usual case of refinement of one crystal, print that model for information

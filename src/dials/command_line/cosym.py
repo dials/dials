@@ -393,7 +393,6 @@ def run(args=None):
 
     expeditor = Expeditor(experiments, reflections)
     experiments, reflections = expeditor.filter_experiments_with_crystals()
-    reflections = reflections.split_by_experiment_id()
 
     # reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
