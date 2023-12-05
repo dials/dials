@@ -77,6 +77,8 @@ class Expeditor(object):
 
     def filter_experiments_with_crystals(self):
         if not self.input_has_crystalless_expts:
+            if not self.reflection_table:
+                return self.experiments, None
             tables = parse_multiple_datasets([self.reflection_table])
             if not self.experiments.identifiers():
                 assign_unique_identifiers(tables, self.experiments)
