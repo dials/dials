@@ -425,7 +425,7 @@ def make_merging_statistics_summary(dataset_statistics):
     max_lengths = [max(len(s) for s in col) for col in vals]
     hasasterisk = [any("*" in v for v in col) for col in vals]
     header = ""
-    min_separator = 2  # min whitespace between values in a colum
+    min_separator = 2  # min whitespace between values in a column
 
     # First format the header, adjusting max length if necessary.
     for i, (name, ml, hasaster) in enumerate(zip(names, max_lengths, hasasterisk)):

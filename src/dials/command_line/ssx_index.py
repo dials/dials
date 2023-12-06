@@ -167,7 +167,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         sys.exit(f"Error: {e}")
 
     summary_table = make_summary_table(summary_data)
-    logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
+    logger.info("\nSummary of images successfully indexed\n" + summary_table)
 
     n_images = reduce(
         lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0

@@ -177,7 +177,7 @@ namespace dials { namespace af { namespace boost_python {
     /**
      * Update the table with column data from another table. New columns are added
      * to the table and existing columns are over-written by columns from the
-     * other table. Before updating, missing experiment identifers from other are
+     * other table. Before updating, missing experiment identifiers from other are
      * added to self.
      * @param self The current table
      * @param other The other table

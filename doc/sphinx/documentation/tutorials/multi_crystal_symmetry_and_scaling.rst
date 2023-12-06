@@ -220,7 +220,7 @@ one would probably proceed with the first three datasets::
 We could have also excluded a subset of images, for example using the option
 :samp:`exclude_images=3:301:600` to exclude the last 300 images of dataset 3.
 This option could be used to exclude the end of a dataset that was showing
-sigificant radiation damage, or if the crystal had moved out of the beam part-way
+significant radiation damage, or if the crystal had moved out of the beam part-way
 through the measurement.
 
 It is also worth checking the assigned space group using :samp:`dials.symmetry`.

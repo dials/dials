@@ -314,7 +314,7 @@ namespace dials { namespace algorithms {
         grid[coords_[i]] = i + 1;
       }
 
-      // For each point check the pixels to the left in all three dimensins
+      // For each point check the pixels to the left in all three dimensions
       // and if they are in the list of pixels then add the edges.
       for (std::size_t i = 0; i < coords_.size(); ++i) {
         int j;
