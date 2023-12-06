@@ -618,7 +618,17 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    from dials.array_family import flex
+    from dials.util.multi_dataset_handling import Expeditor
 
+    if any(experiments.crystals()):
+        experiments, reflections = Expeditor(
+            experiments, reflections
+        ).filter_experiments_with_crystals()
+        if reflections:
+            reflections = [flex.reflection_table.concat(reflections)]
+        else:
+            reflections = flex.reflection_table([])
     try:
         template_list = {
             str(e.imageset.get_template())

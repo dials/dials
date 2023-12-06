@@ -72,6 +72,11 @@ class Script:
         if len(reflections) == 0 and len(experiments) == 0:
             self.parser.print_help()
             return
+        from dials.util.multi_dataset_handling import Expeditor
+
+        expeditor = Expeditor(experiments, reflections)
+        experiments, reflections = expeditor.filter_experiments_with_crystals()
+
         if len(reflections) != 1:
             raise Sorry("exactly 1 reflection table must be specified")
         if len(experiments) == 0:
@@ -136,6 +141,9 @@ class Script:
 
         # Write the parameters
         Command.start(f"Writing experiments to {params.output}")
+        experiments, reflections = expeditor.combine_experiments_for_output(
+            experiments, reflections
+        )
         experiments.as_file(params.output)
         Command.end(f"Wrote experiments to {params.output}")
 

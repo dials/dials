@@ -55,6 +55,9 @@ def run(args=None):
     if len(experiments) <= 1:
         parser.print_help()
         return
+    from dials.util.multi_dataset_handling import Expeditor
+
+    experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
 
     hkl = flex.miller_index(params.hkl)
 

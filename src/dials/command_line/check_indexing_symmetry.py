@@ -317,6 +317,12 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    from dials.util.multi_dataset_handling import Expeditor
+
+    experiments, reflections = Expeditor(
+        experiments, reflections
+    ).filter_experiments_with_crystals()
+
     if len(reflections) == 0 or len(experiments) == 0:
         parser.print_help()
         return

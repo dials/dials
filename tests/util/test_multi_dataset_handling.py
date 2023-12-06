@@ -78,6 +78,7 @@ def test_expeditor(dials_data, run_in_tmp_path):
     from dials.util.phil import FilenameDataWrapper
 
     loc = dials_data("semisynthetic_multilattice", pathlib=True)
+    # use the exact same process as when loading through optionparser.
     reflections = [
         FilenameDataWrapper(
             filename="a",

@@ -67,7 +67,9 @@ class Script:
         if len(experiments) != 1:
             self.parser.print_help()
             return
+        from dials.util.multi_dataset_handling import Expeditor
 
+        experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
         expt = experiments[0]
 
         axes = expt.goniometer.get_axes()

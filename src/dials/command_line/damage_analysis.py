@@ -43,8 +43,8 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader
 from cctbx import crystal, miller
 from iotbx import mtz
 from libtbx import phil
-from scitbx.array_family import flex
 
+from dials.array_family import flex
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
 from dials.pychef.damage_series import (
@@ -356,10 +356,17 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
                 raise ValueError("A single input reflections datafile is required")
             if "inverse_scale_factor" not in reflections[0]:
                 raise KeyError("Input data must be scaled.")
+            from dials.util.multi_dataset_handling import Expeditor
+
+            experiments, reflections = Expeditor(
+                experiments, reflections
+            ).filter_experiments_with_crystals()
+            reflections = flex.reflection_table.concat(reflections)
+
             script = PychefRunner.from_dials_data_files(
                 params,
                 experiments,
-                reflections[0],
+                reflections,
             )
 
         elif unhandled and os.path.isfile(unhandled[0]):
@@ -381,7 +388,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         script.run()
         if params.damage_series.dose_group_size:
             if experiments and reflections:
-                script.create_damage_series(params, experiments, reflections[0])
+                script.create_damage_series(params, experiments, reflections)
             else:
                 script.create_damage_series_mtz()
         script.make_html_report(params.output.html, params.output.json)

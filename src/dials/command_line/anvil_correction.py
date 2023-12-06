@@ -328,9 +328,8 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     # Get a single reflection table per experiment object.
     reflections_list = parse_multiple_datasets(reflections_list)
     expeditor = Expeditor(experiments, reflections_list)
-    experiments, reflections = expeditor.filter_experiments_with_crystals()
+    experiments, reflections_list = expeditor.filter_experiments_with_crystals()
     unindexed = expeditor.get_unindexed()
-    reflections_list = reflections.split_by_experiment_id()
 
     # Record the density of diamond in g·cm⁻³ (for consistency with NIST tables,
     # https://doi.org/10.18434/T4D01F).

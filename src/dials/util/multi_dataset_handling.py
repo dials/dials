@@ -83,6 +83,12 @@ class Expeditor(object):
             if not self.experiments.identifiers():
                 assign_unique_identifiers(tables, self.experiments)
             return self.experiments, tables
+        if not self.experiments.identifiers():
+            for i, expt in enumerate(self.experiments):
+                strid = ersatz_uuid4()
+                expt.identifier = strid
+                if self.reflection_table:
+                    self.reflection_table.experiment_identifiers()[i] = strid
 
         expts_with_crystals = ExperimentList(
             [expt for expt in self.experiments if expt.crystal]
