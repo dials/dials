@@ -1,0 +1,1 @@
+``dials.index``: Ensure the unindexed_reflections table in the indexer classes is updated during refinement.
