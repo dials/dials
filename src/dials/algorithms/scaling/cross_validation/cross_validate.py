@@ -54,7 +54,7 @@ phil_scope = phil.parse(
       .type = choice
       .help = "Choose the cross validation running mode, for a full description"
               "see the module docstring. Choice is used for testing a parameter"
-              "that can only have discreet values (a choice or bool phil parameter)."
+              "that can only have discrete values (a choice or bool phil parameter)."
               "Variable is used for testing a parameter that can have a float or"
               "int value (that is also not a 'choice' type). Single just performs"
               "cross validation on one parameter configuration."

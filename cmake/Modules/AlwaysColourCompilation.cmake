@@ -1,7 +1,7 @@
 # Add compiler flags to always output coloured diagnostics
 #
 # This is an issue with Ninja where it captures the output to avoid
-# intermixing output like the makefile generator. Unfortuantely,
+# intermixing output like the makefile generator. Unfortunately,
 # the compiler detects it's being captured and doesn't output the
 # coloured diagnostics.
 #

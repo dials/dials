@@ -104,7 +104,7 @@ systematic_absences {
 
   significance_level = *0.95 0.975 0.99
     .type = choice
-    .help = "Signficance to use when testing whether axial reflections are "
+    .help = "Significance to use when testing whether axial reflections are "
             "different to zero (absences and reflections in reflecting condition)."
 
 }

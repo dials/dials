@@ -277,7 +277,7 @@ def _dials_phil_str():
       transformation = 6
         .type = int(value_min=0, value_max=6)
         .multiple = False
-        .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distince coset results. \
+        .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distance coset results. \
                 0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
                 See Sauter and Zwart, Acta D (2009) 65:553
     }

@@ -90,7 +90,7 @@ def test_index_after_search(dials_data, run_in_tmp_path):
     """Integrate the beam centre search with the rest of the toolchain
 
     Do the following:
-    1. Take a known good experiment and perturbate the beam centre
+    1. Take a known good experiment and perturb the beam centre
     2. Run dials.search_beam_centre on the perturbated beam centre and original
     reflection table, check for expected output;
     3. Run dials.index with the found beam centre and check that the expected
@@ -99,7 +99,7 @@ def test_index_after_search(dials_data, run_in_tmp_path):
 
     insulin = dials_data("insulin_processed", pathlib=True)
 
-    # load the original experiment and perturbate the beam centre by a small offset
+    # load the original experiment and perturb the beam centre by a small offset
     experiments = load.experiment_list(insulin / "imported.expt", check_format=False)
     original_origin = experiments[0].detector.hierarchy().get_origin()
     shifted_origin = (
