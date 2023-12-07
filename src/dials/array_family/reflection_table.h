@@ -92,7 +92,7 @@ namespace dials { namespace af {
     ReferenceSpot = (1 << 6),
     DontIntegrate = (1 << 7),
 
-    // Integated
+    // Integrated
     IntegratedSum = (1 << 8),
     IntegratedPrf = (1 << 9),
     Integrated = IntegratedSum | IntegratedPrf,

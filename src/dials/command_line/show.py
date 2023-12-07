@@ -315,7 +315,7 @@ def show_image_statistics(experiments, im_type):
     else:
         raise ValueError(f"Unknown im_type: {im_type}")
 
-    # To show image statistics, check_format has to be true. So we have to reinstatiate
+    # To show image statistics, check_format has to be true. So we have to reinstantiate
     # the experiment list here
     try:
         experiments = ExperimentListFactory.from_json(

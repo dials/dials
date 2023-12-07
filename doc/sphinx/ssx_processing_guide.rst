@@ -112,7 +112,7 @@ During processing, data files will be created after each batch of crystals has
 been processed. The size of the batch for saving data can be set with the
 :samp:`batch_size` option. This creates numbered output files such as
 :samp:`integrated_0.refl, integrated_0.expt, integrated_1.refl, integrated_1.expt` etc.
-After all images have been integated, unit cell clustering is performed and
+After all images have been integrated, unit cell clustering is performed and
 reported, as this will have changed compared to at the end of indexing if
 using the ellipsoid integration algorithm.
 

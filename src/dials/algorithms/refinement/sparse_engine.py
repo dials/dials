@@ -99,7 +99,7 @@ class SparseLevenbergMarquardtIterations(
 
     def set_cholesky_factor(self):
         """Override that disables this method of the base AdaptLstbx. For
-        sparse, large matrices this is numberically unstable; not to mention it
+        sparse, large matrices this is numerically unstable; not to mention it
         is not implemented for the Eigen wrapper"""
         pass
 
