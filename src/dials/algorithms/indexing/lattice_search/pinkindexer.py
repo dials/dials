@@ -353,7 +353,7 @@ class PinkIndexer(Strategy):
         cell = gemmi.UnitCell(*self.cell.parameters())
 
         wav_min, wav_max = self.wav_min, self.wav_max
-        eps = 1e-3
+        eps = 0.02
         crystals = []
         for imageset_id, expt in enumerate(experiments):
             beam = expt.beam
@@ -376,43 +376,3 @@ class PinkIndexer(Strategy):
             crystal.set_A(A)
             crystals.append(crystal)
         return crystals
-
-
-#        small_cell_result = small_cell_index_lattice_detail(
-#            experiments, reflections, self._params
-#        )
-#        if not small_cell_result:
-#            return []
-#
-#        ori = small_cell_result[2]
-#        direct_matrix = ori.direct_matrix()
-#        real_a = direct_matrix[0:3]
-#        real_b = direct_matrix[3:6]
-#        real_c = direct_matrix[6:9]
-#        crystal = Crystal(real_a, real_b, real_c, self._params.small_cell.spacegroup)
-#        candidate_crystal_models = [
-#            crystal,
-#        ]
-#
-#        # Reset id column to ensure that index assignment later will work properly.
-#        # This is a workaround for https://github.com/dials/dials/issues/2485
-#        reflections["id"] *= 0
-#        reflections["id"] -= 1
-#
-#        # Additional refinement of the crystal orientation using the spots indexed
-#        # by small_cell by superposing ideal relp positions over the observed relps
-#        indexed = small_cell_result[3]
-#        Bmat = matrix.sqr(crystal.get_B())
-#        observed_relps = [(0.0, 0.0, 0.0)]
-#        predicted_relps = [(0.0, 0.0, 0.0)]
-#        for spot in indexed:
-#            predicted_relps.append(Bmat * spot.hkl.ohkl)
-#            observed_relps.append(spot.xyz)
-#        fit = superpose.least_squares_fit(
-#            flex.vec3_double(observed_relps), flex.vec3_double(predicted_relps)
-#        )
-#        Umat = fit.r
-#        crystal.set_A(Umat * Bmat)
-#
-#        self.candidate_crystal_models = candidate_crystal_models
-#        return self.candidate_crystal_models
