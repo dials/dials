@@ -13,8 +13,8 @@ from dials.util.slice import slice_experiments, slice_reflections
 
 help_message = """
 
-Slice a sequence to produce a smaller sequence within the bounds of the original. If
-experiments or experiments are provided, modify the scan objects within these. If
+Slice a sequence to produce a smaller sequence within the bounds of the
+original. If experiments are provided, modify the scan objects within this. If
 reflections are provided, remove reflections outside the provided image ranges.
 Each image_range parameter refers to a single experiment ID, counting up from
 zero. Any reflections with experiment ID not matched by a image_range parameter
@@ -26,7 +26,7 @@ Examples::
 
   dials.slice_sequence models.expt "image_range=1 20"
 
-  # two experiments and reflections with IDs '0' and '1'
+  # Two experiments and reflections with IDs '0' and '1'
   dials.slice_sequence models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 """
