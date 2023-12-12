@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from libtbx.phil import parse
 
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
@@ -67,6 +69,15 @@ class Script:
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
+            check_format=True,
+            read_experiments=True,
+        )
+
+        # Parser to use if check_format=True fails
+        self.fallback_parser = ArgumentParser(
+            usage=usage,
+            phil=phil_scope,
+            epilog=help_message,
             check_format=False,
             read_experiments=True,
         )
@@ -74,7 +85,11 @@ class Script:
     def run(self, args=None):
         """Execute the script."""
         # Parse the command line
-        params, options = self.parser.parse_args(args, show_diff_phil=True)
+        try:
+            params, options = self.parser.parse_args(args, show_diff_phil=True)
+        except Exception:
+            self.parser = self.fallback_parser
+            params, options = self.parser.parse_args(args, show_diff_phil=True)
 
         # Check the number of experiments
         experiments = flatten_experiments(params.input.experiments)
@@ -115,9 +130,12 @@ class Script:
         # region, see https://github.com/dials/dials/issues/349
 
         if not params.ignore_shadows:
-            shadowed = filter_shadowed_reflections(
-                experiments, predicted_all, experiment_goniometer=True
-            )
+            try:
+                shadowed = filter_shadowed_reflections(
+                    experiments, predicted_all, experiment_goniometer=True
+                )
+            except AttributeError:
+                sys.exit("Unable to check shadows without access to image data")
             predicted_all = predicted_all.select(~shadowed)
 
         try:
