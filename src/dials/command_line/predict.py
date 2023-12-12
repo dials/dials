@@ -74,6 +74,7 @@ class Script:
         )
 
         # Parser to use if check_format=True fails
+        # See https://github.com/cctbx/dxtbx/issues/187
         self.fallback_parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
