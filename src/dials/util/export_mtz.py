@@ -356,22 +356,11 @@ def add_batch_list(
 def write_columns(mtz, reflection_table):
     """Write the column definitions AND data to the current dataset."""
 
-    # now create the actual data structures - first keep a track of the columns
-
-    # H K L M/ISYM BATCH I SIGI IPR SIGIPR FRACTIONCALC XDET YDET ROT WIDTH
-    # LP MPART FLAG BGPKRATIOS
-
-    # gather the required information for the reflection file
-
     nref = len(reflection_table["miller_index"])
     assert nref
     xdet, ydet, _ = [
         flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
     ]
-
-    # now add column information...
-
-    # FIXME add DIALS_FLAG which can include e.g. was partial etc.
 
     type_table = {
         "H": "H",
@@ -397,9 +386,6 @@ def write_columns(mtz, reflection_table):
         "QE": "R",
     }
 
-    # mtz.nreflections = nref
-    # dataset = self.current_dataset
-
     mtz_data = pd.DataFrame(
         flumpy.to_numpy(reflection_table["miller_index"]).astype("float32"),
         columns=["H", "K", "L"],
@@ -417,8 +403,7 @@ def write_columns(mtz, reflection_table):
     if "intensity.scale.value" in reflection_table:
         I_scaling = reflection_table["intensity.scale.value"]
         V_scaling = reflection_table["intensity.scale.variance"]
-        # Trap negative variances
-        assert V_scaling.all_gt(0)
+        assert V_scaling.all_gt(0)  # Trap negative variances
         mtz.add_column("I", type_table["I"])
         mtz_data.insert(
             len(mtz_data.columns), "I", flumpy.to_numpy(I_scaling).astype("float32")
@@ -451,8 +436,7 @@ def write_columns(mtz, reflection_table):
                 col_names = ("I", "SIGI")
             I_profile = reflection_table["intensity.prf.value"]
             V_profile = reflection_table["intensity.prf.variance"]
-            # Trap negative variances
-            assert V_profile.all_gt(0)
+            assert V_profile.all_gt(0)  # Trap negative variances
             mtz.add_column(col_names[0], type_table["I"])
             mtz_data.insert(
                 len(mtz_data.columns),
@@ -469,8 +453,7 @@ def write_columns(mtz, reflection_table):
         if "intensity.sum.value" in reflection_table:
             I_sum = reflection_table["intensity.sum.value"]
             V_sum = reflection_table["intensity.sum.variance"]
-            # Trap negative variances
-            assert V_sum.all_gt(0)
+            assert V_sum.all_gt(0)  # Trap negative variances
             mtz.add_column("I", type_table["I"])
             mtz_data.insert(
                 len(mtz_data.columns), "I", flumpy.to_numpy(I_sum).astype("float32")
