@@ -8,9 +8,12 @@ from dataclasses import dataclass, field
 from math import isclose
 from typing import List, Optional
 
+import gemmi
 import numpy as np
+import pandas as pd
 
 from cctbx import uctbx
+from dxtbx import flumpy
 from iotbx import mtz
 from libtbx import env
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
@@ -33,6 +36,7 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
 )
+from dials.util.reindex import reindex_experiments, reindex_reflections
 from dials.util.version import dials_version
 
 logger = logging.getLogger(__name__)
@@ -180,297 +184,352 @@ class MADMergedMTZWriter(MergedMTZWriter):
         )
 
 
-class UnmergedMTZWriter(MTZWriterBase):
-    def add_batch_list(
-        self,
-        image_range,
-        experiment,
-        wavelength,
-        dataset_id,
-        batch_offset,
-        force_static_model,
-    ):
-        """Add batch metadata to the mtz file."""
+def add_batch_list(
+    mtz,
+    image_range,
+    experiment,
+    wavelength,
+    dataset_id,
+    batch_offset,
+    force_static_model,
+):
+    """Add batch metadata to the gemmi mtz object."""
 
-        # Recalculate useful numbers and references here
-        n_batches = image_range[1] - image_range[0] + 1
-        phi_start = flex.float(n_batches, 0)
-        phi_range = flex.float(n_batches, 0)
-        umat_array = flex.float(flex.grid(n_batches, 9))
-        cell_array = flex.float(flex.grid(n_batches, 6))
+    # Recalculate useful numbers and references here
+    n_batches = image_range[1] - image_range[0] + 1
+    phi_start = flex.float(n_batches, 0)
+    phi_range = flex.float(n_batches, 0)
+    umat_array = flex.float(flex.grid(n_batches, 9))
+    cell_array = flex.float(flex.grid(n_batches, 6))
 
-        # Reciprocal lattice vectors in the lab frame at zero scan angle
-        if experiment.goniometer:
-            S = matrix.sqr(experiment.goniometer.get_setting_rotation())
-            F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
-            UBlab = S * F * matrix.sqr(experiment.crystal.get_A())
+    # Reciprocal lattice vectors in the lab frame at zero scan angle
+    if experiment.goniometer:
+        S = matrix.sqr(experiment.goniometer.get_setting_rotation())
+        F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
+        UBlab = S * F * matrix.sqr(experiment.crystal.get_A())
 
-            axis = matrix.col(experiment.goniometer.get_rotation_axis())
-            axis_datum = matrix.col(experiment.goniometer.get_rotation_axis_datum())
+        axis = matrix.col(experiment.goniometer.get_rotation_axis())
+        axis_datum = matrix.col(experiment.goniometer.get_rotation_axis_datum())
 
-        else:
-            UBlab = matrix.sqr(experiment.crystal.get_A())
+    else:
+        UBlab = matrix.sqr(experiment.crystal.get_A())
 
-        i0 = image_range[0]
-        for i in range(n_batches):
-            if experiment.scan:
-                phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(
-                    i + i0
-                )
+    i0 = image_range[0]
+    for i in range(n_batches):
+        if experiment.scan:
+            phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
 
-            # Unit cell and UB matrix for the centre of the image for scan-varying model
-            if (
-                not force_static_model
-                and experiment.crystal.num_scan_points > 0
-                and experiment.goniometer
-            ):
-
-                # Get the index of the image in the sequence e.g. first => 0, second => 1
-                image_index = i + i0 - experiment.scan.get_image_range()[0]
-
-                # Find the U matrix at the frame centre by calculating the linear transform
-                # that goes from the start of the frame to the end, and then applying half of
-                # that to the start value
-                U0 = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
-                U1 = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index + 1))
-                M = U1 * U0.inverse()
-                (
-                    angle_M,
-                    axis_M,
-                ) = M.r3_rotation_matrix_as_unit_quaternion().unit_quaternion_as_axis_and_angle(
-                    deg=False
-                )
-                M_half = axis_M.axis_and_angle_as_r3_rotation_matrix(
-                    angle_M / 2, deg=False
-                )
-                Ucentre = M_half * U0
-
-                # Find the B matrix at the frame centre by interpolation
-                B0 = matrix.sqr(experiment.crystal.get_B_at_scan_point(image_index))
-                B1 = matrix.sqr(experiment.crystal.get_B_at_scan_point(image_index + 1))
-                Bcentre = (B0 + B1) / 2
-
-                # Unit cell at the frame centre
-                unit_cell = uctbx.unit_cell(
-                    orthogonalization_matrix=Bcentre.transpose().inverse()
-                )
-
-                # Get full lab frame UB then unwind to zero scan angle
-                phi_centre = phi_start[i] + phi_range[i] / 2
-                R = matrix.sqr(
-                    axis_datum.axis_and_angle_as_r3_rotation_matrix(
-                        phi_centre, deg=False
-                    )
-                )
-                Rlab_inv = matrix.sqr(
-                    axis.axis_and_angle_as_r3_rotation_matrix(-phi_centre, deg=False)
-                )
-                _UBlab = Rlab_inv * S * R * F * Ucentre * Bcentre
-
-            else:
-                unit_cell = experiment.crystal.get_unit_cell()
-                _UBlab = UBlab
-
-            # We assume a single-axis goniometer as it is not clear that multi-
-            # axis goniometry was ever fully supported in MTZ format. Orientation
-            # will be taken from the laboratory frame for this image.
-            U = matrix.sqr(dials.util.ext.ub_to_mosflm_u(_UBlab, unit_cell))
-
-            # FIXME need to get what was refined and what was constrained from the
-            # crystal model - see https://github.com/dials/dials/issues/355
-            _unit_cell_params = unit_cell.parameters()
-            for j in range(6):
-                cell_array[i, j] = _unit_cell_params[j]
-            # Transpose to put in column-major order for MTZ export
-            U_t_elements = U.transpose().elems
-            for j in range(9):
-                umat_array[i, j] = U_t_elements[j]
-
-        # We ignore panels beyond the first one, at the moment
-        panel = experiment.detector[0]
-        panel_size = panel.get_image_size()
-        panel_distance = panel.get_directed_distance()
-
-        if experiment.goniometer:
-            axis = flex.float(experiment.goniometer.get_rotation_axis())
-        else:
-            axis = flex.float((0.0, 0.0, 0.0))
-
-        source = flex.float(experiment.beam.get_sample_to_source_direction())
-
-        # get the mosaic spread though today it may not actually be set - should
-        # this be in the BATCH headers?
-        try:
-            mosaic = experiment.crystal.get_mosaicity()
-        except AttributeError:
-            mosaic = 0.0
-
-        # Jump into C++ to do the rest of the work
-        dials.util.ext.add_dials_batches(
-            self.mtz_file,
-            dataset_id,
-            image_range,
-            batch_offset,
-            wavelength,
-            mosaic,
-            phi_start,
-            phi_range,
-            cell_array,
-            umat_array,
-            panel_size,
-            panel_distance,
-            axis,
-            source,
-        )
-
-    def write_columns(self, reflection_table):
-        """Write the column definitions AND data to the current dataset."""
-
-        # now create the actual data structures - first keep a track of the columns
-
-        # H K L M/ISYM BATCH I SIGI IPR SIGIPR FRACTIONCALC XDET YDET ROT WIDTH
-        # LP MPART FLAG BGPKRATIOS
-
-        # gather the required information for the reflection file
-
-        nref = len(reflection_table["miller_index"])
-        assert nref
-        xdet, ydet, _ = [
-            flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
-        ]
-
-        # now add column information...
-
-        # FIXME add DIALS_FLAG which can include e.g. was partial etc.
-
-        type_table = {
-            "H": "H",
-            "K": "H",
-            "L": "H",
-            "I": "J",
-            "SIGI": "Q",
-            "IPR": "J",
-            "SIGIPR": "Q",
-            "BG": "R",
-            "SIGBG": "R",
-            "XDET": "R",
-            "YDET": "R",
-            "BATCH": "B",
-            "BGPKRATIOS": "R",
-            "WIDTH": "R",
-            "MPART": "I",
-            "M_ISYM": "Y",
-            "FLAG": "I",
-            "LP": "R",
-            "FRACTIONCALC": "R",
-            "ROT": "R",
-            "QE": "R",
-        }
-
-        # derive index columns from original indices with
-        #
-        # from m.replace_original_index_miller_indices
-        #
-        # so all that is needed now is to make space for the reflections - fill with
-        # zeros...
-
-        self.mtz_file.adjust_column_array_sizes(nref)
-        self.mtz_file.set_n_reflections(nref)
-        dataset = self.current_dataset
-
-        # assign H, K, L, M_ISYM space
-        for column in "H", "K", "L", "M_ISYM":
-            dataset.add_column(column, type_table[column]).set_values(
-                flex.double(nref, 0.0).as_float()
-            )
-
-        self.mtz_file.replace_original_index_miller_indices(
-            reflection_table["miller_index"]
-        )
-
-        dataset.add_column("BATCH", type_table["BATCH"]).set_values(
-            reflection_table["batch"].as_double().as_float()
-        )
-
-        # if intensity values used in scaling exist, then just export these as I, SIGI
-        if "intensity.scale.value" in reflection_table:
-            I_scaling = reflection_table["intensity.scale.value"]
-            V_scaling = reflection_table["intensity.scale.variance"]
-            # Trap negative variances
-            assert V_scaling.all_gt(0)
-            dataset.add_column("I", type_table["I"]).set_values(I_scaling.as_float())
-            dataset.add_column("SIGI", type_table["SIGI"]).set_values(
-                flex.sqrt(V_scaling).as_float()
-            )
-            dataset.add_column("SCALEUSED", "R").set_values(
-                reflection_table["inverse_scale_factor"].as_float()
-            )
-            dataset.add_column("SIGSCALEUSED", "R").set_values(
-                flex.sqrt(reflection_table["inverse_scale_factor_variance"]).as_float()
-            )
-        else:
-            if "intensity.prf.value" in reflection_table:
-                if "intensity.sum.value" in reflection_table:
-                    col_names = ("IPR", "SIGIPR")
-                else:
-                    col_names = ("I", "SIGI")
-                I_profile = reflection_table["intensity.prf.value"]
-                V_profile = reflection_table["intensity.prf.variance"]
-                # Trap negative variances
-                assert V_profile.all_gt(0)
-                dataset.add_column(col_names[0], type_table["I"]).set_values(
-                    I_profile.as_float()
-                )
-                dataset.add_column(col_names[1], type_table["SIGI"]).set_values(
-                    flex.sqrt(V_profile).as_float()
-                )
-            if "intensity.sum.value" in reflection_table:
-                I_sum = reflection_table["intensity.sum.value"]
-                V_sum = reflection_table["intensity.sum.variance"]
-                # Trap negative variances
-                assert V_sum.all_gt(0)
-                dataset.add_column("I", type_table["I"]).set_values(I_sum.as_float())
-                dataset.add_column("SIGI", type_table["SIGI"]).set_values(
-                    flex.sqrt(V_sum).as_float()
-                )
+        # Unit cell and UB matrix for the centre of the image for scan-varying model
         if (
-            "background.sum.value" in reflection_table
-            and "background.sum.variance" in reflection_table
+            not force_static_model
+            and experiment.crystal.num_scan_points > 0
+            and experiment.goniometer
         ):
-            bg = reflection_table["background.sum.value"]
-            varbg = reflection_table["background.sum.variance"]
-            assert (varbg >= 0).count(False) == 0
-            sigbg = flex.sqrt(varbg)
-            dataset.add_column("BG", type_table["BG"]).set_values(bg.as_float())
-            dataset.add_column("SIGBG", type_table["SIGBG"]).set_values(
-                sigbg.as_float()
+
+            # Get the index of the image in the sequence e.g. first => 0, second => 1
+            image_index = i + i0 - experiment.scan.get_image_range()[0]
+
+            # Find the U matrix at the frame centre by calculating the linear transform
+            # that goes from the start of the frame to the end, and then applying half of
+            # that to the start value
+            U0 = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
+            U1 = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index + 1))
+            M = U1 * U0.inverse()
+            (
+                angle_M,
+                axis_M,
+            ) = M.r3_rotation_matrix_as_unit_quaternion().unit_quaternion_as_axis_and_angle(
+                deg=False
+            )
+            M_half = axis_M.axis_and_angle_as_r3_rotation_matrix(angle_M / 2, deg=False)
+            Ucentre = M_half * U0
+
+            # Find the B matrix at the frame centre by interpolation
+            B0 = matrix.sqr(experiment.crystal.get_B_at_scan_point(image_index))
+            B1 = matrix.sqr(experiment.crystal.get_B_at_scan_point(image_index + 1))
+            Bcentre = (B0 + B1) / 2
+
+            # Unit cell at the frame centre
+            unit_cell = uctbx.unit_cell(
+                orthogonalization_matrix=Bcentre.transpose().inverse()
             )
 
-        dataset.add_column("FRACTIONCALC", type_table["FRACTIONCALC"]).set_values(
-            reflection_table["fractioncalc"].as_float()
-        )
+            # Get full lab frame UB then unwind to zero scan angle
+            phi_centre = phi_start[i] + phi_range[i] / 2
+            R = matrix.sqr(
+                axis_datum.axis_and_angle_as_r3_rotation_matrix(phi_centre, deg=False)
+            )
+            Rlab_inv = matrix.sqr(
+                axis.axis_and_angle_as_r3_rotation_matrix(-phi_centre, deg=False)
+            )
+            _UBlab = Rlab_inv * S * R * F * Ucentre * Bcentre
 
-        dataset.add_column("XDET", type_table["XDET"]).set_values(xdet.as_float())
-        dataset.add_column("YDET", type_table["YDET"]).set_values(ydet.as_float())
-        dataset.add_column("ROT", type_table["ROT"]).set_values(
-            reflection_table["ROT"].as_float()
-        )
-        if "lp" in reflection_table:
-            dataset.add_column("LP", type_table["LP"]).set_values(
-                reflection_table["lp"].as_float()
-            )
-        if "qe" in reflection_table:
-            dataset.add_column("QE", type_table["QE"]).set_values(
-                reflection_table["qe"].as_float()
-            )
-        elif "dqe" in reflection_table:
-            dataset.add_column("QE", type_table["QE"]).set_values(
-                reflection_table["dqe"].as_float()
-            )
         else:
-            dataset.add_column("QE", type_table["QE"]).set_values(
-                flex.double(nref, 1.0).as_float()
+            unit_cell = experiment.crystal.get_unit_cell()
+            _UBlab = UBlab
+
+        # We assume a single-axis goniometer as it is not clear that multi-
+        # axis goniometry was ever fully supported in MTZ format. Orientation
+        # will be taken from the laboratory frame for this image.
+        U = matrix.sqr(dials.util.ext.ub_to_mosflm_u(_UBlab, unit_cell))
+
+        # FIXME need to get what was refined and what was constrained from the
+        # crystal model - see https://github.com/dials/dials/issues/355
+        _unit_cell_params = unit_cell.parameters()
+        for j in range(6):
+            cell_array[i, j] = _unit_cell_params[j]
+        # Transpose to put in column-major order for MTZ export
+        U_t_elements = U.transpose().elems
+        for j in range(9):
+            umat_array[i, j] = U_t_elements[j]
+
+    # We ignore panels beyond the first one, at the moment
+    panel = experiment.detector[0]
+    panel_size = panel.get_image_size()
+    panel_distance = panel.get_directed_distance()
+
+    if experiment.goniometer:
+        axis = flex.float(experiment.goniometer.get_rotation_axis())
+    else:
+        axis = flex.float((0.0, 0.0, 0.0))
+
+    source = flex.float(experiment.beam.get_sample_to_source_direction())
+
+    # get the mosaic spread though today it may not actually be set - should
+    # this be in the BATCH headers?
+    try:
+        mosaic = experiment.crystal.get_mosaicity()
+    except AttributeError:
+        mosaic = 0.0
+
+    max_batch_number = 0
+    if mtz.batches:
+        max_batch_number = mtz.batches[-1].number
+
+    batch_offset += image_range[0] - 1
+    if max_batch_number > batch_offset:
+        batch_offset = max_batch_number
+
+    batch = gemmi.Mtz.Batch()
+
+    # Setting fields that are the same for all batches
+    batch.dataset_id = dataset_id
+    batch.wavelength = wavelength
+    batch.ints[12] = 1  # ncryst
+    batch.ints[14] = 2  # ldtype 3D
+    batch.ints[15] = 1  # jsaxs - goniostat scan axis number
+    batch.ints[17] = 1  # ngonax - number of goniostat axes
+    batch.ints[19] = 1  # ndet
+
+    batch.floats[21] = mosaic  # crydat[0]
+    for j in range(3):
+        batch.floats[38 + j] = axis[j]  # scanax
+    batch.floats[43] = 1.0  # bscale (batch scale)
+    for j in range(3):
+        batch.floats[59 + j] = axis[j]  # e1
+    batch.floats[80 + flex.min_index(source)] = -1.0  # idealised source vector
+    for j in range(3):
+        batch.floats[83 + j] = source[j]  # source including tilts
+    batch.floats[111] = panel_distance  # dx
+    batch.floats[114] = panel_size[0]  # NX
+    batch.floats[116] = panel_size[1]  # NY
+    batch.axes = ["AXIS"]  # gonlab[0]
+
+    # Setting fields that differ
+    for i_batch in range(n_batches):
+        batch.number = batch_offset + i_batch + 1
+        batch.title = f"Batch {batch.number}"
+        for j in range(6):
+            batch.floats[j] = cell_array[i_batch, j]  # cell
+        for j in range(9):
+            batch.floats[6 + j] = umat_array[i_batch, j]  # Umat
+        batch.floats[36] = phi_start[i_batch]  # phistt
+        batch.floats[37] = phi_start[i_batch] + phi_range[i_batch]  # phiend
+        batch.floats[47] = phi_range[i_batch]  # phirange
+
+        # Append this batch
+        mtz.batches.append(batch)
+
+    return
+
+
+def write_columns(mtz, reflection_table):
+    """Write the column definitions AND data to the current dataset."""
+
+    nref = len(reflection_table["miller_index"])
+    assert nref
+    xdet, ydet, _ = [
+        flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
+    ]
+
+    type_table = {
+        "H": "H",
+        "K": "H",
+        "L": "H",
+        "I": "J",
+        "SIGI": "Q",
+        "IPR": "J",
+        "SIGIPR": "Q",
+        "BG": "R",
+        "SIGBG": "R",
+        "XDET": "R",
+        "YDET": "R",
+        "BATCH": "B",
+        "BGPKRATIOS": "R",
+        "WIDTH": "R",
+        "MPART": "I",
+        "M_ISYM": "Y",
+        "FLAG": "I",
+        "LP": "R",
+        "FRACTIONCALC": "R",
+        "ROT": "R",
+        "QE": "R",
+    }
+
+    mtz_data = pd.DataFrame(
+        flumpy.to_numpy(reflection_table["miller_index"]).astype("float32"),
+        columns=["H", "K", "L"],
+    )
+    mtz_data.insert(3, "M/ISYM", np.zeros(nref, dtype="float32"))
+
+    # H, K, L are in the base dataset, but we have to add M/ISYM
+    mtz.add_column("M/ISYM", type_table["M_ISYM"])
+    mtz.add_column("BATCH", type_table["BATCH"])
+    mtz_data.insert(
+        4, "BATCH", flumpy.to_numpy(reflection_table["batch"]).astype("float32")
+    )
+
+    # if intensity values used in scaling exist, then just export these as I, SIGI
+    if "intensity.scale.value" in reflection_table:
+        I_scaling = reflection_table["intensity.scale.value"]
+        V_scaling = reflection_table["intensity.scale.variance"]
+        assert V_scaling.all_gt(0)  # Trap negative variances
+        mtz.add_column("I", type_table["I"])
+        mtz_data.insert(
+            len(mtz_data.columns), "I", flumpy.to_numpy(I_scaling).astype("float32")
+        )
+        mtz.add_column("SIGI", type_table["SIGI"])
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "SIGI",
+            flumpy.to_numpy(flex.sqrt(V_scaling)).astype("float32"),
+        )
+        mtz.add_column("SCALEUSED", "R")
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "SCALEUSED",
+            flumpy.to_numpy(reflection_table["inverse_scale_factor"]).astype("float32"),
+        )
+        mtz.add_column("SIGSCALEUSED", "R")
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "SIGSCALEUSED",
+            flumpy.to_numpy(
+                flex.sqrt(reflection_table["inverse_scale_factor_variance"])
+            ).astype("float32"),
+        )
+    else:
+        if "intensity.prf.value" in reflection_table:
+            if "intensity.sum.value" in reflection_table:
+                col_names = ("IPR", "SIGIPR")
+            else:
+                col_names = ("I", "SIGI")
+            I_profile = reflection_table["intensity.prf.value"]
+            V_profile = reflection_table["intensity.prf.variance"]
+            assert V_profile.all_gt(0)  # Trap negative variances
+            mtz.add_column(col_names[0], type_table["I"])
+            mtz_data.insert(
+                len(mtz_data.columns),
+                col_names[0],
+                flumpy.to_numpy(I_profile.as_float()).astype("float32"),
             )
+            mtz.add_column(col_names[1], type_table["SIGI"])
+            mtz_data.insert(
+                len(mtz_data.columns),
+                col_names[1],
+                flumpy.to_numpy(flex.sqrt(V_profile)).astype("float32"),
+            )
+
+        if "intensity.sum.value" in reflection_table:
+            I_sum = reflection_table["intensity.sum.value"]
+            V_sum = reflection_table["intensity.sum.variance"]
+            assert V_sum.all_gt(0)  # Trap negative variances
+            mtz.add_column("I", type_table["I"])
+            mtz_data.insert(
+                len(mtz_data.columns), "I", flumpy.to_numpy(I_sum).astype("float32")
+            )
+            mtz.add_column("SIGI", type_table["SIGI"])
+            mtz_data.insert(
+                len(mtz_data.columns),
+                "SIGI",
+                flumpy.to_numpy(flex.sqrt(V_sum)).astype("float32"),
+            )
+
+    if (
+        "background.sum.value" in reflection_table
+        and "background.sum.variance" in reflection_table
+    ):
+        bg = reflection_table["background.sum.value"]
+        varbg = reflection_table["background.sum.variance"]
+        assert (varbg >= 0).count(False) == 0
+        sigbg = flex.sqrt(varbg)
+        mtz.add_column("BG", type_table["BG"])
+        mtz_data.insert(
+            len(mtz_data.columns), "BG", flumpy.to_numpy(bg).astype("float32")
+        )
+        mtz.add_column("SIGBG", type_table["SIGBG"])
+        mtz_data.insert(
+            len(mtz_data.columns), "SIGBG", flumpy.to_numpy(sigbg).astype("float32")
+        )
+
+    mtz.add_column("FRACTIONCALC", type_table["FRACTIONCALC"])
+    mtz_data.insert(
+        len(mtz_data.columns),
+        "FRACTIONCALC",
+        flumpy.to_numpy(reflection_table["fractioncalc"]).astype("float32"),
+    )
+
+    mtz.add_column("XDET", type_table["XDET"])
+    mtz_data.insert(
+        len(mtz_data.columns), "XDET", flumpy.to_numpy(xdet).astype("float32")
+    )
+    mtz.add_column("YDET", type_table["YDET"])
+    mtz_data.insert(
+        len(mtz_data.columns), "YDET", flumpy.to_numpy(ydet).astype("float32")
+    )
+    mtz.add_column("ROT", type_table["ROT"])
+    mtz_data.insert(
+        len(mtz_data.columns),
+        "ROT",
+        flumpy.to_numpy(reflection_table["ROT"]).astype("float32"),
+    )
+    if "lp" in reflection_table:
+        mtz.add_column("LP", type_table["LP"])
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "LP",
+            flumpy.to_numpy(reflection_table["lp"]).astype("float32"),
+        )
+    if "qe" in reflection_table:
+        mtz.add_column("QE", type_table["QE"])
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "QE",
+            flumpy.to_numpy(reflection_table["qe"]).astype("float32"),
+        )
+    elif "dqe" in reflection_table:
+        mtz.add_column("QE", type_table["QE"])
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "QE",
+            flumpy.to_numpy(reflection_table["dqe"]).astype("float32"),
+        )
+    else:
+        mtz.add_column("QE", type_table["QE"])
+        mtz_data.insert(len(mtz_data.columns), "QE", np.ones(nref).astype("float32"))
+
+    mtz.switch_to_original_hkl()
+    mtz.set_data(mtz_data)
 
 
 def export_mtz(
@@ -509,12 +568,6 @@ def export_mtz(
     # Convert geometry to the Cambridge frame
     experiment_list = convert_to_cambridge(experiment_list)
 
-    # Convert experiment_list to a real python list or else identity assumptions
-    # fail like:
-    #   assert experiment_list[0] is experiment_list[0]
-    # And assumptions about added attributes break
-    experiment_list = list(experiment_list)
-
     # Validate multi-experiment assumptions
     if len(experiment_list) > 1:
         # All experiments should match crystals, or else we need multiple crystals/datasets
@@ -529,6 +582,27 @@ def export_mtz(
         if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
             raise ValueError("Experiments do not have a unique space group")
 
+    # Reindex to a tabulated setting if necessary
+    sg = experiment_list[0].crystal.get_space_group()
+    if sg.match_tabulated_settings().number() == 0:
+        logger.warning(
+            "The data will be reindexed to a tabulated setting of the space group"
+        )
+        cb_op = sg.info().change_of_basis_op_to_reference_setting()
+        experiment_list = reindex_experiments(experiment_list, cb_op)
+        reflection_table = reindex_reflections(
+            [
+                reflection_table,
+            ],
+            cb_op,
+        )
+
+    # Convert experiment_list to a real python list or else identity assumptions
+    # fail like:
+    #   assert experiment_list[0] is experiment_list[0]
+    # And assumptions about added attributes break
+    experiment_list = list(experiment_list)
+
     wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
     for w in wavelengths.values():
         w.calculate_weighted_mean([reflection_table])
@@ -538,7 +612,7 @@ def export_mtz(
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavlength: %.5f, experiment numbers: %s "
+                "  Wavelength: %.5f, experiment numbers: %s "
                 % (
                     v.weighted_mean,
                     ",".join(
@@ -596,7 +670,20 @@ def export_mtz(
         )
 
     # Create the mtz file
-    mtz_writer = UnmergedMTZWriter(experiment_list[0].crystal.get_space_group())
+    mtz = gemmi.Mtz(with_base=True)
+    mtz.title = f"From {env.dispatcher_name}"
+    date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
+    if time.strftime("%Z") != "GMT":
+        date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+    mtz.history += [
+        f"From {dials_version()}, run on {date_str}",
+    ]
+
+    # Create the right gemmi spacegroup from the crystal's cctbx space_group
+    # via a Hall symbol
+    hall = experiment_list[0].crystal.get_space_group().type().hall_symbol()
+    ops = gemmi.symops_from_hall(hall)
+    mtz.spacegroup = gemmi.find_spacegroup_by_ops(ops)
 
     # FIXME TODO for more than one experiment into an MTZ file:
     #
@@ -633,7 +720,8 @@ def export_mtz(
         s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
         logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
 
-        mtz_writer.add_batch_list(
+        add_batch_list(
+            mtz,
             image_range,
             experiment,
             wavelength,
@@ -655,17 +743,16 @@ def export_mtz(
         else:
             experiment.data["ROT"] = z
 
-    mtz_writer.add_crystal(
-        crystal_name=crystal_name,
-        project_name=project_name,
-        unit_cell=best_unit_cell,
-    )
-    # Note: add unit cell here as may have changed basis since creating mtz.
+    mtz.set_cell_for_all(gemmi.UnitCell(*best_unit_cell.parameters()))
+
     # For multi-wave unmerged mtz, we add an empty dataset for each wavelength,
     # but only write the data into the final dataset (for unmerged the batches
     # link the unmerged data to the individual wavelengths).
     for wavelength in wavelengths.values():
-        mtz_writer.add_empty_dataset(wavelength.weighted_mean)
+        ds = mtz.add_dataset("FROMDIALS")
+        ds.crystal_name = crystal_name
+        ds.project_name = project_name
+        ds.wavelength = wavelength.weighted_mean
 
     # Combine all of the experiment data columns before writing
     combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
@@ -679,15 +766,64 @@ def export_mtz(
     ), "Lost rows in split/combine"
 
     # Write all the data and columns to the mtz file
-    mtz_writer.write_columns(combined_data)
+    write_columns(mtz, combined_data)
+
+    # Switch to ASU indices and sort file in standard order
+    mtz.switch_to_asu_hkl()
+    mtz.sort(5)
 
     logger.info(
         "Saving %s integrated reflections to %s", len(combined_data["id"]), filename
     )
-    mtz_file = mtz_writer.mtz_file
-    mtz_file.write(filename)
+    mtz.write_to_file(filename)
+    log_summary(mtz)
 
-    return mtz_file
+    return mtz
+
+
+def log_summary(mtz):
+    """Log a summary of an MTZ object, based on the output of `gemmi mtz --dump`"""
+
+    logger.info("Title: " + mtz.title)
+    logger.info(f"Total Number of Datasets = {len(mtz.datasets)}\n")
+    for ds in mtz.datasets:
+        logger.info(
+            f"Dataset {ds.id:4d}   {ds.project_name} > {ds.crystal_name} > {ds.dataset_name}:"
+        )
+        logger.info(
+            "        cell  {:7g} {:7g} {:7g}  {:6g} {:6g} {:6g}".format(
+                *ds.cell.parameters
+            )
+        )
+        logger.info(f"  wavelength  {ds.wavelength:g}")
+    logger.info(f"\nNumber of Columns = {len(mtz.columns)}")
+    logger.info(
+        f"Number of Reflections = {mtz.nreflections}",
+    )
+    logger.info(f"Number of Batches = {len(mtz.batches)}")
+    logger.info(f"Missing values marked as: {mtz.valm}")
+    logger.info(
+        "Global Cell (obsolete): {:7g} {:7g} {:7g}  {:6g} {:6g} {:6g}".format(
+            *mtz.cell.parameters
+        )
+    )
+    mtz.update_reso()
+    logger.info(
+        f"Resolution: {mtz.resolution_high():.2f} - {mtz.resolution_low():.2f} A"
+    )
+    logger.info("Sort Order: {:d} {:d} {:d} {:d} {:d}".format(*mtz.sort_order))
+    logger.info(f"Space Group: {mtz.spacegroup.hm}")
+    logger.info(f"Space Group Number: {mtz.spacegroup.ccp4}")
+    logger.info("Header info:")
+    logger.info("Column    Type  Dataset    Min        Max")
+    for col in mtz.columns:
+        # col.min_value and col.max_value are not set, so we have to calculate them here
+        logger.info(
+            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {col.array.min():12.6g} {col.array.max():10.6g}"
+        )
+    logger.info(f"History ({len(mtz.history)} lines):")
+    for line in mtz.history:
+        logger.info(line)
 
 
 @dataclass
