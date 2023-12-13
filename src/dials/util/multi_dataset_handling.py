@@ -57,6 +57,11 @@ class Expeditor(object):
         self.reflections_with_id_minus_1 = flex.reflection_table()
         if reflection_tables:
             if len(reflection_tables) > 1:
+                n_imagesets = 0
+                for t in reflection_tables:
+                    if "imageset_id" in t:
+                        t["imageset_id"] += n_imagesets
+                        n_imagesets += len(set(t["imageset_id"]))
                 self.reflection_table = flex.reflection_table.concat(reflection_tables)
             else:
                 self.reflection_table = reflection_tables[0]
@@ -111,17 +116,26 @@ class Expeditor(object):
             ]
         return expts_with_crystals, reflection_table.split_by_experiment_id()
 
-    def combine_experiments_for_output(self, experiments, reflection_tables=None):
+    def combine_experiments_for_output(
+        self, experiments, reflection_tables=None, include_unindexed=False
+    ):
         # When reflection tables exist, handle two types of input.
         # Either the program returns a list of reflections tables, one for each experiment,
         # or a combined table for all experiments.
         if reflection_tables:
             if len(experiments) != len(reflection_tables):
                 if len(reflection_tables) == 1:
-                    reflection_tables = reflection_tables[0].split_by_experiment_id()
-                    assert len(reflection_tables) == len(
+                    reflection_tables[0].assert_experiment_identifiers_are_consistent(
                         experiments
-                    ), f"{len(reflection_tables)} != {len(experiments)}"
+                    )
+                    unassigned = None
+                    new_unassigned_sel = reflection_tables[0]["id"] == -1
+                    if any(new_unassigned_sel):
+                        logger.info(f"{new_unassigned_sel.count(True)} unassigned")
+                        unassigned = reflection_tables[0].select(new_unassigned_sel)
+                    reflection_tables = reflection_tables[0].split_by_experiment_id()
+                    if unassigned and include_unindexed:
+                        reflection_tables.append(unassigned)
                 else:
                     raise ValueError("Mismatch")
         imagesets = self.experiments.imagesets()
@@ -132,6 +146,8 @@ class Expeditor(object):
                         table["imageset_id"] = flex.int(
                             table.size(), imagesets.index(expt.imageset)
                         )
+                if self.reflections_with_id_minus_1 and include_unindexed:
+                    reflection_tables.append(self.reflections_with_id_minus_1)
                 return experiments, flex.reflection_table.concat(reflection_tables)
             return experiments, None
 
@@ -146,7 +162,6 @@ class Expeditor(object):
         # else:
         #    reflection_table = reflection_tables[0]
         # tables = reflection_table.split_by_experiment_id()
-
         for i, expt, table in zip(self.crystal_locs, experiments, reflection_tables):
             other_expts_sharing_scan = self.experiments.where(scan=expt.scan)
             for j in other_expts_sharing_scan:

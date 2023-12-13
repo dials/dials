@@ -36,7 +36,6 @@ from dxtbx.model import Experiment
 
 import dials.util.log
 from dials.array_family import flex
-from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 Vector = Sequence[SupportsFloat]
@@ -321,15 +320,8 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     )
     from dials.util.multi_dataset_handling import Expeditor
 
-    # Work around parse_multiple_datasets dropping unindexed reflections.
-    # unindexed = flex.reflection_table()
-    # for r_table in reflections_list:
-    #    unindexed.extend(r_table.select(r_table["id"] == -1))
-    # Get a single reflection table per experiment object.
-    reflections_list = parse_multiple_datasets(reflections_list)
     expeditor = Expeditor(experiments, reflections_list)
     experiments, reflections_list = expeditor.filter_experiments_with_crystals()
-    unindexed = expeditor.get_unindexed()
 
     # Record the density of diamond in g·cm⁻³ (for consistency with NIST tables,
     # https://doi.org/10.18434/T4D01F).
@@ -356,8 +348,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         experiments.as_file(params.output.experiments)
     logger.info("Writing the reflection table to %s", params.output.reflections)
     # Collate reflections into a single reflection table and save it to file.
-    unindexed.extend(reflections)
-    unindexed.as_file(params.output.reflections)
+    reflections.as_file(params.output.reflections)
 
 
 # Keep this minimal.  Try to keep the command-line behaviour neatly encapsulated in run.

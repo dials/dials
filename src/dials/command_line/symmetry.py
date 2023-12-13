@@ -34,7 +34,6 @@ from dials.util.exclude_images import (
     get_selection_for_valid_image_ranges,
 )
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -510,7 +509,7 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 float(params.systematic_absences.significance_level),
                 method=params.systematic_absences.method,
             )
-    return experiments, reflection_tables
+
     logger.info(
         "Saving reindexed experiments to %s in space group %s",
         params.output.experiments,
@@ -618,31 +617,9 @@ def run(args=None):
             % (len(experiments), len(reflections))
         )
     try:
-        experiments, reflections = assign_unique_identifiers(experiments, reflections)
-        experiments, reflections = symmetry(experiments, reflections, params=params)
+        symmetry(experiments, reflections, params=params)
     except ValueError as e:
         sys.exit(e)
-
-    logger.info(
-        "Saving reindexed experiments to %s in space group %s",
-        params.output.experiments,
-        str(experiments[0].crystal.get_space_group().info()),
-    )
-    experiments, reflections = expeditor.combine_experiments_for_output(
-        experiments,
-        reflections,
-    )
-    experiments.as_file(params.output.experiments)
-    if params.output.reflections is not None:
-        logger.info(
-            "Saving %s reindexed reflections to %s",
-            len(reflections),
-            params.output.reflections,
-        )
-        reflections.as_file(params.output.reflections)
-
-    if params.output.html and params.systematic_absences.check:
-        ScrewAxisObserver().generate_html_report(params.output.html)
 
 
 if __name__ == "__main__":

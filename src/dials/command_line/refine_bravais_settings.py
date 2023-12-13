@@ -201,8 +201,9 @@ def run(args=None):
     if len(experiments) == 0:
         parser.print_help()
         return
-    expeditor = Expeditor(experiments, reflections)
+    expeditor = Expeditor(experiments, [reflections])
     experiments, reflections = expeditor.filter_experiments_with_crystals()
+    reflections = flex.reflection_table.concat(reflections)
 
     if len(experiments.crystals()) > 1:
         if params.crystal_id is not None:
@@ -241,10 +242,8 @@ def run(args=None):
         soln = int(subgroup.setting_number)
         bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
         logger.info("Saving solution %i as %s", soln, bs_json)
-
-        expts = expeditor.generate_experiments_with_updated_crystal(
-            expts, params.crystal_id
-        )
+        crystal_id = params.crystal_id if params.crystal_id else 0
+        expts = expeditor.generate_experiments_with_updated_crystal(expts, crystal_id)
 
         expts.as_file(os.path.join(params.output.directory, bs_json))
 

@@ -177,7 +177,10 @@ def run(args=None):
 
     params, options = parser.parse_args(args=args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
+    from dials.util.multi_dataset_handling import Expeditor
 
+    expeditor = Expeditor(experiments)
+    experiments, _ = expeditor.filter_experiments_with_crystals()
     if not experiments:
         parser.print_help()
         return

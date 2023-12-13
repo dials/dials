@@ -415,14 +415,7 @@ def run(args=None):
     if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
     cosym_instance.run()
-    experiments, reflections = expeditor.combine_experiments_for_output(
-        cosym_instance._experiments, cosym_instance._reflections
-    )
-    logger.info("Saving reindexed experiments to %s", params.output.experiments)
-    experiments.as_file(params.output.experiments)
-    logger.info("Saving reindexed reflections to %s", params.output.reflections)
-    reflections.as_file(params.output.reflections)
-    # cosym_instance.export()
+    cosym_instance.export()
 
 
 if __name__ == "__main__":

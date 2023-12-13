@@ -751,7 +751,8 @@ def run(args=None, phil=working_phil):
 
     expeditor = Expeditor(experiments, reference)
     experiments, reference = expeditor.filter_experiments_with_crystals()
-    reference = flex.reflection_table.concat(reference)
+    if reference:
+        reference = flex.reflection_table.concat(reference)
     try:
         experiments, reflections, report = run_integration(
             params, experiments, reference

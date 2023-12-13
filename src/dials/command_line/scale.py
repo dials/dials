@@ -246,23 +246,20 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     else:
         # Note, cross validation mode does not produce scaled datafiles
         if scaled_experiments and joint_table:
-            experiments, reflections = expeditor.combine_experiments_for_output(
-                scaled_experiments, [joint_table]
-            )
             logger.info(
                 "Saving the scaled experiments to %s", params.output.experiments
             )
-            experiments.as_file(params.output.experiments)
+            scaled_experiments.as_file(params.output.experiments)
             logger.info(
                 "Saving the scaled reflections to %s", params.output.reflections
             )
-            reflections.as_file(params.output.reflections)
+            joint_table.as_file(params.output.reflections)
 
             if params.output.unmerged_mtz:
-                _export_unmerged_mtz(params, experiments, reflections)
+                _export_unmerged_mtz(params, scaled_experiments, joint_table)
 
             if params.output.merged_mtz:
-                _export_merged_mtz(params, experiments, reflections)
+                _export_merged_mtz(params, scaled_experiments, joint_table)
 
     logger.info(
         "See dials.github.io/dials_scale_user_guide.html for more info on scaling options"

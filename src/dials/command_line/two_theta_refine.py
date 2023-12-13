@@ -32,7 +32,6 @@ from dials.algorithms.refinement.two_theta_refiner import (
 from dials.array_family import flex
 from dials.util import log, tabulate
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -436,18 +435,17 @@ class Script:
         # Parse the command line
         params, _ = self.parser.parse_args(args, show_diff_phil=False)
 
-        # set up global reflections list
-        reflections = flex.reflection_table()
-
-        # loop through the input, building up the global lists
         reflections_list, input_experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
+        # set up global reflections list
+        from dials.util.multi_dataset_handling import Expeditor
+
+        expeditor = Expeditor(input_experiments, reflections_list)
+        input_experiments, reflections = expeditor.filter_experiments_with_crystals()
+        reflections = flex.reflection_table.concat(reflections)
 
         experiments = copy.deepcopy(input_experiments)
-        reflections_list = parse_multiple_datasets(reflections_list)
-        for refs in reflections_list:
-            reflections.extend(refs)
 
         # Try to load the models and data
         nexp = len(experiments)
@@ -530,6 +528,8 @@ class Script:
             logger.info("Final refined crystal model:")
             logger.info(crystals[0])
             logger.info(self.cell_param_table(crystals[0]))
+
+        experiments, _ = expeditor.combine_experiments_for_output(experiments)
 
         # Save the refined experiments to file
         output_experiments_filename = params.output.experiments

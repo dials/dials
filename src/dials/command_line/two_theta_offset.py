@@ -54,6 +54,11 @@ class Script:
 
         # Check the number of experiments is at least 2
         experiments = flatten_experiments(params.input.experiments)
+        from dials.util.multi_dataset_handling import Expeditor
+
+        expeditor = Expeditor(experiments)
+        experiments, _ = expeditor.filter_experiments_with_crystals()
+
         if len(experiments) < 2:
             self.parser.print_help()
             return
