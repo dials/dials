@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 
+from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.phil import parse
 
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
@@ -69,16 +70,6 @@ class Script:
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
-            check_format=True,
-            read_experiments=True,
-        )
-
-        # Parser to use if check_format=True fails
-        # See https://github.com/cctbx/dxtbx/issues/187
-        self.fallback_parser = ArgumentParser(
-            usage=usage,
-            phil=phil_scope,
-            epilog=help_message,
             check_format=False,
             read_experiments=True,
         )
@@ -86,11 +77,7 @@ class Script:
     def run(self, args=None):
         """Execute the script."""
         # Parse the command line
-        try:
-            params, options = self.parser.parse_args(args, show_diff_phil=True)
-        except Exception:
-            self.parser = self.fallback_parser
-            params, options = self.parser.parse_args(args, show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
 
         # Check the number of experiments
         experiments = flatten_experiments(params.input.experiments)
@@ -128,15 +115,20 @@ class Script:
             predicted_all.extend(predicted)
 
         # if we are not ignoring shadows, look for reflections in the masked
-        # region, see https://github.com/dials/dials/issues/349
-
+        # region, see https://github.com/dials/dials/issues/349. In this case
+        # we need access to the image data
         if not params.ignore_shadows:
             try:
-                shadowed = filter_shadowed_reflections(
-                    experiments, predicted_all, experiment_goniometer=True
+                experiments = ExperimentListFactory.from_json(
+                    experiments.as_json(), check_format=True
                 )
-            except AttributeError:
-                sys.exit("Unable to check shadows without access to image data")
+            except OSError as e:
+                sys.exit(
+                    f"Unable to read image data. Please check {e.filename} is accessible"
+                )
+            shadowed = filter_shadowed_reflections(
+                experiments, predicted_all, experiment_goniometer=True
+            )
             predicted_all = predicted_all.select(~shadowed)
 
         try:
