@@ -332,6 +332,8 @@ class Script:
                     save_chunk(chunk_counter, chunk_expts, chunk_refls)
                     chunk_counter += 1
                     chunk_expts = ExperimentList()
+                    imagesets_found = OrderedSet()
+                    next_iset_id = 0
                     if reflections:
                         chunk_refls = flex.reflection_table()
                     else:
