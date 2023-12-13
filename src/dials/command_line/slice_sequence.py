@@ -270,9 +270,7 @@ class Script:
                     slice_reflections(reflections, [sr]) for sr in params.image_range
                 ]
                 identifiers = sliced_experiments.identifiers()
-                sliced_reflections = concatenate_reflections(
-                    sliced_reflections, identifiers
-                )
+                sliced_reflections = concatenate_reflections(sliced, identifiers)
 
         else:
             # slice each dataset into the requested subset
