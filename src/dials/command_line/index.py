@@ -158,7 +158,8 @@ def _index_single_imageset(experiments, reflections, params, log_text=None):
     # update the identifiers so that the unindexed has id 0, and the rest 1,2,3.. etc
     idxr.unindexed_reflections["id"] = flex.int(idxr.unindexed_reflections.size(), 0)
     idxr.unindexed_reflections.experiment_identifiers()[0] = unindexed[0].identifier
-    idxr.unindexed_reflections.clean_experiment_identifiers_map()
+    if idxr.unindexed_reflections.size():
+        idxr.unindexed_reflections.clean_experiment_identifiers_map()
 
     idx_refl = idxr.refined_reflections
     for id_ in sorted(set(idx_refl["id"]), reverse=True):
@@ -179,7 +180,8 @@ def _index_single_imageset(experiments, reflections, params, log_text=None):
     indexed_experiments = ExperimentList(unindexed)
     indexed_experiments.extend(idxr.refined_experiments)
     idx_refl.extend(idxr.unindexed_reflections)
-    idx_refl.assert_experiment_identifiers_are_consistent()
+    idx_refl.assert_experiment_identifiers_are_consistent(indexed_experiments)
+
     return indexed_experiments, idx_refl
 
 
