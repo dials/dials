@@ -218,7 +218,7 @@ def _index_joint_indexing(experiments, reflections, params):
             input_expts = experiments
             known_crystal_models = None
 
-    for id_ in sorted(set(reflections["id"]), reverse=True):
+    for id_ in sorted(set(reflections["id"]).difference({-1}), reverse=True):
         del reflections.experiment_identifiers()[id_]
     reflections["original_id"] = copy.deepcopy(reflections["imageset_id"])
     reflections["id"] = copy.deepcopy(reflections["imageset_id"])
@@ -245,18 +245,42 @@ def _index_joint_indexing(experiments, reflections, params):
         unindexed_refl = idxr.unindexed_reflections.select(sel)
         unindexed_refl["id"] = flex.int(unindexed_refl.size(), n_id)
         del unindexed_refl["original_id"]
-        unindexed_refl.experiment_identifiers()[n_id] == identifier
+        unindexed_refl.clean_experiment_identifiers_map()
+        unindexed_refl.experiment_identifiers()[n_id] = identifier
         n_id += 1
         indexed_reflections.extend(unindexed_refl)
+        indexed_experiments.append(unindexed[i])
         # now get the indexed
         i_expts = idxr.refined_experiments.where(imageset=iset)
         identifiers = [idxr.refined_experiments[i].identifier for i in i_expts]
+        n_indexed_this = len(identifiers)
         refls = idxr.refined_reflections.select_on_experiment_identifiers(identifiers)
+        refls.reset_ids()  # number from 0
         # now reset the ids in the refls
+        for id_ in sorted(set(refls["id"]), reverse=True):
+            identifier = refls.experiment_identifiers()[id_]
+            del refls.experiment_identifiers()[id_]
+            refls.experiment_identifiers()[id_ + n_id] = identifier
+        refls["id"] += n_id
+        n_id += n_indexed_this
+        del refls["original_id"]
+        indexed_reflections.extend(refls)
+        # the refiner copies the input beam, detector and gonio, we want to share these
+        indexed_experiments[-1].detector = idxr.refined_experiments[i_expts[0]].detector
+        indexed_experiments[-1].beam = idxr.refined_experiments[i_expts[0]].beam
+        if idxr.refined_experiments[
+            i_expts[0]
+        ].goniometer:  # might be using the stills indexer which deletes the gonio
+            indexed_experiments[-1].goniometer = idxr.refined_experiments[
+                i_expts[0]
+            ].goniometer
+        for j in i_expts:
+            indexed_experiments.append(idxr.refined_experiments[j])
+    indexed_reflections.assert_experiment_identifiers_are_consistent(
+        indexed_experiments
+    )
 
-    pass
-    # FIXME
-    return indexed_experiments, refls
+    return indexed_experiments, indexed_reflections
 
 
 def _index_experiments(

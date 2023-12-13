@@ -712,17 +712,48 @@ def test_index_multi_lattice_multi_sweep(dials_data, tmp_path):
             "max_lattices=2",
             "joint_indexing=False",
             "n_macro_cycles=2",
+            "output.retain_unindexed_experiment=False",
+            "output.experiments=indexed_1.expt",
+            "output.reflections=indexed_1.refl",
         ],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert (tmp_path / "indexed.refl").is_file()
-    assert (tmp_path / "indexed.expt").is_file()
-    expts = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
+    assert (tmp_path / "indexed_1.refl").is_file()
+    assert (tmp_path / "indexed_1.expt").is_file()
+    expts = load.experiment_list(tmp_path / "indexed_1.expt", check_format=False)
     assert len(expts) == 4
     assert len(expts.crystals()) == 4
-    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    refls = flex.reflection_table.from_file(tmp_path / "indexed_1.refl")
+    refls.assert_experiment_identifiers_are_consistent(expts)
+    assert set(refls["imageset_id"]) == {0, 1}
+    assert refls.get_flags(refls.flags.indexed).count(True) >= n_indexed_first
+
+    # now run with keeping unindexed experiment existing model
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            tmp_path / "indexed.expt",
+            tmp_path / "indexed.refl",
+            "max_lattices=2",
+            "joint_indexing=False",
+            "n_macro_cycles=2",
+            "output.retain_unindexed_experiment=True",
+            "output.experiments=indexed_2.expt",
+            "output.reflections=indexed_2.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed_2.refl").is_file()
+    assert (tmp_path / "indexed_2.expt").is_file()
+    expts = load.experiment_list(tmp_path / "indexed_2.expt", check_format=False)
+    assert len(expts) == 6
+    assert expts.crystals()[0] is None
+    assert len(expts.crystals()) == 5
+    refls = flex.reflection_table.from_file(tmp_path / "indexed_2.refl")
     refls.assert_experiment_identifiers_are_consistent(expts)
     assert set(refls["imageset_id"]) == {0, 1}
     assert refls.get_flags(refls.flags.indexed).count(True) >= n_indexed_first
@@ -993,16 +1024,45 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
             dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
             "max_lattices=2",
             "minimum_angular_separation=0.001",
+            "output.retain_unindexed_experiment=False",
+            "output.experiments=indexed_1.expt",
+            "output.reflections=indexed_1.refl",
         ],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert (tmp_path / "indexed.expt").is_file()
-    assert (tmp_path / "indexed.refl").is_file()
+    assert (tmp_path / "indexed_1.expt").is_file()
+    assert (tmp_path / "indexed_1.refl").is_file()
 
-    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
-    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    expts = ExperimentList.from_file(tmp_path / "indexed_1.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed_1.refl")
     assert len(expts) == 8
     assert len(expts.crystals()) == 2
+    refls.assert_experiment_identifiers_are_consistent(expts)
+
+    # now rerun but keeping unindexed experiments
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            "max_lattices=2",
+            "minimum_angular_separation=0.001",
+            "output.retain_unindexed_experiment=True",
+            "output.experiments=indexed_2.expt",
+            "output.reflections=indexed_2.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed_2.expt").is_file()
+    assert (tmp_path / "indexed_2.refl").is_file()
+
+    expts = ExperimentList.from_file(tmp_path / "indexed_2.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed_2.refl")
+    assert len(expts) == 12
+    assert expts.crystals()[0] is None
+    assert len(expts.crystals()) == 3  # None and two crystals
     refls.assert_experiment_identifiers_are_consistent(expts)
