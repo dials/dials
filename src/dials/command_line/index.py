@@ -81,7 +81,7 @@ output {
     .type = path
   reflections = indexed.refl
     .type = path
-  retain_unindexed_experiment = False
+  retain_unindexed_experiments = False
     .type = bool
     .help = "If True, the input experiment models are extended with new crystal"
             "models, thus the output contains a crystal-less experiment for each"
@@ -150,7 +150,7 @@ def _index_single_imageset(experiments, reflections, params, log_text=None):
         params=params,
     )
     idxr.index()
-    if not params.output.retain_unindexed_experiment:
+    if not params.output.retain_unindexed_experiments:
         idx_refl = copy.deepcopy(idxr.refined_reflections)
         idx_refl.extend(idxr.unindexed_reflections)
         return idxr.refined_experiments, idx_refl
@@ -231,7 +231,7 @@ def _index_joint_indexing(experiments, reflections, params):
         params=params,
     )
     idxr.index()
-    if not params.output.retain_unindexed_experiment:
+    if not params.output.retain_unindexed_experiments:
         idx_refl = copy.deepcopy(idxr.refined_reflections)
         idx_refl.extend(idxr.unindexed_reflections)
         return idxr.refined_experiments, idx_refl
