@@ -31,9 +31,12 @@ pink_indexer
     wav_max = None
         .type = float(value_min=0.)
         .help = "Maximum wavelength for polychromatic data"
-    max_refls = 50
-        .type = int(value_min=10, value_max=100)
-        .help = "Maximum number of reflections to consider during indexing"
+    rotogram_grid_points = 90
+        .type = int(value_min=10, value_max=1000)
+        .help = "Number of points at which to evaluate the angle search for each rlp-observation pair"
+    voxel_grid_points=100
+        .type = int(value_min=10, value_max=1000)
+        .help = "Controls the number of voxels onto which the rotograms are discretized"
 }
 """
 
@@ -149,6 +152,9 @@ class Indexer:
             H (array) : n x 3 array of miller indices.
             scattering_vector (array) : n x 3 array of empirical scattering vectors.
             fix (string) : a comma separated string of cell parameters to fix, possible choices are a,b,c,alpha,beta,gamma
+        Returns:
+            cell (array) : length 6 array of cell parameters, a,b,c,alpha,beta,gamma
+            R (array) : 3 x 3 rotation matrix
         """
         qhat = normalize(scattering_vector)
 
@@ -192,22 +198,28 @@ class Indexer:
         rotogram_grid_points=200,
         voxel_grid_points=200,
         fix="a",
+        dilate=False,
     ):
         """
         Args:
             s0 (array): An array of 3 floating point numbers corresponding to the s0 vector. This will be normalized.
             s1 (array): An array of 3 floating point numbers corresponding to the s0 vector. This will be normalized.
-            max_refls (int): The maximum number of refls to consider.
-            rotogram_grid_points (int): The number of points at which to evaluate the rotograms.
-            voxel_grid_points (int): The fineness of the discretization used to quantitate rotograms.
-            fix (str): See Indexer.refine_cell_rotation for details.
+            max_refls (int, optional): The maximum number of refls to consider.
+            rotogram_grid_points (int, optional): The number of points at which to evaluate the rotograms.
+            voxel_grid_points (int, optional): The fineness of the discretization used to quantitate rotograms.
+            fix (str, optional): See Indexer.refine_cell_rotation for details.
+            dilate (bool, optional): Dilate the grid search search by adding the values of adjacent voxels. Default True.
+
+        Returns:
+            Hout (int32 array): an n x 3 array of Miller indices with unassigned reflections denoted by 0,0,0
+            cell (array) : length 6 array of refined cell parameters, a,b,c,alpha,beta,gamma
+            R (array) : 3 x 3 rotation matrix
         """
         s0 = normalize(np.asarray(s0, dtype=self.float_dtype))
         s1 = normalize(np.asarray(s1, dtype=self.float_dtype))
 
         q = s1 - s0[None, :]
         q_len = norm2(q, keepdims=True)
-        qhat = q / q_len
 
         # Possible resolution range for each observation
         res_min = self.wav_min / q_len.squeeze(-1)
@@ -215,8 +227,17 @@ class Indexer:
 
         if len(res_min) > max_refls:
             dmin = np.sort(res_min)[-max_refls]
+            idx = res_min >= dmin
+            s1 = s1[idx]
+            q = q[idx]
+            q_len = q_len[idx]
+            res_min = res_min[idx]
+            res_max = res_max[idx]
         else:
             dmin = res_min.min()
+
+        # Normalized q vector
+        qhat = q / q_len
 
         # Generate the feasible set of reflections from the current geometry
         # These are in cartesian reciprocal space coordinates in the
@@ -256,43 +277,43 @@ class Indexer:
         _discretized = np.round(v_grid_size * v / rad).astype("int8")
         discretized = _discretized.reshape((-1, 3))
 
-        # This block is optimized for speed. There are lot of nicer, legible ways to
-        # do this in numpy but they can be rather slow. Here's one example alternative:
-        # idx,counts = np.unique(discretized, axis=0, return_counts=True)
-        # max_idx = np.argmax(counts)
-        # grid_max = idx[max_idx]
         w = 2 * v_grid_size + 1
-        to_id = np.arange(w * w * w, dtype="int32").reshape(
-            (w, w, w)
-        )  # Converts grid points to a unique integer id
-        a, b, c = discretized.T
-        flat_ids = to_id[a, b, c]  # Convert 3-D grid values to integers
-        counts = np.bincount(flat_ids)
-        max_idx = np.argmax(counts)
-        brick = np.ones((w, w, w), dtype="int8")
+        voxels = np.zeros((w, w, w), dtype="int8")
+        np.add.at(voxels, tuple(discretized.T), 1)
+        if dilate:
+            # kernel = np.array(np.meshgrid([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]), dtype='int8').T.reshape(-1, 3)
+            kernel = np.ones((3, 3, 3), dtype="float32")
+            l = v_grid_size - 1
+            kernel = np.pad(kernel, [[l, l], [l, l], [l, l]])
+            voxels = np.fft.ifftn(
+                np.fft.fftn(voxels.astype("float32")) * np.fft.fftn(kernel)
+            )
+
         vrange = np.arange(-v_grid_size, v_grid_size + 1, dtype="int8")
         vrange = np.roll(vrange, v_grid_size + 1)
-        grid_max = np.array(
-            [
-                (vrange[:, None, None] * brick).flatten()[max_idx],
-                (vrange[None, :, None] * brick).flatten()[max_idx],
-                (vrange[None, None, :] * brick).flatten()[max_idx],
-            ]
-        )
+        grid_max = np.where(voxels == voxels.max())
+        grid_max = vrange[[i[0] for i in grid_max]]
+
         # v_max = rad * grid_max / v_grid_size
 
         # This complicated indexing stuff will figure out the assignment
         # corresponding to the best rotogram voxel.
-        flat_assignment = (_discretized == grid_max).all(-1).any(-1)
+        flat_assignment = (np.abs(_discretized - grid_max) <= 1).all(-1).any(-1)
+        # score = (_discretized - grid_max <= 1).all(-1).sum(-1)
+
+        # from scipy.optimize import linear_sum_assignment
+        # cost = np.zeros_like(mask, dtype='float32')
+        # cost[mask] = -score
+        # a,b = linear_sum_assignment(cost)
+        # Hout = Hobs = Hall[b]
+        # q = s1[a] - s0[None,:]
+
         Hidx = i[flat_assignment]
         Hobs = Hall[j[flat_assignment]]
 
         Hout = np.zeros_like(s1)
         Hout[Hidx] = Hobs
         q = s1[Hidx] - s0[None, :]
-
-        # vnorm = norm2(v_max)
-        # theta = 4.0 * np.tan(vnorm)
 
         cell, R = self.refine_cell_rotation(Hobs, q, fix)
         return Hout, cell, R
@@ -341,6 +362,8 @@ class PinkIndexer(Strategy):
         self.wav_min = params.wav_min
         self.wav_max = params.wav_max
         self.max_refls = params.max_refls
+        self.rotogram_grid_points = params.rotogram_grid_points
+        self.voxel_grid_points = params.voxel_grid_points
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
@@ -350,29 +373,39 @@ class PinkIndexer(Strategy):
             experiments (dxtbx.model.experiment_list.ExperimentList):
                 The experimental geometry models
         """
+        # This is a workaround for https://github.com/dials/dials/issues/2485
+        reflections["id"] *= 0
+        reflections["id"] -= 1
+
+        if len(experiments) < 1:
+            msg = "pink_indexer received an experimentlist with length > 1. To use the pink_indexer method, you must set joint_indexing=False when you call dials.index"
+            raise ValueError(msg)
+
+        expt = experiments[0]
+        refls = reflections
+
         cell = gemmi.UnitCell(*self.cell.parameters())
 
         wav_min, wav_max = self.wav_min, self.wav_max
-        eps = 0.02
-        crystals = []
-        for imageset_id, expt in enumerate(experiments):
-            beam = expt.beam
-            s0 = beam.get_s0()
-            wav = beam.get_wavelength()
-            if wav_min is None:
-                wav_min = wav * (1.0 - eps)
-            if wav_max is None:
-                wav_max = wav * (1.0 + eps)
-            pidxr = Indexer(cell, wav_min, wav_max)
-            sel = reflections["imageset_id"] == imageset_id
-            refls = reflections.select(sel)
-            s1 = np.array(refls["s1"], dtype="float32")
-            H, cell, U = pidxr.index_pink(s0, s1, self.max_refls)
-            real_a, real_b, real_c = np.array(cell.orthogonalization_matrix).T
-            crystal = Crystal(real_a, real_b, real_c, self.spacegroup)
-            B = np.array(cell.fractionalization_matrix).T
-            UB = U @ B
-            A = matrix.sqr(UB.flatten())
-            crystal.set_A(A)
-            crystals.append(crystal)
-        return crystals
+        eps = 0.01
+
+        beam = expt.beam
+        s0 = beam.get_s0()
+        wav = beam.get_wavelength()
+        if wav_min is None:
+            wav_min = wav * (1.0 - eps)
+        if wav_max is None:
+            wav_max = wav * (1.0 + eps)
+        pidxr = Indexer(cell, wav_min, wav_max)
+        s1 = np.array(refls["s1"], dtype="float32")
+        H, cell, U = pidxr.index_pink(
+            s0, s1, self.max_refls, self.rotogram_grid_points, self.voxel_grid_points
+        )
+        real_a, real_b, real_c = np.array(cell.orthogonalization_matrix).T
+        crystal = Crystal(real_a, real_b, real_c, self.spacegroup)
+        B = np.array(cell.fractionalization_matrix).reshape((3, 3)).T
+        UB = U @ B
+        A = matrix.sqr(UB.flatten())
+        crystal.set_A(A)
+        self.candidate_crystal_models = [crystal]
+        return self.candidate_crystal_models
