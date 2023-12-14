@@ -82,10 +82,8 @@ class Render3d:
             self.set_beam_centre(
                 self.settings.beam_centre_panel, self.settings.beam_centre
             )
-        crystals = [
-            expt.crystal for expt in self.experiments if expt.crystal is not None
-        ]
-        if crystals:
+        crystals = [expt.crystal for expt in self.experiments]
+        if any(crystals):
             # the points are scaled by 100 so must do that here too
             vecs = [
                 [
@@ -94,8 +92,13 @@ class Render3d:
                     .transpose()
                     .as_list_of_lists()
                 ]
+                if c
+                else None
                 for c in crystals
             ]
+            # enable bookkeeping for unindexed data in case of -1 ids
+            if all(vecs):
+                vecs = [None] + vecs
             self.viewer.set_reciprocal_lattice_vectors(vecs)
             vecs = [
                 [
@@ -104,8 +107,13 @@ class Render3d:
                     .transpose()
                     .as_list_of_lists()
                 ]
+                if c
+                else None
                 for c in crystals
             ]
+            # enable bookkeeping for unindexed data in case of -1 ids
+            if all(vecs):
+                vecs = [None] + vecs
             self.viewer.set_reciprocal_crystal_vectors(vecs)
         self.map_points_to_reciprocal_space()
         self.set_points()
@@ -268,9 +276,10 @@ class Render3d:
                 for i in range(0, flex.max(imageset_id) + 1):
                     colors.set_selected(imageset_id == i, palette[(i % n) + 1])
             else:
-                colors.set_selected(reflections["id"] == -1, palette[0])
-                for i in range(0, flex.max(reflections["id"]) + 1):
-                    colors.set_selected(reflections["id"] == i, palette[(i % n) + 1])
+                # handle cases where unindexed have either id=-1 or their own experiment
+                m = flex.min(self.reflections_input["id"])
+                for i in range(m, flex.max(reflections["id"]) + 1):
+                    colors.set_selected(reflections["id"] == i, palette[((i - m) % n)])
         self.viewer.set_colors(colors)
 
     def set_beam_centre(self, panel, beam_centre):
