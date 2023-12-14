@@ -45,12 +45,6 @@ phil_scope = iotbx.phil.parse(
 class Expeditor(object):
     def __init__(self, experiments, reflection_tables=None):
 
-        # dict of file : elist, refls
-
-        # FIXME - allow passing in multiple tables and experiment list
-        # FIXME allow not having reflection tables
-
-        # FIXME how to handle old datasets with -1 in id column? e.g. for anvil_correction
         self.experiments = experiments
         self.reflection_table = None
 
@@ -151,17 +145,6 @@ class Expeditor(object):
                 return experiments, flex.reflection_table.concat(reflection_tables)
             return experiments, None
 
-        # if -1 in set(reflection_table["id"]):
-        #    # need to match it up to the right imageset
-        #    reflection_table = reflection_table.select(reflection_table["id"] >= 0)
-
-        # if we have a model for a gonio, detector or beam which belongs to a scan, update
-        # all experiments that share that scan
-        # if len(reflection_tables) > 1:
-        #    reflection_table = flex.reflection_table.concat(reflection_tables)
-        # else:
-        #    reflection_table = reflection_tables[0]
-        # tables = reflection_table.split_by_experiment_id()
         for i, expt, table in zip(self.crystal_locs, experiments, reflection_tables):
             other_expts_sharing_scan = self.experiments.where(scan=expt.scan)
             for j in other_expts_sharing_scan:
@@ -177,7 +160,6 @@ class Expeditor(object):
                     table.size(), imagesets.index(expt.imageset)
                 )
 
-        # self._reflections = update_imageset_ids(self._experiments, self._reflections)
         reflections = flex.reflection_table.concat(self.crystalless_reflection_tables)
         reflections.assert_experiment_identifiers_are_consistent(self.experiments)
         return self.experiments, reflections
