@@ -194,6 +194,7 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
         ("I23", None, 2, 10, False, False),
         ("P422", (79, 79, 37, 90, 90, 90), None, 10, True, False),
         ("P321", (59.39, 59.39, 28.35, 90, 90, 120), None, 5, False, False),
+        ("C2", (56.194, 53.224, 32.156, 90.000, 92.277, 90.000), None, 5, False, False),
     ],
 )
 def test_synthetic(

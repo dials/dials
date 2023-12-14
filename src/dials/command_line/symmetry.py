@@ -9,7 +9,7 @@ import random
 import sys
 
 import iotbx.phil
-from cctbx import sgtbx, uctbx
+from cctbx import sgtbx
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dxtbx.model import ExperimentList
@@ -17,7 +17,10 @@ from libtbx import Auto
 
 import dials.util
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
-from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
+from dials.algorithms.symmetry import (
+    median_unit_cell,
+    resolution_filter_from_reflections_experiments,
+)
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
@@ -125,14 +128,6 @@ output {
 """,
     process_includes=True,
 )
-
-
-def median_unit_cell(experiments):
-    uc_params = [flex.double() for i in range(6)]
-    for c in experiments.crystals():
-        for i, p in enumerate(c.get_unit_cell().parameters()):
-            uc_params[i].append(p)
-    return uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
 
 
 def unit_cells_are_similar_to(
