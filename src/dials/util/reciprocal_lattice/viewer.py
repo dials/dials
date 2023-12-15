@@ -222,9 +222,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.d_min_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.d_min_ctrl)
 
-        self.z_min_ctrl = floatspin.FloatSpin(
-            parent=self, increment=1, min_val=0, digits=0
-        )
+        self.z_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=1)
         self.z_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.z_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -602,12 +600,14 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             if vectors:
                 # handle cases where unindexed have either id=-1 or their own experiment
                 m = flex.min(self.parent.reflections_input["id"])
-                for i, axes in enumerate(vectors):
+                for i, axes in enumerate(vectors):  # corresponds to experiment objects
                     if axes is not None:
                         if self.settings.experiment_ids:
-                            if (i + m) not in self.settings.experiment_ids:
+                            if i not in self.settings.experiment_ids:
                                 continue
-                        j = i % self.palette.size()
+                        j = (
+                            i - m
+                        ) % self.palette.size()  # make the first unindexed lattice be white.
                         color = self.palette[j]
                         self.draw_cell(axes, color)
 

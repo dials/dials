@@ -96,9 +96,6 @@ class Render3d:
                 else None
                 for c in crystals
             ]
-            # enable bookkeeping for unindexed data in case of -1 ids
-            if all(vecs):
-                vecs = [None] + vecs
             self.viewer.set_reciprocal_lattice_vectors(vecs)
             vecs = [
                 [
@@ -111,9 +108,6 @@ class Render3d:
                 else None
                 for c in crystals
             ]
-            # enable bookkeeping for unindexed data in case of -1 ids
-            if all(vecs):
-                vecs = [None] + vecs
             self.viewer.set_reciprocal_crystal_vectors(vecs)
         self.map_points_to_reciprocal_space()
         self.set_points()
@@ -192,7 +186,6 @@ class Render3d:
             use_column = "xyzobs.px.value"
         else:
             use_column = "xyzcal.px"
-
         if self.settings.d_min is not None:
             reflections = reflections.select(d_spacings >= self.settings.d_min)
         else:
