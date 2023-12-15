@@ -1,0 +1,2 @@
+``dials.estimate_resolution``: Fix bug causing fitting failures for isigma, misigma curves
+
