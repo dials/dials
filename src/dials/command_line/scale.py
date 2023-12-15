@@ -227,10 +227,6 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    from dials.util.multi_dataset_handling import Expeditor
-
-    expeditor = Expeditor(experiments, reflections)
-    experiments, reflections = expeditor.filter_experiments_with_crystals()
 
     log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())

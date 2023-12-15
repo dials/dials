@@ -23,6 +23,7 @@ from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
+    parse_multiple_datasets,
     select_datasets_on_identifiers,
     update_imageset_ids,
 )
@@ -389,10 +390,7 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    from dials.util.multi_dataset_handling import Expeditor
-
-    expeditor = Expeditor(experiments, reflections)
-    experiments, reflections = expeditor.filter_experiments_with_crystals()
+    reflections = parse_multiple_datasets(reflections)
 
     # reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):

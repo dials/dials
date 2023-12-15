@@ -34,6 +34,11 @@ from dials.util.exclude_images import (
     get_selection_for_valid_image_ranges,
 )
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+    update_imageset_ids,
+)
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -540,7 +545,7 @@ def _reindex_experiments_reflections(experiments, reflections, space_group, cb_o
         experiments, cb_op, space_group=space_group
     )
     reindexed_reflections = flex.reflection_table()
-    # reflections = update_imageset_ids(experiments, reflections)
+    reflections = update_imageset_ids(experiments, reflections)
     for i in range(len(reindexed_experiments)):
         reindexed_refl = copy.deepcopy(reflections[i])
         reindexed_refl["miller_index"] = cb_op.apply(reindexed_refl["miller_index"])
@@ -605,18 +610,14 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
-    # reflections = parse_multiple_datasets(reflections)
-    from dials.util.multi_dataset_handling import Expeditor
-
-    expeditor = Expeditor(experiments, reflections)
-    experiments, reflections = expeditor.filter_experiments_with_crystals()
-
+    reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         sys.exit(
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
     try:
+        experiments, reflections = assign_unique_identifiers(experiments, reflections)
         symmetry(experiments, reflections, params=params)
     except ValueError as e:
         sys.exit(e)
