@@ -78,7 +78,9 @@ class Script:
           .help = "If not None, instead of creating many individual"
                   "files, create composite files with the number of"
                   "datasets given in the chunk_sizes list."
-
+        include_crystalless_experiments = False
+          .type = bool
+          .expert_level = 2
       }
     """,
             process_includes=True,
@@ -121,7 +123,17 @@ class Script:
         reflections, experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
-        if reflections:
+
+        if not params.output.include_crystalless_experiments and any(
+            experiments.crystals()
+        ):
+            from dials.util.multi_dataset_handling import Expeditor
+
+            expeditor = Expeditor(experiments, reflections)
+            experiments, reflections = expeditor.filter_experiments_with_crystals()
+            if reflections:
+                reflections = flex.reflection_table.concat(reflections)
+        elif reflections:
             reflections = reflections[0]
         else:
             reflections = None

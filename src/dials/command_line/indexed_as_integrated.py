@@ -7,7 +7,6 @@ import iotbx.phil
 import dials.util
 from dials.array_family import flex
 from dials.util import log
-from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -88,11 +87,7 @@ def run(args=None):
         parser.print_help()
         return
 
-    expeditor = Expeditor(experiments, reflections)
-    experiments, reflections = expeditor.filter_experiments_with_crystals()
-    reflections = flex.reflection_table.concat(reflections)
-
-    pseudo_integrated = indexed_as_integrated(reflections, params, experiments)
+    pseudo_integrated = indexed_as_integrated(reflections[0], params, experiments)
     pseudo_integrated.as_file(params.output.reflections)
 
     logger.info(f"\nSaved pseudo-integrated data to: {params.output.reflections}\n")

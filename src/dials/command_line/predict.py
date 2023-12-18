@@ -109,6 +109,7 @@ class Script:
                 expt, force_static=params.force_static, dmin=params.d_min
             )
             predicted["id"] = flex.int(len(predicted), i_expt)
+            predicted.experiment_identifiers()[i_expt] = expt.identifier
             predicted_all.extend(predicted)
 
         # if we are not ignoring shadows, look for reflections in the masked

@@ -108,7 +108,8 @@ class Expeditor(object):
                 else None
                 for expt in self.experiments
             ]
-        return expts_with_crystals, reflection_table.split_by_experiment_id()
+            reflection_table = reflection_table.split_by_experiment_id()
+        return expts_with_crystals, reflection_table
 
     def combine_experiments_for_output(
         self, experiments, reflection_tables=None, include_unindexed=False

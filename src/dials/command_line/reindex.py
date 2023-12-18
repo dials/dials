@@ -135,8 +135,13 @@ def run(args=None):
         return
     if params.change_of_basis_op is None:
         raise Sorry("Please provide a change_of_basis_op.")
-    expeditor = Expeditor(experiments, reflections)
-    experiments, reflections = expeditor.filter_experiments_with_crystals()
+
+    # reindex does support just reflections, in that case we don't need to worry
+    # about crystalless experiments and the program handles unindexed reflections
+    # fine. Expeditor requires an experiment list.
+    if experiments:
+        expeditor = Expeditor(experiments, reflections)
+        experiments, reflections = expeditor.filter_experiments_with_crystals()
 
     reference_crystal = None
     if params.reference.experiments is not None:
@@ -293,11 +298,10 @@ experiments file must also be specified with the option: reference.experiments= 
         reflections = reindex_reflections(
             reflections, change_of_basis_op, params.hkl_offset
         )
-
-    experiments, reflections = expeditor.combine_experiments_for_output(
-        experiments, [reflections]
-    )
     if experiments:
+        experiments, reflections = expeditor.combine_experiments_for_output(
+            experiments, [reflections]
+        )
         logger.info(
             f"Saving reindexed experimental models to {params.output.experiments}"
         )

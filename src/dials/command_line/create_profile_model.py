@@ -141,9 +141,7 @@ class Script:
 
         # Write the parameters
         Command.start(f"Writing experiments to {params.output}")
-        experiments, reflections = expeditor.combine_experiments_for_output(
-            experiments, reflections
-        )
+
         experiments.as_file(params.output)
         Command.end(f"Wrote experiments to {params.output}")
 
