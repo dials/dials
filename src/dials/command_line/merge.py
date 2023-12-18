@@ -346,11 +346,10 @@ can be processed with dials.merge"""
                 f"""{k} not found in the reflection table.
 Only scaled data can be processed with dials.merge"""
             )
-    from dials.util.multi_dataset_handling import Expeditor
-
-    experiments, reflections = Expeditor(
-        experiments, reflections
-    ).filter_experiments_with_crystals()
+    if not all(experiments.crystals()):
+        raise Sorry(
+            "dials.merge requires all reflection data to have a matching crystal model."
+        )
 
     try:
         if params.output.json or params.output.html:

@@ -19,6 +19,7 @@ from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
 from dials.util import Sorry, log
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.reference import intensities_from_reference_file
 from dials.util.reindex import (
@@ -134,6 +135,8 @@ def run(args=None):
         return
     if params.change_of_basis_op is None:
         raise Sorry("Please provide a change_of_basis_op.")
+    expeditor = Expeditor(experiments, reflections)
+    experiments, reflections = expeditor.filter_experiments_with_crystals()
 
     reference_crystal = None
     if params.reference.experiments is not None:
@@ -286,16 +289,20 @@ experiments file must also be specified with the option: reference.experiments= 
                 )
             raise
 
-        logger.info(
-            f"Saving reindexed experimental models to {params.output.experiments}"
-        )
-        experiments.as_file(params.output.experiments)
-
     if len(reflections):
         reflections = reindex_reflections(
             reflections, change_of_basis_op, params.hkl_offset
         )
 
+    experiments, reflections = expeditor.combine_experiments_for_output(
+        experiments, [reflections]
+    )
+    if experiments:
+        logger.info(
+            f"Saving reindexed experimental models to {params.output.experiments}"
+        )
+        experiments.as_file(params.output.experiments)
+    if reflections:
         logger.info(f"Saving reindexed reflections to {params.output.reflections}")
         reflections.as_file(params.output.reflections)
 

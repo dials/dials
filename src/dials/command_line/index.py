@@ -81,7 +81,7 @@ output {
     .type = path
   reflections = indexed.refl
     .type = path
-  retain_unindexed_experiments = False
+  retain_unindexed_experiments = True
     .type = bool
     .help = "If True, the input experiment models are extended with new crystal"
             "models, thus the output contains a crystal-less experiment for each"

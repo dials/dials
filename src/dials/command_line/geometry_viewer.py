@@ -622,6 +622,9 @@ def run(args=None):
         sys.exit()
 
     experiments = flatten_experiments(params.input.experiments)
+    from dials.util.multi_dataset_handling import Expeditor
+
+    experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
 
     if len(experiments) == 0:
         parser.print_help()

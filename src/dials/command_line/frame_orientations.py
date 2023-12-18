@@ -19,6 +19,7 @@ from scitbx import matrix
 
 import dials.util
 from dials.util import tabulate
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, flatten_experiments
 
 matplotlib.use("Agg")
@@ -80,6 +81,8 @@ plot_filename = None
 
         # Try to load the models
         experiments = flatten_experiments(self.params.input.experiments)
+        experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
+
         nexp = len(experiments)
         if nexp == 0:
             self.parser.print_help()
