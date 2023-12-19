@@ -14,6 +14,7 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 from dials.util.version import dials_version
@@ -108,8 +109,6 @@ refinement {
 )
 
 working_phil = phil_scope.fetch(sources=[phil_overrides])
-
-from dials.util.multi_dataset_handling import generate_experiment_identifiers
 
 
 def _index_single_imageset(experiments, reflections, params, log_text=None):

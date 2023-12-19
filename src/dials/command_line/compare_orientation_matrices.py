@@ -5,6 +5,7 @@ from cctbx.array_family import flex
 
 import dials.algorithms.indexing.compare_orientation_matrices
 import dials.util
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
@@ -55,7 +56,6 @@ def run(args=None):
     if len(experiments) <= 1:
         parser.print_help()
         return
-    from dials.util.multi_dataset_handling import Expeditor
 
     experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
 

@@ -390,9 +390,8 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    reflections = parse_multiple_datasets(reflections)
 
-    # reflections = parse_multiple_datasets(reflections)
+    reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         raise Sorry(
             "Mismatched number of experiments and reflection tables found: %s & %s."

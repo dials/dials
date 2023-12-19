@@ -7,6 +7,7 @@ from libtbx.phil import parse
 
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import Expeditor
 
 logger = logging.getLogger("dials.command_line.export_best")
 
@@ -135,7 +136,6 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    from dials.util.multi_dataset_handling import Expeditor
 
     experiments, reflections = Expeditor(
         experiments, reflections

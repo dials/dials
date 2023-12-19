@@ -39,6 +39,7 @@ from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
@@ -746,8 +747,6 @@ def run(args=None, phil=working_phil):
 
     if reference and "shoebox" not in reference[0]:
         sys.exit("Error: shoebox data missing from reflection table")
-
-    from dials.util.multi_dataset_handling import Expeditor
 
     experiments, reference = Expeditor(
         experiments, reference

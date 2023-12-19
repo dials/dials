@@ -13,6 +13,7 @@ from libtbx.utils import format_float_with_standard_uncertainty
 from dials.algorithms.symmetry import origin
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -317,7 +318,6 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    from dials.util.multi_dataset_handling import Expeditor
 
     experiments, reflections = Expeditor(
         experiments, reflections

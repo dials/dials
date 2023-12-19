@@ -14,6 +14,7 @@ from dxtbx.model import ExperimentList
 import dials.util
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.array_family import flex
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
@@ -74,8 +75,6 @@ def run(args=None):
             )
             crystal_symmetries.append(arrays[0].crystal_symmetry())
     else:
-        from dials.util.multi_dataset_handling import Expeditor
-
         experiments, reflections = Expeditor(
             experiments, reflections
         ).filter_experiments_with_crystals()

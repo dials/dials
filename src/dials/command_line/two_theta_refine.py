@@ -32,6 +32,7 @@ from dials.algorithms.refinement.two_theta_refiner import (
 from dials.array_family import flex
 from dials.util import log, tabulate
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -439,8 +440,6 @@ class Script:
             params.input.reflections, params.input.experiments
         )
         # set up global reflections list
-        from dials.util.multi_dataset_handling import Expeditor
-
         expeditor = Expeditor(input_experiments, reflections_list)
         input_experiments, reflections = expeditor.filter_experiments_with_crystals()
         reflections = flex.reflection_table.concat(reflections)

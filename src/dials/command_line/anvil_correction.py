@@ -36,6 +36,7 @@ from dxtbx.model import Experiment
 
 import dials.util.log
 from dials.array_family import flex
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 Vector = Sequence[SupportsFloat]
@@ -318,7 +319,6 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     reflections_list, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    from dials.util.multi_dataset_handling import Expeditor
 
     expeditor = Expeditor(experiments, reflections_list)
     experiments, reflections_list = expeditor.filter_experiments_with_crystals()

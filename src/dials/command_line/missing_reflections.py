@@ -77,8 +77,9 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         parser.print_help()
         return
 
-    expeditor = Expeditor(experiments, reflections)
-    experiments, reflections = expeditor.filter_experiments_with_crystals()
+    experiments, reflections = Expeditor(
+        experiments, reflections
+    ).filter_experiments_with_crystals()
     if not all(any(t.get_flags(t.flags.integrated, all=False)) for t in reflections):
         sys.exit("dials.missing_reflections only works on integrated data")
 

@@ -11,6 +11,7 @@ import dials.util
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.export_mtz import match_wavelengths
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
@@ -127,10 +128,9 @@ class Script:
         if not params.output.include_crystalless_experiments and any(
             experiments.crystals()
         ):
-            from dials.util.multi_dataset_handling import Expeditor
-
-            expeditor = Expeditor(experiments, reflections)
-            experiments, reflections = expeditor.filter_experiments_with_crystals()
+            experiments, reflections = Expeditor(
+                experiments, reflections
+            ).filter_experiments_with_crystals()
             if reflections:
                 reflections = flex.reflection_table.concat(reflections)
         elif reflections:

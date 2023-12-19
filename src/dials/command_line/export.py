@@ -7,7 +7,9 @@ from io import StringIO
 from iotbx.phil import parse
 from libtbx import Auto
 
+from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import Expeditor
 
 logger = logging.getLogger("dials.command_line.export")
 
@@ -618,8 +620,6 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
-    from dials.array_family import flex
-    from dials.util.multi_dataset_handling import Expeditor
 
     if any(experiments.crystals()):
         experiments, reflections = Expeditor(

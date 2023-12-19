@@ -68,6 +68,7 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader
 import libtbx.phil
 
 from dials.util import log, resolution_analysis, show_mail_handle_errors
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -130,12 +131,7 @@ def run(args=None):
             scaled_unmerged, params.resolution
         )
     else:
-        from dials.util.multi_dataset_handling import Expeditor
-
-        experiments, reflections = Expeditor(
-            experiments, reflections
-        ).filter_experiments_with_crystals()
-
+        reflections = parse_multiple_datasets(reflections)
         if len(experiments) != len(reflections):
             sys.exit(
                 f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
