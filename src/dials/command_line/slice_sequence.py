@@ -280,7 +280,7 @@ class Script:
                     raise Sorry(
                         "The input experiment list and image_ranges are not of the same length"
                         + f" ({len(experiments)} != {len(params.image_range)})."
-                        + "\nTo achieve multiple slices from a single sweep, the dials.slice_sequence can be run multiple times with different image_range values."
+                        + "\nTo achieve multiple slices from a single sweep, dials.slice_sequence can be run multiple times with different image_range values."
                         + "\nAlternatively, multi-experiment file pairs can be split with dials.split_experiments to help manage multiple-experiment workflows."
                     )
                 sliced_experiments = slice_experiments(experiments, params.image_range)
