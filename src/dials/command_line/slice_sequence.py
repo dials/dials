@@ -149,8 +149,9 @@ def exclude_images_multiple(experiments, reflections, image_number):
             image_ranges.append((start, last_image))
 
         # Slice the experiments
+        elist = ExperimentList([experiment])
         sliced_experiments.extend(
-            [slice_experiments(experiments, [sr])[0] for sr in image_ranges]
+            [slice_experiments(elist, [sr])[0] for sr in image_ranges]
         )
 
         # Slice the reflections
@@ -275,6 +276,13 @@ class Script:
         else:
             # slice each dataset into the requested subset
             if slice_exps:
+                if len(experiments) != len(params.image_range):
+                    raise Sorry(
+                        "The input experiment list and image_ranges are not of the same length"
+                        + f" ({len(experiments)} != {len(params.image_range)})."
+                        + "\nTo achieve multiple slices from a single sweep, the dials.slice_sequence can be run multiple times with different image_range values."
+                        + "\nAlternatively, multi-experiment file pairs can be split with dials.split_experiments to help manage multiple-experiment workflows."
+                    )
                 sliced_experiments = slice_experiments(experiments, params.image_range)
             if slice_refs:
                 sliced_reflections = slice_reflections(reflections, params.image_range)
