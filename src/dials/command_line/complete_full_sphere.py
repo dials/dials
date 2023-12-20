@@ -64,12 +64,12 @@ class Script:
         model_shadow = params.shadow
 
         experiments = flatten_experiments(params.input.experiments)
-
+        if experiments:
+            experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
         if len(experiments) != 1:
             self.parser.print_help()
             return
 
-        experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
         expt = experiments[0]
 
         axes = expt.goniometer.get_axes()
