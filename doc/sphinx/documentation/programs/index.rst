@@ -28,7 +28,6 @@ Utilities:
 
    dials_show
    dials_image_viewer
-   dials_reciprocal_lattice_viewer
    dials_generate_mask
    dials_check_indexing_symmetry
    dials_search_beam_position
