@@ -206,7 +206,8 @@ def change_of_basis_ops_to_minimum_cell(
         )
         target_group = counter.most_common()[0][0]
         cb_ops = []
-        best_cell = None
+        # best_cell = None
+        best_cells = []
         for expt in experiments:
             groups = metric_subgroups(
                 expt.crystal.get_crystal_symmetry(),
@@ -220,7 +221,8 @@ def change_of_basis_ops_to_minimum_cell(
                     group = g
             if group:
                 cb_ops.append(group["cb_op_inp_best"])
-                if not best_cell:
+                best_cells.append(group["best_subsym"].unit_cell())
+                """if not best_cell:
                     best_cell = group["best_subsym"].unit_cell()
                 else:
                     this_best_cell = group["best_subsym"].unit_cell()
@@ -241,7 +243,7 @@ def change_of_basis_ops_to_minimum_cell(
                             + f"Incompatible best cells:\n  {best_params},\n  {this_params},\n"
                             + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
                             + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}"
-                        )
+                        )"""
             else:
                 cb_ops.append(None)
                 logger.info(
@@ -249,6 +251,43 @@ def change_of_basis_ops_to_minimum_cell(
                     f"{expt.crystal.get_crystal_symmetry()}\n"
                     f"Target symmetry: {target_group.info()}"
                 )
+        # now get median best cell
+        from cctbx import uctbx
+
+        uc_params = [flex.double() for i in range(6)]
+        for unit_cell in best_cells:
+            for i, p in enumerate(unit_cell.parameters()):
+                uc_params[i].append(p)
+        overall_best_unit_cell = uctbx.unit_cell(
+            parameters=[flex.median(p) for p in uc_params]
+        )
+        n = 0
+        for i, cb_op in enumerate(cb_ops):
+            if cb_op is not None:
+                best_cell = best_cells[n]
+                n += 1
+                if not best_cell.is_similar_to(
+                    overall_best_unit_cell,
+                    relative_length_tolerance,
+                    absolute_angle_tolerance,
+                ):
+                    best_params = ", ".join(
+                        f"{i:.2f}" for i in overall_best_unit_cell.parameters()
+                    )
+                    this_params = ", ".join(f"{i:.2f}" for i in best_cell.parameters())
+                    logger.info(
+                        f"Unable to map input cell for dataset {i} to a minimum cell through\n"
+                        + f"a consistent best cell in space group {target_group.info()}.\n"
+                        + f"Incompatible best cells:\n  {best_params},\n  {this_params},\n"
+                        + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
+                        + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}"
+                    )
+                    cb_ops[i] = None
+        if not any(cb_ops):
+            raise ValueError(
+                "Exiting symmetry analysis: Unable to map any cells to a minimum cell through a consistent best cell"
+            )
+
         ref_expts = ExperimentList(
             [expt for expt, cb_op in zip(experiments, cb_ops) if cb_op]
         ).change_basis(list(filter(None, cb_ops)))
