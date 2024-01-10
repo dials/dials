@@ -124,7 +124,7 @@ def test_cosym_with_reference(dials_data, run_in_tmp_path):
 
 
 def test_synthetic_map_cell_issue(run_in_tmp_path):
-    # Test that the program cleanly exits if a set of unit cells cannot be mapped to a consistent
+    # Test that the program filters out datasets that cannot be mapped to a consistent
     # minimum cell in the change_of_basis_ops_to_minimum_cell function.
     unit_cell = uctbx.unit_cell((5.46, 9.82, 29.58, 95.24, 94.54, 105.21))
     space_group = sgtbx.space_group_info("P1").group()

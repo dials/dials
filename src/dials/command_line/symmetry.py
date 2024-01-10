@@ -206,7 +206,6 @@ def change_of_basis_ops_to_minimum_cell(
         )
         target_group = counter.most_common()[0][0]
         cb_ops = []
-        # best_cell = None
         best_cells = []
         for expt in experiments:
             groups = metric_subgroups(
@@ -222,28 +221,6 @@ def change_of_basis_ops_to_minimum_cell(
             if group:
                 cb_ops.append(group["cb_op_inp_best"])
                 best_cells.append(group["best_subsym"].unit_cell())
-                """if not best_cell:
-                    best_cell = group["best_subsym"].unit_cell()
-                else:
-                    this_best_cell = group["best_subsym"].unit_cell()
-                    if not best_cell.is_similar_to(
-                        this_best_cell,
-                        relative_length_tolerance,
-                        absolute_angle_tolerance,
-                    ):
-                        best_params = ", ".join(
-                            f"{i:.2f}" for i in best_cell.parameters()
-                        )
-                        this_params = ", ".join(
-                            f"{i:.2f}" for i in this_best_cell.parameters()
-                        )
-                        raise ValueError(
-                            "Exiting symmetry analysis: Unable to map input cells to a minimum cell through\n"
-                            + f"a consistent best cell in space group {target_group.info()}.\n"
-                            + f"Incompatible best cells:\n  {best_params},\n  {this_params},\n"
-                            + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
-                            + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}"
-                        )"""
             else:
                 cb_ops.append(None)
                 logger.info(
