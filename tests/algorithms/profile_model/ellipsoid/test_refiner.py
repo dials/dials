@@ -565,7 +565,7 @@ def test_RefinerData(testdata):
     assert data.h_list == reflections["miller_index"]
     for i, sp in enumerate(reflections["sp"]):
         assert data.sp_list[:, i] == pytest.approx(sp)
-    assert data.ctot_list[0] == sum(shoebox_data)
+    assert data.ctot_list[0] == pytest.approx(sum(shoebox_data), abs=1e-9)
 
     mobs1 = np.abs(data.mobs_list[0, :])
     mobs2 = np.abs(data.mobs_list[1, :])
