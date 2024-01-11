@@ -124,7 +124,7 @@ def test_cosym_with_reference(dials_data, run_in_tmp_path):
 
 
 def test_synthetic_map_cell_issue(run_in_tmp_path):
-    # Test that the program cleanly exits if a set of unit cells cannot be mapped to a consistent
+    # Test that the program filters out datasets that cannot be mapped to a consistent
     # minimum cell in the change_of_basis_ops_to_minimum_cell function.
     unit_cell = uctbx.unit_cell((5.46, 9.82, 29.58, 95.24, 94.54, 105.21))
     space_group = sgtbx.space_group_info("P1").group()
@@ -165,9 +165,11 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
         "output.json=cosym.json",
     ]
 
-    with pytest.raises(Sorry) as e:
-        dials_cosym.run(args=args)
-        assert str(e).startswith("Sorry: Exiting symmetry analysis")
+    dials_cosym.run(args=args)
+    assert pathlib.Path("symmetrized.refl").is_file()
+    assert pathlib.Path("symmetrized.expt").is_file()
+    expts = load.experiment_list("symmetrized.expt", check_format=False)
+    assert len(expts) == 3
 
     # Increase the angle tolerance so that the cells are determined as similar
     # and can therefore be correctly mapped to the same cell setting.
@@ -177,6 +179,8 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
     assert pathlib.Path("symmetrized.expt").is_file()
     assert pathlib.Path("cosym.html").is_file()
     assert pathlib.Path("cosym.json").is_file()
+    expts = load.experiment_list("symmetrized.expt", check_format=False)
+    assert len(expts) == 7
 
 
 @pytest.mark.parametrize(
