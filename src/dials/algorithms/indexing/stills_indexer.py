@@ -567,7 +567,7 @@ class StillsIndexer(Indexer):
                         graph_verbose=False,
                     )
                     nv0()
-                    if self.params.indexing.stills.nv_reject_outliers:
+                    if self.all_params.indexing.stills.nv_reject_outliers:
                         acceptance_flags_nv0 = nv0.nv_acceptance_flags
                         indexed = indexed.select(
                             acceptance_flags & acceptance_flags_nv0
