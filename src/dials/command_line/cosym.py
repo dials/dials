@@ -162,10 +162,11 @@ class cosym(Subject):
             if not cb_op
         ]
         if len(exclude):
+            exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
             logger.info(
                 f"Rejecting {len(exclude)} datasets from cosym analysis "
                 f"(couldn't determine consistent cb_op to minimum cell):\n"
-                f"{exclude}",
+                f"dataset indices: {exclude_indices}",
             )
             self._experiments, self._reflections = select_datasets_on_identifiers(
                 self._experiments, self._reflections, exclude_datasets=exclude
