@@ -11,6 +11,8 @@ import typing
 
 import numpy as np
 import scipy.optimize
+from scipy.optimize import curve_fit
+from scipy.special import expit
 
 import iotbx.merging_statistics
 import iotbx.mtz
@@ -43,6 +45,7 @@ class metrics(enum.Enum):
     I_MEAN_OVER_SIGMA_MEAN = "i_mean_over_sigi_mean"
     RMERGE = "r_merge"
     COMPLETENESS = "completeness"
+    CC_HALF_SIGNIFICANCE_LEVEL = "cc_half_significance_level"
 
 
 def polynomial_fit(x, y, degree=5, n_obs=None):
@@ -248,6 +251,53 @@ def _get_cc_half_critical_values(merging_stats, cc_half_method):
         return flex.double(critical).reversed()
 
 
+def resolution_cc_half_significance(merging_stats, cc_half_method="half_dataset"):
+    """Fit the crossover from statistically significant to not significant cc half"""
+    metric = "cc_one_half_sigma_tau" if cc_half_method == "sigma_tau" else "cc_one_half"
+    critical_values = _get_cc_half_critical_values(merging_stats, cc_half_method)
+    y_obs = flex.double(getattr(b, metric) for b in merging_stats.bins).reversed()
+    d_star_sq = flex.double(
+        uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins
+    ).reversed()
+
+    data = [0 if c > y else 1 for c, y in zip(critical_values, y_obs)]
+    y_fit = None
+    if all(data):
+        d_min = 1.0 / math.sqrt(flex.max(d_star_sq))
+    elif not any(data):
+        d_min = None
+    else:
+        # fit a logistic curve to find when crosses over threshold.
+
+        def f(x, r, res):
+            xpr = r * (x - res)
+            return 1.0 - expit(xpr)
+
+        start_res = None
+        for x, v in zip(d_star_sq, data):
+            if not v:
+                start_res = x  # finds the highest d-value where cc1/2 not significant.
+        assert start_res
+        params = [100.0, start_res]  # try to use a sensible starting point
+        try:
+            fit_params, _ = curve_fit(f, d_star_sq, data, params)
+        except Exception as e:
+            logger.debug(f"Error fitting curve: {e}")
+            d_min = None
+        else:
+            if fit_params[0] < 0:  # fitted the 'wrong way', not reliable!
+                d_min = None
+            elif (
+                fit_params[1] <= 0.0
+            ):  # negative resolution limit! something went badly wrong.
+                d_min = None
+            else:
+                d_min = 1.0 / math.sqrt(fit_params[1])
+                y_fit = flex.double(f(d_star_sq, fit_params[0], fit_params[1]))
+
+    return ResolutionResult(d_star_sq, flex.double(data), y_fit, d_min)
+
+
 def resolution_cc_half(
     merging_stats, limit, cc_half_method="half_dataset", model=tanh_fit
 ):
@@ -446,6 +496,7 @@ def plot_result(metric, result):
             metrics.I_MEAN_OVER_SIGMA_MEAN: "&lt;I&gt;/<σ(I)>",
             metrics.RMERGE: "R<sub>merge</sub> ",
             metrics.COMPLETENESS: "Completeness",
+            metrics.CC_HALF_SIGNIFICANCE_LEVEL: "CC<sub>½</sub> significance",
         }
         d_star_sq_tickvals, d_star_sq_ticktext = plots.d_star_sq_to_d_ticks(
             result.d_star_sq, 5
@@ -591,15 +642,21 @@ class Resolutionizer:
         variances = flex.double()
         for table in reflection_tables:
             if "intensity.scale.value" in table:
-                table = filter_reflection_table(
-                    table, ["scale"], partiality_threshold=0.4
-                )
+                try:
+                    table = filter_reflection_table(
+                        table, ["scale"], partiality_threshold=0.4
+                    )
+                except ValueError:
+                    continue
                 intensities.extend(table["intensity.scale.value"])
                 variances.extend(table["intensity.scale.variance"])
             else:
-                table = filter_reflection_table(
-                    table, ["profile"], partiality_threshold=0.4
-                )
+                try:
+                    table = filter_reflection_table(
+                        table, ["profile"], partiality_threshold=0.4
+                    )
+                except ValueError:
+                    continue
                 intensities.extend(table["intensity.prf.value"])
                 variances.extend(table["intensity.prf.variance"])
             indices.extend(table["miller_index"])
@@ -636,6 +693,11 @@ class Resolutionizer:
                 model=tanh_fit
                 if self._params.cc_half_fit == "tanh"
                 else polynomial_fit,
+            )
+        elif metric == metrics.CC_HALF_SIGNIFICANCE_LEVEL:
+            return resolution_cc_half_significance(
+                self._merging_statistics,
+                cc_half_method=self._params.cc_half_method,
             )
         elif metric == metrics.CC_REF:
             return self._resolution_cc_ref(limit=self._params.cc_ref)

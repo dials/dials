@@ -47,6 +47,7 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
         "Resolution I/sig:         1.53",
         "Resolution Mn(I/sig):     1.51",
         "Resolution Mn(I)/Mn(sig): 1.49",
+        "Resolution cc_half_significance_level:    1.20",
     )
     for line in expected_output:
         assert line in captured.out
@@ -54,6 +55,7 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
     expected_keys = {
         "cc_half",
         "cc_ref",
+        "cc_half_significance_level",
         "isigma",
         "misigma",
         "i_mean_over_sigma_mean",
@@ -77,8 +79,10 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmp_path, capsys):
         ["batch_range=1900,3600", str(refls), str(expts)],
     )
     captured = capsys.readouterr()
-
-    expected_output = "Resolution cc_half:       0.61"
+    expected_output = (
+        "Resolution cc_half:       0.59",
+        "Resolution cc_half_significance_level:    0.59",
+    )
     for line in expected_output:
         assert line in captured.out
     assert run_in_tmp_path.joinpath("dials.estimate_resolution.html").is_file()
@@ -111,6 +115,7 @@ def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
     expected_output = (
         "Resolution fit against cc_half failed: Not enough reflections for fitting",
         "Resolution Mn(I/sig):     0.62",
+        "Resolution cc_half_significance_level:    0.62",
     )
     for line in expected_output:
         assert line in captured.out
