@@ -10,6 +10,7 @@ include(SetDefaultBuildRelWithDebInfo) # Default builds to release with debug in
 include(CoverageBuildConfiguration) # Custom module to make turning coverage on easy
 include(AlwaysColourCompilation) # Always show coloured compiler output
 include(CheckCXXSymbolExists)
+include(AddBuildTypesFunc)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json
 set(CMAKE_CXX_STANDARD 14)
