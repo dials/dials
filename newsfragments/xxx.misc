@@ -1,0 +1,1 @@
+Move the common function to a separate cmake file in the cmake directory.
