@@ -97,7 +97,7 @@ class StillsIndexer(Indexer):
             # The stills_indexer provides its own outlier rejection
             params.refinement.reflections.outlier.algorithm = "null"
         super().__init__(reflections, experiments, params)
-        self.warn_if_setting_unused_params(params)
+        self.warn_if_setting_unused_params()
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -820,8 +820,7 @@ class StillsIndexer(Indexer):
 
         return ref_experiments, reflections
 
-    @staticmethod
-    def warn_if_setting_unused_params(params):
+    def warn_if_setting_unused_params(self):
         warning_message = (
             "Warning: the value of indexing.refinement_protocol.{} has been"
             " changed to {}, but this parameter is unused by stills indexer."
@@ -833,7 +832,8 @@ class StillsIndexer(Indexer):
             "disable_unit_cell_volume_sanity_check": False,
         }
         for param, default in unused_refinement_protocol_defaults.items():
-            if value := getattr(params.refinement_protocol, param) != default:
+            value = getattr(self.params.refinement_protocol, param)
+            if value != default:
                 logger.info(warning_message.format(param, str(value)))
 
 
