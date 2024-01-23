@@ -169,7 +169,7 @@ indexing {
       .type = choice
       .expert_level = 1
       .help = "refine_shells: if using sequences indexer, refine in increasing"
-              "resolution cutoffs after indexing; if using stills indexer,"
+              "resolution cutoffs after indexing, if using stills indexer,"
               "refine all data up to d_min_start resolution once only."
               "repredict_only: do not refine after indexing, just update spot"
               "predictions."
