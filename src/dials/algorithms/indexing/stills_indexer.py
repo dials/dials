@@ -822,17 +822,19 @@ class StillsIndexer(Indexer):
 
     @staticmethod
     def warn_if_setting_unused_params(params):
-        msg = "Warning: the value of indexing.refinement_protocol.{} has been"\
-              " changed to {}, but this parameter is unused by stills indexer."
+        warning_message = (
+            "Warning: the value of indexing.refinement_protocol.{} has been"
+            " changed to {}, but this parameter is unused by stills indexer."
+        )
         unused_refinement_protocol_defaults = {
             "n_macro_cycles": 5,
             "d_min_step": libtbx.Auto,
             "d_min_final": None,
-            "disable_unit_cell_volume_sanity_check": False
+            "disable_unit_cell_volume_sanity_check": False,
         }
         for param, default in unused_refinement_protocol_defaults.items():
             if value := getattr(params.refinement_protocol, param) != default:
-                logger.info(msg.format(param, str(value)))
+                logger.info(warning_message.format(param, str(value)))
 
 
 """Mixin class definitions that override the dials indexing class methods specific to stills"""
