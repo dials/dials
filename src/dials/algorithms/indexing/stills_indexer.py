@@ -97,6 +97,7 @@ class StillsIndexer(Indexer):
             # The stills_indexer provides its own outlier rejection
             params.refinement.reflections.outlier.algorithm = "null"
         super().__init__(reflections, experiments, params)
+        self.warn_if_setting_unused_params(params)
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -818,6 +819,20 @@ class StillsIndexer(Indexer):
                 )
 
         return ref_experiments, reflections
+
+    @staticmethod
+    def warn_if_setting_unused_params(params):
+        msg = "Warning: the value of indexing.refinement_protocol.{} has been"\
+              " changed to {}, but this parameter is unused by stills indexer."
+        unused_refinement_protocol_defaults = {
+            "n_macro_cycles": 5,
+            "d_min_step": libtbx.Auto,
+            "d_min_final": None,
+            "disable_unit_cell_volume_sanity_check": False
+        }
+        for param, default in unused_refinement_protocol_defaults.items():
+            if value := getattr(params.refinement_protocol, param) != default:
+                logger.info(msg.format(param, str(value)))
 
 
 """Mixin class definitions that override the dials indexing class methods specific to stills"""
