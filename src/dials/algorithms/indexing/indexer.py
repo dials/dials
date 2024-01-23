@@ -186,7 +186,7 @@ indexing {
     d_min_start = None
       .type = float(value_min=0.0)
       .help = "For sequences/stills indexer, the lower limit of d-spacing"
-              "of reflections used in the first/the only round of refinement.
+              "of reflections used in the first/the only round of refinement."
     d_min_final = None
       .type = float(value_min=0.0)
       .help = "Do not ever include reflections below this value in refinement."
