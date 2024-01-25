@@ -103,6 +103,19 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
         )
 
 
+def test_export_single_cbf(dials_data, tmp_path):
+
+    image = str(dials_data("centroid_test_data", pathlib=True) / "centroid_0002.cbf")
+    export_bitmaps.run(
+        [
+            image,
+            f"output.directory={tmp_path}",
+            "imageset_index=1",
+        ],
+    )
+    assert tmp_path.joinpath("image0002.png").is_file()
+
+
 def test_export_still_image(dials_regression: Path, tmp_path):
     image = os.path.join(
         dials_regression,
