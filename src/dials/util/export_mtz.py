@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 try:
     import gemmi
-except ImportError as e:
+except ModuleNotFoundError as e:
     gemmi = None
     gemmi_import_error = e
 
