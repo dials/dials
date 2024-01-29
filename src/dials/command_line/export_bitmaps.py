@@ -173,6 +173,10 @@ def imageset_as_bitmaps(imageset, params):
     if params.imageset_index:
         selected_images = []
         for idx in params.imageset_index:
+            if idx > len(images):
+                sys.exit(
+                    f"Bad value for imageset_index: {idx}. The imageset has length {len(images)}; allowable values for imageset_index are the range 1 to {len(images)} inclusive."
+                )
             selected_images.append(images[idx - 1])
         images = selected_images
 
