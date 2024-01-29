@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from iotbx import cif, mtz, pdb
+
 try:
-    from mmtbx.command_line.fmodel import fmodel_from_xray_structure_master_params as fmodel_phil
+    from mmtbx.command_line.fmodel import (
+        fmodel_from_xray_structure_master_params as fmodel_phil,
+    )
 except ImportError:
     from mmtbx.programs.fmodel import master_phil as fmodel_phil
 from mmtbx.utils import fmodel_from_xray_structure
