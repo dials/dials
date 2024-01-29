@@ -10,6 +10,11 @@ from typing import List, Optional
 
 import numpy as np
 import pandas as pd
+try:
+    import gemmi
+except ImportError as e:
+    gemmi = None
+    gemmi_import_error = e
 
 from cctbx import uctbx
 from dxtbx import flumpy
@@ -309,7 +314,8 @@ def add_batch_list(
     if max_batch_number > batch_offset:
         batch_offset = max_batch_number
 
-    import gemmi
+    if gemmi is None:
+        raise gemmi_import_error
     batch = gemmi.Mtz.Batch()
 
     # Setting fields that are the same for all batches
@@ -670,7 +676,8 @@ def export_mtz(
         )
 
     # Create the mtz file
-    import gemmi
+    if gemmi is None:
+        raise gemmi_import_error
     mtz = gemmi.Mtz(with_base=True)
     mtz.title = f"From {env.dispatcher_name}"
     date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
