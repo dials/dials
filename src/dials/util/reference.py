@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from iotbx import cif, mtz, pdb
-from mmtbx.command_line.fmodel import fmodel_from_xray_structure_master_params
+
+try:
+    from mmtbx.command_line.fmodel import (
+        fmodel_from_xray_structure_master_params as fmodel_phil,
+    )
+except ImportError:
+    from mmtbx.programs.fmodel import master_phil as fmodel_phil
 from mmtbx.utils import fmodel_from_xray_structure
 
 reference_phil_str = """
@@ -133,7 +139,7 @@ def _mmtbx_intensity_from_structure(
     """Use the mmtbx methods for quick calculation of fs from model."""
     if wavelength:
         xray_structure.set_inelastic_form_factors(photon=wavelength, table="sasaki")
-    params = fmodel_from_xray_structure_master_params.extract()
+    params = fmodel_phil.extract()
     params.high_resolution = d_min
     params.fmodel.k_sol = k_sol
     params.fmodel.b_sol = b_sol
