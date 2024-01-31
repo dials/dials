@@ -21,6 +21,14 @@ steps:
   displayName: Repository checkout
   workingDirectory: $(Pipeline.Workspace)
 
+# Update conda
+- bash: |
+    set -eux
+    conda update -n base --all
+    conda info
+  displayName: Update conda
+  workingDirectory: $(Pipeline.Workspace)
+
 # Create a new conda environment using the bootstrap script
 - script: |
     set -eux
