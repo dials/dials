@@ -829,7 +829,6 @@ class StillsIndexer(Indexer):
             "n_macro_cycles": 5,
             "d_min_step": libtbx.Auto,
             "d_min_final": None,
-            "disable_unit_cell_volume_sanity_check": False,
         }
         for param, default in unused_refinement_protocol_defaults.items():
             value = getattr(self.params.refinement_protocol, param)
