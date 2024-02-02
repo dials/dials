@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from dxtbx.model import MosaicCrystalSauter2014
+from dxtbx.model import MosaicCrystalSauter2014, Scan
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from scitbx import matrix
@@ -46,6 +46,9 @@ output {
     .type = float
     .help = "Override for mosaic angle. If None, use the crystal's mosaic angle, if"
             "available"
+  retain_imagesequences = False
+    .type = bool
+    .help = "Output the experiments as a sharing an imagesequence indexed by scans of 0 oscillation."
   log = dials.sequence_to_stills.log
     .type = str
 }
@@ -119,7 +122,6 @@ def sequence_to_stills(experiments, reflections, params):
 
             # Shift array position to scan-point index
             i_scan_point = i_array - i_start
-
             # Obtain the A matrix at this scan point, or fallback to the static
             # A matrix if there are no scan points.
             try:
@@ -166,50 +168,89 @@ def sequence_to_stills(experiments, reflections, params):
             elif params.output.half_mosaicity_deg is not None:
                 crystal.set_half_mosaicity_deg(params.output.half_mosaicity_deg)
 
-            new_experiment = Experiment(
-                detector=experiment.detector,
-                beam=experiment.beam,
-                crystal=crystal,
-                imageset=experiment.imageset.as_imageset()[
-                    i_scan_point : i_scan_point + 1
-                ],
-            )
+            if params.output.retain_imagesequences:
+                angle = experiment.scan.get_angle_from_array_index(
+                    i_scan_point
+                )  ##FIXME i_array?
+                new_experiment = Experiment(
+                    detector=experiment.detector,
+                    beam=experiment.beam,
+                    crystal=crystal,
+                    imageset=experiment.imageset,
+                    scan=Scan(
+                        image_range=(i_array + 1, i_array + 2), oscillation=(angle, 0.0)
+                    ),
+                )
+            else:
+                new_experiment = Experiment(
+                    detector=experiment.detector,
+                    beam=experiment.beam,
+                    crystal=crystal,
+                    imageset=experiment.imageset.as_imageset()[
+                        i_scan_point : i_scan_point + 1  ##FIXME i_array?
+                    ],
+                )
 
             # Each reflection in a 3D shoebox can be found on multiple images.
             # Slice the reflections such that any reflection on this scan point
             # is included with this image
-            subrefls = refls.select((i_scan_point >= z1) & (i_scan_point < z2))
+            subrefls = refls.select((i_array >= z1) & (i_array < z2))
             if len(subrefls) == 0:
                 continue
             new_experiments.append(new_experiment)
             new_id = len(new_experiments) - 1
-            for refl in subrefls.rows():
-                assert i_scan_point in range(*refl["bbox"][4:6])
 
-                new_sb = Shoebox()
-                start = i_scan_point - refl["bbox"][4]  # z1
-                new_sb.data = refl["shoebox"].data[start : start + 1, :, :]
-                new_sb.background = refl["shoebox"].background[start : start + 1, :, :]
-                new_sb.mask = refl["shoebox"].mask[start : start + 1, :, :]
-                intensity = new_sb.summed_intensity()
-                new_sb.bbox = tuple(
-                    list(refl["bbox"])[0:4] + [0, 1]
-                )  # keep the original shoebox but reset the z values
-                new_sb.panel = refl["panel"]
-                new_refl = {}
-                new_refl["id"] = new_refl["imageset_id"] = new_id
-                new_refl["shoebox"] = new_sb
-                new_refl["bbox"] = new_sb.bbox
-                new_refl["intensity.sum.value"] = intensity.observed.value
-                new_refl["intensity.sum.variance"] = intensity.observed.variance
-                for key in ["entering", "flags", "miller_index", "panel"]:
-                    new_refl[key] = refl[key]
-                centroid = new_sb.centroid_foreground_minus_background()
-                new_refl["xyzobs.px.value"] = centroid.px.position
-                new_refl["xyzobs.px.variance"] = centroid.px.variance
-                new_reflections.append({})
-                for key in new_refl:
-                    new_reflections[key][-1] = new_refl[key]
+            if params.output.retain_imagesequences:
+                for refl in subrefls.rows():
+                    assert i_array in range(*refl["bbox"][4:6])
+                    new_refl = {}
+                    new_refl["id"] = new_refl["imageset_id"] = new_id
+                    for key in [
+                        "entering",
+                        "flags",
+                        "miller_index",
+                        "panel",
+                        "shoebox",
+                        "bbox",
+                        "intensity.sum.value",
+                        "intensity.sum.variance",
+                        "xyzobs.px.value",
+                        "xyzobs.px.variance",
+                    ]:
+                        new_refl[key] = refl[key]
+                    new_reflections.append({})
+                    for key in new_refl:
+                        new_reflections[key][-1] = new_refl[key]
+            else:
+                for refl in subrefls.rows():
+                    assert i_array in range(*refl["bbox"][4:6])
+
+                    new_sb = Shoebox()
+                    start = i_array - refl["bbox"][4]  # z1
+                    new_sb.data = refl["shoebox"].data[start : start + 1, :, :]
+                    new_sb.background = refl["shoebox"].background[
+                        start : start + 1, :, :
+                    ]
+                    new_sb.mask = refl["shoebox"].mask[start : start + 1, :, :]
+                    intensity = new_sb.summed_intensity()
+                    new_sb.bbox = tuple(
+                        list(refl["bbox"])[0:4] + [0, 1]
+                    )  # keep the original shoebox but reset the z values
+                    new_sb.panel = refl["panel"]
+                    new_refl = {}
+                    new_refl["id"] = new_refl["imageset_id"] = new_id
+                    new_refl["shoebox"] = new_sb
+                    new_refl["bbox"] = new_sb.bbox
+                    new_refl["intensity.sum.value"] = intensity.observed.value
+                    new_refl["intensity.sum.variance"] = intensity.observed.variance
+                    for key in ["entering", "flags", "miller_index", "panel"]:
+                        new_refl[key] = refl[key]
+                    centroid = new_sb.centroid_foreground_minus_background()
+                    new_refl["xyzobs.px.value"] = centroid.px.position
+                    new_refl["xyzobs.px.variance"] = centroid.px.variance
+                    new_reflections.append({})
+                    for key in new_refl:
+                        new_reflections[key][-1] = new_refl[key]
 
     logger.info("Re-predicting reflection centroids")
     # Re-predict using the reflection slices and the stills predictors
