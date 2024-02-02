@@ -24,7 +24,7 @@ steps:
 # Update conda
 - bash: |
     set -eux
-    conda update -n base --all
+    conda update -n base --all -y
     conda info
   displayName: Update conda
   workingDirectory: $(Pipeline.Workspace)
