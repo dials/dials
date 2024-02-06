@@ -114,7 +114,7 @@ how the parameters affect the spot finding algorithm. The final image,
 peaks at real diffraction spot positions will give the best chance of success.
 
 Another very powerful tool for investigating problems with strong spot positions
-is :doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`.
+is dials.reciprocal_lattice_viewer.
 This displays the strong spots in 3D, after mapping them from their detector
 positions to reciprocal space. In a favourable case you should be
 able to see the crystal's reciprocal lattice by eye in the strong spot
