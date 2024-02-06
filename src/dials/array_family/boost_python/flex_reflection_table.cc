@@ -760,6 +760,31 @@ namespace dials { namespace af { namespace boost_python {
     return data_bytes;
   }
 
+  boost::python::list get_shoebox_data_arrays(reflection_table self) {
+    boost::python::list result;
+    af::shared<Shoebox<> > sbox = self["shoebox"];
+    size_t n = 0;
+    for (int i = 0; i < self.size(); ++i) {
+      const Shoebox<> &s1 = sbox[i];
+      n += s1.data.size();
+    }
+    size_t ntot = 0;
+    af::shared<float> data_array(n, 0);
+    af::shared<float> bg_array(n, 0);
+    af::shared<size_t> mask_array(n, 0);
+    for (int i = 0; i < self.size(); ++i) {
+      const Shoebox<> &s1 = sbox[i];
+      std::copy(s1.data.begin(), s1.data.end(), data_array.begin() + ntot);
+      std::copy(s1.background.begin(), s1.background.end(), bg_array.begin() + ntot);
+      std::copy(s1.mask.begin(), s1.mask.end(), mask_array.begin() + ntot);
+      ntot += s1.data.size();
+    }
+    result.append(data_array);
+    result.append(bg_array);
+    result.append(mask_array);
+    return result;
+  }
+
   /**
    * Pack the reflection table in msgpack format into a streambuf object
    * @param self The reflection table
@@ -938,6 +963,7 @@ namespace dials { namespace af { namespace boost_python {
         .def("as_msgpack_to_file", &reflection_table_as_msgpack_to_file)
         .def("from_msgpack", &reflection_table_from_msgpack)
         .staticmethod("from_msgpack")
+        .def("get_shoebox_data_arrays", &get_shoebox_data_arrays)
         .def("experiment_identifiers", &T::experiment_identifiers)
         .def("select", &reflection_table_suite::select_rows_index<flex_table_type>)
         .def("select", &reflection_table_suite::select_rows_flags<flex_table_type>)

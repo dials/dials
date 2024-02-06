@@ -230,6 +230,8 @@ class _:
         """
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
+        elif os.getenv("DIALS_USE_H5"):
+            self.as_new_h5(filename)
         else:
             self.as_msgpack_file(filename)
 
@@ -243,7 +245,14 @@ class _:
                 filename
             )
         except RuntimeError:
-            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
+            try:
+                return dials_array_family_flex_ext.reflection_table.from_new_h5(
+                    filename
+                )
+            except OSError:
+                return dials_array_family_flex_ext.reflection_table.from_pickle(
+                    filename
+                )
 
     @staticmethod
     def empty_standard(nrows):
@@ -374,6 +383,24 @@ class _:
         self.clean_experiment_identifiers_map()
         handle.set_reflections(self)
         handle.close()
+
+    def as_new_h5(self, filename):
+        from dials.util.nexus.nexus_new import NewNexusFile
+
+        handle = NewNexusFile(filename, "w")
+        # Clean up any removed experiments from the identifiers map
+        self.clean_experiment_identifiers_map()
+        handle.set_reflections(self)
+        handle.close()
+
+    @staticmethod
+    def from_new_h5(filename):
+        from dials.util.nexus.nexus_new import NewNexusFile
+
+        handle = NewNexusFile(filename, "r")
+        table = handle.get_reflections()
+        handle.close()
+        return table
 
     def as_miller_array(self, experiment, intensity="sum"):
         """Return a miller array with the chosen intensities.
