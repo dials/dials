@@ -20,7 +20,6 @@ from dials.algorithms.integration.processor import (
     ProcessorFlat3D,
     ProcessorSingle2D,
     ProcessorStills,
-    assess_available_memory,
     build_processor,
     job,
 )
@@ -39,6 +38,7 @@ from dials.constants import EPS, FULL_PARTIALITY
 from dials.util import Sorry, phil, pprint, tabulate
 from dials.util.command_line import heading
 from dials.util.report import Report
+from dials.util.system import MEMORY_LIMIT
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
@@ -999,7 +999,6 @@ class Integrator:
 
         # Do profile modelling
         if profile_fitting:
-
             logger.info("=" * 80)
             logger.info("")
             logger.info(heading("Modelling reflection profiles"))
@@ -1019,7 +1018,6 @@ class Integrator:
                     "** Skipping profile modelling - no reference profiles given **"
                 )
             else:
-
                 # Try to set up the validation
                 if self.params.profile.validation.number_of_partitions > 1:
                     n = len(reference)
@@ -1134,7 +1132,6 @@ class Integrator:
 
                 # If we have more than 1 fold then do the validation
                 if num_folds > 1:
-
                     # Create the data processor
                     executor = ProfileValidatorExecutor(
                         self.experiments, profile_fitter
@@ -1283,24 +1280,19 @@ class Integrator:
         if self.params.integration.mp.method != "multiprocessing":
             self.reflections, time_info = _run_processor(self.reflections)
         else:
-            # need to do a memory check and decide whether to split table
-            available_immediate, _, __ = assess_available_memory(
-                self.params.integration
-            )
-
-            #  here don't consider nproc as the processor will reduce nproc to 1
-            # if necessary, only want to split if we can't even process with
-            # nproc = 1
+            # Here, don't consider nproc as the processor will reduce nproc to 1 if
+            # necessary. Only want to split if we can't even process with nproc = 1
 
             if self.params.integration.mp.n_subset_split:
                 tables = self.reflections.random_split(
                     self.params.integration.mp.n_subset_split
                 )
             else:
+                # need to do a memory check and decide whether to split table
                 tables = _iterative_table_split(
                     [self.reflections],
                     self.experiments,
-                    available_immediate,
+                    MEMORY_LIMIT * self.params.integration.block.max_memory_usage,
                 )
 
             if len(tables) == 1:
@@ -1527,7 +1519,6 @@ class Integrator3DThreaded:
 
         # Do profile modelling
         if self.params.integration.profile.fitting:
-
             logger.info("=" * 80)
             logger.info("")
             logger.info(heading("Modelling reflection profiles"))
