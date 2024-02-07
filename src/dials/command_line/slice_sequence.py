@@ -13,8 +13,8 @@ from dials.util.slice import slice_experiments, slice_reflections
 
 help_message = """
 
-Slice a sequence to produce a smaller sequence within the bounds of the original. If
-experiments or experiments are provided, modify the scan objects within these. If
+Slice a sequence to produce a smaller sequence within the bounds of the
+original. If experiments are provided, modify the scan objects within this. If
 reflections are provided, remove reflections outside the provided image ranges.
 Each image_range parameter refers to a single experiment ID, counting up from
 zero. Any reflections with experiment ID not matched by a image_range parameter
@@ -26,7 +26,7 @@ Examples::
 
   dials.slice_sequence models.expt "image_range=1 20"
 
-  # two experiments and reflections with IDs '0' and '1'
+  # Two experiments and reflections with IDs '0' and '1'
   dials.slice_sequence models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 """
@@ -64,6 +64,21 @@ phil_scope = parse(
     .help = "Overrides image_range if present. This option splits each sequence"
             "into the nearest integer number of equal size blocks close to"
             "block_size degrees in width"
+
+  exclude_images_multiple = None
+    .type = int
+    .help = "Overrides image_range and block_size if present. This option"
+            "splits each scan at the specified image and at each multiple of"
+            "this image number in each experiment. The specified images are"
+            "also excluded from the resulting scans. This is provided as an"
+            "alternative method for specifying image exclusions for cRED data,"
+            "where the scan of diffraction images is interrupted at regular"
+            "intervals by a crystal positioning image (typically every 20th"
+            "image). The alternative is using the same-named parameter in"
+            "dials.integrate, where it acts as a mask for images while keeping"
+            "a single scan. Splitting the scan may be more appropriate if the"
+            "experimental geometry changes after collecting calibration images."
+    .expert_level = 2
 """
 )
 
@@ -93,6 +108,67 @@ def calculate_block_ranges(scan, block_size):
         start += nim
 
     return image_ranges
+
+
+def concatenate_reflections(sliced_reflections, identifiers):
+    """Join a list of reflection tables into a single table, taking care to set
+    the id column and experimental identifiers"""
+
+    if len(sliced_reflections) != len(identifiers):
+        raise Sorry(
+            "Sliced reflections and identifiers lists are not of the same length"
+        )
+
+    reflections = flex.reflection_table()
+    for i, rt in enumerate(sliced_reflections):
+        for k in rt.experiment_identifiers().keys():
+            del rt.experiment_identifiers()[k]
+        rt["id"] = flex.int(rt.size(), i)  # set id
+        rt.experiment_identifiers()[i] = identifiers[i]
+        reflections.extend(rt)
+    return reflections
+
+
+def exclude_images_multiple(experiments, reflections, image_number):
+
+    sliced_experiments = []
+    sliced_reflections = []
+
+    for iexp, experiment in enumerate(experiments):
+
+        # Calculate the image range for each slice
+        first_image, last_image = experiment.scan.get_image_range()
+        first_exclude = ((first_image - 1) // image_number + 1) * image_number
+        excludes = list(range(first_exclude, last_image + 1, image_number))
+        image_ranges = []
+        start = first_image
+        for i in excludes:
+            image_ranges.append((start, i - 1))
+            start = i + 1
+        if last_image > start:
+            image_ranges.append((start, last_image))
+
+        # Slice the experiments
+        elist = ExperimentList([experiment])
+        sliced_experiments.extend(
+            [slice_experiments(elist, [sr])[0] for sr in image_ranges]
+        )
+
+        # Slice the reflections
+        refs = reflections.select(reflections["id"] == iexp)
+        if len(refs) == 0:
+            raise Sorry(f"No reflections found for experiment with id={iexp}")
+        sliced_reflections.extend(
+            [slice_reflections(refs, [sr]) for sr in image_ranges]
+        )
+
+    # Recombine experiments and reflections
+    generate_experiment_identifiers(sliced_experiments)
+    experiments = ExperimentList(sliced_experiments)
+    identifiers = experiments.identifiers()
+    reflections = concatenate_reflections(sliced_reflections, identifiers)
+
+    return experiments, reflections
 
 
 class Script:
@@ -158,8 +234,18 @@ class Script:
         if not params.image_range:
             params.image_range = [None]
 
+        # Check if excluding multiples of an image number
+        if params.exclude_images_multiple:
+            if not (slice_exps and slice_refs):
+                raise Sorry(
+                    "For slicing by exclude_images_multiple, both experiments and reflections files must be provided"
+                )
+            sliced_experiments, sliced_reflections = exclude_images_multiple(
+                experiments, reflections, params.exclude_images_multiple
+            )
+
         # check if slicing into blocks
-        if params.block_size is not None:
+        elif params.block_size is not None:
             if not slice_exps:
                 raise Sorry(
                     "For slicing into blocks, an experiment file must be provided"
@@ -184,19 +270,19 @@ class Script:
                 sliced = [
                     slice_reflections(reflections, [sr]) for sr in params.image_range
                 ]
-                sliced_reflections = flex.reflection_table()
                 identifiers = sliced_experiments.identifiers()
-                # resetting experiment identifiers
-                for i, rt in enumerate(sliced):
-                    for k in rt.experiment_identifiers().keys():
-                        del rt.experiment_identifiers()[k]
-                    rt["id"] = flex.int(rt.size(), i)  # set id
-                    rt.experiment_identifiers()[i] = identifiers[i]
-                    sliced_reflections.extend(rt)
+                sliced_reflections = concatenate_reflections(sliced, identifiers)
 
         else:
             # slice each dataset into the requested subset
             if slice_exps:
+                if len(experiments) != len(params.image_range):
+                    raise Sorry(
+                        "The input experiment list and image_ranges are not of the same length"
+                        + f" ({len(experiments)} != {len(params.image_range)})."
+                        + "\nTo achieve multiple slices from a single sweep, dials.slice_sequence can be run multiple times with different image_range values."
+                        + "\nAlternatively, multi-experiment file pairs can be split with dials.split_experiments to help manage multiple-experiment workflows."
+                    )
                 sliced_experiments = slice_experiments(experiments, params.image_range)
             if slice_refs:
                 sliced_reflections = slice_reflections(reflections, params.image_range)

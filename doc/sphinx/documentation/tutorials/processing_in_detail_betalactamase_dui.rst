@@ -120,7 +120,7 @@ images, such as these. However they may not be optimal for data from other
 detector types, such as CCDs or image plates. If you have a case where
 spot-finding has gone badly, it may be helpful to debug using the
 :doc:`dials.image_viewer<../programs/dials_image_viewer>` and
-:doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`,
+dials.reciprocal_lattice_viewer,
 which can be launched via buttons shown on the "Tools" tab.
 
 In particular, the effect of changing the spot-finding parameters can be explored
@@ -130,7 +130,7 @@ of how the parameters affect the spot finding algorithm. The final image,
 ("threshold") is the one on which spots were found, so ensuring this produces
 peaks at real diffraction spot positions will give the best chance of success.
 
-The second external viewer, the :doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`,
+The second external viewer, the dials.reciprocal_lattice_viewer,
 displays the strong spots in 3D, after mapping them from their detector
 positions to reciprocal space. In a favourable case you should be
 able to see the crystal's reciprocal lattice by eye in the strong spot

@@ -6,6 +6,7 @@ import logging
 from cctbx import sgtbx
 from rstbx.symmetry.constraints import parameter_reduction
 
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.algorithms.symmetry.reindex_to_reference import (
     determine_reindex_operator_against_reference,
 )
@@ -74,6 +75,7 @@ def change_of_basis_op_against_reference(
             ), "No 'intensity.sum.value' in reflections"
             table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
     # Make miller array of the datasets
+    best_cell = determine_best_unit_cell(experiments)
     filter_logger = logging.getLogger("dials.util.filter_reflections")
     filter_logger.disabled = True
     test_miller_sets = filtered_arrays_from_experiments_reflections(
@@ -82,7 +84,7 @@ def change_of_basis_op_against_reference(
     test_miller_set = test_miller_sets[0]
     for d in test_miller_sets[1:]:
         test_miller_set = test_miller_set.concatenate(d)
-
+    test_miller_set = test_miller_set.customized_copy(unit_cell=best_cell)
     change_of_basis_op = determine_reindex_operator_against_reference(
         test_miller_set, reference_miller_set
     )

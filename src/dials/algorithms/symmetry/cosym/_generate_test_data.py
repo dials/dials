@@ -135,7 +135,7 @@ def generate_test_data(
         cb_op = random.choice(cb_ops)
         reindexing_ops.append(cb_op.as_xyz())
         d = intensities.change_basis(cb_op).customized_copy(
-            crystal_symmetry=intensities.crystal_symmetry()
+            crystal_symmetry=intensities.crystal_symmetry().change_basis(cb_op)
         )
 
         if map_to_p1:

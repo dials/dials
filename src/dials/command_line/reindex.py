@@ -159,8 +159,8 @@ def run(args=None):
                 )
 
             reference_crystal = reference_experiments.crystals()[0]
-            reference_crystal.unit_cell = determine_best_unit_cell(
-                reference_experiments
+            reference_crystal.set_unit_cell(
+                determine_best_unit_cell(reference_experiments)
             )
 
     if params.reference.reflections is not None:

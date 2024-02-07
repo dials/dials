@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import sys
-from io import StringIO
 
 from iotbx.phil import parse
 from libtbx import Auto
@@ -363,7 +362,7 @@ def export_mtz(params, experiments, reflections):
                 "Data appears to be unscaled, setting mtz.hklout = 'integrated.mtz'"
             )
 
-    m = export_mtz(
+    export_mtz(
         reflection_table,
         experiments,
         intensity_choice=params.intensity,
@@ -379,11 +378,6 @@ def export_mtz(params, experiments, reflections):
         project_name=params.mtz.project_name,
         wavelength_tolerance=params.mtz.wavelength_tolerance,
     )
-
-    summary = StringIO()
-    m.show_summary(out=summary)
-    logger.info("")
-    logger.info(summary.getvalue())
 
 
 def export_sadabs(params, experiments, reflections):
