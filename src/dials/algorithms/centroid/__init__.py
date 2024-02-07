@@ -81,8 +81,6 @@ def tof_centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
     tof = scan.get_property("time_of_flight")  # (usec)
     frames = [i + 1 for i in range(len(tof))]
     frame_to_tof = frame_to_tof_interpolator(frames, tof)
-    scale = pixel_size + (tof[0],)
-    scale2 = tuple(s * s for s in scale)
 
     if isinstance(position, tuple):
         # Convert Pixel coordinate into mm/rad

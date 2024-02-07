@@ -911,7 +911,23 @@ class TOFSpotFinder(SpotFinder):
 
         self.experiments = experiments
 
+    def _correct_centroid_tof(self, reflections):
+
+        """
+        Sets the centroid of the spot to the peak position along the
+        time of flight, as this tends to more accurately represent the true
+        centroid for spallation sources.
+        """
+
+        x, y, tof = reflections["xyzobs.px.value"].parts()
+        peak_x, peak_y, peak_tof = reflections["shoebox"].peak_coordinates().parts()
+        reflections["xyzobs.px.value"] = flex.vec3_double(x, y, peak_tof)
+
+        return reflections
+
     def _post_process(self, reflections):
+
+        reflections = self._correct_centroid_tof(reflections)
 
         n_rows = reflections.nrows()
         panel_numbers = flex.size_t(reflections["panel"])
