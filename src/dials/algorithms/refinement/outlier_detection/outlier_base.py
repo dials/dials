@@ -9,7 +9,7 @@ from libtbx.phil import parse
 
 from dials.array_family import flex
 from dials.util import tabulate
-from dials.util.mp import available_cores
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger(__name__)
 
@@ -522,7 +522,7 @@ class CentroidOutlierFactory:
             params.outlier.block_width = None
 
         if params.outlier.nproc is libtbx.Auto:
-            params.outlier.nproc = available_cores()
+            params.outlier.nproc = CPU_COUNT
             logger.info("Setting outlier.nproc={}".format(params.outlier.nproc))
 
         od = outlier_detector(

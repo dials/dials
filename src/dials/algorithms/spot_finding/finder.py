@@ -18,7 +18,8 @@ from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
 from dials.util import Sorry, log
 from dials.util.log import rehandle_cached_records
-from dials.util.mp import available_cores, batch_multi_node_parallel_map
+from dials.util.mp import batch_multi_node_parallel_map
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger(__name__)
 
@@ -444,7 +445,7 @@ class ExtractSpots:
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
         if mp_nproc is libtbx.Auto:
-            mp_nproc = available_cores()
+            mp_nproc = CPU_COUNT
             logger.info(f"Setting nproc={mp_nproc}")
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
