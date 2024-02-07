@@ -42,7 +42,7 @@ def _try_extract_cgroup_cpu_quota():
     return None, None
 
 
-def cpu_count():
+def cpu_count() -> int:
     """Get the available CPU count for this system.
 
     Takes the minimum value from the following locations:
@@ -50,14 +50,17 @@ def cpu_count():
     - Total system cpus available on the host.
     - CPU Affinity (if set)
     - Cgroups limit (if set)
+
+    If the number of CPUs cannot be determined by any of these means, return 1.
     """
-    count = os.cpu_count()
+    count: int | None = os.cpu_count()
 
     # Check CPU affinity if available
     try:
-        affinity_count = len(psutil.Process().cpu_affinity())
-        if affinity_count > 0:
-            count = min(count, affinity_count)
+        if affinity := psutil.Process().cpu_affinity():
+            affinity_count = len(affinity)
+            if affinity_count > 0:
+                count = min(count, affinity_count) if count else affinity_count
     except Exception:
         pass
 
@@ -68,9 +71,9 @@ def cpu_count():
             # We round up on fractional CPUs
             cgroups_count = math.ceil(quota / period)
             if cgroups_count > 0:
-                count = min(count, cgroups_count)
+                count = min(count, cgroups_count) if count else cgroups_count
 
-    return count
+    return count or 1
 
 
 def memory_limit() -> int:
