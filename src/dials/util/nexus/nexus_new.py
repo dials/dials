@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import h5py
 import numpy as np
 
 from dxtbx import flumpy
@@ -12,20 +13,21 @@ class ReflectionListEncoder(object):
         """Encode the reflection data."""
 
         # Create the reflection data group
-        group = handle.create_group("entry/data_processing")
-        group.attrs["num_reflections"] = reflections.size()
-        identifiers_group = handle.create_group("entry/experiment_identifiers")
-        identifiers = np.array(
-            [str(i) for i in reflections.experiment_identifiers().values()],
-            dtype="S",
-        )
-        identifiers_group.create_dataset(
-            "identifiers", data=identifiers, dtype=identifiers.dtype
-        )
-        ids = np.array(list(reflections.experiment_identifiers().keys()), dtype=int)
-        identifiers_group.create_dataset("ids", data=ids, dtype=ids.dtype)
+        group = handle.create_group("entry/data_processing", track_order=True)
+        # ok this works if we don't have -1 ids i.e. after #2567 just remove for now.
+        if -1 in reflections["id"]:
+            sel = reflections["id"] == -1
+            reflections.del_selected(sel)
+        tables = reflections.split_by_experiment_id()
 
-        self.encode_columns(group, reflections)
+        for table in tables:
+            table.clean_experiment_identifiers_map()
+            assert len(table.experiment_identifiers().values()) == 1
+            identifier = list(table.experiment_identifiers().values())[0]
+            this_group = group.create_group(identifier)
+            this_group.attrs["num_reflections"] = table.size()
+            del table["id"]
+            self.encode_columns(this_group, table)
 
     def encode_columns(self, group, table):
         """Encode a column of data."""
@@ -75,38 +77,40 @@ class ReflectionListDecoder(object):
         g = handle["entry/data_processing"]
 
         # Create the list of reflections
-        table = flex.reflection_table(int(g.attrs["num_reflections"]))
-        identifiers = handle["entry"]["experiment_identifiers"]["identifiers"][()]
-        ids = handle["entry"]["experiment_identifiers"]["ids"][()]
-        for id_, identifier in zip(ids, identifiers):
-            table.experiment_identifiers()[int(id_)] = str(identifier.decode())
+        tables = []
+        for i, (name, dataset) in enumerate(g.items()):
+            table = flex.reflection_table(int(dataset.attrs["num_reflections"]))
+            table.experiment_identifiers()[i] = str(name)
+            table["id"] = flex.int(table.size(), i)
 
-        # Decode all the columns
-        shoebox_data = None
-        shoebox_background = None
-        shoebox_mask = None
-        for key in g:
-            item = g[key]
-            if key == "shoebox_data":
-                shoebox_data = flumpy.from_numpy(np.array(g[key]))
-            elif key == "shoebox_background":
-                shoebox_background = flumpy.from_numpy(np.array(g[key]))
-            elif key == "shoebox_mask":
-                shoebox_mask = flumpy.from_numpy(np.array(g[key]))
-            else:
-                val = self._convert(key, item)
-                if val:
-                    table[str(key)] = val
+            # Decode all the columns
+            shoebox_data = None
+            shoebox_background = None
+            shoebox_mask = None
 
-        if "panel" in table and "bbox" in table:
-            table["shoebox"] = flex.shoebox(
-                table["panel"], table["bbox"], allocate=True
-            )
-            if shoebox_mask and shoebox_background and shoebox_data:
-                dials_array_family_flex_ext.ShoeboxExtractFromData(
-                    table, shoebox_data, shoebox_background, shoebox_mask
+            for key in dataset:
+                item = dataset[key]
+                if key == "shoebox_data":
+                    shoebox_data = flumpy.from_numpy(np.array(dataset[key]))
+                elif key == "shoebox_background":
+                    shoebox_background = flumpy.from_numpy(np.array(dataset[key]))
+                elif key == "shoebox_mask":
+                    shoebox_mask = flumpy.from_numpy(np.array(dataset[key]))
+                else:
+                    val = self._convert(key, item)
+                    if val:
+                        table[str(key)] = val
+
+            if "panel" in table and "bbox" in table:
+                table["shoebox"] = flex.shoebox(
+                    table["panel"], table["bbox"], allocate=True
                 )
-
+                if shoebox_mask and shoebox_background and shoebox_data:
+                    dials_array_family_flex_ext.ShoeboxExtractFromData(
+                        table, shoebox_data, shoebox_background, shoebox_mask
+                    )
+            tables.append(table)
+        table = flex.reflection_table.concat(tables)
         # Return the list of reflections
         return table
 
@@ -137,10 +141,8 @@ class ReflectionListDecoder(object):
 class NewNexusFile:
     """Interface to Nexus file."""
 
-    def __init__(self, filename, mode="a"):
+    def __init__(self, filename, mode="w"):
         """Open the file with the given mode."""
-        import h5py
-
         self._handle = h5py.File(filename, mode)
 
     def close(self):
