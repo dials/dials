@@ -3,20 +3,17 @@ from __future__ import annotations
 import logging
 
 import gemmi
-from scipy.linalg import orthogonal_procrustes
-from scipy.optimize import minimize
+import numpy as np
+from scipy.spatial.transform.rotation import Rotation
 
 import iotbx.phil
 from dxtbx.model import Crystal
-from scitbx import matrix
 
 from dials.algorithms.indexing import DialsIndexError
 
 from .strategy import Strategy
 
 logger = logging.getLogger(__name__)
-
-import numpy as np
 
 pink_indexer_phil_str = """
 pink_indexer
@@ -25,20 +22,82 @@ pink_indexer
     max_refls = 50
         .type = int(value_min=10)
         .help = "Maximum number of reflections to consider indexing"
-    wav_min = None
+    wavelength = None
         .type = float(value_min=0.)
-        .help = "Minimum wavelength for polychromatic data"
-    wav_max = None
+        .help = "The peak wavelength"
+    percent_bandwidth = 1.
         .type = float(value_min=0.)
-        .help = "Maximum wavelength for polychromatic data"
-    rotogram_grid_points = 90
+        .help = "The percent bandwidth used to calculate the wavelength range for indexing."
+    rotogram_grid_points = 180
         .type = int(value_min=10, value_max=1000)
         .help = "Number of points at which to evaluate the angle search for each rlp-observation pair"
-    voxel_grid_points=100
+    voxel_grid_points=150
         .type = int(value_min=10, value_max=1000)
         .help = "Controls the number of voxels onto which the rotograms are discretized"
+    min_lattices=1
+        .type = int(value_min=1, value_max=100)
+        .help = "The minimum number of candidate lattices to generate."
 }
 """
+
+
+def rotvec_to_quaternion(rotvec, deg=False, eps=1e-32):
+    """
+    Convert rotation vector(s) to quaternion(s).
+    """
+    alpha = norm2(rotvec)
+    ax = rotvec / np.where(alpha == 0.0, np.inf, alpha)[..., None]
+    if deg:
+        alpha = np.deg2rad(alpha)
+    a2 = 0.5 * alpha
+    w = np.cos(a2)
+    x = np.sin(a2) * ax[..., 0]
+    y = np.sin(a2) * ax[..., 1]
+    z = np.sin(a2) * ax[..., 2]
+    return np.stack((w, x, y, z), axis=-1)
+
+
+def quaternion_multiply(a, b):
+    """
+    Multiply two quaternions, return a*b
+    """
+    # Expand a
+    aw = a[..., 0]
+    ax = a[..., 1]
+    ay = a[..., 2]
+    az = a[..., 3]
+
+    # Expand b
+    bw = b[..., 0]
+    bx = b[..., 1]
+    by = b[..., 2]
+    bz = b[..., 3]
+
+    # Calculate result
+    w = aw * bw - ax * bx - ay * by - az * bz
+    x = aw * bx + ax * bw + ay * bz - az * by
+    y = aw * by - ax * bz + ay * bw + az * bx
+    z = aw * bz + ax * by - ay * bx + az * bw
+
+    return np.dstack((w, x, y, z))
+
+
+def norm2(array, axis=-1, keepdims=False):
+    """Faster version of np.linalg.norm for the L2 norm in lower dimensions."""
+    a2 = np.square(array)
+    out = 0.0
+    for vec in np.split(a2, a2.shape[axis], axis=axis):
+        out += vec
+    out = np.sqrt(out)
+    if not keepdims:
+        out = np.squeeze(out, axis=axis)
+    return out
+
+
+def normalize(array, axis=-1):
+    """Normalize a numpy array along a particular axis by dividing by its L2 norm"""
+    out = array / norm2(array, axis=axis, keepdims=True)
+    return out
 
 
 def angle_between(vec1, vec2, deg=True):
@@ -61,10 +120,10 @@ def angle_between(vec1, vec2, deg=True):
     angles : array
         A vector of angles with the same leading dimensions of vec1 and vec2.
     """
-    v1 = vec1 / np.linalg.norm(vec1, axis=-1)[..., None]
-    v2 = vec2 / np.linalg.norm(vec2, axis=-1)[..., None]
-    x1 = np.linalg.norm(v1 - v2, axis=-1)
-    x2 = np.linalg.norm(v1 + v2, axis=-1)
+    v1 = normalize(vec1, axis=-1)
+    v2 = normalize(vec2, axis=-1)
+    x1 = norm2(v1 - v2, axis=-1)
+    x2 = norm2(v1 + v2, axis=-1)
     alpha = 2.0 * np.arctan2(x1, x2)
     if deg:
         return np.rad2deg(alpha)
@@ -107,88 +166,25 @@ def generate_reciprocal_cell(cell, dmin, dtype=np.int32):
     return hkl
 
 
-def norm2(array, axis=-1, keepdims=False):
-    """Faster version of np.linalg.norm for 3d coords and L2 norm"""
-    a2 = np.square(array)
-    out = 0.0
-    for vec in np.split(a2, a2.shape[axis], axis=axis):
-        out += vec
-    out = np.sqrt(out)
-    if not keepdims:
-        out = np.squeeze(out, axis=axis)
-    return out
-
-
-def normalize(array, axis=-1):
-    """Normalize a numpy array along a particular axis by dividing by its L2 norm"""
-    out = array / norm2(array, axis=axis, keepdims=True)
-    return out
-
-
 class Indexer:
     """
     A class which implements the PinkIndexer algorithm.
     [Gevorkov Y, et al. pinkIndexer – a universal indexer for pink-beam X-ray and electron diffraction snapshots. Acta Cryst A. 2020 Mar 1;76(2):121–31.](https://doi.org/10.1107/S2053273319015559)
     """
 
-    def __init__(self, cell, wav_min, wav_max, float_dtype="float32"):
+    def __init__(self, cell, wavelength, bandwidth, float_dtype="float32"):
         """
         Args:
             cell (gemmi.UnitCell): The target cell.
-            wav_min (float): Lower wavelength limit in reciprocal Å.
-            wav_max (float): Upper wavelength limit in reciprocal Å.
+            wavelength (float): Peak wavelength in Å.
+            bandwidth (float): The percentage bandwidth used to calculate a wavelength range
         """
         self.float_dtype = float_dtype
         self.cell = cell
-        self.wav_min = wav_min
-        self.wav_max = wav_max
+        self.wav_peak = wavelength
+        self.wav_min = wavelength - bandwidth * wavelength / 200.0
+        self.wav_max = wavelength + bandwidth * wavelength / 200.0
         self.B = np.asarray(cell.fractionalization_matrix, dtype=self.float_dtype).T
-
-    def refine_cell_rotation(self, H, scattering_vector, fix="a"):
-        """
-        Refine rotation and crystal basis from candidate rlp and observed
-        scattering vectors.
-        Args:
-            H (array) : n x 3 array of miller indices.
-            scattering_vector (array) : n x 3 array of empirical scattering vectors.
-            fix (string) : a comma separated string of cell parameters to fix, possible choices are a,b,c,alpha,beta,gamma
-        Returns:
-            cell (array) : length 6 array of cell parameters, a,b,c,alpha,beta,gamma
-            R (array) : 3 x 3 rotation matrix
-        """
-        qhat = normalize(scattering_vector)
-
-        a, b, c, alpha, beta, gamma = self.cell.parameters
-        cell_params = np.array([a, b, c, alpha, beta, gamma])
-        cell_param_names = ["a", "b", "c", "alpha", "beta", "gamma"]
-        fix = fix.split(",")
-        fix_mask = np.array(
-            [(i in fix) for i in cell_param_names],
-        )
-        guess = cell_params[~fix_mask]
-
-        def loss_fn(params, return_cell_R_B=False):
-            cell = np.copy(cell_params)
-            cell[~fix_mask] = params
-            cell = gemmi.UnitCell(*cell)
-
-            B = np.array(cell.fractionalization_matrix, dtype=self.float_dtype).T
-            rlp = (B @ H.T).T
-            rlp_hat = normalize(rlp)
-
-            R, _ = orthogonal_procrustes(rlp_hat, qhat)
-            R = R.T
-            angles = angle_between((R @ rlp.T).T, qhat)
-            loss = angles.mean()
-
-            if return_cell_R_B:
-                return loss, cell, R, B
-            return loss
-
-        loss_fn(guess)
-        result = minimize(loss_fn, guess)
-        _, cell, R, B = loss_fn(result.x, True)
-        return cell, R
 
     def index_pink(
         self,
@@ -197,47 +193,52 @@ class Indexer:
         max_refls=50,
         rotogram_grid_points=200,
         voxel_grid_points=200,
-        fix="a",
-        dilate=False,
+        int_dtype="uint8",
+        float_dtype="float32",
+        min_lattices=1,
+        dilate_r=None,
     ):
         """
         Args:
             s0 (array): An array of 3 floating point numbers corresponding to the s0 vector. This will be normalized.
-            s1 (array): An array of 3 floating point numbers corresponding to the s0 vector. This will be normalized.
+            s1 (array): An n x 3 array floating point numbers corresponding to the s1 vectors. This will be normalized.
             max_refls (int, optional): The maximum number of refls to consider.
             rotogram_grid_points (int, optional): The number of points at which to evaluate the rotograms.
             voxel_grid_points (int, optional): The fineness of the discretization used to quantitate rotograms.
-            fix (str, optional): See Indexer.refine_cell_rotation for details.
-            dilate (bool, optional): Dilate the grid search search by adding the values of adjacent voxels. Default True.
+            int_dtype (str or dtype, optional): the dtype to use for the voxel grid
+            float_dtype (str or dtype, optional): the dtype to use for floating point values
+            min_lattices (int, optional): the minimum number of candidate lattices returned by this function
+            dilate_r (float, optional): optionally dilate the voxel grid by a kernel with this radius in pixels.
 
         Returns:
-            Hout (int32 array): an n x 3 array of Miller indices with unassigned reflections denoted by 0,0,0
-            cell (array) : length 6 array of refined cell parameters, a,b,c,alpha,beta,gamma
-            R (array) : 3 x 3 rotation matrix
+            iter_UB: an interable of crystal bases as numpy arrays
         """
-        s0 = normalize(np.asarray(s0, dtype=self.float_dtype))
-        s1 = normalize(np.asarray(s1, dtype=self.float_dtype))
+        s0_hat = normalize(np.asarray(s0, dtype=self.float_dtype))
+        s1_hat = normalize(np.asarray(s1, dtype=self.float_dtype))
 
-        q = s1 - s0[None, :]
-        q_len = norm2(q, keepdims=True)
+        q = s1_hat - s0_hat[None, :]
+        q_len = norm2(q, keepdims=True)  # length of q if lambda is 1A
 
-        # Possible resolution range for each observation
+        # Possible resolution range for each observation considering wavelength range
         res_min = self.wav_min / q_len.squeeze(-1)
         res_max = self.wav_max / q_len.squeeze(-1)
 
+        in_range = None
+        # Truncate the resolution range if there are too many reflections
         if len(res_min) > max_refls:
             dmin = np.sort(res_min)[-max_refls]
-            idx = res_min >= dmin
-            s1 = s1[idx]
-            q = q[idx]
-            q_len = q_len[idx]
-            res_min = res_min[idx]
-            res_max = res_max[idx]
+            in_range = res_min >= dmin
+            s1_hat = s1_hat[in_range]
+            s1 = s1[in_range]
+            q = q[in_range]
+            q_len = q_len[in_range]
+            res_min = res_min[in_range]
+            res_max = res_max[in_range]
         else:
             dmin = res_min.min()
 
         # Normalized q vector
-        qhat = q / q_len
+        qhat = normalize(q)
 
         # Generate the feasible set of reflections from the current geometry
         # These are in cartesian reciprocal space coordinates in the
@@ -248,7 +249,7 @@ class Indexer:
 
         # Remove candidate rlps if incompatible with resolution range of observation
         dall = self.cell.calculate_d_array(Hall)
-        mask = (res_max[:, None] >= dall) & (res_min[:, None] <= dall)
+        mask = (dall <= res_max[:, None]) & (dall >= res_min[:, None])
         i, j = np.where(mask)
 
         hhat = hhat[j]
@@ -258,65 +259,90 @@ class Indexer:
         m = hhat + qhat
         mhat = normalize(m)
 
-        phi = np.linspace(-2 * np.pi, 0.0, rotogram_grid_points, dtype=self.float_dtype)
-        c1 = np.sin(phi / 2.0)
-        c2 = -np.cos(phi / 2.0)
-        d1 = np.einsum("ad,ad->a", mhat, qhat)
-        d2 = np.cross(qhat, mhat)
-        theta = 2 * np.arccos(-d1[..., None] * c1)
-        num = (
-            mhat[..., None, :] * c2[..., :, None] + d2[..., None, :] * c1[..., :, None]
+        # construct a rotation that maps hhat onto qhat
+        Rm = rotvec_to_quaternion(np.pi * mhat)
+
+        # construct rotations about qhat
+        phimin = -np.pi
+        phimax = np.pi
+        phi = np.linspace(
+            phimin, phimax, rotogram_grid_points + 1, dtype=self.float_dtype
+        )[:-1]
+        rotvec = qhat[:, None, :] * phi[None, :, None]
+        Rq = rotvec_to_quaternion(rotvec)
+
+        # combine mhat and qhat rotations into general rotation
+        quat = quaternion_multiply(Rq, Rm[:, None, :])
+        flat_quat = quat.reshape((-1, 4))
+        rotvec = (
+            Rotation.from_quat(flat_quat).as_rotvec().reshape(quat.shape[:-1] + (-1,))
         )
-        denom = np.sin(theta[..., None] / 2.0)
-        ehat = num / denom
-        v = np.arctan(theta / 4)[..., None] * ehat
+        theta = norm2(rotvec)
+        axis = rotvec / theta[..., None]
 
-        # Discretize
-        v_grid_size = voxel_grid_points // 2
-        rad = np.arctan(np.pi / 4.0)  # Radius of ball in which rotograms live
-        _discretized = np.round(v_grid_size * v / rad).astype("int8")
-        discretized = _discretized.reshape((-1, 3))
+        # Scaling the general rotvec norm by this factor makes the discretization more uniform
+        # without this, the rotations would be biased toward higher angles
+        scales = np.arctan(theta / 4.0)
+        scaled_rotvec = axis * scales[..., None]
 
-        w = 2 * v_grid_size + 1
-        voxels = np.zeros((w, w, w), dtype="int8")
-        np.add.at(voxels, tuple(discretized.T), 1)
-        if dilate:
-            # kernel = np.array(np.meshgrid([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]), dtype='int8').T.reshape(-1, 3)
-            kernel = np.ones((3, 3, 3), dtype="float32")
-            l = v_grid_size - 1
-            kernel = np.pad(kernel, [[l, l], [l, l], [l, l]])
-            voxels = np.fft.ifftn(
-                np.fft.fftn(voxels.astype("float32")) * np.fft.fftn(kernel)
+        # Discretize scaled rotvecs
+        scale_max = np.arctan(np.pi / 4.0)
+        bins = np.linspace(-scale_max, scale_max, voxel_grid_points)
+        # This is how you would calculate the bin centers if you cared to extract the rotation matrix directly
+        # bin_centers = np.concatenate(
+        #    (bins[[0]], 0.5 * (bins[1:] + bins[:-1]), bins[[-1]])
+        # )
+        idx = np.digitize(scaled_rotvec, bins)
+
+        # Map discretized rotvecs into voxel grid
+        n = voxel_grid_points + 1
+        voxels = np.zeros((n, n, n), dtype=int_dtype)
+        np.add.at(voxels, tuple(idx.transpose((2, 0, 1))), 1)
+
+        # Optionally dilate the voxel grid
+        if dilate_r is not None:
+            # PinkIndexer does a little dilation to help avoid overfitting
+            # I'm implementing this using a radially symmetric convolution
+            # In the original paper, they use a cubic kernel ones((3, 3, 3))
+            voxels = voxels.astype(float_dtype)
+            x = np.arange(voxels.shape[0], dtype=float_dtype)
+            x = np.square(x - x.mean())
+            kernel = np.exp(
+                -(x[:, None, None] + x[None, :, None] + x[None, None, :])
+                / np.square(dilate_r)
             )
+            from scipy.signal import fftconvolve
 
-        vrange = np.arange(-v_grid_size, v_grid_size + 1, dtype="int8")
-        vrange = np.roll(vrange, v_grid_size + 1)
-        grid_max = np.where(voxels == voxels.max())
-        grid_max = vrange[[i[0] for i in grid_max]]
+            voxels = fftconvolve(voxels, kernel, mode="same")
 
-        # v_max = rad * grid_max / v_grid_size
+        # Possible solutions are voxels with the highest density
+        cutoff = np.sort(voxels.flatten())[-min_lattices]
+        peaks = np.column_stack(np.where(voxels >= cutoff))
+        for peak in peaks:
+            assignment = np.zeros_like(mask)
+            assignment[i, j] = (idx == peak).all(-1).any(-1)
+            refl_id, miller_id = np.where(assignment)
 
-        # This complicated indexing stuff will figure out the assignment
-        # corresponding to the best rotogram voxel.
-        flat_assignment = (np.abs(_discretized - grid_max) <= 1).all(-1).any(-1)
-        # score = (_discretized - grid_max <= 1).all(-1).sum(-1)
+            # Use a bootstrap approach to estimate the UB matrix
+            n = len(refl_id)
+            num_bootstraps = 100
+            bs_idx = np.random.choice(n, (num_bootstraps, n))
 
-        # from scipy.optimize import linear_sum_assignment
-        # cost = np.zeros_like(mask, dtype='float32')
-        # cost[mask] = -score
-        # a,b = linear_sum_assignment(cost)
-        # Hout = Hobs = Hall[b]
-        # q = s1[a] - s0[None,:]
+            refl_id = refl_id[bs_idx]
+            miller_id = miller_id[bs_idx]
 
-        Hidx = i[flat_assignment]
-        Hobs = Hall[j[flat_assignment]]
+            h = Hall[miller_id]
+            s = s1_hat[refl_id]
 
-        Hout = np.zeros_like(s1)
-        Hout[Hidx] = Hobs
-        q = s1[Hidx] - s0[None, :]
-
-        cell, R = self.refine_cell_rotation(Hobs, q, fix)
-        return Hout, cell, R
+            # Assign everything to be the nominal wavelength
+            wav = self.wav_peak
+            k = np.reciprocal(wav)
+            UB = (
+                k
+                * (s - s0_hat).transpose(0, 2, 1)
+                @ np.linalg.pinv(h.transpose(0, 2, 1))
+            )
+            yield UB.mean(0)
 
 
 class PinkIndexer(Strategy):
@@ -342,6 +368,7 @@ class PinkIndexer(Strategy):
             target_symmetry_primitive (cctbx.crystal.symmetry): The target
                 crystal symmetry and unit cell
             max_lattices (int): The maximum number of lattice models to find
+            params (phil,optional): Phil params
         """
         super().__init__(params=None, *args, **kwargs)
         self._target_symmetry_primitive = target_symmetry_primitive
@@ -359,11 +386,12 @@ class PinkIndexer(Strategy):
         self.cell = target_cell
         self.tarsym = target_symmetry_primitive
         self.spacegroup = target_symmetry_primitive.space_group()
-        self.wav_min = params.wav_min
-        self.wav_max = params.wav_max
+        self.wavelength = params.wavelength
+        self.percent_bandwidth = params.percent_bandwidth
         self.max_refls = params.max_refls
         self.rotogram_grid_points = params.rotogram_grid_points
         self.voxel_grid_points = params.voxel_grid_points
+        self.min_lattices = params.min_lattices
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
@@ -386,26 +414,25 @@ class PinkIndexer(Strategy):
 
         cell = gemmi.UnitCell(*self.cell.parameters())
 
-        wav_min, wav_max = self.wav_min, self.wav_max
-        eps = 0.01
-
         beam = expt.beam
         s0 = beam.get_s0()
-        wav = beam.get_wavelength()
-        if wav_min is None:
-            wav_min = wav * (1.0 - eps)
-        if wav_max is None:
-            wav_max = wav * (1.0 + eps)
-        pidxr = Indexer(cell, wav_min, wav_max)
+        wav, bw = self.wavelength, self.percent_bandwidth
+        if wav is None:
+            wav = beam.get_wavelength()
+        if bw is None:
+            bw = 1.0
+        pidxr = Indexer(cell, wav, bw)
         s1 = np.array(refls["s1"], dtype="float32")
-        H, cell, U = pidxr.index_pink(
-            s0, s1, self.max_refls, self.rotogram_grid_points, self.voxel_grid_points
-        )
-        real_a, real_b, real_c = np.array(cell.orthogonalization_matrix).T
-        crystal = Crystal(real_a, real_b, real_c, self.spacegroup)
-        B = np.array(cell.fractionalization_matrix).reshape((3, 3)).T
-        UB = U @ B
-        A = matrix.sqr(UB.flatten())
-        crystal.set_A(A)
-        self.candidate_crystal_models = [crystal]
+        self.candidate_crystal_models = []
+        for UB in pidxr.index_pink(
+            s0,
+            s1,
+            self.max_refls,
+            rotogram_grid_points=self.rotogram_grid_points,
+            voxel_grid_points=self.voxel_grid_points,
+            min_lattices=self.min_lattices,
+        ):
+            real_a, real_b, real_c = np.linalg.inv(UB.astype("double"))
+            crystal = Crystal(real_a, real_b, real_c, self.spacegroup)
+            self.candidate_crystal_models.append(crystal)
         return self.candidate_crystal_models
