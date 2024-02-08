@@ -27,7 +27,7 @@ pink_indexer
         .help = "The peak wavelength"
     percent_bandwidth = 1.
         .type = float(value_min=0.)
-        .help = "The percent bandwidth used to calculate the wavelength range for indexing."
+        .help = "The percent bandwidth used to calculate the wavelength range for indexing. The wavelength range is defined (wavelength - wavelength*percent_bandwidth/200, wavelength + wavelength*percent_bandwidth/200). This parameter also reflects the uncertainty of the supplied cell constants with larger values appropriate for less certain unit cells."
     rotogram_grid_points = 180
         .type = int(value_min=10, value_max=1000)
         .help = "Number of points at which to evaluate the angle search for each rlp-observation pair"
