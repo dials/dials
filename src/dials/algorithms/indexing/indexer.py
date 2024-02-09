@@ -168,7 +168,9 @@ indexing {
     mode = *refine_shells repredict_only None
       .type = choice
       .expert_level = 1
-      .help = "refine_shells: refine in increasing resolution cutoffs after indexing."
+      .help = "refine_shells: if using sequences indexer, refine in increasing"
+              "resolution cutoffs after indexing, if using stills indexer,"
+              "refine all data up to d_min_start resolution once only."
               "repredict_only: do not refine after indexing, just update spot"
               "predictions."
               "None: do not refine and do not update spot predictions."
@@ -179,16 +181,20 @@ indexing {
               "cycle. Does not apply to stills.indexer=stills."
     d_min_step = Auto
       .type = float(value_min=0.0)
-      .help = "Reduction per step in d_min for reflections to include in refinement."
+      .help = "Reduction per step in d_min for reflections to include"
+              "in refinement. Does not apply to stills.indexer=stills."
     d_min_start = None
       .type = float(value_min=0.0)
+      .help = "For sequences/stills indexer, the lower limit of d-spacing"
+              "of reflections used in the first/the only round of refinement."
     d_min_final = None
       .type = float(value_min=0.0)
       .help = "Do not ever include reflections below this value in refinement."
+              "Does not apply to stills.indexer=stills."
     disable_unit_cell_volume_sanity_check = False
       .type = bool
       .help = "Disable sanity check on unrealistic increases in unit cell volume"
-              "during refinement."
+              "during refinement. Does not apply to stills.indexer=stills."
       .expert_level = 1
   }
   multiple_lattice_search
