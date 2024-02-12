@@ -800,6 +800,45 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path)
         if ii == 1:
             assert crys.get_domain_size_ang() == pytest.approx(2689.0, rel=0.1)
 
+def test_pink_indexer(
+    dials_data, tmp_path,
+):
+    data_dir = dials_data("cunir_serial_processed", pathlib=True)
+    expt_file = data_dir / "imported_with_ref_5.expt"
+    refl_file = data_dir / "strong_5.refl"
+
+    command = [shutil.which("dials.split_experiments"), expt_file, refl_file]
+    result = subprocess.run(command, cwd=tmp_path)
+
+    command = [shutil.which("dials.combine_experiments")]
+    for i in range(5):
+        command.append(f'split_{i}.expt')
+        command.append(f'split_{i}.refl')
+    result = subprocess.run(command, cwd=tmp_path)
+
+    extra_args = [
+        "joint_indexing=False",
+        "indexing.method=pink_indexer",
+        "min_lattices=5",
+        "percent_bandwidth=2",
+        'known_symmetry.space_group="P 21 3"',
+        "known_symmetry.unit_cell=96.410, 96.410,96.410,90.0,90.0,90.0",
+    ]
+
+    expected_unit_cell = uctbx.unit_cell((96.41, 96.41, 96.41, 90, 90, 90))
+    expected_rmsds = (0.200, 0.200, 0.000) 
+    expected_hall_symbol = " P 2ac 2ab 3"
+
+    run_indexing(
+        'combined.expt',
+        'combined.refl',
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=5,
+    )
 
 @pytest.mark.parametrize(
     "indexer_type,fix_cell",
