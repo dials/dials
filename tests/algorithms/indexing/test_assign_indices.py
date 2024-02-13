@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import os
 import random
+from pathlib import Path
 
 import pytest
 
@@ -226,7 +227,7 @@ class CompareGlobalLocal:
         )
 
 
-def test_index_reflections(dials_regression):
+def test_index_reflections(dials_regression: Path):
     experiments_json = os.path.join(
         dials_regression, "indexing_test_data", "i04_weak_data", "experiments.json"
     )

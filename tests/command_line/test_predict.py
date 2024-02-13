@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from dials.array_family import flex
 
@@ -19,7 +20,7 @@ def plausible(table):
     return True
 
 
-def test_static_prediction(dials_regression, tmp_path):
+def test_static_prediction(dials_regression: Path, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
@@ -39,7 +40,7 @@ def test_static_prediction(dials_regression, tmp_path):
     assert plausible(table)
 
 
-def test_scan_varying_prediction(dials_regression, tmp_path):
+def test_scan_varying_prediction(dials_regression: Path, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
@@ -59,7 +60,7 @@ def test_scan_varying_prediction(dials_regression, tmp_path):
     assert plausible(table)
 
 
-def test_force_static_prediction(dials_regression, tmp_path):
+def test_force_static_prediction(dials_regression: Path, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),

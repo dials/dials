@@ -229,7 +229,14 @@ class Target:
             # For each correlation coefficient, set the weight equal to the size of
             # the sample used to calculate that coefficient
             pairwise_combos = itertools.combinations(np.isfinite(all_intensities), 2)
-            sample_size = lambda x, y: np.count_nonzero(x & y)
+
+            def sample_size(x, y):
+                pairs = np.count_nonzero(x & y)
+                if pairs < self._min_pairs:
+                    return 0
+                else:
+                    return pairs
+
             wij[right_up] = list(itertools.starmap(sample_size, pairwise_combos))
 
             if self._weights == "standard_error":

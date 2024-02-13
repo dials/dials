@@ -18,7 +18,7 @@ def slice_experiments(experiments, image_ranges):
 
     if len(experiments) != len(image_ranges):
         raise ValueError(
-            "Input experiment list and image_ranges are not of the same length"
+            f"Input experiment list and image_ranges are not of the same length ({len(experiments)} != {len(image_ranges)})"
         )
 
     for exp, sr in zip(experiments, image_ranges):
@@ -62,6 +62,7 @@ def slice_reflections(reflections, image_ranges):
             continue
         isel = (reflections["id"] == iexp).iselection()
         frames = (reflections["xyzobs.px.value"].parts()[2]).select(isel)
+
         # reflns on image n have frames in range [n-1, n)
         in_low_lim = frames >= sr[0] - 1
         in_high_lim = frames < sr[1]

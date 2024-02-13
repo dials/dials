@@ -502,7 +502,13 @@ def merge_scaled_array_to_mtz_with_report_collection(
         process_merged_data(
             params, mtz_dataset, merged, merged_anomalous, stats_summary
         )
-        mtz = make_merged_mtz_file([mtz_dataset])
+        if params.r_free_flags.reference:
+            r_free_array = r_free_flags_from_reference(params, [mtz_dataset])
+        elif params.r_free_flags.generate:
+            r_free_array = generate_r_free_flags(params, [mtz_dataset])
+        else:
+            r_free_array = None
+        mtz = make_merged_mtz_file([mtz_dataset], r_free_array=r_free_array)
         json_data = collector.create_json()
     return mtz, json_data
 
@@ -617,15 +623,16 @@ def r_free_flags_from_reference(
             flag_format = "ccp4"
         else:
             flag_format = "cns"
-        missing_flags = missing_set.generate_r_free_flags(
-            fraction=params.r_free_flags.fraction,
-            max_free=2000,
-            lattice_symmetry_max_delta=5.0,
-            use_lattice_symmetry=params.r_free_flags.use_lattice_symmetry,
-            n_shells=params.r_free_flags.n_shells,
-            format=flag_format,
-        )
-        r_free_array = r_free_array.concatenate(other=missing_flags)
+        if missing_set.size():
+            missing_flags = missing_set.generate_r_free_flags(
+                fraction=params.r_free_flags.fraction,
+                max_free=2000,
+                lattice_symmetry_max_delta=5.0,
+                use_lattice_symmetry=params.r_free_flags.use_lattice_symmetry,
+                n_shells=params.r_free_flags.n_shells,
+                format=flag_format,
+            )
+            r_free_array = r_free_array.concatenate(other=missing_flags)
 
     return r_free_array
 

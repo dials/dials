@@ -1,0 +1,1 @@
+``dials.export_bitmaps``: Fix for use of imageset_index parameter on image sets that don't start at image numbers of 1.

@@ -245,7 +245,7 @@ class flex_arr_img_panel(wx.Panel):
 
             self.local_bbox = self.table[self.row_pos]["bbox"]
 
-        except Exception:
+        except KeyError:
             self.first_lst_in, self.segn_lst_in = None, None
 
     def _mi_list_of_wxbitmaps(self, re_scaling=False):
@@ -425,8 +425,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
             self.parent_panel.to_re_zoom(self.scroll_rot)
             self.scroll_rot = 0
             v_size_x, v_size_y = self.GetVirtualSize()
-            new_scroll_pos_x = float(self.x_uni * v_size_x - self.Mouse_Pos_x)
-            new_scroll_pos_y = float(self.y_uni * v_size_y - self.Mouse_Pos_y)
+            new_scroll_pos_x = int(self.x_uni * v_size_x - self.Mouse_Pos_x)
+            new_scroll_pos_y = int(self.y_uni * v_size_y - self.Mouse_Pos_y)
 
             self.Scroll(new_scroll_pos_x, new_scroll_pos_y)
 

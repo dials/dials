@@ -24,7 +24,7 @@ from scitbx import matrix
 
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
-from dials.algorithms.symmetry import symmetry_base
+from dials.algorithms.symmetry import median_unit_cell, symmetry_base
 from dials.algorithms.symmetry.cosym import engine as cosym_engine
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
@@ -595,6 +595,7 @@ class SymmetryAnalysis:
     @staticmethod
     def summary_table(d):
         best_subgroup = d["subgroup_scores"][0]
+        cell = ", ".join(f"{i:.3f}" for i in best_subgroup["unit_cell"])
         return (
             (
                 "Best solution",
@@ -604,10 +605,7 @@ class SymmetryAnalysis:
                     ).info()
                 ),
             ),
-            (
-                "Unit cell",
-                "%.3f %.3f %.3f %.1f %.1f %.1f" % tuple(best_subgroup["unit_cell"]),
-            ),
+            ("Unit cell", cell),
             ("Reindex operator", best_subgroup["cb_op"]),
             ("Laue group probability", f"{best_subgroup['likelihood']:.3f}"),
             ("Laue group confidence", f"{best_subgroup['confidence']:.3f}"),
@@ -631,9 +629,11 @@ class SymmetryAnalysis:
             "Best solution: %s"
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
-        output.append(
-            f"Unit cell: {str(self.best_solution.subgroup['best_subsym'].unit_cell())}"
+        cell = ", ".join(
+            f"{i:.3f}"
+            for i in self.best_solution.subgroup["best_subsym"].unit_cell().parameters()
         )
+        output.append(f"Unit cell: {cell}")
         output.append(
             "Reindex operator: %s"
             % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
@@ -895,3 +895,50 @@ def extract_reference_intensities(
     if not reference_intensities.sigmas():
         reference_intensities.set_sigmas(reference_intensities.data() ** 0.5)
     return reference_intensities, initial_space_group_info
+
+
+def change_of_basis_op_to_best_cell(
+    experiments,
+    max_delta,
+    relative_length_tolerance,
+    absolute_angle_tolerance,
+    best_subgroup,
+):
+    """
+    Compute change of basis op to map experiments from P1 cell to the best cell
+    that matches the best subgroup
+    """
+
+    median_cell = median_unit_cell(experiments)
+    groups = metric_subgroups(
+        experiments[0]
+        .crystal.get_crystal_symmetry()
+        .customized_copy(unit_cell=median_cell),
+        max_delta,
+        enforce_max_delta_for_generated_two_folds=True,
+    )
+    match = None
+    for g in groups.result_groups:
+        if (
+            g["best_subsym"]
+            .unit_cell()
+            .is_similar_to(
+                best_subgroup["best_subsym"].unit_cell(),
+                relative_length_tolerance=relative_length_tolerance,
+                absolute_angle_tolerance=absolute_angle_tolerance,
+            )
+        ) and (
+            sgtbx.lattice_symmetry_group(g["best_subsym"].unit_cell(), max_delta=0)
+            == sgtbx.lattice_symmetry_group(
+                best_subgroup["best_subsym"].unit_cell(), max_delta=0
+            )
+        ):
+            match = g
+            break
+    if not match:
+        raise RuntimeError(
+            "Unable to determine reindexing operator from minumum cells to best cell.\n"
+            + "This may be fixed by increasing relative_length_tolerance or absolute_angle_tolerance."
+        )
+    cb_op = match["cb_op_inp_best"]
+    return cb_op

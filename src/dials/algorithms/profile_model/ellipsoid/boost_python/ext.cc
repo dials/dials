@@ -776,10 +776,13 @@ namespace dials { namespace algorithms { namespace boost_python {
           vec3<double> sp4 = panel.get_pixel_lab_coord(p4).normalize() * s0_length;
 
           // The coordinates in kabsch space
-          vec2<double> x1 = cs.from_beam_vector(sp1);
-          vec2<double> x2 = cs.from_beam_vector(sp2);
-          vec2<double> x3 = cs.from_beam_vector(sp3);
-          vec2<double> x4 = cs.from_beam_vector(sp4);
+          // Scale the unitless reciprocal space coordinates
+          // as |mu| == |s0| i.e. xi should be in A-1 here (this is different
+          // to the gaussian_rs model)
+          vec2<double> x1 = cs.from_beam_vector(sp1) * s0_length;
+          vec2<double> x2 = cs.from_beam_vector(sp2) * s0_length;
+          vec2<double> x3 = cs.from_beam_vector(sp3) * s0_length;
+          vec2<double> x4 = cs.from_beam_vector(sp4) * s0_length;
 
           // The distance from the mean
           double d1 = detail::AT_B_A(x1 - mubar, Sbar_inv);

@@ -50,7 +50,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2023.5"  # June 2023 release
+_prebuilt_cctbx_base = "2023"  # Latest Nightly release
 
 
 def make_executable(filepath):
@@ -344,9 +344,9 @@ environments exist and are working.
         python_requirement,
     ]
     if include_cctbx or cmake:
-        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
+        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
-        command_list.extend(["pycbf", "cmake"])
+        command_list.extend(["pycbf", "cmake", "pre-commit"])
     if os.name == "nt":
         command_list = [
             "cmd.exe",
@@ -1279,6 +1279,7 @@ add_subdirectory(dials)
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
+            "-DHDF5_ROOT=" + conda_base_root,
         ]
         + extra_args,
     )
@@ -1326,6 +1327,7 @@ def configure_build(config_flags, prebuilt_cctbx):
         "xia2",
         "prime",
         "--skip_phenix_dispatchers",
+        "--use_environment",
     ] + config_flags
 
     run_indirect_command(

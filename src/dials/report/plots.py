@@ -37,7 +37,7 @@ def make_image_range_table(experiments, batch_manager):
         ]
     ]
     for i, exp in enumerate(experiments):
-        if exp.scan:
+        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
             valid_image_ranges = ",".join(
                 str(j) for j in exp.scan.get_valid_image_ranges(exp.identifier)
             )

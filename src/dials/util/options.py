@@ -459,7 +459,7 @@ class PhilCommandParser:
         # Parse the command line phil parameters
         user_phils = []
         unhandled = []
-        interpretor = self.system_phil.command_line_argument_interpreter()
+        interpreter = self.system_phil.command_line_argument_interpreter()
 
         def _is_a_phil_file(filename):
             return any(
@@ -483,7 +483,7 @@ class PhilCommandParser:
             # Treat "has a schema" as "looks like a URL (not phil)
             elif "=" in arg and not get_url_scheme(arg):
                 try:
-                    user_phils.append(interpretor.process_arg(arg=arg))
+                    user_phils.append(interpreter.process_arg(arg=arg))
                 except Exception:
                     if return_unhandled:
                         unhandled.append(arg)

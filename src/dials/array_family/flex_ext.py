@@ -30,7 +30,7 @@ import dials.extensions.simple_centroid_ext
 import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
-from dials.util.exclude_images import set_invalid_images
+from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -171,6 +171,12 @@ class _:
             )
 
         # Set images to exclude in the imagesets
+        if params.spotfinder.exclude_images_multiple:
+            params.spotfinder.exclude_images = expand_exclude_multiples(
+                experiments,
+                params.spotfinder.exclude_images_multiple,
+                params.spotfinder.exclude_images,
+            )
         experiments = set_invalid_images(experiments, params.spotfinder.exclude_images)
 
         # Get the spot-finder from the input parameters
@@ -931,7 +937,11 @@ class _:
 
         compute = CorrectionsMulti()
         for experiment in experiments:
-            if experiment.goniometer is not None:
+            if (
+                experiment.goniometer is not None
+                and experiment.scan is not None
+                and (experiment.scan.get_oscillation()[1] != 0.0)
+            ):
                 compute.append(
                     Corrections(
                         experiment.beam, experiment.goniometer, experiment.detector

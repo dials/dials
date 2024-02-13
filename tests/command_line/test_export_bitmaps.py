@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -102,7 +103,18 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
         )
 
 
-def test_export_still_image(dials_regression, tmp_path):
+@pytest.mark.parametrize("set_imageset_index", [True, False])
+def test_export_single_cbf(dials_data, tmp_path, set_imageset_index):
+
+    image = str(dials_data("centroid_test_data", pathlib=True) / "centroid_0002.cbf")
+    cmd = [image, f"output.directory={tmp_path}"]
+    if set_imageset_index:
+        cmd.append("imageset_index=1")
+    export_bitmaps.run(cmd)
+    assert tmp_path.joinpath("image0002.png").is_file()
+
+
+def test_export_still_image(dials_regression: Path, tmp_path):
     image = os.path.join(
         dials_regression,
         "image_examples",
@@ -126,7 +138,7 @@ def test_export_still_image(dials_regression, tmp_path):
         True,
     ],
 )
-def test_export_multi_panel(dials_regression, tmp_path, show_resolution_rings):
+def test_export_multi_panel(dials_regression: Path, tmp_path, show_resolution_rings):
     image = os.path.join(
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )

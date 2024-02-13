@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import sys
-from io import StringIO
 
 from iotbx.phil import parse
 from libtbx import Auto
@@ -141,6 +140,10 @@ phil_scope = parse(
     .help = "Best unit cell value, to use when performing resolution cutting,"
             "and as the overall unit cell in the exported mtz. If None, the median"
             "cell will be used."
+
+    wavelength_tolerance=1e-4
+      .type = float
+      .help = "An absolute tolerance on the wavelength (in A)"
 
   }
 
@@ -359,7 +362,7 @@ def export_mtz(params, experiments, reflections):
                 "Data appears to be unscaled, setting mtz.hklout = 'integrated.mtz'"
             )
 
-    m = export_mtz(
+    export_mtz(
         reflection_table,
         experiments,
         intensity_choice=params.intensity,
@@ -373,12 +376,8 @@ def export_mtz(params, experiments, reflections):
         force_static_model=params.mtz.force_static_model,
         crystal_name=params.mtz.crystal_name,
         project_name=params.mtz.project_name,
+        wavelength_tolerance=params.mtz.wavelength_tolerance,
     )
-
-    summary = StringIO()
-    m.show_summary(out=summary)
-    logger.info("")
-    logger.info(summary.getvalue())
 
 
 def export_sadabs(params, experiments, reflections):

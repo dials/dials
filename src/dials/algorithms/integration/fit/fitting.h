@@ -30,7 +30,7 @@ namespace dials { namespace algorithms {
   namespace detail {
 
     /**
-     * Return multi dimensional array as 2D (i.e. flatten dimensons 1-N)
+     * Return multi dimensional array as 2D (i.e. flatten dimensions 1-N)
      */
     template <typename T, std::size_t N>
     af::const_ref<T, af::c_grid<2> > as_2d(

@@ -329,7 +329,7 @@ def test_override_geometry(dials_data, tmp_path):
     assert goniometer.get_fixed_rotation() == (0, 1, 2, 3, 4, 5, 6, 7, 8)
     assert goniometer.get_setting_rotation() == (8, 7, 6, 5, 4, 3, 2, 1, 0)
     assert scan.get_image_range() == (1, 4)
-    assert scan.get_oscillation() == (1, 2)
+    assert scan.get_oscillation() == pytest.approx((1, 2))
 
 
 def test_import_beam_centre(dials_data, tmp_path):
@@ -376,7 +376,7 @@ def test_import_beam_centre(dials_data, tmp_path):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression, tmp_path):
+def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
     # test slow_fast_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,
@@ -795,7 +795,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     assert len(experiments3.scans()) == 5  # four for sacla stills, 1 for centroid data
 
 
-def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
+def test_convert_stills_to_sequences_nonh5(dials_regression: pathlib.Path, tmp_path):
     image_path = Path(
         dials_regression,
         "image_examples",

@@ -63,7 +63,9 @@ class wxbmp_from_np_array:
             w, h = dc.GetSize()
             tw, th = dc.GetTextExtent(text)
             dc.Clear()
-            dc.DrawText(text, (w - tw) / 2, (h - th) / 2)  # display text in center
+            dc.DrawText(
+                text, int((w - tw) / 2), int((h - th) / 2)
+            )  # display text in center
             dc.SelectObject(wxBitmap)
             del dc
             wx_bmp_lst = [[wxBitmap]]

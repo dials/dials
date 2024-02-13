@@ -163,15 +163,22 @@ def imageset_as_bitmaps(imageset, params):
 
     output_files = []
 
-    images = params.imageset_index
-    if not images:
-        if (
-            scan := imageset.get_scan()
-        ) is not None and not scan.is_still():  # and not images:
-            start, end = scan.get_image_range()
-        else:
-            start, end = 1, len(imageset)
-        images = list(range(start, end + 1))
+    if (
+        scan := imageset.get_scan()
+    ) is not None and not scan.is_still():  # and not images:
+        start, end = scan.get_image_range()
+    else:
+        start, end = 1, len(imageset)
+    images = list(range(start, end + 1))
+    if params.imageset_index:
+        selected_images = []
+        for idx in params.imageset_index:
+            if idx > len(images):
+                sys.exit(
+                    f"Bad value for imageset_index: {idx}. The imageset has length {len(images)}; allowable values for imageset_index are the range 1 to {len(images)} inclusive."
+                )
+            selected_images.append(images[idx - 1])
+        images = selected_images
 
     if params.output.file and len(images) != 1:
         sys.exit("output.file can only be specified if a single image is exported")

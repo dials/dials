@@ -112,7 +112,7 @@ def run_indexing(
     return _indexing_result(indexed_reflections, experiments_list, rmsds)
 
 
-def test_index_i04_weak_data_fft3d(dials_regression, tmp_path):
+def test_index_i04_weak_data_fft3d(dials_regression: pathlib.Path, tmp_path):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
@@ -138,9 +138,9 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmp_path):
     )
 
 
-def test_index_trypsin_four_lattice_P212121(dials_regression, tmp_path):
+def test_index_trypsin_four_lattice_P212121(dials_regression: pathlib.Path, tmp_path):
     # synthetic trypsin multi-lattice dataset (4 lattices)
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "trypsin"
+    data_dir = dials_regression / "indexing_test_data" / "trypsin"
     pickle_path = data_dir / "P1_X6_1_2_3_4.pickle"
     sequence_path = data_dir / "experiments_P1_X6_1_2_3_4.json"
     extra_args = [
@@ -173,9 +173,9 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmp_path):
     )
 
 
-def test_index_i04_weak_data_fft1d(dials_regression, tmp_path):
+def test_index_i04_weak_data_fft1d(dials_regression: pathlib.Path, tmp_path):
     # thaumatin
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
+    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
     pickle_path = data_dir / "full.pickle"
     sequence_path = data_dir / "experiments_import.json"
     extra_args = [
@@ -201,9 +201,9 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmp_path):
     )
 
 
-def test_index_trypsin_index_assignment_local(dials_regression, tmp_path):
+def test_index_trypsin_index_assignment_local(dials_regression: pathlib.Path, tmp_path):
     # synthetic trypsin multi-lattice dataset (3 lattices)
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "trypsin"
+    data_dir = dials_regression / "indexing_test_data" / "trypsin"
     pickle_path = data_dir / "P1_X6_1_2_3.pickle"
     sequence_path = data_dir / "experiments_P1_X6_1_2_3.json"
     extra_args = [
@@ -239,9 +239,9 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmp_path):
     )
 
 
-def test_index_peak_search_clean(dials_regression, tmp_path):
+def test_index_peak_search_clean(dials_regression: pathlib.Path, tmp_path):
     # test indexing from single image of i04_weak_data
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
+    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
     pickle_path = data_dir / "first_image.pickle"
     sequence_path = data_dir / "experiments_import.json"
     extra_args = [
@@ -270,10 +270,12 @@ def test_index_peak_search_clean(dials_regression, tmp_path):
 
 
 @pytest.mark.parametrize("specify_unit_cell", [False, True])
-def test_index_imosflm_tutorial(dials_regression, tmp_path, specify_unit_cell):
+def test_index_imosflm_tutorial(
+    dials_regression: pathlib.Path, tmp_path, specify_unit_cell
+):
     # test on spots derived from imosflm tutorial data:
     # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "imosflm_hg_mar"
+    data_dir = dials_regression / "indexing_test_data" / "imosflm_hg_mar"
     pickle_path = data_dir / "strong.pickle"
     sequence_path = data_dir / "experiments.json"
 
@@ -386,7 +388,6 @@ def insulin_spotfinding_stills(dials_data, tmp_path_factory):
     return experiment, reflections
 
 
-@pytest.mark.xfel
 @pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
 def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method):
     experiment, reflections = insulin_spotfinding_stills
@@ -415,13 +416,11 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method
     )
 
 
-def test_multiple_experiments(dials_regression, tmp_path):
+def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
     # Test indexing 4 lysozyme still shots in a single dials.index job
     #   - the first image doesn't index
     #   - the last three images do index
-    data_dir = (
-        pathlib.Path(dials_regression) / "indexing_test_data" / "i24_lysozyme_stills"
-    )
+    data_dir = dials_regression / "indexing_test_data" / "i24_lysozyme_stills"
     pickle_path = data_dir / "strong.pickle"
     experiments_json = data_dir / "imported_experiments.json"
 
@@ -448,8 +447,8 @@ def test_multiple_experiments(dials_regression, tmp_path):
     )
 
 
-def test_index_4rotation(dials_regression, tmp_path):
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "4rotation"
+def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
+    data_dir = dials_regression / "indexing_test_data" / "4rotation"
     pickle_path = data_dir / "strong.pickle"
     sequence_path = data_dir / "experiments.json"
     extra_args = [
@@ -474,10 +473,12 @@ def test_index_4rotation(dials_regression, tmp_path):
     assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_4(dials_regression, tmp_path):
+def test_index_small_molecule_multi_sequence_4(
+    dials_regression: pathlib.Path, tmp_path
+):
     # test for small molecule multi-sequence indexing, 4 sequences with different values
     # of goniometer.fixed_rotation()
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "multi_sweep"
+    data_dir = dials_regression / "indexing_test_data" / "multi_sweep"
     pickle_paths = [
         sorted((data_dir / f"SWEEP{i + 1}" / "index").glob("*_strong.pickle"))[0]
         for i in range(4)
@@ -502,10 +503,12 @@ def test_index_small_molecule_multi_sequence_4(dials_regression, tmp_path):
     assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_3(dials_regression, tmp_path):
+def test_index_small_molecule_multi_sequence_3(
+    dials_regression: pathlib.Path, tmp_path
+):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
-    data_dir = pathlib.Path(dials_regression) / "dials-191"
+    data_dir = dials_regression / "dials-191"
     print(data_dir)
     pickle_paths = [
         sorted(data_dir.glob(f"*_SWEEP{i + 1}_strong.pickle"))[0] for i in range(3)
@@ -533,9 +536,28 @@ def test_index_small_molecule_multi_sequence_3(dials_regression, tmp_path):
     # expect at least indexed 2000 reflections per experiment
     for i in range(3):
         assert (result.indexed_reflections["id"] == i).count(True) > 2000
+    n_indexed_run1 = result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True)
+    # reindex with known orientations
+    result = run_indexing(
+        tmp_path / "indexed.refl",
+        tmp_path / "indexed.expt",
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+    assert (
+        result.indexed_reflections.get_flags(
+            result.indexed_reflections.flags.indexed
+        ).count(True)
+        > n_indexed_run1
+    )
 
 
-def test_index_small_molecule_ice_max_cell(dials_regression, tmp_path):
+def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_path):
     # test for small molecule indexing: presence of ice rings makes max-cell
     # estimation tricky
     data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
@@ -558,25 +580,31 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmp_path):
     assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
 
 
-@pytest.mark.xfail
-def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
+def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
     """Problem: Sometimes there is enough data to index, but not enough to
     refine. If this happens in the (N>1)th crystal of max_lattices, then
     all existing solutions are also dropped."""
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "lattice_failures")
+    lpe4_expt = (
+        dials_data("indexing_test_data", pathlib=True)
+        / "lattice_failure-lpe4-2-a15.expt"
+    )
+    lpe4_pickle = (
+        dials_data("indexing_test_data", pathlib=True)
+        / "lattice_failure-lpe4-2-a15_strong.pickle"
+    )
 
     result = subprocess.run(
         [
             shutil.which("dials.index"),
-            os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
-            os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
+            lpe4_pickle,
+            lpe4_expt,
             "max_lattices=3",
         ],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert (tmp_path / "indexed.refl").if_file()
+    assert (tmp_path / "indexed.refl").is_file()
     assert (tmp_path / "indexed.expt").is_file()
     experiments_list = load.experiment_list(
         tmp_path / "indexed.expt", check_format=False
@@ -588,7 +616,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
         [
             shutil.which("dials.index"),
             tmp_path / "indexed.expt",
-            os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
+            lpe4_pickle,
             "max_lattices=2",
         ],
         cwd=tmp_path,
@@ -603,7 +631,103 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
     assert len(experiments_list) == 2
 
 
-@pytest.mark.xfel
+@pytest.mark.parametrize(
+    "indexer_type,expected_n_lattices",
+    (("sequences", 3), ("stills", 1)),
+)
+def test_indexers_dont_lose_reflections(
+    dials_data, tmp_path, indexer_type, expected_n_lattices
+):
+    refl = flex.reflection_table.from_file(
+        dials_data("cunir_serial_processed") / "strong_1.refl"
+    )
+    expts = load.experiment_list(
+        dials_data("cunir_serial_processed") / "imported_with_ref_5.expt",
+        check_format=False,
+    )[0:1]
+    refl["imageset_id"] = flex.int(refl.size(), 0)  # needed for centroid_px_to_mm
+    refl.centroid_px_to_mm(expts)
+    refl.map_centroids_to_reciprocal_space(expts)
+
+    from cctbx import sgtbx, uctbx
+
+    from dials.algorithms.indexing.indexer import Indexer
+    from dials.command_line.ssx_index import phil_scope as ssx_index_phil_scope
+
+    params = ssx_index_phil_scope.extract()
+    params.indexing.known_symmetry.space_group = sgtbx.space_group_info("P 21 3")
+    params.indexing.known_symmetry.unit_cell = uctbx.unit_cell(
+        (96.4, 96.4, 96.4, 90, 90, 90)
+    )
+    params.indexing.multiple_lattice_search.max_lattices = 5
+    params.indexing.method = "real_space_grid_search"
+    params.indexing.stills.indexer = indexer_type
+    idxr = Indexer.from_parameters(refl, expts, params=params)
+    idxr.index()
+    assert len(idxr.refined_experiments) == expected_n_lattices
+    assert (
+        idxr.refined_reflections.size() + idxr.unindexed_reflections.size()
+    ) == refl.size()
+    refined = idxr.refined_reflections
+    assert (refined.get_flags(refined.flags.indexed)).count(True) == refined.size()
+    assert (refined["miller_index"] == (0, 0, 0)).count(True) == 0
+    unindexed = idxr.unindexed_reflections
+    assert unindexed.get_flags(unindexed.flags.indexed).count(True) == 0
+    assert (unindexed["miller_index"] != (0, 0, 0)).count(True) == 0
+
+
+def test_index_multi_lattice_multi_sweep(dials_data, tmp_path):
+    loc = dials_data("semisynthetic_multilattice", pathlib=True)
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            loc / "ag_imported_1_50.expt",
+            loc / "ag_strong_1_50.refl",
+            loc / "bh_imported_1_50.expt",
+            loc / "bh_strong_1_50.refl",
+            "max_lattices=2",
+            "joint_indexing=False",
+            "n_macro_cycles=2",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.refl").is_file()
+    assert (tmp_path / "indexed.expt").is_file()
+    expts = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 4
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    refls.assert_experiment_identifiers_are_consistent(expts)
+    assert set(refls["imageset_id"]) == {0, 1}
+    n_indexed_first = refls.get_flags(refls.flags.indexed).count(True)
+
+    # now try to reindex with existing model
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            tmp_path / "indexed.expt",
+            tmp_path / "indexed.refl",
+            "max_lattices=2",
+            "joint_indexing=False",
+            "n_macro_cycles=2",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.refl").is_file()
+    assert (tmp_path / "indexed.expt").is_file()
+    expts = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 4
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    refls.assert_experiment_identifiers_are_consistent(expts)
+    assert set(refls["imageset_id"]) == {0, 1}
+    assert refls.get_flags(refls.flags.indexed).count(True) >= n_indexed_first
+
+
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path):
     """Problem: In stills_indexer, before calling the refine function, the
     experiment list contains a list of dxtbx crystal models (that are not
@@ -679,7 +803,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path)
 
 @pytest.mark.parametrize(
     "indexer_type,fix_cell",
-    (("sequences", False), pytest.param("stills", True, marks=pytest.mark.xfel)),
+    (("sequences", False), ("stills", True)),
 )
 def test_index_ED_still_low_res_spot_match(
     dials_data, tmp_path, indexer_type, fix_cell
@@ -766,8 +890,8 @@ def test_unconventional_P1_cell(dials_data, tmp_path, cell_params):
     )
 
 
-def test_real_space_grid_search_no_unit_cell(dials_regression, tmp_path):
-    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
+def test_real_space_grid_search_no_unit_cell(dials_regression: pathlib.Path, tmp_path):
+    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
     experiments_json = data_dir / "experiments_import.json"
     pickle_path = data_dir / "full.pickle"
     commands = [
@@ -827,5 +951,58 @@ def test_all_expt_ids_have_expts(dials_data, tmp_path):
 
     refl = flex.reflection_table.from_file(tmp_path / "indexed.refl")
     expt = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert (refl["id"] != -1).count(True) == refl.get_flags(refl.flags.indexed).count(
+        True
+    )
+    refl.assert_experiment_identifiers_are_consistent(expt)
 
     assert flex.max(refl["id"]) + 1 == len(expt)
+
+
+def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
+    # this test data is not really multi-lattice, but we can force it to find multiple
+    # lattices by setting a very low minimum_angular_separation=0.001
+    # A test to demonstrate a fix for https://github.com/dials/dials/issues/1821
+
+    # first check that all is well if we don't find the extra lattice
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            "max_lattices=2",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 1
+    refls.assert_experiment_identifiers_are_consistent(expts)
+
+    # now force it to find a second shared lattice
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
+            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            "max_lattices=2",
+            "minimum_angular_separation=0.001",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    assert len(expts) == 8
+    assert len(expts.crystals()) == 2
+    refls.assert_experiment_identifiers_are_consistent(expts)

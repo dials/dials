@@ -188,7 +188,7 @@ function(_cctbx_read_module MODULE)
                 endif()
             endforeach()
         else()
-            # We didn't have any speciic override. If include/ exists
+            # We didn't have any specific override. If include/ exists
             # then use that, otherwise use the module parent directory.
             if (EXISTS "${_dist_path}/include")
                 list(APPEND _include_paths "${_dist_path}/include")

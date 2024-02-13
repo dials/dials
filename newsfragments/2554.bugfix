@@ -1,0 +1,1 @@
+``dials.sequence_to_stills``: Avoid creating an experiment for an image with no reflections on it.
