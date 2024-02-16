@@ -363,10 +363,9 @@ class PinkIndexer(Strategy):
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
     ):
-        """Construct PinkIndexer object.
+        """
         Args:
-            target_symmetry_primitive (cctbx.crystal.symmetry): The target
-                crystal symmetry and unit cell
+            target_symmetry_primitive (cctbx.crystal.symmetry): The target crystal symmetry and unit cell
             max_lattices (int): The maximum number of lattice models to find
             params (phil,optional): Phil params
         """
