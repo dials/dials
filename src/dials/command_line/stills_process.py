@@ -1391,8 +1391,18 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         return experiments, centroids
 
     def integrate(self, experiments, indexed):
-
         st = time.time()
+
+        logger.info("*" * 80)
+        logger.info("Integrating Reflections")
+        logger.info("*" * 80)
+
+        if self.params.integration.integration_only_overrides.trusted_range:
+            for detector in experiments.detectors():
+                for panel in detector:
+                    panel.set_trusted_range(
+                        self.params.integration.integration_only_overrides.trusted_range
+                    )
 
         if self.params.profile.algorithm == "ellipsoid":
             from dials.command_line.ssx_integrate import (
@@ -1410,18 +1420,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             experiments = ExperimentList([experiment])
 
         else:
-            logger.info("*" * 80)
-            logger.info("Integrating Reflections")
-            logger.info("*" * 80)
-
             indexed, _ = self.process_reference(indexed)
-
-            if self.params.integration.integration_only_overrides.trusted_range:
-                for detector in experiments.detectors():
-                    for panel in detector:
-                        panel.set_trusted_range(
-                            self.params.integration.integration_only_overrides.trusted_range
-                        )
 
             if self.params.dispatch.coset:
                 from xfel.util.sublattice_helper import integrate_coset
@@ -1433,77 +1432,28 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             from dials.algorithms.integration.integrator import create_integrator
             from dials.algorithms.profile_model.factory import ProfileModelFactory
 
-        if self.params.dispatch.coset:
-            from dials.algorithms.integration.sublattice_helper import integrate_coset
-
-            integrate_coset(self, experiments, indexed)
-
-        # Get the integrator from the input parameters
-        logger.info("Configuring integrator from input parameters")
-        from dials.algorithms.integration.integrator import create_integrator
-        from dials.algorithms.profile_model.factory import ProfileModelFactory
-
-        # Compute the profile model
-        # Predict the reflections
-        # Match the predictions with the reference
-        # Create the integrator
-        experiments = ProfileModelFactory.create(self.params, experiments, indexed)
-        new_experiments = ExperimentList()
-        new_reflections = flex.reflection_table()
-        for expt_id, expt in enumerate(experiments):
-            if (
-                self.params.profile.gaussian_rs.parameters.sigma_b_cutoff is None
-                or expt.profile.sigma_b()
-                < self.params.profile.gaussian_rs.parameters.sigma_b_cutoff
-            ):
-                refls = indexed.select(indexed["id"] == expt_id)
-                refls["id"] = flex.int(len(refls), len(new_experiments))
-                # refls.reset_ids()
-                del refls.experiment_identifiers()[expt_id]
-                refls.experiment_identifiers()[len(new_experiments)] = expt.identifier
-                new_reflections.extend(refls)
-                new_experiments.append(expt)
-            else:
-                logger.info(
-                    "Rejected expt %d with sigma_b %f"
-                    % (expt_id, expt.profile.sigma_b())
-                )
-        experiments = new_experiments
-        indexed = new_reflections
-        if len(experiments) == 0:
-            raise RuntimeError("No experiments after filtering by sigma_b")
-        logger.info("")
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info("Predicting reflections")
-        logger.info("")
-        predicted = flex.reflection_table.from_predictions_multi(
-            experiments,
-            dmin=self.params.prediction.d_min,
-            dmax=self.params.prediction.d_max,
-            margin=self.params.prediction.margin,
-            force_static=self.params.prediction.force_static,
-        )
-        predicted.match_with_reference(indexed)
-        logger.info("")
-        integrator = create_integrator(self.params, experiments, predicted)
-
-        # Integrate the reflections
-        integrated = integrator.integrate()
-
-        # correct integrated intensities for absorption correction, if necessary
-        for abs_params in self.params.integration.absorption_correction:
-            if abs_params.apply:
-                if abs_params.algorithm == "fuller_kapton":
-                    from dials.algorithms.integration.kapton_correction import (
-                        multi_kapton_correction,
-                    )
-                elif abs_params.algorithm == "kapton_2019":
-                    from dials.algorithms.integration.kapton_2019_correction import (
-                        multi_kapton_correction,
-                    )
-                elif abs_params.algorithm == "other":
-                    continue  # custom abs. corr. implementation should go here
+            # Compute the profile model
+            # Predict the reflections
+            # Match the predictions with the reference
+            # Create the integrator
+            experiments = ProfileModelFactory.create(self.params, experiments, indexed)
+            new_experiments = ExperimentList()
+            new_reflections = flex.reflection_table()
+            for expt_id, expt in enumerate(experiments):
+                if (
+                    self.params.profile.gaussian_rs.parameters.sigma_b_cutoff is None
+                    or expt.profile.sigma_b()
+                    < self.params.profile.gaussian_rs.parameters.sigma_b_cutoff
+                ):
+                    refls = indexed.select(indexed["id"] == expt_id)
+                    refls["id"] = flex.int(len(refls), len(new_experiments))
+                    # refls.reset_ids()
+                    del refls.experiment_identifiers()[expt_id]
+                    refls.experiment_identifiers()[
+                        len(new_experiments)
+                    ] = expt.identifier
+                    new_reflections.extend(refls)
+                    new_experiments.append(expt)
                 else:
                     logger.info(
                         "Rejected expt %d with sigma_b %f"
@@ -1532,27 +1482,27 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             # Integrate the reflections
             integrated = integrator.integrate()
 
-            # correct integrated intensities for absorption correction, if necessary
-            for abs_params in self.params.integration.absorption_correction:
-                if abs_params.apply:
-                    if abs_params.algorithm == "fuller_kapton":
-                        from dials.algorithms.integration.kapton_correction import (
-                            multi_kapton_correction,
-                        )
-                    elif abs_params.algorithm == "kapton_2019":
-                        from dials.algorithms.integration.kapton_2019_correction import (
-                            multi_kapton_correction,
-                        )
-                    elif abs_params.algorithm == "other":
-                        continue  # custom abs. corr. implementation should go here
-                    else:
-                        raise ValueError(
-                            "absorption_correction.apply=True, "
-                            "but no .algorithm has been selected!"
-                        )
-                    experiments, integrated = multi_kapton_correction(
-                        experiments, integrated, abs_params.fuller_kapton, logger=logger
-                    )()
+        # correct integrated intensities for absorption correction, if necessary
+        for abs_params in self.params.integration.absorption_correction:
+            if abs_params.apply:
+                if abs_params.algorithm == "fuller_kapton":
+                    from dials.algorithms.integration.kapton_correction import (
+                        multi_kapton_correction,
+                    )
+                elif abs_params.algorithm == "kapton_2019":
+                    from dials.algorithms.integration.kapton_2019_correction import (
+                        multi_kapton_correction,
+                    )
+                elif abs_params.algorithm == "other":
+                    continue  # custom abs. corr. implementation should go here
+                else:
+                    raise ValueError(
+                        "absorption_correction.apply=True, "
+                        "but no .algorithm has been selected!"
+                    )
+                experiments, integrated = multi_kapton_correction(
+                    experiments, integrated, abs_params.fuller_kapton, logger=logger
+                )()
 
         if self.params.significance_filter.enable:
             from dials.algorithms.integration.stills_significance_filter import (
