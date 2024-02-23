@@ -79,7 +79,7 @@ refinement {
 
 phil_scope = phil.parse(
     """
-method = *fft1d *real_space_grid_search
+method = *fft1d *real_space_grid_search pink_indexer low_res_spot_match
     .type = choice(multi=True)
 nproc = Auto
     .type = int
