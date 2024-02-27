@@ -1,1 +1,1 @@
-Do more accurate discovery of available CPUs and virtual memory across a range of different systems.  This should make various DIALS tools, in particular ``dials.integrate``, function better in situations where system resources are fairly limited or DIALS requires a lot of memory.
+Do more accurate and reliable discovery of available CPUs and virtual memory across a range of different systems.  This should make various DIALS tools, in particular ``dials.integrate``, function better in situations where system resources are fairly limited or DIALS requires a lot of memory.

@@ -1288,7 +1288,9 @@ class Integrator:
                     self.params.integration.mp.n_subset_split
                 )
             else:
-                # need to do a memory check and decide whether to split table
+                # Need to do a memory check and decide whether to split table.
+                # Split if its size in memory exceeds the fraction of available memory
+                # specified by the PHIL parameter integration.block.max_memory_usage.
                 tables = _iterative_table_split(
                     [self.reflections],
                     self.experiments,
