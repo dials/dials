@@ -25,7 +25,7 @@ phil_scope = iotbx.phil.parse(
     """\
 include scope dials.algorithms.correlation.analysis.phil_scope
 
-seed = 230
+seed = 42
   .type = int(value_min=0)
 
 output {
