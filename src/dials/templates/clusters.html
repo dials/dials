@@ -65,6 +65,39 @@
                                 </div>
                             </div>
 
+                            <div class="panel panel-default">
+                                <div class="panel-heading" data-toggle="collapse" data-target="#collapse_cc_cluster_corr">
+                                    <h4 class="panel-title">
+                                        <a>Correlation coefficient clustering CORRECTED</a>
+                                    </h4>
+                                </div>
+                                <div id="collapse_cc_cluster_corr" class="panel-collapse collapse">
+                                    <div class="panel-body">
+
+                                        <div class="container-fluid">
+                                            {{ macros.plotly_graph("cc_cluster_corr", cc_cluster_corr_json, style="dendrogram-plot") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel panel-default">
+                                <div class="panel-heading" data-toggle="collapse" data-target="#collapse_cos_angle_cluster_corr">
+                                    <h4 class="panel-title">
+                                        <a>Cos angle clustering CORRECTED</a>
+                                    </h4>
+                                </div>
+                                <div id="collapse_cos_angle_cluster_corr" class="panel-collapse collapse">
+                                    <div class="panel-body">
+
+                                        <div class="container-fluid">
+                                            {{ macros.plotly_graph("cos_angle_cluster_corr", cos_angle_cluster_corr_json, style="dendrogram-plot") }}
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
