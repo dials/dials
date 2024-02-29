@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import itertools
 import json
 import logging
@@ -178,7 +179,7 @@ class CorrelationMatrix(Subject):
         cc_linkage_matrix_corr = hierarchy.linkage(cc_dist_mat_corr, method="average")
 
         # Cos
-        # because linkage matrix needs cos_dist_mat but it's not in a square form so need to go backwards
+        # because linkage matrix needs cos_dist_mat but it's not in a square form can't do covariance correction on it so need to go backwards
         cos_dist_mat_corr = ssd.squareform(1 - corrected_cos)
         cos_linkage_matrix_corr = hierarchy.linkage(cos_dist_mat_corr, method="average")
 
@@ -247,9 +248,12 @@ class CorrelationMatrix(Subject):
         with open(self.params.output.cos_corr_json, "w") as f:
             f.write(json_str)
 
-    def CompleteCovarianceMatrix(self, C, S):
-        # C is the initial (possibly invalid) covariance matrix
+    def CompleteCovarianceMatrix(self, Corr, S):
+        # Corr is the initial (possibly invalid) covariance matrix
         # S is a matrix with 1 or 0 for specified covariances
+
+        C = copy.deepcopy(Corr)
+
         # number of rows
         n = np.shape(C)[0]
         p = 0.98
