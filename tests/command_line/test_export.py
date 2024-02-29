@@ -584,6 +584,39 @@ def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
                 assert result == pytest.approx(cell_esds[instruction], abs=0.001)
 
 
+def test_shelx_ins_composition(dials_data, tmp_path):
+    # Call dials.export
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "intensity=scale",
+            "format=shelx",
+            "composition=C3H7NO2S",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    sfac_unit = {
+        "SFAC": "C H N O S",
+        "UNIT": "12 28 4 8 4",
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            if instruction in sfac_unit:
+                result = " ".join(tokens[1:6])
+                assert result == sfac_unit[instruction]
+
+
 def test_export_sum_or_profile_only(dials_data, tmp_path):
     expt = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
     refl = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
