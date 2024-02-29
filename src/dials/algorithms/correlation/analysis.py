@@ -13,11 +13,6 @@ import iotbx.phil
 from dials.algorithms.correlation.plots import to_plotly_json
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
-from dials.command_line.symmetry import (
-    apply_change_of_basis_ops,
-    change_of_basis_ops_to_minimum_cell,
-    eliminate_sys_absent,
-)
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
@@ -77,55 +72,37 @@ class CorrelationMatrix(Subject):
             value: key for key, value in self.ids_to_identifiers_map.items()
         }
 
-        # Map experiments and reflections to minimum cell
-        cb_ops = change_of_basis_ops_to_minimum_cell(
-            self._experiments,
-            params.lattice_symmetry_max_delta,
-            params.relative_length_tolerance,
-            params.absolute_angle_tolerance,
-        )
-        exclude = [
-            expt.identifier
-            for expt, cb_op in zip(self._experiments, cb_ops)
-            if not cb_op
-        ]
-        if len(exclude):
-            exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
-            logger.info(
-                f"Rejecting {len(exclude)} datasets from cosym analysis "
-                f"(couldn't determine consistent cb_op to minimum cell):\n"
-                f"dataset indices: {exclude_indices}",
+        if "inverse_scale_factor" in reflections[0]:
+            # FIXME - can we also just use the filtered_arrays_from_experiments_reflections function?
+            from dials.report.analysis import scaled_data_as_miller_array
+
+            datasets = []
+            for expt, r in zip(self._experiments, self._reflections):
+                sel = ~r.get_flags(r.flags.bad_for_scaling, all=False)
+                sel &= r["inverse_scale_factor"] > 0
+                datasets.append(scaled_data_as_miller_array([r], [expt]))
+
+        else:
+            datasets = filtered_arrays_from_experiments_reflections(
+                self._experiments,
+                self._reflections,
+                outlier_rejection_after_filter=False,
+                partiality_threshold=params.partiality_threshold,
             )
-            self._experiments, self._reflections = select_datasets_on_identifiers(
-                self._experiments, self._reflections, exclude_datasets=exclude
+        individual_merged_intensities = []
+        for unmerged in datasets:
+            individual_merged_intensities.append(
+                unmerged.merge_equivalents().array().set_info(unmerged.info())
             )
-            cb_ops = list(filter(None, cb_ops))
-
-        # Eliminate reflections that are systematically absent due to centring
-        # of the lattice, otherwise they would lead to non-integer miller indices
-        # when reindexing to a primitive setting
-        self._reflections = eliminate_sys_absent(self._experiments, self._reflections)
-
-        self._experiments, self._reflections = apply_change_of_basis_ops(
-            self._experiments, self._reflections, cb_ops
-        )
-
-        # transform models into miller arrays
-        datasets = filtered_arrays_from_experiments_reflections(
-            self._experiments,
-            self._reflections,
-            outlier_rejection_after_filter=False,
-            partiality_threshold=params.partiality_threshold,
-        )
-
         datasets = [
-            ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
+            d.eliminate_sys_absent(integral_only=True).primitive_setting()
+            for d in individual_merged_intensities
         ]
 
         self.params.lattice_group = datasets[0].space_group_info()
         self.params.space_group = datasets[0].space_group_info()
 
-        self.params.weights = "standard_error"
+        # self.params.weights = "standard_error"
 
         self.cosym_analysis = CosymAnalysis(datasets, self.params)
 
