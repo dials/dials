@@ -45,6 +45,11 @@ input is an models.expt file.
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
+SHELX format exports intensity data in HKLF 4 format for use in the SHELX suite
+of programs. As this file format does not contain unit cell parameters or
+symmetry information a minimal instruction file is also written. Optionally the
+expected contents of the asymmetric unit can be added to this instruciton file.
+
 PETS format exports intensity data and diffraction data in the CIF format
 used by PETS. This is primarily intended to produce files suitable for
 dynamic diffraction refinement using Jana2020, which requires this format.
@@ -72,6 +77,11 @@ Examples::
   dials.export indexed.refl format=xds
   dials.export models.expt format=xds
   dials.export models.expt indexed.refl format=xds
+
+  # Export to shelx
+  dials.export scaled.expt scaled.refl format=shelx
+  dials.export scaled.expt scaled.refl format=shelx shelx.hklout=dials.hkl
+  dials.export scaled.expt scaled.refl format=shelx composition=C3H7NO2S
 """
 
 phil_scope = parse(
@@ -249,6 +259,9 @@ phil_scope = parse(
     ins = dials.ins
       .type = path
       .help = "The output ins file"
+    composition = None
+      .type = str
+      .help = "The chemical composition of the asymmetric unit"
     scale = True
       .type = bool
       .help = "Scale reflections to maximise output precision in SHELX 8.2f format"
