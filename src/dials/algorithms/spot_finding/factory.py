@@ -452,6 +452,8 @@ class SpotFinderFactory:
         # Setup the spot finder
         contains_tof_experiments = False
         for experiment in experiments:
+            if experiment.scan is None:
+                continue
             if experiment.scan.has_property("time_of_flight"):
                 contains_tof_experiments = True
             elif contains_tof_experiments:

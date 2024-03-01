@@ -9,7 +9,7 @@ def centroid_px_to_mm(detector, scan, position, variance, sd_error):
 
     # Get the pixel to millimeter function
     assert len(detector) == 1
-    if scan.has_property("time_of_flight"):
+    if scan is not None and scan.has_property("time_of_flight"):
         return tof_centroid_px_to_mm_panel(
             detector[0], scan, position, variance, sd_error
         )
@@ -20,7 +20,7 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
     """Convenience function to calculate centroid in mm/rad from px"""
     # Get the pixel to millimeter function
 
-    if scan.has_property("time_of_flight"):
+    if scan is not None and scan.has_property("time_of_flight"):
         return tof_centroid_px_to_mm_panel(panel, scan, position, variance, sd_error)
 
     pixel_size = panel.get_pixel_size()
@@ -75,7 +75,7 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
 
 def tof_centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
     """Convenience function to calculate centroid in mm/tof from px"""
-    assert scan.has_property("time_of_flight")
+    assert scan is not None and scan.has_property("time_of_flight")
 
     pixel_size = panel.get_pixel_size()
     tof = scan.get_property("time_of_flight")  # (usec)
