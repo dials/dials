@@ -13,6 +13,7 @@ import libtbx
 from dxtbx.format.image import ImageBool
 from dxtbx.imageset import ImageSequence, ImageSet
 from dxtbx.model import ExperimentList
+from dxtbx.model.tof_helpers import wavelength_from_tof
 
 from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
@@ -747,10 +748,10 @@ class SpotFinder:
             flex.size_t_range(len(reflections)), reflections.flags.strong
         )
 
-        # Check for overloads
         reflections.is_overloaded(experiments)
 
-        # Return the reflections
+        reflections = self._post_process(reflections)
+
         return reflections
 
     def _find_spots_in_imageset(self, imageset):
@@ -855,3 +856,111 @@ class SpotFinder:
 
         # Return the hot mask
         return hot_mask
+
+    def _post_process(self, reflections):
+        return reflections
+
+
+class TOFSpotFinder(SpotFinder):
+    """
+    Class to do spot finding tailored to time of flight experiments
+    """
+
+    def __init__(
+        self,
+        experiments,
+        threshold_function=None,
+        mask=None,
+        region_of_interest=None,
+        max_strong_pixel_fraction=0.1,
+        compute_mean_background=False,
+        mp_method=None,
+        mp_nproc=1,
+        mp_njobs=1,
+        mp_chunksize=1,
+        mask_generator=None,
+        filter_spots=None,
+        scan_range=None,
+        write_hot_mask=True,
+        hot_mask_prefix="hot_mask",
+        min_spot_size=1,
+        max_spot_size=20,
+        min_chunksize=50,
+    ):
+
+        super().__init__(
+            threshold_function=threshold_function,
+            mask=mask,
+            region_of_interest=region_of_interest,
+            max_strong_pixel_fraction=max_strong_pixel_fraction,
+            compute_mean_background=compute_mean_background,
+            mp_method=mp_method,
+            mp_nproc=mp_nproc,
+            mp_njobs=mp_njobs,
+            mp_chunksize=mp_chunksize,
+            mask_generator=mask_generator,
+            filter_spots=filter_spots,
+            scan_range=scan_range,
+            write_hot_mask=write_hot_mask,
+            hot_mask_prefix=hot_mask_prefix,
+            min_spot_size=min_spot_size,
+            max_spot_size=max_spot_size,
+            no_shoeboxes_2d=False,
+            min_chunksize=min_chunksize,
+            is_stills=False,
+        )
+
+        self.experiments = experiments
+
+    def _correct_centroid_tof(self, reflections):
+
+        """
+        Sets the centroid of the spot to the peak position along the
+        time of flight, as this tends to more accurately represent the true
+        centroid for spallation sources.
+        """
+
+        x, y, tof = reflections["xyzobs.px.value"].parts()
+        peak_x, peak_y, peak_tof = reflections["shoebox"].peak_coordinates().parts()
+        reflections["xyzobs.px.value"] = flex.vec3_double(x, y, peak_tof)
+
+        return reflections
+
+    def _post_process(self, reflections):
+
+        reflections = self._correct_centroid_tof(reflections)
+
+        n_rows = reflections.nrows()
+        panel_numbers = flex.size_t(reflections["panel"])
+        reflections["L1"] = flex.double(n_rows)
+        reflections["wavelength"] = flex.double(n_rows)
+        reflections["s0"] = flex.vec3_double(n_rows)
+        reflections.centroid_px_to_mm(self.experiments)
+
+        for i, expt in enumerate(self.experiments):
+            if "imageset_id" in reflections:
+                sel_expt = reflections["imageset_id"] == i
+            else:
+                sel_expt = reflections["id"] == i
+
+            L0 = expt.beam.get_sample_to_source_distance() * 10**-3  # (m)
+            unit_s0 = expt.beam.get_unit_s0()
+
+            for i_panel in range(len(expt.detector)):
+
+                sel = sel_expt & (panel_numbers == i_panel)
+                x, y, tof = reflections["xyzobs.mm.value"].select(sel).parts()
+                px, py, frame = reflections["xyzobs.px.value"].select(sel).parts()
+                s1 = expt.detector[i_panel].get_lab_coord(flex.vec2_double(x, y))
+                L1 = s1.norms()
+                wavelengths = wavelength_from_tof(L0 + L1 * 10**-3, tof * 10**-6)
+                s0s = flex.vec3_double(
+                    unit_s0[0] / wavelengths,
+                    unit_s0[1] / wavelengths,
+                    unit_s0[2] / wavelengths,
+                )
+
+                reflections["wavelength"].set_selected(sel, wavelengths)
+                reflections["s0"].set_selected(sel, s0s)
+                reflections["L1"].set_selected(sel, L1)
+        return reflections
