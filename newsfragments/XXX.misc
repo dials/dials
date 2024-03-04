@@ -1,0 +1,1 @@
+Add filter in `TOFSpotFinder._post_process` to remove any reflections outside of the time of flight range
