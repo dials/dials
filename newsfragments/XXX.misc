@@ -1,0 +1,1 @@
+Remove references to `Experiment.is_still()` and `Experiments.all_sequences()`.

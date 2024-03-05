@@ -1357,7 +1357,7 @@ Splitting reflection table into %s subsets for processing
                 group = job.index()
                 f0, f1 = job.frames()
                 rows.append([str(i), str(group), str(f0), str(f1)])
-        elif self._experiments.all_sequences():
+        elif self._experiments.all_rotations():
             rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
             for i in range(len(self)):
                 job = self._manager.job(i)
@@ -1589,7 +1589,7 @@ class Integrator3DThreaded:
                 group = job.index()
                 f0, f1 = job.frames()
                 rows.append([str(i), str(group), str(f0), str(f1)])
-        elif self._experiments.all_sequences():
+        elif self._experiments.all_rotations():
             rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
             for i in range(len(self)):
                 job = self._manager.job(i)
