@@ -169,10 +169,16 @@ def index(experiments, reflections, params):
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
     if params.indexing.joint_indexing is Auto:
-        if any(e.is_still() for e in experiments):
+        if all(e.is_still() for e in experiments):
             params.indexing.joint_indexing = False
-        else:
+            logger.info("joint_indexing=False has been set for stills experiments")
+        elif all(not e.is_still() for e in experiments):
             params.indexing.joint_indexing = True
+            logger.info("joint_indexing=True has been set for scans experiments")
+        else:
+            raise ValueError(
+                "Unable to set joint_indexing automatically for a mixture of stills and scans experiments"
+            )
 
     if len(experiments) == 1 or params.indexing.joint_indexing:
         indexed_experiments, indexed_reflections = _index_experiments(
