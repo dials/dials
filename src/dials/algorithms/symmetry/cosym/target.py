@@ -15,6 +15,76 @@ from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
 logger = logging.getLogger(__name__)
+import math
+
+from cctbx.miller import binned_data
+
+
+def weighted_cchalf(
+    this, other, assume_index_matching=False, use_binning=False, weighted=True
+):
+    if not use_binning:
+        assert other.indices().size() == this.indices().size()
+        if this.data().size() == 0:
+            return None, None
+
+        if assume_index_matching:
+            (o, c) = (this, other)
+        else:
+            (o, c) = this.common_sets(other=other, assert_no_singles=True)
+
+        # The case where the denominator is less or equal to zero is
+        # pathological and should never arise in practice.
+        if weighted:
+            assert len(o.sigmas())
+            assert len(c.sigmas())
+            n = len(o.data())
+            if n == 1:
+                return None, 1
+            v_o = o.sigmas() ** 2
+            v_c = c.sigmas() ** 2
+            var_w = v_o + v_c
+            joint_w = 1.0 / var_w
+            sumjw = flex.sum(joint_w)
+            norm_jw = joint_w / sumjw
+            xbar = flex.sum(o.data() * norm_jw)
+            ybar = flex.sum(c.data() * norm_jw)
+            sxy = flex.sum((o.data() - xbar) * (c.data() - ybar) * norm_jw)
+
+            sx = flex.sum((o.data() - xbar) ** 2 * norm_jw)
+            sy = flex.sum((c.data() - ybar) ** 2 * norm_jw)
+            # what is neff? neff = 1/V2
+            # V2 = flex.sum(norm_jw**2)
+            # use entropy based approach
+            neff = math.exp(-1.0 * flex.sum(norm_jw * flex.log(norm_jw)))
+            # print(n, neff, 1.0/V2)
+            if sx == 0.0 or sy == 0.0:
+                return None, 0
+            return (sxy / ((sx * sy) ** 0.5), neff)
+        else:
+            n = len(o.data())
+            xbar = flex.sum(o.data()) / n
+            ybar = flex.sum(c.data()) / n
+            sxy = flex.sum((o.data() - xbar) * (c.data() - ybar))
+            sx = flex.sum((o.data() - xbar) ** 2)
+            sy = flex.sum((c.data() - ybar) ** 2)
+
+            return (sxy / ((sx * sy) ** 0.5), n)
+    assert this.binner is not None
+    results = []
+    n_eff = []
+    for i_bin in this.binner().range_all():
+        sel = this.binner().selection(i_bin)
+        cchalf, neff = weighted_cchalf(
+            this.select(sel),
+            other.select(sel),
+            assume_index_matching=assume_index_matching,
+            use_binning=False,
+            weighted=weighted,
+        )
+        results.append(cchalf)
+        n_eff.append(neff)
+    return binned_data(binner=this.binner(), data=results, data_fmt="%7.4f"), n_eff
 
 
 class Target:
@@ -72,8 +142,12 @@ class Target:
         order = lattice_ids.argsort().astype(np.uint64)
         sorted_data = data.data().select(flex.size_t(order))
         sorted_indices = data.indices().select(flex.size_t(order))
+        sorted_sigmas = data.sigmas().select(flex.size_t(order))
         self._lattice_ids = lattice_ids[order]
-        self._data = data.customized_copy(indices=sorted_indices, data=sorted_data)
+        self._data = data.customized_copy(
+            indices=sorted_indices, data=sorted_data, sigmas=sorted_sigmas
+        )
+        # self._sigmas = data.customized_copy(indices=sorted_indices, data=sorted_sigmas)
         assert isinstance(self._data.indices(), type(flex.miller_index()))
         assert isinstance(self._data.data(), type(flex.double()))
 
@@ -201,11 +275,13 @@ class Target:
 
             i_lower, i_upper = self._lattice_lower_upper_index(i)
             intensities_i = self._data.data()[i_lower:i_upper]
+            sigmas_i = self._data.sigmas()[i_lower:i_upper]
 
             for j in range(n_lattices):
 
                 j_lower, j_upper = self._lattice_lower_upper_index(j)
                 intensities_j = self._data.data()[j_lower:j_upper]
+                sigmas_j = self._data.sigmas()[j_lower:j_upper]
 
                 for k, cb_op_k in enumerate(self.sym_ops):
                     cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
@@ -239,7 +315,35 @@ class Target:
                                 self._patterson_group.epsilon(indices_j.select(isel_j))
                                 == 1
                             )
-                            corr = flex.linear_correlation(
+                            ms = miller.set(
+                                crystal_symmetry=self._data.crystal_symmetry(),
+                                indices=indices_j.select(isel_j),
+                            )
+                            ma_j = miller.array(
+                                miller_set=ms,
+                                data=intensities_j.select(isel_j),
+                                sigmas=sigmas_j.select(isel_j),
+                            )
+                            ms = miller.set(
+                                crystal_symmetry=self._data.crystal_symmetry(),
+                                indices=indices_i.select(isel_i),
+                            )
+                            ma_i = miller.array(
+                                miller_set=ms,
+                                data=intensities_i.select(isel_i),
+                                sigmas=sigmas_i.select(isel_i),
+                            )
+                            corr, neff = weighted_cchalf(
+                                ma_i, ma_j, assume_index_matching=True
+                            )
+                            if not neff:
+                                n = None
+                                cc = None
+                            else:
+                                cc = corr
+                                n = neff
+
+                            """corr = flex.linear_correlation(
                                 intensities_i.select(isel_i),
                                 intensities_j.select(isel_j),
                             )
@@ -249,7 +353,7 @@ class Target:
                                 n = corr.n()
                             else:
                                 cc = None
-                                n = None
+                                n = None"""
                             rij_cache[key] = (cc, n)
 
                         if (
