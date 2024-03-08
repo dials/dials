@@ -4,6 +4,7 @@ import copy
 import itertools
 import json
 import logging
+import math
 from collections import OrderedDict
 
 import numpy as np
@@ -11,10 +12,12 @@ import scipy.spatial.distance as ssd
 from scipy.cluster import hierarchy
 
 import iotbx.phil
+from cctbx.miller import binned_data
 
 from dials.algorithms.correlation.plots import to_plotly_json
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
+from dials.array_family import flex
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
@@ -96,17 +99,17 @@ class CorrelationMatrix(Subject):
             individual_merged_intensities.append(
                 unmerged.merge_equivalents().array().set_info(unmerged.info())
             )
-        datasets = [
+        self.datasets = [
             d.eliminate_sys_absent(integral_only=True).primitive_setting()
             for d in individual_merged_intensities
         ]
 
-        self.params.lattice_group = datasets[0].space_group_info()
-        self.params.space_group = datasets[0].space_group_info()
+        self.params.lattice_group = self.datasets[0].space_group_info()
+        self.params.space_group = self.datasets[0].space_group_info()
 
         # self.params.weights = "standard_error"
 
-        self.cosym_analysis = CosymAnalysis(datasets, self.params)
+        self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
     def _filter_min_reflections(self, experiments, reflections):
         """
@@ -166,22 +169,41 @@ class CorrelationMatrix(Subject):
 
         logger.info("Applying matrix corrections via scary maths\n")
 
-        cc_known = np.ones(correlation_matrix.shape)
-        cos_known = np.ones(cos_angle.shape)
+        # TEMP - MAKE THIS NICER LATER
+        self.cc_linkage_matrix = cc_linkage_matrix
+        self.correlation_matrix = correlation_matrix
+        self.cos_angle = cos_angle
+        self.cos_linkage_matrix = cos_linkage_matrix
 
-        corrected_cc = self.CompleteCovarianceMatrix(correlation_matrix, cc_known)
-        corrected_cos = self.CompleteCovarianceMatrix(cos_angle, cos_known)
+        cc_weighted_matrix = np.zeros(correlation_matrix.shape)
+        for row, i in enumerate(self.datasets):
+            for column, j in enumerate(self.datasets):
+                m1 = copy.deepcopy(i)
+                m2 = copy.deepcopy(j)
+                m1_int, m2_int = m1.common_sets(m2)
+                wcc, neff = self.weighted_cchalf(m1_int, m2_int)
+                cc_weighted_matrix[row, column] = wcc
 
-        ##CC
-        corr_diffraction_dissimilarity = 1 - corrected_cc
-        assert ssd.is_valid_dm(corr_diffraction_dissimilarity, tol=1e-12)
-        cc_dist_mat_corr = ssd.squareform(corr_diffraction_dissimilarity, checks=False)
+        difference_matrix = abs(correlation_matrix - cc_weighted_matrix)
+        logger.info("Difference between cc matrix and cc weighted matrix")
+        logger.info(difference_matrix)
+        logger.info("average of difference matrix")
+        logger.info(np.average(difference_matrix))
+
+        # DO WE WANT TO ASSERT THIS?!?!?!?!?!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for i in range(cc_weighted_matrix.shape[0]):
+            cc_weighted_matrix[i, i] = 1
+
+        # clip values of correlation matrix to account for floating point errors
+        cc_weighted_matrix[np.where(cc_weighted_matrix < -1)] = -1
+        cc_weighted_matrix[np.where(cc_weighted_matrix > 1)] = 1
+        diffraction_dissimilarity_corr = 1 - cc_weighted_matrix
+
+        assert ssd.is_valid_dm(diffraction_dissimilarity_corr, tol=1e-12)
+        # convert the redundant n*n square matrix form into a condensed nC2 array
+        cc_dist_mat_corr = ssd.squareform(diffraction_dissimilarity_corr, checks=False)
+
         cc_linkage_matrix_corr = hierarchy.linkage(cc_dist_mat_corr, method="average")
-
-        # Cos
-        # because linkage matrix needs cos_dist_mat but it's not in a square form can't do covariance correction on it so need to go backwards
-        cos_dist_mat_corr = ssd.squareform(1 - corrected_cos)
-        cos_linkage_matrix_corr = hierarchy.linkage(cos_dist_mat_corr, method="average")
 
         labels = list(range(0, len(self._experiments)))
 
@@ -196,17 +218,12 @@ class CorrelationMatrix(Subject):
         )
 
         self.cc_corr_json = to_plotly_json(
-            corrected_cc,
+            cc_weighted_matrix,
             cc_linkage_matrix_corr,
             labels=labels,
             matrix_type="correlation",
         )
-        self.cos_corr_json = to_plotly_json(
-            corrected_cos,
-            cos_linkage_matrix_corr,
-            labels=labels,
-            matrix_type="cos_angle",
-        )
+        self.cos_corr_json = self.cos_json
 
         self.rij_graphs = OrderedDict()
 
@@ -356,3 +373,67 @@ class CorrelationMatrix(Subject):
                 C[nind, i] = xtransp1D
 
         return C
+
+    def weighted_cchalf(
+        self, this, other, assume_index_matching=False, use_binning=False, weighted=True
+    ):
+        if not use_binning:
+            assert other.indices().size() == this.indices().size()
+            if this.data().size() == 0:
+                return None, None
+
+            if assume_index_matching:
+                (o, c) = (this, other)
+            else:
+                (o, c) = this.common_sets(other=other, assert_no_singles=True)
+
+            # The case where the denominator is less or equal to zero is
+            # pathological and should never arise in practice.
+            if weighted:
+                assert len(o.sigmas())
+                assert len(c.sigmas())
+                n = len(o.data())
+                if n == 1:
+                    return None, 1
+                v_o = o.sigmas() ** 2
+                v_c = c.sigmas() ** 2
+                var_w = v_o + v_c
+                joint_w = 1.0 / var_w
+                sumjw = flex.sum(joint_w)
+                norm_jw = joint_w / sumjw
+                xbar = flex.sum(o.data() * norm_jw)
+                ybar = flex.sum(c.data() * norm_jw)
+                sxy = flex.sum((o.data() - xbar) * (c.data() - ybar) * norm_jw)
+
+                sx = flex.sum((o.data() - xbar) ** 2 * norm_jw)
+                sy = flex.sum((c.data() - ybar) ** 2 * norm_jw)
+                # what is neff? neff = 1/V2
+                # V2 = flex.sum(norm_jw**2)
+                # use entropy based approach
+                neff = math.exp(-1.0 * flex.sum(norm_jw * flex.log(norm_jw)))
+                # print(n, neff, 1.0/V2)
+                return (sxy / ((sx * sy) ** 0.5), neff)
+            else:
+                n = len(o.data())
+                xbar = flex.sum(o.data()) / n
+                ybar = flex.sum(c.data()) / n
+                sxy = flex.sum((o.data() - xbar) * (c.data() - ybar))
+                sx = flex.sum((o.data() - xbar) ** 2)
+                sy = flex.sum((c.data() - ybar) ** 2)
+
+                return (sxy / ((sx * sy) ** 0.5), n)
+        assert this.binner() is not None
+        results = []
+        n_eff = []
+        for i_bin in this.binner().range_all():
+            sel = this.binner().selection(i_bin)
+            cchalf, neff = self.weighted_cchalf(
+                this.select(sel),
+                other.select(sel),
+                assume_index_matching=assume_index_matching,
+                use_binning=False,
+                weighted=weighted,
+            )
+            results.append(cchalf)
+            n_eff.append(neff)
+        return binned_data(binner=this.binner(), data=results, data_fmt="%7.4f"), n_eff
