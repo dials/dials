@@ -131,8 +131,6 @@ def run(args=None):
         page_title="DIALS Correlation Matrix",
         cc_cluster_json=matrices.cc_json,
         cos_angle_cluster_json=matrices.cos_json,
-        cc_cluster_corr_json=matrices.cc_corr_json,
-        cos_angle_cluster_corr_json=matrices.cos_corr_json,
         image_range_tables=[matrices.table_list],
         cosym_graphs=matrices.rij_graphs,
     )

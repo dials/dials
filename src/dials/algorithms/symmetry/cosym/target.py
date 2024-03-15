@@ -209,10 +209,6 @@ class Target:
                 valid_intensities = intensities[selection][epsilon_equals_one]
                 all_intensities[column, valid_mil_ind] = valid_intensities
 
-        # print(np.isnan(all_intensities).any())
-        # print(np.count_nonzero(np.isnan(all_intensities)))
-        # print(all_intensities.shape)
-
         # Ideally we would use `np.ma.corrcoef` here, but it is broken, so use
         # pd.DataFrame.corr() instead (see numpy/numpy#15601)
         rij = (
@@ -221,28 +217,6 @@ class Target:
             .corr(min_periods=self._min_pairs)
             .values
         )
-        # rij_cov = (
-        # pd.DataFrame(all_intensities)
-        # .T.dropna(how="all")
-        # .cov(min_periods=self._min_pairs)
-        # .values
-        # )
-
-        # print("had set min pairs to 3")
-        # print(np.isnan(rij).any())
-        # print(np.count_nonzero(np.isnan(rij)))
-        # print(rij.shape)
-        # known = copy.deepcopy(rij)
-        # np.nan_to_num(known, copy=False)
-        # known[known != 0] = 1
-        # known_cov = copy.deepcopy(rij_cov)
-        # np.nan_to_num(known_cov, copy=False)
-        # known_cov[known_cov != 0] = 1
-        # rij_corr = self.CompleteCovarianceMatrix(rij,known)
-        # rij_cov_corr = self.CompleteCovarianceMatrix(rij_cov,known)
-        # print(rij)
-        # print(rij_corr)
-
         # Set any NaN correlation coefficients to zero
         np.nan_to_num(rij, copy=False)
         # Cosym does not make use of the on-diagonal correlation coefficients
@@ -398,113 +372,3 @@ class Target:
             x[i] += eps  # reset to original values
             curvs[i] += (fm - 2 * f + fp) / (eps**2)
         return curvs
-
-    def CompleteCovarianceMatrix(self, Corr, S):
-        # Corr is the initial (possibly invalid) covariance matrix
-        # S is a matrix with 1 or 0 for specified covariances
-
-        C = copy.deepcopy(Corr)
-        print("Correcting rij matrix")
-
-        # number of rows
-        n = np.shape(C)[0]
-        p = 0.98
-        # OCTAVE starts from index 1, python starts from index 0
-        for i in range(1, n):
-            # Diagonals defined to be known, so this finds all that are not diagonals (and assume triangular symmetry?)
-            SS = S[i, 0:i]
-            # Makes a np.array with the INDICES that are non-zero - need [0] because gets stored as a weird tuple
-            # MAYBE RETHINK THIS LATER
-            ind = (SS == 1).nonzero()[0]
-            # Makes a np.array with the INDICES that are zero - need [0] because gets stored as a weird tuple
-            # MAYBE RETHINK THIS LATER
-            nind = (SS == 0).nonzero()[0]
-            # Convert specified covariances into a matrix that looks like this:
-            # H = [A   B'  x]
-            #     [B   D   c]
-            #     [x'  c'  d]
-            d = C[i, i]
-            c = C[ind, i]
-            c.resize(len(ind), 1)
-
-            # Weird stuff here because I am not familiar enough with numpy to make this cleaner
-            # Basically need to take subset of numpy array but may not be sequential (ie rows 2 and 4 so can't use ':' in slicing)
-
-            ind_pairs = list(itertools.product(ind.tolist(), repeat=2))
-            nind_pairs = list(itertools.product(nind.tolist(), repeat=2))
-            ind_pairs_list = []
-            nind_pairs_list = []
-            ind_nind_pairs_list = []
-            for h in ind_pairs:
-                ind_pairs_list.append(list(h))
-            for h in nind_pairs:
-                nind_pairs_list.append(list(h))
-            for h in ind:
-                for j in nind:
-                    ind_nind_pairs_list.append([h, j])
-
-            if len(ind) > 0:
-                x, y = np.transpose(np.array(ind_pairs_list))
-                D = C[x, y]
-                D.resize((len(ind), len(ind)))
-            else:
-                D = np.array([[]])
-
-            if len(nind) > 0:
-                a, b = np.transpose(np.array(nind_pairs_list))
-                A = C[a, b]
-                A.resize((len(nind), len(nind)))
-            else:
-                A = np.array([[]])
-
-            if len(ind) > 0 and len(nind) > 0:
-                s, t = np.transpose(np.array(ind_nind_pairs_list))
-                B = C[s, t]
-                B.resize((len(ind), len(nind)))
-            elif len(ind) > 0 and len(nind) == 0:
-                B = np.zeros((len(ind), 1))
-            elif len(nind) > 0 and len(ind) == 0:
-                B = np.zeros((1, len(nind)))
-            else:
-                B = np.array([[]])
-
-            if D.size > 0:
-                Dinv = np.linalg.inv(D)
-                # NOTE THROUGHOUT - order of transposes are sometimes different to original code because numpy doesn't always preserve 'rows' and 'columns'
-                # the same as Octave does....
-                implied_variance = np.matmul(np.matmul(np.transpose(c), Dinv), c)
-                if implied_variance > d * p:
-                    max_cov_value2 = np.diag(D) * d
-                    c.resize(1, c.size)
-                    replace_idx = (c**2 >= max_cov_value2 * p).nonzero()
-                    if len(replace_idx) > 0:
-                        max_cov_value2 = np.array([max_cov_value2])
-                        c[replace_idx] = np.sign(c[replace_idx]) * np.sqrt(
-                            max_cov_value2[replace_idx]
-                        )
-                        implied_variance = np.matmul(
-                            np.matmul(c, Dinv), np.transpose(c)
-                        )
-                    if implied_variance > d * p:
-                        c = np.sqrt(d * p / implied_variance) * c
-
-                try:
-                    x = np.matmul(np.matmul(np.transpose(B), Dinv), np.transpose(c))
-                except ValueError:
-                    x = np.matmul(np.matmul(np.transpose(B), Dinv), c)
-            else:
-                x = np.zeros((B.shape[1], 1))
-            tmp = np.transpose(c)
-            ctransp1D = tmp.reshape(-1)
-            c1D = c.reshape(-1)
-            tmp = np.transpose(x)
-            xtransp1D = tmp.reshape(-1)
-            x1D = x.reshape(-1)
-
-            C[ind, i] = ctransp1D
-            C[i, ind] = c1D
-            if len(x) > 0:
-                C[i, nind] = x1D
-                C[nind, i] = xtransp1D
-
-        return C
