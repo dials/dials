@@ -41,8 +41,8 @@ from dials.algorithms.indexing.ssx.analysis import (
 )
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
 try:
@@ -151,7 +151,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     if params.nproc is Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
 
     if params.nproc > 1:
         params.indexing.nproc = params.nproc

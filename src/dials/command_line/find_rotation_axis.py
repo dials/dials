@@ -30,10 +30,10 @@ import libtbx.phil
 import dials.util
 import dials.util.log
 from dials.array_family import flex
-from dials.util.mp import available_cores
 
 # from dials.array_family import flex
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
 # Define a logger
@@ -414,7 +414,7 @@ def run(args=None, phil=phil_scope):
     )
 
     if params.nproc is libtbx.Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
         logger.info("Setting nproc={}".format(params.nproc))
 
     hist_bins = 1000, 500

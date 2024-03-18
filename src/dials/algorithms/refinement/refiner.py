@@ -8,8 +8,6 @@ import copy
 import logging
 import math
 
-import psutil
-
 import libtbx
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
@@ -40,6 +38,7 @@ from dials.algorithms.refinement.restraints import RestraintsParameterisation
 from dials.algorithms.refinement.target import TargetFactory
 from dials.algorithms.refinement.target import phil_str as target_phil_str
 from dials.array_family import flex
+from dials.util.system import MEMORY_LIMIT
 
 logger = logging.getLogger(__name__)
 
@@ -483,7 +482,7 @@ class RefinerFactory:
             dense_jacobian_gigabytes = (
                 nparam * nref * ndim * flex.double.element_size()
             ) / 1e9
-            avail_memory_gigabytes = psutil.virtual_memory().available / 1e9
+            avail_memory_gigabytes = MEMORY_LIMIT / 1e9
             # Report if the Jacobian requires a large amount of storage
             if (
                 dense_jacobian_gigabytes > 0.2 * avail_memory_gigabytes
