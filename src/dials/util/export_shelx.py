@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
-import string
+import re
 from math import isclose
 
 from cctbx import crystal, miller
+from cctbx.eltbx import chemical_elements
 from iotbx.shelx.write_ins import LATT_SYMM
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
@@ -169,161 +170,36 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
                 )
             )
         LATT_SYMM(f, sg)
-        if composition:
-            logger.info(
-                f"Using composition {composition} to write SFAC & UNIT instructions"
+        logger.info(
+            f"Using composition {composition} to write SFAC & UNIT instructions"
+        )
+        sorted_composition = _parse_compound(composition)
+        f.write("SFAC %s\n" % " ".join(sorted_composition))
+        f.write(
+            "UNIT %s\n"
+            % " ".join(
+                [str(sorted_composition[e] * sg.order_z()) for e in sorted_composition]
             )
-            sorted_composition = _parse_compound(composition)
-            f.write("SFAC %s\n" % " ".join(sorted_composition))
-            f.write(
-                "UNIT %s\n"
-                % " ".join(
-                    [
-                        str(sorted_composition[e] * sg.order_z())
-                        for e in sorted_composition
-                    ]
-                )
-            )
-        else:
-            f.write("SFAC C\n")
-            f.write("UNIT 0\n")
+        )
         f.write("HKLF 4\n")  # Intensities
         f.write("END\n")
 
 
 def _parse_compound(composition):
-    """
-    Modified from parse_compund() in xia2/src/xia2/cli/to_shelx.py
-    """
-    elements = [
-        "H",
-        "He",
-        "Li",
-        "Be",
-        "B",
-        "C",
-        "N",
-        "O",
-        "F",
-        "Ne",
-        "Na",
-        "Mg",
-        "Al",
-        "Si",
-        "P",
-        "S",
-        "Cl",
-        "Ar",
-        "K",
-        "Ca",
-        "Sc",
-        "Ti",
-        "V",
-        "Cr",
-        "Mn",
-        "Fe",
-        "Co",
-        "Ni",
-        "Cu",
-        "Zn",
-        "Ga",
-        "Ge",
-        "As",
-        "Se",
-        "Br",
-        "Kr",
-        "Rb",
-        "Sr",
-        "Y",
-        "Zr",
-        "Nb",
-        "Mo",
-        "Tc",
-        "Ru",
-        "Rh",
-        "Pd",
-        "Ag",
-        "Cd",
-        "In",
-        "Sn",
-        "Sb",
-        "Te",
-        "I",
-        "Xe",
-        "Cs",
-        "Ba",
-        "La",
-        "Ce",
-        "Pr",
-        "Nd",
-        "Pm",
-        "Sm",
-        "Eu",
-        "Gd",
-        "Tb",
-        "Dy",
-        "Ho",
-        "Er",
-        "Tm",
-        "Yb",
-        "Lu",
-        "Hf",
-        "Ta",
-        "W",
-        "Re",
-        "Os",
-        "Ir",
-        "Pt",
-        "Au",
-        "Hg",
-        "Tl",
-        "Pb",
-        "Bi",
-        "Po",
-        "At",
-        "Rn",
-        "Fr",
-        "Ra",
-        "Ac",
-        "Th",
-        "Pa",
-        "U",
-        "Np",
-        "Pu",
-    ]
-    result = {}
-    element = ""
-    number = ""
-    composition += "Q"  # Not in any element symbol
-    for c in composition:
-        if c in string.ascii_uppercase:
-            if not element:
-                element += c
-                continue
-            if number == "":
-                count = 1
-            else:
-                count = int(number)
-            if element not in result:
-                if element in elements:
-                    result[element] = 0
-                else:
-                    raise Sorry(f"Element {element} in {composition} not recognised")
-            if element in elements:
-                result[element] += count
-            element = "" + c
-            number = ""
-            if c == "Q":
-                break
-        elif c in string.ascii_lowercase:
-            element += c
-        elif c in string.digits:
-            number += c
+    elements = chemical_elements.proper_caps_list()[:94]
+    m = re.findall(r"([A-Z][a-z]?)(\d*)\s*", composition)
+    if all(e[1] == "" for e in m):
+        # Assume user has just supplied list of elements so UNIT instruction cannot be calculated
+        result = {element: 0 for element, count in m}
+    else:
+        result = {element: int(count or 1) for element, count in m}
+    # Check for elements without scattering factors in SHELXL
+    unmatched = list(set(result).difference(elements))
+    if unmatched:
+        raise Sorry(f"Element(s) {' '.join(unmatched)} in {composition} not recognised")
+
     if "C" in result:
         # move C to start of list
         elements.insert(0, elements.pop(5))
-    if all(n == 1 for n in result.values()):
-        # Assume user has just supplied list of elements so UNIT instruction cannot be caluclated
-        result = result.fromkeys(result, 0)
     sorted_result = {e: result[e] for e in elements if e in result}
     return sorted_result
