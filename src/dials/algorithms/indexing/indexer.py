@@ -941,6 +941,25 @@ class Indexer:
                 self.params.max_cell = params.multiplier * max(uc_params[:3])
                 logger.info("Using max_cell: %.1f Angstrom", self.params.max_cell)
             else:
+
+                convert_reflections_z_to_deg = True
+                all_tof_experiments = False
+                for expt in self.experiments:
+                    if expt.scan is not None and expt.scan.has_property(
+                        "time_of_flight"
+                    ):
+                        all_tof_experiments = True
+                    elif all_tof_experiments:
+                        raise ValueError(
+                            "Cannot find max cell for ToF and non-ToF experiments at the same time"
+                        )
+
+                if all_tof_experiments:
+                    if params.step_size < 100:
+                        logger.info("Setting default ToF step size to 500 usec")
+                        params.step_size = 500
+                        convert_reflections_z_to_deg = False
+
                 self.params.max_cell = find_max_cell(
                     self.reflections,
                     max_cell_multiplier=params.multiplier,
@@ -952,6 +971,7 @@ class Indexer:
                     filter_ice=params.filter_ice,
                     filter_overlaps=params.filter_overlaps,
                     overlaps_border=params.overlaps_border,
+                    convert_reflections_z_to_deg=convert_reflections_z_to_deg,
                 ).max_cell
                 logger.info("Found max_cell: %.1f Angstrom", self.params.max_cell)
 
