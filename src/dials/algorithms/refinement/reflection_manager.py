@@ -872,6 +872,13 @@ class ReflectionManager:
         self._reflections = self._reflections.select(sel)
         return self._reflections
 
+    def update_residuals(self):
+        x_obs, y_obs, phi_obs = self._reflections["xyzobs.mm.value"].parts()
+        x_calc, y_calc, phi_calc = self._reflections["xyzcal.mm"].parts()
+        self._reflections["x_resid"] = x_calc - x_obs
+        self._reflections["y_resid"] = y_calc - y_obs
+        self._reflections["phi_resid"] = phi_calc - phi_obs
+
 
 class StillsReflectionManager(ReflectionManager):
     """Overloads for a Reflection Manager that does not exclude

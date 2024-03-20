@@ -15,6 +15,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
     phil_str as sv_phil_str,
 )
 from dials.algorithms.refinement.refinement_helpers import string_sel
+from dials.algorithms.refinement.reflection_mamager import LaueReflectionManager
 from dials.algorithms.refinement.restraints.restraints_parameterisation import (
     uc_phil_str as uc_restraints_phil_str,
 )
@@ -31,6 +32,7 @@ from .detector_parameters import (
 )
 from .goniometer_parameters import GoniometerParameterisation
 from .prediction_parameters import (
+    LauePredictionParameterisation,
     XYPhiPredictionParameterisation,
     XYPhiPredictionParameterisationSparse,
 )
@@ -822,6 +824,16 @@ def build_prediction_parameterisation(
     xl_ori_params, xl_uc_params = _parameterise_crystals(options, experiments, analysis)
     det_params = _parameterise_detectors(options, experiments, analysis)
     gon_params = _parameterise_goniometers(options, experiments, analysis)
+
+    beam_params = []
+
+    if isinstance(reflection_manager, LaueReflectionManager):
+        PredParam = LauePredictionParameterisation
+        return PredParam(
+            experiments, det_params, beam_params, xl_ori_params, xl_uc_params
+        )
+
+    beam_params = _parameterise_beams(options, experiments, analysis)
 
     # Build the prediction equation parameterisation
     if do_stills:  # doing stills

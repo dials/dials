@@ -967,3 +967,104 @@ class XYPhiPredictionParameterisationSparse(
     @staticmethod
     def _extend_gradient_vectors(results, m, n, keys=("dX_dp", "dY_dp", "dZ_dp")):
         return SparseGradientVectorMixin._extend_gradient_vectors(results, m, n, keys)
+
+
+class LauePredictionParameterisation(PredictionParameterisation):
+
+    """A basic extension to PredictionParameterisation for ToF data,
+    where only panel positions are considered."""
+
+    _grad_names = ("dX_dp", "dY_dp", "dwavelength_dp")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        return
+
+    def _local_setup(self, reflections):
+        self._wavelength = reflections["wavelength_cal"]
+        self._r = self._UB * self._h
+        self._s0 = reflections["s0_cal"]
+        return
+
+    def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
+        """helper function to extend the derivatives lists by derivatives of
+        generic parameterisations."""
+
+        # Get required data
+        h = self._h.select(isel)
+        if b_matrix:
+            B = self._B.select(isel)
+        else:
+            U = self._U.select(isel)
+        D = self._D.select(isel)
+        s1 = self._s1.select(isel)
+        s0 = self._s0.select(isel)
+        wavelength = self._wavelength.select(isel)
+
+        if derivatives is None:
+            # get derivatives of the B/U matrix wrt the parameters
+            derivatives = [
+                None if der is None else flex.mat3_double(len(isel), der.elems)
+                for der in parameterisation.get_ds_dp(use_none_as_null=True)
+            ]
+
+        dpv_dp = []
+        dwavelength_dp = []
+
+        # loop through the parameters
+        for der in derivatives:
+            if der is None:
+                dpv_dp.append(None)
+                dwavelength_dp.append(None)
+                continue
+
+            # calculate the derivative of r for this parameter
+            if b_matrix:
+                dr = der * B * h
+            else:
+                dr = U * der * h
+
+            dwavelength = (-wavelength) * (dr.dot(s1)) / (s0.dot(s0))
+            dwavelength_dp.append(dwavelength)
+            # calculate the derivative of pv for this parameter
+            dpv_dp.append(D * (dr + (s0 / wavelength) * dwavelength))
+
+        return dpv_dp, dwavelength_dp
+
+    def _xl_orientation_derivatives(
+        self, isel, parameterisation=None, dU_dxlo_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by derivatives of the
+        crystal orientation parameterisations"""
+        return self._xl_derivatives(
+            isel, dU_dxlo_p, b_matrix=True, parameterisation=parameterisation
+        )
+
+    def _xl_unit_cell_derivatives(
+        self, isel, parameterisation=None, dB_dxluc_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal unit cell parameterisations"""
+        return self._xl_derivatives(
+            isel, dB_dxluc_p, b_matrix=False, parameterisation=parameterisation
+        )
+
+    @staticmethod
+    def _calc_dX_dp_and_dY_dp_from_dpv_dp(w_inv, u_w_inv, v_w_inv, dpv_dp):
+        """helper function to calculate positional derivatives from
+        dpv_dp using the quotient rule"""
+
+        dX_dp = []
+        dY_dp = []
+
+        for der in dpv_dp:
+            if der is None:
+                dX_dp.append(None)
+                dY_dp.append(None)
+            else:
+                du_dp, dv_dp, dw_dp = der.parts()
+
+                dX_dp.append(w_inv * (du_dp - dw_dp * u_w_inv))
+                dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
+
+        return dX_dp, dY_dp

@@ -75,6 +75,16 @@ namespace dials { namespace algorithms {
     }
   };
 
+  struct laue_prediction_data : prediction_data {
+    af::shared<double> wavelength_cal;
+    af::shared<vec3<double> > s0_cal;
+
+    laue_prediction_data(af::reflection_table &table) : prediction_data(table) {
+      wavelength_cal = table.get<double>("wavelength_cal");
+      s0_cal = table.get<vec3<double> >("s0_cal");
+    }
+  };
+
   /**
    * A reflection predictor for scan static prediction.
    */

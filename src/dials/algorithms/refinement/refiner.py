@@ -386,6 +386,7 @@ class RefinerFactory:
         obs["x_resid"] = x_calc - x_obs
         obs["y_resid"] = y_calc - y_obs
         obs["phi_resid"] = phi_calc - phi_obs
+        refman.update_residuals()
 
         # determine whether to do basic centroid analysis to automatically
         # determine outlier rejection block
