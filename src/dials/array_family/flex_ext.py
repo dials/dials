@@ -1324,9 +1324,9 @@ Found %s"""
 
                 sel = sel_expt & (panel_numbers == i_panel)
                 if calculated:
-                    x, y, rot_angle = self["xyzcal.mm"].select(sel).parts()
+                    x, y, z = self["xyzcal.mm"].select(sel).parts()
                 else:
-                    x, y, rot_angle = self["xyzobs.mm.value"].select(sel).parts()
+                    x, y, z = self["xyzobs.mm.value"].select(sel).parts()
                 s1 = expt.detector[i_panel].get_lab_coord(
                     cctbx.array_family.flex.vec2_double(x, y)
                 )
@@ -1354,12 +1354,13 @@ Found %s"""
                         sample_rotation *= matrix.sqr(expt.crystal.get_U())
 
                     self["rlp"].set_selected(sel, tuple(setting_rotation.inverse()) * S)
-                    self["rlp"].set_selected(
-                        sel,
-                        self["rlp"]
-                        .select(sel)
-                        .rotate_around_origin(rotation_axis, -rot_angle),
-                    )
+                    if expt.scan is not None and expt.scan.has_property("oscillation"):
+                        self["rlp"].set_selected(
+                            sel,
+                            self["rlp"]
+                            .select(sel)
+                            .rotate_around_origin(rotation_axis, -z),
+                        )
                     self["rlp"].set_selected(
                         sel, tuple(sample_rotation.inverse()) * self["rlp"].select(sel)
                     )
