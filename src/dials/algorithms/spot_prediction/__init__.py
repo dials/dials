@@ -32,6 +32,7 @@ __all__ = [
     "StillsDeltaPsiReflectionPredictor",
     "StillsRayPredictor",
     "StillsReflectionPredictor",
+    "LaueReflectionPredictor",
 ]
 
 
@@ -150,6 +151,19 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False, **kwa
     return StillsDeltaPsiReflectionPredictor(
         experiment.beam,
         experiment.detector,
+        experiment.crystal.get_A(),
+        experiment.crystal.get_unit_cell(),
+        experiment.crystal.get_space_group().type(),
+        dmin,
+    )
+
+
+def LaueReflectionPredictor(experiment, dmin: float):
+
+    return dials_algorithms_spot_prediction_ext.LaueReflectionPredictor(
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
         experiment.crystal.get_A(),
         experiment.crystal.get_unit_cell(),
         experiment.crystal.get_space_group().type(),
