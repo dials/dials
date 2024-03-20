@@ -22,7 +22,7 @@ from dials.command_line.check_indexing_symmetry import (
     get_symop_correlation_coefficients,
 )
 from dials.util.log import LoggingContext
-from dials.util.mp import available_cores
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +212,7 @@ def refined_settings_from_refined_triclinic(
     """
 
     if params.nproc is libtbx.Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
 
     if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
         if experiments[0].goniometer is None:

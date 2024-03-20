@@ -4,7 +4,7 @@ import logging
 
 import gemmi
 import numpy as np
-from scipy.spatial.transform.rotation import Rotation
+from scipy.spatial.transform import Rotation
 
 import iotbx.phil
 from dxtbx.model import Crystal
@@ -348,6 +348,7 @@ class Indexer:
 class PinkIndexer(Strategy):
     """
     A lattice search strategy using the pinkIndexer algorithm.
+
     For more info, see:
     [Gevorkov Y, et al. pinkIndexer – a universal indexer for pink-beam X-ray and electron diffraction snapshots. Acta Cryst A. 2020 Mar 1;76(2):121–31.](https://doi.org/10.1107/S2053273319015559)
     """
@@ -364,10 +365,13 @@ class PinkIndexer(Strategy):
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
     ):
         """Construct PinkIndexer object.
+
         Args:
             target_symmetry_primitive (cctbx.crystal.symmetry): The target
                 crystal symmetry and unit cell
+
             max_lattices (int): The maximum number of lattice models to find
+
             params (phil,optional): Phil params
         """
         super().__init__(params=None, *args, **kwargs)
