@@ -37,10 +37,6 @@ output {
     .type = str
   cos_json = dials.correlation_matrix_cos.json
     .type = str
-  cc_corr_json = dials.correlation_matrix_cc_corrected.json
-    .type = str
-  cos_corr_json = dials.correlation_matrix_cos_corrected.json
-    .type = str
 }
 """,
     process_includes=True,
