@@ -38,6 +38,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::is_angle_in_range;
   using dxtbx::model::Panel;
   using dxtbx::model::plane_ray_intersection;
+  using dxtbx::model::PolychromaticBeam;
   using dxtbx::model::Scan;
   using scitbx::constants::pi;
   using scitbx::constants::pi_180;
@@ -1624,7 +1625,7 @@ namespace dials { namespace algorithms {
     }
 
   protected:
-    PolyBeam beam_;
+    PolychromaticBeam beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
