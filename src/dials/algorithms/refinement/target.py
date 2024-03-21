@@ -5,7 +5,7 @@ principally Target and ReflectionManager."""
 from __future__ import annotations
 
 import math
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 from libtbx.phil import parse
 from scitbx import sparse
@@ -77,9 +77,23 @@ class TargetFactory:
                 + " not recognised"
             )
 
+        all_tof_experiments = False
+        for expt in experiments:
+            if expt.scan is not None and expt.scan.has_property("time_of_flight"):
+                all_tof_experiments = True
+            elif all_tof_experiments:
+                raise ValueError(
+                    "Cannot refine ToF and non-ToF experiments at the same time"
+                )
+
+        if all_tof_experiments:
+            from dials.algorithms.refinement.target import (
+                LaueLeastSquaresResidualWithRmsdCutoff as targ,
+            )
+
         # Determine whether the target is in X, Y, Phi space or just X, Y to choose
         # the right Target to instantiate
-        if do_stills:
+        elif do_stills:
             if do_sparse:
                 from dials.algorithms.refinement.target_stills import (
                     LeastSquaresStillsResidualWithRmsdCutoffSparse as targ,
@@ -233,7 +247,11 @@ class Target:
             sel = reflections["id"] == iexp
 
             # keep all reflections if there is no rotation axis
-            if exp.goniometer is None:
+            if (
+                exp.goniometer is None
+                or exp.scan is None
+                or not exp.scan.has_property("oscillation")
+            ):
                 to_keep.set_selected(sel, True)
                 continue
 
@@ -698,3 +716,141 @@ class LeastSquaresPositionalResidualWithRmsdCutoffSparse(
     large number of Experiments"""
 
     pass
+
+
+class LaueLeastSquaresResidualWithRmsdCutoff(Target):
+
+    """A Laue implementation of the target class providing a least squares
+    residual in terms of detector impact position X, Y, and observed
+    wavelength"""
+
+    _grad_names = ["dX_dp", "dY_dp", "dwavelength_dp"]
+    rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_wavelength"]
+    rmsd_units = ["mm", "mm", "A"]
+
+    def __init__(
+        self,
+        experiments,
+        predictor,
+        reflection_manager,
+        prediction_parameterisation,
+        restraints_parameterisation,
+        frac_binsize_cutoff: float = 0.33333,
+        absolute_cutoffs: Optional[list] = None,
+        gradient_calculation_blocksize=None,
+    ):
+
+        Target.__init__(
+            self,
+            experiments,
+            predictor,
+            reflection_manager,
+            prediction_parameterisation,
+            restraints_parameterisation,
+            gradient_calculation_blocksize,
+        )
+
+        """
+        Set up the RMSD achieved criterion.
+        For simplicity, we take models from the first Experiment only.
+        If this is not appropriate for refinement over all experiments
+        then absolute cutoffs should be used instead.
+        """
+
+        detector = experiments[0].detector
+
+        if not absolute_cutoffs:
+            # Pixel cutoffs
+            pixel_sizes = [p.get_pixel_size() for p in detector]
+            min_px_size_x = min(e[0] for e in pixel_sizes)
+            min_px_size_y = min(e[1] for e in pixel_sizes)
+            self._binsize_cutoffs = [
+                min_px_size_x * frac_binsize_cutoff,
+                min_px_size_y * frac_binsize_cutoff,
+            ]
+            # Wavelength cutoff
+            self._binsize_cutoffs.append(0)
+        else:
+            assert len(absolute_cutoffs) == 3
+            self._binsize_cutoffs = absolute_cutoffs
+
+    @staticmethod
+    def _extract_residuals_and_weights(matches):
+
+        # return residuals and weights as 1d flex.double vectors
+        residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
+
+        residuals = flex.double.concatenate(residuals, matches["wavelength_resid"])
+
+        weights, w_y, w_z = matches["xyzobs.mm.weights"].parts()
+        weights.extend(w_y)
+        weights.extend(w_z)
+
+        return residuals, weights
+
+    @staticmethod
+    def _extract_squared_residuals(matches):
+
+        return flex.double.concatenate(
+            matches["x_resid2"], matches["y_resid2"], matches["wavelength_resid2"]
+        )
+
+    def _rmsds_core(self, reflections):
+
+        """calculate unweighted RMSDs for the specified reflections"""
+
+        resid_x = flex.sum(reflections["x_resid2"])
+        resid_y = flex.sum(reflections["y_resid2"])
+        resid_wavelength = flex.sum(reflections["wavelength_resid2"])
+        n = len(reflections)
+
+        rmsds = (
+            math.sqrt(resid_x / n),
+            math.sqrt(resid_y / n),
+            math.sqrt(abs(resid_wavelength) / n),
+        )
+        return rmsds
+
+    def _predict_core(self, reflections, skip_derivatives=False):
+        """perform prediction for the specified reflections"""
+
+        # If the prediction parameterisation has a compose method (true for the scan
+        # varying case) then call it. Prefer hasattr to try-except duck typing to
+        # avoid masking AttributeErrors that could be raised within the method.
+        if hasattr(self._prediction_parameterisation, "compose"):
+            self._prediction_parameterisation.compose(reflections, skip_derivatives)
+
+        # do prediction (updates reflection table in situ). Scan-varying prediction
+        # is done automatically if the crystal has scan-points (assuming reflections
+        # have ub_matrix set)
+        self._reflection_predictor(reflections)
+
+        x_obs, y_obs, _ = reflections["xyzobs.mm.value"].parts()
+        x_calc, y_calc, _ = reflections["xyzcal.mm"].parts()
+
+        # calculate residuals and assign columns
+        reflections["x_resid"] = x_calc - x_obs
+        reflections["x_resid2"] = reflections["x_resid"] ** 2
+        reflections["y_resid"] = y_calc - y_obs
+        reflections["y_resid2"] = reflections["y_resid"] ** 2
+        wavelength_obs = reflections["wavelength"]
+        wavelength_cal = reflections["wavelength_cal"]
+        reflections["wavelength_resid"] = wavelength_cal - wavelength_obs
+        reflections["wavelength_resid2"] = reflections["wavelength_resid"] ** 2
+
+        return reflections
+
+    def achieved(self):
+        """RMSD criterion for target achieved"""
+        r = self._rmsds if self._rmsds else self.rmsds()
+
+        # reset cached rmsds to avoid getting out of step
+        self._rmsds = None
+
+        if (
+            r[0] < self._binsize_cutoffs[0]
+            and r[1] < self._binsize_cutoffs[1]
+            and r[2] < self._binsize_cutoffs[2]
+        ):
+            return True
+        return False
