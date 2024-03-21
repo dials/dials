@@ -418,8 +418,13 @@ class PredictionParameterisation:
             sel = panels == ipanel
             D.set_selected(sel, D_mat)
 
+        if "s0" in reflections:
+            s0 = reflections["s0"]
+        else:
+            s0 = experiment.beam.get_s0()
+
         result = {
-            "s0": experiment.beam.get_s0(),
+            "s0": s0,
             "U": matrix.sqr(experiment.crystal.get_U()),
             "B": matrix.sqr(experiment.crystal.get_B()),
             "D": D,
