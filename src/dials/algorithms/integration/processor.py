@@ -3,11 +3,7 @@ from __future__ import annotations
 import itertools
 import logging
 import math
-import os
-import pathlib
 from time import time
-
-import psutil
 
 import boost_adaptbx.boost.python
 import libtbx
@@ -19,7 +15,8 @@ from dials.array_family import flex
 from dials.model.data import make_image
 from dials.util import tabulate
 from dials.util.log import rehandle_cached_records
-from dials.util.mp import available_cores, multi_node_parallel_map
+from dials.util.mp import multi_node_parallel_map
+from dials.util.system import CPU_COUNT, MEMORY_LIMIT
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     Group,
@@ -64,90 +61,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-def assess_available_memory(params):
-
-    # Obtain information about system memory
-    available_memory = psutil.virtual_memory().available
-    available_swap = psutil.swap_memory().free
-
-    # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
-    condor_job_ad = os.environ.get("_CONDOR_JOB_AD")
-    if condor_job_ad:
-        try:
-            job_classad = dials.util.parse_htcondor_job_classad(
-                pathlib.Path(condor_job_ad)
-            )
-        except Exception as e:
-            logger.error(
-                f"Error parsing _CONDOR_JOB_AD {condor_job_ad}: {e}",
-                exc_info=True,
-            )
-        else:
-            if job_classad.memory_provisioned:
-                # Convert MB to bytes
-                available_memory = min(
-                    available_memory, job_classad.memory_provisioned * 1024**2
-                )
-
-    available_incl_swap = available_memory + available_swap
-    available_limit = available_incl_swap * params.block.max_memory_usage
-    available_immediate_limit = available_memory * params.block.max_memory_usage
-
-    # Compile a memory report
-    report = [
-        "Memory situation report:",
-    ]
-
-    def _report(description, numbytes):
-        report.append(f"  {description:<50}:{numbytes/1e9:5.1f} GB")
-
-    _report("Available system memory (excluding swap)", available_memory)
-    _report("Available swap memory", available_swap)
-    _report("Available system memory (including swap)", available_incl_swap)
-    _report("Maximum memory for processing (including swap)", available_limit)
-    _report(
-        "Maximum memory for processing (excluding swap)",
-        available_immediate_limit,
-    )
-
-    # Check if a ulimit applies
-    # Note that resource may be None on non-Linux platforms.
-    # We can't use psutil as platform-independent solution in this instance due to
-    # https://github.com/conda-forge/psutil-feedstock/issues/47
-    rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS", None))
-    if rlimit:
-        try:
-            ulimit = resource.getrlimit(rlimit)[0]
-            if ulimit <= 0 or ulimit > (2**62):
-                report.append("  no memory ulimit set")
-            else:
-                ulimit_used = psutil.Process().memory_info().rss
-                _report("Memory ulimit detected", ulimit)
-                _report("Memory ulimit in use", ulimit_used)
-                available_memory = max(0, min(available_memory, ulimit - ulimit_used))
-                available_incl_swap = max(
-                    0, min(available_incl_swap, ulimit - ulimit_used)
-                )
-                available_immediate_limit = (
-                    available_memory * params.block.max_memory_usage
-                )
-                _report("Available system memory (limited)", available_memory)
-                _report(
-                    "Available system memory (incl. swap; limited)",
-                    available_incl_swap,
-                )
-                _report(
-                    "Maximum memory for processing (exc. swap; limited)",
-                    available_immediate_limit,
-                )
-        except Exception as e:
-            logger.debug(
-                "Could not obtain ulimit values due to %s", str(e), exc_info=True
-            )
-
-    return available_immediate_limit, available_incl_swap, report
 
 
 def _average_bbox_size(reflections):
@@ -648,7 +561,7 @@ class _Manager:
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
         if self.params.mp.nproc is libtbx.Auto:
-            self.params.mp.nproc = available_cores()
+            self.params.mp.nproc = CPU_COUNT
             logger.info(f"Setting nproc={self.params.mp.nproc}")
 
         # Compute the block size and processors
@@ -861,28 +774,31 @@ class _Manager:
         Compute the number of processors
         """
 
+        # Obtain information about system memory
+        available_memory = MEMORY_LIMIT
+        available_limit = available_memory * self.params.block.max_memory_usage
+
         # Get the maximum shoebox memory to estimate memory use for one process
         memory_required_per_process = flex.max(
             self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
         )
 
-        (
-            available_immediate_limit,
-            available_incl_swap,
-            report,
-        ) = assess_available_memory(self.params)
+        # Compile a memory report
+        report = ["Memory situation report:"]
 
-        report.append(
-            f"  {'Memory required per process':50}:{memory_required_per_process/1e9:5.1f} GB"
-        )
+        def _report(description, numbytes):
+            report.append(f"  {description:<50}: {numbytes/1e9:5.1f} GB")
+
+        _report("Available system memory", available_memory)
+        _report("Maximum memory for processing", available_limit)
+        _report("Memory required per process", memory_required_per_process)
 
         output_level = logging.INFO
 
         # Limit the number of parallel processes by amount of available memory
         if self.params.mp.method == "multiprocessing" and self.params.mp.nproc > 1:
-
             # Compute expected memory usage and warn if not enough
-            njobs = available_immediate_limit / memory_required_per_process
+            njobs = available_limit / memory_required_per_process
             if njobs >= self.params.mp.nproc:
                 # There is enough memory. Take no action
                 pass
@@ -890,22 +806,10 @@ class _Manager:
                 # There is enough memory to run, but not as many processes as requested
                 output_level = logging.WARNING
                 report.append(
-                    "Reducing number of processes from %d to %d due to memory constraints."
-                    % (self.params.mp.nproc, int(njobs))
+                    f"Reducing number of processes from {self.params.mp.nproc} to "
+                    f"{int(njobs)} due to memory constraints."
                 )
                 self.params.mp.nproc = int(njobs)
-            elif (
-                available_incl_swap * self.params.block.max_memory_usage
-                >= memory_required_per_process
-            ):
-                # There is enough memory to run, but only if we count swap.
-                output_level = logging.WARNING
-                report.append(
-                    "Reducing number of processes from %d to 1 due to memory constraints."
-                    % self.params.mp.nproc,
-                )
-                report.append("Running this process will rely on swap usage!")
-                self.params.mp.nproc = 1
             else:
                 # There is not enough memory to run
                 output_level = logging.ERROR

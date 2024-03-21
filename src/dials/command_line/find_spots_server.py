@@ -21,8 +21,8 @@ from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 from dials.command_line.index import phil_scope as index_phil_scope
 from dials.command_line.integrate import phil_scope as integrate_phil_scope
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -371,7 +371,7 @@ def run(args=None):
     parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
     params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
     main(params.nproc, params.port)
 
 
