@@ -748,7 +748,11 @@ class ReflectionManager:
             nrefs = sample_size = len(isel)
 
             # set sample size according to nref_per_degree (per experiment)
-            if exp.scan and self._nref_per_degree:
+            if (
+                exp.scan
+                and exp.scan.has_property("oscillation")
+                and self._nref_per_degree
+            ):
                 sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
                 width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
                 if self._nref_per_degree is libtbx.Auto:
@@ -957,7 +961,7 @@ class LaueReflectionManager(ReflectionManager):
     reflections too close to the spindle, and reports only information
     about X, and Y residuals"""
 
-    _weighting_strategy = weighting_strategies.LaueMixedWeightingStrategy()
+    _weighting_strategy = weighting_strategies.LaueStatisticalWeightingStrategy()
     experiment_type = "laue"
 
     def __init__(
@@ -1112,7 +1116,7 @@ class LaueReflectionManager(ReflectionManager):
     def update_residuals(self):
         x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
         x_calc, y_calc, _ = self._reflections["xyzcal.mm"].parts()
-        wavelength_obs = self._reflections["Wavelength"]
+        wavelength_obs = self._reflections["wavelength"]
         wavelength_cal = self._reflections["wavelength_cal"]
         self._reflections["x_resid"] = x_calc - x_obs
         self._reflections["y_resid"] = y_calc - y_obs
