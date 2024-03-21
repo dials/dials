@@ -15,7 +15,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
     phil_str as sv_phil_str,
 )
 from dials.algorithms.refinement.refinement_helpers import string_sel
-from dials.algorithms.refinement.reflection_mamager import LaueReflectionManager
+from dials.algorithms.refinement.reflection_manager import LaueReflectionManager
 from dials.algorithms.refinement.restraints.restraints_parameterisation import (
     uc_phil_str as uc_restraints_phil_str,
 )
@@ -820,7 +820,6 @@ def build_prediction_parameterisation(
     analysis = _centroid_analysis(options, experiments, reflection_manager)
 
     # Parameterise each unique model
-    beam_params = _parameterise_beams(options, experiments, analysis)
     xl_ori_params, xl_uc_params = _parameterise_crystals(options, experiments, analysis)
     det_params = _parameterise_detectors(options, experiments, analysis)
     gon_params = _parameterise_goniometers(options, experiments, analysis)
