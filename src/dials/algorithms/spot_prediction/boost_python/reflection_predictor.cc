@@ -173,8 +173,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       const af::const_ref<std::size_t>&) = &Predictor::operator();
 
     class_<Predictor>("LaueReflectionPredictor", no_init)
-      .def(init<const vec3<double>&,
+      .def(init<const PolychromaticBeam&,
                 const Detector&,
+                const Goniometer&,
                 mat3<double>,
                 const cctbx::uctbx::unit_cell&,
                 const cctbx::sgtbx::space_group_type&,
