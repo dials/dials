@@ -199,10 +199,12 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
 
         # Add ToF to xyzcal.mm
         wavelength_cal = reflections["wavelength_cal"]
-        tof_cal = tof_helpers.tof_from_wavelength(wavelength_cal)  # (s)
+        distance = experiment.beam.get_sample_to_source_distance() * 10**-3
+        distance = distance + (reflections["s1"].norms() * 10**-3)
+        tof_cal = tof_helpers.tof_from_wavelength(distance, wavelength_cal)  # (s)
         x, y, z = reflections["xyzcal.mm"].parts()
-        reflections["xyzcal.mm"] = flex.vec3_double(x, y, tof_cal)
         tof_cal = tof_cal * 1e6  # (usec)
+        reflections["xyzcal.mm"] = flex.vec3_double(x, y, tof_cal)
 
         # Add frame to xyzcal.px
         expt_tof = experiment.scan.get_property("time_of_flight")  # (usec)
@@ -211,8 +213,6 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
         reflection_frames = flex.double(tof_to_frame(tof_cal))
         px, py, pz = reflections["xyzcal.px"].parts()
         reflections["xyzcal.px"] = flex.vec3_double(px, py, reflection_frames)
-        if "xyzobs.mm.value" in reflections:
-            reflections = self._match_full_turns(reflections)
 
         return reflections
 
