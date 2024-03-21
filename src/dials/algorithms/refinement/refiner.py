@@ -932,7 +932,7 @@ class Refiner:
             scan = exp.scan
             try:
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
-            except (AttributeError, ZeroDivisionError):
+            except (AttributeError, ZeroDivisionError, RuntimeError):
                 images_per_rad = None
 
             raw_rmsds = self._target.rmsds_for_experiment(iexp)
@@ -978,7 +978,7 @@ class Refiner:
             )
         scan = self._experiments.scans()[0]
         images_per_rad = None
-        if scan:
+        if scan and scan.has_property("oscillation"):
             if scan.get_oscillation(deg=False)[1] != 0.0:
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
 
