@@ -8,7 +8,7 @@ import pkg_resources
 import iotbx.phil
 import libtbx
 from cctbx import sgtbx
-from dxtbx.model import ExperimentList, ImageSequence
+from dxtbx.model import ExperimentList, ImageSequence, tof_helpers
 
 import dials.util
 from dials.algorithms.indexing import (
@@ -873,7 +873,7 @@ class Indexer:
             refined_reflections = reflections.select(imgset_sel)
             panel_numbers = flex.size_t(refined_reflections["panel"])
             xyzcal_mm = refined_reflections["xyzcal.mm"]
-            x_mm, y_mm, z_rad = xyzcal_mm.parts()
+            x_mm, y_mm, z = xyzcal_mm.parts()
             xy_cal_mm = flex.vec2_double(x_mm, y_mm)
             xy_cal_px = flex.vec2_double(len(xy_cal_mm))
             for i_panel in range(len(expt.detector)):
@@ -884,10 +884,16 @@ class Indexer:
                 )
             x_px, y_px = xy_cal_px.parts()
             if expt.scan is not None:
-                z_px = expt.scan.get_array_index_from_angle(z_rad, deg=False)
+                if expt.scan.has_property("time_of_flight"):
+                    tof = expt.scan.get_property("time_of_flight")
+                    frames = [i + 1 for i in range(len(tof))]
+                    tof_to_frame = tof_helpers.tof_to_frame_interpolator(tof, frames)
+                    z_px = flex.double(tof_to_frame(z))
+                else:
+                    z_px = expt.scan.get_array_index_from_angle(z, deg=False)
             else:
                 # must be a still image, z centroid not meaningful
-                z_px = z_rad
+                z_px = z
             xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
             reflections["xyzcal.px"].set_selected(imgset_sel, xyzcal_px)
 
