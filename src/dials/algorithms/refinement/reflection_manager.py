@@ -397,14 +397,14 @@ class ReflectionManagerFactory:
 
         ## Weighting strategy
 
-        # check incompatible weighting strategy
         if params.weighting_strategy.override == "statistical":
-            raise DialsRefineConfigError(
-                'The "statistical" weighting strategy is not compatible '
-                "with laue refinement"
+            params.weighting_strategy.override == "statistical_laue"
+        elif params.weighting_strategy.override == "constant":
+            params.weighting_strategy.override = "constant_laue"
+        elif params.weighting_strategy.override is not None:
+            raise ValueError(
+                f"{params.weighting_strategy.override} not compatible with Laue data"
             )
-        if params.weighting_strategy.override == "constant":
-            params.weighting_strategy.override = "constant_stills"
 
         weighting_strategy = ReflectionManagerFactory.get_weighting_strategy_override(
             params
@@ -420,6 +420,7 @@ class ReflectionManagerFactory:
             scan_margin=params.scan_margin,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
+            wavelength_weight=params.weighting_strategy.wavelength_weight,
         )
 
     @staticmethod
@@ -448,16 +449,14 @@ class ReflectionManagerFactory:
                 *params.weighting_strategy.constants
             )
 
-        elif params.weighting_strategy.override == "laue_statistical":
+        elif params.weighting_strategy.override == "statistical_laue":
             return weighting_strategies.LaueStatisticalWeightingStrategy(
-                params.weighting_strategy.init_wavelength_weight,
-                params.weighting_strategy.delta_wavelength_weight,
+                params.weighting_strategy.wavelength_weight,
             )
 
-        elif params.weighting_strategy.override == "laue_mixed":
+        elif params.weighting_strategy.override == "constant_laue":
             return weighting_strategies.LaueMixedWeightingStrategy(
-                params.weighting_strategy.init_wavelength_weight,
-                params.weighting_strategy.delta_wavelength_weight,
+                params.weighting_strategy.wavelength_weight,
             )
 
         return None
@@ -957,9 +956,6 @@ class StillsReflectionManager(ReflectionManager):
 
 
 class LaueReflectionManager(ReflectionManager):
-    """Overloads for a Reflection Manager that does not exclude
-    reflections too close to the spindle, and reports only information
-    about X, and Y residuals"""
 
     _weighting_strategy = weighting_strategies.LaueStatisticalWeightingStrategy()
     experiment_type = "laue"
@@ -975,6 +971,7 @@ class LaueReflectionManager(ReflectionManager):
         scan_margin=0.0,
         outlier_detector=None,
         weighting_strategy_override=None,
+        wavelength_weight=1e7,
     ):
 
         if len(reflections) == 0:
@@ -1049,6 +1046,10 @@ class LaueReflectionManager(ReflectionManager):
         # set weights for all kept reflections
         if weighting_strategy_override is not None:
             self._weighting_strategy = weighting_strategy_override
+        else:
+            self._weighting_strategy = (
+                weighting_strategies.LaueStatisticalWeightingStrategy(wavelength_weight)
+            )
         self._weighting_strategy.calculate_weights(self._reflections)
 
         # not known until the manager is finalised
