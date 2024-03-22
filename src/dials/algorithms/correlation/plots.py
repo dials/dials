@@ -5,6 +5,8 @@ from collections import OrderedDict
 
 from scipy.cluster import hierarchy
 
+from dials.algorithms.clustering.plots import scipy_dendrogram_to_plotly_json
+
 
 def linkage_matrix_to_dict(linkage_matrix):
     """
@@ -43,83 +45,6 @@ def linkage_matrix_to_dict(linkage_matrix):
     return OrderedDict(sorted(d.items()))
 
 
-def scipy_dendrogram_to_plotly_json(ddict):
-    """
-    Convert a dendrogram calculated using scipy into a plotly json format.
-
-    Args:
-      ddict (dict): Scipy dendrogram in dictionary format.
-    """
-
-    colors = {
-        "b": "rgb(31, 119, 180)",
-        "g": "rgb(44, 160, 44)",
-        "o": "rgb(255, 127, 14)",
-        "r": "rgb(214, 39, 40)",
-    }
-
-    dcoord = ddict["dcoord"]
-    icoord = ddict["icoord"]
-    color_list = ddict["color_list"]
-    ivl = ddict["ivl"]
-
-    data = []
-    xticktext = []
-    xtickvals = []
-
-    for k, y in enumerate(dcoord):
-        x = icoord[k]
-
-        if y[0] == 0:
-            xtickvals.append(x[0])
-        if y[3] == 0:
-            xtickvals.append(x[3])
-
-        data.append(
-            {
-                "x": x,
-                "y": y,
-                "marker": {"color": colors.get(color_list[k])},
-                "mode": "lines",
-            }
-        )
-
-    xtickvals = sorted(xtickvals)
-    xticktext = ivl
-    d = {
-        "data": data,
-        "layout": {
-            "barmode": "group",
-            "legend": {"x": 100, "y": 0.5, "bordercolor": "transparent"},
-            "margin": {"r": 10},
-            "showlegend": False,
-            "title": "dendrogram",
-            "xaxis": {
-                "showline": False,
-                "showgrid": False,
-                "showticklabels": True,
-                "tickangle": 300,
-                "title": "Individual datasets",
-                "titlefont": {"color": "none"},
-                "type": "linear",
-                "ticktext": xticktext,
-                "tickvals": xtickvals,
-                "tickorientation": "vertical",
-            },
-            "yaxis": {
-                "showline": False,
-                "showgrid": False,
-                "showticklabels": True,
-                "tickangle": 0,
-                "title": "Ward distance",
-                "type": "linear",
-            },
-            "hovermode": "closest",
-        },
-    }
-    return d
-
-
 def to_plotly_json(
     correlation_matrix, linkage_matrix, labels=None, matrix_type="correlation"
 ):
@@ -145,7 +70,9 @@ def to_plotly_json(
         no_plot=True,
     )
 
-    y2_dict = scipy_dendrogram_to_plotly_json(ddict)  # above heatmap
+    y2_dict = scipy_dendrogram_to_plotly_json(
+        ddict, "Dendrogram", xtitle="Individual datasets", ytitle="Ward distance"
+    )  # above heatmap
     x2_dict = copy.deepcopy(y2_dict)  # left of heatmap, rotated
     for d in y2_dict["data"]:
         d["yaxis"] = "y2"
