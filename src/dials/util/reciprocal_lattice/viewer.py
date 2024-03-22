@@ -90,6 +90,9 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
     def load_models(self, experiments, reflections):
         Render3d.load_models(self, experiments, reflections)
         if self.settings.beam_centre is not None:
+            self.settings_panel.beam_panel_ctrl.SetValue(
+                self.settings.beam_centre_panel
+            )
             self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
         else:

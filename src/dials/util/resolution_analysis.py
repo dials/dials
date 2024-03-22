@@ -108,9 +108,11 @@ def log_fit(x, y, degree=5, n_obs=None):
 
     x, y should be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
-
+    sel = y > 0
+    y_sel = y.select(sel)
+    x_sel = x.select(sel)
     fit = curve_fitting.univariate_polynomial_fit(
-        x, flex.log(y), degree=degree, max_iterations=100
+        x_sel, flex.log(y_sel), degree=degree, max_iterations=100
     )
     f = curve_fitting.univariate_polynomial(*fit.params)
     return flex.exp(f(x))
@@ -121,9 +123,11 @@ def log_inv_fit(x, y, degree=5, n_obs=None):
 
     x, y should be iterables, the order of the polynomial for the transformed
     fit needs to be specified. This will be useful for e.g. Rmerge."""
-
+    sel = y > 0
+    y_sel = y.select(sel)
+    x_sel = x.select(sel)
     fit = curve_fitting.univariate_polynomial_fit(
-        x, flex.log(1 / y), degree=degree, max_iterations=100
+        x_sel, flex.log(1 / y_sel), degree=degree, max_iterations=100
     )
     f = curve_fitting.univariate_polynomial(*fit.params)
     return 1 / flex.exp(f(x))

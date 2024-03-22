@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 
+import gemmi
 import pytest
 
 import iotbx.cif
@@ -217,7 +218,19 @@ def test_mtz_primitive_cell(dials_data, tmp_path):
     scaled_expt = dials_data("insulin_processed", pathlib=True) / "scaled.expt"
     scaled_refl = dials_data("insulin_processed", pathlib=True) / "scaled.refl"
 
-    # First reindex to the primitive setting
+    # Export in I23
+    subprocess.run(
+        [
+            shutil.which("dials.export"),
+            scaled_expt,
+            scaled_refl,
+            "mtz.hklout=reference.mtz",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    ).check_returncode()
+
+    # Now reindex to the primitive setting
     expts = load.experiment_list(scaled_expt, check_format=False)
     cs = expts[0].crystal.get_crystal_symmetry()
     cb_op = cs.change_of_basis_op_to_primitive_setting()
@@ -231,27 +244,29 @@ def test_mtz_primitive_cell(dials_data, tmp_path):
         cwd=tmp_path,
     ).check_returncode()
 
-    # Now export the reindexed experiments/reflections
+    # Export the reindexed experiments/reflections - internally this will
+    # reindex back to I23
     subprocess.run(
         [
             shutil.which("dials.export"),
             tmp_path / "reindexed.expt",
             tmp_path / "reindexed.refl",
+            "mtz.hklout=from_reindexed.mtz",
         ],
         cwd=tmp_path,
         capture_output=True,
     ).check_returncode()
 
-    mtz_obj = mtz.object(str(tmp_path / "scaled.mtz"))
-    cs_primitive = cs.change_basis(cb_op)
-    assert mtz_obj.space_group() == cs_primitive.space_group()
-    refl = flex.reflection_table.from_file(scaled_refl)
-    refl = refl.select(~refl.get_flags(refl.flags.bad_for_scaling, all=False))
-    for ma in mtz_obj.as_miller_arrays():
-        assert ma.crystal_symmetry().is_similar_symmetry(cs_primitive)
-        assert ma.d_max_min() == pytest.approx(
-            (flex.max(refl["d"]), flex.min(refl["d"]))
-        )
+    # Now read both files and check that relevant data are identical
+    mtz1 = gemmi.read_mtz_file(str(tmp_path / "reference.mtz"))
+    mtz2 = gemmi.read_mtz_file(str(tmp_path / "from_reindexed.mtz"))
+
+    assert mtz1.spacegroup == mtz2.spacegroup
+    assert mtz1.cell == mtz2.cell
+    assert (mtz1.array == mtz2.array).all()
+    for b1, b2 in zip(mtz1.batches, mtz2.batches):
+        assert list(b1.ints) == list(b2.ints)
+        assert list(b1.floats) == list(b2.floats)
 
 
 @pytest.mark.parametrize("compress", [None, "gz", "bz2", "xz"])

@@ -541,6 +541,11 @@ class ReflectionManager:
             s1 = obs_data["s1"].select(sel)
             phi = obs_data["xyzobs.mm.value"].parts()[2].select(sel)
 
+            if len(phi) == 0:
+                raise DialsRefineConfigError(
+                    f"Experiment id {iexp} contains no reflections"
+                )
+
             # first test: reject reflections for which the parallelepiped formed
             # between the gonio axis, s0 and s1 has a volume of less than the cutoff.
             # Those reflections are by definition closer to the spindle-beam
@@ -555,8 +560,8 @@ class ReflectionManager:
             # sanity check to catch a mutilated scan that does not make sense
             if passed2.count(True) == 0:
                 raise DialsRefineConfigError(
-                    "Experiment id {} contains no reflections with valid "
-                    "scan angles".format(iexp)
+                    f"Experiment id {iexp} contains no reflections with valid "
+                    f"scan angles"
                 )
 
             # combine tests so far

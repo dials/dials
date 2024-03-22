@@ -263,8 +263,8 @@ class SpotFrame(XrayFrame):
                 self.viewing_stills = False
                 break
         for experiment_list in self.experiments:
-            if any(
-                exp.scan and (exp.scan.get_oscillation()[1] != 0.0)
+            if not all(
+                exp.scan and (exp.scan.get_oscillation()[1] == 0.0)
                 for exp in experiment_list
             ):
                 self.viewing_still_scans = False

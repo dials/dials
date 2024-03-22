@@ -8,7 +8,7 @@ from dials.array_family import flex
 
 def test_selection_identifier_propagation():
     """
-    If experiment idenfitiers are set, then when selecting on a reflection
+    If experiment identifiers are set, then when selecting on a reflection
     table, copy across any for the same id.
 
     If no identifiers are set, then nothing should happen."""

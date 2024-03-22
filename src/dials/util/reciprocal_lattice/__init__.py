@@ -173,11 +173,11 @@ class Render3d:
             elif self.settings.display == "integrated":
                 reflections = reflections.select(integrated_sel)
 
-            if self.settings.experiment_ids:
-                sel = flex.bool(len(reflections), False)
-                for i in self.settings.experiment_ids:
-                    sel.set_selected(reflections["id"] == i, True)
-                reflections = reflections.select(sel)
+        if self.settings.experiment_ids:
+            sel = flex.bool(len(reflections), False)
+            for i in self.settings.experiment_ids:
+                sel.set_selected(reflections["id"] == i, True)
+            reflections = reflections.select(sel)
 
         d_spacings = 1 / reflections["rlp"].norms()
 

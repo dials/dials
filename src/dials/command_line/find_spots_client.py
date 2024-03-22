@@ -17,7 +17,7 @@ from dxtbx.util import get_url_scheme
 from scitbx.array_family import flex
 
 import dials.util
-from dials.util.mp import available_cores
+from dials.util.system import CPU_COUNT
 
 
 def work(host, port, filename, params):
@@ -29,12 +29,7 @@ def work(host, port, filename, params):
     return conn.getresponse().read()
 
 
-def _nproc():
-    return available_cores()
-
-
 def response_to_xml(d):
-
     if "n_spots_total" in d:
         response = f"""<image>{d['image']}</image>
 <spot_count>{d['n_spots_total']}</spot_count>
@@ -49,7 +44,6 @@ def response_to_xml(d):
         return f"<response>\n{d['error']}\n</response>"
 
     if "lattices" in d:
-
         for lattice in d["lattices"]:
             crystal = CrystalFactory.from_dict(lattice["crystal"])
             response = "\n".join(
@@ -89,8 +83,7 @@ def work_all(
     grid=None,
     nproc=None,
 ):
-    if nproc is None:
-        nproc = _nproc()
+    nproc = nproc or CPU_COUNT
     with ThreadPool(processes=nproc) as pool:
         threads = {}
         for filename in filenames:
@@ -107,7 +100,6 @@ def work_all(
             json.dump(results, f)
 
     if plot or table:
-
         from dials.algorithms.spot_finding.per_image_analysis import (
             StatsMultiImage,
             plot_stats,

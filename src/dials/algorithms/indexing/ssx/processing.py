@@ -59,11 +59,14 @@ loggers_to_disable = [
     "dials.algorithms.refinement.reflection_processor",
     "dials.algorithms.refinement.refiner",
     "dials.algorithms.refinement.reflection_manager",
+    "dials.algorithms.refinement.outlier_detection.outlier_base",
     "dials.algorithms.indexing.stills_indexer",
     "dials.algorithms.indexing.nave_parameters",
     "dials.algorithms.indexing.basis_vector_search.real_space_grid_search",
     "dials.algorithms.indexing.basis_vector_search.combinations",
     "dials.algorithms.indexing.indexer",
+    "dials.algorithms.indexing.lattice_search",
+    "dials.algorithms.indexing.lattice_search.low_res_spot_match",
 ]
 debug_loggers_to_disable = [
     "dials.algorithms.indexing.symmetry",
@@ -105,7 +108,7 @@ class manage_loggers(object):
                 logging.getLogger(name).setLevel(logging.INFO)
 
     def __exit__(self, ex_type, ex_value, ex_traceback):
-        # Reenable the disabled loggers or reset logging levels.
+        # Re-enable the disabled loggers or reset logging levels.
         if self.individual_log_verbosity < 2:
             for logname in self.loggers:
                 logging.getLogger(logname).disabled = False
@@ -126,6 +129,7 @@ def index_one(
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
 
     elist = ExperimentList([experiment])
+    params.indexing.nproc = 1  # make sure none of the processes try to spawn multiprocessing within existing multiprocessing.
     for method in method_list:
         params.indexing.method = method
         idxr = Indexer.from_parameters(
@@ -191,10 +195,13 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             selr = table.select(table["id"] == id_)
             calx, caly, _ = selr["xyzcal.px"].parts()
             obsx, obsy, _ = selr["xyzobs.px.value"].parts()
-            delpsi = selr["delpsical.rad"]
+            if "delpsical.rad" in selr:
+                delpsi = selr["delpsical.rad"]
+                rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
+            else:
+                rmsd_z = 0.0
             rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
             rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
-            rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
             n_id_ = calx.size()
             result.n_indexed.append(n_id_)
             result.rmsd_x.append(rmsd_x)

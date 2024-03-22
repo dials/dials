@@ -130,3 +130,51 @@ def test_slice_sequence_with_scan_varying_crystal(dials_data, tmp_path):
 
     for a, b in zip(orig_UB[9:21], sliced_UB):
         assert a == pytest.approx(b)
+
+
+def test_slice_sequence_exclude_images_multiple(dials_data, tmp_path):
+    data_dir = dials_data("refinement_test_data", pathlib=True)
+    experiments_path = data_dir / "i04-weak.json"
+    pickle_path = data_dir / "i04-weak.pickle"
+
+    assert experiments_path.is_file()
+    assert pickle_path.is_file()
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.slice_sequence"),
+            experiments_path,
+            pickle_path,
+            "exclude_images_multiple=40",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    # load results
+    sliced_expts = load.experiment_list(
+        tmp_path / "i04-weak_sliced.expt", check_format=False
+    )
+    sliced_refls = flex.reflection_table.from_file(tmp_path / "i04-weak_sliced.refl")
+
+    # simple test of results
+    assert len(sliced_expts) == 14
+    assert len(sliced_refls) == 100397
+    image_ranges = [e.scan.get_image_range() for e in sliced_expts]
+    assert image_ranges == [
+        (1, 39),
+        (41, 79),
+        (81, 119),
+        (121, 159),
+        (161, 199),
+        (201, 239),
+        (241, 279),
+        (281, 319),
+        (321, 359),
+        (361, 399),
+        (401, 439),
+        (441, 479),
+        (481, 519),
+        (521, 540),
+    ]

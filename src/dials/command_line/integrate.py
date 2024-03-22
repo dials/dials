@@ -6,7 +6,7 @@ a corresponding set of strong spots from which a profile model is calculated.
 The program will output a set of integrated reflections and an experiment list
 with additional profile model data. The data can be reintegrated using the same
 profile model by inputting this integrated.expt file back into
-dials.integate.
+dials.integrate.
 
 Examples::
 

@@ -44,7 +44,7 @@ class CrossValidator:
         raise NotImplementedError()
 
     def get_parameter_type(self, name):
-        """Find the parameter type for a discreet phil option - bool or choice."""
+        """Find the parameter type for a discrete phil option - bool or choice."""
         raise NotImplementedError()
 
     def set_parameter(self, params, name, val):

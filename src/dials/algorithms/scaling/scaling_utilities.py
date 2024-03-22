@@ -193,7 +193,7 @@ def set_wilson_outliers(reflection_table):
     reflection_table.set_flags(sel1 & sel2, reflection_table.flags.outlier_in_scaling)
     msg = (
         "{0} reflections have been identified as outliers based on their normalised {sep}"
-        "intensity values. These are reflections that have a probablity of {sep}"
+        "intensity values. These are reflections that have a probability of {sep}"
         "< 10e-6 based on a Wilson distribution (E^2 > {1}, {2} for centric {sep}"
         "and acentric reflections respectively). {sep}"
     ).format(

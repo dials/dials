@@ -278,7 +278,7 @@ def refine_profile(
     LL_tolerance=1e-6,
 ):
     """Do the profile refinement"""
-    logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
+    logger.info("\n" + "=" * 80 + "\nRefining profile parameters")
 
     # Create the parameterisation
     state = ModelState(
@@ -317,7 +317,7 @@ def refine_crystal(
         return
 
     initial_cell_volume = experiment.crystal.get_unit_cell().volume()
-    logger.info("\n" + "=" * 80 + "\nRefining crystal parmameters")
+    logger.info("\n" + "=" * 80 + "\nRefining crystal parameters")
 
     # Create the parameterisation
     state = ModelState(

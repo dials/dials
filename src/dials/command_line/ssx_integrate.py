@@ -58,8 +58,8 @@ from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.combine_experiments import CombineWithReference
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
+from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
 try:
@@ -206,7 +206,7 @@ def setup(reflections, params):
 
     # Note, memory processing logic can go here
     if params.nproc is Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
     logger.info(f"Using {params.nproc} processes for integration")
 
     # aggregate some output for json, html etc
@@ -470,7 +470,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
-    ## FIXME - experiment identifiers approach wont work if input strong.refl and refined.expt
+    ## FIXME - experiment identifiers approach won't work if input strong.refl and refined.expt
     # for now - check image path and update identifiers to that of refined.expt?
     if len(set(reflections[0]["id"]).difference({-1})) > 1:
         logger.info("Attempting to split multi-still reflection table")
