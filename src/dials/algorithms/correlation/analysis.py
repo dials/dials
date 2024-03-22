@@ -133,6 +133,50 @@ class CorrelationMatrix(Subject):
             max_calls=self.cosym_analysis.params.minimization.max_calls,
         )
 
+        (
+            self.correlation_matrix,
+            self.cc_linkage_matrix,
+        ) = self.compute_correlation_coefficient_matrix()
+        self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix()
+
+        labels = list(range(0, len(self._experiments)))
+
+        self.cc_json = to_plotly_json(
+            self.correlation_matrix,
+            self.cc_linkage_matrix,
+            labels=labels,
+            matrix_type="correlation",
+        )
+        self.cos_json = to_plotly_json(
+            self.cos_angle,
+            self.cos_linkage_matrix,
+            labels=labels,
+            matrix_type="cos_angle",
+        )
+
+        self.rij_graphs = OrderedDict()
+
+        self.rij_graphs.update(
+            plot_rij_histogram(self.correlation_matrix, key="cosym_rij_histogram_sg")
+        )
+
+        self.rij_graphs.update(
+            plot_coords(self.cosym_analysis.coords, key="cosym_coordinates_sg")
+        )
+
+        path_list = []
+        self.table_list = [["Experiment/Image Number", "Image Path"]]
+
+        for i in self._experiments:
+            j = i.imageset
+            path_list.append(j.paths()[0])
+
+        ids = list(range(0, len(path_list)))
+
+        for i, j in zip(ids, path_list):
+            self.table_list.append([i, j])
+
+    def compute_correlation_coefficient_matrix(self):
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
 
         correlation_matrix = self.cosym_analysis.target.rij_matrix
@@ -151,6 +195,9 @@ class CorrelationMatrix(Subject):
 
         cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="average")
 
+        return correlation_matrix, cc_linkage_matrix
+
+    def compute_cos_angle_matrix(self):
         logger.info(
             "Calculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)\n"
         )
@@ -159,44 +206,7 @@ class CorrelationMatrix(Subject):
         cos_angle = 1 - ssd.squareform(cos_dist_mat)
         cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
 
-        self.cc_linkage_matrix = cc_linkage_matrix
-        self.correlation_matrix = correlation_matrix
-        self.cos_angle = cos_angle
-        self.cos_linkage_matrix = cos_linkage_matrix
-
-        labels = list(range(0, len(self._experiments)))
-
-        self.cc_json = to_plotly_json(
-            correlation_matrix,
-            cc_linkage_matrix,
-            labels=labels,
-            matrix_type="correlation",
-        )
-        self.cos_json = to_plotly_json(
-            cos_angle, cos_linkage_matrix, labels=labels, matrix_type="cos_angle"
-        )
-
-        self.rij_graphs = OrderedDict()
-
-        self.rij_graphs.update(
-            plot_rij_histogram(correlation_matrix, key="cosym_rij_histogram_sg")
-        )
-
-        self.rij_graphs.update(
-            plot_coords(self.cosym_analysis.coords, key="cosym_coordinates_sg")
-        )
-
-        path_list = []
-        self.table_list = [["Experiment/Image Number", "Image Path"]]
-
-        for i in self._experiments:
-            j = i.imageset
-            path_list.append(j.paths()[0])
-
-        ids = list(range(0, len(path_list)))
-
-        for i, j in zip(ids, path_list):
-            self.table_list.append([i, j])
+        return cos_angle, cos_linkage_matrix
 
     def output_json(self):
         """
