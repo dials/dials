@@ -32,6 +32,8 @@ def test_corr_mat(dials_data, run_in_tmp_path):
         args=input_data, show_diff_phil=False, return_unhandled=True
     )
 
+    params.output.json = "dials.correlation_matrix.json"
+
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -42,7 +44,6 @@ def test_corr_mat(dials_data, run_in_tmp_path):
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
     matrices = CorrelationMatrix(experiments, reflections, params)
     matrices.calculate_matrices()
-
+    matrices.convert_to_json()
     matrices.output_json()
-    assert pathlib.Path("dials.correlation_matrix_cc.json").is_file()
-    assert pathlib.Path("dials.correlation_matrix_cos.json").is_file()
+    assert pathlib.Path("dials.correlation_matrix.json").is_file()

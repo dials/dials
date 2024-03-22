@@ -139,6 +139,39 @@ class CorrelationMatrix(Subject):
         ) = self.compute_correlation_coefficient_matrix()
         self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix()
 
+    def compute_correlation_coefficient_matrix(self):
+        logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
+
+        correlation_matrix = self.cosym_analysis.target.rij_matrix
+
+        for i in range(correlation_matrix.shape[0]):
+            correlation_matrix[i, i] = 1
+
+        # clip values of correlation matrix to account for floating point errors
+        correlation_matrix[np.where(correlation_matrix < -1)] = -1
+        correlation_matrix[np.where(correlation_matrix > 1)] = 1
+        diffraction_dissimilarity = 1 - correlation_matrix
+
+        assert ssd.is_valid_dm(diffraction_dissimilarity, tol=1e-12)
+        # convert the redundant n*n square matrix form into a condensed nC2 array
+        cc_dist_mat = ssd.squareform(diffraction_dissimilarity, checks=False)
+
+        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="average")
+
+        return correlation_matrix, cc_linkage_matrix
+
+    def compute_cos_angle_matrix(self):
+        logger.info(
+            "Calculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)\n"
+        )
+
+        cos_dist_mat = ssd.pdist(self.cosym_analysis.coords, metric="cosine")
+        cos_angle = 1 - ssd.squareform(cos_dist_mat)
+        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
+
+        return cos_angle, cos_linkage_matrix
+
+    def convert_to_json(self):
         labels = list(range(0, len(self._experiments)))
 
         self.cc_json = to_plotly_json(
@@ -176,46 +209,16 @@ class CorrelationMatrix(Subject):
         for i, j in zip(ids, path_list):
             self.table_list.append([i, j])
 
-    def compute_correlation_coefficient_matrix(self):
-        logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
-
-        correlation_matrix = self.cosym_analysis.target.rij_matrix
-
-        for i in range(correlation_matrix.shape[0]):
-            correlation_matrix[i, i] = 1
-
-        # clip values of correlation matrix to account for floating point errors
-        correlation_matrix[np.where(correlation_matrix < -1)] = -1
-        correlation_matrix[np.where(correlation_matrix > 1)] = 1
-        diffraction_dissimilarity = 1 - correlation_matrix
-
-        assert ssd.is_valid_dm(diffraction_dissimilarity, tol=1e-12)
-        # convert the redundant n*n square matrix form into a condensed nC2 array
-        cc_dist_mat = ssd.squareform(diffraction_dissimilarity, checks=False)
-
-        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="average")
-
-        return correlation_matrix, cc_linkage_matrix
-
-    def compute_cos_angle_matrix(self):
-        logger.info(
-            "Calculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)\n"
-        )
-
-        cos_dist_mat = ssd.pdist(self.cosym_analysis.coords, metric="cosine")
-        cos_angle = 1 - ssd.squareform(cos_dist_mat)
-        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
-
-        return cos_angle, cos_linkage_matrix
-
     def output_json(self):
         """
         Outputs the cos and cc json files used for graphing.
         """
 
-        json_str = json.dumps(self.cc_json)
-        with open(self.params.output.cc_json, "w") as f:
-            f.write(json_str)
-        json_str = json.dumps(self.cos_json)
-        with open(self.params.output.cos_json, "w") as f:
+        combined_json_dict = {
+            "correlation_matrix": self.cc_json,
+            "cos_matrix": self.cos_json,
+        }
+
+        json_str = json.dumps(combined_json_dict)
+        with open(self.params.output.json, "w") as f:
             f.write(json_str)

@@ -31,12 +31,13 @@ seed = 42
 output {
   log = dials.correlation_matrix.log
     .type = str
+    .help = "The log name"
   html = dials.correlation_matrix.html
     .type = path
-  cc_json = dials.correlation_matrix_cc.json
+    .help = "Filename for the html report"
+  json = None
     .type = str
-  cos_json = dials.correlation_matrix_cos.json
-    .type = str
+    .help = "Filename for the cluster information output in json format"
 }
 """,
     process_includes=True,
@@ -115,28 +116,35 @@ def run(args=None):
         raise Sorry(e)
 
     matrices.calculate_matrices()
-    matrices.output_json()
 
-    loader = ChoiceLoader(
-        [PackageLoader("dials", "templates"), PackageLoader("dials", "templates")]
-    )
-    env = Environment(loader=loader)
+    if params.output.json or params.output.html:
+        matrices.convert_to_json()
 
-    template = env.get_template("clusters.html")
-    html = template.render(
-        page_title="DIALS Correlation Matrix",
-        cc_cluster_json=matrices.cc_json,
-        cos_angle_cluster_json=matrices.cos_json,
-        image_range_tables=[matrices.table_list],
-        cosym_graphs=matrices.rij_graphs,
-    )
+    if params.output.json:
+        matrices.output_json()
 
-    logger.info(
-        f"Saving graphical output of correlation matrices to {params.output.html}."
-    )
+    if params.output.html:
 
-    with open(params.output.html, "wb") as f:
-        f.write(html.encode("utf-8", "xmlcharrefreplace"))
+        loader = ChoiceLoader(
+            [PackageLoader("dials", "templates"), PackageLoader("dials", "templates")]
+        )
+        env = Environment(loader=loader)
+
+        template = env.get_template("clusters.html")
+        html = template.render(
+            page_title="DIALS Correlation Matrix",
+            cc_cluster_json=matrices.cc_json,
+            cos_angle_cluster_json=matrices.cos_json,
+            image_range_tables=[matrices.table_list],
+            cosym_graphs=matrices.rij_graphs,
+        )
+
+        logger.info(
+            f"Saving graphical output of correlation matrices to {params.output.html}."
+        )
+
+        with open(params.output.html, "wb") as f:
+            f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
 
 if __name__ == "__main__":
