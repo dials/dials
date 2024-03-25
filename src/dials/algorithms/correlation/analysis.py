@@ -10,7 +10,7 @@ from scipy.cluster import hierarchy
 
 import iotbx.phil
 
-from dials.algorithms.correlation.plots import to_plotly_json
+from dials.algorithms.correlation.plots import linkage_matrix_to_dict, to_plotly_json
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
@@ -171,7 +171,7 @@ class CorrelationMatrix(Subject):
 
         return cos_angle, cos_linkage_matrix
 
-    def convert_to_json(self):
+    def convert_to_html_json(self):
         labels = list(range(0, len(self._experiments)))
 
         self.cc_json = to_plotly_json(
@@ -209,14 +209,30 @@ class CorrelationMatrix(Subject):
         for i, j in zip(ids, path_list):
             self.table_list.append([i, j])
 
+    def convert_to_importable_json(self, linkage_matrix):
+        linkage_mat_as_dict = linkage_matrix_to_dict(linkage_matrix)
+        for i in linkage_mat_as_dict:
+            old_datasets = [i - 1 for i in linkage_mat_as_dict[i]["datasets"]]
+            datasets_as_ids = [self.ids_to_identifiers_map[j] for j in old_datasets]
+            linkage_mat_as_dict[i]["datasets"] = datasets_as_ids
+
+        return linkage_mat_as_dict
+
     def output_json(self):
         """
-        Outputs the cos and cc json files used for graphing.
+        Outputs the cos and cc json files containing correlation/cos matrices and linkage details.
         """
 
+        linkage_mat_as_dict_cc = self.convert_to_importable_json(self.cc_linkage_matrix)
+        linkage_mat_as_dict_cos = self.convert_to_importable_json(
+            self.cos_linkage_matrix
+        )
+
         combined_json_dict = {
-            "correlation_matrix": self.cc_json,
-            "cos_matrix": self.cos_json,
+            "correlation_matrix_clustering": linkage_mat_as_dict_cc,
+            "correlation_matrix": self.correlation_matrix.tolist(),
+            "cos_matrix_clustering": linkage_mat_as_dict_cos,
+            "cos_angle_matrix": self.cos_angle.tolist(),
         }
 
         json_str = json.dumps(combined_json_dict)

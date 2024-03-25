@@ -117,13 +117,11 @@ def run(args=None):
 
     matrices.calculate_matrices()
 
-    if params.output.json or params.output.html:
-        matrices.convert_to_json()
-
     if params.output.json:
         matrices.output_json()
 
     if params.output.html:
+        matrices.convert_to_html_json()
 
         loader = ChoiceLoader(
             [PackageLoader("dials", "templates"), PackageLoader("dials", "templates")]
