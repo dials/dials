@@ -1,1 +1,0 @@
-wxPython was inadvertently reverted to 4.1 instead of 4.2 for python 3.9 and 3.10 releases.

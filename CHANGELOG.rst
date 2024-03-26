@@ -1,3 +1,12 @@
+DIALS 3.18.1 (2024-03-26)
+=========================
+
+Bugfixes
+--------
+
+- wxPython was inadvertently reverted to 4.1 instead of 4.2 for python 3.9 and 3.10 releases. (`#2636 <https://github.com/dials/dials/issues/2636>`_)
+
+
 DIALS 3.18.0 (2024-02-22)
 =========================
 
