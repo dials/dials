@@ -53,6 +53,6 @@ conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm
 conda-forge::urllib3
-conda-forge::wxpython>=4.0.1
+conda-forge::wxpython>=4.2.0
 conda-forge::xz
 conda-forge::zlib
