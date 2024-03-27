@@ -619,16 +619,14 @@ def run(args=None, phil=working_phil):
     except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
         sys.exit(str(e))
     else:
+        # For the usual case of refinement of one crystal, print that model for information
+        if len(experiments.crystals()) == 1:
+            logger.info("")
+            logger.info("Final refined crystal model:")
+            logger.info(experiments.crystals()[0])
         experiments, reflections = expeditor.combine_experiments_for_output(
             experiments, [reflections]
         )
-
-    # For the usual case of refinement of one crystal, print that model for information
-    crystals = experiments.crystals()
-    if len(crystals) == 1:
-        logger.info("")
-        logger.info("Final refined crystal model:")
-        logger.info(crystals[0])
 
     # Write table of centroids to file, if requested
     if params.output.centroids:

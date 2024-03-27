@@ -150,13 +150,12 @@ def run(args=None):
         reference_experiments = load.experiment_list(
             params.reference.experiments, check_format=False
         )
-        if len(reference_experiments.crystals()) == 1:
-            reference_crystal = reference_experiments.crystals()[0]
+        crystals = [expt.crystal for expt in reference_experiments if expt.crystal]
+        if len(crystals) == 1:
+            reference_crystal = crystals[0]
         else:
             # first check sg all same
-            sgs = [
-                expt.crystal.get_space_group().type().number() for expt in experiments
-            ]
+            sgs = [cryst.get_space_group().type().number() for cryst in crystals]
             if len(set(sgs)) > 1:
                 raise Sorry(
                     """The reference experiments have different space groups:
@@ -166,7 +165,7 @@ def run(args=None):
                     % ", ".join(map(str, set(sgs)))
                 )
 
-            reference_crystal = reference_experiments.crystals()[0]
+            reference_crystal = crystals[0]
             reference_crystal.set_unit_cell(
                 determine_best_unit_cell(reference_experiments)
             )
