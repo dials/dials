@@ -1,0 +1,1 @@
+``dials.find_spots_{server,client}`` are now deprecated and will be removed in a future release

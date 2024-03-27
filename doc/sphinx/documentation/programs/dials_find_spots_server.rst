@@ -1,6 +1,10 @@
 dials.find_spots_server/client
 ==============================
 
+.. warning::
+    ``dials.find_spots_server/client`` are deprecated and will be removed
+    in a future release.
+
 Introduction
 ------------
 

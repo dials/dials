@@ -7,6 +7,18 @@ import multiprocessing
 import sys
 import time
 import urllib.parse
+import warnings
+
+try:
+    import colorama
+
+    YELLOW = colorama.Fore.YELLOW
+    NC = colorama.Style.RESET_ALL
+except ImportError:
+    YELLOW = ""
+    NC = ""
+else:
+    colorama.init()
 
 import libtbx.phil
 from cctbx import uctbx
@@ -376,4 +388,14 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    run()
+    print(
+        f"\n{YELLOW}Warning: dials.find_spots_server is now deprecated and will be removed in a future release.\n\n{NC}",
+        file=sys.stderr,
+    )
+    run()  # noqa: F405
+else:
+    warnings.warn(
+        "dials.command_line.find_spots_server is deprecated and will be removed in a future release.",
+        UserWarning,
+        stacklevel=1,
+    )
