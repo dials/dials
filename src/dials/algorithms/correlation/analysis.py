@@ -136,8 +136,6 @@ class CorrelationMatrix(Subject):
     def compute_correlation_coefficient_matrix(correlation_matrix):
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
 
-        # correlation_matrix = self.cosym_analysis.target.rij_matrix
-
         for i in range(correlation_matrix.shape[0]):
             correlation_matrix[i, i] = 1
 
