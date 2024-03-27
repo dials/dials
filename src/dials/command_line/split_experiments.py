@@ -11,6 +11,7 @@ import dials.util
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.export_mtz import match_wavelengths
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
@@ -78,7 +79,9 @@ class Script:
           .help = "If not None, instead of creating many individual"
                   "files, create composite files with the number of"
                   "datasets given in the chunk_sizes list."
-
+        include_crystalless_experiments = False
+          .type = bool
+          .expert_level = 2
       }
     """,
             process_includes=True,
@@ -121,7 +124,16 @@ class Script:
         reflections, experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
-        if reflections:
+
+        if not params.output.include_crystalless_experiments and any(
+            experiments.crystals()
+        ):
+            experiments, reflections = Expeditor(
+                experiments, reflections
+            ).filter_experiments_with_crystals()
+            if reflections:
+                reflections = flex.reflection_table.concat(reflections)
+        elif reflections:
             reflections = reflections[0]
         else:
             reflections = None
@@ -332,6 +344,8 @@ class Script:
                     save_chunk(chunk_counter, chunk_expts, chunk_refls)
                     chunk_counter += 1
                     chunk_expts = ExperimentList()
+                    imagesets_found = OrderedSet()
+                    next_iset_id = 0
                     if reflections:
                         chunk_refls = flex.reflection_table()
                     else:

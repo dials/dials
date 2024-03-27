@@ -10,6 +10,7 @@ import pytest
 
 from dxtbx.serialize import load
 
+from dials.array_family import flex
 from dials.command_line.ssx_index import run
 
 
@@ -34,7 +35,9 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     assert (tmp_path / "indexed.expt").is_file()
     assert (tmp_path / "dials.ssx_index.html").is_file()
     experiments = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
-    assert len(experiments) == 3  # only 3 out of the 5 get indexed
+    assert (
+        len([c for c in experiments.crystals() if c]) == 3
+    )  # only 3 out of the 5 get indexed
     for i in [0, 1, 2, 4]:
         assert tmp_path.joinpath(
             f"nuggets/nugget_index_merlin0047_1700{i}.cbf.json"
@@ -71,12 +74,42 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path, indexer):
     experiments = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
     if indexer == "stills":
         assert (
-            len(experiments) == 3
+            len(experiments) == 3 + 5
         )  # only 3 out of the 5 get indexed if no reference geometry
+        assert len([c for c in experiments.crystals() if c is not None]) == 3
     elif indexer == "sequences":
         assert (
-            len(experiments) == 5
+            len(experiments) == 5 + 5
         )  # all 5 get indexed, albeit some with questionably high rmsds.
+        assert len([c for c in experiments.crystals() if c is not None]) == 5
+
+
+def test_ssx_index_no_spots_on_image(dials_data, tmp_path):
+    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    expts = ssx / "imported_no_ref_5.expt"
+    refls = ssx / "strong_5.refl"
+    # pretend that no spots found on image index 2 (17002.cbf)
+    data = flex.reflection_table.from_file(refls)
+    data.del_selected(data["id"] == 2)
+    # N.B. we purposefully don't delete the entry from the identifiers map
+    # as we still have a matching experiment in the experiment list.
+    # This matches the output from spotfinding when no spots are found on a still image
+    data.as_file(tmp_path / "altered.refl")
+
+    result = subprocess.run(
+        [shutil.which("dials.ssx_index"), expts, tmp_path / "altered.refl", "-vv"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "indexed.refl").is_file()
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "dials.ssx_index.html").is_file()
+    experiments = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
+    assert (
+        len([c for c in experiments.crystals() if c]) == 2
+    )  # only 2 out of the 5 get indexed if no reference geometry
 
 
 def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
@@ -88,7 +121,8 @@ def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
     assert os.path.exists("indexed.refl")
     assert os.path.exists("indexed.expt")
     experiments = load.experiment_list("indexed.expt", check_format=False)
-    assert len(experiments) == 0
+    assert len(experiments) == 5
+    assert len([c for c in experiments.crystals() if c]) == 0
 
 
 def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
@@ -112,7 +146,7 @@ def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     assert os.path.exists("dials.ssx_index.html")
     experiments = load.experiment_list("indexed.expt", check_format=False)
     assert (
-        len(experiments) == 5
+        len([c for c in experiments.crystals() if c]) == 5
     )  # only 4 out of the 5 images gets indexed, one has two lattices
 
     # now if just fft1d method:
@@ -120,10 +154,11 @@ def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     run([expts, refls, "method=fft1d", "unit_cell=96.4,96.4,96.4,90,90,90"])
     experiments = load.experiment_list("indexed.expt", check_format=False)
     assert (
-        len(experiments) == 2
+        len([c for c in experiments.crystals() if c]) == 2
     )  # only 2 out of the 5 images get indexed without real space grid search
 
     # test we can run the pink_indexer method through ssx_index also
     run([expts, refls, "method=pink_indexer", "unit_cell=96.4,96.4,96.4,90,90,90"])
     experiments = load.experiment_list("indexed.expt", check_format=False)
-    assert len(experiments) == 5
+    assert len(experiments) == 10
+    assert len([c for c in experiments.crystals() if c is not None]) == 5

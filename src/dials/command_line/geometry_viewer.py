@@ -17,6 +17,7 @@ from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
 
 from dials.util import show_mail_handle_errors, wx_viewer
+from dials.util.multi_dataset_handling import Expeditor
 
 help_message = """
 """
@@ -622,6 +623,8 @@ def run(args=None):
         sys.exit()
 
     experiments = flatten_experiments(params.input.experiments)
+
+    experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
 
     if len(experiments) == 0:
         parser.print_help()
