@@ -72,23 +72,12 @@ class CorrelationMatrix(Subject):
             value: key for key, value in self.ids_to_identifiers_map.items()
         }
 
-        if "inverse_scale_factor" in reflections[0]:
-            # FIXME - can we also just use the filtered_arrays_from_experiments_reflections function?
-            from dials.report.analysis import scaled_data_as_miller_array
-
-            datasets = []
-            for expt, r in zip(self._experiments, self._reflections):
-                sel = ~r.get_flags(r.flags.bad_for_scaling, all=False)
-                sel &= r["inverse_scale_factor"] > 0
-                datasets.append(scaled_data_as_miller_array([r], [expt]))
-
-        else:
-            datasets = filtered_arrays_from_experiments_reflections(
-                self._experiments,
-                self._reflections,
-                outlier_rejection_after_filter=False,
-                partiality_threshold=params.partiality_threshold,
-            )
+        datasets = filtered_arrays_from_experiments_reflections(
+            self._experiments,
+            self._reflections,
+            outlier_rejection_after_filter=False,
+            partiality_threshold=params.partiality_threshold,
+        )
         individual_merged_intensities = []
         for unmerged in datasets:
             individual_merged_intensities.append(
@@ -136,13 +125,18 @@ class CorrelationMatrix(Subject):
         (
             self.correlation_matrix,
             self.cc_linkage_matrix,
-        ) = self.compute_correlation_coefficient_matrix()
-        self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix()
+        ) = self.compute_correlation_coefficient_matrix(
+            self.cosym_analysis.target.rij_matrix
+        )
+        self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix(
+            self.cosym_analysis.coords
+        )
 
-    def compute_correlation_coefficient_matrix(self):
+    @staticmethod
+    def compute_correlation_coefficient_matrix(correlation_matrix):
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
 
-        correlation_matrix = self.cosym_analysis.target.rij_matrix
+        # correlation_matrix = self.cosym_analysis.target.rij_matrix
 
         for i in range(correlation_matrix.shape[0]):
             correlation_matrix[i, i] = 1
@@ -160,12 +154,13 @@ class CorrelationMatrix(Subject):
 
         return correlation_matrix, cc_linkage_matrix
 
-    def compute_cos_angle_matrix(self):
+    @staticmethod
+    def compute_cos_angle_matrix(coords):
         logger.info(
             "Calculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)\n"
         )
 
-        cos_dist_mat = ssd.pdist(self.cosym_analysis.coords, metric="cosine")
+        cos_dist_mat = ssd.pdist(coords, metric="cosine")
         cos_angle = 1 - ssd.squareform(cos_dist_mat)
         cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
 
