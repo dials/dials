@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 import pytest
 
+from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
 
 import dials.util.image_grouping
@@ -454,12 +455,16 @@ grouping:
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
+    assert len(expts1) == 5
+    expts1 = ExperimentList([e for e in expts1 if e.crystal])
     assert len(expts1) == 2
     assert expts1[0].scan.get_image_range() == (17002, 17002)
     assert expts1[1].scan.get_image_range() == (17004, 17004)
     filelist_2 = fd["group_2"]
     assert len(filelist_2) == 1
     expts2 = load.experiment_list(filelist_2[0].expt)
+    assert len(expts2) == 5
+    expts2 = ExperimentList([e for e in expts2 if e.crystal])
     assert len(expts2) == 3
     assert expts2[0].scan.get_image_range() == (17001, 17001)
     assert expts2[1].scan.get_image_range() == (17001, 17001)
@@ -510,18 +515,24 @@ grouping:
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
+    assert len(expts1) == 4
+    expts1 = ExperimentList([e for e in expts1 if e.crystal])
     assert len(expts1) == 2
     assert expts1[0].scan.get_image_range()[0] == 17001
     assert expts1[1].scan.get_image_range()[0] == 17001
     filelist_2 = fd["group_2"]
     assert len(filelist_2) == 1
     expts2 = load.experiment_list(filelist_2[0].expt)
+    assert len(expts2) == 4
+    expts2 = ExperimentList([e for e in expts2 if e.crystal])
     assert len(expts2) == 2
     assert expts2[0].scan.get_image_range()[0] == 17002
     assert expts2[1].scan.get_image_range()[0] == 17003
     filelist_3 = fd["group_3"]
     assert len(filelist_3) == 1
     expts3 = load.experiment_list(filelist_3[0].expt)
+    assert len(expts3) == 2
+    expts3 = ExperimentList([e for e in expts3 if e.crystal])
     assert len(expts3) == 1
     assert expts3[0].scan.get_image_range()[0] == 17004
 
@@ -537,15 +548,14 @@ grouping:
     handler.write_groupids_into_files(fps_copy)
 
     refls = flex.reflection_table.from_file(fps_copy[0].refl)
-    assert set(refls["id"]) == {0, 1, 2, 3, 4}
-    sel0 = refls["id"] == 0
-    sel1 = refls["id"] == 1
-    assert set(refls["group_id"].select(sel0 | sel1)) == {0}
-    sel2 = refls["id"] == 2
-    sel3 = refls["id"] == 3
-    assert set(refls["group_id"].select(sel2 | sel3)) == {1}
-    sel4 = refls["id"] == 4
-    assert set(refls["group_id"].select(sel4)) == {2}
+    ids = refls["id"]
+    assert set(ids) == set(range(10))  # {0, 1, 2, 3, 4,5,6,7,8,9}
+    sel0 = (ids == 0) | (ids == 1) | (ids == 2) | (ids == 3)
+    assert set(refls["group_id"].select(sel0)) == {0}
+    sel1 = (ids == 4) | (ids == 5) | (ids == 6) | (ids == 7)
+    assert set(refls["group_id"].select(sel1)) == {1}
+    sel2 = (ids == 8) | (ids == 9)
+    assert set(refls["group_id"].select(sel2)) == {2}
 
     real_example_single = f"""
 ---
@@ -571,4 +581,5 @@ grouping:
     filelist_1 = fd["group_1"]
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
-    assert len(expts1) == 5
+    assert len(expts1) == 10
+    assert len([e for e in expts1 if e.crystal]) == 5

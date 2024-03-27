@@ -74,12 +74,14 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path, indexer):
     experiments = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
     if indexer == "stills":
         assert (
-            len(experiments) == 3
+            len(experiments) == 3 + 5
         )  # only 3 out of the 5 get indexed if no reference geometry
+        assert len([c for c in experiments.crystals() if c is not None]) == 3
     elif indexer == "sequences":
         assert (
-            len(experiments) == 5
+            len(experiments) == 5 + 5
         )  # all 5 get indexed, albeit some with questionably high rmsds.
+        assert len([c for c in experiments.crystals() if c is not None]) == 5
 
 
 def test_ssx_index_no_spots_on_image(dials_data, tmp_path):
@@ -158,4 +160,5 @@ def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     # test we can run the pink_indexer method through ssx_index also
     run([expts, refls, "method=pink_indexer", "unit_cell=96.4,96.4,96.4,90,90,90"])
     experiments = load.experiment_list("indexed.expt", check_format=False)
-    assert len(experiments) == 5
+    assert len(experiments) == 10
+    assert len([c for c in experiments.crystals() if c is not None]) == 5
