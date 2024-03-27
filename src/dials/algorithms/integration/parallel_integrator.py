@@ -715,7 +715,7 @@ class IntegrationManager:
                 f0, f1 = job.frames()
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(group), str(f0), str(f1), str(n)])
-        elif self.experiments.all_sequences():
+        elif self.experiments.all_rotations():
             rows = [
                 [
                     "#",
@@ -1182,7 +1182,7 @@ class ReferenceCalculatorManager:
                 f0, f1 = job.frames()
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(group), str(f0), str(f1), str(n)])
-        elif self.experiments.all_sequences():
+        elif self.experiments.all_rotations():
             rows = [
                 [
                     "#",

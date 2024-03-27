@@ -38,7 +38,10 @@ steps:
 # Build and install dxtbx
 - script: |
     source activate conda_base/
-    git clone https://github.com/cctbx/dxtbx ./modules/dxtbx
+    git clone https://github.com/toastisme/dxtbx ./modules/dxtbx
+    cd ./modules/dxtbx 
+    git checkout add_experiment_type
+    cd ../../
     mkdir build_dxtbx
     cd build_dxtbx
     cmake ../modules/dxtbx -DCMAKE_UNITY_BUILD=true -GNinja

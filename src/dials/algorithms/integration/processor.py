@@ -315,7 +315,7 @@ class _ProcessorRot(_Processor):
         :param manager: The processing manager
         """
         # Ensure we have the correct type of data
-        if not experiments.all_sequences():
+        if not experiments.all_rotations():
             raise RuntimeError(
                 """
         An inappropriate processing algorithm may have been selected!
@@ -842,7 +842,7 @@ class _Manager:
                 f0, f1 = job.frames()
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(group), str(f0), str(f1), str(n)])
-        elif self.experiments.all_sequences():
+        elif self.experiments.all_rotations():
             rows = [
                 [
                     "#",

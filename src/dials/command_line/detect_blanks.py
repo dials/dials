@@ -79,7 +79,7 @@ def run(args=None):
 
     imagesets = experiments.imagesets()
 
-    if any(experiment.is_still() for experiment in experiments):
+    if not experiments.all_rotations():
         sys.exit("dials.detect_blanks can only be used with rotation data")
 
     assert len(imagesets) == 1

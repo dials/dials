@@ -18,6 +18,10 @@ steps:
 - bash: |
     set -eux
     python modules/dials/installer/bootstrap.py update
+    cd modules/dxtbx 
+    git remote add toastisme https://github.com/toastisme/dxtbx
+    git fetch toastisme
+    git checkout -b add_experiment_type toastisme/add_experiment_type
   displayName: Repository checkout
   workingDirectory: $(Pipeline.Workspace)
 
