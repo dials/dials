@@ -154,38 +154,68 @@ def lru_equality_cache(maxsize=10):
     return _decorator
 
 
-def generate_ice_ring_resolution_ranges(beam, panel, params):
+def generate_ice_ring_skip_ranges(
+    params, detector=None, beam=None, disable_parallax=False
+):
     """
     Generate a set of resolution ranges from the ice ring parameters
     """
-    if params.filter is True:
+    if not params.filter:
+        return
 
-        # Get the crystal symmetry
-        crystal_symmetry = crystal.symmetry(
-            unit_cell=params.unit_cell, space_group=params.space_group.group()
-        )
+    if params.d_min is not None:
+        d_min = params.d_min
+    else:
+        assert detector is not None
+        assert beam is not None
+        panel_d_mins = []
+        for panel in detector:
+            if disable_parallax:
+                panel = copy.deepcopy(panel)
+                panel.set_px_mm_strategy(SimplePxMmStrategy())
+            panel_d_mins.append(panel.get_max_resolution_at_corners(beam.get_s0()))
+        d_min = min(panel_d_mins)
 
-        # Get the half width
-        half_width = params.width * 0.5
+    # Get the crystal symmetry
+    crystal_symmetry = crystal.symmetry(
+        unit_cell=params.unit_cell, space_group=params.space_group.group()
+    )
 
-        # Set the high resolution
-        if params.d_min is None:
-            d_min = panel.get_max_resolution_at_corners(beam.get_s0())
-        else:
-            d_min = params.d_min
+    # Get the half width
+    half_width = params.width * 0.5
 
-        # Build the miller set
-        ms = crystal_symmetry.build_miller_set(anomalous_flag=False, d_min=d_min)
-        ms = ms.sort(by_value="resolution")
+    # Build the miller set
+    ms = crystal_symmetry.build_miller_set(anomalous_flag=False, d_min=d_min)
+    ms = ms.sort(by_value="resolution")
 
-        # Yield all the d ranges
-        for j, d in enumerate(ms.d_spacings().data()):
-            d_sq_inv = 1.0 / (d**2)
-            d_sq_inv_min = d_sq_inv - half_width
-            d_sq_inv_max = d_sq_inv + half_width
-            d_max = math.sqrt(1.0 / d_sq_inv_min)
-            d_min = math.sqrt(1.0 / d_sq_inv_max)
-            yield (d_min, d_max)
+    # Yield all the d ranges
+    for j, d in enumerate(ms.d_spacings().data()):
+        d_sq_inv = 1.0 / (d ** 2)
+        d_sq_inv_min = d_sq_inv - half_width
+        d_sq_inv_max = d_sq_inv + half_width
+        d_max = math.sqrt(1.0 / d_sq_inv_min)
+        d_min = math.sqrt(1.0 / d_sq_inv_max)
+        yield (d_min, d_max)
+
+
+def generate_skip_ranges(params, detector=None, beam=None):
+    if params.d_min is not None:
+        yield (0, params.d_min)
+    if params.d_max is not None:
+        d_max = params.d_max
+        d_inf = max(d_max + 1, 1e9)
+        yield (d_max, d_inf)
+    for range in params.resolution_range:
+        if range is None:
+            continue
+        for d1, d2 in range:
+            d1, d2 = sorted(d1, d2)
+            assert d1 < d2, "d_min must be < d_max"
+            yield (d1, d2)
+    for range in generate_ice_ring_skip_ranges(
+        params.ice_rings, detector, beam, params.disable_parallax_correction
+    ):
+        yield range
 
 
 @lru_equality_cache(maxsize=3)
@@ -214,6 +244,12 @@ def generate_mask(
     # Get the detector and beam
     detector = imageset.get_detector()
     beam = imageset.get_beam()
+
+    filter_method = getattr(params, "resolution_filter_method", "mask")
+    if filter_method == "mask":
+        skip_ranges = list(generate_skip_ranges(params, detector, beam))
+    else:
+        skip_ranges = []
 
     # Create the mask for each panel
     masks = []
@@ -288,46 +324,10 @@ def generate_mask(
             panel = copy.deepcopy(panel)
             panel.set_px_mm_strategy(SimplePxMmStrategy())
 
-        # Generate high and low resolution masks
-        if params.d_min is not None:
-            logger.debug(f"Generating high resolution mask:\n d_min = {params.d_min}")
-            _apply_resolution_mask(mask, beam, panel, 0, params.d_min)
-        if params.d_max is not None:
-            logger.debug(f"Generating low resolution mask:\n d_max = {params.d_max}")
-            d_max = params.d_max
-            d_inf = max(d_max + 1, 1e9)
-            _apply_resolution_mask(mask, beam, panel, d_max, d_inf)
-
-        try:
-            # Mask out the resolution range
-            for drange in params.resolution_range:
-                d_min = min(drange)
-                d_max = max(drange)
-                assert d_min < d_max, "d_min must be < d_max"
-                logger.debug(
-                    "Generating resolution range mask:\n"
-                    + f" d_min = {d_min}\n"
-                    + f" d_max = {d_max}"
-                )
-                _apply_resolution_mask(mask, beam, panel, d_min, d_max)
-        except TypeError:
-            # Catch the default value None of params.resolution_range
-            if any(params.resolution_range):
-                raise
-
-        # Mask out the resolution ranges for the ice rings
-        for drange in generate_ice_ring_resolution_ranges(
-            beam, panel, params.ice_rings
-        ):
-            d_min = min(drange)
-            d_max = max(drange)
-            assert d_min < d_max, "d_min must be < d_max"
-            logger.debug(
-                "Generating ice ring mask:\n"
-                + f" d_min = {d_min:.4f}\n"
-                + f" d_max = {d_max:.4f}"
-            )
-            _apply_resolution_mask(mask, beam, panel, d_min, d_max)
+        for d1, d2 in skip_ranges:
+            d1, d2 = sorted([d1, d2])
+            logger.debug(f"Generating mask for range {d1:.4f}-{d2:.4f}")
+            _apply_resolution_mask(mask, beam, panel, d1, d2)
 
         # Add to the list
         masks.append(mask)

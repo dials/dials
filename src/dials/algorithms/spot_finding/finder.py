@@ -10,6 +10,7 @@ import pickle
 from typing import Iterable, Tuple
 
 import libtbx
+from cctbx import uctbx
 from dxtbx.format.image import ImageBool
 from dxtbx.imageset import ImageSequence, ImageSet
 from dxtbx.model import ExperimentList
@@ -646,6 +647,7 @@ class SpotFinder:
         no_shoeboxes_2d=False,
         min_chunksize=50,
         is_stills=False,
+        omit_ranges=None,
     ):
         """
         Initialise the class.
@@ -677,6 +679,7 @@ class SpotFinder:
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
+        self.omit_ranges = omit_ranges
 
     def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
         """
@@ -724,6 +727,18 @@ class SpotFinder:
             assert missed.count(True) == 0, "Failed to remap {} experiment IDs".format(
                 missed.count(True)
             )
+
+            if self.omit_ranges is not None:
+                table.centroid_px_to_mm(experiments)
+                table.map_centroids_to_reciprocal_space(experiments)
+                d_star_sq = flex.pow2(table["rlp"].norms())
+                table["d"] = uctbx.d_star_sq_as_d(d_star_sq)
+                sel = flex.bool(len(table), True)
+                for d1, d2 in self.omit_ranges:
+                    d1, d2 = sorted([d1, d2])
+                    subsel = (d1 < table["d"]) & (table["d"] < d2)
+                    sel &= subsel
+                table = table[sel]
 
             reflections.extend(table)
             # Write a hot pixel mask
