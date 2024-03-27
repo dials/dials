@@ -8,6 +8,7 @@ import math
 import random
 
 import libtbx
+from dxtbx.model import tof_helpers
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
 from scitbx import matrix
@@ -371,7 +372,19 @@ class ReflectionManagerFactory:
         params: libtbx.phil.scope_extract,
     ) -> LaueReflectionManager:
 
-        refman = LaueReflectionManager
+        all_tof_experiments = False
+        for expt in experiments:
+            if expt.scan is not None and expt.scan.has_property("time_of_flight"):
+                all_tof_experiments = True
+            elif all_tof_experiments:
+                raise ValueError(
+                    "Cannot refine ToF and non-ToF experiments at the same time"
+                )
+
+        if all_tof_experiments:
+            refman = TOFReflectionManager
+        else:
+            refman = LaueReflectionManager
 
         ## Outlier detection
         if params.outlier.algorithm in ("auto", libtbx.Auto):
@@ -1125,3 +1138,85 @@ class LaueReflectionManager(ReflectionManager):
         self._reflections["wavelength_resid2"] = (
             self._reflections["wavelength_resid"] ** 2
         )
+
+
+class TOFReflectionManager(LaueReflectionManager):
+    def __init__(
+        self,
+        reflections,
+        experiments,
+        nref_per_degree=None,
+        max_sample_size=None,
+        min_sample_size=0,
+        close_to_spindle_cutoff=0.02,
+        scan_margin=0.0,
+        outlier_detector=None,
+        weighting_strategy_override=None,
+        wavelength_weight=1e7,
+    ):
+
+        super().__init__(
+            reflections=reflections,
+            experiments=experiments,
+            nref_per_degree=nref_per_degree,
+            max_sample_size=max_sample_size,
+            min_sample_size=min_sample_size,
+            close_to_spindle_cutoff=close_to_spindle_cutoff,
+            scan_margin=scan_margin,
+            outlier_detector=outlier_detector,
+            weighting_strategy_override=weighting_strategy_override,
+            wavelength_weight=wavelength_weight,
+        )
+
+        tof_to_frame_interpolators = []
+        sample_to_source_distances = []
+        for expt in self._experiments:
+            tof = expt.scan.get_property("time_of_flight")  # (usec)
+            frames = list(range(len(tof)))
+            tof_to_frame = tof_helpers.tof_to_frame_interpolator(tof, frames)
+            tof_to_frame_interpolators.append(tof_to_frame)
+            sample_to_source_distances.append(
+                expt.beam.get_sample_to_source_distance() * 10**-3  # (m)
+            )
+
+        self.tof_to_frame_interpolators = tof_to_frame_interpolators
+        self.sample_to_source_distances = sample_to_source_distances
+
+    def update_residuals(self):
+        x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
+        x_calc, y_calc, _ = self._reflections["xyzcal.mm"].parts()
+        wavelength_obs = self._reflections["wavelength"]
+        wavelength_cal = self._reflections["wavelength_cal"]
+        L2 = self._reflections["s1"].norms() * 10**-3
+        self._reflections["x_resid"] = x_calc - x_obs
+        self._reflections["y_resid"] = y_calc - y_obs
+        self._reflections["wavelength_resid"] = wavelength_cal - wavelength_obs
+        self._reflections["wavelength_resid2"] = (
+            self._reflections["wavelength_resid"] ** 2
+        )
+
+        frame_resid = flex.double(len(self._reflections))
+        frame_resid2 = flex.double(len(self._reflections))
+        for idx, expt in enumerate(self._experiments):
+            if "imageset_id" in self._reflections:
+                r_expt = self._reflections["imageset_id"] == idx
+            else:
+                r_expt = self._reflections["id"] == idx
+            L_expt = self.sample_to_source_distances[idx] + L2.select(r_expt)
+            tof_obs_expt = (
+                tof_helpers.tof_from_wavelength(L_expt, wavelength_obs.select(r_expt))
+                * 10**6
+            )  # (usec)
+            tof_cal_expt = (
+                tof_helpers.tof_from_wavelength(L_expt, wavelength_cal.select(r_expt))
+                * 10**6
+            )  # (usec)
+            tof_to_frame = self.tof_to_frame_interpolators[idx]
+            frame_resid_expt = flex.double(
+                tof_to_frame(tof_cal_expt) - tof_to_frame(tof_obs_expt)
+            )
+            frame_resid.set_selected(r_expt, frame_resid_expt)
+            frame_resid2.set_selected(r_expt, frame_resid_expt**2)
+
+        self._reflections["frame_resid"] = frame_resid
+        self._reflections["frame_resid2"] = frame_resid2

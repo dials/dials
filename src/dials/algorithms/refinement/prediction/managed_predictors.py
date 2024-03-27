@@ -208,7 +208,7 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
 
         # Add frame to xyzcal.px
         expt_tof = experiment.scan.get_property("time_of_flight")  # (usec)
-        frames = [i + 1 for i in range(len(expt_tof))]
+        frames = list(range(len(expt_tof)))
         tof_to_frame = tof_helpers.tof_to_frame_interpolator(expt_tof, frames)
         reflection_frames = flex.double(tof_to_frame(tof_cal))
         px, py, pz = reflections["xyzcal.px"].parts()

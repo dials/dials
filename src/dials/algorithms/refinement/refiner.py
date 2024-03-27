@@ -838,6 +838,7 @@ class Refiner:
                 rmsd_multipliers.append(1.0)
             elif units == "A":
                 header.append(name + "\n(A)")
+                rmsd_multipliers.append(1.0)
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
                 rmsd_multipliers.append(RAD2DEG)
@@ -913,6 +914,8 @@ class Refiner:
                 # will convert other angles in radians to degrees (e.g. for
                 # RMSD_DeltaPsi and RMSD_2theta)
                 header.append(name + "\n(deg)")
+            elif name == "RMSD_wavelength" and units == "A":
+                header.append(name + "\n(A)")
             else:  # skip other/unknown RMSDs
                 pass
 
@@ -952,7 +955,7 @@ class Refiner:
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
                 elif name == "RMSD_wavelength" and units == "A":
-                    header.append(name + "\n(A)")
+                    rmsds.append(rmsd)
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)
             rows.append([str(iexp), str(num)] + [f"{r:.5g}" for r in rmsds])
@@ -1003,7 +1006,7 @@ class Refiner:
                     name == "RMSD_DeltaPsi" and units == "rad"
                 ):  # convert radians to degrees for reporting of stills
                     header.append(name + "\n(deg)")
-                elif name == "RMSD_wavelength" and units == "A":
+                elif name == "RMSD_wavelength" and units == "frame":
                     header.append(name + "\n(frame)")
                 else:  # skip RMSDs that cannot be expressed in image/scan space
                     pass
@@ -1031,7 +1034,7 @@ class Refiner:
                         rmsds.append(rmsd * images_per_rad)
                     elif name == "RMSD_DeltaPsi" and units == "rad":
                         rmsds.append(rmsd * RAD2DEG)
-                    elif name == "RMSD_wavelength" and units == "A":
+                    elif name == "RMSD_wavelength" and units == "frame":
                         rmsds.append(rmsd)
                 rows.append([str(ipanel), str(num)] + [f"{r:.5g}" for r in rmsds])
 

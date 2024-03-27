@@ -223,7 +223,7 @@ class ModelRankWeighted(ModelRank):
     def score_by_rmsd_xy(self, reverse=False):
         # smaller rmsds = better
         rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
-            s.rmsds for s in self.all_solutions
+            s.rmsds[:3] for s in self.all_solutions
         ).parts()
         rmsd_xy = flex.sqrt(flex.pow2(rmsd_x) + flex.pow2(rmsd_y))
         score = flex.log(rmsd_xy) / math.log(2)
@@ -275,7 +275,7 @@ class ModelRankWeighted(ModelRank):
         perm = flex.sort_permutation(combined_scores)
 
         rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
-            s.rmsds for s in self.all_solutions
+            s.rmsds[:3] for s in self.all_solutions
         ).parts()
         rmsd_xy = flex.sqrt(flex.pow2(rmsd_x) + flex.pow2(rmsd_y))
 

@@ -88,7 +88,7 @@ class TargetFactory:
 
         if all_tof_experiments:
             from dials.algorithms.refinement.target import (
-                LaueLeastSquaresResidualWithRmsdCutoff as targ,
+                TOFLeastSquaresResidualWithRmsdCutoff as targ,
             )
 
         # Determine whether the target is in X, Y, Phi space or just X, Y to choose
@@ -854,3 +854,28 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
         ):
             return True
         return False
+
+
+class TOFLeastSquaresResidualWithRmsdCutoff(LaueLeastSquaresResidualWithRmsdCutoff):
+
+    _grad_names = ["dX_dp", "dY_dp", "dwavelength_dp"]
+    rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_wavelength", "RMSD_wavelength"]
+    rmsd_units = ["mm", "mm", "A", "frame"]
+
+    def _rmsds_core(self, reflections):
+
+        """calculate unweighted RMSDs for the specified reflections"""
+
+        resid_x = flex.sum(reflections["x_resid2"])
+        resid_y = flex.sum(reflections["y_resid2"])
+        resid_wavelength = flex.sum(reflections["wavelength_resid2"])
+        resid_frame = flex.sum(reflections["frame_resid2"])
+        n = len(reflections)
+
+        rmsds = (
+            math.sqrt(resid_x / n),
+            math.sqrt(resid_y / n),
+            math.sqrt(abs(resid_wavelength) / n),
+            math.sqrt(abs(resid_frame) / n),
+        )
+        return rmsds

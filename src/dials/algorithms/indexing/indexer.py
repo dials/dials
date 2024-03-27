@@ -886,7 +886,7 @@ class Indexer:
             if expt.scan is not None:
                 if expt.scan.has_property("time_of_flight"):
                     tof = expt.scan.get_property("time_of_flight")
-                    frames = [i + 1 for i in range(len(tof))]
+                    frames = list(range(len(tof)))
                     tof_to_frame = tof_helpers.tof_to_frame_interpolator(tof, frames)
                     z_px = flex.double(tof_to_frame(z))
                 else:
