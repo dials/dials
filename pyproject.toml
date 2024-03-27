@@ -13,3 +13,29 @@ known_firstparty="dials_*"
 known_cctbx="boost,boost_adaptbx,cbflib_adaptbx,cctbx,chiltbx,clipper_adaptbx,cma_es,cootbx,crys3d,cudatbx,dxtbx,fable,fast_linalg,fftw3tbx,gltbx,iota,iotbx,libtbx,mmtbx,omptbx,prime,rstbx,scitbx,simtbx,smtbx,spotfinder,tbxx,ucif,wxtbx,xfel"
 profile="black"
 
+[tool.flake8]
+#: Black disagrees with flake8 on a few points. Ignore those.
+ignore = "E203, E266, E501, W503"
+#: E203 whitespace before ':'
+#: E266 too many leading '#' for block comment
+#: E501 line too long
+#: W503 line break before binary operator
+max-line-length = 88
+select = "E401,E711,E712,E713,E714,E721,E722,E901,F401,F402,F403,F405,F541,F631,F632,F633,F811,F812,F821,F822,F841,F901,W191,W291,W292,W293,W602,W603,W604,W605,W606,C4"
+
+[tool.pytest.ini-options]
+addopts = "-rsxX"
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore:the matrix subclass is not the recommended way:PendingDeprecationWarning",
+    "ignore:numpy.dtype size changed:RuntimeWarning",
+    "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning",
+    "ignore:warn_name_set_on_empty_Forward:UserWarning",
+    "ignore:warn_ungrouped_named_tokens_in_collection:UserWarning",
+    "ignore:numpy.dtype size changed:RuntimeWarning",
+    "ignore:numpy.ufunc size changed:RuntimeWarning",
+    "ignore:`product` is deprecated as of NumPy:DeprecationWarning:h5py|numpy",
+    "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
+    "ignore:Use setlocale(), getencoding() and getlocale() instead:DeprecationWarning:pytest_nunit"
+]
+junit_family = "legacy"
