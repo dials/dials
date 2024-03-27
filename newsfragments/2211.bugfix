@@ -1,0 +1,1 @@
+``dials.find_spots_server``: More cleanly handle termination and ping. Handle case on MacOS where server would fail to start.
