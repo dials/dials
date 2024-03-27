@@ -1,0 +1,1 @@
+In the CI environments, use Mamba rather than Conda to install dependencies, to enable us to set up the ``xfel_regrtession`` test environment and run the ``xfel_regression`` tests.
