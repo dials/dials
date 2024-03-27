@@ -137,7 +137,9 @@ class Expeditor(object):
         if not self.input_has_crystalless_expts:
             if reflection_tables:
                 for expt, table in zip(experiments, reflection_tables):
-                    if "imageset_id" in table:
+                    if (
+                        "imageset_id" in table and imagesets
+                    ):  # strong check to guarantee
                         table["imageset_id"] = flex.int(
                             table.size(), imagesets.index(expt.imageset)
                         )

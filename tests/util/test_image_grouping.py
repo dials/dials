@@ -549,7 +549,7 @@ grouping:
 
     refls = flex.reflection_table.from_file(fps_copy[0].refl)
     ids = refls["id"]
-    assert set(ids) == set(range(10))  # {0, 1, 2, 3, 4,5,6,7,8,9}
+    assert set(ids) == set(range(10))
     sel0 = (ids == 0) | (ids == 1) | (ids == 2) | (ids == 3)
     assert set(refls["group_id"].select(sel0)) == {0}
     sel1 = (ids == 4) | (ids == 5) | (ids == 6) | (ids == 7)
