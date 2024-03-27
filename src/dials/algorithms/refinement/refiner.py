@@ -836,6 +836,8 @@ class Refiner:
             if units == "mm":
                 header.append(name + "\n(mm)")
                 rmsd_multipliers.append(1.0)
+            elif units == "A":
+                header.append(name + "\n(A)")
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
                 rmsd_multipliers.append(RAD2DEG)
@@ -949,6 +951,8 @@ class Refiner:
                     rmsds.append(rmsd * px_per_mm[1])
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
+                elif name == "RMSD_wavelength" and units == "A":
+                    header.append(name + "\n(A)")
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)
             rows.append([str(iexp), str(num)] + [f"{r:.5g}" for r in rmsds])
@@ -999,6 +1003,8 @@ class Refiner:
                     name == "RMSD_DeltaPsi" and units == "rad"
                 ):  # convert radians to degrees for reporting of stills
                     header.append(name + "\n(deg)")
+                elif name == "RMSD_wavelength" and units == "A":
+                    header.append(name + "\n(frame)")
                 else:  # skip RMSDs that cannot be expressed in image/scan space
                     pass
 
@@ -1025,6 +1031,8 @@ class Refiner:
                         rmsds.append(rmsd * images_per_rad)
                     elif name == "RMSD_DeltaPsi" and units == "rad":
                         rmsds.append(rmsd * RAD2DEG)
+                    elif name == "RMSD_wavelength" and units == "A":
+                        rmsds.append(rmsd)
                 rows.append([str(ipanel), str(num)] + [f"{r:.5g}" for r in rmsds])
 
             if len(rows) > 0:
