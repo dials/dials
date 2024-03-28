@@ -914,8 +914,8 @@ class Refiner:
                 # will convert other angles in radians to degrees (e.g. for
                 # RMSD_DeltaPsi and RMSD_2theta)
                 header.append(name + "\n(deg)")
-            elif name == "RMSD_wavelength" and units == "A":
-                header.append(name + "\n(A)")
+            elif name == "RMSD_wavelength" and units == "frame":
+                header.append(name + "\n(frame)")
             else:  # skip other/unknown RMSDs
                 pass
 
@@ -954,7 +954,7 @@ class Refiner:
                     rmsds.append(rmsd * px_per_mm[1])
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
-                elif name == "RMSD_wavelength" and units == "A":
+                elif name == "RMSD_wavelength" and units == "frame":
                     rmsds.append(rmsd)
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)

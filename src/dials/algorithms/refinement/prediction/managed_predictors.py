@@ -210,6 +210,8 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
         expt_tof = experiment.scan.get_property("time_of_flight")  # (usec)
         frames = list(range(len(expt_tof)))
         tof_to_frame = tof_helpers.tof_to_frame_interpolator(expt_tof, frames)
+        tof_cal.set_selected(tof_cal < min(expt_tof), min(expt_tof))
+        tof_cal.set_selected(tof_cal > max(expt_tof), max(expt_tof))
         reflection_frames = flex.double(tof_to_frame(tof_cal))
         px, py, pz = reflections["xyzcal.px"].parts()
         reflections["xyzcal.px"] = flex.vec3_double(px, py, reflection_frames)

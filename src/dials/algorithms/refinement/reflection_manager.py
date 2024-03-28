@@ -1170,8 +1170,11 @@ class TOFReflectionManager(LaueReflectionManager):
 
         tof_to_frame_interpolators = []
         sample_to_source_distances = []
+        tof_ranges = []
         for expt in self._experiments:
             tof = expt.scan.get_property("time_of_flight")  # (usec)
+            tof_range = (min(tof), max(tof))
+            tof_ranges.append(tof_range)
             frames = list(range(len(tof)))
             tof_to_frame = tof_helpers.tof_to_frame_interpolator(tof, frames)
             tof_to_frame_interpolators.append(tof_to_frame)
@@ -1179,8 +1182,9 @@ class TOFReflectionManager(LaueReflectionManager):
                 expt.beam.get_sample_to_source_distance() * 10**-3  # (m)
             )
 
-        self.tof_to_frame_interpolators = tof_to_frame_interpolators
-        self.sample_to_source_distances = sample_to_source_distances
+        self._tof_to_frame_interpolators = tof_to_frame_interpolators
+        self._sample_to_source_distances = sample_to_source_distances
+        self._tof_ranges = tof_ranges
 
     def update_residuals(self):
         x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
@@ -1202,16 +1206,32 @@ class TOFReflectionManager(LaueReflectionManager):
                 r_expt = self._reflections["imageset_id"] == idx
             else:
                 r_expt = self._reflections["id"] == idx
-            L_expt = self.sample_to_source_distances[idx] + L2.select(r_expt)
+
+            L_expt = self._sample_to_source_distances[idx] + L2.select(r_expt)
+
             tof_obs_expt = (
                 tof_helpers.tof_from_wavelength(L_expt, wavelength_obs.select(r_expt))
                 * 10**6
             )  # (usec)
+            tof_obs_expt.set_selected(
+                tof_obs_expt < self._tof_ranges[idx][0], self._tof_ranges[idx][0]
+            )
+            tof_obs_expt.set_selected(
+                tof_obs_expt > self._tof_ranges[idx][1], self._tof_ranges[idx][1]
+            )
+
             tof_cal_expt = (
                 tof_helpers.tof_from_wavelength(L_expt, wavelength_cal.select(r_expt))
                 * 10**6
             )  # (usec)
-            tof_to_frame = self.tof_to_frame_interpolators[idx]
+            tof_cal_expt.set_selected(
+                tof_cal_expt < self._tof_ranges[idx][0], self._tof_ranges[idx][0]
+            )
+            tof_cal_expt.set_selected(
+                tof_cal_expt > self._tof_ranges[idx][1], self._tof_ranges[idx][1]
+            )
+
+            tof_to_frame = self._tof_to_frame_interpolators[idx]
             frame_resid_expt = flex.double(
                 tof_to_frame(tof_cal_expt) - tof_to_frame(tof_obs_expt)
             )

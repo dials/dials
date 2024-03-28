@@ -888,6 +888,8 @@ class Indexer:
                     tof = expt.scan.get_property("time_of_flight")
                     frames = list(range(len(tof)))
                     tof_to_frame = tof_helpers.tof_to_frame_interpolator(tof, frames)
+                    z.set_selected(z < min(tof), min(tof))
+                    z.set_selected(z > max(tof), max(tof))
                     z_px = flex.double(tof_to_frame(z))
                 else:
                     z_px = expt.scan.get_array_index_from_angle(z, deg=False)
