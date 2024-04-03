@@ -21,7 +21,6 @@
             <div class="panel-group">
 
                 {{ macros.panel('Data sets', 'datasets', {}, tables=image_range_tables) }}
-                {{ macros.panel('Cosym plots', 'cosym_plots', cosym_graphs) }}
 
                 <div class="panel panel-default">
                     <div class="panel-heading" data-toggle="collapse" data-target="#collapse_intensity_cluster">
@@ -64,6 +63,8 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {{ macros.panel('Cosym cluster plots', 'cosym_plots', cosym_graphs) }}
 
                         </div>
                     </div>
