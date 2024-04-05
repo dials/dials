@@ -3,16 +3,20 @@ from __future__ import annotations
 import copy
 from collections import OrderedDict
 
+import numpy as np
 from scipy.cluster import hierarchy
 
 from dials.algorithms.clustering.plots import scipy_dendrogram_to_plotly_json
 
 
-def linkage_matrix_to_dict(linkage_matrix):
+def linkage_matrix_to_dict(linkage_matrix: np.ndarray) -> OrderedDict:
     """
     Convert a linkage matrix to a dictionary.
+    Args:
+            linkage_matrix(numpy.ndarray): linkage matrix from hierarchy.linkage methods
+    Returns:
+            link_dict(collections.OrderedDict): linkage matrix converted to dictionary format
     """
-
     tree = hierarchy.to_tree(linkage_matrix, rd=False)
 
     d = {}
@@ -38,15 +42,27 @@ def linkage_matrix_to_dict(linkage_matrix):
 
     add_node(tree)
 
-    return OrderedDict(sorted(d.items()))
+    link_dict = OrderedDict(sorted(d.items()))
+
+    return link_dict
 
 
 def to_plotly_json(
-    correlation_matrix, linkage_matrix, labels=None, matrix_type="correlation"
-):
+    correlation_matrix: np.ndarray,
+    linkage_matrix: np.ndarray,
+    labels: list = None,
+    matrix_type: str = "correlation",
+) -> dict:
     """
     Prepares a plotly-style plot of the heatmap corresponding to the input matrix
     with dendrograms on the top and left sides.
+    Args:
+        correlation_matrix(numpy.ndarray): pair-wise correlation matrix
+        linkage_matrix(numpy.ndarray): linkage matrix describing dendrogram-style clustering of correlation matrix
+        labels(list): desired labels for datasets
+        matrix_type(str): must be "correlation" or "cos_angle"
+    Returns:
+        d(dict): heatmap and dendrogram plot expressed as a dictionary for future graphical display
     """
 
     assert matrix_type in ("correlation", "cos_angle")

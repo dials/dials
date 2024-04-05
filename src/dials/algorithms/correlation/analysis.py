@@ -7,9 +7,11 @@ from collections import OrderedDict
 
 import numpy as np
 import scipy.spatial.distance as ssd
+from dxtbx_model_ext import ExperimentList
 from scipy.cluster import hierarchy
 
 import iotbx.phil
+from libtbx.phil import scope_extract
 
 from dials.algorithms.correlation.plots import linkage_matrix_to_dict, to_plotly_json
 from dials.algorithms.symmetry.cosym import CosymAnalysis
@@ -45,10 +47,20 @@ min_reflections = 10
 
 
 class CorrelationMatrix:
-    def __init__(self, experiments, reflections, params=None):
+    def __init__(
+        self,
+        experiments: ExperimentList,
+        reflections: list,
+        params: scope_extract = None,
+    ):
         """
         Set up the required cosym preparations for determining the correlation matricies
         of a series of input experiments and reflections.
+
+        Args:
+            experiments (dxtbx_model_ext.ExperimentList): list of experiments in dials format
+            reflections (list): list of dials_array_family_flex_ext.reflection_table objects associated with the experiments
+            params (libtbx.phil.scope_extract):
         """
 
         # Set up experiments, reflections and params
@@ -96,11 +108,15 @@ class CorrelationMatrix:
 
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
-    def _merge_intensities(self, datasets):
+    def _merge_intensities(self, datasets: list) -> list:
         """
-        Merge intensities and elimate systematically absent reflections
-        """
+        Merge intensities and elimate systematically absent reflections.
 
+        Args:
+            datasets(list): list of cctbx.miller.array objects
+        Returns:
+            datasets_sys_absent_eliminated(list): list of merged cctbx.miller.array objects
+        """
         individual_merged_intensities = []
         for unmerged in datasets:
             individual_merged_intensities.append(
@@ -113,9 +129,19 @@ class CorrelationMatrix:
 
         return datasets_sys_absent_eliminated
 
-    def _filter_min_reflections(self, experiments, reflections):
+    def _filter_min_reflections(
+        self, experiments: ExperimentList, reflections: list
+    ) -> tuple:
         """
         Filter all datasets that have less than the specified number of reflections.
+
+        Args:
+            experiments (dxtbx_model_ext.ExperimentList): list of experiments in dials format
+            reflections (list): list of dials_array_family_flex_ext.reflection_table objects associated with the experiments
+
+        Returns:
+            filtered_datasets (tuple): tuple of filtered datasets
+
         """
         identifiers = []
 
@@ -123,9 +149,11 @@ class CorrelationMatrix:
             if len(refl) >= self.params.min_reflections:
                 identifiers.append(expt.identifier)
 
-        return select_datasets_on_identifiers(
+        filtered_datasets = select_datasets_on_identifiers(
             experiments, reflections, use_datasets=identifiers
         )
+
+        return filtered_datasets
 
     def calculate_matrices(self):
         """
@@ -157,9 +185,19 @@ class CorrelationMatrix:
         )
 
     @staticmethod
-    def compute_correlation_coefficient_matrix(correlation_matrix):
+    def compute_correlation_coefficient_matrix(
+        correlation_matrix: np.ndarray,
+    ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the correlation matrix and clustering linkage matrix from the rij cosym matrix.
+
+        Args:
+            correlation_matrix(numpy.ndarray): pair-wise matrix of correlation coefficients
+
+        Returns:
+            correlation_matrix(numpy.ndarray): correlation matrix with corrections to diagonals and accounting for floating point errors
+            cc_linkage_matrix(numpy.ndarray): linkage matrix describing clustering of correlation matrix in dendrogram-style
+
         """
 
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
@@ -185,11 +223,19 @@ class CorrelationMatrix:
         return correlation_matrix, cc_linkage_matrix
 
     @staticmethod
-    def compute_cos_angle_matrix(coords):
+    def compute_cos_angle_matrix(
+        coords: np.ndarray,
+    ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the cos_angle matrix and clustering linkage matrix from the optimized cosym coordinates.
-        """
+        Args:
+            coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
 
+        Returns:
+            cos_angle(numpy.ndarray): pair-wise cos angle matrix
+            cos_linkage_matrix(numpy.ndarray): linkage matrix describing clustering of cos angle matrix in dendrogram-style
+
+        """
         logger.info(
             "Calculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)\n"
         )
@@ -248,12 +294,15 @@ class CorrelationMatrix:
         for i, j in zip(ids, path_list):
             self.table_list.append([i, j])
 
-    def convert_to_importable_json(self, linkage_matrix):
+    def convert_to_importable_json(self, linkage_matrix: np.ndarray) -> OrderedDict:
         """
         Generate a json file of the linkage matrices with unique identifiers rather than dataset numbers
-        May be useful for future developments to import this for further clustering analysis
+        May be useful for future developments to import this for further clustering analysis.
+        Args:
+            linkage_matrix(numpy.ndarray): linkage matrix from hierarchy.linkage methods
+        Returns:
+            linkage_mat_as_dict(collections.OrderedDict): linkage matrix converted to dictionary with datasets replaced with dials unique identifiers
         """
-
         linkage_mat_as_dict = linkage_matrix_to_dict(linkage_matrix)
         for i in linkage_mat_as_dict:
             # Difference in indexing between linkage_mat_as_dict and datasets, so have i-1
