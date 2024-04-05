@@ -111,7 +111,7 @@ steps:
     set -e
     . dials
     rm -rf tests &  # this will be overwritten with xfel tests
-    mamba install -y bash distro git-lfs mpi4py openmpi pandas
+    mamba install -y bash distro git-lfs mpi4py pandas
     cd modules
     git clone https://gitlab.com/cctbx/xfel_regression.git
     cd xfel_regression
