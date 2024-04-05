@@ -11,7 +11,7 @@ import iotbx.phil
 
 from dials.algorithms.correlation.analysis import CorrelationMatrix
 from dials.array_family import flex
-from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util import log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -45,7 +45,7 @@ output {
 
 
 help_message = """
-This module will implement a subset of methods used in dials.cosym to perform
+This module implements a subset of methods used in dials.cosym to perform
 correlation and cos angle based clustering methods. Data should be passed
 through dials.cosym first to implement consistent symmetry.
 
@@ -99,12 +99,12 @@ def run(args=None):
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
-        raise Sorry(
+        sys.exit(
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
-    if len(experiments) == 1:
-        raise Sorry(
+    if len(experiments) < 2:
+        sys.exit(
             "At least 2 datasets are needed for cluster analysis. Please re-run with more datasets."
         )
     try:
@@ -113,7 +113,7 @@ def run(args=None):
             experiments=experiments, reflections=reflections, params=params
         )
     except ValueError as e:
-        raise Sorry(e)
+        sys.exit(e)
 
     matrices.calculate_matrices()
 

@@ -10,11 +10,7 @@ from dials.algorithms.clustering.plots import scipy_dendrogram_to_plotly_json
 
 def linkage_matrix_to_dict(linkage_matrix):
     """
-    Convert a linkage matrix to a dictionary
-
-    Args:
-      linkage_matrix (numpy.ndarray): Linkage matrix describing the
-        dendrogram-style linkage from a distance matrix
+    Convert a linkage matrix to a dictionary.
     """
 
     tree = hierarchy.to_tree(linkage_matrix, rd=False)
@@ -48,16 +44,9 @@ def linkage_matrix_to_dict(linkage_matrix):
 def to_plotly_json(
     correlation_matrix, linkage_matrix, labels=None, matrix_type="correlation"
 ):
-
     """
     Prepares a plotly-style plot of the heatmap corresponding to the input matrix
     with dendrograms on the top and left sides.
-    Args:
-      correlation_matrix (numpy.ndarray): correlation matrix relating datasets
-      linkage_matrix (numpy.ndarray): Linkage matrix describing the
-        dendrogram-style linkage from a distance matrix
-      labels (list): list of dataset labels
-      matrix_type (str): either "correlation" or "cos_angle"
     """
 
     assert matrix_type in ("correlation", "cos_angle")
@@ -70,14 +59,19 @@ def to_plotly_json(
         no_plot=True,
     )
 
+    # Converts the dendrogram to plotly json format - y2_dict is the one above the heatmap
     y2_dict = scipy_dendrogram_to_plotly_json(
         ddict, "Dendrogram", xtitle="Individual datasets", ytitle="Ward distance"
-    )  # above heatmap
-    x2_dict = copy.deepcopy(y2_dict)  # left of heatmap, rotated
+    )
+
+    # x2_dict is the same dendrogram but positioned left of the heatmap
+    x2_dict = copy.deepcopy(y2_dict)
     for d in y2_dict["data"]:
         d["yaxis"] = "y2"
         d["xaxis"] = "x2"
 
+    # Switches x and y data so that the dendrogram will be rotated 90deg
+    # This orientatates it to match with the heatmap
     for d in x2_dict["data"]:
         x = d["x"]
         y = d["y"]
@@ -86,6 +80,7 @@ def to_plotly_json(
         d["yaxis"] = "y3"
         d["xaxis"] = "x3"
 
+    # Reorders the matrix into the same order as the dendrogram for the plots
     D = correlation_matrix
     index = ddict["leaves"]
     D = D[index, :]
