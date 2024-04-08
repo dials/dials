@@ -1,0 +1,87 @@
+# Conda dependencies for DIALS on all platforms.
+# Because this file is interpreted by bootstrap, it uses a limited
+# subset of conda-build selector syntax.
+#
+# ## Subsections of dependencies
+#
+# Dependencies are now split here into the categories of build, host,
+# run, as per https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#requirements-section
+#
+# Briefly,
+# - `build` is for build and development tools
+# - `host` is complicated, but can be considered build-time dependencies
+#   that are expected to be present on the targeted platform. Please see
+#   above conda-build documentation for details, but if you are unsure
+#   where a dependency goes, it's probably safest to put it here.
+# - `run` are dependencies not used at build-time. Most pure-python
+#   packages go here.
+# - `test` are dependencies only used to run tests.
+#
+# ## Limiting dependencies by platform
+#
+# A limited subset of conda-build syntax is supported. These are
+# comments on a line in the form `# [expr]`. Before any other processing
+# is done, the file is filtered so that only lines with expressions
+# matching the current running platform are present. The file is then
+# processed like normal.
+#
+# Expression can be of the form:
+#  - `# [osx]`, `# [win]`, `# [linux]`
+#  - `or` expressions e.g. `# [osx or linux]`
+#  - `# [prebuilt_cctbx]` is special to DIALS, but represents
+#     dependencies that are only used when using prebuilt cctbx via
+#     CMake, or `# [not prebuilt_cctbx]` for dependencies only used
+#     when cctbx is also built.
+# - `# [build_platform != target_platform]` _exactly_ - this is used by
+#   conda-forge when cross-compiling. It will do nothing and be ignored
+#   when running bootstrap.
+
+build:
+  - cmake  # [prebuilt_cctbx]
+  - ninja  # [prebuilt_cctbx]
+  - python                                 # [build_platform != target_platform] # [not bootstrap]
+  - cross-python_{{ target_platform }}     # [build_platform != target_platform] # [not bootstrap]
+  - numpy                                  # [build_platform != target_platform] # [not bootstrap]
+  - pybind11                               # [build_platform != target_platform] # [not bootstrap]
+  - {{ compiler('cxx') }}  # [not bootstrap]
+  - {{ stdlib("c") }}      # [not bootstrap]
+  - cxx-compiler  # [bootstrap]
+
+host:
+- cctbx-base  # [prebuilt_cctbx and bootstrap]
+- cctbx-base >=2023.10 # [not bootstrap]
+- hdf5 <1.13 # [bootstrap]
+- hdf5 # [not bootstrap]
+- libboost-devel
+- libboost-python-devel
+- numpy >=1.19,<1.21|>=1.21.5 #[bootstrap]
+- numpy # [not bootstrap]
+- pip
+- pybind11
+- python
+
+run:
+- {{ pin_compatible('cctbx-base') }} # [not bootstrap]
+- {{ pin_compatible('hdf5') }} # [not bootstrap]
+- h5py
+- hdf5plugin
+- matplotlib-base >=3.0.2
+- mrcfile
+- natsort
+- {{ pin_compatible('numpy') }} # [not bootstrap]
+- nxmx
+- orderedset
+- pint
+- pycbf # [prebuilt_cctbx]
+- python
+- python-dateutil >=2.7.0
+- scipy
+- tqdm
+
+test:
+  - dials-data
+  - pip
+  - pytest
+  - pytest-mock
+  - pytest-nunit # [win]
+  - pytest-xdist

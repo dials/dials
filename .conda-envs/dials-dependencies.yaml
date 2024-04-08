@@ -1,0 +1,117 @@
+# Conda dependencies for DIALS on all platforms.
+# Because this file is interpreted by bootstrap, it uses a limited
+# subset of conda-build selector syntax, AND is written in a highly
+# limited subset of yaml, to make it easier for bootstrap to pass.
+#
+# ## Subsections of dependencies
+#
+# Dependencies are now split here into the categories of build, host,
+# run, as per https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#requirements-section
+#
+# Briefly,
+# - `build` is for build and development tools
+# - `host` is complicated, but can be considered build-time dependencies
+#   that are expected to be present on the targeted platform. Please see
+#   above conda-build documentation for details, but if you are unsure
+#   where a dependency goes, it's probably safest to put it here.
+# - `run` are dependencies not used at build-time. Most pure-python
+#   packages go here.
+# - `test` are dependencies only used to run tests.
+#
+# ## Limiting dependencies by platform
+#
+# A limited subset of conda-build syntax is supported. These are
+# comments on a line in the form `# [expr]`. Before any other processing
+# is done, the file is filtered so that only lines with expressions
+# matching the current running platform are present. The file is then
+# processed like normal.
+#
+# Expression can be of the forms:
+#   - Platform variables: `osx`, `win`, `linux`. True for each platform.
+#   - `bootstrap`: True if running from bootstrap.py
+#   - `prebuilt_cctbx` if using cctbx from conda-package instead of
+#     building from scratch. This is used on conda-forge, and also with
+#     CMake-based bootstrap builds.
+#   - Inverted individual variables with e.g. `not bootstrap`
+#   - `and` combinations e.g. `osx and not bootstrap`
+
+build:
+- python                                 # [build_platform != target_platform] # [not bootstrap]
+- cross-python_{{ target_platform }}     # [build_platform != target_platform] # [not bootstrap]
+- {{ compiler('cxx') }} # [not bootstrap]
+- cxx-compiler #[bootstrap]
+- {{ stdlib("c") }} #[not bootstrap]
+- cmake # [prebuilt_cctbx]
+- ninja  # [prebuilt_cctbx]
+- requests  # Used for doc builds to update release list for sphinx # [bootstrap]
+- sphinx >=4 #[bootstrap]
+- conda # [bootstrap]
+- mamba # [bootstrap]
+
+host:
+- cctbx-base  #[prebuilt_cctbx]
+- dxtbx ={{ version_xy }} #[not bootstrap]
+- libboost-devel
+- libboost-python-devel
+- msgpack-cxx
+- pip
+- python
+- pthread-stubs # [bootstrap and osx]
+- libcxx # [bootstrap and osx]
+########################################################################
+# AND, a whole load of dependencies of unknown provenance. These were
+# present in the dependency list, and probably all come out of what is
+# necessary to physically built cctbx, hence their categorisation. If
+# any of these are used directly by dxtbx, dials or xia2, then they
+# should be moved to the appropriate place.
+- alabaster  #[not prebuilt_cctbx]
+- biopython  #[not prebuilt_cctbx]
+- bzip2  #[not prebuilt_cctbx]
+- docutils  #[not prebuilt_cctbx]
+- eigen  #[not prebuilt_cctbx]
+- future  #[not prebuilt_cctbx]
+- iota  #[not prebuilt_cctbx]
+- jpeg  #[not prebuilt_cctbx]
+- msgpack-python  #[not prebuilt_cctbx]
+- pillow>=5.4.1  #[not prebuilt_cctbx]
+- psutil  #[not prebuilt_cctbx]
+- pyrtf  #[not prebuilt_cctbx]
+- reportlab  #[not prebuilt_cctbx]
+- scons  #[not prebuilt_cctbx]
+- setuptools  #[not prebuilt_cctbx]
+- six  #[not prebuilt_cctbx]
+- sqlite  #[not prebuilt_cctbx]
+- urllib3  #[not prebuilt_cctbx]
+- xz  #[not prebuilt_cctbx]
+- zlib  #[not prebuilt_cctbx]
+
+run:
+- {{ pin_compatible('cctbx-base') }} #[not bootstrap]
+- {{ pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) }} #[not bootstrap]
+- gemmi >0.6.5
+- h5py >=3.1.0
+- jinja2
+- matplotlib-base >=3.0.2
+- numpy >=1.19,<1.21|>=1.21.5 #[bootstrap]
+- numpy #[not bootstrap]
+- orderedset
+- pandas
+- procrunner
+- pycbf #[prebuilt_cctbx]
+- python
+- scikit-learn
+- scipy
+- tabulate
+- tqdm
+- wxpython>=4.2.0
+- python.app # [bootstrap and osx]
+- colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
+
+test:
+  - dials-data>=2.4.72
+  - pip
+  - pytest
+  - pytest-forked
+  - pytest-mock
+  - pytest-nunit # [win]
+  - pytest-xdist
