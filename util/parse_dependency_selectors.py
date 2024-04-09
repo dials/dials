@@ -106,16 +106,45 @@ class DependencySelectorParser(object):
         return output
 
 
-parser = DependencySelectorParser(bootstrap=True, prebuilt_cctbx=False)
-assert parser._parse_fragment("osx")
-assert parser._parse_fragment("bootstrap")
-assert parser._parse_fragment("osx and bootstrap")
-assert not parser._parse_fragment("linux and bootstrap")
-assert not parser._parse_fragment("prebuilt_cctbx and osx and not bootstrap")
+def test_parser():
+    parser = DependencySelectorParser(bootstrap=True, prebuilt_cctbx=False)
+    assert parser._parse_fragment("osx")
+    assert parser._parse_fragment("bootstrap")
+    assert parser._parse_fragment("osx and bootstrap")
+    assert not parser._parse_fragment("linux and bootstrap")
+    assert not parser._parse_fragment("prebuilt_cctbx and osx and not bootstrap")
 
-from pprint import pprint
 
-if len(sys.argv) > 1:
-    for arg in sys.argv[1:]:
-        print("Parsing " + arg)
-        pprint(parser.parse_file(arg))
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+    from pprint import pprint
+
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-k",
+        "--kind",
+        choices=["bootstrap", "conda-build"],
+        help="Choose the target for handling dependency lists.",
+        default="bootstrap",
+    )
+    # parser.add_argument("--conda-build", action="store_const", const="conda-build", dest="kind", help="Run as though constructing a conda-build recipe")
+    parser.add_argument(
+        "--prebuilt-cctbx", help="Mark as using prebuilt cctbx. Implied by conda-build."
+    )
+    parser.add_argument("source", nargs="+", help="Dependency files to merge")
+    args = parser.parse_args()
+    if not args.kind:
+        print("Must provide source files")
+        parser.print_usage()
+        sys.exit(1)
+
+    deps = DependencySelectorParser(
+        bootstrap=args.kind == "bootstrap", prebuilt_cctbx=args.prebuilt_cctbx
+    )
+    pprint(deps.parse_file(args.source[0]))
+# from pprint import pprint
+
+# if len(sys.argv) > 1:
+#     for arg in sys.argv[1:]:
+#         print("Parsing " + arg)
+#         pprint(parser.parse_file(arg))

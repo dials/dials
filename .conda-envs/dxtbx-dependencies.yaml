@@ -1,8 +1,11 @@
-# Conda dependencies for DIALS on all platforms.
-# Because this file is interpreted by bootstrap, it uses a limited
-# subset of conda-build selector syntax.
+# # Conda dependencies for DXTBX on all platforms.
 #
-# ## Subsections of dependencies
+# This file is interpreted by bootstrap. it uses a HIGHLY limited
+# subset of yaml and conda-build selector preprocessing. As such, the
+# file itself is not YAML without at minimum preprocessing and may need
+# full conda-build templating to be parseable.
+#
+# ## Splitting Dependencies
 #
 # Dependencies are now split here into the categories of build, host,
 # run, as per https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#requirements-section
