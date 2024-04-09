@@ -1,1 +1,1 @@
-Mark all find_spots_server code as xfail. This utility is deprecated.
+Remove find_spots_server_client tests.
