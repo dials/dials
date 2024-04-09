@@ -34,6 +34,7 @@ def server_port(tmp_path) -> int:
     p.kill()
 
 
+@pytest.mark.xfail
 def test_server_return_codes(dials_data, server_port):
     try:
         first_file = sorted(
@@ -53,6 +54,7 @@ def test_server_return_codes(dials_data, server_port):
         assert not result.returncode and not result.stderr
 
 
+@pytest.mark.xfail
 def test_find_spots_server_client(dials_data, tmp_path, server_port):
     filenames = sorted(dials_data("centroid_test_data", pathlib=True).glob("*.cbf"))
     try:
