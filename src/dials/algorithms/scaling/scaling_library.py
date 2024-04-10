@@ -105,10 +105,8 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
             ] * flex.pow2(conv * inverse_partiality)
             if "partiality.inv.variance" in reflection_table:
                 reflection_table["variance"] += (
-                    reflection_table["intensity.sum.value"]
-                    * conv
-                    * reflection_table["partiality.inv.variance"]
-                )
+                    (reflection_table["intensity.sum.value"] * conv) ** 2
+                ) * reflection_table["partiality.inv.variance"]
         else:
             reflection_table["intensity"] = (
                 reflection_table["intensity.sum.value"] * conv
