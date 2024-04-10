@@ -1,39 +1,45 @@
-# Conda dependencies for DIALS on all platforms.
-# Because this file is interpreted by bootstrap, it uses a limited
-# subset of conda-build selector syntax, AND is written in a highly
-# limited subset of yaml, to make it easier for bootstrap to pass.
+# # Conda dependencies for DXTBX on all platforms.
 #
-# ## Subsections of dependencies
+# This file is interpreted by bootstrap. it uses a HIGHLY limited subset of
+# yaml and conda-build selector preprocessing. As such, the file itself is not
+# YAML without at minimum preprocessing, and may need full conda-build
+# templating to be parseable.
 #
-# Dependencies are now split here into the categories of build, host,
-# run, as per https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#requirements-section
+# ## Splitting Dependencies
+#
+# Dependencies are now split here into the categories of build, host, run, as
+# per https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#requirements-section
 #
 # Briefly,
 # - `build` is for build and development tools
-# - `host` is complicated, but can be considered build-time dependencies
-#   that are expected to be present on the targeted platform. Please see
-#   above conda-build documentation for details, but if you are unsure
-#   where a dependency goes, it's probably safest to put it here.
-# - `run` are dependencies not used at build-time. Most pure-python
-#   packages go here.
+# - `host` is complicated, but can broadly be considered "build-time"
+#   dependencies that are expected to be present on the targeted platform.
+#   Please see above conda-build documentation for details, but if you are
+#   unsure where a dependency goes, it's probably safest to put it here.
+# - `run` are dependencies not used at build-time, but are required for
+#   running. Most pure-python packages go here.
 # - `test` are dependencies only used to run tests.
 #
-# ## Limiting dependencies by platform
+# ## Filtering dependencies by platform and target
 #
-# A limited subset of conda-build syntax is supported. These are
-# comments on a line in the form `# [expr]`. Before any other processing
-# is done, the file is filtered so that only lines with expressions
-# matching the current running platform are present. The file is then
-# processed like normal.
+# Before use (by bootstrap OR conda), this file is passed through a
+# preprocessor. This handles all lines of the form `#[expr]`, and each
+# line is filtered out on a line-by-line basis if the expression
+# evaluates to false.
 #
-# Expression can be of the forms:
-#   - Platform variables: `osx`, `win`, `linux`. True for each platform.
-#   - `bootstrap`: True if running from bootstrap.py
-#   - `prebuilt_cctbx` if using cctbx from conda-package instead of
-#     building from scratch. This is used on conda-forge, and also with
-#     CMake-based bootstrap builds.
-#   - Inverted individual variables with e.g. `not bootstrap`
-#   - `and` combinations e.g. `osx and not bootstrap`
+# Only the last `# [expression]` is stripped and evaluated, which allows
+# passing further selection expressions through for onward processing.
+#
+# Expression values supported:
+# - Platform e.g. `osx`, `win` or `linux`
+# - `bootstrap`: Whether we are targeting bootstrap.py. This allows us
+#   to have advanced conda-build syntax (e.g. jinja templates) while
+#   ignoring these when generating the bootstrap dependency list.
+# - `prebuilt_cctbx`: Whether we are building cctbx. This is true for
+#   bootstrap with CMake and for conda-build builds.
+# - Compound expressions with `and` e.g. `osx and bootstrap`. This will
+#   work with `not`-expressions, but nothing more complex.
+#
 
 build:
 - python                                 # [build_platform != target_platform] # [not bootstrap]
