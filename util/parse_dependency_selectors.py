@@ -10,6 +10,27 @@ re_selector = re.compile(r"# *\[([^#]+)]$")
 re_pin = re.compile(r"""{{ *pin_compatible *\( *['"]([^'"]+)['"]""")
 
 
+def _split_dependency_line(line):
+    # type: (str) -> tuple[str | None, str | None, str]
+
+    # Lines that are templated get ignored here
+    if "{" in line:
+        return (None, None, line)
+    pending = line
+    # Strip off the comment/selector
+    if "#" in line:
+        pending = pending[: pending.index("#")].strip()
+    # If we have a version spec and no space, this is an error
+    if " " not in pending and (set(pending) & set("><=!")):
+        raise RuntimeError(
+            "Error: Versioned requirement '%s' has no space" % (pending,)
+        )
+    vers = None
+    if " " in pending:
+        pending, vers = pending.split(" ", maxsplit=1)
+    return (pending, vers, line)
+
+
 class DependencySelectorParser(object):
     """
     Parse simple conda-build selectors syntax, with optional variables.
@@ -56,7 +77,7 @@ class DependencySelectorParser(object):
 
             if match:
                 if self._parse_fragment(match.group(1)):
-                    print(f"... Passed: {line}")
+                    # print(f"... Passed: {line}")
                     output_lines.append(line)
             elif re_pin.search(line):
                 # Ignore pin_compatible dependencies
@@ -66,14 +87,24 @@ class DependencySelectorParser(object):
         return "\n".join(output_lines)
 
     def parse_file(self, filename):
-        # type: (str) -> dict[str, list[str]]
-        """Parse a dependency file into a structured dictionary"""
+        # type: (str) -> dict[str, list[tuple[str, str|None, str]]]
+        """
+        Parse a dependency file into a structured dictionary.
+
+        The dictionary has structure:
+        {
+            "section": [
+                ("dependency_name", "dependency_version", "raw_line"),
+                ...
+            ]
+        }
+        """
         with open(filename, "rt") as f:
             data = self.preprocess(f.read())
         output = {}
         current_section = None
         for n, line in enumerate(data.splitlines()):
-            print(f"Examining line {n}: {line} (current: {current_section})")
+            # print(f"Examining line {n}: {line} (current: {current_section})")
             if "#" in line:
                 line = line[: line.index("#")]
             line = line.strip()
@@ -91,7 +122,7 @@ class DependencySelectorParser(object):
                         + line
                         + "'"
                     )
-                output[current_section].append(line[1:].strip())
+                output[current_section].append(_split_dependency_line(line[1:].strip()))
             else:
                 if line:
                     raise RuntimeError(
@@ -124,7 +155,7 @@ if __name__ == "__main__":
         "-k",
         "--kind",
         choices=["bootstrap", "conda-build"],
-        help="Choose the target for handling dependency lists.",
+        help="Choose the target for handling dependency lists. Default: %(default)s",
         default="bootstrap",
     )
     # parser.add_argument("--conda-build", action="store_const", const="conda-build", dest="kind", help="Run as though constructing a conda-build recipe")
@@ -133,15 +164,70 @@ if __name__ == "__main__":
     )
     parser.add_argument("source", nargs="+", help="Dependency files to merge")
     args = parser.parse_args()
-    if not args.kind:
-        print("Must provide source files")
-        parser.print_usage()
-        sys.exit(1)
+    # if not args.kind:
+    #     print("Must provide source files")
+    #     parser.print_usage()
+    #     sys.exit(1)
 
+    # print("Processing requirements for target:", args.kind)
     deps = DependencySelectorParser(
         bootstrap=args.kind == "bootstrap", prebuilt_cctbx=args.prebuilt_cctbx
     )
-    pprint(deps.parse_file(args.source[0]))
+
+    def _merge_deps(source, merge_into):
+        # type: (list[tuple[str|None,str|None, str]], list[tuple[str|None,str|None, str]]) -> None
+        indices = {x[0]: i for i, x in enumerate(merge_into)}
+        for pkg, ver, line in source:
+            if pkg is None:
+                # Lines that don't define a package always get added
+                merge_into.append(pkg, ver, line)
+            elif pkg in indices:
+                # This already exists in the target. Should we replace it?
+                other_ver = merge_into[indices[pkg]][1]
+                if not other_ver and ver:
+                    print(f"Merging '{line}' over {merge_into[indices[pkg]]}")
+                    merge_into[indices[pkg]] = (pkg, ver, line)
+                elif other_ver and ver and ver != other_ver:
+                    raise RuntimeError(
+                        "Cannot merge requirements for %s: '%s' and '%s'"
+                        % (pkg, ver, other_ver)
+                    )
+            else:
+                merge_into.append((pkg, ver, line))
+                indices[pkg] = len(merge_into) - 1
+
+    # Map of section to list of (dependency_name, dependency_version, raw_line)
+    reqs = {}  # type: dict[str, list[tuple[str, str|None, str]]]
+    for source in args.source:
+        source_reqs = deps.parse_file(source)
+        # Now, merge this into the existing requirements
+        for section, items in source_reqs.items():
+            _merge_deps(items, reqs.setdefault(section, []))
+    # breakpoint()
+    # If bootstrap, then we further merge everything down
+    if args.kind == "bootstrap":
+        merged_req = []
+        for items in reqs.values():
+            _merge_deps(items, merged_req)
+        for pkg, ver, _ in sorted(merged_req, key=lambda x: x[0]):
+            if pkg == "python":
+                # Bootstrap handles this dependency implicitly
+                continue
+            print(f"conda-forge::{pkg}" + (f"{ver}" if ver else ""))
+
+    else:
+        pprint(reqs)
+        # for item in items:
+        #     _merge_deps(item)
+        # for pkg, ver, line in items:
+        #     if
+    #             if " " not in item and (set(item) & set("")):
+    #                 raise RuntimeError("Error: Versioned requirement has no space")
+    #             package_ver =
+    #             if " " in item:
+    #                 # We have a version.
+
+    # pprint(reqs)
 # from pprint import pprint
 
 # if len(sys.argv) > 1:

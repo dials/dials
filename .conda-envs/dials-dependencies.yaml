@@ -67,13 +67,14 @@ host:
 - alabaster  #[not prebuilt_cctbx]
 - biopython  #[not prebuilt_cctbx]
 - bzip2  #[not prebuilt_cctbx]
+- c-compiler
 - docutils  #[not prebuilt_cctbx]
 - eigen  #[not prebuilt_cctbx]
 - future  #[not prebuilt_cctbx]
 - iota  #[not prebuilt_cctbx]
 - jpeg  #[not prebuilt_cctbx]
 - msgpack-python  #[not prebuilt_cctbx]
-- pillow>=5.4.1  #[not prebuilt_cctbx]
+- pillow >=5.4.1  #[not prebuilt_cctbx]
 - psutil  #[not prebuilt_cctbx]
 - pyrtf  #[not prebuilt_cctbx]
 - reportlab  #[not prebuilt_cctbx]
@@ -88,7 +89,7 @@ host:
 run:
 - {{ pin_compatible('cctbx-base') }} #[not bootstrap]
 - {{ pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) }} #[not bootstrap]
-- gemmi >0.6.5
+- gemmi >=0.6.5
 - h5py >=3.1.0
 - jinja2
 - matplotlib-base >=3.0.2
@@ -96,19 +97,18 @@ run:
 - numpy #[not bootstrap]
 - orderedset
 - pandas
-- procrunner
 - pycbf #[prebuilt_cctbx]
 - python
 - scikit-learn
 - scipy
 - tabulate
 - tqdm
-- wxpython>=4.2.0
+- wxpython >=4.2.0
 - python.app # [bootstrap and osx]
 - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
 
 test:
-  - dials-data>=2.4.72
+  - dials-data >=2.4.72
   - pip
   - pytest
   - pytest-forked
