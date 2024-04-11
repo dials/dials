@@ -5,11 +5,55 @@ from libtbx.env_config import get_boost_library_with_python_version
 from pathlib import Path
 
 Import("env_etc")
+Import("env_no_includes_boost_python_ext")
+
+
+def _get_node_child(node, *path):
+    """Walk a SCons node tree to a particular named child"""
+    if not path:
+        return node
+    return _get_node_child(
+        [x for x in node.children() if x.name == path[0]][0], *path[1:]
+    )
+
+
+# Problem: gltbx fails compilation on RHEL8 conda-forge compilers.
+#
+# Reason:
+# - The conda-forge sysroot stdlib system uses #include_next in order
+#   to chain to a wrapped stdlib.h.
+# - gltbx adds the system /usr/include and /usr/local/include multiple
+#   times to the include search path.
+# - When the c-f sysroot stdlib tries to #include_next, instead of the
+#   REAL sysroot stdlib.h, it picks up the system stdlib.h.
+# - This worked on RHEL7- the system stdlib was old enough that it
+#   apparently didn't use this mechanism.
+# - Since the RHEL8 system stdlib is recent enough to use this mechanism,
+#   it thinks it is being #included twice, and so hits the usual guards.
+#
+# This "System include path" was added originally to work around the fact
+# that OpenGL is a complicated dependency and thus you need to use the
+# library from the system. This problem can also be solved using the
+# Conda-forge CDT system dependencies.
+#
+# So, IF we have the CDT OpenGL packages, attempt to fix the gltbx
+# build. We think this is safe here because:
+# - We never use the layered tbx environment any more (ran into issues)
+#   so either we are building CCTBX, or we aren't using SCons.
+# - These paths won't get included on other platforms.
+#
+gltbx_env = _get_node_child(
+    env_no_includes_boost_python_ext.fs.Top, "lib", "gltbx_fonts_ext.so"
+).env
+while "/usr/include" in gltbx_env["CPPPATH"]:
+    gltbx_env["CPPPATH"].remove("/usr/include")
+while "/usr/local/include" in gltbx_env["CPPPATH"]:
+    gltbx_env["CPPPATH"].remove("/usr/local/include")
+
 
 env_etc.dials_dist = os.path.join(libtbx.env.dist_path("dials"), "src", "dials")
 env_etc.dials_include = os.path.dirname(env_etc.dials_dist)
 if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
-    Import("env_no_includes_boost_python_ext")
     env = env_no_includes_boost_python_ext.Clone()
     env_etc.enable_more_warnings(env=env)
 
