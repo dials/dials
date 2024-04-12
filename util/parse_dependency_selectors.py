@@ -5,13 +5,17 @@ from __future__ import annotations
 import os
 import re
 import sys
+from collections import namedtuple
+
+Dependency = namedtuple("Dependency", ["name", "version", "raw_line"])
 
 re_selector = re.compile(r"# *\[([^#]+)]$")
 re_pin = re.compile(r"""{{ *pin_compatible *\( *['"]([^'"]+)['"]""")
 
 
 def _split_dependency_line(line):
-    # type: (str) -> tuple[str | None, str | None, str]
+    """Split a single line into (name, version, raw_line) parts"""
+    # type: (str) -> Dependency
 
     # Lines that are templated get ignored here
     if "{" in line:
@@ -28,7 +32,46 @@ def _split_dependency_line(line):
     vers = None
     if " " in pending:
         pending, vers = pending.split(" ", maxsplit=1)
-    return (pending, vers, line)
+    return Dependency(pending, vers, line)
+
+
+def _merge_dependency_lists(source, merge_into):
+    # type: (list[Dependency], list[Dependency]) -> None
+    """
+    Merge two lists of dependencies into one unified list.
+
+    This will replace unversioned dependencies with versioned
+    dependencies, merge dependencies with identical versions, and
+    leave in place depenencies with versions specified.
+
+    Lines from the source list that don't have a dependency name
+    will be added as long as they don't have a duplicate line in the
+    target list.
+    """
+    indices = {x[0]: i for i, x in enumerate(merge_into)}
+    for pkg, ver, line in source:
+        if pkg is None:
+            # Lines that don't define a package always get added
+            merge_into.append(pkg, ver, line)
+        elif pkg in indices:
+            # This already exists in the target. Should we replace it?
+            other_ver = merge_into[indices[pkg]][1]
+            if not other_ver and ver:
+                print(f"Merging '{line}' over {merge_into[indices[pkg]]}")
+                merge_into[indices[pkg]] = (pkg, ver, line)
+            elif other_ver and ver and ver != other_ver:
+                raise RuntimeError(
+                    "Cannot merge requirements for %s: '%s' and '%s'"
+                    % (pkg, ver, other_ver)
+                )
+        else:
+            merge_into.append((pkg, ver, line))
+            indices[pkg] = len(merge_into) - 1
+
+
+def _merge_dependency_dictionaries(sources):
+    # type: (list[dict[str, Dependency]]) -> dict[str, Dependency]
+    """Merge multiple parsed dependency dictionaries into one."""
 
 
 class DependencySelectorParser(object):
@@ -45,38 +88,35 @@ class DependencySelectorParser(object):
         self._vars = dict(kwargs)
         self._vars.update(
             {
-                "osx": sys.platform == "darwin",
-                "linux": sys.platform.startswith("linux"),
-                "win": os.name == "nt",
+                "osx": kwargs.get("osx", sys.platform == "darwin"),
+                "linux": kwargs.get("linux", sys.platform.startswith("linux")),
+                "win": kwargs.get("win", os.name == "nt"),
             }
         )
 
-    def _parse_fragment(self, fragment, pos=0):
+    def _parse_expression(self, fragment, pos=0):
         # type: (str, int) -> bool
-        """Recursively parse a single expression or fragment of an expression."""
-        # print(f"Parsing fragment: {fragment}")
-        # if "not bootstrap" in fragment:
-        #     breakpoint()
+        """Recursively parse an expression or fragment of an expression."""
         if fragment in self._vars:
             return self._vars[fragment]
         if " and " in fragment:
             left, right = fragment.split(" and ", maxsplit=1)
-            return self._parse_fragment(left, pos) and self._parse_fragment(
+            return self._parse_expression(left, pos) and self._parse_expression(
                 right, pos + fragment.index(" and ")
             )
         if fragment.startswith("not "):
-            return not self._parse_fragment(fragment[4:].strip(), pos + 4)
+            return not self._parse_expression(fragment[4:].strip(), pos + 4)
         raise ValueError("Could not parse selector fragment '" + fragment + "'")
 
     def preprocess(self, data):
         # type: (str) -> str
-        """Apply preprocessing selectors to file data"""
+        """Apply preprocessing selectors to raw file data"""
         output_lines = []
         for line in data.splitlines():
             match = re_selector.search(line)
 
             if match:
-                if self._parse_fragment(match.group(1)):
+                if self._parse_expression(match.group(1)):
                     # print(f"... Passed: {line}")
                     output_lines.append(line)
             elif re_pin.search(line):
@@ -87,7 +127,7 @@ class DependencySelectorParser(object):
         return "\n".join(output_lines)
 
     def parse_file(self, filename):
-        # type: (str) -> dict[str, list[tuple[str, str|None, str]]]
+        # type: (str) -> dict[str, Dependency]
         """
         Parse a dependency file into a structured dictionary.
 
@@ -136,14 +176,42 @@ class DependencySelectorParser(object):
                     )
         return output
 
+    def parse_files(self, filenames):
+        # type: (list[str | os.PathLike]) -> dict[str, Dependency]
+        """Parse and merge multiple dependency files."""
+        reqs = {}  # type: dict[str, list[Dependency]]
+        for source in filenames:
+            source_reqs = deps.parse_file(str(source))
+            # Now, merge this into the previous results
+            for section, items in source_reqs.items():
+                _merge_dependency_lists(items, reqs.setdefault(section, []))
+
+
+def preprocess_for_bootstrap(paths, prebuilt_cctbx):
+    # type: (list[str | os.PathLike], bool) -> list[str]
+    """Do dependency file preprocessing intended for bootstrap.py"""
+    parser = DependencySelectorParser(prebuilt_cctbx=prebuilt_cctbx, bootstrap=True)
+    reqs = parser.parse_files(paths)
+    merged_req = []
+    for items in reqs.values():
+        _merge_dependency_lists(items, merged_req)
+
+    output_lines = []
+    for pkg, ver, _ in sorted(merged_req, key=lambda x: x[0]):
+        if pkg == "python":
+            # Bootstrap handles this dependency implicitly
+            continue
+        output_lines.append("conda-forge::" + pkg + (ver or ""))
+    return output_lines
+
 
 def test_parser():
     parser = DependencySelectorParser(bootstrap=True, prebuilt_cctbx=False)
-    assert parser._parse_fragment("osx")
-    assert parser._parse_fragment("bootstrap")
-    assert parser._parse_fragment("osx and bootstrap")
-    assert not parser._parse_fragment("linux and bootstrap")
-    assert not parser._parse_fragment("prebuilt_cctbx and osx and not bootstrap")
+    assert parser._parse_expression("osx")
+    assert parser._parse_expression("bootstrap")
+    assert parser._parse_expression("osx and bootstrap")
+    assert not parser._parse_expression("linux and bootstrap")
+    assert not parser._parse_expression("prebuilt_cctbx and osx and not bootstrap")
 
 
 if __name__ == "__main__":
@@ -164,73 +232,16 @@ if __name__ == "__main__":
     )
     parser.add_argument("source", nargs="+", help="Dependency files to merge")
     args = parser.parse_args()
-    # if not args.kind:
-    #     print("Must provide source files")
-    #     parser.print_usage()
-    #     sys.exit(1)
 
-    # print("Processing requirements for target:", args.kind)
-    deps = DependencySelectorParser(
-        bootstrap=args.kind == "bootstrap", prebuilt_cctbx=args.prebuilt_cctbx
-    )
-
-    def _merge_deps(source, merge_into):
-        # type: (list[tuple[str|None,str|None, str]], list[tuple[str|None,str|None, str]]) -> None
-        indices = {x[0]: i for i, x in enumerate(merge_into)}
-        for pkg, ver, line in source:
-            if pkg is None:
-                # Lines that don't define a package always get added
-                merge_into.append(pkg, ver, line)
-            elif pkg in indices:
-                # This already exists in the target. Should we replace it?
-                other_ver = merge_into[indices[pkg]][1]
-                if not other_ver and ver:
-                    print(f"Merging '{line}' over {merge_into[indices[pkg]]}")
-                    merge_into[indices[pkg]] = (pkg, ver, line)
-                elif other_ver and ver and ver != other_ver:
-                    raise RuntimeError(
-                        "Cannot merge requirements for %s: '%s' and '%s'"
-                        % (pkg, ver, other_ver)
-                    )
-            else:
-                merge_into.append((pkg, ver, line))
-                indices[pkg] = len(merge_into) - 1
-
-    # Map of section to list of (dependency_name, dependency_version, raw_line)
-    reqs = {}  # type: dict[str, list[tuple[str, str|None, str]]]
-    for source in args.source:
-        source_reqs = deps.parse_file(source)
-        # Now, merge this into the existing requirements
-        for section, items in source_reqs.items():
-            _merge_deps(items, reqs.setdefault(section, []))
-    # breakpoint()
-    # If bootstrap, then we further merge everything down
     if args.kind == "bootstrap":
-        merged_req = []
-        for items in reqs.values():
-            _merge_deps(items, merged_req)
-        for pkg, ver, _ in sorted(merged_req, key=lambda x: x[0]):
-            if pkg == "python":
-                # Bootstrap handles this dependency implicitly
-                continue
-            print(f"conda-forge::{pkg}" + (f"{ver}" if ver else ""))
-
+        print(
+            "\n".join(
+                preprocess_for_bootstrap(
+                    args.sources, prebuilt_cctbx=args.prebuilt_cctbx
+                )
+            )
+        )
     else:
+        deps = DependencySelectorParser(bootstrap=False, prebuilt_cctbx=True)
+        reqs = deps.parse_files(args.sources)
         pprint(reqs)
-        # for item in items:
-        #     _merge_deps(item)
-        # for pkg, ver, line in items:
-        #     if
-    #             if " " not in item and (set(item) & set("")):
-    #                 raise RuntimeError("Error: Versioned requirement has no space")
-    #             package_ver =
-    #             if " " in item:
-    #                 # We have a version.
-
-    # pprint(reqs)
-# from pprint import pprint
-
-# if len(sys.argv) > 1:
-#     for arg in sys.argv[1:]:
-#         print("Parsing " + arg)
-#         pprint(parser.parse_file(arg))
