@@ -19,6 +19,7 @@ conda-forge::jpeg
 conda-forge::libboost-devel
 conda-forge::libboost-python-devel
 conda-forge::matplotlib-base>=3.0.2
+conda-forge::mesa-libgl-devel-cos7-x86_64
 conda-forge::mrcfile
 conda-forge::msgpack-cxx
 conda-forge::msgpack-python
