@@ -104,11 +104,11 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
                 "intensity.sum.variance"
             ] * flex.pow2(conv * inverse_partiality)
             if "partiality.inv.variance" in reflection_table:
+                # see e.g. https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+                # section "Example formulae", f=AB.
                 reflection_table["variance"] += (
-                    reflection_table["intensity.sum.value"]
-                    * conv
-                    * reflection_table["partiality.inv.variance"]
-                )
+                    flex.pow2(reflection_table["intensity.sum.value"] * conv)
+                ) * reflection_table["partiality.inv.variance"]
         else:
             reflection_table["intensity"] = (
                 reflection_table["intensity.sum.value"] * conv
