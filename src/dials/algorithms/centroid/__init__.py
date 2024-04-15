@@ -79,7 +79,7 @@ def tof_centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
 
     pixel_size = panel.get_pixel_size()
     tof = scan.get_property("time_of_flight")  # (usec)
-    frames = [i + 1 for i in range(len(tof))]
+    frames = list(range(len(tof)))
     frame_to_tof = frame_to_tof_interpolator(frames, tof)
 
     if isinstance(position, tuple):

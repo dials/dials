@@ -930,6 +930,20 @@ class TOFSpotFinder(SpotFinder):
 
         reflections = self._correct_centroid_tof(reflections)
 
+        # Filter any reflections outside of the tof range
+        for i, expt in enumerate(self.experiments):
+            _, _, frame = reflections["xyzobs.px.value"].parts()
+            tof_frame_range = (0, len(expt.scan.get_property("time_of_flight")) - 1)
+            if "imageset_id" in reflections:
+                sel_expt = reflections["imageset_id"] == i
+            else:
+                sel_expt = reflections["id"] == i
+
+            sel = sel_expt & (
+                (frame > tof_frame_range[1]) | (frame < tof_frame_range[0])
+            )
+            reflections = reflections.select(~sel)
+
         n_rows = reflections.nrows()
         panel_numbers = flex.size_t(reflections["panel"])
         reflections["L1"] = flex.double(n_rows)
