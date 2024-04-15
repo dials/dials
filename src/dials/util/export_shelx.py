@@ -187,7 +187,7 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
 
 def _parse_compound(composition):
     elements = chemical_elements.proper_caps_list()[:94]
-    m = re.findall(r"([A-Z][a-z]?)(\d*)\s*", composition)
+    m = re.findall(r"([A-Z][a-z]?)(\d*)", composition)
     if all(e[1] == "" for e in m):
         # Assume user has just supplied list of elements so UNIT instruction cannot be calculated
         result = {element: 0 for element, count in m}
