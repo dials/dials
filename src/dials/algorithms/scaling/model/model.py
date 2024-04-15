@@ -12,7 +12,10 @@ import math
 
 from libtbx import Auto, phil
 
-from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
+from dials.algorithms.scaling.error_model.error_model import (
+    BasicErrorModel,
+    StillsErrorModel,
+)
 from dials.algorithms.scaling.model.components.analytical_component import (
     AnalyticalComponent,
 )
@@ -372,9 +375,9 @@ class ScalingModelBase:
                     a = p[0]
                 if not error_params.basic.b:
                     b = p[1]
-                new_model = BasicErrorModel(a, b, error_params.basic)
+                new_model = StillsErrorModel(a, b, error_params.basic)
         if not new_model:
-            new_model = BasicErrorModel(basic_params=error_params.basic)
+            new_model = StillsErrorModel(basic_params=error_params.basic)
         logger.info(f"Loaded error model: {new_model}")
         self.set_error_model(new_model)
 

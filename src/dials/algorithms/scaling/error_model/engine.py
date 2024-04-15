@@ -56,7 +56,7 @@ def error_model_refinery(model, active_parameters, error_model_scope, max_iterat
     parameterisation by implementing the set_param_vals and get_param_vals
     methods (the code is organised in this way to allow the use of the
     dials.refinement engines)."""
-    if model.id_ == "basic":
+    if model.id_ == "basic" or model.id_ == "still":
         if error_model_scope.minimisation == "individual":
             return ErrorModelRefinery(
                 model=model,
@@ -170,7 +170,7 @@ class ErrorModelRefinery:
             r2 = self.avals[-2]
         except IndexError:
             return False
-
+        print(r1, r2)
         if r2 > 0:
             return abs((r2 - r1) / r2) < self._avals_tolerance
         else:

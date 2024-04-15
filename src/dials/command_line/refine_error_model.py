@@ -25,7 +25,7 @@ from iotbx import phil
 from dials.algorithms.scaling.combine_intensities import combine_intensities
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.error_model.error_model import (
-    BasicErrorModel,
+    StillsErrorModel,
     calc_deltahl,
     calc_sigmaprime,
 )
@@ -105,7 +105,7 @@ def refine_error_model(params, experiments, reflection_tables):
     )
 
     # now do the error model refinement
-    model = BasicErrorModel(basic_params=params.basic)
+    model = StillsErrorModel(basic_params=params.basic)
     try:
         model = run_error_model_refinement(model, Ih_table)
     except (ValueError, RuntimeError) as e:
