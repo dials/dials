@@ -497,9 +497,13 @@ def index(
         method_list,
     )
 
-    # combine detector models if not already
-    if (len(indexed_experiments.detectors())) > 1:
-        combine = CombineWithReference(detector=indexed_experiments[0].detector)
+    # combine detector models if all the same (i.e. haven't been refined in indexing),
+    # to enable use case of joint refinement.
+    detector_0 = indexed_experiments[0].detector if indexed_experiments else None
+    if (len(indexed_experiments.detectors()) > 1) and all(
+        d == detector_0 for d in indexed_experiments.detectors()[1:]
+    ):
+        combine = CombineWithReference(detector=detector_0)
         elist = ExperimentList()
         for expt in indexed_experiments:
             elist.append(combine(expt))

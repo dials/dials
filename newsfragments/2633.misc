@@ -1,0 +1,1 @@
+Constrain wxPython version to minimum 4.2.0. This ensures releases are not downgraded.
