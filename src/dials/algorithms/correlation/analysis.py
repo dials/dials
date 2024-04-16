@@ -7,10 +7,10 @@ from collections import OrderedDict
 
 import numpy as np
 import scipy.spatial.distance as ssd
-from dxtbx.model import ExperimentList
 from scipy.cluster import hierarchy
 
 import iotbx.phil
+from dxtbx.model import ExperimentList
 from libtbx.phil import scope_extract
 
 from dials.algorithms.correlation.plots import linkage_matrix_to_dict, to_plotly_json
@@ -19,6 +19,7 @@ from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogra
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
+from dials_array_family_flex_ext import reflection_table
 
 logger = logging.getLogger("dials.algorithms.correlation.analysis")
 
@@ -50,7 +51,7 @@ class CorrelationMatrix:
     def __init__(
         self,
         experiments: ExperimentList,
-        reflections: list,
+        reflections: list[reflection_table],
         params: scope_extract = None,
     ):
         """
@@ -75,7 +76,9 @@ class CorrelationMatrix:
                 sel = get_selection_for_valid_image_ranges(refl, expt)
                 self._reflections.append(refl.select(sel))
         else:
-            sys.exit("Number of reflection tables does not match number of experiments.")
+            sys.exit(
+                "Number of reflection tables does not match number of experiments."
+            )
 
         # Initial filtering to remove experiments and reflections that do not meet the minimum number of reflections required (params.min_reflections)
 
@@ -158,8 +161,8 @@ class CorrelationMatrix:
     def calculate_matrices(self):
         """
         Runs the required algorithms within dials.cosym to calculate the rij matrix and optimise the coordinates.
-        These results are passed into matrix computation functions to calculate the cos-angle and correlation matrices
-        and corresponding clustering.
+        These results are passed into matrix computation functions to calculate the cosine similarity (cos-angle) and correlation matrices
+        as well as the corresponding clustering.
         """
 
         # Cosym algorithm to calculate the rij matrix (CC matrix when symmetry known)
@@ -210,7 +213,12 @@ class CorrelationMatrix:
 
         # Convert to distance matrix rather than correlation
         diffraction_dissimilarity = 1 - correlation_matrix
-        assert ssd.is_valid_dm(diffraction_dissimilarity, tol=1e-12)
+        try:
+            assert ssd.is_valid_dm(diffraction_dissimilarity, tol=1e-12)
+        except AssertionError:
+            sys.exit(
+                "Correlation matrix does not give a valid distance matrix. Distance matrix is either non-symmetric or does not have a zero-diagonal."
+            )
 
         # convert the redundant n*n square matrix form into a condensed nC2 array
         cc_dist_mat = ssd.squareform(diffraction_dissimilarity, checks=False)

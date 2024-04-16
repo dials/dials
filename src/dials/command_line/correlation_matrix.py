@@ -46,7 +46,7 @@ output {
 
 help_message = """
 This module implements a subset of methods used in dials.cosym to perform
-correlation and cos angle based clustering methods. Data should be passed
+correlation and cosine similarity based clustering methods. Data should be passed
 through dials.cosym first to implement consistent symmetry.
 
 Examples::
