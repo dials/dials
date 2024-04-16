@@ -159,13 +159,13 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
             f"TITL {sg.type().number()} in {sg.type().lookup_symbol().replace(' ','')}\n"
         )
         f.write(
-            "CELL {:8.5f} {:8.4f} {:8.4f} {:8.4f} {:8.3f} {:8.3f} {:8.3f}\n".format(
+            "CELL {:7.5f} {:9.5f} {:9.5f} {:9.5f} {:8.4f} {:8.4f} {:8.4f}\n".format(
                 wl, *uc.parameters()
             )
         )
         if uc_sd:
             f.write(
-                "ZERR {:8.3f} {:8.4f} {:8.4f} {:8.4f} {:8.3f} {:8.3f} {:8.3f}\n".format(
+                "ZERR {:7.2f} {:9.5f} {:9.5f} {:9.5f} {:8.4f} {:8.4f} {:8.4f}\n".format(
                     sg.order_z(), *uc_sd
                 )
             )
