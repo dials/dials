@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 import numpy as np
 import scipy.spatial.distance as ssd
-from dxtbx_model_ext import ExperimentList
+from dxtbx.model import ExperimentList
 from scipy.cluster import hierarchy
 
 import iotbx.phil
@@ -75,7 +75,7 @@ class CorrelationMatrix:
                 sel = get_selection_for_valid_image_ranges(refl, expt)
                 self._reflections.append(refl.select(sel))
         else:
-            sys.exit("Number of reflections and experiments do not match.")
+            sys.exit("Number of reflection tables does not match number of experiments.")
 
         # Initial filtering to remove experiments and reflections that do not meet the minimum number of reflections required (params.min_reflections)
 
@@ -130,8 +130,8 @@ class CorrelationMatrix:
         return datasets_sys_absent_eliminated
 
     def _filter_min_reflections(
-        self, experiments: ExperimentList, reflections: list
-    ) -> tuple:
+        self, experiments: ExperimentList, reflections: list[reflection_table]
+    ) -> tuple[ExperimentList, list[reflection_table]]:
         """
         Filter all datasets that have less than the specified number of reflections.
 
@@ -203,12 +203,10 @@ class CorrelationMatrix:
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
 
         # Make diagonals equal to 1 (each dataset correlated with itself)
-        for i in range(correlation_matrix.shape[0]):
-            correlation_matrix[i, i] = 1
+        np.fill_diagonal(correlation_matrix, 1)
 
         # clip values of correlation matrix to account for floating point errors
-        correlation_matrix[np.where(correlation_matrix < -1)] = -1
-        correlation_matrix[np.where(correlation_matrix > 1)] = 1
+        correlation_matrix.clip(-1, 1, out=correlation_matrix)
 
         # Convert to distance matrix rather than correlation
         diffraction_dissimilarity = 1 - correlation_matrix
@@ -283,16 +281,8 @@ class CorrelationMatrix:
 
         # Generate the table for the html that lists all datasets and image paths present in the analysis
 
-        path_list = []
-        self.table_list = [["Experiment/Image Number", "Image Path"]]
-
-        for i in self._experiments:
-            path_list.append(i.imageset.paths()[0])
-
-        ids = list(range(0, len(path_list)))
-
-        for i, j in zip(ids, path_list):
-            self.table_list.append([i, j])
+        paths = enumerate(e.imageset.paths()[0] for e in self._experiments)
+        self.table_list = [["Experiment/Image Number", "Image Path"], *map(list, paths)]
 
     def convert_to_importable_json(self, linkage_matrix: np.ndarray) -> OrderedDict:
         """
@@ -306,7 +296,7 @@ class CorrelationMatrix:
         linkage_mat_as_dict = linkage_matrix_to_dict(linkage_matrix)
         for i in linkage_mat_as_dict:
             # Difference in indexing between linkage_mat_as_dict and datasets, so have i-1
-            old_datasets = [i - 1 for i in linkage_mat_as_dict[i]["datasets"]]
+            old_datasets = [j - 1 for j in linkage_mat_as_dict[i]["datasets"]]
             datasets_as_ids = [self.ids_to_identifiers_map[j] for j in old_datasets]
             linkage_mat_as_dict[i]["datasets"] = datasets_as_ids
 

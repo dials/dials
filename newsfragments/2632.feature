@@ -1,1 +1,1 @@
-``dials.correlation_matrix``: Correlation and cos-angle clustering of multi-crystal datasets independent of xia2.multiplex. HTML output included of clustering heatmaps, dendrograms and corresponding cosym graphs.
+``dials.correlation_matrix``: A new command-line tool for correlation and cosine similarity clustering of multi-crystal datasets, independent of ``xia2.multiplex``. It provides HTML output, including clustering heatmaps, dendrograms and corresponding ``dials.cosym`` graphs.
