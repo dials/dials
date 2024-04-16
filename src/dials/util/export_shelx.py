@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+import re
 from math import isclose
 
 from cctbx import crystal, miller
+from cctbx.eltbx import chemical_elements
 from iotbx.shelx.write_ins import LATT_SYMM
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
@@ -96,12 +98,13 @@ def export_shelx(scaled_data, experiment_list, params):
     _write_ins(
         experiment_list,
         best_unit_cell=params.mtz.best_unit_cell,
+        composition=params.shelx.composition,
         ins_file=params.shelx.ins,
     )
     logger.info(f"Written {params.shelx.ins}")
 
 
-def _write_ins(experiment_list, best_unit_cell, ins_file):
+def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
     sg = experiment_list[0].crystal.get_space_group()
     unit_cells = []
     wavelengths = []
@@ -167,3 +170,36 @@ def _write_ins(experiment_list, best_unit_cell, ins_file):
                 )
             )
         LATT_SYMM(f, sg)
+        logger.info(
+            f"Using composition {composition} to write SFAC & UNIT instructions"
+        )
+        sorted_composition = _parse_compound(composition)
+        f.write("SFAC %s\n" % " ".join(sorted_composition))
+        f.write(
+            "UNIT %s\n"
+            % " ".join(
+                [str(sorted_composition[e] * sg.order_z()) for e in sorted_composition]
+            )
+        )
+        f.write("HKLF 4\n")  # Intensities
+        f.write("END\n")
+
+
+def _parse_compound(composition):
+    elements = chemical_elements.proper_caps_list()[:94]
+    m = re.findall(r"([A-Z][a-z]?)(\d*)", composition)
+    if all(e[1] == "" for e in m):
+        # Assume user has just supplied list of elements so UNIT instruction cannot be calculated
+        result = {element: 0 for element, count in m}
+    else:
+        result = {element: int(count or 1) for element, count in m}
+    # Check for elements without scattering factors in SHELXL
+    unmatched = list(set(result).difference(elements))
+    if unmatched:
+        raise Sorry(f"Element(s) {' '.join(unmatched)} in {composition} not recognised")
+
+    if "C" in result:
+        # move C to start of list
+        elements.insert(0, elements.pop(5))
+    sorted_result = {e: result[e] for e in elements if e in result}
+    return sorted_result
