@@ -129,7 +129,7 @@ def run(args=None):
         env = Environment(loader=loader)
 
         template = env.get_template("clusters.html")
-        html = template.render(
+        html = template.stream(
             page_title="DIALS Correlation Matrix",
             cc_cluster_json=matrices.cc_json,
             cos_angle_cluster_json=matrices.cos_json,
@@ -140,9 +140,7 @@ def run(args=None):
         logger.info(
             f"Saving graphical output of correlation matrices to {params.output.html}."
         )
-
-        with open(params.output.html, "wb") as f:
-            f.write(html.encode("utf-8", "xmlcharrefreplace"))
+        html.dump(params.output.html, errors="xmlcharrefreplace")
 
 
 if __name__ == "__main__":

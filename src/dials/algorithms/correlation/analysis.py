@@ -19,7 +19,7 @@ from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogra
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
-from dials_array_family_flex_ext import reflection_table
+from dials.array_family.flex import reflection_table
 
 logger = logging.getLogger("dials.algorithms.correlation.analysis")
 
@@ -262,18 +262,14 @@ class CorrelationMatrix:
 
         # Convert the cosine and cc matrices into a plotly json format for output graphs
 
-        labels = list(range(0, len(self._experiments)))
-
         self.cc_json = to_plotly_json(
             self.correlation_matrix,
             self.cc_linkage_matrix,
-            labels=labels,
             matrix_type="correlation",
         )
         self.cos_json = to_plotly_json(
             self.cos_angle,
             self.cos_linkage_matrix,
-            labels=labels,
             matrix_type="cos_angle",
         )
 
@@ -302,11 +298,9 @@ class CorrelationMatrix:
             linkage_mat_as_dict(collections.OrderedDict): linkage matrix converted to dictionary with datasets replaced with dials unique identifiers
         """
         linkage_mat_as_dict = linkage_matrix_to_dict(linkage_matrix)
-        for i in linkage_mat_as_dict:
+        for d in linkage_mat_as_dict.values():
             # Difference in indexing between linkage_mat_as_dict and datasets, so have i-1
-            old_datasets = [j - 1 for j in linkage_mat_as_dict[i]["datasets"]]
-            datasets_as_ids = [self.ids_to_identifiers_map[j] for j in old_datasets]
-            linkage_mat_as_dict[i]["datasets"] = datasets_as_ids
+            d["datasets"] = [self.ids_to_identifiers_map[i - 1] for i in d["datasets"]]
 
         return linkage_mat_as_dict
 
@@ -327,6 +321,5 @@ class CorrelationMatrix:
             "cos_angle_matrix": self.cos_angle.tolist(),
         }
 
-        json_str = json.dumps(combined_json_dict)
         with open(self.params.output.json, "w") as f:
-            f.write(json_str)
+            json.dump(combined_json_dict, f)

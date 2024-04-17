@@ -21,7 +21,6 @@ def linkage_matrix_to_dict(linkage_matrix: np.ndarray) -> OrderedDict:
 
     d = {}
 
-    # http://w3facility.org/question/scipy-dendrogram-to-json-for-d3-js-tree-visualisation/
     # https://gist.github.com/mdml/7537455
 
     def add_node(node):

@@ -25,8 +25,8 @@ def test_corr_mat(dials_data, run_in_tmp_path):
         epilog=" ",
     )
     for i in [0, 1, 2, 3]:
-        input_data.append(os.fspath(mcp / f"experiments_{i}.expt"))
-        input_data.append(os.fspath(mcp / f"reflections_{i}.refl"))
+        input_data.append(str(mcp / f"experiments_{i}.expt"))
+        input_data.append(str(mcp / f"reflections_{i}.refl"))
 
     params, options, args = parser.parse_args(
         args=input_data, show_diff_phil=False, return_unhandled=True
