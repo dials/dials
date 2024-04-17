@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import sys
 from collections import OrderedDict
 
 import numpy as np
@@ -64,7 +65,10 @@ def to_plotly_json(
         d(dict): heatmap and dendrogram plot expressed as a dictionary for future graphical display
     """
 
-    assert matrix_type in ("correlation", "cos_angle")
+    if matrix_type not in ("correlation", "cos_angle"):
+        sys.exit(
+            f"Matrix type input as {matrix_type}, but needs to be 'correlation' or 'cos_angle'"
+        )
 
     ddict = hierarchy.dendrogram(
         linkage_matrix,

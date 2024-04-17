@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import pathlib
 
 import dials.command_line.correlation_matrix as dials_corr_mat

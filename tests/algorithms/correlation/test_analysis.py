@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import pathlib
 
 from dials.algorithms.correlation.analysis import CorrelationMatrix
