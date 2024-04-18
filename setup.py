@@ -6,7 +6,7 @@ import setuptools
 
 from build import build
 
-__version_tag__ = "3.18.dev"
+__version_tag__ = "3.19.dev"
 
 setup_kwargs = {
     "name": "dials",
