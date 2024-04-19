@@ -170,7 +170,6 @@ class ErrorModelRefinery:
             r2 = self.avals[-2]
         except IndexError:
             return False
-        print(r1, r2)
         if r2 > 0:
             return abs((r2 - r1) / r2) < self._avals_tolerance
         else:

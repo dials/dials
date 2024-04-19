@@ -240,7 +240,6 @@ class ErrorModelBinner:
         self.delta_hl = calc_deltahl(self.Ih_table, self.n_h, self.sigmaprime)
         self.bin_variances = self.calculate_bin_variances()
         self.binning_info["initial_variances"] = self.binning_info["bin_variances"]
-        print(self.bin_variances)
 
     def update(self, parameters):
         """Update the variances for updated model parameters."""
@@ -594,14 +593,27 @@ def filter_unsuitable_reflections_stills(
     Ih_table, min_multiplicity, I_over_sigma, min_partiality, min_reflections_required
 ):
     """Filter suitable reflections for minimisation."""
+    Ih_table.update_weights()
     sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
     Ih_table = Ih_table.select(sel)
     sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= I_over_sigma
     Ih_table = Ih_table.select(sel)
     n_h = Ih_table.calc_nh()
+
+    sigmaprime = calc_sigmaprime([1.0, 0.0], Ih_table)
+    delta_hl = calc_deltahl(Ih_table, n_h, sigmaprime)
+    sel = np.abs(delta_hl) < 12.0
+    Ih_table = Ih_table.select(sel)
+
+    n_h = Ih_table.calc_nh()
+
     sel3 = n_h >= min_multiplicity
     Ih_table = Ih_table.select(sel3)
     n = Ih_table.size
+    n_h = Ih_table.calc_nh()
+    sigmaprime = calc_sigmaprime([1.0, 0.0], Ih_table)
+    delta_hl = calc_deltahl(Ih_table, n_h, sigmaprime)
+
     if n < min_reflections_required:
         raise ValueError(
             "Insufficient reflections (%s < %s) to perform error modelling."
