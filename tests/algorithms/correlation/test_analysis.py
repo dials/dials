@@ -43,6 +43,5 @@ def test_corr_mat(dials_data, run_in_tmp_path):
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
     matrices = CorrelationMatrix(experiments, reflections, params)
     matrices.calculate_matrices()
-    matrices.convert_to_importable_json()
     matrices.output_json()
     assert pathlib.Path("dials.correlation_matrix.json").is_file()
