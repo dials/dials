@@ -21,7 +21,7 @@ logger = logging.getLogger("dials")
 
 phil_scope = phil.parse(
     """
-    error_model = *basic None still
+    error_model = *basic None
         .type = choice
         .help = "The error model to use."
         .expert_level = 1
@@ -42,6 +42,15 @@ phil_scope = phil.parse(
                   "determine both parameters concurrently. If minimisation=None,"
                   "the model parameters are fixed to their initial or given values."
           .expert_level = 3
+        stills {
+            I_over_sigma = 2.0
+              .type=float
+              .help = "Minimum uncorrected I/sigma for individual reflections used in error model optimisation"
+            min_multiplicity = 4
+              .type = int
+              .help = "Only reflections with at least this multiplicity (after Isigma filtering) are"
+                      "used in error model optimisation."
+        }
         min_Ih = 25.0
             .type = float
             .help = "Reflections with expected intensity above this value are to."
@@ -349,51 +358,6 @@ class ErrorModelBinner:
         return bin_vars
 
 
-class StillErrorModelBinner(ErrorModelBinner):
-    def _create_summation_matrix(self):
-        from cctbx import sgtbx, uctbx
-        from dxtbx import flumpy
-
-        nbins = 10
-        self.Ih_table.setup_binner(
-            uctbx.unit_cell((96.4, 96.4, 96.4, 90, 90, 90)),
-            sgtbx.space_group_info("P213").group(),
-            nbins,
-        )
-        import matplotlib.pyplot as plt
-
-        n = self.Ih_table.size
-        Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
-        summation_matrix = sparse.matrix(n, 5)  # nbins)
-        for i, ibin in enumerate(self.Ih_table.binner.range_used()):
-            if i >= 5:
-                continue
-            sel = self.Ih_table.binner.selection(ibin)
-            I = self.Ih_table.intensities
-            varianecs = self.Ih_table.variances
-            """plt.scatter(I, varianecs)
-            plt.show()
-            plt.clear()"""
-            # sel = flumpy.to_numpy(sel)
-            for j in np.nonzero(sel)[0]:
-                summation_matrix[int(j), i] = 1
-            self.binning_info["mean_intensities"] = np.append(
-                self.binning_info["mean_intensities"], [np.mean(Ih[sel])]
-            )
-            n_in_bin = np.count_nonzero(sel)
-            self.binning_info["refl_per_bin"] = np.append(
-                self.binning_info["refl_per_bin"], [n_in_bin]
-            )
-            self.binning_info["bin_boundaries"] = np.append(
-                self.binning_info["bin_boundaries"], [i + 1]
-            )
-        self.binning_info["bin_boundaries"] = np.append(
-            self.binning_info["bin_boundaries"], [i + 2]
-        )
-        print(self.binning_info)
-        return summation_matrix
-
-
 class BComponent:
 
     """The basic error model B parameter component"""
@@ -420,7 +384,7 @@ class BasicErrorModel:
 
     id_ = "basic"
 
-    def __init__(self, a=None, b=None, basic_params=None):
+    def __init__(self, a=None, b=None, basic_params=None, is_still=False):
 
         """
         A basic two-parameter error model s'^2 = a^2(s^2 + (bI)^2)
@@ -429,7 +393,7 @@ class BasicErrorModel:
         see if a user specified fixed value is set. If no fixed values are given
         then the model starts with the default parameters a=1.0 b=0.02
         """
-
+        self.is_still = is_still
         self.free_components = []
         self.sortedy = None
         self.sortedx = None
@@ -454,14 +418,14 @@ class BasicErrorModel:
         if not basic_params.b:
             self._active_parameters.append("b")
 
-    def configure_for_refinement(self, Ih_table, min_partiality=0.25):
+    def configure_for_refinement(self, Ih_table, min_partiality=0.4):
         """
         Add data to allow error model refinement.
 
         Raises: ValueError if insufficient reflections left after filtering.
         """
         self.filtered_Ih_table = self.filter_unsuitable_reflections(
-            Ih_table, self.params, min_partiality
+            Ih_table, self.params, min_partiality, self.is_still
         )
         # always want binning info so that can calc for output.
         self.binner = ErrorModelBinner(
@@ -501,8 +465,18 @@ class BasicErrorModel:
         return self.filtered_Ih_table.size
 
     @classmethod
-    def filter_unsuitable_reflections(cls, Ih_table, error_params, min_partiality):
+    def filter_unsuitable_reflections(
+        cls, Ih_table, error_params, min_partiality, is_still
+    ):
         """Filter suitable reflections for minimisation."""
+        if is_still:
+            return filter_unsuitable_reflections_stills(
+                Ih_table,
+                error_params.stills.min_multiplicity,
+                error_params.stills.I_over_sigma,
+                min_partiality=min_partiality,
+                min_reflections_required=cls.min_reflections_required,
+            )
         return filter_unsuitable_reflections(
             Ih_table,
             min_Ih=error_params.min_Ih,
@@ -616,49 +590,24 @@ class BasicErrorModel:
         )
 
 
-class StillsErrorModel(BasicErrorModel):
-
-    min_reflections_required = 250
-
-    id_ = "still"
-
-    '''def configure_for_refinement(self, Ih_table, min_partiality=0.25):
-        """
-        Add data to allow error model refinement.
-
-        Raises: ValueError if insufficient reflections left after filtering.
-        """
-        self.filtered_Ih_table = self.filter_unsuitable_reflections(
-            Ih_table, self.params, min_partiality
+def filter_unsuitable_reflections_stills(
+    Ih_table, min_multiplicity, I_over_sigma, min_partiality, min_reflections_required
+):
+    """Filter suitable reflections for minimisation."""
+    sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
+    Ih_table = Ih_table.select(sel)
+    sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= I_over_sigma
+    Ih_table = Ih_table.select(sel)
+    n_h = Ih_table.calc_nh()
+    sel3 = n_h >= min_multiplicity
+    Ih_table = Ih_table.select(sel3)
+    n = Ih_table.size
+    if n < min_reflections_required:
+        raise ValueError(
+            "Insufficient reflections (%s < %s) to perform error modelling."
+            % (n, min_reflections_required)
         )
-        # always want binning info so that can calc for output.
-        self.binner = StillErrorModelBinner(
-            self.filtered_Ih_table, self.min_reflections_required, self.params.n_bins
-        )
-        # need to calculate sorted deltahl for norm dev plotting (and used by
-        # individual a-parameter minimiser)
-        self.calculate_sorted_deviations(self.parameters)
-
-        self.binner.update(self.parameters)'''
-
-    @classmethod
-    def filter_unsuitable_reflections(cls, Ih_table, error_params, min_partiality):
-        """Filter suitable reflections for minimisation."""
-
-        sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
-        Ih_table = Ih_table.select(sel)
-        sel = Ih_table.intensities >= 100.0
-        Ih_table = Ih_table.select(sel)
-        n_h = Ih_table.calc_nh()
-        sel3 = n_h > 4.0
-        Ih_table = Ih_table.select(sel3)
-        n = Ih_table.size
-        if n < cls.min_reflections_required:
-            raise ValueError(
-                "Insufficient reflections (%s < %s) to perform error modelling."
-                % (n, cls.min_reflections_required)
-            )
-        return Ih_table
+    return Ih_table
 
 
 def filter_unsuitable_reflections(

@@ -25,7 +25,7 @@ from iotbx import phil
 from dials.algorithms.scaling.combine_intensities import combine_intensities
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.error_model.error_model import (
-    StillsErrorModel,
+    BasicErrorModel,
     calc_deltahl,
     calc_sigmaprime,
 )
@@ -55,6 +55,8 @@ logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
     include scope dials.algorithms.scaling.error_model.error_model.phil_scope
+    min_partiality = 0.95
+        .type = float
     intensity_choice = *profile sum combine
         .type = choice
         .help = "Use profile or summation intensities"
@@ -104,10 +106,15 @@ def refine_error_model(params, experiments, reflection_tables):
         reflection_tables, space_group, additional_cols=["partiality"], anomalous=True
     )
 
+    is_still = True
+    for expt in experiments:
+        if expt.scan and expt.scan.get_oscillation()[1] != 0.0:
+            is_still = False
+            break
     # now do the error model refinement
-    model = StillsErrorModel(basic_params=params.basic)
+    model = BasicErrorModel(basic_params=params.basic, is_still=is_still)
     try:
-        model = run_error_model_refinement(model, Ih_table)
+        model = run_error_model_refinement(model, Ih_table, params.min_partiality)
     except (ValueError, RuntimeError) as e:
         logger.info(e)
     else:

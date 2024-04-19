@@ -352,8 +352,14 @@ class SingleScaler(ScalerBase):
         self._configure_model_and_datastructures(for_multi=for_multi)
         if self.params.weighting.error_model.error_model:
             # reload current error model parameters, or create new null
+            is_still = True
+            if (
+                self._experiment.scan
+                and self._experiment.scan.get_oscillation()[1] != 0.0
+            ):
+                is_still = False
             self.experiment.scaling_model.load_error_model(
-                self.params.weighting.error_model
+                self.params.weighting.error_model, is_still
             )
             self._update_error_model(self.experiment.scaling_model.error_model)
         if "Imid" in self.experiment.scaling_model.configdict:
@@ -380,7 +386,9 @@ class SingleScaler(ScalerBase):
         Ih_table, _ = self._create_global_Ih_table(anomalous=True, remove_outliers=True)
         try:
             model = run_error_model_refinement(
-                self._experiment.scaling_model.error_model, Ih_table
+                self._experiment.scaling_model.error_model,
+                Ih_table,
+                self.params.reflection_selection.min_partiality,
             )
         except (ValueError, RuntimeError) as e:
             logger.info(e)
@@ -1500,7 +1508,9 @@ class MultiScalerBase(ScalerBase):
                 continue
             tables = [s.get_valid_reflections().select(~s.outliers) for s in scalers]
             space_group = scalers[0].experiment.crystal.get_space_group()
-            Ih_table = IhTable(tables, space_group, anomalous=True)
+            Ih_table = IhTable(
+                tables, space_group, anomalous=True, additional_cols=["partiality"]
+            )
             if len(minimisation_groups) == 1:
                 logger.info("Determining a combined error model for all datasets")
             else:

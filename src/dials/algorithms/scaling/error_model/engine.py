@@ -21,7 +21,7 @@ from dials.algorithms.scaling.scaling_refiner import print_step_table
 logger = logging.getLogger("dials")
 
 
-def run_error_model_refinement(model, Ih_table):
+def run_error_model_refinement(model, Ih_table, min_partiality=0.4):
     """
     Refine an error model for the input data, returning the model.
 
@@ -30,7 +30,7 @@ def run_error_model_refinement(model, Ih_table):
         RuntimeError: can be raised in LBFGS minimiser.
     """
     assert Ih_table.n_work_blocks == 1
-    model.configure_for_refinement(Ih_table.blocked_data_list[0])
+    model.configure_for_refinement(Ih_table.blocked_data_list[0], min_partiality)
     if not model.active_parameters:
         logger.info("All error model parameters fixed, skipping refinement")
     else:
@@ -56,7 +56,7 @@ def error_model_refinery(model, active_parameters, error_model_scope, max_iterat
     parameterisation by implementing the set_param_vals and get_param_vals
     methods (the code is organised in this way to allow the use of the
     dials.refinement engines)."""
-    if model.id_ == "basic" or model.id_ == "still":
+    if model.id_ == "basic":
         if error_model_scope.minimisation == "individual":
             return ErrorModelRefinery(
                 model=model,
