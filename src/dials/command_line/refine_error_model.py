@@ -103,7 +103,14 @@ def refine_error_model(params, experiments, reflection_tables):
         reflection_tables[i] = table
     space_group = experiments[0].crystal.get_space_group()
     Ih_table = IhTable(
-        reflection_tables, space_group, additional_cols=["partiality"], anomalous=True
+        reflection_tables,
+        space_group,
+        additional_cols=[
+            "partiality",
+            "partiality_applied",
+            "partiality.inv.variance_applied",
+        ],
+        anomalous=True,
     )
 
     is_still = True

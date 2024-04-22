@@ -200,7 +200,7 @@ class ErrorModelRefinery:
     def run(self):
         """Refine the model."""
         if self.parameters_to_refine == ["a", "b"]:
-            for n in range(20):  # usually converges in around 5 cycles
+            for n in range(50):  # usually converges in around 5 cycles
                 self._refine_a()
                 # now update in model
                 self.avals.append(self.model.components["a"].parameters[0])

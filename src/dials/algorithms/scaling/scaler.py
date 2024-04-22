@@ -1509,7 +1509,14 @@ class MultiScalerBase(ScalerBase):
             tables = [s.get_valid_reflections().select(~s.outliers) for s in scalers]
             space_group = scalers[0].experiment.crystal.get_space_group()
             Ih_table = IhTable(
-                tables, space_group, anomalous=True, additional_cols=["partiality"]
+                tables,
+                space_group,
+                anomalous=True,
+                additional_cols=[
+                    "partiality",
+                    "partiality_applied",
+                    "partiality.inv.variance_applied",
+                ],
             )
             if len(minimisation_groups) == 1:
                 logger.info("Determining a combined error model for all datasets")

@@ -257,7 +257,11 @@ class ErrorModelBinner:
         n = self.Ih_table.size
         self.binning_info["n_reflections"] = n
         summation_matrix = sparse.matrix(n, self.n_bins)
-        Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
+        Ih = (
+            self.Ih_table.Ih_values
+            * self.Ih_table.inverse_scale_factors
+            * self.Ih_table.Ih_table["partiality_applied"].to_numpy()
+        )
         size_order = flex.sort_permutation(flumpy.from_numpy(Ih), reverse=True)
         Imax = Ih.max()
         min_Ih = Ih.min()
@@ -593,11 +597,35 @@ def filter_unsuitable_reflections_stills(
     Ih_table, min_multiplicity, I_over_sigma, min_partiality, min_reflections_required
 ):
     """Filter suitable reflections for minimisation."""
-    Ih_table.update_weights()
-    sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
-    Ih_table = Ih_table.select(sel)
-    sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= I_over_sigma
-    Ih_table = Ih_table.select(sel)
+    # Ih_table.update_weights()
+    # Ih_table.calc_Ih()
+    if "partiality" in Ih_table.Ih_table:
+        sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
+        Ih_table = Ih_table.select(sel)
+        sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= I_over_sigma
+        Ih_table = Ih_table.select(sel)
+    elif "partiality_applied" in Ih_table.Ih_table:
+
+        Iorig = Ih_table.intensities * Ih_table.Ih_table["partiality_applied"]
+        V = Ih_table.variances - (
+            Ih_table.intensities * Ih_table.Ih_table["partiality.inv.variance_applied"]
+        )
+        V = V * (Ih_table.Ih_table["partiality_applied"] ** 2)
+        ratio = Iorig / (V**0.5)
+        sel = ratio.to_numpy() >= I_over_sigma
+
+        Ih_table = Ih_table.select(sel)
+        Iorig = Ih_table.intensities
+        Ih_table.update_weights()
+        Ih_table.calc_Ih()
+        # sel = Iorig * Ih_table.Ih_table["partiality_applied"].to_numpy() > 100
+        sel = (
+            Ih_table.Ih_values
+            * Ih_table.Ih_table["partiality_applied"].to_numpy()
+            * Ih_table.inverse_scale_factors
+        ) > 100.0
+        Ih_table = Ih_table.select(sel)
+
     n_h = Ih_table.calc_nh()
 
     sigmaprime = calc_sigmaprime([1.0, 0.0], Ih_table)
