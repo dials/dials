@@ -109,6 +109,7 @@ def refine_error_model(params, experiments, reflection_tables):
             "partiality",
             "partiality_applied",
             "partiality.inv.variance_applied",
+            "partiality.inv.variance",
         ],
         anomalous=True,
     )

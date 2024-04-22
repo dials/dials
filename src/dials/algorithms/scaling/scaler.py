@@ -1515,6 +1515,7 @@ class MultiScalerBase(ScalerBase):
                 additional_cols=[
                     "partiality",
                     "partiality_applied",
+                    "partiality.inv.variance",
                     "partiality.inv.variance_applied",
                 ],
             )
