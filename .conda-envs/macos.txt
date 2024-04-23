@@ -11,11 +11,10 @@ conda-forge::eigen
 conda-forge::future
 conda-forge::gemmi>=0.6.5
 conda-forge::h5py>=3.1.0
-conda-forge::hdf5<1.13
+conda-forge::hdf5
 conda-forge::hdf5plugin
 conda-forge::iota
 conda-forge::jinja2
-conda-forge::jpeg
 conda-forge::libboost-devel
 conda-forge::libboost-python-devel
 conda-forge::libcxx
