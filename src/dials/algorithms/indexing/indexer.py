@@ -613,6 +613,11 @@ class Indexer:
 
                 if self._check_have_similar_crystal_models(experiments):
                     have_similar_crystal_models = True
+                    try:
+                        # Unset ids for the last experiment that is now deleted
+                        self._remove_id_from_reflections(len(experiments))
+                    except AttributeError:
+                        pass
                     break
 
                 logger.info("")
@@ -682,34 +687,9 @@ class Indexer:
                             # below
                             # note here we are acting on the table from the last macrocycle
                             # This is guaranteed to exist due to the check if len(experiments) == 1: above
-                            sel = self.refined_reflections["id"] == model_id
-                            if sel.count(
-                                True
-                            ):  # not the case if failure on first cycle of refinement of new xtal
-                                logger.info(
-                                    "Removing %d reflections with id %d",
-                                    sel.count(True),
-                                    model_id,
-                                )
-                                self.refined_reflections["id"].set_selected(sel, -1)
-                                # N.B. Need to unset the flags here as the break below means we
-                                # don't enter the code after
-                                del self.refined_reflections.experiment_identifiers()[
-                                    model_id
-                                ]
-                                self.refined_reflections.unset_flags(
-                                    sel, self.refined_reflections.flags.indexed
-                                )
-                                self.refined_reflections["miller_index"].set_selected(
-                                    sel, (0, 0, 0)
-                                )
-                                self.unindexed_reflections.extend(
-                                    self.refined_reflections.select(sel)
-                                )
-                                self.refined_reflections = (
-                                    self.refined_reflections.select(~sel)
-                                )
-                                self.refined_reflections.clean_experiment_identifiers_map()
+                            # N.B. Need to unset the flags here as the break below means we
+                            # don't enter the code after
+                            self._remove_id_from_reflections(model_id)
                         break
 
                 self._unit_cell_volume_sanity_check(experiments, refined_experiments)
@@ -784,6 +764,26 @@ class Indexer:
             )
 
         self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
+
+    def _remove_id_from_reflections(self, model_id):
+        sel = self.refined_reflections["id"] == model_id
+        if sel.count(
+            True
+        ):  # not the case if failure on first cycle of refinement of new xtal
+            logger.info(
+                "Removing %d reflections with id %d",
+                sel.count(True),
+                model_id,
+            )
+            self.refined_reflections["id"].set_selected(sel, -1)
+            del self.refined_reflections.experiment_identifiers()[model_id]
+            self.refined_reflections.unset_flags(
+                sel, self.refined_reflections.flags.indexed
+            )
+            self.refined_reflections["miller_index"].set_selected(sel, (0, 0, 0))
+            self.unindexed_reflections.extend(self.refined_reflections.select(sel))
+            self.refined_reflections = self.refined_reflections.select(~sel)
+            self.refined_reflections.clean_experiment_identifiers_map()
 
     def _unit_cell_volume_sanity_check(self, original_experiments, refined_experiments):
         # sanity check for unrealistic unit cell volume increase during refinement
