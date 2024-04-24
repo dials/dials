@@ -105,12 +105,7 @@ def refine_error_model(params, experiments, reflection_tables):
     Ih_table = IhTable(
         reflection_tables,
         space_group,
-        additional_cols=[
-            "partiality",
-            "partiality_applied",
-            "partiality.inv.variance_applied",
-            "partiality.inv.variance",
-        ],
+        additional_cols=["partiality"],
         anomalous=True,
     )
 

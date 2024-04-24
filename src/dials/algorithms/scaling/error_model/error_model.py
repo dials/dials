@@ -257,11 +257,10 @@ class ErrorModelBinner:
         n = self.Ih_table.size
         self.binning_info["n_reflections"] = n
         summation_matrix = sparse.matrix(n, self.n_bins)
-        Ih = (
-            self.Ih_table.Ih_values
-            * self.Ih_table.inverse_scale_factors
-            * self.Ih_table.Ih_table["partiality"].to_numpy()
-        )
+        # calculate expected intensity value in pixels on scale of each image
+        Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
+        if "partiality" in self.Ih_table.Ih_table:
+            Ih *= self.Ih_table.Ih_table["partiality"].to_numpy()
         size_order = flex.sort_permutation(flumpy.from_numpy(Ih), reverse=True)
         Imax = Ih.max()
         min_Ih = Ih.min()

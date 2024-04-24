@@ -1512,12 +1512,7 @@ class MultiScalerBase(ScalerBase):
                 tables,
                 space_group,
                 anomalous=True,
-                additional_cols=[
-                    "partiality",
-                    "partiality_applied",
-                    "partiality.inv.variance",
-                    "partiality.inv.variance_applied",
-                ],
+                additional_cols=["partiality"],
             )
             if len(minimisation_groups) == 1:
                 logger.info("Determining a combined error model for all datasets")
