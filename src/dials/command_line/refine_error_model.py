@@ -55,8 +55,9 @@ logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
     include scope dials.algorithms.scaling.error_model.error_model.phil_scope
-    min_partiality = 0.95
+    min_partiality = 0.4
         .type = float
+        .help = "Use reflections with at least this partiality in error model optimisation."
     intensity_choice = *profile sum combine
         .type = choice
         .help = "Use profile or summation intensities"

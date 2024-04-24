@@ -679,11 +679,11 @@ def run(args=None):
         sys.exit(f"Unknown format: {params.format}")
 
     # Export the data
-    # try:
-    exporter(params, experiments, reflections)
-    #    logger.error(f"Error: {e}")
-    # except Exception as e:
-    #    sys.exit(1)
+    try:
+        exporter(params, experiments, reflections)
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
