@@ -628,8 +628,8 @@ def filter_unsuitable_reflections_stills(
     sel = np.abs(delta_hl) < 6.0
     Ih_table = Ih_table.select(sel)
 
-    sel3 = Ih_table.calc_nh() >= min_multiplicity
-    Ih_table = Ih_table.select(sel3)
+    sel = Ih_table.calc_nh() >= min_multiplicity
+    Ih_table = Ih_table.select(sel)
     n = Ih_table.size
 
     if n < min_reflections_required:
