@@ -479,6 +479,7 @@ class BasicErrorModel:
                 error_params.stills.I_over_sigma,
                 min_partiality=min_partiality,
                 min_reflections_required=cls.min_reflections_required,
+                min_Ih=error_params.min_Ih,
             )
         return filter_unsuitable_reflections(
             Ih_table,
@@ -594,7 +595,12 @@ class BasicErrorModel:
 
 
 def filter_unsuitable_reflections_stills(
-    Ih_table, min_multiplicity, I_over_sigma, min_partiality, min_reflections_required
+    Ih_table,
+    min_multiplicity,
+    I_over_sigma,
+    min_partiality,
+    min_reflections_required,
+    min_Ih,
 ):
     """Filter suitable reflections for minimisation."""
     # Ih_table.update_weights()
@@ -610,7 +616,7 @@ def filter_unsuitable_reflections_stills(
             Ih_table.Ih_values
             * Ih_table.Ih_table["partiality"].to_numpy()
             * Ih_table.inverse_scale_factors
-        ) > 25.0
+        ) > min_Ih
         Ih_table = Ih_table.select(sel)
 
     n_h = Ih_table.calc_nh()
