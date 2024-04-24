@@ -956,7 +956,7 @@ class _:
             self["qe"] = qe
         return lp
 
-    def extract_shoeboxes(self, imageset, mask=None, nthreads=1):
+    def extract_shoeboxes(self, imageset, mask=None):
         """
         Helper function to read a load of shoebox data.
 

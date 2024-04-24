@@ -11,14 +11,14 @@ conda-forge::eigen
 conda-forge::future
 conda-forge::gemmi>=0.6.5
 conda-forge::h5py>=3.1.0
-conda-forge::hdf5<1.13
+conda-forge::hdf5
 conda-forge::hdf5plugin
 conda-forge::iota
 conda-forge::jinja2
-conda-forge::jpeg
 conda-forge::libboost-devel
 conda-forge::libboost-python-devel
 conda-forge::matplotlib-base>=3.0.2
+conda-forge::mesa-libgl-devel-cos7-x86_64
 conda-forge::mrcfile
 conda-forge::msgpack-cxx
 conda-forge::msgpack-python
@@ -50,6 +50,6 @@ conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm
 conda-forge::urllib3
-conda-forge::wxpython>=4.0.1
+conda-forge::wxpython>=4.2.0
 conda-forge::xz
 conda-forge::zlib
