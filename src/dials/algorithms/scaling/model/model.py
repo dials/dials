@@ -357,7 +357,7 @@ class ScalingModelBase:
     def update(self, model_params):
         pass
 
-    def load_error_model(self, error_params, is_still=False):
+    def load_error_model(self, error_params):
         # load existing model if there, but use user-specified values if given
         new_model = None
         if (
@@ -372,11 +372,9 @@ class ScalingModelBase:
                     a = p[0]
                 if not error_params.basic.b:
                     b = p[1]
-                new_model = BasicErrorModel(a, b, error_params.basic, is_still)
+                new_model = BasicErrorModel(a, b, error_params.basic)
         if not new_model:
-            new_model = BasicErrorModel(
-                basic_params=error_params.basic, is_still=is_still
-            )
+            new_model = BasicErrorModel(basic_params=error_params.basic)
         logger.info(f"Loaded error model: {new_model}")
         self.set_error_model(new_model)
 

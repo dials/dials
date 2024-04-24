@@ -43,7 +43,7 @@ phil_scope = phil.parse(
                   "the model parameters are fixed to their initial or given values."
           .expert_level = 3
         stills {
-            I_over_sigma = 2.0
+            min_Isigma = 2.0
               .type=float
               .help = "Minimum uncorrected I/sigma for individual reflections used in error model optimisation"
             min_multiplicity = 4
@@ -386,7 +386,7 @@ class BasicErrorModel:
 
     id_ = "basic"
 
-    def __init__(self, a=None, b=None, basic_params=None, is_still=False):
+    def __init__(self, a=None, b=None, basic_params=None):
 
         """
         A basic two-parameter error model s'^2 = a^2(s^2 + (bI)^2)
@@ -395,7 +395,6 @@ class BasicErrorModel:
         see if a user specified fixed value is set. If no fixed values are given
         then the model starts with the default parameters a=1.0 b=0.02
         """
-        self.is_still = is_still
         self.free_components = []
         self.sortedy = None
         self.sortedx = None
@@ -420,14 +419,19 @@ class BasicErrorModel:
         if not basic_params.b:
             self._active_parameters.append("b")
 
-    def configure_for_refinement(self, Ih_table, min_partiality=0.4):
+    def configure_for_refinement(
+        self, Ih_table, min_partiality=0.4, use_stills_filtering=False
+    ):
         """
         Add data to allow error model refinement.
 
         Raises: ValueError if insufficient reflections left after filtering.
         """
         self.filtered_Ih_table = self.filter_unsuitable_reflections(
-            Ih_table, self.params, min_partiality, self.is_still
+            Ih_table,
+            self.params,
+            min_partiality,
+            use_stills_filtering,
         )
         # always want binning info so that can calc for output.
         self.binner = ErrorModelBinner(
@@ -468,14 +472,14 @@ class BasicErrorModel:
 
     @classmethod
     def filter_unsuitable_reflections(
-        cls, Ih_table, error_params, min_partiality, is_still
+        cls, Ih_table, error_params, min_partiality, use_stills_filtering
     ):
         """Filter suitable reflections for minimisation."""
-        if is_still:
+        if use_stills_filtering:
             return filter_unsuitable_reflections_stills(
                 Ih_table,
                 error_params.stills.min_multiplicity,
-                error_params.stills.I_over_sigma,
+                error_params.stills.min_Isigma,
                 min_partiality=min_partiality,
                 min_reflections_required=cls.min_reflections_required,
                 min_Ih=error_params.min_Ih,
@@ -596,7 +600,7 @@ class BasicErrorModel:
 def filter_unsuitable_reflections_stills(
     Ih_table,
     min_multiplicity,
-    I_over_sigma,
+    min_Isigma,
     min_partiality,
     min_reflections_required,
     min_Ih,
@@ -607,7 +611,7 @@ def filter_unsuitable_reflections_stills(
     if "partiality" in Ih_table.Ih_table:
         sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
         Ih_table = Ih_table.select(sel)
-        sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= I_over_sigma
+        sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= min_Isigma
         Ih_table = Ih_table.select(sel)
         Ih_table.update_weights()
         Ih_table.calc_Ih()

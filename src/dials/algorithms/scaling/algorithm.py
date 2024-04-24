@@ -655,7 +655,7 @@ def targeted_scaling_algorithm(scaler):
         scaler.perform_scaling()
 
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
-    do_error_analysis(scaler, reselect=True)
+    do_error_analysis(scaler, reselect=False)
 
     scaler.prepare_reflection_tables_for_output()
     return scaler

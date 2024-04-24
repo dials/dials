@@ -350,16 +350,13 @@ class SingleScaler(ScalerBase):
         self.free_set_selection = flex.bool(self.n_suitable_refl, False)
         self._free_Ih_table = None  # An array of len n_suitable_refl
         self._configure_model_and_datastructures(for_multi=for_multi)
+        self.is_still = True
+        if self._experiment.scan and self._experiment.scan.get_oscillation()[1] != 0.0:
+            self.is_still = False
         if self.params.weighting.error_model.error_model:
             # reload current error model parameters, or create new null
-            is_still = True
-            if (
-                self._experiment.scan
-                and self._experiment.scan.get_oscillation()[1] != 0.0
-            ):
-                is_still = False
             self.experiment.scaling_model.load_error_model(
-                self.params.weighting.error_model, is_still
+                self.params.weighting.error_model
             )
             self._update_error_model(self.experiment.scaling_model.error_model)
         if "Imid" in self.experiment.scaling_model.configdict:
@@ -389,6 +386,7 @@ class SingleScaler(ScalerBase):
                 self._experiment.scaling_model.error_model,
                 Ih_table,
                 self.params.reflection_selection.min_partiality,
+                use_stills_filtering=self.is_still,
             )
         except (ValueError, RuntimeError) as e:
             logger.info(e)
@@ -1522,7 +1520,10 @@ class MultiScalerBase(ScalerBase):
                 )
             try:
                 model = run_error_model_refinement(
-                    scalers[0]._experiment.scaling_model.error_model, Ih_table
+                    scalers[0]._experiment.scaling_model.error_model,
+                    Ih_table,
+                    min_partiality=self.params.reflection_selection.min_partiality,
+                    use_stills_filtering=scalers[0].is_still,
                 )
             except (ValueError, RuntimeError) as e:
                 logger.info(e)

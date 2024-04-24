@@ -109,15 +109,17 @@ def refine_error_model(params, experiments, reflection_tables):
         anomalous=True,
     )
 
-    is_still = True
+    use_stills_filtering = True
     for expt in experiments:
         if expt.scan and expt.scan.get_oscillation()[1] != 0.0:
-            is_still = False
+            use_stills_filtering = False
             break
     # now do the error model refinement
-    model = BasicErrorModel(basic_params=params.basic, is_still=is_still)
+    model = BasicErrorModel(basic_params=params.basic)
     try:
-        model = run_error_model_refinement(model, Ih_table, params.min_partiality)
+        model = run_error_model_refinement(
+            model, Ih_table, params.min_partiality, use_stills_filtering
+        )
     except (ValueError, RuntimeError) as e:
         logger.info(e)
     else:
