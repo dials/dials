@@ -606,37 +606,31 @@ def filter_unsuitable_reflections_stills(
     min_Ih,
 ):
     """Filter suitable reflections for minimisation."""
-    # Ih_table.update_weights()
-    # Ih_table.calc_Ih()
+
     if "partiality" in Ih_table.Ih_table:
         sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
         Ih_table = Ih_table.select(sel)
-        sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= min_Isigma
-        Ih_table = Ih_table.select(sel)
-        Ih_table.update_weights()
-        Ih_table.calc_Ih()
-        sel = (
-            Ih_table.Ih_values
-            * Ih_table.Ih_table["partiality"].to_numpy()
-            * Ih_table.inverse_scale_factors
-        ) > min_Ih
-        Ih_table = Ih_table.select(sel)
 
-    n_h = Ih_table.calc_nh()
+    sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= min_Isigma
+    Ih_table = Ih_table.select(sel)
 
-    sigmaprime = calc_sigmaprime([1.0, 0.0], Ih_table)
-    delta_hl = calc_deltahl(Ih_table, n_h, sigmaprime)
-    sel = np.abs(delta_hl) < 6.0
+    Ih = Ih_table.Ih_values * Ih_table.inverse_scale_factors
+    if "partiality" in Ih_table.Ih_table:
+        Ih *= Ih_table.Ih_table["partiality"].to_numpy()
+    sel = Ih > min_Ih
     Ih_table = Ih_table.select(sel)
 
     n_h = Ih_table.calc_nh()
-
-    sel3 = n_h >= min_multiplicity
-    Ih_table = Ih_table.select(sel3)
-    n = Ih_table.size
-    n_h = Ih_table.calc_nh()
     sigmaprime = calc_sigmaprime([1.0, 0.0], Ih_table)
     delta_hl = calc_deltahl(Ih_table, n_h, sigmaprime)
+    # Optimise on the central bulk distribution of the data - avoid the few
+    # reflections in the long tails.
+    sel = np.abs(delta_hl) < 6.0
+    Ih_table = Ih_table.select(sel)
+
+    sel3 = Ih_table.calc_nh() >= min_multiplicity
+    Ih_table = Ih_table.select(sel3)
+    n = Ih_table.size
 
     if n < min_reflections_required:
         raise ValueError(
