@@ -16,10 +16,10 @@ from libtbx.phil import scope_extract
 from dials.algorithms.correlation.plots import linkage_matrix_to_dict, to_plotly_json
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
+from dials.array_family.flex import reflection_table
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
-from dials.array_family.flex import reflection_table
 
 logger = logging.getLogger("dials.algorithms.correlation.analysis")
 
@@ -224,7 +224,7 @@ class CorrelationMatrix:
         cc_dist_mat = ssd.squareform(diffraction_dissimilarity, checks=False)
 
         # Clustering method
-        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="ward")
+        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="average")
 
         return correlation_matrix, cc_linkage_matrix
 
@@ -251,7 +251,7 @@ class CorrelationMatrix:
         cos_angle = 1 - ssd.squareform(cos_dist_mat)
 
         # Clustering method
-        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="ward")
+        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
 
         return cos_angle, cos_linkage_matrix
 
