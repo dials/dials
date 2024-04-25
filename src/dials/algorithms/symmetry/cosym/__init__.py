@@ -79,6 +79,15 @@ use_curvatures = True
 weights = count standard_error
   .type = choice
   .short_caption = "Weights"
+  .help = "If not None, a weights matrix is used in the cosym procedure."
+          "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
+          "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
+          "the sqrt of (1-CC*2)/(n-2), where (n-2) are the degrees of freedom in a pairwise CC calculation."
+cc_weights = None sigma
+  .type = choice
+  .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
+          "freedom in the cosym procedure."
+          "weights=sigma uses the intensity uncertainties to perform inverse variance weighting during the cc calculation."
 
 min_pairs = 3
   .type = int(value_min=1)
@@ -229,6 +238,7 @@ class CosymAnalysis(symmetry_base, Subject):
             lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
+            cc_weights=self.params.cc_weights,
         )
 
     def _determine_dimensions(self):

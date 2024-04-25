@@ -49,10 +49,12 @@ def weighted_cchalf(
             norm_jw = joint_w / sumjw
             xbar = flex.sum(o.data() * norm_jw)
             ybar = flex.sum(c.data() * norm_jw)
-            sxy = flex.sum((o.data() - xbar) * (c.data() - ybar) * norm_jw)
+            dx = o.data() - xbar
+            dy = c.data() - ybar
+            sxy = flex.sum(dx * dy * norm_jw)
 
-            sx = flex.sum((o.data() - xbar) ** 2 * norm_jw)
-            sy = flex.sum((c.data() - ybar) ** 2 * norm_jw)
+            sx = flex.sum(dx**2 * norm_jw)
+            sy = flex.sum(dy**2 * norm_jw)
             # what is neff? neff = 1/V2
             # V2 = flex.sum(norm_jw**2)
             # use entropy based approach
@@ -87,6 +89,119 @@ def weighted_cchalf(
     return binned_data(binner=this.binner(), data=results, data_fmt="%7.4f"), n_eff
 
 
+from scipy import sparse
+
+
+def _lattice_lower_upper_index(lattices, lattice_id):
+    lower_index = int(lattices[lattice_id])
+    upper_index = None
+    if lattice_id < len(lattices) - 1:
+        upper_index = int(lattices[lattice_id + 1])
+    else:
+        assert lattice_id == len(lattices) - 1
+    return lower_index, upper_index
+
+
+def _compute_rij_matrix_one_row_block(
+    i, lattices, data, indices, sym_ops, patterson_group, weights=True, min_pairs=3
+):
+    cs = data.crystal_symmetry()
+    n_lattices = len(lattices)
+    use_cache = True
+    rij_cache = {}
+
+    n_sym_ops = len(sym_ops)
+    NN = n_lattices * n_sym_ops
+
+    rij_row = []
+    rij_col = []
+    rij_data = []
+    if weights:
+        wij_row = []
+        wij_col = []
+        wij_data = []
+    else:
+        wij = None
+    i_lower, i_upper = _lattice_lower_upper_index(lattices, i)
+    intensities_i = data.data()[i_lower:i_upper]
+    sigmas_i = data.sigmas()[i_lower:i_upper]
+    cb_ops = [sgtbx.change_of_basis_op(cb_op_k) for cb_op_k in sym_ops]
+
+    for j in range(n_lattices):
+
+        j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
+        intensities_j = data.data()[j_lower:j_upper]
+        sigmas_j = data.sigmas()[j_lower:j_upper]
+
+        for k, cb_op_k in enumerate(cb_ops):
+
+            indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+
+            for kk, cb_op_kk in enumerate(cb_ops):
+                if i == j and k == kk:
+                    # don't include correlation of dataset with itself
+                    continue
+
+                ik = i + (n_lattices * k)
+                jk = j + (n_lattices * kk)
+
+                key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
+                if use_cache and key in rij_cache:
+                    cc, n = rij_cache[key]
+                else:
+                    indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
+
+                    matches = miller.match_indices(indices_i, indices_j)
+                    pairs = matches.pairs()
+                    isel_i = pairs.column(0)
+                    isel_j = pairs.column(1)
+                    isel_i = isel_i.select(
+                        patterson_group.epsilon(indices_i.select(isel_i)) == 1
+                    )
+                    isel_j = isel_j.select(
+                        patterson_group.epsilon(indices_j.select(isel_j)) == 1
+                    )
+                    ms = miller.set(
+                        crystal_symmetry=cs, indices=indices_j.select(isel_j)
+                    )
+                    ma_j = miller.array(
+                        miller_set=ms,
+                        data=intensities_j.select(isel_j),
+                        sigmas=sigmas_j.select(isel_j),
+                    )
+                    ms = miller.set(
+                        crystal_symmetry=cs, indices=indices_i.select(isel_i)
+                    )
+                    ma_i = miller.array(
+                        miller_set=ms,
+                        data=intensities_i.select(isel_i),
+                        sigmas=sigmas_i.select(isel_i),
+                    )
+                    corr, neff = weighted_cchalf(ma_i, ma_j, assume_index_matching=True)
+                    n, cc = (None, None)
+                    if neff:
+                        cc = corr
+                        n = neff
+
+                    rij_cache[key] = (cc, n)
+
+                if n is None or cc is None or (min_pairs is not None and n < min_pairs):
+                    continue
+                if weights:
+                    wij_row.append(ik)
+                    wij_col.append(jk)
+                    wij_data.append(n)
+                rij_row.append(ik)
+                rij_col.append(jk)
+                rij_data.append(cc)
+
+    rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
+    if weights:
+        wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
+
+    return rij, wij
+
+
 class Target:
     """Target function for cosym analysis.
 
@@ -102,7 +217,8 @@ class Target:
         min_pairs=3,
         lattice_group=None,
         dimensions=None,
-        nproc=10,
+        nproc=1,
+        cc_weights=None,
     ):
         r"""Initialise a Target object.
 
@@ -179,8 +295,10 @@ class Target:
         logger.debug(
             "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
-
-        self.rij_matrix, self.wij_matrix = self._compute_rij_wij_flex()
+        if cc_weights == "sigma":
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_flex()
+        else:
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
 
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
@@ -221,15 +339,6 @@ class Target:
 
         return operators
 
-    def _lattice_lower_upper_index(self, lattice_id):
-        lower_index = int(self._lattices[lattice_id])
-        upper_index = None
-        if lattice_id < len(self._lattices) - 1:
-            upper_index = int(self._lattices[lattice_id + 1])
-        else:
-            assert lattice_id == len(self._lattices) - 1
-        return lower_index, upper_index
-
     def _compute_rij_wij_flex(self, use_cache=True):
         n_lattices = len(self._lattices)
         # n_sym_ops = len(self.sym_ops)
@@ -245,158 +354,45 @@ class Target:
             miller.map_to_asu(space_group_type, False, indices_reindexed)
             cb_op_str = cb_op.as_xyz()
             indices[cb_op_str] = indices_reindexed
-            """indices[cb_op_str] = np.array(
-                [
-                    h.iround().as_numpy_array()
-                    for h in indices_reindexed.as_vec3_double().parts()
-                ]
-            ).transpose()"""
             epsilons[cb_op_str] = self._patterson_group.epsilon(indices_reindexed)
 
-        from scipy import sparse
-
-        from libtbx import easy_mp
-
-        def _compute_rij_matrix_one_row_block(i):
-            rij_cache = {}
-
-            n_sym_ops = len(self.sym_ops)
-            NN = n_lattices * n_sym_ops
-
-            rij_row = []
-            rij_col = []
-            rij_data = []
-            if self._weights:
-                wij_row = []
-                wij_col = []
-                wij_data = []
-            else:
-                wij = None
-
-            i_lower, i_upper = self._lattice_lower_upper_index(i)
-            intensities_i = self._data.data()[i_lower:i_upper]
-            sigmas_i = self._data.sigmas()[i_lower:i_upper]
-
-            for j in range(n_lattices):
-
-                j_lower, j_upper = self._lattice_lower_upper_index(j)
-                intensities_j = self._data.data()[j_lower:j_upper]
-                sigmas_j = self._data.sigmas()[j_lower:j_upper]
-
-                for k, cb_op_k in enumerate(self.sym_ops):
-                    cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
-
-                    indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
-
-                    for kk, cb_op_kk in enumerate(self.sym_ops):
-                        if i == j and k == kk:
-                            # don't include correlation of dataset with itself
-                            continue
-                        cb_op_kk = sgtbx.change_of_basis_op(cb_op_kk)
-
-                        ik = i + (n_lattices * k)
-                        jk = j + (n_lattices * kk)
-
-                        key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
-                        if use_cache and key in rij_cache:
-                            cc, n = rij_cache[key]
-                        else:
-                            indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
-
-                            matches = miller.match_indices(indices_i, indices_j)
-                            pairs = matches.pairs()
-                            isel_i = pairs.column(0)
-                            isel_j = pairs.column(1)
-                            isel_i = isel_i.select(
-                                self._patterson_group.epsilon(indices_i.select(isel_i))
-                                == 1
-                            )
-                            isel_j = isel_j.select(
-                                self._patterson_group.epsilon(indices_j.select(isel_j))
-                                == 1
-                            )
-                            ms = miller.set(
-                                crystal_symmetry=self._data.crystal_symmetry(),
-                                indices=indices_j.select(isel_j),
-                            )
-                            ma_j = miller.array(
-                                miller_set=ms,
-                                data=intensities_j.select(isel_j),
-                                sigmas=sigmas_j.select(isel_j),
-                            )
-                            ms = miller.set(
-                                crystal_symmetry=self._data.crystal_symmetry(),
-                                indices=indices_i.select(isel_i),
-                            )
-                            ma_i = miller.array(
-                                miller_set=ms,
-                                data=intensities_i.select(isel_i),
-                                sigmas=sigmas_i.select(isel_i),
-                            )
-                            corr, neff = weighted_cchalf(
-                                ma_i, ma_j, assume_index_matching=True
-                            )
-                            if not neff:
-                                n = None
-                                cc = None
-                            else:
-                                cc = corr
-                                n = neff
-
-                            """corr = flex.linear_correlation(
-                                intensities_i.select(isel_i),
-                                intensities_j.select(isel_j),
-                            )
-
-                            if corr.is_well_defined():
-                                cc = corr.coefficient()
-                                n = corr.n()
-                            else:
-                                cc = None
-                                n = None"""
-                            rij_cache[key] = (cc, n)
-
-                        if (
-                            n is None
-                            or cc is None
-                            or (self._min_pairs is not None and n < self._min_pairs)
-                        ):
-                            continue
-                        if self._weights:
-                            wij_row.append(ik)
-                            wij_col.append(jk)
-                            wij_data.append(n)
-                        rij_row.append(ik)
-                        rij_col.append(jk)
-                        rij_data.append(cc)
-
-            rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
-            if self._weights:
-                wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
-
-            return rij, wij
-
-        args = [(i,) for i in range(n_lattices)]
-        results = easy_mp.parallel_map(
-            _compute_rij_matrix_one_row_block,
-            args,
-            processes=self._nproc,
-            iterable_type=easy_mp.posiargs,
-            method="multiprocessing",
-        )
+        args = list(range(n_lattices))
 
         rij_matrix = None
         wij_matrix = None
-        for i, (rij, wij) in enumerate(results):
-            if rij_matrix is None:
-                rij_matrix = rij
-            else:
-                rij_matrix += rij
-            if wij is not None:
-                if wij_matrix is None:
-                    wij_matrix = wij
+        import concurrent.futures
+
+        futures = {}
+        with concurrent.futures.ProcessPoolExecutor(max_workers=10) as pool:
+            for a in args:
+
+                futures[
+                    pool.submit(
+                        _compute_rij_matrix_one_row_block,
+                        a,
+                        self._lattices,
+                        self._data,
+                        indices,
+                        self.sym_ops,
+                        self._patterson_group,
+                        weights=True,
+                        min_pairs=self._min_pairs,
+                    )
+                ] = a
+            for future in concurrent.futures.as_completed(futures):
+                rij, wij = future.result()
+                a = futures[future]
+
+                # for (rij, wij) in results:
+                if rij_matrix is None:
+                    rij_matrix = rij
                 else:
-                    wij_matrix += wij
+                    rij_matrix += rij
+                if wij is not None:
+                    if wij_matrix is None:
+                        wij_matrix = wij
+                    else:
+                        wij_matrix += wij
 
         rij_matrix = rij_matrix.toarray().astype(np.float64)
         if wij_matrix is not None:
