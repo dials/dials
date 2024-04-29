@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import copy
 import itertools
 import logging
@@ -248,6 +249,7 @@ class Target:
         self._weights = weights
         self._min_pairs = min_pairs
         self._nproc = nproc
+        logger.info(f"Using nproc={nproc} processes")
 
         data = intensities.customized_copy(anomalous_flag=False)
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
@@ -360,10 +362,9 @@ class Target:
 
         rij_matrix = None
         wij_matrix = None
-        import concurrent.futures
 
         futures = {}
-        with concurrent.futures.ProcessPoolExecutor(max_workers=10) as pool:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=self._nproc) as pool:
             for a in args:
 
                 futures[

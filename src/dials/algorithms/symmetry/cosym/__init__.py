@@ -110,8 +110,7 @@ minimization
 
 nproc = None
   .type = int(value_min=1)
-  .help = "Deprecated"
-  .deprecated = True
+  .help = "Number of processes"
 """
 )
 
@@ -239,6 +238,7 @@ class CosymAnalysis(symmetry_base, Subject):
             dimensions=dimensions,
             weights=self.params.weights,
             cc_weights=self.params.cc_weights,
+            nproc=self.params.nproc,
         )
 
     def _determine_dimensions(self):
