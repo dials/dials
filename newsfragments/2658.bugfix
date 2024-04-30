@@ -1,0 +1,1 @@
+``dials.find_rotation_axis``: Correctly set the orientation of the rotation axis for a multi-axis goniometer.
