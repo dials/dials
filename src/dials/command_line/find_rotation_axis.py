@@ -26,6 +26,7 @@ import numpy as np
 import dxtbx.flumpy as flumpy
 import libtbx
 import libtbx.phil
+from scitbx import matrix
 
 import dials.util
 import dials.util.log
@@ -522,7 +523,27 @@ def run(args=None, phil=phil_scope):
     logger.info(
         f"\nRotation axis found: {azimuth_deg:.2f} deg. / {azimuth_rad:.3f} rad."
     )
-    expt.goniometer.set_rotation_axis(rotation_axis_to_xyz(azimuth_rad))
+
+    current_rotation_axis = matrix.col(expt.goniometer.get_rotation_axis())
+    new_rotation_axis = matrix.col(rotation_axis_to_xyz(azimuth_rad))
+
+    # Rotation matrix to take the current_rotation_axis to the new_rotation_axis
+    angle = current_rotation_axis.angle(new_rotation_axis)
+    if angle:
+        axis = matrix.col(current_rotation_axis.cross(new_rotation_axis)).normalize()
+        R = axis.axis_and_angle_as_r3_rotation_matrix(angle)
+    else:
+        R = matrix.sqr(matrix.identity(3))
+
+    try:
+        # For a multi-axis goniometer, rotate the base axis by R
+        axes = expt.goniometer.get_axes()
+        base_axis = matrix.col(axes[-1])
+        axes[-1] = R * base_axis
+        expt.goniometer.set_axes(axes)
+    except AttributeError:
+        # For a single-axis goniometer, just set the new_rotation_axis
+        expt.goniometer.set_rotation_axis(new_rotation_axis)
     logger.info(str(expt.goniometer))
 
     logger.info(f"Saving optimised experiments to {params.output.experiments}")
