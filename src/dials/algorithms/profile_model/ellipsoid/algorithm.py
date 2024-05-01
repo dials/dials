@@ -49,13 +49,14 @@ ellipsoid_algorithm_phil_scope = parse(
 
     }
 
-    corrections {
-      lp = True
+    partiality {
+      apply = False
         .type = bool
-      dqe = True
-        .type = bool
-      partiality = True
-        .type = bool
+        .help = "If True, intensity.sum.value and intensity.sum.variance colums are scaled"
+                "by the calculated partiality values, and the partiality columns are"
+                "renamed as 'partiality_applied'. This option allows the data to be"
+                "corrected for reduction with cctbx.xfel.merge, providing the postrefinement"
+                "option is disabled in that program."
     }
 
   }
@@ -209,6 +210,7 @@ def final_integrator(
     sigma_d,
     use_crude_shoebox_mask=False,
     shoebox_probability=FULL_PARTIALITY,
+    apply_p_correction=False,
 ):
     """Performs an initial integration of all predicted spots"""
 
@@ -265,8 +267,29 @@ def final_integrator(
 
     profile = experiment.crystal.mosaicity
     profile.parameterisation.compute_partiality(experiments, reflection_table)
-
+    if apply_p_correction:
+        apply_partiality_correction(reflection_table)
     return reflection_table
+
+
+def apply_partiality_correction(reflections):
+    reflections["intensity.sum.variance"] = reflections["intensity.sum.variance"] / (
+        reflections["partiality"] ** 2
+    )
+    # increase variance, depends on square of raw intensity value (i.e. before partiality correction)
+    reflections["intensity.sum.variance"] += (
+        reflections["intensity.sum.value"] ** 2
+    ) * reflections["partiality.inv.variance"]
+    reflections["intensity.sum.value"] = (
+        reflections["intensity.sum.value"] / reflections["partiality"]
+    )
+    reflections["partiality_applied"] = reflections["partiality"]
+    reflections["partiality.inv.variance_applied"] = reflections[
+        "partiality.inv.variance"
+    ]
+    del reflections["partiality"]
+    del reflections["partiality.inv.variance"]
+    return reflections
 
 
 def refine_profile(
