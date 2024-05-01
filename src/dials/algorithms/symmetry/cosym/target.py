@@ -16,7 +16,6 @@ from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
 logger = logging.getLogger(__name__)
-import math
 
 from cctbx.miller import binned_data
 
@@ -56,13 +55,11 @@ def weighted_cchalf(
 
             sx = flex.sum(dx**2 * norm_jw)
             sy = flex.sum(dy**2 * norm_jw)
-            # what is neff? neff = 1/V2
-            # V2 = flex.sum(norm_jw**2)
-            # use entropy based approach
-            neff = math.exp(-1.0 * flex.sum(norm_jw * flex.log(norm_jw)))
-            # print(n, neff, 1.0/V2)
             if sx == 0.0 or sy == 0.0:
                 return None, 0
+            # effective sample size of weighted sample
+            # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
+            neff = 1 / flex.sum(norm_jw**2)
             return (sxy / ((sx * sy) ** 0.5), neff)
         else:
             n = len(o.data())
