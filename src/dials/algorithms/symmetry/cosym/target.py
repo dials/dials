@@ -58,6 +58,7 @@ def weighted_cchalf(
             if sx == 0.0 or sy == 0.0:
                 return None, 0
             # effective sample size of weighted sample
+            # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
             neff = 1 / flex.sum(norm_jw**2)
             return (sxy / ((sx * sy) ** 0.5), neff)
