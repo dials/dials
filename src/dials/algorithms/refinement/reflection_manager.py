@@ -104,7 +104,7 @@ phil_str = (
                 "whether the case is for stills or scans. The default gives"
                 "unit weighting."
         .type = floats(size = 3, value_min = 0)
-      wavelength_weight = 1e7
+      wavelength_weight = 1e4
         .help = "Weight for the wavelength term in the target function for"
                 "Laue refinement"
         .type = float(value_min = 0)
@@ -388,7 +388,7 @@ class ReflectionManagerFactory:
 
         ## Outlier detection
         if params.outlier.algorithm in ("auto", libtbx.Auto):
-            params.outlier.algorithm = "sauter_poon"
+            params.outlier.algorithm = "mcd"
         if params.outlier.sauter_poon.px_sz is libtbx.Auto:
             # get this from the first panel of the first detector
             params.outlier.sauter_poon.px_sz = experiments.detectors()[0][
@@ -411,13 +411,18 @@ class ReflectionManagerFactory:
         ## Weighting strategy
 
         if params.weighting_strategy.override == "statistical":
-            params.weighting_strategy.override == "statistical_laue"
+            params.weighting_strategy.override = "statistical_laue"
         elif params.weighting_strategy.override == "constant":
             params.weighting_strategy.override = "constant_laue"
-        elif params.weighting_strategy.override is not None:
-            raise ValueError(
-                f"{params.weighting_strategy.override} not compatible with Laue data"
-            )
+
+        if params.weighting_strategy.override is not None:
+            if params.weighting_strategy.override not in [
+                "constant_laue",
+                "statistical_laue",
+            ]:
+                raise ValueError(
+                    f"{params.weighting_strategy.override} not compatible with Laue data"
+                )
 
         weighting_strategy = ReflectionManagerFactory.get_weighting_strategy_override(
             params
