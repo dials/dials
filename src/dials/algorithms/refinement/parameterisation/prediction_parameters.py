@@ -987,7 +987,7 @@ class LauePredictionParameterisation(PredictionParameterisation):
 
     def _local_setup(self, reflections):
         self._wavelength = reflections["wavelength_cal"]
-        self._r = self._UB * self._h
+        self._r = self._setting_rotation * self._fixed_rotation * self._UB * self._h
         self._s0 = reflections["s0_cal"]
         return
 
