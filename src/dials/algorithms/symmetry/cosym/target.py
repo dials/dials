@@ -249,7 +249,6 @@ class Target:
         self._weights = weights
         self._min_pairs = min_pairs
         self._nproc = nproc
-        logger.info(f"Using nproc={nproc} processes")
 
         data = intensities.customized_copy(anomalous_flag=False)
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
