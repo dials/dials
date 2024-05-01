@@ -978,7 +978,7 @@ class Refiner:
     def print_panel_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""
 
-        if len(self._experiments.scans()) > 1:
+        if len(self._experiments.scans()) > 1 and not self._experiments.all_tof():
             logger.warning(
                 "Multiple scans present. Only the first scan will be used "
                 "to determine the image width for reporting RMSDs"
