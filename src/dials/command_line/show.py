@@ -88,9 +88,7 @@ def beam_centre_raw_image_px(detector, s0):
     return x_px + offset[0], y_px + offset[1]
 
 
-def show_beam(
-    detector, beam, experiment_type: ExperimentType = ExperimentType.ROTATION
-):
+def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
 
     # standard static beam model string
     s = str(beam)
