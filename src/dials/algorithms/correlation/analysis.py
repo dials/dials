@@ -125,9 +125,6 @@ class CorrelationMatrix:
 
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
-        # QUERY THIS BIT WITH JAMES
-        # self.cosym_analysis.run()
-
     def _merge_intensities(self, datasets: list) -> list:
         """
         Merge intensities and elimate systematically absent reflections.
@@ -324,7 +321,7 @@ class CorrelationMatrix:
                 if merged is None:
                     merged = copy.deepcopy(d)
                 else:
-                    merged = merged.concatenate(d)
+                    merged = merged.concatenate(d, assert_is_similar_symmetry=False)
             merging = merged.merge_equivalents()
             merged_intensities = merging.array()
             multiplicities = merging.redundancies()
