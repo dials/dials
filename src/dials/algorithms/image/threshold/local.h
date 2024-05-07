@@ -1175,10 +1175,67 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Erode the dispersion mask
+     * Erode the dispersion mask: N.B. this inverts the definition in flight -
+     * the purpose of erosion is to extract those pixels which are at least
+     * the kernel-width away from the nearest true background pixel.
+     * The implementation in this context returns the pixels which are
+     * valid for assessing an estimate of the background.
+     *
      * @param dst The dispersion mask
      */
     void erode_dispersion_mask(const af::const_ref<bool, af::c_grid<2> > &mask,
+                               af::ref<bool, af::c_grid<2> > dst) {
+      // array size, slow then fast
+      std::size_t ysize = dst.accessor()[0];
+      std::size_t xsize = dst.accessor()[1];
+
+      // search distance: N.B. that this is in practice one pixel smaller
+      int d = std::min(kernel_size_[0], kernel_size_[1]) - 1;
+
+      // scratch array to store the result, which is then inverted back
+      // to the input array
+      af::versa<bool, af::c_grid<2> > scr(dst.accessor());
+
+      for (int j = 0, k = 0; j < ysize; ++j) {
+        for (std::size_t i = 0; i < xsize; ++i, ++k) {
+          // pixel has to be non-background (dst[k]) and valid (mask[k]) to continue
+          if (!dst[k] || !mask[k]) {
+            scr[k] = false;
+            continue;
+          }
+
+          // take as a prior that this pixel is non-backgroundy
+          bool tmp = true;
+
+          // search over a (2 * d + 1) ** 2 pixel grid for any true background pixel
+          for (int _j = -d; _j <= d; _j++) {
+            if ((j + _j < 0) || (j + _j >= ysize)) continue;
+            for (int _i = -d; _i <= d; _i++) {
+              if ((i + _i < 0 || i + _i >= xsize)) continue;
+              int _k = (j + _j) * xsize + i + _i;
+              if (!dst[_k]) {
+                tmp = false;
+              }
+            }
+          }
+
+          scr[k] = tmp;
+        }
+      }
+
+      // copy mask back, inverting as we go
+      for (int j = 0, k = 0; j < ysize; ++j) {
+        for (std::size_t i = 0; i < xsize; ++i, ++k) {
+          dst[k] = mask[k] && !scr[k];
+        }
+      }
+    }
+
+    /**
+     * Erode the dispersion mask: N.B. this inverts the definition in flight
+     * @param dst The dispersion mask
+     */
+    void erode_dispersion_orig(const af::const_ref<bool, af::c_grid<2> > &mask,
                                af::ref<bool, af::c_grid<2> > dst) {
       // The distance array
       af::versa<int, af::c_grid<2> > distance(dst.accessor(), 0);
