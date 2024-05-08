@@ -23,6 +23,7 @@ from libtbx import Auto
 from scitbx import matrix
 
 import dials.util
+import dials.util.system
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry import median_unit_cell, symmetry_base
 from dials.algorithms.symmetry.cosym import engine as cosym_engine
@@ -79,6 +80,15 @@ use_curvatures = True
 weights = count standard_error
   .type = choice
   .short_caption = "Weights"
+  .help = "If not None, a weights matrix is used in the cosym procedure."
+          "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
+          "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
+          "the sqrt of (1-CC*2)/(n-2), where (n-2) are the degrees of freedom in a pairwise CC calculation."
+cc_weights = None sigma
+  .type = choice
+  .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
+          "freedom in the cosym procedure."
+          "weights=sigma uses the intensity uncertainties to perform inverse variance weighting during the cc calculation."
 
 min_pairs = 3
   .type = int(value_min=1)
@@ -99,10 +109,9 @@ minimization
     .short_caption = "Maximum number of calls"
 }
 
-nproc = None
+nproc = Auto
   .type = int(value_min=1)
-  .help = "Deprecated"
-  .deprecated = True
+  .help = "Number of processes"
 """
 )
 
@@ -208,6 +217,13 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
+        # N.B. currently only multiprocessing used if cc_weights=sigma
+        if self.params.nproc is Auto:
+            if self.params.cc_weights == "sigma":
+                params.nproc = dials.util.system.CPU_COUNT
+                logger.info("Setting nproc={}".format(params.nproc))
+            else:
+                params.nproc = 1
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -229,6 +245,8 @@ class CosymAnalysis(symmetry_base, Subject):
             lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
+            cc_weights=self.params.cc_weights,
+            nproc=self.params.nproc,
         )
 
     def _determine_dimensions(self):
