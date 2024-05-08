@@ -223,7 +223,7 @@ class CosymAnalysis(symmetry_base, Subject):
                 params.nproc = dials.util.system.CPU_COUNT
                 logger.info("Setting nproc={}".format(params.nproc))
             else:
-                params.nproc = None
+                params.nproc = 1
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
