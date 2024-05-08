@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import copy
 import itertools
 import logging
@@ -15,6 +16,120 @@ from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
 logger = logging.getLogger(__name__)
+from scipy import sparse
+
+from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
+
+
+def _lattice_lower_upper_index(lattices, lattice_id):
+    lower_index = int(lattices[lattice_id])
+    upper_index = None
+    if lattice_id < len(lattices) - 1:
+        upper_index = int(lattices[lattice_id + 1])
+    else:
+        assert lattice_id == len(lattices) - 1
+    return lower_index, upper_index
+
+
+def _compute_rij_matrix_one_row_block(
+    i, lattices, data, indices, sym_ops, patterson_group, weights=True, min_pairs=3
+):
+    cs = data.crystal_symmetry()
+    n_lattices = len(lattices)
+    rij_cache = {}
+
+    NN = n_lattices * len(sym_ops)
+
+    rij_row = []
+    rij_col = []
+    rij_data = []
+    wij = None
+    if weights:
+        wij_row = []
+        wij_col = []
+        wij_data = []
+
+    i_lower, i_upper = _lattice_lower_upper_index(lattices, i)
+    intensities_i = data.data()[i_lower:i_upper]
+    sigmas_i = data.sigmas()[i_lower:i_upper]
+    cb_ops = [sgtbx.change_of_basis_op(cb_op_k) for cb_op_k in sym_ops]
+
+    for j in range(n_lattices):
+
+        j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
+        intensities_j = data.data()[j_lower:j_upper]
+        sigmas_j = data.sigmas()[j_lower:j_upper]
+
+        for k, cb_op_k in enumerate(cb_ops):
+
+            indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+
+            for kk, cb_op_kk in enumerate(cb_ops):
+                if i == j and k == kk:
+                    # don't include correlation of dataset with itself
+                    continue
+
+                ik = i + (n_lattices * k)
+                jk = j + (n_lattices * kk)
+
+                key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
+                if key in rij_cache:
+                    cc, n = rij_cache[key]
+                else:
+                    indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
+
+                    matches = miller.match_indices(indices_i, indices_j)
+                    pairs = matches.pairs()
+                    isel_i = pairs.column(0)
+                    isel_j = pairs.column(1)
+                    isel_i = isel_i.select(
+                        patterson_group.epsilon(indices_i.select(isel_i)) == 1
+                    )
+                    isel_j = isel_j.select(
+                        patterson_group.epsilon(indices_j.select(isel_j)) == 1
+                    )
+                    ms = miller.set(
+                        crystal_symmetry=cs, indices=indices_j.select(isel_j)
+                    )
+                    ma_j = miller.array(
+                        miller_set=ms,
+                        data=intensities_j.select(isel_j),
+                        sigmas=sigmas_j.select(isel_j),
+                    )
+                    ms = miller.set(
+                        crystal_symmetry=cs, indices=indices_i.select(isel_i)
+                    )
+                    ma_i = miller.array(
+                        miller_set=ms,
+                        data=intensities_i.select(isel_i),
+                        sigmas=sigmas_i.select(isel_i),
+                    )
+                    corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
+                        ma_i, ma_j, assume_index_matching=True
+                    )[0]
+                    if neff:
+                        cc = corr
+                        n = neff
+                    else:
+                        n, cc = (None, None)
+
+                    rij_cache[key] = (cc, n)
+
+                if n is None or cc is None or (min_pairs is not None and n < min_pairs):
+                    continue
+                if weights:
+                    wij_row.append(ik)
+                    wij_col.append(jk)
+                    wij_data.append(n)
+                rij_row.append(ik)
+                rij_col.append(jk)
+                rij_data.append(cc)
+
+    rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
+    if weights:
+        wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
+
+    return rij, wij
 
 
 class Target:
@@ -32,6 +147,8 @@ class Target:
         min_pairs=3,
         lattice_group=None,
         dimensions=None,
+        nproc=1,
+        cc_weights=None,
     ):
         r"""Initialise a Target object.
 
@@ -60,6 +177,7 @@ class Target:
             assert weights in ("count", "standard_error")
         self._weights = weights
         self._min_pairs = min_pairs
+        self._nproc = nproc
 
         data = intensities.customized_copy(anomalous_flag=False)
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
@@ -70,8 +188,11 @@ class Target:
         order = lattice_ids.argsort().astype(np.uint64)
         sorted_data = data.data().select(flex.size_t(order))
         sorted_indices = data.indices().select(flex.size_t(order))
+        sorted_sigmas = data.sigmas().select(flex.size_t(order))
         self._lattice_ids = lattice_ids[order]
-        self._data = data.customized_copy(indices=sorted_indices, data=sorted_data)
+        self._data = data.customized_copy(
+            indices=sorted_indices, data=sorted_data, sigmas=sorted_sigmas
+        )
         assert isinstance(self._data.indices(), type(flex.miller_index()))
         assert isinstance(self._data.data(), type(flex.double()))
 
@@ -103,8 +224,10 @@ class Target:
         logger.debug(
             "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
-
-        self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
+        if cc_weights == "sigma":
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights()
+        else:
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
 
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
@@ -144,6 +267,63 @@ class Target:
                 operators.append(cb_op.apply(partition[0]))
 
         return operators
+
+    def _compute_rij_wij_ccweights(self):
+        # Use flex-based methods for calculating matrices.
+        # Pre-calculate miller indices after application of each cb_op. Only calculate
+        # this once per cb_op instead of on-the-fly every time we need it.
+        indices = {}
+        epsilons = {}
+        space_group_type = self._data.space_group().type()
+        for cb_op in self.sym_ops:
+            cb_op = sgtbx.change_of_basis_op(cb_op)
+            indices_reindexed = cb_op.apply(self._data.indices())
+            miller.map_to_asu(space_group_type, False, indices_reindexed)
+            cb_op_str = cb_op.as_xyz()
+            indices[cb_op_str] = indices_reindexed
+            epsilons[cb_op_str] = self._patterson_group.epsilon(indices_reindexed)
+
+        rij_matrix = None
+        wij_matrix = None
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=self._nproc) as pool:
+            futures = [
+                pool.submit(
+                    _compute_rij_matrix_one_row_block,
+                    i,
+                    self._lattices,
+                    self._data,
+                    indices,
+                    self.sym_ops,
+                    self._patterson_group,
+                    weights=True,
+                    min_pairs=self._min_pairs,
+                )
+                for i, _ in enumerate(self._lattices)
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                rij, wij = future.result()
+
+                if rij_matrix is None:
+                    rij_matrix = rij
+                else:
+                    rij_matrix += rij
+                if wij is not None:
+                    if wij_matrix is None:
+                        wij_matrix = wij
+                    else:
+                        wij_matrix += wij
+
+        rij_matrix = rij_matrix.toarray().astype(np.float64)
+        if wij_matrix is not None:
+            wij_matrix = wij_matrix.toarray().astype(np.float64)
+            if self._weights == "standard_error":
+                sel = np.where(wij_matrix > 2)
+                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 2))
+                wij_matrix = np.zeros_like(rij_matrix)
+                wij_matrix[sel] = 1 / se
+
+        return rij_matrix, wij_matrix
 
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix.
