@@ -15,6 +15,7 @@ import logging
 import math
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import List, Tuple
 from unittest.mock import Mock
 
 import numpy as np
@@ -489,7 +490,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     @classmethod
     def weighted_cchalf(
         cls, this, other, assume_index_matching=False, use_binning=False
-    ):
+    ) -> List[Tuple]:
         if not use_binning:
             assert other.indices().size() == this.indices().size()
             if this.data().size() == 0:
@@ -526,7 +527,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
             neff = 1 / flex.sum(flex.pow2(norm_jw))
-            return (sxy / (flex.sqrt((sx * sy))), neff)
+            return [(sxy / ((sx * sy) ** 0.5), neff)]
 
         assert this.binner is not None
         results = []
@@ -538,7 +539,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                     other.select(sel),
                     assume_index_matching=assume_index_matching,
                     use_binning=False,
-                )
+                )[0]
             )
         return results
 

@@ -29,6 +29,7 @@ def test_cosym(dials_data, run_in_tmp_path, space_group, engine, weights, cc_wei
     args = [
         "space_group=" + str(space_group),
         "seed=0",
+        "nproc=1",
         f"engine={engine}",
         f"weights={weights}",
         f"cc_weights={cc_weights}",

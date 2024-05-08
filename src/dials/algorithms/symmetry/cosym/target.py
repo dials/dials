@@ -106,7 +106,7 @@ def _compute_rij_matrix_one_row_block(
                     )
                     corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
                         ma_i, ma_j, assume_index_matching=True
-                    )
+                    )[0]
                     if neff:
                         cc = corr
                         n = neff
