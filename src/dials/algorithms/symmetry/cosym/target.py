@@ -193,7 +193,6 @@ class Target:
         self._data = data.customized_copy(
             indices=sorted_indices, data=sorted_data, sigmas=sorted_sigmas
         )
-        # self._sigmas = data.customized_copy(indices=sorted_indices, data=sorted_sigmas)
         assert isinstance(self._data.indices(), type(flex.miller_index()))
         assert isinstance(self._data.data(), type(flex.double()))
 
