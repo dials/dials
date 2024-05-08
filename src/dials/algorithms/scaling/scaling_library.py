@@ -486,6 +486,62 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             )
         return results
 
+    @classmethod
+    def weighted_cchalf(
+        cls, this, other, assume_index_matching=False, use_binning=False
+    ):
+        if not use_binning:
+            assert other.indices().size() == this.indices().size()
+            if this.data().size() == 0:
+                return None, None
+
+            if assume_index_matching:
+                (o, c) = (this, other)
+            else:
+                (o, c) = this.common_sets(other=other, assert_no_singles=True)
+
+            # The case where the denominator is less or equal to zero is
+            # pathological and should never arise in practice.
+            assert len(o.sigmas())
+            assert len(c.sigmas())
+            n = len(o.data())
+            if n == 1:
+                return None, 1
+            v_o = flex.pow2(o.sigmas())
+            v_c = flex.pow2(c.sigmas())
+            joint_w = 1.0 / (v_o + v_c)
+            sumjw = flex.sum(joint_w)
+            norm_jw = joint_w / sumjw
+            xbar = flex.sum(o.data() * norm_jw)
+            ybar = flex.sum(c.data() * norm_jw)
+            dx = o.data() - xbar
+            dy = c.data() - ybar
+            sxy = flex.sum(dx * dy * norm_jw)
+
+            sx = flex.sum(flex.pow2(dx) * norm_jw)
+            sy = flex.sum(flex.pow2(dy) * norm_jw)
+            if sx == 0.0 or sy == 0.0:
+                return None, 0
+            # effective sample size of weighted sample
+            # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
+            # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
+            neff = 1 / flex.sum(flex.pow2(norm_jw))
+            return (sxy / (flex.sqrt((sx * sy))), neff)
+
+        assert this.binner is not None
+        results = []
+        for i_bin in this.binner().range_all():
+            sel = this.binner().selection(i_bin)
+            results.append(
+                cls.weighted_cchalf(
+                    this.select(sel),
+                    other.select(sel),
+                    assume_index_matching=assume_index_matching,
+                    use_binning=False,
+                )
+            )
+        return results
+
 
 def merging_stats_from_scaled_array(
     scaled_miller_array,

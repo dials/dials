@@ -16,79 +16,9 @@ from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
 logger = logging.getLogger(__name__)
-
-from cctbx.miller import binned_data
-
-
-def weighted_cchalf(
-    this, other, assume_index_matching=False, use_binning=False, weighted=True
-):
-    if not use_binning:
-        assert other.indices().size() == this.indices().size()
-        if this.data().size() == 0:
-            return None, None
-
-        if assume_index_matching:
-            (o, c) = (this, other)
-        else:
-            (o, c) = this.common_sets(other=other, assert_no_singles=True)
-
-        # The case where the denominator is less or equal to zero is
-        # pathological and should never arise in practice.
-        if weighted:
-            assert len(o.sigmas())
-            assert len(c.sigmas())
-            n = len(o.data())
-            if n == 1:
-                return None, 1
-            v_o = o.sigmas() ** 2
-            v_c = c.sigmas() ** 2
-            var_w = v_o + v_c
-            joint_w = 1.0 / var_w
-            sumjw = flex.sum(joint_w)
-            norm_jw = joint_w / sumjw
-            xbar = flex.sum(o.data() * norm_jw)
-            ybar = flex.sum(c.data() * norm_jw)
-            dx = o.data() - xbar
-            dy = c.data() - ybar
-            sxy = flex.sum(dx * dy * norm_jw)
-
-            sx = flex.sum(dx**2 * norm_jw)
-            sy = flex.sum(dy**2 * norm_jw)
-            if sx == 0.0 or sy == 0.0:
-                return None, 0
-            # effective sample size of weighted sample
-            # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
-            # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
-            neff = 1 / flex.sum(norm_jw**2)
-            return (sxy / ((sx * sy) ** 0.5), neff)
-        else:
-            n = len(o.data())
-            xbar = flex.sum(o.data()) / n
-            ybar = flex.sum(c.data()) / n
-            sxy = flex.sum((o.data() - xbar) * (c.data() - ybar))
-            sx = flex.sum((o.data() - xbar) ** 2)
-            sy = flex.sum((c.data() - ybar) ** 2)
-
-            return (sxy / ((sx * sy) ** 0.5), n)
-    assert this.binner is not None
-    results = []
-    n_eff = []
-    for i_bin in this.binner().range_all():
-        sel = this.binner().selection(i_bin)
-        cchalf, neff = weighted_cchalf(
-            this.select(sel),
-            other.select(sel),
-            assume_index_matching=assume_index_matching,
-            use_binning=False,
-            weighted=weighted,
-        )
-        results.append(cchalf)
-        n_eff.append(neff)
-    return binned_data(binner=this.binner(), data=results, data_fmt="%7.4f"), n_eff
-
-
 from scipy import sparse
+
+from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
 
 
 def _lattice_lower_upper_index(lattices, lattice_id):
@@ -106,21 +36,19 @@ def _compute_rij_matrix_one_row_block(
 ):
     cs = data.crystal_symmetry()
     n_lattices = len(lattices)
-    use_cache = True
     rij_cache = {}
 
-    n_sym_ops = len(sym_ops)
-    NN = n_lattices * n_sym_ops
+    NN = n_lattices * len(sym_ops)
 
     rij_row = []
     rij_col = []
     rij_data = []
+    wij = None
     if weights:
         wij_row = []
         wij_col = []
         wij_data = []
-    else:
-        wij = None
+
     i_lower, i_upper = _lattice_lower_upper_index(lattices, i)
     intensities_i = data.data()[i_lower:i_upper]
     sigmas_i = data.sigmas()[i_lower:i_upper]
@@ -145,7 +73,7 @@ def _compute_rij_matrix_one_row_block(
                 jk = j + (n_lattices * kk)
 
                 key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
-                if use_cache and key in rij_cache:
+                if key in rij_cache:
                     cc, n = rij_cache[key]
                 else:
                     indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
@@ -176,11 +104,14 @@ def _compute_rij_matrix_one_row_block(
                         data=intensities_i.select(isel_i),
                         sigmas=sigmas_i.select(isel_i),
                     )
-                    corr, neff = weighted_cchalf(ma_i, ma_j, assume_index_matching=True)
-                    n, cc = (None, None)
+                    corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
+                        ma_i, ma_j, assume_index_matching=True
+                    )
                     if neff:
                         cc = corr
                         n = neff
+                    else:
+                        n, cc = (None, None)
 
                     rij_cache[key] = (cc, n)
 
@@ -295,7 +226,7 @@ class Target:
             "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
         if cc_weights == "sigma":
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_flex()
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights()
         else:
             self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
 
@@ -338,10 +269,8 @@ class Target:
 
         return operators
 
-    def _compute_rij_wij_flex(self, use_cache=True):
-        n_lattices = len(self._lattices)
-        # n_sym_ops = len(self.sym_ops)
-
+    def _compute_rij_wij_ccweights(self):
+        # Use flex-based methods for calculating matrices.
         # Pre-calculate miller indices after application of each cb_op. Only calculate
         # this once per cb_op instead of on-the-fly every time we need it.
         indices = {}
@@ -355,33 +284,27 @@ class Target:
             indices[cb_op_str] = indices_reindexed
             epsilons[cb_op_str] = self._patterson_group.epsilon(indices_reindexed)
 
-        args = list(range(n_lattices))
-
         rij_matrix = None
         wij_matrix = None
 
-        futures = {}
         with concurrent.futures.ProcessPoolExecutor(max_workers=self._nproc) as pool:
-            for a in args:
-
-                futures[
-                    pool.submit(
-                        _compute_rij_matrix_one_row_block,
-                        a,
-                        self._lattices,
-                        self._data,
-                        indices,
-                        self.sym_ops,
-                        self._patterson_group,
-                        weights=True,
-                        min_pairs=self._min_pairs,
-                    )
-                ] = a
+            futures = [
+                pool.submit(
+                    _compute_rij_matrix_one_row_block,
+                    i,
+                    self._lattices,
+                    self._data,
+                    indices,
+                    self.sym_ops,
+                    self._patterson_group,
+                    weights=True,
+                    min_pairs=self._min_pairs,
+                )
+                for i, _ in enumerate(self._lattices)
+            ]
             for future in concurrent.futures.as_completed(futures):
                 rij, wij = future.result()
-                a = futures[future]
 
-                # for (rij, wij) in results:
                 if rij_matrix is None:
                     rij_matrix = rij
                 else:

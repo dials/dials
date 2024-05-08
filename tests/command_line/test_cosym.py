@@ -17,11 +17,22 @@ from dials.util import Sorry
 
 
 @pytest.mark.parametrize(
-    "space_group,engine", [(None, "scitbx"), ("P 1", "scipy"), ("P 4", "scipy")]
+    "space_group,engine,weights,cc_weights",
+    [
+        (None, "scitbx", None, None),
+        ("P 1", "scipy", None, None),
+        ("P 4", "scipy", "standard_error", "sigma"),
+    ],
 )
-def test_cosym(dials_data, run_in_tmp_path, space_group, engine):
+def test_cosym(dials_data, run_in_tmp_path, space_group, engine, weights, cc_weights):
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
-    args = ["space_group=" + str(space_group), "seed=0", f"engine={engine}"]
+    args = [
+        "space_group=" + str(space_group),
+        "seed=0",
+        f"engine={engine}",
+        f"weights={weights}",
+        f"cc_weights={cc_weights}",
+    ]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
         args.append(os.fspath(mcp / f"experiments_{i}.json"))
         args.append(os.fspath(mcp / f"reflections_{i}.pickle"))
