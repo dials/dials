@@ -1,1 +1,1 @@
-``dials.find_spots``: replace the existing signal mask erosion with simpler and more explicit algorithm: as the data are typically sparse this results in a modest performance improvement
+``dials.find_spots``: add second implementation of signal mask erosion for documentation and clarify comments
