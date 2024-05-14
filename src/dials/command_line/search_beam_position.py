@@ -7,9 +7,11 @@ import itertools
 import logging
 import math
 import random
+import sys
 
 import iotbx.phil
 import libtbx
+from dxtbx import flumpy
 from libtbx.test_utils import approx_equal
 from libtbx.utils import plural_s
 from rstbx.dps_core import Direction, Directional_FFT
@@ -22,6 +24,10 @@ from scitbx.simplex import simplex_opt
 
 import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
+from dials.command_line.beam_center_methods import (  # InversionMethodParams,; MaxMethodParams,; beam_position_from_inversion,; beam_position_from_max,
+    MidpointMethodParams,
+    beam_position_from_midpoint,
+)
 from dials.util import Sorry, log
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
@@ -37,44 +43,105 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 Examples::
 
   dials.search_beam_position imported.expt strong.refl
+  dials.search_beam_position method=avg_projection imported.exp
+  dials.search_beam_position method=max_projection imported.exp
 """
 
 phil_scope = iotbx.phil.parse(
     """
-nproc = Auto
-  .type = int(value_min=1)
-plot_search_scope = False
+method = default midpoint maximum inversion
+slice = ":::"
+  .type = str
+  .help = "A slice (similar to slicing in Numpy) used to select specific images "
+          "in the dataset."
+plot = False
+  .help = "Plot the diffraction image with the computed beam center."
   .type = bool
-max_cell = None
-  .type = float
-  .help = "Known max cell (otherwise will compute from spot positions)"
-image_range = None
-  .help = "The range of images to use in indexing. Number of arguments"
-    "must be a factor of two. Specifying \"0 0\" will use all images"
-    "by default. The given range follows C conventions"
-    "(e.g. j0 <= j < j1)."
-  .type = ints(size=2)
-  .multiple = True
-max_reflections = 10000
-  .type = int(value_min=1)
-  .help = "Maximum number of reflections to use in the search for better"
-          "experimental model. If the number of input reflections is greater"
-          "then a random subset of reflections will be used."
-mm_search_scope = 4.0
-  .help = "Global radius of origin offset search."
-  .type = float(value_min=0)
-wide_search_binning = 2
-  .help = "Modify the coarseness of the wide grid search for the beam centre."
-  .type = float(value_min=0)
-n_macro_cycles = 1
-  .type = int
-  .help = "Number of macro cycles for an iterative beam centre search."
-d_min = None
-  .type = float(value_min=0)
+verbose = True
+  .help = "Print the beam center position to the output."
+  .type = bool
+default {
+    nproc = Auto
+      .type = int(value_min=1)
+    plot_search_scope = False
+      .type = bool
+    max_cell = None
+      .type = float
+      .help = "Known max cell (otherwise will compute from spot positions)"
+    image_range = None
+      .help = "The range of images to use in indexing. Number of arguments"
+        "must be a factor of two. Specifying \"0 0\" will use all images"
+        "by default. The given range follows C conventions"
+        "(e.g. j0 <= j < j1)."
+      .type = ints(size=2)
+      .multiple = True
+    max_reflections = 10000
+      .type = int(value_min=1)
+      .help = "Maximum number of reflections to use in the search for better"
+              "experimental model. If the number of input reflections is greater"
+              "then a random subset of reflections will be used."
+    mm_search_scope = 4.0
+      .help = "Global radius of origin offset search."
+      .type = float(value_min=0)
+    wide_search_binning = 2
+      .help = "Modify the coarseness of the wide grid search for the beam centre."
+      .type = float(value_min=0)
+    n_macro_cycles = 1
+      .type = int
+      .help = "Number of macro cycles for an iterative beam centre search."
+    d_min = None
+      .type = float(value_min=0)
+    seed = 42
+      .type = int(value_min=0)
+}
+midpoint {
+    data_slice = (0.3, 0.9, 0.01)
+      .type = floats
+      .help = "Projected data range where to compute the midpoints."
+    convolution_width = 20
+      .help = "Width of the convolution kernel used for smoothing (in pixels)."
+      .type = int
+    bad_pixel_threshold = 20000
+      .help = "Set all pixels above this value to zero."
+      .type = int
+    per_image = False
+      .help = "Compute the midpoints for each image individually."
+              "Otherwise, compute for all images and average."
+      .type = bool
+}
+maximum {
+    bad_pixel_threshold = 20000
+      .help = "Set all pixels above this value to zero."
+      .type = int
+    bin_step = 10
+      .type = int
+      .help = "Distance in pixels between neighboring bins (pixels)."
+    bin_width = 20
+      .type = int
+      .help = "Width of the bin used to find the region"
+              " of max intensity (pixels)."
+    convolution_width = 2
+      .type = int
+      .help = "Width of the convolution kernel used for smoothing (pixels)."
+    n_convolutions = 2
+      .type = int
+      .help = "Number of times the projected profile is smoothed."
+}
+inversion {
+    guess_position = None
+      .type = ints(size=2)
+      .help = "Initial guess for the beam position (x, y) in pixels."
+    inversion_window_width = 100
+      .type = int
+      .help = "The width of the window used for the inversion method."
+    bad_pixel_threshold = 20000
+      .help = "Set all pixels above this value to zero."
+      .type = int
+    filename = 'fig.png'
+      .type = str
+      .help = "Filename to save the plot."
 
-seed = 42
-  .type = int(value_min=0)
-
+}
 output {
   experiments = optimised.expt
     .type = path
@@ -471,7 +538,7 @@ def run(args=None):
         phil=phil_scope,
         read_experiments=True,
         read_reflections=True,
-        check_format=False,
+        check_format=True,
         epilog=help_message,
     )
 
@@ -480,59 +547,136 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
-    if len(experiments) == 0 or len(reflections) == 0:
-        parser.print_help()
-        exit(0)
+    if params.method[0] == "default":
 
-    # Configure the logging
-    log.config(logfile=params.output.log)
+        if len(experiments) == 0 or len(reflections) == 0:
+            parser.print_help()
+            exit(0)
 
-    # Log the diff phil
-    diff_phil = parser.diff_phil.as_str()
-    if diff_phil != "":
-        logger.info("The following parameters have been modified:\n")
-        logger.info(diff_phil)
+        # Configure the logging
+        log.config(logfile=params.output.log)
 
-    if params.seed is not None:
-        flex.set_random_seed(params.seed)
-        random.seed(params.seed)
+        # Log the diff phil
+        diff_phil = parser.diff_phil.as_str()
+        if diff_phil != "":
+            logger.info("The following parameters have been modified:\n")
+            logger.info(diff_phil)
 
     if params.nproc is libtbx.Auto:
         params.nproc = CPU_COUNT
 
-    imagesets = experiments.imagesets()
-    # Split all the refln tables by ID, corresponding to the respective imagesets
-    reflections = [
-        refl_unique_id
-        for refl in reflections
-        for refl_unique_id in refl.split_by_experiment_id()
-    ]
+        if params.labelit.nproc is libtbx.Auto:
+            params.labelit.nproc = available_cores()
 
-    assert len(imagesets) > 0
-    assert len(reflections) == len(imagesets)
-
-    if params.image_range is not None and len(params.image_range) > 0:
+        imagesets = experiments.imagesets()
+        # Split all the refln tables by ID, corresponding to the respective imagesets
         reflections = [
-            slice_reflections(refl, params.image_range) for refl in reflections
+            refl_unique_id
+            for refl in reflections
+            for refl_unique_id in refl.split_by_experiment_id()
         ]
 
-    for i in range(params.n_macro_cycles):
-        if params.n_macro_cycles > 1:
-            logger.info("Starting macro cycle %i", i + 1)
-        experiments = discover_better_experimental_model(
-            experiments,
-            reflections,
-            params,
-            nproc=params.nproc,
-            d_min=params.d_min,
-            mm_search_scope=params.mm_search_scope,
-            wide_search_binning=params.wide_search_binning,
-            plot_search_scope=params.plot_search_scope,
-        )
-        logger.info("")
+        assert len(imagesets) > 0
+        assert len(reflections) == len(imagesets)
 
-    logger.info("Saving optimised experiments to %s", params.output.experiments)
-    experiments.as_file(params.output.experiments)
+        if (
+            params.labelit.image_range is not None
+            and len(params.labelit.image_range) > 0
+        ):
+            reflections = [
+                slice_reflections(refl, params.labelit.image_range)
+                for refl in reflections
+            ]
+
+        for i in range(params.labelit.n_macro_cycles):
+            if params.labelit.n_macro_cycles > 1:
+                logger.info("Starting macro cycle %i", i + 1)
+            experiments = discover_better_experimental_model(
+                experiments,
+                reflections,
+                params.labelit,
+                nproc=params.labelit.nproc,
+                d_min=params.labelit.d_min,
+                mm_search_scope=params.labelit.mm_search_scope,
+                wide_search_binning=params.labelit.wide_search_binning,
+                plot_search_scope=params.labelit.plot_search_scope,
+            )
+            logger.info("")
+
+        logger.info("Saving optimised experiments to %s", params.output.experiments)
+        experiments.as_file(params.output.experiments)
+
+    elif params.method[0] == "midpoint":
+
+        if len(experiments) == 0:
+            parser.print_help()
+            sys.exit(0)
+
+        imagesets = experiments.imagesets()
+        p = params.midpoint
+
+        if len(imagesets) != 1:
+            print("Number of imagesets not equal to one.")
+            print("Setting per_image = True.")
+            p.per_image = True
+
+        method_params = MidpointMethodParams(
+            data_slice=p.data_slice,
+            convolution_width=p.convolution_width,
+            bad_pixel_threshold=p.bad_pixel_threshold,
+            plot=params.plot,
+            per_image=p.per_image,
+            verbose=params.verbose,
+        )
+
+        # import sys
+        # sys.exit(0)
+
+        for ims_index, image_set in enumerate(imagesets):
+            num_images = image_set.size()
+
+            if p.per_image:
+                for index in range(num_images):
+                    image = image_set.get_corrected_data(index)
+                    image = flumpy.to_numpy(image[0])
+
+                    mask = image_set.get_mask(0)
+                    mask = flumpy.to_numpy(mask[0])
+
+                    image[mask == 0] = 0
+
+                    filename = "beam_position_from_midpoint"
+                    filename += f"_{ims_index:02d}_{index:04d}.png"
+                    beam_position_from_midpoint(
+                        image, method_params, output_file=filename
+                    )
+            else:
+                for index in range(num_images):
+                    image = image_set.get_corrected_data(index)
+                    image = flumpy.to_numpy(image[0])
+
+                    if index == 0:
+                        avg_image = image
+                    else:
+                        avg_image = avg_image + image
+
+                image = avg_image / num_images
+                mask = image_set.get_mask(0)
+                mask = flumpy.to_numpy(mask[0])
+
+                image[mask == 0] = 0
+
+                filename = "beam_position_from_midpoint.png"
+
+                beam_position_from_midpoint(image, method_params, output_file=filename)
+
+    else:
+        print(f"Unknown method: {params.method[0]}")
+        msg = "Possible choices: labelit (default),"
+        msg += " avg_projection, max_projection"
+        print(msg)
+        parser.print_help()
+        sys.exit(0)
 
 
 if __name__ == "__main__":
