@@ -613,11 +613,8 @@ class Indexer:
 
                 if self._check_have_similar_crystal_models(experiments):
                     have_similar_crystal_models = True
-                    try:
-                        # Unset ids for the last experiment that is now deleted
-                        self._remove_id_from_reflections(len(experiments))
-                    except AttributeError:
-                        pass
+                    # Unset ids for the last experiment that is now deleted
+                    self._remove_id_from_reflections(len(experiments))
                     break
 
                 logger.info("")
