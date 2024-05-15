@@ -658,6 +658,7 @@ def save_subset(input_: SplittingIterable) -> Optional[Tuple[str, FilePair]]:
         sel_identifiers = list(identifiers.select(flumpy.from_numpy(sel)))
         expts.select_on_experiment_identifiers(sel_identifiers)
         refls = refls.select_on_experiment_identifiers(sel_identifiers)
+        refls.reset_ids()
     if expts:
         exptout = (
             input_.working_directory
