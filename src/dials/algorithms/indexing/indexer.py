@@ -611,10 +611,8 @@ class Indexer:
                 logger.info("\nIndexed crystal models:")
                 self.show_experiments(experiments, self.reflections, d_min=self.d_min)
 
-                if self._check_have_similar_crystal_models(experiments):
+                if self._remove_similar_crystal_models(experiments):
                     have_similar_crystal_models = True
-                    # Unset ids for the last experiment that is now deleted
-                    self._remove_id_from_reflections(len(experiments))
                     break
 
                 logger.info("")
@@ -828,9 +826,9 @@ class Indexer:
                         reflections["id"] == i_expt, miller_indices
                     )
 
-    def _check_have_similar_crystal_models(self, experiments):
+    def _remove_similar_crystal_models(self, experiments):
         """
-        Checks for similar crystal models.
+        Checks for too-similar crystal models and removes them.
 
         Checks whether the most recently added crystal model is similar to previously
         found crystal models, and if so, deletes the last crystal model from the
@@ -859,6 +857,8 @@ class Indexer:
                 have_similar_crystal_models = True
                 for id_ in sorted(models_to_reject, reverse=True):
                     del experiments[id_]
+                    # Unset ids in the reflection table
+                    self._remove_id_from_reflections(id_)
                 break
         return have_similar_crystal_models
 
