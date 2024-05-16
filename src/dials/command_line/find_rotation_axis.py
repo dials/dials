@@ -155,7 +155,10 @@ def cylinder_histo(xyz, bins=(1000, 500)):
     """
     i, j = np.triu_indices(len(xyz), k=1)
     diffs = xyz[i] - xyz[j]
+    del i
+    del j
     polar = xyz2cyl(diffs)
+    del diffs
 
     px, py = polar.T
     H, xedges, yedges = np.histogram2d(
@@ -393,6 +396,7 @@ def run(args=None, phil=phil_scope):
     rotx, roty, _ = expt.goniometer.get_rotation_axis()
     azimuth_current = np.degrees(np.arctan2(-roty, rotx))
     arr = extract_spot_data(reflections, experiments, params.max_two_theta)
+    del reflections
 
     if params.azimuth is not None:
         azimuth_current = params.azimuth
