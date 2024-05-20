@@ -494,7 +494,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         if not use_binning:
             assert other.indices().size() == this.indices().size()
             if this.data().size() == 0:
-                return None, None
+                return [(None, 0)]
 
             if assume_index_matching:
                 (o, c) = (this, other)
@@ -507,7 +507,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             assert len(c.sigmas())
             n = len(o.data())
             if n == 1:
-                return None, 1
+                return [(None, 1)]
             v_o = flex.pow2(o.sigmas())
             v_c = flex.pow2(c.sigmas())
             joint_w = 1.0 / (v_o + v_c)
@@ -522,7 +522,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             sx = flex.sum(flex.pow2(dx) * norm_jw)
             sy = flex.sum(flex.pow2(dy) * norm_jw)
             if sx == 0.0 or sy == 0.0:
-                return None, 0
+                return [(None, 0)]
             # effective sample size of weighted sample
             # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
