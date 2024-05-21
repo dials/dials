@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import glob
-import time
 import sys
 import time
 
@@ -11,8 +10,9 @@ from dials.util import debug_console
 interactive_console = debug_console
 
 
-from libtbx.phil import parse
 from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.phil import parse
+
 from dials.array_family.flex import reflection_table
 
 
