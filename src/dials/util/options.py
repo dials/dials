@@ -5,20 +5,16 @@ import copy
 import itertools
 import logging
 import os
-import pickle
 import sys
-import traceback
 import warnings
-from collections import defaultdict, namedtuple
-from glob import glob
+from pathlib import Path
+
+from orderedset import OrderedSet
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
-from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.util import get_url_scheme
-from orderedset import OrderedSet
 
-from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.multi_dataset_handling import (
     renumber_table_id_columns,
@@ -61,44 +57,23 @@ geometry
 class PhilCommandParser:
     """A class to parse phil parameters from positional arguments"""
 
-    def __init__(
-        self,
-        phil=None,
-        read_experiments=False,
-        read_reflections=False,
-        read_experiments_from_images=False,
-        check_format=True,
-    ):
+    def __init__(self, phil=None):
         """
         Initialise the parser.
 
         :param phil: The phil scope
-        :param read_experiments: Try to read the experiments
-        :param read_reflections: Try to read the reflections
-        :param read_experiments_from_images: Try to read the experiments from images
-        :param check_format: Check the format when reading images
         """
-        from dials.util.phil import parse
-
         # Set the system phil scope
         if phil is None:
-            self._system_phil = parse("")
+            self._system_phil = libtbx.phil.parse("")
         else:
             self._system_phil = copy.deepcopy(phil)
 
-        # Set the flags
-        self._read_experiments = read_experiments
-        self._read_reflections = read_reflections
-        self._read_experiments_from_images = read_experiments_from_images
-        self._check_format = check_format
-
         # Adopt the input scope
-        input_phil_scope = self._generate_input_scope()
-        if input_phil_scope is not None:
-            self.system_phil.adopt_scope(input_phil_scope)
+        self.system_phil.adopt_scope(self._generate_input_scope())
 
         # Set the working phil scope
-        self._phil = self.system_phil.fetch(source=parse(""))
+        self._phil = self.system_phil.fetch(source=libtbx.phil.parse(""))
 
     @property
     def phil(self):
@@ -127,31 +102,20 @@ class PhilCommandParser:
         """
         return self.system_phil.fetch_diff(source=self.phil)
 
-    def parse_args(
-        self, args, verbose=False, return_unhandled=False, quick_parse=False
-    ):
+    def parse_args(self, args, verbose=False, return_unhandled=False):
         """
         Parse the command line arguments.
 
         :param args: The input arguments
         :param verbose: Print verbose output
         :param return_unhandled: True/False also return unhandled arguments
-        :param quick_parse: Return as fast as possible and without reading any data,
-                            ignoring class constructor options.
         :return: The options and parameters and (optionally) unhandled arguments
         """
-        from dxtbx.model.experiment_list import (
-            BeamComparison,
-            DetectorComparison,
-            GoniometerComparison,
-        )
-
-        from dials.util.phil import parse
 
         # Parse the command line phil parameters
         user_phils = []
-        experiment_files = []
-        reflection_table_files = []
+        experiment_files: list[Path] = []
+        reflection_table_files: list[Path] = []
         unhandled = []
         interpreter = self.system_phil.command_line_argument_interpreter()
 
@@ -166,12 +130,12 @@ class PhilCommandParser:
 
         for arg in args:
             if (
-                _is_a_phil_file(arg)
+                _is_a_phil_file(filename=arg)
                 and os.path.isfile(arg)
                 and os.path.getsize(arg) > 0
             ):
                 try:
-                    user_phils.append(parse(file_name=arg))
+                    user_phils.append(libtbx.phil.parse(file_name=arg))
                 except Exception:
                     if return_unhandled:
                         unhandled.append(arg)
@@ -182,14 +146,14 @@ class PhilCommandParser:
                 and os.path.isfile(arg)
                 and os.path.getsize(arg) > 0
             ):
-                experiment_files.append(arg)
+                experiment_files.append(Path(arg))
 
             elif (
                 _is_a_refl_file(arg)
                 and os.path.isfile(arg)
                 and os.path.getsize(arg) > 0
             ):
-                reflection_table_files.append(arg)
+                reflection_table_files.append(Path(arg))
 
             # Treat "has a schema" as "looks like a URL (not phil)
             elif "=" in arg and not get_url_scheme(arg):
@@ -220,25 +184,14 @@ class PhilCommandParser:
         except Exception as e:
             raise InvalidPhilError(e)
 
-        # Stop at this point if quick_parse is set. A second pass may be needed.
-        if quick_parse:
-            return params, unhandled
-
-        try:
-            load_models = params.load_models
-        except AttributeError:
-            load_models = True
-
         # Add the cached arguments
-        for obj in importer.experiments:
-            params.input.experiments.append(obj)
-        for obj in importer.reflections:
-            params.input.reflections.append(obj)
+        params.input.experiments = experiment_files
+        params.input.reflections = reflection_table_files
 
         # Convert to phil
         self._phil = self.system_phil.format(python_object=params)
 
-        return params, importer.unhandled
+        return params, unhandled
 
     def _generate_input_scope(self):
         """
@@ -246,19 +199,8 @@ class PhilCommandParser:
 
         :return: The input phil scope
         """
-        from dials.util.phil import parse
-
-        # Create the input scope
-        require_input_scope = (
-            self._read_experiments
-            or self._read_reflections
-            or self._read_experiments_from_images
-        )
-        if not require_input_scope:
-            return None
-        input_phil_scope = parse("input {}")
+        input_phil_scope = libtbx.phil.parse("input {}")
         main_scope = input_phil_scope.get_without_substitution("input")
-        assert len(main_scope) == 1
         main_scope = main_scope[0]
 
         # Return the input scope
@@ -353,7 +295,7 @@ class ArgumentParserBase(argparse.ArgumentParser):
             help="PHIL files to read. Pass '-' for STDIN. Can be specified multiple times, but duplicates ignored.",
         )
 
-    def parse_known_args(self, args=None, quick_parse=False):
+    def parse_known_args(self, args=None):
         """
         Parse the command line arguments and get system configuration.
 
@@ -380,7 +322,7 @@ class ArgumentParserBase(argparse.ArgumentParser):
                 args.extend(l.strip() for l in lines)
 
         # Maybe sort the data
-        if hasattr(options, "sort") and options.sort:
+        if getattr(options, "sort", None):
             args = sorted(args)
 
         # Return the parameters
@@ -401,10 +343,6 @@ class ArgumentParser(ArgumentParserBase):
     def __init__(
         self,
         phil=None,
-        read_experiments=False,
-        read_reflections=False,
-        read_experiments_from_images=False,
-        check_format=True,
         sort_options=False,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         **kwargs,
@@ -413,21 +351,11 @@ class ArgumentParser(ArgumentParserBase):
         Initialise the class.
 
         :param phil: The phil scope
-        :param read_experiments: Try to read the experiments
-        :param read_reflections: Try to read the reflections
-        :param read_experiments_from_images: Try to read the experiments from images
-        :param check_format: Check the format when reading images
         :param sort_options: Show argument sorting options
         """
 
         # Create the phil parser
-        self._phil_parser = PhilCommandParser(
-            phil=phil,
-            read_experiments=read_experiments,
-            read_reflections=read_reflections,
-            read_experiments_from_images=read_experiments_from_images,
-            check_format=check_format,
-        )
+        self._phil_parser = PhilCommandParser(phil)
 
         # Initialise the option parser
         super().__init__(
@@ -443,7 +371,6 @@ class ArgumentParser(ArgumentParserBase):
         show_diff_phil=False,
         return_unhandled=False,
         ignore_unhandled=False,
-        quick_parse=False,
     ):
         """
         Parse the command line arguments and get system configuration.
@@ -453,18 +380,13 @@ class ArgumentParser(ArgumentParserBase):
         :param return_unhandled: True/False return unhandled arguments
         :param ignore_unhandled: True/False ignore unhandled arguments
                                   if return_unhandled is False
-        :param quick_parse: Return as fast as possible and without reading any data,
-                            ignoring class constructor options
         :return: The options and phil parameters
         """
 
         # Parse the command line arguments, this will separate out
         # options (e.g. -o, --option) and positional arguments, in
         # which phil options will be included.
-        options, args = super().parse_known_args(args=args, quick_parse=quick_parse)
-
-        if options.help:
-            self.print_help()
+        options, args = super().parse_known_args(args=args)
 
         # Show config
         if hasattr(options, "show_config") and options.show_config:
@@ -505,7 +427,6 @@ class ArgumentParser(ArgumentParserBase):
                 args,
                 options.verbose > 0,
                 return_unhandled=return_unhandled,
-                quick_parse=quick_parse,
             )
         except InvalidPhilError as e:
             self.error(message=f"Invalid phil parameter: {e}")
@@ -520,7 +441,7 @@ class ArgumentParser(ArgumentParserBase):
         # Return the parameters
         if return_unhandled:
             return params, options, args
-        elif len(args) > 0 and not quick_parse:
+        elif len(args) > 0:
             # Handle printing any messages to diagnose unhandled arguments
             msg = self._warn_about_unhandled_args(args, verbosity=options.verbose)
 
