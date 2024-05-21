@@ -152,6 +152,7 @@ class PhilCommandParser:
         # Parse the command line phil parameters
         user_phils = []
         experiment_files = []
+        reflection_table_files = []
         unhandled = []
         interpreter = self.system_phil.command_line_argument_interpreter()
 
@@ -160,6 +161,9 @@ class PhilCommandParser:
 
         def _is_an_experiment_file(filename):
             return filename.endswith(".expt")
+
+        def _is_a_refl_file(filename: str) -> bool:
+            return filename.endswith(".refl")
 
         for arg in args:
             if (
@@ -180,6 +184,14 @@ class PhilCommandParser:
                 and os.path.getsize(arg) > 0
             ):
                 experiment_files.append(arg)
+
+            elif (
+                _is_a_refl_file(arg)
+                and os.path.isfile(arg)
+                and os.path.getsize(arg) > 0
+            ):
+                reflection_table_files.append(arg)
+
             # Treat "has a schema" as "looks like a URL (not phil)
             elif "=" in arg and not get_url_scheme(arg):
                 try:
