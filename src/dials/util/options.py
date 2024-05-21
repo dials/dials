@@ -24,7 +24,6 @@ from dials.util.multi_dataset_handling import (
     renumber_table_id_columns,
     sort_tables_to_experiments_order,
 )
-from dials.util.phil import FilenameDataWrapper
 
 
 class InvalidPhilError(ValueError):
