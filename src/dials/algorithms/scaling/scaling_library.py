@@ -522,7 +522,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             sx = flex.sum(flex.pow2(dx) * norm_jw)
             sy = flex.sum(flex.pow2(dy) * norm_jw)
             if sx == 0.0 or sy == 0.0:
-                return [(None, 0)]
+                return [(None, 1)]
             # effective sample size of weighted sample
             # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
