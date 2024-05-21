@@ -23,11 +23,11 @@ from scitbx.array_family import flex
 from scitbx.simplex import simplex_opt
 
 import dials.util
-from dials.algorithms.indexing.indexer import find_max_cell
-from dials.command_line.beam_center_methods import (  # InversionMethodParams,; MaxMethodParams,; beam_position_from_inversion,; beam_position_from_max,
+from dials.algorithms.beam_position.midpoint_method import (
     MidpointMethodParams,
     beam_position_from_midpoint,
 )
+from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
@@ -623,10 +623,8 @@ def run(args=None):
         method_params = MidpointMethodParams(
             data_slice=p.data_slice,
             convolution_width=p.convolution_width,
-            bad_pixel_threshold=p.bad_pixel_threshold,
             plot=params.plot,
             per_image=p.per_image,
-            verbose=params.verbose,
         )
 
         # import sys
@@ -634,6 +632,8 @@ def run(args=None):
 
         for ims_index, image_set in enumerate(imagesets):
             num_images = image_set.size()
+
+            import numpy as np
 
             if p.per_image:
                 for index in range(num_images):
@@ -643,13 +643,13 @@ def run(args=None):
                     mask = image_set.get_mask(0)
                     mask = flumpy.to_numpy(mask[0])
 
+                    np.savez(f"image_{ims_index:04d}.npz", data=image, mask=mask)
+
                     image[mask == 0] = 0
 
                     filename = "beam_position_from_midpoint"
                     filename += f"_{ims_index:02d}_{index:04d}.png"
-                    beam_position_from_midpoint(
-                        image, method_params, output_file=filename
-                    )
+                    beam_position_from_midpoint(image, method_params)
             else:
                 for index in range(num_images):
                     image = image_set.get_corrected_data(index)
@@ -668,7 +668,9 @@ def run(args=None):
 
                 filename = "beam_position_from_midpoint.png"
 
-                beam_position_from_midpoint(image, method_params, output_file=filename)
+                beam_position_from_midpoint(
+                    image, method_params, plot_filename=filename
+                )
 
     else:
         print(f"Unknown method: {params.method[0]}")

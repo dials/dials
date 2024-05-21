@@ -4,10 +4,14 @@ from dataclasses import dataclass
 from typing import Tuple
 
 import numpy as np
-from plot_params import PlotParams
-from plot_profile import plot_profile
 
-from dials.algorithms.beam_position.helper_functions import Line2D, normalize, smooth
+from dials.algorithms.beam_position.helper_functions import (
+    Line2D,
+    PlotParams,
+    normalize,
+    plot_profile,
+    smooth,
+)
 
 
 @dataclass

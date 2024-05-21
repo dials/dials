@@ -48,7 +48,7 @@ class MidpointMethodParams:
     data_slice: Tuple[float, float, float] = (0.3, 0.9, 0.01)
     convolution_width: int = 20
     exclude_range_x: Optional[List[Tuple[float, float]]] = None
-    exclude_range_y: Optional[List[Tuple[float, float]]] = [(510, 550)]
+    exclude_range_y: Optional[List[Tuple[float, float]]] = None  # [(510, 550)]
     per_image: bool = False
     plot: bool = False
 
@@ -109,8 +109,7 @@ def beam_position_from_midpoint(
     x0 = pick_by_occurrence(midpoints_x)
     y0 = pick_by_occurrence(midpoints_y)
 
-    if params.verbose:
-        print(f"From midpoint: ({x0:.2f}, {y0:.2f})")
+    print(f"From midpoint: ({x0:.2f}, {y0:.2f})")
 
     if params.plot:
 
