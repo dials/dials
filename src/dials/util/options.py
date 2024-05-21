@@ -389,7 +389,7 @@ class ArgumentParser(ArgumentParserBase):
         options, args = super().parse_known_args(args=args)
 
         # Show config
-        if hasattr(options, "show_config") and options.show_config:
+        if getattr(options, "show_config", None):
             show_config = True
             attributes_level = options.attributes_level
             expert_level = options.expert_level
@@ -414,10 +414,7 @@ class ArgumentParser(ArgumentParserBase):
             )
             exit(0)
 
-        if (
-            hasattr(options, "export_autocomplete_hints")
-            and options.export_autocomplete_hints
-        ):
+        if getattr(options, "export_autocomplete_hints", None):
             self._export_autocomplete_hints()
             exit(0)
 
