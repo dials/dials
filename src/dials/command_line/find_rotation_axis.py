@@ -43,6 +43,11 @@ logger = logging.getLogger("dials.find_rotation_axis")
 # Define the master PHIL scope for this program.
 phil_scope = libtbx.phil.parse(
     """
+d_max = 10.0
+    .type = float
+    .help = "Low resolution limit to apply to the data, intended to remove"
+            "noisy regions of low angle scatter"
+
 max_two_theta = 10.0
     .type = float
     .help = "Scattering angle limit to select reflections only in the central"
@@ -289,13 +294,19 @@ def optimise(
     return best_azimuth
 
 
-def extract_spot_data(reflections, experiments, max_two_theta):
+def extract_spot_data(reflections, experiments, params):
     """
-    From the spot positions, extract reciprocal space X, Y and angle positions
-    for each reflection up to the scattering angle max_two_theta
+    Filter reflections according to various parameters, then extract reciprocal
+    space X, Y and angle positions.
     """
+
+    max_two_theta = params.max_two_theta
+    d_max = params.d_max
+
     # Map reflections to reciprocal space
     reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+    reflections["d"] = 1 / reflections["rlp"].norms()
 
     # Calculate scattering vectors
     reflections["s1"] = flex.vec3_double(len(reflections))
@@ -306,7 +317,6 @@ def extract_spot_data(reflections, experiments, max_two_theta):
             sel_expt = reflections["imageset_id"] == i
         else:
             sel_expt = reflections["id"] == i
-
         for i_panel in range(len(expt.detector)):
             sel = sel_expt & (panel_numbers == i_panel)
             x, y, _ = reflections["xyzobs.mm.value"].select(sel).parts()
@@ -317,11 +327,18 @@ def extract_spot_data(reflections, experiments, max_two_theta):
             reflections["2theta"].set_selected(sel, tt)
 
     # Filter reflections
-    full_len = len(reflections)
-    reflections = reflections.select(reflections["2theta"] <= max_two_theta)
-    if len(reflections) < full_len:
+    nref = len(reflections)
+    if max_two_theta:
+        reflections = reflections.select(reflections["2theta"] <= max_two_theta)
+    if len(reflections) < nref:
         logger.info(
-            f"{len(reflections)} reflections with 2θ ≤ {max_two_theta}° selected from {full_len} total"
+            f"{len(reflections)} reflections with 2θ ≤ {max_two_theta}° selected from {nref} total"
+        )
+    nref = len(reflections)
+    if d_max:
+        reflections = reflections.select(reflections["d"] <= d_max)
+        logger.info(
+            f"{len(reflections)} reflections with d ≤ {d_max} Å selected from {nref} total"
         )
 
     x, y, _ = reflections["s1"].parts()
@@ -395,7 +412,7 @@ def run(args=None, phil=phil_scope):
     wavelength = expt.beam.get_wavelength()
     rotx, roty, _ = expt.goniometer.get_rotation_axis()
     azimuth_current = np.degrees(np.arctan2(-roty, rotx))
-    arr = extract_spot_data(reflections, experiments, params.max_two_theta)
+    arr = extract_spot_data(reflections, experiments, params)
     del reflections
 
     if params.azimuth is not None:
