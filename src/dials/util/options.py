@@ -12,12 +12,11 @@ import warnings
 from collections import defaultdict, namedtuple
 from glob import glob
 
-from orderedset import OrderedSet
-
 import libtbx.phil
 from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.util import get_url_scheme
+from orderedset import OrderedSet
 
 from dials.array_family import flex
 from dials.util import Sorry
@@ -157,16 +156,10 @@ class PhilCommandParser:
         interpreter = self.system_phil.command_line_argument_interpreter()
 
         def _is_a_phil_file(filename):
-            return any(
-                filename.endswith(phil_ext)
-                for phil_ext in (".phil", ".param", ".params", ".eff", ".def")
-            )
-        
+            return filename.endswith((".phil", ".param", ".params", ".eff", ".def"))
+
         def _is_an_experiment_file(filename):
-            return any(
-                filename.endswith(ext)
-                for ext in (".expt")
-            )
+            return filename.endswith(".expt")
 
         for arg in args:
             if (
