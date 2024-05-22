@@ -31,8 +31,6 @@ from scitbx import matrix
 import dials.util
 import dials.util.log
 from dials.array_family import flex
-
-# from dials.array_family import flex
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
@@ -52,6 +50,10 @@ max_two_theta = 10.0
     .type = float
     .help = "Scattering angle limit to select reflections only in the central"
             "mostly flat region of the Ewald sphere surface"
+
+max_sample_size = 2000
+    .help = "The maximum number of reflections to use."
+    .type = int(value_min=1)
 
 view = False
     .type = bool
@@ -132,12 +134,6 @@ def make_2d_rotmat(theta):
     """Take angle in radians, and return 2D rotation matrix"""
     R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
     return R
-
-
-def random_sample(arr, n):
-    """Select random sample of `n` rows from array"""
-    indices = np.random.choice(arr.shape[0], n, replace=False)
-    return arr[indices]
 
 
 def xyz2cyl(arr):
@@ -302,6 +298,7 @@ def extract_spot_data(reflections, experiments, params):
 
     max_two_theta = params.max_two_theta
     d_max = params.d_max
+    max_sample_size = params.max_sample_size
 
     # Map reflections to reciprocal space
     reflections.centroid_px_to_mm(experiments)
@@ -339,6 +336,13 @@ def extract_spot_data(reflections, experiments, params):
         reflections = reflections.select(reflections["d"] <= d_max)
         logger.info(
             f"{len(reflections)} reflections with d ≤ {d_max} Å selected from {nref} total"
+        )
+    nref = len(reflections)
+    if max_sample_size and max_sample_size < nref:
+        reflections.sort("d", reverse=True)
+        reflections = reflections[0:max_sample_size]
+        logger.info(
+            f"{len(reflections)} lowest resolution reflections selected from {nref} total"
         )
 
     x, y, _ = reflections["s1"].parts()
