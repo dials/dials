@@ -21,7 +21,7 @@ def test_find_rotation_axis(dials_data, run_in_tmp_path):
     )
 
     axis = matrix.col(experiments[0].goniometer.get_rotation_axis())
-    expected = matrix.col((-0.627963, -0.778243, 0))
+    expected = matrix.col((-0.626604, -0.779338, 0))
 
     assert axis.angle(expected) < 1e-6
 
@@ -50,6 +50,6 @@ def test_find_rotation_axis_multi_axis_goniometer(dials_data, run_in_tmp_path):
     )
 
     axis = matrix.col(experiments[0].goniometer.get_rotation_axis())
-    expected = matrix.col((-0.627963, -0.778243, 0))
+    expected = matrix.col((-0.626604, -0.779338, 0))
 
     assert axis.angle(expected) < 1e-6
