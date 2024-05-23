@@ -6,7 +6,6 @@ import itertools
 import logging
 import os
 import sys
-import warnings
 from pathlib import Path
 
 from orderedset import OrderedSet
@@ -678,18 +677,6 @@ class ArgumentParser(ArgumentParserBase):
         print('    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset)))
         print(" esac")
         print("}")
-
-
-class OptionParser(ArgumentParser):
-    def __init__(self, *args, **kwargs):
-        # Backwards compatibility 2021-11-10; 2022-04-06
-        # Remove after Dec 2022
-        warnings.warn(
-            "OptionParser is deprecated, use ArgumentParser instead",
-            UserWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
 
 
 def flatten_reflections(filename_object_list):
