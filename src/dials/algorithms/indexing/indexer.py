@@ -771,6 +771,8 @@ class Indexer:
                     logger.info("Target d_min_final reached: finished with refinement")
                     break
 
+        # FIXME here filter out any experiments that have zero reflections
+
         if self.refined_experiments is None:
             raise DialsIndexRefineError("None of the experiments could refine.")
 
