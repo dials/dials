@@ -83,6 +83,17 @@ phil_str = (
       .type = float(value_min=0,value_max=5)
       .expert_level = 1
 
+    allow_experiments_with_no_reflections = False
+      .help = "Allow experiments with no reflections to pass through the"
+              "refinement. This is used by the indexer when performing"
+              "joint indexing. In such cases it is possible that an experiment"
+              "sharing a crystal model with another has no indexed reflections."
+              "Rather than failing the refinement job, setting this option to"
+              "True will allow refinement of that crystal model using"
+              "reflections from the other experiment."
+      .type = bool
+      .expert_level = 3
+
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
       .expert_level = 1
@@ -319,6 +330,7 @@ class ReflectionManagerFactory:
             scan_margin=params.scan_margin,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
+            allow_experiments_with_no_reflections=params.allow_experiments_with_no_reflections,
         )
 
 
@@ -345,6 +357,7 @@ class ReflectionManager:
         scan_margin=0.0,
         outlier_detector=None,
         weighting_strategy_override=None,
+        allow_experiments_with_no_reflections=False,
     ):
 
         if len(reflections) == 0:
@@ -394,6 +407,9 @@ class ReflectionManager:
         self._nref_per_degree = nref_per_degree  # random subsets
         self._max_sample_size = max_sample_size  # sample size ceiling
         self._min_sample_size = min_sample_size  # sample size floor
+        self._allow_experiments_with_no_reflections = (
+            allow_experiments_with_no_reflections
+        )
 
         # exclude reflections that fail some inclusion criteria
         refs_to_keep = self._id_refs_to_keep(reflections)
@@ -541,7 +557,7 @@ class ReflectionManager:
             s1 = obs_data["s1"].select(sel)
             phi = obs_data["xyzobs.mm.value"].parts()[2].select(sel)
 
-            if len(phi) == 0:
+            if not self._allow_experiments_with_no_reflections and len(phi) == 0:
                 raise DialsRefineConfigError(
                     f"Experiment id {iexp} contains no reflections"
                 )
@@ -558,7 +574,10 @@ class ReflectionManager:
             passed2 = exp.scan.is_angle_valid(phi, deg=False)
 
             # sanity check to catch a mutilated scan that does not make sense
-            if passed2.count(True) == 0:
+            if (
+                not self._allow_experiments_with_no_reflections
+                and passed2.count(True) == 0
+            ):
                 raise DialsRefineConfigError(
                     f"Experiment id {iexp} contains no reflections with valid "
                     f"scan angles"

@@ -966,6 +966,14 @@ class Indexer:
     def refine(self, experiments, reflections):
         from dials.algorithms.indexing.refinement import refine
 
+        if self.all_params.indexing.joint_indexing:
+            # Disable zero length reflection list sanity check in refinement
+            # for joint indexing, to avoid failing to index when one experiment
+            # is bad while others sharing the crystal model are good.
+            # See https://github.com/dials/dials/issues/2609 for details.
+            self.all_params.refinement.reflections.allow_experiments_with_no_reflections = (
+                True
+            )
         refiner, refined, outliers = refine(self.all_params, reflections, experiments)
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
