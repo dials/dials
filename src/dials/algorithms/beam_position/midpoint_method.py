@@ -47,8 +47,8 @@ class MidpointMethodParams:
 
     data_slice: Tuple[float, float, float] = (0.3, 0.9, 0.01)
     convolution_width: int = 20
-    exclude_range_x: Optional[List[Tuple[float, float]]] = None
-    exclude_range_y: Optional[List[Tuple[float, float]]] = None  # [(510, 550)]
+    exclude_range_x: Tuple[float, float] = None
+    exclude_range_y: Tuple[float, float] = None  # (510, 550)
     per_image: bool = False
     plot: bool = False
 
@@ -76,7 +76,7 @@ def pick_by_occurrence(peaks: List[List[float]]):
 def beam_position_from_midpoint(
     image: np.ndarray,
     params: MidpointMethodParams,
-    discard_percentile: float = 0.1,
+    discard_percentile: float = 0.01,
     plot_filename: Optional[str] = "beam_position_from_midpoint.png",
 ) -> Tuple[float, float]:
     """
@@ -101,10 +101,10 @@ def beam_position_from_midpoint(
         The beam center position in pixels (x, y).
     """
 
-    image = remove_percentiles(image, percentile=1 - discard_percentile * 0.01)
+    img_clean = remove_percentiles(image, percentile=1 - discard_percentile * 0.01)
 
-    profile_x, midpoints_x, levels_x = find_midpoint(image, params, axis="x")
-    profile_y, midpoints_y, levels_y = find_midpoint(image, params, axis="y")
+    profile_x, midpoints_x, levels_x = find_midpoint(img_clean, params, axis="x")
+    profile_y, midpoints_y, levels_y = find_midpoint(img_clean, params, axis="y")
 
     x0 = pick_by_occurrence(midpoints_x)
     y0 = pick_by_occurrence(midpoints_y)
@@ -285,8 +285,12 @@ def middle(a, ycut, exclude_range, smooth_width):
 
     # Mark the excluded regions
     if exclude_range is not None:
-        for i, j in exclude_range:
-            b[i - smooth_width : j + smooth_width] = -2
+        exclude_range = list(exclude_range)
+        n_range = int(len(exclude_range) / 2)
+        for i in range(n_range):
+            start = int(exclude_range[i])
+            end = int(exclude_range[i + 1])
+            b[start - smooth_width : end + smooth_width] = -2
 
     transitions = np.where(np.diff(np.sign(b)))[0] + 1
 

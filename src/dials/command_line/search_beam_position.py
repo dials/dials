@@ -101,9 +101,14 @@ midpoint {
     convolution_width = 20
       .help = "Width of the convolution kernel used for smoothing (in pixels)."
       .type = int
-    bad_pixel_threshold = 20000
-      .help = "Set all pixels above this value to zero."
-      .type = int
+    exclude_range_x = None
+      .type = floats
+      .help = "List of pixel ranges of the form (start, stop) to exclude from"
+              " the projected profile along the x-axis."
+    exclude_range_y = None
+      .type = floats
+      .help = "List of pixel ranges of the form (start, stop) to exclude from"
+              " the projected profile along the y-axis."
     per_image = False
       .help = "Compute the midpoints for each image individually."
               "Otherwise, compute for all images and average."
@@ -623,6 +628,8 @@ def run(args=None):
         method_params = MidpointMethodParams(
             data_slice=p.data_slice,
             convolution_width=p.convolution_width,
+            exclude_range_x=p.exclude_range_x,
+            exclude_range_y=p.exclude_range_y,
             plot=params.plot,
             per_image=p.per_image,
         )

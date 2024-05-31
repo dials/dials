@@ -144,8 +144,6 @@ def plot_profile(params: PlotParams):
         cmap="jet",
         aspect="auto",
         origin="lower",
-        vmin=0,
-        vmax=20,
         rasterized=True,
         interpolation="none",
     )
