@@ -93,6 +93,7 @@ class CorrelationMatrix:
         )
 
         # Used for optional json creation that is in a format friendly for import and analysis (for future development)
+        # Also to retain dataset ids when used in multiplex
         if self.ids_to_identifiers_map is None:
             self.ids_to_identifiers_map = {}
             for table in self._reflections:
@@ -122,6 +123,8 @@ class CorrelationMatrix:
 
         self.params.lattice_group = self.datasets[0].space_group_info()
         self.params.space_group = self.datasets[0].space_group_info()
+
+        self.params.cc_weights = "sigma"
 
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
@@ -294,26 +297,20 @@ class CorrelationMatrix:
         Returns:
             info(list): list of ClusterInfo objects to describe all clusters of a certain type (ie correlation or cos angle)
         """
+
         info = []
         for cluster_id, cluster in cluster_dict.items():
-            # sel_cluster = flex.bool(self._labels_all.size(), False)
             uc_params = [flex.double() for i in range(6)]
             for j in cluster["datasets"]:
-                # sel_cluster |= self._labels_all == j
                 uc_j = self.datasets[j - 1].unit_cell().parameters()
                 for i in range(6):
                     uc_params[i].append(uc_j[i])
             average_uc = [flex.mean(uc_params[i]) for i in range(6)]
             intensities_cluster = []
             labels_cluster = []
-            ids = [id - 1 for id in cluster["datasets"]]
-            # print(ids)
-            # for u in self._labels_all:
-            # print(u)
+            ids = [self._labels_all[id - 1] for id in cluster["datasets"]]
             for idx, k in zip(self._labels_all, self.unmerged_datasets):
                 if idx in ids:
-                    # USE THIS LINE TO REPLICATE MULTIPLEX!
-                    # if (idx - 1) in ids:
                     intensities_cluster.append(k)
                     labels_cluster.append(idx)
             merged = None
@@ -347,11 +344,13 @@ class CorrelationMatrix:
         self.cc_json = to_plotly_json(
             self.correlation_matrix,
             self.cc_linkage_matrix,
+            labels=self.labels,
             matrix_type="correlation",
         )
         self.cos_json = to_plotly_json(
             self.cos_angle,
             self.cos_linkage_matrix,
+            labels=self.labels,
             matrix_type="cos_angle",
         )
 
