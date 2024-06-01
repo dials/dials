@@ -402,6 +402,10 @@ outlier
             "doi.org/10.1080/00401706.1999.10485670."
     .expert_level = 1
   {
+     coordinates = *xy radial_transverse
+       .help = "Whether to use xy spot coordinates or radial/transverse spot"
+               "coordinates, relative to the beam vector"
+       .type = choice
      alpha = 0.5
        .help = "Decimal fraction controlling the size of subsets over which the"
                "covariance matrix determinant is minimised."

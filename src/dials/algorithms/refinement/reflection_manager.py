@@ -265,11 +265,18 @@ class ReflectionManagerFactory:
         if params.outlier.algorithm in ("null", None):
             outlier_detector = None
         else:
-            if do_stills:
+            if (
+                params.outlier.algorithm == "mcd"
+                and params.outlier.mcd.coordinates == "radial_transverse"
+            ):
+                colnames = ["r_resid", "t_resid"]
+            else:
                 colnames = ["x_resid", "y_resid"]
+            if do_stills:
+                colnames.append("delpsical.rad")
                 params.outlier.block_width = None
             else:
-                colnames = ["x_resid", "y_resid", "phi_resid"]
+                colnames.append("phi_resid")
             from dials.algorithms.refinement.outlier_detection import (
                 CentroidOutlierFactory,
             )
