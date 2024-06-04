@@ -270,6 +270,11 @@ class ReflectionManagerFactory:
                 and params.outlier.mcd.coordinates == "radial_transverse"
             ):
                 colnames = ["r_resid", "t_resid"]
+            elif (
+                params.outlier.algorithm == "mcd"
+                and params.outlier.mcd.coordinates == "deltatt_transverse"
+            ):
+                colnames = ["twotheta_resid", "t_resid"]
             else:
                 colnames = ["x_resid", "y_resid"]
             if do_stills:

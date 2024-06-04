@@ -315,11 +315,14 @@ def set_obs_s1(reflections, experiments):
     return nrefs_wo_s1
 
 
-def compute_radial_and_transverse_residuals(experiments, reflections):
+def compute_radial_and_transverse_residuals(experiments, reflections, two_theta=False):
     """Compute radial and transverse residuals, relative to the beam center"""
     beam_centre_lab = flex.vec3_double(len(reflections))
     obs_lab_coords = flex.vec3_double(len(reflections))
     delta_lab_coords = flex.vec3_double(len(reflections))
+    if two_theta:
+        tto = flex.double(len(reflections), 0)
+        ttc = flex.double(len(reflections), 0)
     for expt_id, expt in enumerate(experiments):
         s0 = expt.beam.get_s0()
         for panel_id, panel in enumerate(expt.detector):
@@ -334,7 +337,8 @@ def compute_radial_and_transverse_residuals(experiments, reflections):
             # Compute obs in lab space
             x, y, _ = refls["xyzobs.mm.value"].parts()
             c = flex.vec2_double(x, y)
-            obs_lab_coords.set_selected(sel, panel.get_lab_coord(c))
+            lab_c = panel.get_lab_coord(c)
+            obs_lab_coords.set_selected(sel, lab_c)
 
             # Compute deltaXY in panel space. This vector is relative to the panel origin
             x, y, _ = (refls["xyzcal.mm"] - refls["xyzobs.mm.value"]).parts()
@@ -343,10 +347,20 @@ def compute_radial_and_transverse_residuals(experiments, reflections):
                 sel, panel.get_lab_coord(flex.vec2_double(x, y)) - panel.get_origin()
             )
 
+            if two_theta:
+                tto.set_selected(sel, lab_c.angle(s0))
+                x, y, _ = refls["xyzcal.mm"].parts()
+                ttc.set_selected(
+                    sel, panel.get_lab_coord(flex.vec2_double(x, y)).angle(s0)
+                )
+
     # The radial vector points from the center of the reflection to the beam center
     radial_vectors = (obs_lab_coords - beam_centre_lab).each_normalize()
     # The transverse vector is orthogonal to the radial vector and the beam vector
     transverse_vectors = radial_vectors.cross(beam_centre_lab).each_normalize()
     # Compute the raidal and transverse components of each deltaXY
-    reflections["r_resid"] = delta_lab_coords.dot(radial_vectors)
     reflections["t_resid"] = delta_lab_coords.dot(transverse_vectors)
+    if two_theta:
+        reflections["twotheta_resid"] = tto - ttc
+    else:
+        reflections["r_resid"] = delta_lab_coords.dot(radial_vectors)

@@ -391,9 +391,14 @@ class RefinerFactory:
         if (
             params.refinement.reflections.outlier.algorithm == "mcd"
             and params.refinement.reflections.outlier.mcd.coordinates
-            == "radial_transverse"
+            in ("radial_transverse", "deltatt_transverse")
         ):
-            compute_radial_and_transverse_residuals(experiments, obs)
+            compute_radial_and_transverse_residuals(
+                experiments,
+                obs,
+                two_theta=params.refinement.reflections.outlier.mcd.coordinates
+                == "deltatt_transverse",
+            )
 
         # determine whether to do basic centroid analysis to automatically
         # determine outlier rejection block
