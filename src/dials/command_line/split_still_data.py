@@ -14,17 +14,41 @@ and the same for reflection files.
 The second index relates to the input file index, so if more than one input file is input,
 there will then be group_0_1.expt etc.
 
-To see example yaml files, run dials.split_ssx_data show_example_yaml=True
+Example yaml syntax is
+Point to a data array:
+
+---
+metadata:
+  timepoint:
+    '/path/to/example_master.h5' : '/path/to/meta.h5:/timepoint'
+grouping:
+  split_by:
+    values:
+      - timepoint
+
+or for images specified by a template:
+---
+metadata:
+  dose_point:
+    '/path/to/example_#####.cbf' : 'repeat=10'
+grouping:
+  split_by:
+    values:
+      - dose_point
+
 """
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
 import iotbx.phil
 from dxtbx.serialize import load
+from libtbx import Auto
 
+from dials.util import log
 from dials.util.image_grouping import (
     FilePair,
     ParsedYAML,
@@ -32,6 +56,11 @@ from dials.util.image_grouping import (
     series_repeat_to_groupings,
 )
 from dials.util.options import ArgumentParser
+from dials.util.system import CPU_COUNT
+from dials.util.version import dials_version
+
+logger = logging.getLogger("dials")
+
 
 phil_str = """
 input {
@@ -56,8 +85,10 @@ series_repeat = None
           "by providing the number of repeated measurements at each point. i.e. it"
           "is assumed that $series_repeat measurements are taken at each position"
           "and that these form consecutive images in the input image files."
-nproc=1
+nproc=Auto
   .type=int
+output.log=dials.split_ssx_data.log
+  .type=str
 """
 
 phil_scope = iotbx.phil.parse(phil_str)
@@ -72,7 +103,7 @@ def run(args=sys.argv[1:]):
         check_format=False,
         epilog=__doc__,
     )
-    params, _, unhandled = parser.parse_args(
+    params, options, unhandled = parser.parse_args(
         args=args, show_diff_phil=False, return_unhandled=True
     )
     if unhandled:
@@ -83,17 +114,29 @@ def run(args=sys.argv[1:]):
                 args[args.index(item)] = f"input.reflections = {item}"
             else:
                 raise ValueError(f"Unhandled argument: {item}")
-        params, _ = parser.parse_args(args=args, show_diff_phil=False)
+        params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     if not (params.input.reflections and params.input.experiments):
         raise ValueError("Reflections and experiments files must both be specified")
+    log.config(verbosity=options.verbose, logfile=params.output.log)
+    logger.info(dials_version())
+
     reflection_files = sorted([Path(i).resolve() for i in params.input.reflections])
     experiment_files = sorted([Path(i).resolve() for i in params.input.experiments])
 
     datafiles = [FilePair(e, r) for e, r in zip(experiment_files, reflection_files)]
     expts = []
     for fp in datafiles:
-        expts.append(load.experiment_list(fp.expt, check_format=False))
+        elist = load.experiment_list(fp.expt, check_format=False)
+        for e in elist:
+            if e.scan and e.scan.get_oscillation()[1] != 0.0:
+                logger.info("dials.split_ssx_data can only be used on still-shot data")
+                sys.exit()
+        expts.append(elist)
+
+    if params.nproc is Auto:
+        params.nproc = CPU_COUNT
+        logger.info(f"Using nproc={params.nproc}")
 
     if params.series_repeat:
         parsed = series_repeat_to_groupings(
@@ -104,10 +147,10 @@ def run(args=sys.argv[1:]):
         try:
             parsed = ParsedYAML(params.grouping)
         except Exception as e:
-            print(f"Error: {e}\nPlease check input in yaml file.")
+            logger.info(f"Error: {e}\nPlease check input in yaml file.")
         groupings = parsed.groupings
         if len(groupings) != 1:
-            print("Only one grouping type can be specified in grouping yaml")
+            logger.info("Only one grouping type can be specified in grouping yaml")
             sys.exit()
         handler = get_grouping_handler(
             parsed, list(parsed.groupings.keys())[0], nproc=params.nproc
@@ -117,8 +160,9 @@ def run(args=sys.argv[1:]):
             working_directory=Path.cwd(),
             data_file_pairs=datafiles,
         )
+        logger.info("Finished splitting data.")
     except Exception as e:
-        print(f"Error: {e}\nPlease check input.")
+        logger.info(f"Error: {e}\nPlease check input.")
 
 
 if __name__ == "__main__":
