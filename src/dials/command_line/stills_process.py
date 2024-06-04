@@ -324,7 +324,6 @@ refinement {
   }
   reflections {
     weighting_strategy.override = stills
-    outlier.algorithm = null
   }
 }
 integration {

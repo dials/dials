@@ -402,6 +402,11 @@ outlier
             "doi.org/10.1080/00401706.1999.10485670."
     .expert_level = 1
   {
+     coordinates = *xy radial_transverse deltatt_transverse
+       .help = "Whether to use xy spot coordinates in image space,"
+               "radial/transverse spot coordinates relative to the beam"
+               "vector, or a mix of delta two theta and transverse coordinates"
+       .type = choice
      alpha = 0.5
        .help = "Decimal fraction controlling the size of subsets over which the"
                "covariance matrix determinant is minimised."
