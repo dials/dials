@@ -221,7 +221,7 @@ def add_batch_list(
 
     i0 = image_range[0]
     for i in range(n_batches):
-        if experiment.scan:
+        if experiment.scan and experiment.scan.get_oscillation()[1] != 0.0:
             phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
 
         # Unit cell and UB matrix for the centre of the image for scan-varying model

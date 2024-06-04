@@ -9,6 +9,7 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.indexer import Indexer
+from dials.algorithms.indexing.indexer import phil_scope as defaults_phil_scope
 from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch, LatticeSearch
 from dials.algorithms.indexing.nave_parameters import NaveParameters
@@ -97,6 +98,7 @@ class StillsIndexer(Indexer):
             # The stills_indexer provides its own outlier rejection
             params.refinement.reflections.outlier.algorithm = "null"
         super().__init__(reflections, experiments, params)
+        self.warn_if_setting_unused_refinement_protocol_params()
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -822,6 +824,18 @@ class StillsIndexer(Indexer):
                 )
 
         return ref_experiments, reflections
+
+    def warn_if_setting_unused_refinement_protocol_params(self):
+        warning_message = (
+            "Warning: the value of indexing.refinement_protocol.{} has been "
+            "changed to {}, but this parameter is unused by stills indexer."
+        )
+        unused_param_keys = ["n_macro_cycles", "d_min_step", "d_min_final"]
+        defaults = defaults_phil_scope.extract().indexing.refinement_protocol
+        for key in unused_param_keys:
+            value = getattr(self.params.refinement_protocol, key)
+            if value != getattr(defaults, key):
+                logger.warning(warning_message.format(key, str(value)))
 
 
 """Mixin class definitions that override the dials indexing class methods specific to stills"""

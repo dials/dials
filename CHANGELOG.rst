@@ -1,3 +1,135 @@
+DIALS 3.19.1 (2024-05-23)
+=========================
+
+No significant changes.
+
+
+DIALS 3.19.0 (2024-04-17)
+=========================
+
+Features
+--------
+
+- ``dials.predict``: Allow usage when image data are not available. (`#2553 <https://github.com/dials/dials/issues/2553>`_)
+- Add ``TOFSpotFinder`` to tailor default params to time of flight experiments and add additional reflection table data. (`#2602 <https://github.com/dials/dials/issues/2602>`_)
+- ``dials.ssx_index``: Allow use of sequences indexer, pink_indexer and low_res_spot_match indexing algorithms. (`#2614 <https://github.com/dials/dials/issues/2614>`_)
+- ``dials.export``: Add option ``composition=`` to specify of asymmetric unit composition for SHELX ``.ins`` file output. (`#2623 <https://github.com/dials/dials/issues/2623>`_)
+
+
+Bugfixes
+--------
+
+- Fix building on RHEL8 and other more recent distributions. (`#1465 <https://github.com/dials/dials/issues/1465>`_)
+- ``dials.index``: Joint indexing is automatically set on for rotation data, off for still data. This can be overridden by explicit use of ``joint_indexing=``. (`#2605 <https://github.com/dials/dials/issues/2605>`_)
+- ``dials.export`` ``format=shelx``: Increased precision of unit cell parameters and their estimated standard deviations written to ``.ins`` file. (`#2624 <https://github.com/dials/dials/issues/2624>`_)
+- ``dials.ssx_index``: Don't combine detector models if individually refined. (`#2634 <https://github.com/dials/dials/issues/2634>`_)
+- ``dials.scale``: Fix error in propagation of partiality variance, when scaling still data. (`#2642 <https://github.com/dials/dials/issues/2642>`_)
+- ``dials.export``: Fix crash when exporting scaled still-shot data. (`#2646 <https://github.com/dials/dials/issues/2646>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- API: ``array_family/flex_ext.py``: remove ``nthread``s parameter from ``extract_shoeboxes``, as it was never implemented. (`#2638 <https://github.com/dials/dials/issues/2638>`_)
+
+
+Misc
+----
+
+- `#2617 <https://github.com/dials/dials/issues/2617>`_, `#2618 <https://github.com/dials/dials/issues/2618>`_, `#2619 <https://github.com/dials/dials/issues/2619>`_, `#2626 <https://github.com/dials/dials/issues/2626>`_, `#2633 <https://github.com/dials/dials/issues/2633>`_, `#2648 <https://github.com/dials/dials/issues/2648>`_
+
+
+DIALS 3.18.1 (2024-03-26)
+=========================
+
+Bugfixes
+--------
+
+- wxPython was inadvertently reverted to 4.1 instead of 4.2 for python 3.9 and 3.10 releases. (`#2636 <https://github.com/dials/dials/issues/2636>`_)
+
+
+DIALS 3.18.0 (2024-02-22)
+=========================
+
+Features
+--------
+
+- ``dials.slice_sequence``: Add ``exclude_images_multiple=`` option to split a scan at calibration images, as an alternative to excluding those images in ``dials.integrate``. (`#2565 <https://github.com/dials/dials/issues/2565>`_)
+- ``dials.index``: Add ``indexing.method=pink_indexer`` for still images, based on `Gevorkov Y et al. pinkIndexer – a universal indexer for pink-beam X-ray and electron diffraction snapshots <https://doi.org/10.1107/S2053273319015559>`_. (`#2604 <https://github.com/dials/dials/issues/2604>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.index``: Correctly output imageset id when ``joint_indexing=False`` and ``max_lattices>1`` (`#2538 <https://github.com/dials/dials/issues/2538>`_)
+- ``dials.index``: Ensure the unindexed_reflections table in the indexer classes is updated during refinement. (`#2545 <https://github.com/dials/dials/issues/2545>`_)
+- When building a new developer installation without CMake, always defer to environmental flags when configuring compilers. This fixes building on MacOS Sonoma; for which the default libtbx configuration failed. (`#2546 <https://github.com/dials/dials/issues/2546>`_)
+- ``dials.cosym``: Ensure correct reindexing of low symmetry data to the correct setting. (`#2548 <https://github.com/dials/dials/issues/2548>`_)
+- ``dials.export``: Unmerged MTZ output now uses gemmi, fixing various longstanding issues. (`#2549 <https://github.com/dials/dials/issues/2549>`_)
+- ``dials.symmetry/dials.cosym``: Avoid crashes when unable to find consistent symmetry during cell reduction routine. (`#2552 <https://github.com/dials/dials/issues/2552>`_)
+- ``dials.sequence_to_stills``: Avoid creating an experiment for an image with no reflections on it. (`#2554 <https://github.com/dials/dials/issues/2554>`_)
+- ``dials.reciprocal_lattice_viewer``: Fix toggling of ids on spotfinding output when viewing multiple files. (`#2566 <https://github.com/dials/dials/issues/2566>`_)
+- ``dials.estimate_resolution``: Fix bug causing fitting failures for isigma, misigma curves. (`#2568 <https://github.com/dials/dials/issues/2568>`_)
+- ``dials.reciprocal_lattice_viewer``: Ensure the correct panel for the beam centre is recorded when loading models. (`#2572 <https://github.com/dials/dials/issues/2572>`_)
+- ``dials.reindex``: When reindexing against a reference, use the best cell when determining lattice symmetry. (`#2573 <https://github.com/dials/dials/issues/2573>`_)
+- ``dials.cosym``: Filter out datasets that can't be mapped through a consistent best cell, rather than exiting. (`#2574 <https://github.com/dials/dials/issues/2574>`_)
+- ``dials.export_bitmaps``: Fix for use of imageset_index parameter on image sets that don't start at image numbers of 1. (`#2591 <https://github.com/dials/dials/issues/2591>`_)
+- Reorganize imports in ``export_mtz.py`` so that its gemmi-less objects can be used by other gemmi-less software. (`#2592 <https://github.com/dials/dials/issues/2592>`_)
+- ``dials.image_viewer``: Fix for stills experiments viewing crash. (`#2594 <https://github.com/dials/dials/issues/2594>`_)
+- ``dials.refine``: Clarify a misleading error message when there are no reflections to refine. (`#2607 <https://github.com/dials/dials/issues/2607>`_)
+- Dependency update for https://github.com/cctbx/dxtbx/pull/697: adds ``natsort`` (`#2611 <https://github.com/dials/dials/issues/2611>`_)
+
+
+Improved Documentation
+----------------------
+
+- ``dials.refine``: Update online documentation. (`#2551 <https://github.com/dials/dials/issues/2551>`_)
+
+
+Misc
+----
+
+- `#2408 <https://github.com/dials/dials/issues/2408>`_, `#2547 <https://github.com/dials/dials/issues/2547>`_, `#2550 <https://github.com/dials/dials/issues/2550>`_, `#2556 <https://github.com/dials/dials/issues/2556>`_, `#2557 <https://github.com/dials/dials/issues/2557>`_, `#2563 <https://github.com/dials/dials/issues/2563>`_, `#2570 <https://github.com/dials/dials/issues/2570>`_, `#2576 <https://github.com/dials/dials/issues/2576>`_, `#2578 <https://github.com/dials/dials/issues/2578>`_, `#2586 <https://github.com/dials/dials/issues/2586>`_, `#2590 <https://github.com/dials/dials/issues/2590>`_, `#2599 <https://github.com/dials/dials/issues/2599>`_, `#2600 <https://github.com/dials/dials/issues/2600>`_, `#2603 <https://github.com/dials/dials/issues/2603>`_
+
+
+Dials 3.18 (2024-02-22)
+=======================
+
+Features
+--------
+
+- ``dials.slice_sequence``: Add ``exclude_images_multiple`` option to split a scan at calibration images, as an alternative to excluding those images in ``dials.integrate``. See #1992 for details. (`#2565 <https://github.com/dials/dials/issues/2565>`_)
+- ``dials.index``: Add ``indexing.method=pink_indexer`` for still images based on Gevorkov Y, Barty A, Brehm W, White TA, Tolstikova A, Wiedorn MO, et al. pinkIndexer – a universal indexer for pink-beam X-ray and electron diffraction snapshots. Acta Cryst A. 2020 Mar 1;76(2):121–31. (`#2604 <https://github.com/dials/dials/issues/2604>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.index``: Correctly output imageset id when joint_indexing=False and max_lattices>1 (`#2538 <https://github.com/dials/dials/issues/2538>`_)
+- ``dials.index``: Ensure the unindexed_reflections table in the indexer classes is updated during refinement. (`#2545 <https://github.com/dials/dials/issues/2545>`_)
+- Always use configured environment when bootstrapping CCTBX. This fixes building on MacOS Sonoma; for which the default libtbx configuration fails. (`#2546 <https://github.com/dials/dials/issues/2546>`_)
+- ``dials.cosym``: Ensure correct reindexing of low symemtry data to the correct setting (`#2548 <https://github.com/dials/dials/issues/2548>`_)
+- ``dials.export``: Unmerged MTZ output now uses gemmi, which fixes various issues (#1099, #1100, #2057, #2379, #2505) (`#2549 <https://github.com/dials/dials/issues/2549>`_)
+- ``dials.refine``: Ensure online documentation is up to date. (`#2551 <https://github.com/dials/dials/issues/2551>`_)
+- ``dials.symmetry/dials.cosym``: Avoid crashes when unable to find consistent symmetry during cell reduction routine. (`#2552 <https://github.com/dials/dials/issues/2552>`_)
+- ``dials.sequence_to_stills``: Avoid creating an experiment for an image with no reflections on it. (`#2554 <https://github.com/dials/dials/issues/2554>`_)
+- ``dials.reciprocal_lattice_viewer``: Fix toggling of ids on spotfinding output when viewing multiple files (`#2566 <https://github.com/dials/dials/issues/2566>`_)
+- ``dials.estimate_resolution``: Fix bug causing fitting failures for isigma, misigma curves (`#2568 <https://github.com/dials/dials/issues/2568>`_)
+- ``dials.reciprocal_lattice_viewer``: ensure the correct panel for the beam centre is recorded when loading models. (`#2572 <https://github.com/dials/dials/issues/2572>`_)
+- ``dials.reindex``: When reindexing against a reference, use the best cell when determining lattice symmetry. (`#2573 <https://github.com/dials/dials/issues/2573>`_)
+- ``dials.cosym``: Filter out datasets that can't be mapped through a consistent best cell, rather than exiting. (`#2574 <https://github.com/dials/dials/issues/2574>`_)
+- ``dials.export_bitmaps``: Fix for use of imageset_index parameter on image sets that don't start at image numbers of 1. (`#2591 <https://github.com/dials/dials/issues/2591>`_)
+- Reorganize imports in ``export_mtz.py`` so that its gemmi-less objects can be used by other gemmi-less software (`#2592 <https://github.com/dials/dials/issues/2592>`_)
+- ``dials.image_viewer``: Fix for stills experiments viewing crash introduced in #2556 (`#2594 <https://github.com/dials/dials/issues/2594>`_)
+- ``dials.refine``: clarify a misleading error message when there are no reflections to refine. (`#2607 <https://github.com/dials/dials/issues/2607>`_)
+
+
+Misc
+----
+
+- `#2408 <https://github.com/dials/dials/issues/2408>`_, `#2547 <https://github.com/dials/dials/issues/2547>`_, `#2550 <https://github.com/dials/dials/issues/2550>`_, `#2556 <https://github.com/dials/dials/issues/2556>`_, `#2557 <https://github.com/dials/dials/issues/2557>`_, `#2563 <https://github.com/dials/dials/issues/2563>`_, `#2570 <https://github.com/dials/dials/issues/2570>`_, `#2576 <https://github.com/dials/dials/issues/2576>`_, `#2578 <https://github.com/dials/dials/issues/2578>`_, `#2586 <https://github.com/dials/dials/issues/2586>`_, `#2590 <https://github.com/dials/dials/issues/2590>`_, `#2599 <https://github.com/dials/dials/issues/2599>`_, `#2600 <https://github.com/dials/dials/issues/2600>`_
+
+
 DIALS 3.17.0 (2023-11-03)
 =========================
 

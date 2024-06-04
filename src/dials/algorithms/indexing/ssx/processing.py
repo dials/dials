@@ -58,11 +58,14 @@ loggers_to_disable = [
     "dials.algorithms.refinement.reflection_processor",
     "dials.algorithms.refinement.refiner",
     "dials.algorithms.refinement.reflection_manager",
+    "dials.algorithms.refinement.outlier_detection.outlier_base",
     "dials.algorithms.indexing.stills_indexer",
     "dials.algorithms.indexing.nave_parameters",
     "dials.algorithms.indexing.basis_vector_search.real_space_grid_search",
     "dials.algorithms.indexing.basis_vector_search.combinations",
     "dials.algorithms.indexing.indexer",
+    "dials.algorithms.indexing.lattice_search",
+    "dials.algorithms.indexing.lattice_search.low_res_spot_match",
 ]
 debug_loggers_to_disable = [
     "dials.algorithms.indexing.symmetry",
@@ -125,6 +128,7 @@ def index_one(
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
 
     elist = ExperimentList([experiment])
+    params.indexing.nproc = 1  # make sure none of the processes try to spawn multiprocessing within existing multiprocessing.
     for method in method_list:
         params.indexing.method = method
         idxr = Indexer.from_parameters(
@@ -177,10 +181,13 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             selr = table.select(table["id"] == id_)
             calx, caly, _ = selr["xyzcal.px"].parts()
             obsx, obsy, _ = selr["xyzobs.px.value"].parts()
-            delpsi = selr["delpsical.rad"]
+            if "delpsical.rad" in selr:
+                delpsi = selr["delpsical.rad"]
+                rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
+            else:
+                rmsd_z = 0.0
             rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
             rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
-            rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
             n_id_ = calx.size()
             result.n_indexed.append(n_id_)
             result.rmsd_x.append(rmsd_x)
@@ -490,9 +497,13 @@ def index(
         method_list,
     )
 
-    # combine detector models if not already
-    if (len(indexed_experiments.detectors())) > 1:
-        combine = CombineWithReference(detector=indexed_experiments[0].detector)
+    # combine detector models if all the same (i.e. haven't been refined in indexing),
+    # to enable use case of joint refinement.
+    detector_0 = indexed_experiments[0].detector if indexed_experiments else None
+    if (len(indexed_experiments.detectors()) > 1) and all(
+        d == detector_0 for d in indexed_experiments.detectors()[1:]
+    ):
+        combine = CombineWithReference(detector=detector_0)
         elist = ExperimentList()
         for expt in indexed_experiments:
             elist.append(combine(expt))
