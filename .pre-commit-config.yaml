@@ -18,7 +18,7 @@ repos:
   rev: v0.3.4
   hooks:
     - id: ruff
-      args: [--fix, --exit-non-zero-on-fix]
+      args: [--fix, --exit-non-zero-on-fix, --show-fixes]
     - id: ruff-format
       files: \.pyi?$|SConscript$|^libtbx_config$
       types: [file]
