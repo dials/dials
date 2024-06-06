@@ -10,15 +10,15 @@ import logging
 import numpy as np
 import pandas as pd
 from orderedset import OrderedSet
+from scipy import sparse
 
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
-logger = logging.getLogger(__name__)
-from scipy import sparse
-
 from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
+
+logger = logging.getLogger(__name__)
 
 
 def _lattice_lower_upper_index(lattices, lattice_id):
