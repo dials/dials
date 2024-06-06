@@ -55,6 +55,9 @@ logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
     include scope dials.algorithms.scaling.error_model.error_model.phil_scope
+    min_partiality = 0.4
+        .type = float
+        .help = "Use reflections with at least this partiality in error model optimisation."
     intensity_choice = *profile sum combine
         .type = choice
         .help = "Use profile or summation intensities"
@@ -101,13 +104,23 @@ def refine_error_model(params, experiments, reflection_tables):
         reflection_tables[i] = table
     space_group = experiments[0].crystal.get_space_group()
     Ih_table = IhTable(
-        reflection_tables, space_group, additional_cols=["partiality"], anomalous=True
+        reflection_tables,
+        space_group,
+        additional_cols=["partiality"],
+        anomalous=True,
     )
 
+    use_stills_filtering = True
+    for expt in experiments:
+        if expt.scan and expt.scan.get_oscillation()[1] != 0.0:
+            use_stills_filtering = False
+            break
     # now do the error model refinement
     model = BasicErrorModel(basic_params=params.basic)
     try:
-        model = run_error_model_refinement(model, Ih_table)
+        model = run_error_model_refinement(
+            model, Ih_table, params.min_partiality, use_stills_filtering
+        )
     except (ValueError, RuntimeError) as e:
         logger.info(e)
     else:

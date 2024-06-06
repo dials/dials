@@ -1,1 +1,0 @@
-``dials.reindex``: When reindexing against a reference, use the best cell when determining lattice symmetry.

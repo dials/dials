@@ -21,8 +21,10 @@ from cctbx import miller, sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from scitbx import matrix
+from scitbx.array_family import flex
 
 import dials.util
+import dials.util.system
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry import median_unit_cell, symmetry_base
 from dials.algorithms.symmetry.cosym import engine as cosym_engine
@@ -79,6 +81,15 @@ use_curvatures = True
 weights = count standard_error
   .type = choice
   .short_caption = "Weights"
+  .help = "If not None, a weights matrix is used in the cosym procedure."
+          "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
+          "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
+          "the sqrt of (1-CC*2)/(n-2), where (n-2) are the degrees of freedom in a pairwise CC calculation."
+cc_weights = None sigma
+  .type = choice
+  .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
+          "freedom in the cosym procedure."
+          "weights=sigma uses the intensity uncertainties to perform inverse variance weighting during the cc calculation."
 
 min_pairs = 3
   .type = int(value_min=1)
@@ -99,10 +110,9 @@ minimization
     .short_caption = "Maximum number of calls"
 }
 
-nproc = None
+nproc = Auto
   .type = int(value_min=1)
-  .help = "Deprecated"
-  .deprecated = True
+  .help = "Number of processes"
 """
 )
 
@@ -200,6 +210,21 @@ class CosymAnalysis(symmetry_base, Subject):
             )
             self.input_space_group = self.intensities.space_group()
 
+            # ensure still unique after mapping - merge equivalents in the higher symmetry
+            new_intensities = None
+            new_dataset_ids = flex.int([])
+            for d in set(self.dataset_ids):
+                sel = self.dataset_ids == d
+                these_i = self.intensities.select(sel)
+                these_merged = these_i.merge_equivalents().array()
+                if not new_intensities:
+                    new_intensities = these_merged
+                else:
+                    new_intensities = new_intensities.concatenate(these_merged)
+                new_dataset_ids.extend(flex.int(these_merged.size(), d))
+            self.intensities = new_intensities
+            self.dataset_ids = new_dataset_ids
+
         else:
             self.input_space_group = None
 
@@ -208,6 +233,13 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
+        # N.B. currently only multiprocessing used if cc_weights=sigma
+        if self.params.nproc is Auto:
+            if self.params.cc_weights == "sigma":
+                params.nproc = dials.util.system.CPU_COUNT
+                logger.info("Setting nproc={}".format(params.nproc))
+            else:
+                params.nproc = 1
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -229,6 +261,8 @@ class CosymAnalysis(symmetry_base, Subject):
             lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
+            cc_weights=self.params.cc_weights,
+            nproc=self.params.nproc,
         )
 
     def _determine_dimensions(self):

@@ -1,0 +1,1 @@
+d_min, d_max in masking: raise error if d_min > d_max so no spots will be found
