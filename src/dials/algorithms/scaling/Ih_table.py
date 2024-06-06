@@ -153,9 +153,9 @@ class IhTable:
             data_for_block = data[block.block_selections[dataset_id]]
             start = block.dataset_info[dataset_id]["start_index"]
             end = block.dataset_info[dataset_id]["end_index"]
-            block.Ih_table.loc[
-                np.arange(start=start, stop=end), column
-            ] = data_for_block
+            block.Ih_table.loc[np.arange(start=start, stop=end), column] = (
+                data_for_block
+            )
 
     def get_block_selections_for_dataset(self, dataset: int) -> List[flex.size_t]:
         """Generate the block selection list for a given dataset."""

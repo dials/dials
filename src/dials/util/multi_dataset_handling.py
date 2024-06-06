@@ -3,7 +3,6 @@ Module of functions for handling operations on lists of reflection tables
 and experiment lists.
 """
 
-
 from __future__ import annotations
 
 import copy

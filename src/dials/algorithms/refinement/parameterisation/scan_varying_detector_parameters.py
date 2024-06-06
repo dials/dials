@@ -103,22 +103,22 @@ class ScanVaryingDetectorParameterisationSinglePanel(
 
         # calculate derivatives of state wrt underlying smoother parameters
         dd_dp1 = [None] * ddist_dp.size
-        for (i, v) in ddist_dp:
+        for i, v in ddist_dp:
             dd_dp1[i] = dd_dval[0] * v
         dd_dp2 = [None] * dshift1_dp.size
-        for (i, v) in dshift1_dp:
+        for i, v in dshift1_dp:
             dd_dp2[i] = dd_dval[1] * v
         dd_dp3 = [None] * dshift2_dp.size
-        for (i, v) in dshift2_dp:
+        for i, v in dshift2_dp:
             dd_dp3[i] = dd_dval[2] * v
         dd_dp4 = [None] * dtau1_dp.size
-        for (i, v) in dtau1_dp:
+        for i, v in dtau1_dp:
             dd_dp4[i] = dd_dval[3] * v
         dd_dp5 = [None] * dtau2_dp.size
-        for (i, v) in dtau2_dp:
+        for i, v in dtau2_dp:
             dd_dp5[i] = dd_dval[4] * v
         dd_dp6 = [None] * dtau3_dp.size
-        for (i, v) in dtau3_dp:
+        for i, v in dtau3_dp:
             dd_dp6[i] = dd_dval[5] * v
 
         # store derivatives as list-of-lists

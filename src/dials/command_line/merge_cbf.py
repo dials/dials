@@ -194,9 +194,11 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                     #   'Strings with spaces, as they are seen as multiple columns, or with'
                     #   _multiple _columns _defined _on _same _line _they _are _seen _as _one _column
                     new_line = [
-                        element
-                        if modifier is None
-                        else f"{float(element) * modifier:f}"
+                        (
+                            element
+                            if modifier is None
+                            else f"{float(element) * modifier:f}"
+                        )
                         for modifier, element in zip(modifiers, line.split())
                     ]
                     new_header[n] = f"{' '.join(new_line)}\r\n"

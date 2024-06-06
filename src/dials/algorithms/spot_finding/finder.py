@@ -913,7 +913,6 @@ class TOFSpotFinder(SpotFinder):
         self.experiments = experiments
 
     def _correct_centroid_tof(self, reflections):
-
         """
         Sets the centroid of the spot to the peak position along the
         time of flight, as this tends to more accurately represent the true

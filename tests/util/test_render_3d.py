@@ -66,12 +66,12 @@ def test_Render3d(mocker, multi_sequence_data):
     render.load_models(experiments, reflections)
     assert render.set_beam_centre.call_count == 1
 
-    for (outlier_display, expected_count) in (("outliers", 0), ("inliers", 1255)):
+    for outlier_display, expected_count in (("outliers", 0), ("inliers", 1255)):
         render.settings.outlier_display = outlier_display
         render.load_models(experiments, reflections)
         assert render.viewer.set_points.call_args[0][0].size() == expected_count
 
-    for (display, expected_count) in (
+    for display, expected_count in (
         ("indexed", 1255),
         ("unindexed", 0),
         ("integrated", 0),

@@ -1,6 +1,5 @@
 """Versions of refinement classes for two theta refinement of the unit cell"""
 
-
 from __future__ import annotations
 
 import logging

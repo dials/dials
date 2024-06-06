@@ -385,7 +385,6 @@ class MergedHalfDatasets:
 
 
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
-
     """A class to extend iotbx merging statistics."""
 
     def __init__(self, *args, additional_stats=False, seed=0, **kwargs):

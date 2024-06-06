@@ -164,7 +164,6 @@ def prepare_merged_reflection_table(
 
 
 class MTZDataClass:
-
     """Container class (i.e. Python 3.7 dataclass) for per-wavelength mtz dataset."""
 
     def __init__(

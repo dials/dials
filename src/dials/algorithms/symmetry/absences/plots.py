@@ -1,6 +1,5 @@
 """Definitions of plots for systematic absences."""
 
-
 from __future__ import annotations
 
 

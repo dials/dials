@@ -380,7 +380,7 @@ class ComputeEsdReflectingRange:
             # recorded.
             #
             L = 0
-            for (kj, nj, i0, i1) in zip(
+            for kj, nj, i0, i1 in zip(
                 self.K, self.nj, self.indices[:-1], self.indices[1:]
             ):
                 zj = zi[i0:i1]

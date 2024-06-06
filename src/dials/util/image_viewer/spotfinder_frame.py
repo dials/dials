@@ -823,7 +823,7 @@ class SpotFrame(XrayFrame):
             "placement": "cc",
             "colour": "red",
         }
-        for (txt_x, txt_y, txt_str) in res_labels:
+        for txt_x, txt_y, txt_str in res_labels:
             x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(txt_x, txt_y)
             resolution_text_data.append((x, y, txt_str, metadata))
 

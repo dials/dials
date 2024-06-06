@@ -157,7 +157,7 @@ class align_crystal:
             [-ex, ey, -ez],
         )
 
-        for (v1_, v2_) in self.vectors:
+        for v1_, v2_ in self.vectors:
             result_dictionary = collections.defaultdict(list)
             results.append((v1_, v2_, result_dictionary))
             space_group = self.experiment.crystal.get_space_group()

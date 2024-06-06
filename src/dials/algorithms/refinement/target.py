@@ -1,7 +1,6 @@
 """Contains classes used to construct a target function for refinement,
 principally Target and ReflectionManager."""
 
-
 from __future__ import annotations
 
 import math
@@ -381,7 +380,8 @@ class Target:
         """Return a list of the matches, split into blocks according to the
         gradient_calculation_blocksize parameter and the number of processes (if relevant).
         The number of blocks will be set such that the total number of reflections
-        being processed by concurrent processes does not exceed gradient_calculation_blocksize"""
+        being processed by concurrent processes does not exceed gradient_calculation_blocksize
+        """
 
         self.update_matches()
 

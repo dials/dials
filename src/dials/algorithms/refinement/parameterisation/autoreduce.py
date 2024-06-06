@@ -44,6 +44,7 @@ phil_str = """
 """
 phil_scope = parse(phil_str)
 
+
 # A callback for PredictionParameterisation.get_gradients which will give
 # the positions of reflections associated with a particular parameter
 def id_associated_refs(result):

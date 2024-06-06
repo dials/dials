@@ -458,7 +458,6 @@ def _add_absorption_component_to_physically_derived_model(model, reflection_tabl
 
 
 class DoseDecay(ScalingModelBase):
-
     """A model similar to the physical model, where an exponential decay
     component is used plus a relative B-factor per sweep, with no absorption
     surface by default. Most suitable for multi-crystal datasets."""

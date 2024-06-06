@@ -1,6 +1,5 @@
 """Creation of 'corrgram' correlation matrix plots"""
 
-
 from __future__ import annotations
 
 import json

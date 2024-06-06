@@ -1810,19 +1810,11 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                         dest=destrank,
                     )
 
-                    self.all_imported_experiments = (
-                        self.all_strong_reflections
-                    ) = (
+                    self.all_imported_experiments = self.all_strong_reflections = (
                         self.all_indexed_experiments
-                    ) = (
-                        self.all_indexed_reflections
-                    ) = (
+                    ) = self.all_indexed_reflections = (
                         self.all_integrated_experiments
-                    ) = (
-                        self.all_integrated_reflections
-                    ) = (
-                        self.all_coset_experiments
-                    ) = (
+                    ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
 

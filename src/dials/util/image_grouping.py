@@ -80,6 +80,7 @@ grouping:
 
 EPS = 1e-9
 
+
 ## Define classes for defining the metadata type and values/location.
 # class to wrap some metadata
 @dataclass
@@ -388,7 +389,7 @@ class ParsedYAML(object):
         return self._groupings
 
     def _parse_metadata(self, metadata: dict):
-        for (name, metadict) in metadata.items():
+        for name, metadict in metadata.items():
             # name is e.g. timepoint, metadict is image : file
             self.metadata_items[name] = ImgToMetadataDict()
             for image, meta in metadict.items():
@@ -482,9 +483,7 @@ class ParsedYAML(object):
                     self._groupings[groupby].add_metadata_for_image(
                         imagefile, metaforname
                     )
-            self._groupings[groupby].add_tolerances(
-                dict(zip(values, tolerances))
-            )
+            self._groupings[groupby].add_tolerances(dict(zip(values, tolerances)))
             self._groupings[groupby].check_consistent()
 
 
@@ -675,7 +674,6 @@ def save_subset(input_: SplittingIterable) -> Optional[Tuple[str, FilePair]]:
 
 
 class GroupingImageTemplates(object):
-
     """Class that takes a parsed group and determines the groupings and mappings
     required to split input data into groups.
 
@@ -812,9 +810,9 @@ class GroupingImageTemplates(object):
 
     def write_groupids_into_files(self, data_file_pairs: List[FilePair]) -> None:
         "Write a group_id column into the reflection table"
-        expt_file_to_groupsdata: Dict[
-            Path, GroupsForExpt
-        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
+        expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = (
+            self._get_expt_file_to_groupsdata(data_file_pairs)
+        )
 
         def set_group_id_column(
             filepair: FilePair,
@@ -856,9 +854,9 @@ class GroupingImageTemplates(object):
         prefix: str = "",
     ):
 
-        expt_file_to_groupsdata: Dict[
-            Path, GroupsForExpt
-        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
+        expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = (
+            self._get_expt_file_to_groupsdata(data_file_pairs)
+        )
         template = "{name}group_{index:0{maxindexlength:d}d}"
         name_template = functools.partial(
             template.format,
@@ -899,7 +897,6 @@ class GroupingImageTemplates(object):
 
 
 class GroupingImageFiles(GroupingImageTemplates):
-
     """This class provides specific implementations for when the images are h5 files.
     The main difference from templates is getting the image index.
     """
@@ -968,9 +965,9 @@ class GroupingImageFiles(GroupingImageTemplates):
                                 "img_idx_to_group_id"
                             ].group_ids.set_selected(flumpy.from_numpy(in_group), i)
                         else:
-                            file_to_groups[f][
-                                "img_idx_to_group_id"
-                            ].group_ids = flex.int(in_group.size, 0)
+                            file_to_groups[f]["img_idx_to_group_id"].group_ids = (
+                                flex.int(in_group.size, 0)
+                            )
                             file_to_groups[f][
                                 "img_idx_to_group_id"
                             ].group_ids.set_selected(flumpy.from_numpy(in_group), i)

@@ -103,7 +103,6 @@ def calc_deltahl(Ih_table, n_h, sigmaprime) -> np.array:
 
 
 class ErrorModelRegressionAPM:
-
     """Parameter manager for error model minimisation using the linear
     regression method.
 
@@ -171,7 +170,6 @@ class ErrorModelRegressionAPM:
 
 
 class ErrorModelA_APM:
-
     """Parameter manager for minimising A component with individual minimizer"""
 
     def __init__(self, model):
@@ -192,7 +190,6 @@ class ErrorModelA_APM:
 
 
 class ErrorModelB_APM:
-
     """Parameter manager for minimising Bcomponent with individual minimizer"""
 
     def __init__(self, model):
@@ -215,7 +212,6 @@ class ErrorModelB_APM:
 
 
 class ErrorModelBinner:
-
     """A binner for the error model data.
 
     Data are binned based on Ih, and methods are available for
@@ -361,7 +357,6 @@ class ErrorModelBinner:
 
 
 class BComponent:
-
     """The basic error model B parameter component"""
 
     def __init__(self, initial_value=0.02):
@@ -370,7 +365,6 @@ class BComponent:
 
 
 class AComponent:
-
     """The basic error model A parameter component"""
 
     def __init__(self, initial_value=1.00):
@@ -379,7 +373,6 @@ class AComponent:
 
 
 class BasicErrorModel:
-
     """Definition of a basic two-parameter error model."""
 
     min_reflections_required = 250
@@ -387,7 +380,6 @@ class BasicErrorModel:
     id_ = "basic"
 
     def __init__(self, a=None, b=None, basic_params=None):
-
         """
         A basic two-parameter error model s'^2 = a^2(s^2 + (bI)^2)
 

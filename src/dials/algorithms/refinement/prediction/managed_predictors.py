@@ -6,7 +6,6 @@
   the naive assumption that the relp is already in reflecting position
 """
 
-
 from __future__ import annotations
 
 from math import pi

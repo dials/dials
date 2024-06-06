@@ -1,6 +1,5 @@
 """ΔCC½ algorithm definitions"""
 
-
 from __future__ import annotations
 
 import logging
@@ -26,7 +25,6 @@ logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
 
 class CCHalfFromMTZ:
-
     """
     Run a cc-half algorithm using an MTZ file.
     """
@@ -153,7 +151,6 @@ Batch offset can be specified with mtz.batch_offset=
 
 
 class CCHalfFromDials:
-
     """
     Run a cc-half algorithm using dials datafiles.
     """
@@ -465,7 +462,6 @@ class CCHalfFromDials:
 
 
 class DeltaCCHalf:
-
     """
     Implementation of a ΔCC½ algorithm.
     """

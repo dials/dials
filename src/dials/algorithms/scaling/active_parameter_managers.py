@@ -204,7 +204,6 @@ class multi_active_parameter_manager(TargetInterface):
 
 
 class shared_active_parameter_manager(multi_active_parameter_manager):
-
     """Class to enforce sharing of model components.
 
     Intercept calls to a multi_apm, to override set_params calls and manage

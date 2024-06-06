@@ -658,7 +658,9 @@ class ModelState(object):
     def U_params(self, params) -> None:
         try:
             self._U_parameterisation.set_param_vals(tuple(float(i) for i in params))
-        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+        except (
+            ValueError
+        ) as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
             raise RuntimeError(f"Error setting U parameterisation: {e}")
 
     @property
@@ -670,7 +672,9 @@ class ModelState(object):
     def B_params(self, params) -> None:
         try:
             self._B_parameterisation.set_param_vals(tuple(float(i) for i in params))
-        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+        except (
+            ValueError
+        ) as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
             raise RuntimeError(f"Error setting B parameterisation: {e}")
 
     @property

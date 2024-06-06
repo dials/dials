@@ -1,7 +1,6 @@
 """Simulate a rotation dataset with a smoothly-varying beam position for
 refinement testing. Script based on tst_nanoBragg_basic.py"""
 
-
 from __future__ import annotations
 
 import math

@@ -75,7 +75,6 @@ debug_loggers_to_disable = [
 
 
 class manage_loggers(object):
-
     """
     A contextmanager for reducing logging levels for the underlying code of
     parallel ssx programs.

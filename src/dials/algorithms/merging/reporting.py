@@ -52,9 +52,9 @@ class MergeJSONCollector(object):
 class MergingStatisticsData:
     experiments: ExperimentList
     scaled_miller_array: miller.array
-    reflections: Optional[
-        List[flex.reflection_table]
-    ] = None  # only needed if using this class like a script when making batch plots
+    reflections: Optional[List[flex.reflection_table]] = (
+        None  # only needed if using this class like a script when making batch plots
+    )
     merging_statistics_result: Optional[Type[dataset_statistics]] = None
     anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
     cut_merging_statistics_result: Optional[Type[dataset_statistics]] = None

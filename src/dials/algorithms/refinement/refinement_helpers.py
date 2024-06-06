@@ -1,6 +1,5 @@
 """Auxiliary functions for the refinement package"""
 
-
 from __future__ import annotations
 
 import logging

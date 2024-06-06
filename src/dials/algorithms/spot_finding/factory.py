@@ -380,7 +380,7 @@ class SpotDensityFilter:
                 cutoff = hist.slot_centers()[i - 1] - 0.5 * hist.slot_width()
 
         sel = np.column_stack(np.where(H > cutoff))
-        for (ix, iy) in sel:
+        for ix, iy in sel:
             flags.set_selected(
                 (
                     (obs_x > xedges[ix])

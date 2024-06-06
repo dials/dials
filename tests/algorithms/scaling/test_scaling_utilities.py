@@ -512,9 +512,9 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
         "s0_lookup": s0_lookup_index,
         "s1_lookup": s1_lookup_index,
     }
-    experiment.scaling_model.components[
-        "absorption"
-    ].coefficients_list = coefficients_list
+    experiment.scaling_model.components["absorption"].coefficients_list = (
+        coefficients_list
+    )
     assert experiment.scaling_model.components["absorption"]._mode == "memory"
     experiment.scaling_model.components["absorption"].update_reflection_data()
     absorption = experiment.scaling_model.components["absorption"]

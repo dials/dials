@@ -11,6 +11,7 @@ try:
 except ImportError:
     ColoredFormatter = None
 
+
 # https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
 class DialsLogfileFormatter:
     """A formatter for log files that prepends messages with the elapsed time

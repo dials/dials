@@ -1,6 +1,5 @@
 """Setup experimental geometry for refinement test cases"""
 
-
 from __future__ import annotations
 
 import random

@@ -214,11 +214,11 @@ def test(cmdline_overrides=[]):
         phi_grads /= delta
 
         try:
-            for (a, b) in zip(x_grads, an_grads[i]["dX_dp"]):
+            for a, b in zip(x_grads, an_grads[i]["dX_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
-            for (a, b) in zip(y_grads, an_grads[i]["dY_dp"]):
+            for a, b in zip(y_grads, an_grads[i]["dY_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
-            for (a, b) in zip(phi_grads, an_grads[i]["dphi_dp"]):
+            for a, b in zip(phi_grads, an_grads[i]["dphi_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
         except AssertionError:
             print(f"Failure for {p_names[i]}")

@@ -248,9 +248,9 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
     # Make up some fake stuff
     if scan is not None:
-        nx_detector[
-            "timestamp"
-        ] = scan.get_epochs().as_numpy_array()  # FIXME non-standard
+        nx_detector["timestamp"] = (
+            scan.get_epochs().as_numpy_array()
+        )  # FIXME non-standard
         nx_detector["frame_time"] = scan.get_exposure_times().as_numpy_array()
         nx_detector["frame_time"].attrs["units"] = "s"
         # Optional so don't try

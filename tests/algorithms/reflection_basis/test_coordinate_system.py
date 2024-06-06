@@ -138,9 +138,7 @@ def test_beamvector_limit(beamvector):
     c1, c2 = beamvector["cs"].from_beam_vector(s_dash)
 
     # Check the point is equal to the limit in rs
-    assert math.sqrt(c1**2 + c2**2) == pytest.approx(
-        abs(beamvector["cs"].limits()[0])
-    )
+    assert math.sqrt(c1**2 + c2**2) == pytest.approx(abs(beamvector["cs"].limits()[0]))
 
 
 ### Test the TestFromRotationAngle class

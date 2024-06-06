@@ -3,7 +3,6 @@ Analysis of the origin of the diffraction pattern based on indexed and
 measured intensities.
 """
 
-
 from __future__ import annotations
 
 

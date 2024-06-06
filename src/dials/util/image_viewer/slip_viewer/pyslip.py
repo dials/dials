@@ -93,7 +93,7 @@ def point_inside_polygon(x, y, poly):
 
     (p1x, p1y) = new_poly[0]
 
-    for (p2x, p2y) in new_poly:
+    for p2x, p2y in new_poly:
         if y > min(p1y, p2y):
             if y <= max(p1y, p2y):
                 if x <= max(p1x, p2x):
@@ -1639,7 +1639,7 @@ class PySlip(_BufferedCanvas):
             rectangles = []
             if radius:
                 diameter = 2 * radius
-            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+            for lon, lat, place, radius, colour, x_off, y_off, pdata in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1681,7 +1681,7 @@ class PySlip(_BufferedCanvas):
             # dc = wx.GCDC(dc)            # allow transparent colours
             dc.SetPen(wx.Pen(colour))
             dc.SetBrush(wx.Brush(colour))
-            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+            for lon, lat, place, radius, colour, x_off, y_off, pdata in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1700,7 +1700,7 @@ class PySlip(_BufferedCanvas):
         # draw points on map/view
         if map_rel:
             dc = wx.GCDC(dc)  # allow transparent colours
-            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+            for lon, lat, place, radius, colour, x_off, y_off, pdata in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     dc.SetPen(wx.Pen(colour))
@@ -1715,7 +1715,7 @@ class PySlip(_BufferedCanvas):
             dc_h -= 1
             dc_w -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
-            for (x, y, place, radius, colour, x_off, y_off, pdata) in data:
+            for x, y, place, radius, colour, x_off, y_off, pdata in data:
                 dc.SetPen(wx.Pen(colour))
                 dc.SetBrush(wx.Brush(colour))
                 exec(self.point_view_placement[place])
@@ -1798,7 +1798,7 @@ class PySlip(_BufferedCanvas):
                 # fetch the exec code, don't refetch for each point in polygon
                 place_exec = self.poly_view_placement[place]
                 pp = []
-                for (x, y) in p:
+                for x, y in p:
                     exec(place_exec)
                     if closed:
                         pp.append((x, y))
@@ -1831,7 +1831,7 @@ class PySlip(_BufferedCanvas):
 
         # draw images on map/view
         if map_rel:
-            for (lon, lat, bmap, w, h, place, x_off, y_off, idata) in images:
+            for lon, lat, bmap, w, h, place, x_off, y_off, idata in images:
                 w2 = w / 2  # noqa
                 h2 = h / 2  # noqa
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
@@ -1843,7 +1843,7 @@ class PySlip(_BufferedCanvas):
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2  # noqa
             dc_h2 = dc_h / 2  # noqa
-            for (x, y, bmap, w, h, place, x_off, y_off, idata) in images:
+            for x, y, bmap, w, h, place, x_off, y_off, idata in images:
                 w2 = w / 2  # noqa
                 h2 = h / 2  # noqa
                 exec(self.image_view_placement[place])

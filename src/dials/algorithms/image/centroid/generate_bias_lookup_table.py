@@ -2,7 +2,6 @@
 Code to generate lookup values for algorithms/image/centroid/bias.h.
 """
 
-
 from __future__ import annotations
 
 

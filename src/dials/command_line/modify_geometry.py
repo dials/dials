@@ -27,7 +27,6 @@ output {
 def update(
     experiments: ExperimentList, new_params: libtbx.phil.scope_extract
 ) -> ExperimentList:
-
     """
     Modify detector, beam, goniometer and scan in experiments with the values in new_params
     """

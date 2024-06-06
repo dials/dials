@@ -1,7 +1,6 @@
 """Analysis of centroid residuals for determining suitable refinement and
 outlier rejection parameters automatically"""
 
-
 from __future__ import annotations
 
 import math

@@ -1,7 +1,6 @@
 """Testing functions for multivariate outlier rejection by the FAST-MCD
 algorithm"""
 
-
 from __future__ import annotations
 
 

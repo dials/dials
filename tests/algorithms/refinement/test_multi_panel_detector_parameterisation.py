@@ -5,7 +5,6 @@ single panel detector, and a geometrically identical 3x3 panel detector,
 ensuring the results are the same.
 """
 
-
 from __future__ import annotations
 
 from collections import namedtuple

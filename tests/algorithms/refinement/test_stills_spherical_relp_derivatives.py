@@ -2,7 +2,6 @@
 Test derivatives typed up in dials_regression/doc/notes/prediction/stills_prediction_nave3.pdf
 """
 
-
 from __future__ import annotations
 
 import pytest

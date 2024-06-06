@@ -120,7 +120,6 @@ prediction {
 
 
 class EllipsoidProfileModel(ProfileModelExt):
-
     """
     An overall model class that conforms to the requirements of a
     dxtbx.profile_model entry point.

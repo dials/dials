@@ -1139,10 +1139,10 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
             # Loop over attached Panel matrices, using the helper class to calculate
             # derivatives of the d matrix in each case and store them.
             i = igp * 6
-            for (panel_id, offset, dir1_new_basis, dir2_new_basis) in zip(
+            for panel_id, offset, dir1_new_basis, dir2_new_basis in zip(
                 pnl_ids, offsets, dir1s, dir2s
             ):
 
-                self._multi_state_derivatives[panel_id][
-                    i : (i + 6)
-                ] = pgc.derivatives_for_panel(offset, dir1_new_basis, dir2_new_basis)
+                self._multi_state_derivatives[panel_id][i : (i + 6)] = (
+                    pgc.derivatives_for_panel(offset, dir1_new_basis, dir2_new_basis)
+                )

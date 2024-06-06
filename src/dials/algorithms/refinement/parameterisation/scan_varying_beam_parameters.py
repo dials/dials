@@ -87,13 +87,13 @@ class ScanVaryingBeamParameterisation(ScanVaryingModelParameterisation, BeamMixi
 
         # calculate derivatives of state wrt underlying smoother parameters
         ds0_dp1 = [None] * dmu1_dp.size
-        for (i, v) in dmu1_dp:
+        for i, v in dmu1_dp:
             ds0_dp1[i] = ds0_dval[0] * v
         ds0_dp2 = [None] * dmu2_dp.size
-        for (i, v) in dmu2_dp:
+        for i, v in dmu2_dp:
             ds0_dp2[i] = ds0_dval[1] * v
         ds0_dp3 = [None] * dnu_dp.size
-        for (i, v) in dnu_dp:
+        for i, v in dnu_dp:
             ds0_dp3[i] = ds0_dval[2] * v
 
         # store derivatives as list-of-lists

@@ -83,7 +83,7 @@ logger = logging.getLogger("dials")
 
 
 def _build_class_matrix(class_index, class_matrix, offset=0):
-    for (i, val) in enumerate(class_index, start=offset):
+    for i, val in enumerate(class_index, start=offset):
         class_matrix[val, i] = 1.0
     return class_matrix
 

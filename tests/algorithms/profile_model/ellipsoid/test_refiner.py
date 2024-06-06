@@ -169,9 +169,7 @@ def refinerdata_testdata(testdata):
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (
-                100
-                * exp(-0.5 * (j - 5) ** 2 / 1**2)
-                * exp(-0.5 * (i - 5) ** 2 / 1**2)
+                100 * exp(-0.5 * (j - 5) ** 2 / 1**2) * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:
@@ -550,9 +548,7 @@ def test_RefinerData(testdata):
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (
-                100
-                * exp(-0.5 * (j - 5) ** 2 / 1**2)
-                * exp(-0.5 * (i - 5) ** 2 / 1**2)
+                100 * exp(-0.5 * (j - 5) ** 2 / 1**2) * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:
