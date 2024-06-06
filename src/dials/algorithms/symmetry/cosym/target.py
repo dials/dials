@@ -111,7 +111,6 @@ def _compute_rij_matrix_one_row_block(
                         data=intensities_i.select(isel_i),
                         sigmas=sigmas_i.select(isel_i),
                     )
-                    assert ma_i.size() == ma_j.size()
                     n_pairs = ma_i.size()
                     if ma_i.size() < min_pairs:
                         n, cc = (None, None)
