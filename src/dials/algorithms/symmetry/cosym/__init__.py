@@ -21,6 +21,7 @@ from cctbx import miller, sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from scitbx import matrix
+from scitbx.array_family import flex
 
 import dials.util
 import dials.util.system
@@ -208,6 +209,21 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.best_subgroup["cb_op_inp_best"] * self.cb_op_inp_min
             )
             self.input_space_group = self.intensities.space_group()
+
+            # ensure still unique after mapping - merge equivalents in the higher symmetry
+            new_intensities = None
+            new_dataset_ids = flex.int([])
+            for d in set(self.dataset_ids):
+                sel = self.dataset_ids == d
+                these_i = self.intensities.select(sel)
+                these_merged = these_i.merge_equivalents().array()
+                if not new_intensities:
+                    new_intensities = these_merged
+                else:
+                    new_intensities = new_intensities.concatenate(these_merged)
+                new_dataset_ids.extend(flex.int(these_merged.size(), d))
+            self.intensities = new_intensities
+            self.dataset_ids = new_dataset_ids
 
         else:
             self.input_space_group = None
