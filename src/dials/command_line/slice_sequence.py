@@ -11,6 +11,8 @@ from dials.util import Sorry
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util.slice import slice_experiments, slice_reflections
 
+from libtbx.phil import parse
+
 help_message = """
 
 Slice a sequence to produce a smaller sequence within the bounds of the
@@ -30,8 +32,6 @@ Examples::
   dials.slice_sequence models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 """
-
-from libtbx.phil import parse
 
 phil_scope = parse(
     """

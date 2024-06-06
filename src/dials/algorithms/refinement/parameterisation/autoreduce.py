@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 
-logger = logging.getLogger(__name__)
 
 from libtbx.phil import parse
 from scitbx.array_family import flex
 
 from dials.algorithms.refinement import DialsRefineConfigError
+
+logger = logging.getLogger(__name__)
 
 phil_str = """
       min_nref_per_parameter = 5

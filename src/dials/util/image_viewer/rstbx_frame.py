@@ -172,7 +172,7 @@ class XrayFrame(wx.Frame):
         """
 
         key = self.get_key(file_name_or_data)
-        if type(file_name_or_data) is dict:
+        if isinstance(file_name_or_data, dict):
             self._img = rstbx.viewer.image(file_name_or_data)
         else:
             try:
@@ -230,7 +230,7 @@ class XrayFrame(wx.Frame):
         if self.image_chooser.GetCount() >= self.CHOOSER_SIZE:
             self.image_chooser.Delete(0)
         i = self.image_chooser.GetCount()
-        if type(file_name_or_data) is dict:
+        if isinstance(file_name_or_data, dict):
             self.image_chooser.Insert(key, i, None)
         else:
             self.image_chooser.Insert(os.path.basename(key), i, key)

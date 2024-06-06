@@ -442,14 +442,14 @@ def truncate(
             "falling back to assumption of a flat, positive prior, i.e.: "
             "  |F| = sqrt((Io+sqrt(Io**2 +2sigma**2))/2.0)"
         )
-        do_french_wilson = lambda ma: ma.enforce_positive_amplitudes()
+        do_french_wilson = lambda ma: ma.enforce_positive_amplitudes()  # noqa: E731
     elif n_refl < min_reflections:
         raise ValueError(
             "Insufficient reflections for French & Wilson procedure. "
             "Either set fallback_to_flat_prior=True or truncate=False."
         )
     elif implementation == "cctbx":
-        do_french_wilson = lambda ma: ma.french_wilson(log=out)
+        do_french_wilson = lambda ma: ma.french_wilson(log=out)  # noqa: E731
     else:
         do_french_wilson = french_wilson
 

@@ -47,9 +47,10 @@ from dials_scaling_ext import (
     create_sph_harm_lookup_table,
 )
 
-logger = logging.getLogger("dials")
 
 import pkg_resources
+
+logger = logging.getLogger("dials")
 
 base_model_phil_str = """\
 correction.fix = None

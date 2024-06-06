@@ -1710,8 +1710,8 @@ class PySlip(_BufferedCanvas):
                         dc.DrawCircle(int(x + x_off), int(y + y_off), radius)
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
             dc_h -= 1
             dc_w -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1778,8 +1778,8 @@ class PySlip(_BufferedCanvas):
                     lines.append([int(x) for x in p_lonlat])
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
             dc_w -= 1
             dc_h -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1832,8 +1832,8 @@ class PySlip(_BufferedCanvas):
         # draw images on map/view
         if map_rel:
             for (lon, lat, bmap, w, h, place, x_off, y_off, idata) in images:
-                w2 = w / 2  # noqa; lgtm; self-modifying code
-                h2 = h / 2  # noqa; lgtm; self-modifying code
+                w2 = w / 2  # noqa
+                h2 = h / 2  # noqa
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1841,11 +1841,11 @@ class PySlip(_BufferedCanvas):
                     dc.DrawBitmap(bmap, x, y, False)
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
             for (x, y, bmap, w, h, place, x_off, y_off, idata) in images:
-                w2 = w / 2  # noqa; lgtm; self-modifying code
-                h2 = h / 2  # noqa; lgtm; self-modifying code
+                w2 = w / 2  # noqa
+                h2 = h / 2  # noqa
                 exec(self.image_view_placement[place])
                 dc.DrawBitmap(bmap, x, y, False)
 
@@ -1901,16 +1901,16 @@ class PySlip(_BufferedCanvas):
 
                     # place the text relative to hotpoint
                     (w, h, _, _) = dc.GetFullTextExtent(tdata)
-                    w2 = w / 2  # noqa; lgtm; self-modifying code
-                    h2 = h / 2  # noqa; lgtm; self-modifying code
+                    w2 = w / 2  # noqa
+                    h2 = h / 2  # noqa
                     exec(self.text_map_placement[place])
                     dc.SetTextForeground(textcolour)
                     dc.DrawText(tdata, int(x), int(y))
         else:
             # we need the size of the DC
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
             dc_w -= 1
             dc_h -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1950,8 +1950,8 @@ class PySlip(_BufferedCanvas):
 
                 # place the text relative to hotpoint
                 (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text
-                w2 = w / 2  # noqa; lgtm; self-modifying code
-                h2 = h / 2  # noqa; lgtm; self-modifying code
+                w2 = w / 2  # noqa
+                h2 = h / 2  # noqa
                 exec(self.text_view_placement[place])
                 dc.SetTextForeground(textcolour)
                 dc.DrawText(tdata, int(x), int(y))
@@ -2582,8 +2582,8 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 dc = wx.BufferedPaintDC(self, self.buffer)
                 (dc_w, dc_h) = dc.GetSize()
-                dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-                dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+                dc_w2 = dc_w / 2  # noqa
+                dc_h2 = dc_h / 2  # noqa
                 dc_h -= 1
                 dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, pdata) = p
@@ -2633,8 +2633,8 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 dc = wx.BufferedPaintDC(self, self.buffer)
                 (dc_w, dc_h) = dc.GetSize()
-                dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-                dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+                dc_w2 = dc_w / 2  # noqa
+                dc_h2 = dc_h / 2  # noqa
                 dc_h -= 1
                 dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, pdata) = p

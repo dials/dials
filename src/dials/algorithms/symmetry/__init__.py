@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 
-logger = logging.getLogger(__name__)
 
 from io import StringIO
 
@@ -20,6 +19,8 @@ from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
 from dials.util.normalisation import quasi_normalisation
+
+logger = logging.getLogger(__name__)
 
 
 def median_unit_cell(experiments):

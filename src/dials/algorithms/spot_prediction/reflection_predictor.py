@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import logging
 
-logger = logging.getLogger(__name__)
 
 from libtbx.phil import parse
 
 from dials.util import Sorry
+
+logger = logging.getLogger(__name__)
 
 # The phil parameters
 phil_scope = parse(

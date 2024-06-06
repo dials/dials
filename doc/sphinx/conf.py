@@ -17,6 +17,9 @@ import datetime
 import os
 import sys
 
+import alabaster
+
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -120,8 +123,6 @@ pygments_style = "sphinx"
 suppress_warnings = ["image.nonlocal_uri"]
 
 # -- Options for HTML output ----------------------------------------------
-
-import alabaster
 
 html_theme_path = [alabaster.get_path()]
 extensions.append("alabaster")

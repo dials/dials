@@ -11,6 +11,7 @@ import scitbx.matrix
 from cctbx import sgtbx, uctbx
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 from dxtbx.serialize import load
+from cctbx import crystal
 
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
@@ -414,9 +415,6 @@ def test_change_of_basis_ops_to_minimum_cell_mpro():
         relative_length_tolerance=0.05,
         absolute_angle_tolerance=2,
     )
-
-
-from cctbx import crystal
 
 
 def test_change_of_basis_ops_to_minimum_cell_with_outlier():

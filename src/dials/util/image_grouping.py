@@ -398,9 +398,9 @@ class ParsedYAML(object):
                     raise ValueError(
                         f"Image {image} not listed in 'images:' in input yaml"
                     )
-                if type(meta) is float or type(meta) is int:
+                if isinstance(meta, float) or isinstance(meta, int):
                     self.metadata_items[name][imgfile] = ConstantMetadataForFile(meta)
-                elif type(meta) is str:
+                elif isinstance(meta, str):
                     if meta.startswith("repeat="):
                         try:
                             n = int(meta.split("=")[1])

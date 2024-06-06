@@ -21,6 +21,9 @@ from dials.array_family import flex
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
+from dials.algorithms.merging.merge import MergingStatisticsData
+
+import libtbx.phil
 
 RAD2DEG = 180 / math.pi
 
@@ -43,8 +46,6 @@ Examples::
 
   dials.report integrated.refl integrated.expt
 """
-
-import libtbx.phil
 
 # Create the phil parameters
 phil_scope = libtbx.phil.parse(
@@ -2079,9 +2080,6 @@ class ReferenceProfileAnalyser:
                 },
             }
         }
-
-
-from dials.algorithms.merging.merge import MergingStatisticsData
 
 
 def merging_stats_data(reflections, experiments):

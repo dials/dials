@@ -13,9 +13,13 @@ from dials.util import tabulate
 from dials.util.mp import multi_node_parallel_map
 from dials.util.system import MEMORY_LIMIT
 
+# isort: split
+
 # Need this import first because loads extension that parallel_integrator_ext
 # relies on - it assumes the binding for EmpiricalProfileModeller exists
-import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
+import dials.algorithms.profile_model.modeller
+
+# isort: split
 
 from dials.constants import EPS, FULL_PARTIALITY
 from dials_algorithms_integration_parallel_integrator_ext import (

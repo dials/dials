@@ -60,7 +60,7 @@ Error:
 """
         )
 
-import dials.precommitbx.nagger
+import dials.precommitbx.nagger  # noqa: E402
 
 try:
     from dials.util.version import dials_version

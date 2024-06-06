@@ -6,6 +6,8 @@ import subprocess
 
 import pytest
 
+import json
+
 from dxtbx.serialize import load
 
 from dials.array_family import flex
@@ -47,8 +49,6 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     for i in range(1, 6):
         assert tmp_path.joinpath(f"nuggets/nugget_integrated_{i}.json").is_file()
 
-
-import json
 
 expected_simple1 = {
     "likelihood": 171374.174649,

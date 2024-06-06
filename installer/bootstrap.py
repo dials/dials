@@ -254,7 +254,7 @@ def install_conda(python, include_cctbx, cmake):
                 paths = f.readlines()
         except IOError:
             paths = []
-        environments = set(  # noqa; C401, Python 2.7 compatibility
+        environments = set(  # noqa: C401 # Python 2.7 compatibility
             os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
         )
         env_dirs = (
@@ -1251,7 +1251,6 @@ source {dist_root}/conda_base/etc/profile.d/conda.sh
 conda activate {dist_root}/conda_base
 """.format(
                     dist_root=os.getcwd(),
-                    build_lib=os.path.join(os.getcwd(), "build", "lib"),
                 )
             )
 

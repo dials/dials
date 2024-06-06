@@ -4,12 +4,13 @@ from unittest.mock import patch
 
 import pytest
 
-pytest.importorskip("pyFAI")
 
 from dxtbx.serialize import load
 
 from dials.command_line import powder_calibrate
 from dials.command_line.powder_calibrate import Geometry, Point, PowderCalibrator
+
+pytest.importorskip("pyFAI")
 
 
 @pytest.mark.parametrize(

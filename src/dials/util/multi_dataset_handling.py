@@ -15,10 +15,10 @@ from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
 
-logger = logging.getLogger("dials")
 
 import iotbx.phil
 
+logger = logging.getLogger("dials")
 phil_scope = iotbx.phil.parse(
     """
   dataset_selection {

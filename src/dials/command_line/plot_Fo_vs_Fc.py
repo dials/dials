@@ -22,8 +22,8 @@ from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import ArgumentParser
 
 matplotlib.use("pdf")
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.ticker import MultipleLocator  # noqa: E402
 
 
 class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):
