@@ -16,11 +16,13 @@ from scitbx.array_family import flex
 
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement.engine import AdaptLstbx as AdaptLstbxBase
-from dials.algorithms.refinement.engine import DisableMPmixin
+from dials.algorithms.refinement.engine import (
+    DisableMPmixin,
+    LevenbergMarquardtIterations,
+)
 from dials.algorithms.refinement.engine import (
     GaussNewtonIterations as GaussNewtonIterationsBase,
 )
-from dials.algorithms.refinement.engine import LevenbergMarquardtIterations
 
 try:
     from scitbx.examples.bevington import non_linear_ls_eigen_wrapper

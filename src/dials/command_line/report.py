@@ -7,9 +7,11 @@ import math
 
 import numpy as np
 
+import libtbx.phil
 from cctbx import uctbx
 
 import dials.util.log
+from dials.algorithms.merging.merge import MergingStatisticsData
 from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.algorithms.scaling.scaling_library import (
@@ -21,9 +23,6 @@ from dials.array_family import flex
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
-from dials.algorithms.merging.merge import MergingStatisticsData
-
-import libtbx.phil
 
 RAD2DEG = 180 / math.pi
 

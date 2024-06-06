@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 
-
 # Intercept easy_mp exceptions to extract stack traces before they are lost at
 # the libtbx process boundary/the easy_mp API. In the case of a subprocess
 # crash we print the subprocess stack trace, which will be most useful for

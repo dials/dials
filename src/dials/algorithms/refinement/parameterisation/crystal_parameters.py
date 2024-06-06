@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 
-
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from scitbx import matrix
 

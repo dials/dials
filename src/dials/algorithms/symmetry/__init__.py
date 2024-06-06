@@ -6,8 +6,6 @@ This module provides a base class for symmetry determination algorithms.
 from __future__ import annotations
 
 import logging
-
-
 from io import StringIO
 
 import libtbx

@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 import math
 
+import pkg_resources
+
 from libtbx import Auto, phil
 
 from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
@@ -46,9 +48,6 @@ from dials_scaling_ext import (
     calc_theta_phi,
     create_sph_harm_lookup_table,
 )
-
-
-import pkg_resources
 
 logger = logging.getLogger("dials")
 

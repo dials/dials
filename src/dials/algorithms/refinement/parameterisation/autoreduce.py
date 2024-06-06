@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 
-
 from libtbx.phil import parse
 from scitbx.array_family import flex
 

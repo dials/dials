@@ -10,12 +10,10 @@ import logging
 
 from orderedset import OrderedSet
 
+import iotbx.phil
 from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
-
-
-import iotbx.phil
 
 logger = logging.getLogger("dials")
 phil_scope = iotbx.phil.parse(

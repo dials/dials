@@ -3,6 +3,7 @@ from __future__ import annotations
 from os.path import basename, splitext
 
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx.phil import parse
 
 import dials.util
 from dials.algorithms.refinement.refinement_helpers import calculate_frame_numbers
@@ -10,8 +11,6 @@ from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util.slice import slice_experiments, slice_reflections
-
-from libtbx.phil import parse
 
 help_message = """
 

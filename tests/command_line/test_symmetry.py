@@ -8,10 +8,9 @@ import subprocess
 import pytest
 
 import scitbx.matrix
-from cctbx import sgtbx, uctbx
+from cctbx import crystal, sgtbx, uctbx
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 from dxtbx.serialize import load
-from cctbx import crystal
 
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,

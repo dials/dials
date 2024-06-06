@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 import pytest
 
-
 from dxtbx.serialize import load
 
 from dials.command_line import powder_calibrate

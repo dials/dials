@@ -15,9 +15,11 @@ from dials.algorithms.clustering import plots as cluster_plotter
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.array_family import flex
-from dials.command_line.stereographic_projection import calculate_projections
+from dials.command_line.stereographic_projection import (
+    calculate_projections,
+    projections_as_dict,
+)
 from dials.command_line.stereographic_projection import phil_scope as stereo_phil_scope
-from dials.command_line.stereographic_projection import projections_as_dict
 from dials.report.analysis import (
     format_statistics,
     make_merging_statistics_summary,
