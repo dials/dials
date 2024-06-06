@@ -24,7 +24,6 @@ class ScanVaryingDetectorParameterisationSinglePanel(
     angles expressed in mrad"""
 
     def __init__(self, detector, t_range, num_intervals, experiment_ids=None):
-
         if experiment_ids is None:
             experiment_ids = [0]
 

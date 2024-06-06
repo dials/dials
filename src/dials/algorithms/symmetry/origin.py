@@ -77,7 +77,6 @@ def get_hkl_offset_correlation_coefficients(
     grid_l=0,
     reference=None,
 ):
-
     # N.B. deliberately ignoring d_min, d_max as these are inconsistent with
     # changing the miller indices
 

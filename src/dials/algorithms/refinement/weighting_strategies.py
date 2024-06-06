@@ -65,7 +65,6 @@ class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
         reflections = super().calculate_weights(reflections)
 
         if "delpsical.weights" not in reflections:
-
             raise DialsRefineConfigError(
                 'The key "delpsical.weights" is expected within the input reflections'
             )

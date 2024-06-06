@@ -199,7 +199,6 @@ def simple_gaussian_spots(params):
     p = ProgressBar(title="Generating shoeboxes")
 
     for i in range(len(rlist)):
-
         p.update(i * 100.0 / params.nrefl)
         mask = shoebox[i].mask
 

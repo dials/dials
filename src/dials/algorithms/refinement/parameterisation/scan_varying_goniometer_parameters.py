@@ -21,7 +21,6 @@ class ScanVaryingGoniometerParameterisation(
     def __init__(
         self, goniometer, t_range, num_intervals, beam=None, experiment_ids=None
     ):
-
         if experiment_ids is None:
             experiment_ids = [0]
 

@@ -695,7 +695,6 @@ class GroupingImageTemplates(object):
         metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
         groups: List[_MetaDataGroup],
     ) -> dict[ImageFile, _GroupInfo]:
-
         # Ok now we have the groupings of the metadata. Now find which groups each
         # file contains.
         # Purpose here is to create an object that will allow easy allocation from
@@ -853,7 +852,6 @@ class GroupingImageTemplates(object):
         params: Any = None,
         prefix: str = "",
     ):
-
         expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = (
             self._get_expt_file_to_groupsdata(data_file_pairs)
         )
@@ -906,7 +904,6 @@ class GroupingImageFiles(GroupingImageTemplates):
         metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
         groups: List[_MetaDataGroup],
     ) -> dict[ImageFile, _GroupInfo]:
-
         # Ok now we have the groupings of the metadata. Now find which groups each
         # file contains.
         # Purpose here is to create an object that will allow easy allocation from
@@ -965,9 +962,9 @@ class GroupingImageFiles(GroupingImageTemplates):
                                 "img_idx_to_group_id"
                             ].group_ids.set_selected(flumpy.from_numpy(in_group), i)
                         else:
-                            file_to_groups[f]["img_idx_to_group_id"].group_ids = (
-                                flex.int(in_group.size, 0)
-                            )
+                            file_to_groups[f][
+                                "img_idx_to_group_id"
+                            ].group_ids = flex.int(in_group.size, 0)
                             file_to_groups[f][
                                 "img_idx_to_group_id"
                             ].group_ids.set_selected(flumpy.from_numpy(in_group), i)

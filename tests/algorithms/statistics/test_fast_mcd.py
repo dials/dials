@@ -5,7 +5,6 @@ from __future__ import annotations
 
 
 def test_maha():
-
     # Want implementation of Mahalanobis distance to match this R session:
 
     # > x1 <- round(rnorm(10,3), 3)

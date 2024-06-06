@@ -164,9 +164,9 @@ were considered for use when refining the scaling model.
             if d_min and d_min - max_current_res > 0.005:
                 logger.info(
                     "Resolution limit suggested from CC"
-                    + "\u00BD"
+                    + "\u00bd"
                     + " fit (limit CC"
-                    + "\u00BD"
+                    + "\u00bd"
                     + "=0.3): %.2f",
                     d_min,
                 )

@@ -93,7 +93,6 @@ def run():
 
 
 def run_simple_integrate(params, experiments, reflections):
-
     experiment = experiments[0]
 
     # Remove bad reflections (e.g. those not indexed)

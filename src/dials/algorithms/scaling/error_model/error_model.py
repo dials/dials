@@ -540,13 +540,13 @@ class BasicErrorModel:
                 "  Type: basic",
                 f"  Parameters: a = {a:.5f}, b = {b:.5f}",
                 "  Error model formula: "
-                + "\u03C3"
+                + "\u03c3"
                 + "'"
                 + "\xb2"
                 + " = a"
                 + "\xb2"
                 + "("
-                + "\u03C3\xb2"
+                + "\u03c3\xb2"
                 " + (bI)" + "\xb2" + ")",
                 "  estimated I/sigma asymptotic limit: %s" % ISa,
                 "",

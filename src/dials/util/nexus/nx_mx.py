@@ -278,7 +278,6 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
     # Loop through all the panels
     for i, panel in enumerate(detector):
-
         # Get some panel attributes
         pixel_size = panel.get_pixel_size()
         image_size = panel.get_image_size()
@@ -733,7 +732,6 @@ def dump(entry, experiments, params):
 
     # Get the experiment
     for index, experiment in enumerate(experiments):
-
         # Create the entry
         assert ("experiment_%d" % index) not in entry
         nxmx = entry.create_group("experiment_%d" % index)
@@ -856,7 +854,6 @@ def load(entry, exp_index):
     index = []
     rotations = []
     for name in exp_index:
-
         # Get the entry
         nxmx = entry.file[name]
 

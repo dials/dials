@@ -71,7 +71,6 @@ def test(dials_regression: Path, tmp_path):
     # Create a dict of lists of xy for each hkl
     gen_phi = {}
     for h in integrate_handle.hkl:
-
         # Calculate the angles
         angles = ra(h, ub)
         gen_phi[h] = angles
@@ -85,7 +84,6 @@ def test(dials_regression: Path, tmp_path):
 
     # For each hkl in the xds file
     for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzcal):
-
         # Calculate the XDS phi value
         xds_phi = (
             scan.get_oscillation(deg=False)[0]

@@ -202,7 +202,6 @@ def save_combined_experiments(
     experiments_filename="combined.expt",
     reflections_filename="combined.refl",
 ):
-
     output_experiments_list: List[ExperimentList] = []
     output_reflections_list: List[flex.reflection_table] = []
     expt_names_list: List[str] = []

@@ -37,9 +37,7 @@ class active_parameter_manager:
         n_cumul_params = 0
         for component, obj in components.items():
             if component in selection_list:
-                assert hasattr(
-                    obj, "parameters"
-                ), """component object must have the
+                assert hasattr(obj, "parameters"), """component object must have the
           attribute 'parameters' for access to the component parameters."""
                 self.x.extend(obj.free_parameters)
                 n_params = len(obj.free_parameters)

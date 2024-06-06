@@ -47,7 +47,6 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
         tracking=None,
         max_iterations=None,
     ):
-
         AdaptLstbxBase.__init__(
             self,
             target,
@@ -74,7 +73,6 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
         max_iterations=20,
         **kwds,
     ):
-
         AdaptLstbxSparse.__init__(
             self,
             target,

@@ -72,7 +72,6 @@ class DetectorMixin:
         return {"istate": istate, "p_list": p_list}
 
     def _compose_core(self, dist, shift1, shift2, tau1, tau2, tau3):
-
         # extract items from the initial state
         id1 = self._initial_state["d1"]
         id2 = self._initial_state["d2"]
@@ -351,7 +350,6 @@ class DetectorParameterisationSinglePanel(ModelParameterisation, DetectorMixin):
         self.compose()
 
     def compose(self):
-
         # extract parameters from the internal list
         dist, shift1, shift2, tau1, tau2, tau3 = self._param
 
@@ -367,7 +365,6 @@ class DetectorParameterisationSinglePanel(ModelParameterisation, DetectorMixin):
         )
 
     def get_state(self):
-
         # only a single panel exists, so no multi_state_elt argument is allowed
         panel = (self._model)[0]
         return matrix.sqr(panel.get_d_matrix())
@@ -498,7 +495,6 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
         self.compose()
 
     def compose(self):
-
         # extract parameters from the internal list
         dist, shift1, shift2, tau1, tau2, tau3 = self._param
 
@@ -548,7 +544,6 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
         ]
 
     def get_state(self, multi_state_elt=0):
-
         # There is only one detector, but the req. panel must be specified
         panel = (self._model)[multi_state_elt]
         return matrix.sqr(panel.get_d_matrix())
@@ -561,7 +556,6 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
     the base class for more details"""
 
     def compose(self):
-
         # extract items from the initial state
         id1 = self._initial_state["d1"]
         id2 = self._initial_state["d2"]
@@ -621,7 +615,6 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
 
         # now update the panels with their new position and orientation.
         for p, dir1, dir2, org in zip(detector, dir1s, dir2s, origins):
-
             p.set_frame(dir1, dir2, org)
 
         # calculate derivatives of the state wrt parameters
@@ -732,7 +725,6 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
         for panel_id, (offset, dir1_new_basis, dir2_new_basis) in enumerate(
             zip(self._offsets, self._dir1s, self._dir2s)
         ):
-
             # Panel origin:
             # o = dorg + offset[0] * d1 + offset[1] * d2 + offset[2] * dn
 
@@ -955,7 +947,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
         # loop over the groups, collecting initial parameters and states
         for igp, pnl_ids in enumerate(self._panel_ids_by_group):
-
             panel_centres_in_lab_frame = []
             for i in pnl_ids:
                 pnl = detector[i]
@@ -1087,7 +1078,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
         return self._group_ids_by_parameter
 
     def compose(self):
-
         # reset the list that holds derivatives
         for i in range(len(self._model)):
             self._multi_state_derivatives[i] = [None] * len(self._dstate_dp)
@@ -1096,7 +1086,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
         # parameters
         param = iter(self._param)
         for igp, pnl_ids in enumerate(self._panel_ids_by_group):
-
             # extract parameters from the internal list
             dist = next(param)
             shift1 = next(param)
@@ -1142,7 +1131,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
             for panel_id, offset, dir1_new_basis, dir2_new_basis in zip(
                 pnl_ids, offsets, dir1s, dir2s
             ):
-
                 self._multi_state_derivatives[panel_id][i : (i + 6)] = (
                     pgc.derivatives_for_panel(offset, dir1_new_basis, dir2_new_basis)
                 )

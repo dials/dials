@@ -23,7 +23,6 @@ class Extract:
         cmdline_args=None,
         verbose=True,
     ):
-
         self._target = target
         self._prediction_parameterisation = prediction_parameterisation
         self._verbose = verbose
@@ -43,7 +42,6 @@ class Extract:
         self.refiner = self.build_minimiser()
 
     def build_minimiser(self):
-
         assert self._params.engine in ["SimpleLBFGS", "LBFGScurvs", "GaussNewton"]
 
         if self._params.engine == "SimpleLBFGS":
@@ -63,7 +61,6 @@ class Extract:
             return refiner
 
         if self._params.engine == "GaussNewton":
-
             refiner = GaussNewtonIterations(
                 target=self._target,
                 prediction_parameterisation=self._prediction_parameterisation,

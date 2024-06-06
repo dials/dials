@@ -287,7 +287,6 @@ class RingSettingsPanel(wx.Panel):
             dc.DrawCircle(int(x), int(y), int(radius * scale))
 
     def DrawRing(self):
-
         xrayframe = self.GetParent().GetParent()
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
 

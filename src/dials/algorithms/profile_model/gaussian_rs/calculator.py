@@ -452,7 +452,6 @@ class ComputeEsdReflectingRange:
         """
 
         if algorithm == "basic":
-
             # Calculate sigma_m
             try:
                 estimator = ComputeEsdReflectingRange.Estimator(
@@ -636,7 +635,6 @@ class ScanVaryingProfileModelCalculator:
         sigma_b = flex.double()
         sigma_m = flex.double()
         for i in range(z0, z1):
-
             # Get reflections at the index
             reflections = reflection_list[i]
 

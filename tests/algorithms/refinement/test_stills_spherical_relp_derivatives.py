@@ -34,7 +34,6 @@ from .setup_geometry import Extract
 
 class Predictor:
     def __init__(self, experiments):
-
         self._experiment = experiments[0]
         self.update()
 
@@ -69,7 +68,6 @@ class AnalyticalGradients:
         xl_orientation_parameterisation,
         xl_unit_cell_parameterisation,
     ):
-
         # References to the underlying models from the first experiment
         self.experiment = experiments[0]
         self.beam = self.experiment.beam
@@ -91,7 +89,6 @@ class AnalyticalGradients:
         self.us0 = self.s0.normalize()
 
     def get_beam_gradients(self, reflections):
-
         ds0_dbeam_p = self.beam_parameterisation.get_ds_dp()
         p_names = self.beam_parameterisation.get_param_names()
 
@@ -123,7 +120,6 @@ class AnalyticalGradients:
 
         # loop through the parameters
         for name, der in zip(p_names, ds0_dbeam_p):
-
             # term1
             term1 = self.us0.dot(der) * q_s0 + self.s0len * (der)
             term1 = term1 * inv_s
@@ -138,7 +134,6 @@ class AnalyticalGradients:
         return ds1_dp
 
     def get_crystal_orientation_gradients(self, reflections):
-
         # get derivatives of the U matrix wrt the parameters
         dU_dxlo_p = self.xl_orientation_parameterisation.get_ds_dp()
         p_names = self.xl_orientation_parameterisation.get_param_names()
@@ -165,7 +160,6 @@ class AnalyticalGradients:
 
         # loop through the parameters
         for name, der in zip(p_names, dU_dxlo_p):
-
             # calculate the derivative of q for this parameter
             dq = flex.mat3_double(n, der.elems) * B * h
 
@@ -183,7 +177,6 @@ class AnalyticalGradients:
         return ds1_dp
 
     def get_crystal_unit_cell_gradients(self, reflections):
-
         # get derivatives of the B matrix wrt the parameters
         dB_dxluc_p = self.xl_unit_cell_parameterisation.get_ds_dp()
         p_names = self.xl_unit_cell_parameterisation.get_param_names()
@@ -210,7 +203,6 @@ class AnalyticalGradients:
 
         # loop through the parameters
         for name, der in zip(p_names, dB_dxluc_p):
-
             # calculate the derivative of q for this parameter
             dq = U * flex.mat3_double(n, der.elems) * h
 
@@ -337,7 +329,6 @@ def test():
     fd_grads = []
     p_names = pred_param.get_param_names()
     for i, delta in enumerate(deltas):
-
         # save parameter value
         val = p_vals[i]
 
@@ -378,7 +369,6 @@ def test():
     pred_param.set_param_vals(p_vals)
 
     for i, fd_grad in enumerate(fd_grads):
-
         ## compare FD with analytical calculations
         print(f"\n\nParameter {i}: {fd_grad['name']}")
 

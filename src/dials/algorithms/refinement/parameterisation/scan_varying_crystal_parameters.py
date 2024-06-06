@@ -126,7 +126,6 @@ class ScanVaryingCrystalUnitCellParameterisation(
         experiment_ids=None,
         set_state_uncertainties=False,
     ):
-
         self._set_state_uncertainties = set_state_uncertainties
 
         from scitbx import matrix

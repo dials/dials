@@ -272,7 +272,6 @@ class ScalingAlgorithm:
                 self.params.scaling_options.only_target
                 or self.params.scaling_options.reference
             ):
-
                 self.scaler = targeted_scaling_algorithm(self.scaler)
                 return
             # Now pass to a multiscaler ready for next round of scaling.
@@ -586,7 +585,6 @@ def scaling_algorithm(scaler):
         scaler.params.reflection_selection.intensity_choice == "combine"
         or scaler.params.scaling_options.outlier_rejection
     ):
-
         expand_and_do_outlier_rejection(scaler)
 
         do_intensity_combination(scaler, reselect=True)
@@ -607,7 +605,6 @@ def scaling_algorithm(scaler):
         need_to_rescale = True
 
     if scaler.params.scaling_options.full_matrix:
-
         scaler.perform_scaling(
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,

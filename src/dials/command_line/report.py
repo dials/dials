@@ -173,7 +173,6 @@ class ScanVaryingCrystalAnalyser:
         # cell plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -330,7 +329,6 @@ the refinement algorithm accounting for unmodelled features in the data.
         # orientation plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -1133,7 +1131,6 @@ class CentroidAnalyser:
         d["residuals_xy"]["layout"]["title"] = "Centroid residuals in X and Y"
 
         if not is_stills:
-
             d["residuals_zy"] = {
                 "data": [
                     {
@@ -1213,7 +1210,6 @@ class IntensityAnalyser:
     """Analyse the intensities."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
-
         self.grid_size = grid_size
         self.pixels_per_bin = pixels_per_bin
 
@@ -2205,7 +2201,6 @@ class Analyser:
                         json_data["image_range_tables"] = image_range_tables
 
         if self.params.output.html is not None:
-
             from jinja2 import ChoiceLoader, Environment, PackageLoader
 
             loader = ChoiceLoader(

@@ -14,7 +14,6 @@ RAD2DEG = 180.0 / math.pi
 
 class CentroidAnalyser:
     def __init__(self, reflections, av_callback=flex.mean, debug=False):
-
         # flags to indicate at what level the analysis has been performed
         self._average_residuals = False
         self._spectral_analysis = False

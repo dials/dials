@@ -304,9 +304,9 @@ class IhTable:
         for i, index in enumerate(sorted_joint_asu_indices):
             if index == boundary:
                 n_in_prev_group = i - idx_prev
-                self.properties_dict["n_reflections_in_each_block"][
-                    block_id
-                ] = n_in_prev_group
+                self.properties_dict["n_reflections_in_each_block"][block_id] = (
+                    n_in_prev_group
+                )
                 block_id += 1
                 boundary = self.properties_dict["miller_index_boundaries"][block_id]
                 idx_prev = i
@@ -474,7 +474,6 @@ class IhTable:
 
 
 class TargetAsuDictCache(object):
-
     instances = {}
 
     def __new__(cls, target_Ih_table):
@@ -545,17 +544,13 @@ class IhTableBlock:
         Add data to the Ih_table, write data to the h_index_matrix and
         add the loc indices to the block_selections list.
         """
-        assert not self._setup_info[
-            "setup_complete"
-        ], """
+        assert not self._setup_info["setup_complete"], """
 No further data can be added to the IhTableBlock as setup marked complete."""
         assert (
             self._setup_info["next_row"] + len(group_ids) <= self.h_index_matrix.n_rows
         ), """
 Not enough space left to add this data, please check for correct block initialisation."""
-        assert (
-            dataset_id == self._setup_info["next_dataset"]
-        ), """
+        assert dataset_id == self._setup_info["next_dataset"], """
 Datasets must be added in correct order: expected: {}, this dataset: {}""".format(
             self._setup_info["next_dataset"],
             dataset_id,
@@ -591,9 +586,7 @@ Datasets must be added in correct order: expected: {}, this dataset: {}""".forma
     def _complete_setup(self) -> None:
         """Finish the setup of the Ih_table once all data has been added."""
         self.h_index_matrix.compact()
-        assert (
-            self._setup_info["next_row"] == self.h_index_matrix.n_rows
-        ), """
+        assert self._setup_info["next_row"] == self.h_index_matrix.n_rows, """
 Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.h_expand_matrix = self.h_index_matrix.transpose()
         data = np.full(self._csc_cols.size, 1.0)

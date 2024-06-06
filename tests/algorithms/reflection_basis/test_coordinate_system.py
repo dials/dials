@@ -269,7 +269,6 @@ def test_forward_and_backward(rotationangle):
     # Loop a number of times
     num = 1000
     for i in range(num):
-
         # Create a rotation angle
         phi_dash = rotationangle["phi"] + random_shift()
 

@@ -79,7 +79,6 @@ def smallest_angle(angle):
 
 
 def describe(vector, space_group, reciprocal=True):
-
     vector_names = {a.elems: "a", b.elems: "b", c.elems: "c"}
 
     v = vector.elems
@@ -110,7 +109,6 @@ def axis_type(vector, space_group):
 
 
 class align_crystal:
-
     vector_names = {a.elems: "a", b.elems: "b", c.elems: "c"}
 
     def __init__(self, experiment, vectors, frame="reciprocal", mode="main"):

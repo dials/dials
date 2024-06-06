@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 def derive_change_of_basis_op(from_hkl, to_hkl):
-
     # exclude those reflections that we couldn't index
     sel = (to_hkl != (0, 0, 0)) & (from_hkl != (0, 0, 0))
     assert sel.count(True) >= 3  # need minimum of 3 equations ?

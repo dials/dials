@@ -17,7 +17,6 @@ class ScanVaryingBeamParameterisation(ScanVaryingModelParameterisation, BeamMixi
     def __init__(
         self, beam, t_range, num_intervals, goniometer=None, experiment_ids=None
     ):
-
         if experiment_ids is None:
             experiment_ids = [0]
 

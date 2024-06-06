@@ -1107,7 +1107,6 @@ class PySlip(_BufferedCanvas):
             y_off,
             pdata,
         ) in data:
-
             # Gather ellipse center, major and minor axes in view
             # coordinates.
             (ellipse_center, semimajor_axis, semiminor_axis) = [

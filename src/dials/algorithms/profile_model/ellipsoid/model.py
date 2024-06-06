@@ -616,7 +616,6 @@ class AngularProfileModelBase(ProfileModelBase):
 
 
 class Simple1Angular1ProfileModel(AngularProfileModelBase):
-
     name = "simple1angular1"
 
     def parameterisation(self):
@@ -636,7 +635,6 @@ class Simple1Angular1ProfileModel(AngularProfileModelBase):
 
 
 class Simple1Angular3ProfileModel(AngularProfileModelBase):
-
     name = "simple1angular3"
 
     def parameterisation(self):
@@ -661,7 +659,6 @@ class Simple1Angular3ProfileModel(AngularProfileModelBase):
 
 
 class Simple6Angular1ProfileModel(AngularProfileModelBase):
-
     name = "simple6angular1"
 
     def parameterisation(self):
@@ -694,7 +691,6 @@ class Simple6Angular1ProfileModel(AngularProfileModelBase):
 
 
 class Simple6Angular3ProfileModel(AngularProfileModelBase):
-
     name = "simple6angular3"
 
     def parameterisation(self):

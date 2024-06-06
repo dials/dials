@@ -30,7 +30,6 @@ END
 
 class Simulation:
     def __init__(self, override_fdp=None):
-
         # Set up detector
         distance = 100
         pixel_size = 0.1

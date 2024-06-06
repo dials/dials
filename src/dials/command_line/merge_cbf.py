@@ -88,7 +88,6 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
         data_out = None
 
         for j in range(n_images):
-
             i_in = (i_out * n_images) + j
 
             if get_raw_data_from_imageset:
@@ -141,7 +140,6 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                 "Omega_increment",
                 "Chi_increment",
             }:
-
                 if rsplit[1] == "Count_cutoff":  # needs to be an integer
                     new_header.append(
                         "%s\n"

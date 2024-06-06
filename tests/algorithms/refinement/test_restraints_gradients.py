@@ -144,7 +144,6 @@ def test(dials_data):
 
     # look at each parameter
     for i, dO in enumerate(dO_dp):
-
         # print
         # print "***** PARAMETER {0} *****".format(i)
 

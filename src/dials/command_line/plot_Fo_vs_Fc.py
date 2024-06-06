@@ -6,7 +6,6 @@ https://doi.org/10.1107/S2059798317010348
 Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
-
 from __future__ import annotations
 
 import sys

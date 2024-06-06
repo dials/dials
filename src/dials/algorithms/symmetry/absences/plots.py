@@ -22,8 +22,7 @@ def plot_screw_axes(screw_axes_data):
     for name, data in screw_axes_data.items():
         d.update(
             {
-                "plot_"
-                + name: {
+                "plot_" + name: {
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),
@@ -67,8 +66,7 @@ def plot_screw_axes(screw_axes_data):
                 xtickvals.extend([xloc, xloc2])
 
             plot = {
-                "frequencies_plot_"
-                + name: {
+                "frequencies_plot_" + name: {
                     "data": [
                         {
                             "x": list(
@@ -137,8 +135,7 @@ are indicated by vertical lines.""",
 
         d.update(
             {
-                "intensities_plot_"
-                + name: {
+                "intensities_plot_" + name: {
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),

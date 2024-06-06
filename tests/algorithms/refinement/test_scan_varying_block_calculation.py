@@ -17,7 +17,6 @@ from . import geometry_phil
 
 
 def create_experiments(image_start=1):
-
     # Create models
     from libtbx.phil import parse
 
@@ -67,7 +66,6 @@ def create_experiments(image_start=1):
 
 
 def generate_reflections(experiments):
-
     from cctbx.sgtbx import space_group, space_group_symbols
 
     from dials.algorithms.refinement.prediction.managed_predictors import (
@@ -111,7 +109,6 @@ def generate_reflections(experiments):
 
 
 def test_per_width_and_per_image_are_equivalent():
-
     # Scan starting at image 1
     experiments = create_experiments(1)
     reflections = generate_reflections(experiments)

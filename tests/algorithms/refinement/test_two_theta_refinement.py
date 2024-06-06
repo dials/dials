@@ -19,7 +19,6 @@ from dials.algorithms.refinement.two_theta_refiner import (
 
 
 def generate_reflections(experiments):
-
     from cctbx.sgtbx import space_group, space_group_symbols
     from scitbx.array_family import flex
 
@@ -157,7 +156,6 @@ def test_fd_derivatives():
     deltas = [1.0e-7] * len(p_vals)
 
     for i in range(len(deltas)):
-
         val = p_vals[i]
 
         p_vals[i] -= deltas[i] / 2.0

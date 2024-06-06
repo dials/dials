@@ -515,7 +515,6 @@ class Resolutionizer:
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):
-
         self._params = params
         self._reference = reference
 

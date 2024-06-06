@@ -64,7 +64,6 @@ class PredictionParameterisation:
         xl_unit_cell_parameterisations=None,
         goniometer_parameterisations=None,
     ):
-
         if detector_parameterisations is None:
             detector_parameterisations = []
         if beam_parameterisations is None:
@@ -147,7 +146,6 @@ class PredictionParameterisation:
         return self._goniometer_parameterisations
 
     def _len(self):
-
         length = 0
         for model in self._detector_parameterisations:
             length += model.num_free()
@@ -328,7 +326,6 @@ class PredictionParameterisation:
 
         # Populate values in these arrays
         for iexp, exp in enumerate(self._experiments):
-
             sel = reflections["id"] == iexp
             isel = sel.iselection()
             self._experiment_to_idx.append(isel)
@@ -445,7 +442,6 @@ class PredictionParameterisation:
         D = self._D.select(isel)
 
         if dd_ddet_p is None:
-
             # get the derivatives of detector d matrix for this panel
             dd_ddet_p = parameterisation.get_ds_dp(
                 multi_state_elt=panel_id, use_none_as_null=True
@@ -492,7 +488,6 @@ class PredictionParameterisation:
 
         # loop over the detector parameterisations
         for dp in self._detector_parameterisations:
-
             # Determine (sub)set of reflections affected by this parameterisation
             isel = flex.size_t()
             for exp_id in dp.get_experiment_ids():
@@ -511,7 +506,6 @@ class PredictionParameterisation:
 
             # loop through the panels in this detector
             for panel_id, _ in enumerate(detector):
-
                 # get the right subset of array indices to set for this panel
                 sub_isel = isel.select(panel == panel_id)
                 if len(sub_isel) == 0:
@@ -573,7 +567,6 @@ class PredictionParameterisation:
     ):
         # loop over the parameterisations
         for p in parameterisations:
-
             # Determine (sub)set of reflections affected by this parameterisation
             isel = flex.size_t()
             for exp_id in p.get_experiment_ids():
@@ -710,7 +703,6 @@ class SparseGradientVectorMixin:
 
 
 class XYPhiPredictionParameterisation(PredictionParameterisation):
-
     _grad_names = ("dX_dp", "dY_dp", "dphi_dp")
 
     def _local_setup(self, reflections):
@@ -786,7 +778,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         D = self._D.select(isel)
 
         if ds0_dbeam_p is None:
-
             # get the derivatives of the beam vector wrt the parameters
             ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
@@ -800,7 +791,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
         # loop through the parameters
         for der in ds0_dbeam_p:
-
             if der is None:
                 dphi_dp.append(None)
                 dpv_dp.append(None)
@@ -903,7 +893,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         D = self._D.select(isel)
 
         if dS_dgon_p is None:
-
             # get derivatives of the setting matrix S wrt the parameters
             dS_dgon_p = [
                 None if der is None else flex.mat3_double(len(isel), der.elems)
@@ -915,7 +904,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
         # loop through the parameters
         for der in dS_dgon_p:
-
             if der is None:
                 dphi_dp.append(None)
                 dpv_dp.append(None)

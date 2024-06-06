@@ -171,7 +171,6 @@ def _trim_scans_to_observations(experiments, reflections):
         shoebox = None
 
     for iexp, exp in enumerate(experiments):
-
         sel = reflections["id"] == iexp
         isel = sel.iselection()
         if obs_z is not None:
@@ -259,7 +258,6 @@ class RefinerFactory:
 
     @classmethod
     def from_parameters_data_experiments(cls, params, reflections, experiments):
-
         # copy the experiments
         experiments = _copy_experiments_for_refining(experiments)
 
@@ -279,7 +277,6 @@ class RefinerFactory:
 
     @classmethod
     def reflections_after_outlier_rejection(cls, params, reflections, experiments):
-
         # copy the experiments
         experiments = _copy_experiments_for_refining(experiments)
 
@@ -294,7 +291,6 @@ class RefinerFactory:
 
     @classmethod
     def _build_reflection_manager_and_predictor(cls, params, reflections, experiments):
-
         # Currently a refinement job can only have one parameterisation of the
         # prediction equation. This can either be of the XYDelPsi (stills) type, the
         # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
@@ -676,7 +672,6 @@ class RefinerFactory:
         do_stills,
         do_sparse,
     ):
-
         target = TargetFactory.from_parameters_and_experiments(
             params,
             experiments,
@@ -801,7 +796,6 @@ class Refiner:
             return None, None
 
         for k, corrmat in corrmats.items():
-
             assert corrmat.is_square_matrix()
 
             idx = flex.bool(sel).iselection()
@@ -999,7 +993,6 @@ class Refiner:
 
             rows = []
             for ipanel, panel in enumerate(detector):
-
                 px_size = panel.get_pixel_size()
                 px_per_mm = [1.0 / e for e in px_size]
                 num = self._target.get_num_matches_for_panel(ipanel)
@@ -1158,7 +1151,6 @@ class ScanVaryingRefiner(Refiner):
 
             # Calculate scan-varying errors if requested
             if self._pred_param.set_scan_varying_errors:
-
                 # get state covariance matrices the whole range of images. We select
                 # the first element of this at each image because crystal scan-varying
                 # parameterisations are not multi-state

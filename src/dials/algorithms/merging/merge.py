@@ -590,7 +590,6 @@ def r_free_flags_from_reference(
     params: phil.scope_extract,
     mtz_datasets: List[MTZDataClass],
 ) -> miller.array:
-
     mtz = iotbx.mtz.object(params.r_free_flags.reference)
     r_free_arrays = []
     for ma in mtz.as_miller_arrays():

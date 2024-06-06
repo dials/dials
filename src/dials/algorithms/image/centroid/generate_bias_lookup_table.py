@@ -70,7 +70,6 @@ def compute_lookup_table(max_sigma=0.5, N1=1000, N2=1000, N3=50):
 
 
 if __name__ == "__main__":
-
     sigma, bias_sq = compute_lookup_table()
 
     for s, b in zip(sigma, bias_sq):

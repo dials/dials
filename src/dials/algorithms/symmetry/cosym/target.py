@@ -62,13 +62,11 @@ def _compute_rij_matrix_one_row_block(
     cb_ops = [sgtbx.change_of_basis_op(cb_op_k) for cb_op_k in sym_ops]
 
     for j in range(n_lattices):
-
         j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
         intensities_j = data.data()[j_lower:j_upper]
         sigmas_j = data.sigmas()[j_lower:j_upper]
 
         for k, cb_op_k in enumerate(cb_ops):
-
             indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
 
             for kk, cb_op_kk in enumerate(cb_ops):

@@ -90,7 +90,6 @@ class RadialProfileThresholdDebug:
     # DispersionThresholdDebug object for those, while overriding the final_mask
     # method. This wrapper class handles that.
     def __init__(self, imageset, n_iqr, blur, n_bins):
-
         self.imageset = imageset
         params = find_spots_phil_scope.extract()
         params.spotfinder.threshold.radial_profile.blur = blur
@@ -120,7 +119,6 @@ def calculate_isoresolution_lines(
     n_rays=720,
     binning=1,
 ):
-
     # Calculate 2θ angles
     wavelength = beam.get_wavelength()
     twotheta = uctbx.d_star_sq_as_two_theta(uctbx.d_as_d_star_sq(spacings), wavelength)
@@ -133,7 +131,6 @@ def calculate_isoresolution_lines(
     ring_data = []
     resolution_text_data = []
     for tt, d in zip(twotheta, spacings):
-
         # Generate rays at 2θ
         cone_base_centre = beamvec * math.cos(tt)
         cone_base_radius = (beamvec * math.sin(tt)).length()
@@ -586,7 +583,6 @@ class SpotFrame(XrayFrame):
         return True
 
     def drawUntrustedPolygons(self):
-
         # remove any previous selection
         if self.sel_image_polygon_layer:
             self.pyslip.DeleteLayer(self.sel_image_polygon_layer)
@@ -613,7 +609,6 @@ class SpotFrame(XrayFrame):
                 circle = region.circle
 
             if polygon is not None:
-
                 assert len(polygon) % 2 == 0, "Polygon must contain 2D coords"
                 vertices = []
                 for i in range(int(len(polygon) / 2)):
@@ -1201,7 +1196,6 @@ class SpotFrame(XrayFrame):
         return image_data
 
     def _calculate_dispersion_debug(self, image):
-
         # hash current settings
         dispersion_debug_list_hash = hash(
             (
@@ -1674,7 +1668,6 @@ class SpotFrame(XrayFrame):
         return result
 
     def _reflection_overlay_data(self, i_frame):
-
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
@@ -1962,7 +1955,6 @@ class SpotFrame(XrayFrame):
         }
 
     def get_spotfinder_data(self):
-
         self.prediction_colours = [
             "#e41a1c",
             "#377eb8",
@@ -2703,7 +2695,6 @@ class SpotSettingsPanel(wx.Panel):
         self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
-
         button = event.GetEventObject()
         selected = button.GetLabelText()
 

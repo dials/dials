@@ -109,7 +109,6 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
 
 
 def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
-
     reduced_batches = batch_manager.reduced_batches
     shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
     if len(annotations) > 30:
@@ -229,7 +228,6 @@ class _xtriage_output(printed_output):
 
 
 def xtriage_output(xanalysis):
-
     with StringIO() as xs:
         xout = _xtriage_output(xs)
         try:
@@ -524,7 +522,6 @@ class IntensityStatisticsPlots:
         }
 
     def second_moments_plot(self):
-
         acentric = self.merged_intensities.select_acentric()
         centric = self.merged_intensities.select_centric()
         if acentric.size():
@@ -654,7 +651,6 @@ class ResolutionPlotsAndStats:
             d_star_sq_bins, nticks=5
         )
         if self.dataset_statistics.r_split:
-
             d.update(
                 {
                     "r_split": {
@@ -884,7 +880,6 @@ class ResolutionPlotsAndStats:
         }
 
     def merging_statistics_table(self, cc_half_method=None):
-
         headers = [
             "Resolution (Å)",
             "N(obs)",
@@ -959,7 +954,6 @@ class ResolutionPlotsAndStats:
         return merging_stats_table
 
     def overall_statistics_table(self, cc_half_method=None):
-
         headers = ["", "Overall", "Low resolution", "High resolution"]
 
         stats = (
@@ -1070,7 +1064,6 @@ class AnomalousPlotter:
         return d
 
     def del_anom_correlation_ratio(self, unmerged_intensities):
-
         acentric = unmerged_intensities.select_acentric()
         centric = unmerged_intensities.select_centric()
         correl_ratios_acentric, correl_ratios_centric = ([], [])

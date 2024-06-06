@@ -125,7 +125,6 @@ scaling not possible."""
 def _perform_quasi_random_selection(
     Ih_table, n_datasets, min_per_class, min_total, max_total
 ):
-
     class_matrix = sparse.matrix(n_datasets, Ih_table.size)
     class_matrix = _build_class_matrix(
         flumpy.from_numpy(Ih_table.Ih_table["dataset_id"].to_numpy()), class_matrix

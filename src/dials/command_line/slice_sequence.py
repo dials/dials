@@ -130,12 +130,10 @@ def concatenate_reflections(sliced_reflections, identifiers):
 
 
 def exclude_images_multiple(experiments, reflections, image_number):
-
     sliced_experiments = []
     sliced_reflections = []
 
     for iexp, experiment in enumerate(experiments):
-
         # Calculate the image range for each slice
         first_image, last_image = experiment.scan.get_image_range()
         first_exclude = ((first_image - 1) // image_number + 1) * image_number

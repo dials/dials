@@ -76,7 +76,6 @@ class ExperimentsPredictor:
         """Predict for all reflections at the current model geometry"""
 
         for iexp, e in enumerate(self._experiments):
-
             # select the reflections for this experiment only
             sel = reflections["id"] == iexp
             refs = reflections.select(sel)
@@ -91,7 +90,6 @@ class ExperimentsPredictor:
         return reflections
 
     def _predict_one_experiment(self, experiment, reflections):
-
         raise NotImplementedError()
 
     def _post_prediction(self, reflections):
@@ -103,7 +101,6 @@ class ExperimentsPredictor:
 
 class ScansExperimentsPredictor(ExperimentsPredictor):
     def _predict_one_experiment(self, experiment, reflections):
-
         # scan-varying
         if "ub_matrix" in reflections:
             predictor = sv(experiment)
@@ -119,7 +116,6 @@ class ScansExperimentsPredictor(ExperimentsPredictor):
             predictor.for_reflection_table(reflections, UB)
 
     def _post_prediction(self, reflections):
-
         if "xyzobs.mm.value" in reflections:
             reflections = self._match_full_turns(reflections)
 
@@ -154,11 +150,9 @@ class ScansExperimentsPredictor(ExperimentsPredictor):
 
 
 class StillsExperimentsPredictor(ExperimentsPredictor):
-
     spherical_relp_model = False
 
     def _predict_one_experiment(self, experiment, reflections):
-
         predictor = st(experiment, spherical_relp=self.spherical_relp_model)
         UB = experiment.crystal.get_A()
         predictor.for_reflection_table(reflections, UB)
@@ -167,7 +161,6 @@ class StillsExperimentsPredictor(ExperimentsPredictor):
 class ExperimentsPredictorFactory:
     @staticmethod
     def from_experiments(experiments, force_stills=False, spherical_relp=False):
-
         # Determine whether or not to use a stills predictor
         if not force_stills:
             for exp in experiments:
