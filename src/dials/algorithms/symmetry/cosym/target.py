@@ -333,6 +333,9 @@ class Target:
         if wij_matrix is not None:
             wij_matrix = wij_matrix.toarray().astype(np.float64)
             if self._weights == "standard_error":
+                # N.B. using effective n due to sigma weighting, which can be below 2
+                # but approches 1 in the limit, so rather say efective sample size
+                # for standard error calc is n-1
                 sel = np.where(wij_matrix > 1)
                 se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 1))
                 wij_matrix = np.zeros_like(rij_matrix)
