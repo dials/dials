@@ -483,7 +483,7 @@ class ParsedYAML(object):
                         imagefile, metaforname
                     )
             self._groupings[groupby].add_tolerances(
-                {n: t for n, t in zip(values, tolerances)}
+                dict(zip(values, tolerances))
             )
             self._groupings[groupby].check_consistent()
 

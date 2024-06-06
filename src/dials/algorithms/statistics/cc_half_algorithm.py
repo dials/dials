@@ -383,7 +383,7 @@ class CCHalfFromDials:
                 if exp_id == exp.identifier:
                     tested.extend(list(range(imgrange[0], imgrange[1] + 1)))
             for imgrange in exp.scan.get_valid_image_ranges(exp.identifier):
-                if all([j not in tested for j in range(imgrange[0], imgrange[1] + 1)]):
+                if all(j not in tested for j in range(imgrange[0], imgrange[1] + 1)):
                     table_id = expid_to_tableid[exp.identifier]
                     exclude_images.append([f"{table_id}:{imgrange[0]}:{imgrange[1]}"])
                     logger.info(

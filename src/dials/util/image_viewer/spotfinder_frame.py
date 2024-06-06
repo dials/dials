@@ -1749,7 +1749,7 @@ class SpotFrame(XrayFrame):
                     ):
                         shoebox = reflection["shoebox"]
                         iz = i_frame - z0 if not self.viewing_stills else 0
-                        if not reflection["id"] in all_pix_data:
+                        if reflection["id"] not in all_pix_data:
                             all_pix_data[reflection["id"]] = []
 
                             all_foreground_circles[reflection["id"]] = []
