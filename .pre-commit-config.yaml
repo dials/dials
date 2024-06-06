@@ -1,7 +1,7 @@
 repos:
 # Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.1.0
+  rev: v4.6.0
   hooks:
   - id: check-merge-conflict
   - id: check-ast
@@ -15,7 +15,7 @@ repos:
     name: "Don't commit to 'main' directly"
 
 - repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: v0.3.4
+  rev: v0.4.8
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix, --show-fixes]
