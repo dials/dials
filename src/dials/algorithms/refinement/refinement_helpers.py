@@ -1,6 +1,5 @@
 """Auxiliary functions for the refinement package"""
 
-
 from __future__ import annotations
 
 import logging
@@ -319,40 +318,40 @@ def compute_radial_and_transverse_residuals(experiments, reflections, two_theta=
     """Compute radial and transverse residuals, relative to the beam center"""
     beam_centre_lab = flex.vec3_double(len(reflections))
     obs_lab_coords = flex.vec3_double(len(reflections))
+    calc_lab_coords = flex.vec3_double(len(reflections))
     delta_lab_coords = flex.vec3_double(len(reflections))
-    if two_theta:
-        tto = flex.double(len(reflections), 0)
-        ttc = flex.double(len(reflections), 0)
+    delta_xy_panel = reflections["xyzcal.mm"] - reflections["xyzobs.mm.value"]
+    panel_ori = flex.vec3_double(len(reflections))
+
+    all_s0 = flex.vec3_double(len(reflections))
     for expt_id, expt in enumerate(experiments):
-        s0 = expt.beam.get_s0()
-        for panel_id, panel in enumerate(expt.detector):
-            sel = (reflections["id"] == expt_id) & (reflections["panel"] == panel_id)
-            refls = reflections.select(sel)
+        all_s0.set_selected(reflections["id"] == expt_id, expt.beam.get_s0())
 
-            # Compute the beam center in lab space (a vector pointing from the origin to where the beam would intersect
-            # the panel, if it did intersect the panel)
-            beam_centre = panel.get_beam_centre_lab(s0)
-            beam_centre_lab.set_selected(sel, flex.vec3_double(len(refls), beam_centre))
+    # faster to do this row by row than using selections for multi-panel, multi-experiment data
+    for i in range(len(reflections)):
+        expt_id = reflections["id"][i]
+        panel = experiments[expt_id].detector[reflections["panel"][i]]
 
-            # Compute obs in lab space
-            x, y, _ = refls["xyzobs.mm.value"].parts()
-            c = flex.vec2_double(x, y)
-            lab_c = panel.get_lab_coord(c)
-            obs_lab_coords.set_selected(sel, lab_c)
+        # Compute the beam center in lab space (a vector pointing from the origin to where the beam would intersect
+        # the panel, if it did intersect the panel)
+        beam_centre_lab[i] = panel.get_beam_centre_lab(all_s0[i])
 
-            # Compute deltaXY in panel space. This vector is relative to the panel origin
-            x, y, _ = (refls["xyzcal.mm"] - refls["xyzobs.mm.value"]).parts()
-            # Convert deltaXY to lab space, subtracting off the panel origin
-            delta_lab_coords.set_selected(
-                sel, panel.get_lab_coord(flex.vec2_double(x, y)) - panel.get_origin()
-            )
+        # Compute obs in lab space
+        obs_lab_coords[i] = panel.get_lab_coord(reflections["xyzobs.mm.value"][i][0:2])
 
-            if two_theta:
-                tto.set_selected(sel, lab_c.angle(s0))
-                x, y, _ = refls["xyzcal.mm"].parts()
-                ttc.set_selected(
-                    sel, panel.get_lab_coord(flex.vec2_double(x, y)).angle(s0)
-                )
+        # Compute deltaXY in lab space
+        delta_lab_coords[i] = panel.get_lab_coord(delta_xy_panel[i][0:2])
+        panel_ori[i] = panel.get_origin()
+
+        # Compute calc in lab space
+        calc_lab_coords[i] = panel.get_lab_coord(reflections["xyzcal.mm"][i][0:2])
+
+    # subtract off the panel origin to center the deltas relative to the lab origin
+    delta_lab_coords = delta_lab_coords - panel_ori
+
+    if two_theta:
+        tto = obs_lab_coords.angle(all_s0)
+        ttc = calc_lab_coords.angle(all_s0)
 
     # The radial vector points from the center of the reflection to the beam center
     radial_vectors = (obs_lab_coords - beam_centre_lab).each_normalize()
