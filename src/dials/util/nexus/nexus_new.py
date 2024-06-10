@@ -1,39 +1,52 @@
 from __future__ import annotations
 
+from typing import List, Optional
+
 import h5py
 import numpy as np
 
 from dxtbx import flumpy
 
+import dials_array_family_flex_ext
+from dials.array_family import flex
+
 
 class ReflectionListEncoder(object):
     """Encoder for the reflection data."""
 
-    def encode(self, reflections, handle):
+    def encode(
+        self,
+        reflections: List[flex.reflection_table],
+        handle: h5py.File,
+    ) -> None:
         """Encode the reflection data."""
 
         # Create the reflection data group
         group = handle.create_group("entry/data_processing", track_order=True)
-        # ok this works if we don't have -1 ids i.e. after #2567 just remove for now.
-        if -1 in reflections["id"]:
-            sel = reflections["id"] == -1
-            reflections.del_selected(sel)
-        tables = reflections.split_by_experiment_id()
 
-        for table in tables:
-            table.clean_experiment_identifiers_map()
-            assert len(table.experiment_identifiers().values()) == 1
-            identifier = list(table.experiment_identifiers().values())[0]
+        for table in reflections:
+            identifier_map = dict(table.experiment_identifiers())
+            assert len(identifier_map) == 1
+            identifier = list(identifier_map.values())[0]
             this_group = group.create_group(identifier)
             this_group.attrs["num_reflections"] = table.size()
-            del table["id"]
-            self.encode_columns(this_group, table)
+            self.encode_columns(
+                this_group,
+                table,
+                ignore=["id"],
+            )
 
-    def encode_columns(self, group, table):
+    def encode_columns(
+        self,
+        group: h5py.Group,
+        table: flex.reflection_table,
+        ignore: Optional[List[str]] = None,
+    ) -> None:
         """Encode a column of data."""
-        from dials.array_family import flex
 
         for key, data in table.cols():
+            if ignore and key in ignore:
+                continue
             if isinstance(data, flex.shoebox):
                 self.encode_shoebox(group, table)
             elif isinstance(data, flex.int6):
@@ -48,12 +61,12 @@ class ReflectionListEncoder(object):
                     key, data=this_data, shape=this_data.shape, dtype=this_data.dtype
                 )
 
-    def encode_shoebox(self, group, table):
+    def encode_shoebox(self, group: h5py.Group, table: flex.reflection_table):
         """Encode a column of shoeboxes."""
         sbdata, bg, mask = table.get_shoebox_data_arrays()
         data = flumpy.to_numpy(sbdata)
         group.create_dataset(
-            "shoebox_data", data=data, shape=data.shape, dtype=data.dtype
+            "shoebox_intensity", data=data, shape=data.shape, dtype=data.dtype
         )
         data = flumpy.to_numpy(bg)
         group.create_dataset(
@@ -68,10 +81,8 @@ class ReflectionListEncoder(object):
 class ReflectionListDecoder(object):
     """Decoder for the reflection data."""
 
-    def decode(self, handle):
+    def decode(self, handle: h5py.File) -> List[flex.reflection_table]:
         """Decode the reflection data."""
-        import dials_array_family_flex_ext
-        from dials.array_family import flex
 
         # Get the group containing the reflection data
         g = handle["entry/data_processing"]
@@ -88,36 +99,34 @@ class ReflectionListDecoder(object):
             shoebox_background = None
             shoebox_mask = None
 
-            for key in dataset:
-                item = dataset[key]
-                if key == "shoebox_data":
+            for key in dataset.keys():
+                if key == "shoebox_intensity":
                     shoebox_data = flumpy.from_numpy(np.array(dataset[key]))
                 elif key == "shoebox_background":
                     shoebox_background = flumpy.from_numpy(np.array(dataset[key]))
                 elif key == "shoebox_mask":
                     shoebox_mask = flumpy.from_numpy(np.array(dataset[key]))
                 else:
-                    val = self._convert(key, item)
+                    val = self._convert(key, dataset[key])
                     if val:
                         table[str(key)] = val
 
             if "panel" in table and "bbox" in table:
-                table["shoebox"] = flex.shoebox(
-                    table["panel"], table["bbox"], allocate=True
-                )
                 if shoebox_mask and shoebox_background and shoebox_data:
+                    table["shoebox"] = flex.shoebox(
+                        table["panel"], table["bbox"], allocate=True
+                    )
                     dials_array_family_flex_ext.ShoeboxExtractFromData(
                         table, shoebox_data, shoebox_background, shoebox_mask
                     )
             tables.append(table)
-        table = flex.reflection_table.concat(tables)
-        # Return the list of reflections
-        return table
 
-    def _convert(self, key, data):
+        # Return the list of reflections
+        return tables
+
+    def _convert(self, key: str, data: np.array) -> flumpy.FlexArray:
         # Must allow that the data were written by a program outside of DIALS, so no special
         # knowledge of flex types should be assumed.
-        from dials.array_family import flex
 
         if key == "miller_index":  # special
             assert len(data.shape) == 2 and data.shape[1] == 3
@@ -134,34 +143,36 @@ class ReflectionListDecoder(object):
                     "Unrecognised 2D data dimensions (expected shape (N,m)) where m is 2,3 or 6"
                 )
         else:
-            new = flumpy.from_numpy(np.array(data))
+            new = flumpy.from_numpy(data[()])
         return new
 
 
 class NewNexusFile:
     """Interface to Nexus file."""
 
-    def __init__(self, filename, mode="w"):
+    def __init__(self, filename: str, mode="w") -> None:
         """Open the file with the given mode."""
         self._handle = h5py.File(filename, mode)
 
-    def close(self):
+    def close(self) -> None:
         """Close the file."""
         self._handle.close()
         del self._handle
 
-    def set_data(self, data, encoder):
+    def set_data(
+        self, data: List[flex.reflection_table], encoder: ReflectionListEncoder
+    ) -> None:
         """Set the model data using the supplied encoder."""
         encoder.encode(data, self._handle)
 
-    def get_data(self, decoder):
+    def get_data(self, decoder: ReflectionListDecoder) -> List[flex.reflection_table]:
         """Get the model data using the supplied decoder."""
         return decoder.decode(self._handle)
 
-    def set_reflections(self, reflections):
+    def set_reflections(self, reflections: List[flex.reflection_table]) -> None:
         """Set the reflection data."""
         self.set_data(reflections, ReflectionListEncoder())
 
-    def get_reflections(self):
+    def get_reflections(self) -> List[flex.reflection_table]:
         """Get the reflection data."""
         return self.get_data(ReflectionListDecoder())

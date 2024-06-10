@@ -31,6 +31,7 @@ import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
+from dials.util.nexus.nexus_new import NewNexusFile
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -224,6 +225,13 @@ class _:
                 infile.read()
             )
 
+    def as_nxmx(self, filename, expts):
+        from dials.util.nexus import get_entry, nx_reflections
+
+        self.clean_experiment_identifiers_map()
+        e = get_entry(filename, "w")
+        nx_reflections.dump(e, self, expts)
+
     def as_file(self, filename):
         """
         Write the reflection table to file in either msgpack or pickle format
@@ -385,21 +393,28 @@ class _:
         handle.close()
 
     def as_new_h5(self, filename):
-        from dials.util.nexus.nexus_new import NewNexusFile
+        # ok this works if we don't have -1 ids i.e. after #2567 just renumber for now.
+        if -1 in self["id"]:
+            n_id = len(set(self["id"]))
+            sel = self["id"] == -1
+            self["id"].set_selected(sel, n_id)
+            self.experiment_identifiers()[n_id] = str(n_id)
+        tables = self.split_by_experiment_id()
 
-        handle = NewNexusFile(filename, "w")
         # Clean up any removed experiments from the identifiers map
         self.clean_experiment_identifiers_map()
-        handle.set_reflections(self)
+        handle = NewNexusFile(filename, "w")
+        handle.set_reflections(tables)
         handle.close()
 
-    @staticmethod
-    def from_new_h5(filename):
-        from dials.util.nexus.nexus_new import NewNexusFile
+    @classmethod
+    def from_new_h5(cls, filename):
+        # from dials.util.nexus.nexus_new import NewNexusFile
 
         handle = NewNexusFile(filename, "r")
-        table = handle.get_reflections()
+        tables = handle.get_reflections()
         handle.close()
+        table = cls.concat(tables)
         return table
 
     def as_miller_array(self, experiment, intensity="sum"):
