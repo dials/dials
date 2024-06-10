@@ -37,17 +37,19 @@ grouping:
     else:
         args.append("series_repeat=2")
     split.run(args=args)
-    assert pathlib.Path("group_0_0.expt").is_file()
-    assert pathlib.Path("group_0_0.refl").is_file()
-    assert pathlib.Path("group_1_0.expt").is_file()
-    assert pathlib.Path("group_1_0.refl").is_file()
+    assert pathlib.Path(run_in_tmp_path / "group_0_0.expt").is_file()
+    assert pathlib.Path(run_in_tmp_path / "group_0_0.refl").is_file()
+    assert pathlib.Path(run_in_tmp_path / "group_1_0.expt").is_file()
+    assert pathlib.Path(run_in_tmp_path / "group_1_0.refl").is_file()
     expts1 = load.experiment_list("group_0_0.expt", check_format=False)
     assert len(expts1) == 3
     # not old style elist datastructures (no scan, single imageset)
     assert expts1[0].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17000"
     assert expts1[1].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17002"
     assert expts1[2].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17004"
-    expts2 = load.experiment_list("group_1_0.expt", check_format=False)
+    expts2 = load.experiment_list(
+        run_in_tmp_path / "group_1_0.expt", check_format=False
+    )
     assert len(expts2) == 2
     assert expts2[0].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17001"
     assert expts2[1].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17003"
