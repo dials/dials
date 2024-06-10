@@ -19,7 +19,7 @@ def test_split_still_data(dials_data, run_in_tmp_path, use_yaml):
         "nproc=1",
     ]
     if use_yaml:
-        images = dials_data("cunir_serial", pathlib=True)
+        images = os.fspath(dials_data("cunir_serial", pathlib=True))
         yml = f"""
 ---
 metadata:
