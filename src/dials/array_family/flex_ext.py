@@ -31,7 +31,7 @@ import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
-from dials.util.nexus.nexus_new import NewNexusFile
+from dials.util.nexus.nexus_new import H5TableFile
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -239,7 +239,7 @@ class _:
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
         elif os.getenv("DIALS_USE_H5"):
-            self.as_new_h5(filename)
+            self.as_h5(filename)
         else:
             self.as_msgpack_file(filename)
 
@@ -254,9 +254,7 @@ class _:
             )
         except RuntimeError:
             try:
-                return dials_array_family_flex_ext.reflection_table.from_new_h5(
-                    filename
-                )
+                return dials_array_family_flex_ext.reflection_table.from_h5(filename)
             except OSError:
                 return dials_array_family_flex_ext.reflection_table.from_pickle(
                     filename
@@ -379,20 +377,6 @@ class _:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
     def as_h5(self, filename):
-        """
-        Write the reflection table as a HDF5 file.
-
-        :param filename: The output filename
-        """
-        from dials.util.nexus_old import NexusFile
-
-        handle = NexusFile(filename, "w")
-        # Clean up any removed experiments from the identifiers map
-        self.clean_experiment_identifiers_map()
-        handle.set_reflections(self)
-        handle.close()
-
-    def as_new_h5(self, filename):
         # ok this works if we don't have -1 ids i.e. after #2567 just renumber for now.
         if -1 in self["id"]:
             n_id = len(set(self["id"]))
@@ -403,15 +387,14 @@ class _:
 
         # Clean up any removed experiments from the identifiers map
         self.clean_experiment_identifiers_map()
-        handle = NewNexusFile(filename, "w")
+        handle = H5TableFile(filename, "w")
         handle.set_reflections(tables)
         handle.close()
 
     @classmethod
-    def from_new_h5(cls, filename):
-        # from dials.util.nexus.nexus_new import NewNexusFile
+    def from_h5(cls, filename):
 
-        handle = NewNexusFile(filename, "r")
+        handle = H5TableFile(filename, "r")
         tables = handle.get_reflections()
         handle.close()
         table = cls.concat(tables)

@@ -90,6 +90,10 @@ class ReflectionListDecoder(object):
         # Create the list of reflections
         tables = []
         for i, (name, dataset) in enumerate(g.items()):
+            if "num_reflections" not in dataset.attrs:
+                raise RuntimeError(
+                    "Unable to understand file as h5 reflection data (no num_reflections attribute)"
+                )
             table = flex.reflection_table(int(dataset.attrs["num_reflections"]))
             table.experiment_identifiers()[i] = str(name)
             table["id"] = flex.int(table.size(), i)
@@ -121,7 +125,7 @@ class ReflectionListDecoder(object):
                     )
             tables.append(table)
 
-        # Return the list of reflections
+        # Return the list of reflection tables
         return tables
 
     def _convert(self, key: str, data: np.array) -> flumpy.FlexArray:
@@ -142,13 +146,17 @@ class ReflectionListDecoder(object):
                 raise RuntimeError(
                     "Unrecognised 2D data dimensions (expected shape (N,m)) where m is 2,3 or 6"
                 )
-        else:
+        elif len(data.shape) == 1:
             new = flumpy.from_numpy(data[()])
+        else:
+            raise RuntimeError(
+                f"Unrecognised data dimensions: {data.shape}. Only 1D or 2D data supported."
+            )
         return new
 
 
-class NewNexusFile:
-    """Interface to Nexus file."""
+class H5TableFile:
+    """Interface to on-disk representation of reflection data in hdf5 format."""
 
     def __init__(self, filename: str, mode="w") -> None:
         """Open the file with the given mode."""
