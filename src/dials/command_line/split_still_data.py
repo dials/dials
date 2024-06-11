@@ -87,7 +87,7 @@ series_repeat = None
           "and that these form consecutive images in the input image files."
 nproc=Auto
   .type=int
-output.log=dials.split_ssx_data.log
+output.log=dials.split_still_data.log
   .type=str
 """
 
@@ -96,7 +96,7 @@ phil_scope = iotbx.phil.parse(phil_str)
 
 def run(args=sys.argv[1:]):
     parser = ArgumentParser(
-        usage="dials.split_ssx_data integrated.expt integrated.refl series_repeat=10",
+        usage="dials.split_still_data integrated.expt integrated.refl series_repeat=10",
         read_experiments=False,
         read_reflections=False,
         phil=phil_scope,
@@ -130,7 +130,9 @@ def run(args=sys.argv[1:]):
         elist = load.experiment_list(fp.expt, check_format=False)
         for e in elist:
             if e.scan and e.scan.get_oscillation()[1] != 0.0:
-                logger.info("dials.split_ssx_data can only be used on still-shot data")
+                logger.info(
+                    "dials.split_still_data can only be used on still-shot data"
+                )
                 sys.exit()
         expts.append(elist)
 
