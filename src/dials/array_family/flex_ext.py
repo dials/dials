@@ -31,7 +31,7 @@ import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
-from dials.util.nexus.nexus_new import H5TableFile
+from dials.util.table_as_hdf5_file import HDF5TableFile
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -378,23 +378,32 @@ class _:
 
     def as_h5(self, filename):
         # ok this works if we don't have -1 ids i.e. after #2567 just renumber for now.
-        if -1 in self["id"]:
-            n_id = len(set(self["id"]))
-            sel = self["id"] == -1
-            self["id"].set_selected(sel, n_id)
-            self.experiment_identifiers()[n_id] = str(n_id)
-        tables = self.split_by_experiment_id()
+        if "id" in self:
+            if -1 in self["id"]:
+                n_id = len(set(self["id"]))
+                sel = self["id"] == -1
+                self["id"].set_selected(sel, n_id)
+                self.experiment_identifiers()[n_id] = str(n_id)
+            tables = self.split_by_experiment_id()
+        else:
+            # we need an identifier to link to, so set here (or assert needed?)
+            from dxtbx.util import ersatz_uuid4
+
+            assert not list(self.experiment_identifiers().values())
+            self["id"] = cctbx.array_family.flex.int(self.size(), 0)
+            self.experiment_identifiers()[0] = ersatz_uuid4()
+            tables = [self]
 
         # Clean up any removed experiments from the identifiers map
         self.clean_experiment_identifiers_map()
-        handle = H5TableFile(filename, "w")
+        handle = HDF5TableFile(filename, "w")
         handle.set_reflections(tables)
         handle.close()
 
     @classmethod
     def from_h5(cls, filename):
 
-        handle = H5TableFile(filename, "r")
+        handle = HDF5TableFile(filename, "r")
         tables = handle.get_reflections()
         handle.close()
         table = cls.concat(tables)
