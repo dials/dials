@@ -10,6 +10,10 @@ from dxtbx.serialize import load
 import dials.command_line.split_still_data as split
 
 
+@pytest.mark.xfail(
+    os.name == "nt",
+    reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
+)
 @pytest.mark.parametrize("use_yaml", [True, False])
 def test_split_still_data(dials_data, run_in_tmp_path, use_yaml):
     data = dials_data("cunir_serial_processed", pathlib=True)
