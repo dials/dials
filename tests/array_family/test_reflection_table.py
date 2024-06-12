@@ -1095,36 +1095,36 @@ def test_find_overlapping():
             assert is_overlap(b0, b1, i)
 
 
-@pytest.mark.parametrize("msgpack_or_h5", ["msgpack", "h5"])
-def test_to_from_msgpack(tmp_path, msgpack_or_h5):
-    def gen_shoebox():
-        shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
-        shoebox.allocate()
-        for k in range(1):
-            for j in range(3):
-                for i in range(4):
-                    shoebox.data[k, j, i] = i + j + k + 0.1
-                    shoebox.mask[k, j, i] = i % 2
-                    shoebox.background[k, j, i] = i * j + 0.2
-        return shoebox
+def gen_shoebox():
+    shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
+    shoebox.allocate()
+    for k in range(1):
+        for j in range(3):
+            for i in range(4):
+                shoebox.data[k, j, i] = i + j + k + 0.1
+                shoebox.mask[k, j, i] = i % 2
+                shoebox.background[k, j, i] = i * j + 0.2
+    return shoebox
 
-    def compare(a, b):
-        assert a.is_consistent()
-        assert b.is_consistent()
-        assert a.panel == b.panel
-        assert a.bbox == b.bbox
-        for aa, bb in zip(a.data, b.data):
-            if abs(aa - bb) > 1e-9:
-                return False
-        for aa, bb in zip(a.background, b.background):
-            if abs(aa - bb) > 1e-9:
-                return False
-        for aa, bb in zip(a.mask, b.mask):
-            if aa != bb:
-                return False
-        return True
 
-    # The columns as lists
+def compare(a, b):
+    assert a.is_consistent()
+    assert b.is_consistent()
+    assert a.panel == b.panel
+    assert a.bbox == b.bbox
+    for aa, bb in zip(a.data, b.data):
+        if abs(aa - bb) > 1e-9:
+            return False
+    for aa, bb in zip(a.background, b.background):
+        if abs(aa - bb) > 1e-9:
+            return False
+    for aa, bb in zip(a.mask, b.mask):
+        if aa != bb:
+            return False
+    return True
+
+
+def table_and_columns():
     c1 = list(range(10))
     c2 = list(range(10))
     c3 = ["a", "b", "c", "d", "e", "f", "g", "i", "j", "k"]
@@ -1133,15 +1133,15 @@ def test_to_from_msgpack(tmp_path, msgpack_or_h5):
     c6 = [(i + 1, i + 2) for i in range(10)]
     c7 = [(i + 1, i + 2, i + 3) for i in range(10)]
     c8 = [tuple(i + j for j in range(9)) for i in range(10)]
-    c9 = [tuple(i + j for j in range(6)) for i in range(10)]
+    c9 = [(0, 4, 0, 3, 0, 1)] * 10
     c10 = [(i + 1, i + 2, i + 3) for i in range(10)]
-    c11 = [gen_shoebox() for i in range(10)]
+    c11 = [gen_shoebox() for _ in range(10)]
 
     # Create a table with some elements
     table = flex.reflection_table()
     table["col1"] = flex.int(c1)
     table["col2"] = flex.double(c2)
-    # table["col3"] = flex.std_string(c3)
+    table["col3"] = flex.std_string(c3)
     table["col4"] = flex.bool(c4)
     table["col5"] = flex.size_t(c5)
     table["col6"] = flex.vec2_double(c6)
@@ -1150,40 +1150,64 @@ def test_to_from_msgpack(tmp_path, msgpack_or_h5):
     table["col9"] = flex.int6(c9)
     table["col10"] = flex.miller_index(c10)
     table["col11"] = flex.shoebox(c11)
+    return table, [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11]
 
-    if msgpack_or_h5 == "msgpack":
-        obj = table.as_msgpack()
-        new_table = flex.reflection_table.from_msgpack(obj)
-        assert new_table.is_consistent()
-        assert new_table.nrows() == 10
-        assert new_table.ncols() == 10
-        assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
-        assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
-        # assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
-        assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
-        assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
-        assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))
-        assert all(tuple(a == b for a, b in zip(new_table["col7"], c7)))
-        assert all(tuple(a == b for a, b in zip(new_table["col8"], c8)))
-        assert all(tuple(a == b for a, b in zip(new_table["col9"], c9)))
-        assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
-        assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
 
-    if msgpack_or_h5 == "msgpack":
-        table.as_msgpack_file(tmp_path / "reflections.mpack")
-        new_table = flex.reflection_table.from_msgpack_file(
-            tmp_path / "reflections.mpack"
-        )
-    else:
-        print(list(table.keys()))
-        table.as_h5(tmp_path / "reflections.h5")
-        new_table = flex.reflection_table.from_h5(tmp_path / "reflections.h5")
+def test_to_from_h5(tmp_path):
+    # The columns as lists
+    table, columns = table_and_columns()
+    c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
+
+    table.as_h5(tmp_path / "reflections.h5")
+    new_table = flex.reflection_table.from_h5(tmp_path / "reflections.h5")
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
-    assert new_table.ncols() == 10
+    assert new_table.ncols() == 12  # one more as an id column is added
     assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
     assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
-    # assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
+    assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
+    assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
+    assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
+    assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))
+    assert all(tuple(a == b for a, b in zip(new_table["col7"], c7)))
+    assert all(tuple(a == b for a, b in zip(new_table["col8"], c8)))
+    assert all(tuple(a == b for a, b in zip(new_table["col9"], c9)))
+    assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
+    assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
+
+    assert all(new_table["id"] == 0)
+
+
+def test_to_from_msgpack(tmp_path):
+
+    table, columns = table_and_columns()
+    c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
+
+    obj = table.as_msgpack()
+    new_table = flex.reflection_table.from_msgpack(obj)
+    assert new_table.is_consistent()
+    assert new_table.nrows() == 10
+    assert new_table.ncols() == 11
+    assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
+    assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
+    assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
+    assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
+    assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
+    assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))
+    assert all(tuple(a == b for a, b in zip(new_table["col7"], c7)))
+    assert all(tuple(a == b for a, b in zip(new_table["col8"], c8)))
+    assert all(tuple(a == b for a, b in zip(new_table["col9"], c9)))
+    assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
+    assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
+
+    table.as_msgpack_file(tmp_path / "reflections.mpack")
+    new_table = flex.reflection_table.from_msgpack_file(tmp_path / "reflections.mpack")
+    assert new_table.is_consistent()
+    assert new_table.nrows() == 10
+    assert new_table.ncols() == 11
+    assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
+    assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
+    assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
     assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
     assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
     assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))

@@ -767,6 +767,8 @@ namespace dials { namespace af { namespace boost_python {
       n += s1.data.size();
     }
     size_t ntot = 0;
+    af::shared<size_t> panel(self.size(), 0);
+    af::shared<int6> bbox(self.size(), af::init_functor_null<int6>());
     af::shared<float> data_array(n, 0);
     af::shared<float> bg_array(n, 0);
     af::shared<size_t> mask_array(n, 0);
@@ -776,10 +778,14 @@ namespace dials { namespace af { namespace boost_python {
       std::copy(s1.background.begin(), s1.background.end(), bg_array.begin() + ntot);
       std::copy(s1.mask.begin(), s1.mask.end(), mask_array.begin() + ntot);
       ntot += s1.data.size();
+      panel[i] = s1.panel;
+      bbox[i] = s1.bbox;
     }
     result.append(data_array);
     result.append(bg_array);
     result.append(mask_array);
+    result.append(panel);
+    result.append(bbox);
     return result;
   }
 

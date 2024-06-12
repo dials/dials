@@ -30,17 +30,16 @@ namespace dials { namespace af {
   using model::Shoebox;
   using model::Valid;
 
-  void ShoeboxExtractFromData(af::reflection_table data,
+  void ShoeboxExtractFromData(af::shared<Shoebox<> > shoebox_,
                               af::shared<float> shoebox_data,
                               af::shared<float> background_data,
                               af::shared<size_t> mask_data) {
-    af::shared<Shoebox<> > shoebox_ = data["shoebox"];
-    std::vector<int> sizes(data.size());
-    for (int i = 0; i < data.size(); ++i) {
+    std::vector<int> sizes(shoebox_.size());
+    for (int i = 0; i < shoebox_.size(); ++i) {
       sizes[i] = shoebox_[i].data.size();
     }
     int n = 0;
-    for (int i = 0; i < data.size(); ++i) {
+    for (int i = 0; i < shoebox_.size(); ++i) {
       size_t size_ = sizes[i];
       std::copy(shoebox_data.begin() + n,
                 shoebox_data.begin() + n + size_,
