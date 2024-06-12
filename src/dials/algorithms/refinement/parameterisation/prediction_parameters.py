@@ -975,9 +975,8 @@ class XYPhiPredictionParameterisationSparse(
 
 
 class LauePredictionParameterisation(PredictionParameterisation):
-
-    """A basic extension to PredictionParameterisation for ToF data,
-    where only panel positions are considered."""
+    """A basic extension to PredictionParameterisation for Laue data,
+    where gradients for the wavelength of each reflection are also considered."""
 
     _grad_names = ("dX_dp", "dY_dp", "dwavelength_dp")
 
@@ -989,7 +988,53 @@ class LauePredictionParameterisation(PredictionParameterisation):
         self._wavelength = reflections["wavelength_cal"]
         self._r = self._setting_rotation * self._fixed_rotation * self._UB * self._h
         self._s0 = reflections["s0_cal"]
+        self._e_X_r = (self._setting_rotation * self._axis).cross(self._r)
+        self._e_r_s0 = (self._e_X_r).dot(self._s0)
+        self._ds0_dbeam_p = None
         return
+
+    def _beam_derivatives(
+        self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by derivatives of the
+        beam parameterisations."""
+
+        # Get required data
+        r = self._r.select(isel)
+        e_X_r = self._e_X_r.select(isel)
+        e_r_s0 = self._e_r_s0.select(isel)
+        D = self._D.select(isel)
+
+        if ds0_dbeam_p is None:
+
+            # get the derivatives of the beam vector wrt the parameters
+            ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
+
+            ds0_dbeam_p = [
+                None if e is None else flex.vec3_double(len(r), e.elems)
+                for e in ds0_dbeam_p
+            ]
+            self._ds0_dbeam_p = ds0_dbeam_p
+
+        dphi_dp = []
+        dpv_dp = []
+
+        # loop through the parameters
+        for der in ds0_dbeam_p:
+
+            if der is None:
+                dphi_dp.append(None)
+                dpv_dp.append(None)
+                continue
+
+            # calculate the derivative of phi for this parameter
+            dphi = (der.dot(r) / e_r_s0) * -1.0
+            dphi_dp.append(dphi)
+
+            # calculate the derivative of pv for this parameter
+            dpv_dp.append(D * (e_X_r * dphi + der))
+
+        return dpv_dp, dphi_dp
 
     def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
         """helper function to extend the derivatives lists by derivatives of
@@ -1003,7 +1048,6 @@ class LauePredictionParameterisation(PredictionParameterisation):
             U = self._U.select(isel)
         D = self._D.select(isel)
         s1 = self._s1.select(isel)
-        s0 = self._s0.select(isel)
         wavelength = self._wavelength.select(isel)
 
         if derivatives is None:
@@ -1025,15 +1069,24 @@ class LauePredictionParameterisation(PredictionParameterisation):
 
             # calculate the derivative of r for this parameter
             if b_matrix:
-                dr = der * B * h
+                dr = self._setting_rotation * self._fixed_rotation * der * B * h
             else:
-                dr = U * der * h
+                dr = self._setting_rotation * self._fixed_rotation * U * der * h
 
-            dwavelength = (-wavelength) * (dr.dot(s1)) / (s0.dot(s0))
+            r_dot_r = self._r.dot(self._r)
+            unit_s0 = flex.vec3_double(len(dr), self._experiments[0].beam.get_unit_s0())
+
+            total_dr = dr - (unit_s0 / wavelength**2) * (
+                (-2 / r_dot_r) * unit_s0.dot(dr)
+            )
+            dwavelength = -(wavelength**3) * total_dr.dot(s1)
+            # dwavelength2 = (-2 / r_dot_r) * unit_s0.dot(dr)
+
             dwavelength_dp.append(dwavelength)
             # calculate the derivative of pv for this parameter
-            dpv_dp.append(D * (dr + (s0 / wavelength) * dwavelength))
+            dpv_dp.append(D * (dr - (unit_s0 / wavelength**2) * dwavelength))
 
+        # list(self._calc_dX_dp_and_dY_dp_from_dpv_dp(self._w_inv.select(isel), self._u_w_inv.select(isel), self._v_w_inv.select(isel), dpv_dp)[0][0])
         return dpv_dp, dwavelength_dp
 
     def _xl_orientation_derivatives(

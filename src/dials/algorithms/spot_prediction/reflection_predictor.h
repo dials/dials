@@ -1360,10 +1360,10 @@ namespace dials { namespace algorithms {
       return af::reflection_table();
     }
 
-    af::reflection_table all_reflections_for_asu(Goniometer goniometer, double phi) {
-      mat3<double> fixed_rotation = goniometer.get_fixed_rotation();
-      mat3<double> setting_rotation = goniometer.get_setting_rotation();
-      vec3<double> rotation_axis = goniometer.get_rotation_axis();
+    af::reflection_table all_reflections_for_asu(double phi) {
+      mat3<double> fixed_rotation = goniometer_.get_fixed_rotation();
+      mat3<double> setting_rotation = goniometer_.get_setting_rotation();
+      vec3<double> rotation_axis = goniometer_.get_rotation_axis();
       mat3<double> rotation =
         scitbx::math::r3_rotation::axis_and_angle_as_matrix(rotation_axis, phi);
       vec3<double> unit_s0 = beam_.get_unit_s0();

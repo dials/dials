@@ -3,6 +3,7 @@ from __future__ import annotations
 import dials_algorithms_spot_prediction_ext
 from dials_algorithms_spot_prediction_ext import (
     IndexGenerator,
+    LaueRayPredictor,
     NaveStillsReflectionPredictor,
     PixelLabeller,
     PixelToMillerIndex,
@@ -32,6 +33,7 @@ __all__ = [
     "StillsDeltaPsiReflectionPredictor",
     "StillsRayPredictor",
     "StillsReflectionPredictor",
+    "LaueRayPredictor",
     "LaueReflectionPredictor",
 ]
 

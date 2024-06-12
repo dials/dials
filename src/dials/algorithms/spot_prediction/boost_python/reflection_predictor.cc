@@ -186,6 +186,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__call__", predict_observed_with_panel)
       .def("__call__", predict_observed_with_panel_list)
       .def("for_reflection_table", &Predictor::for_reflection_table)
+      .def("all_reflections_for_asu", &Predictor::all_reflections_for_asu)
       .def("for_reflection_table", &Predictor::for_reflection_table_with_individual_ub);
   }
 

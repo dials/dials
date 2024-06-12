@@ -1109,7 +1109,7 @@ class LaueReflectionManager(ReflectionManager):
             wavelength_resid = l["wavelength_resid"]
             w_x, w_y, w_z = l["xyzobs.mm.weights"].parts()
         except KeyError:
-            raise
+            return
 
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
