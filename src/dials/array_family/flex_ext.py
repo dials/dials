@@ -370,36 +370,45 @@ class _:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
     def as_h5(self, filename):
-        # ok this works if we don't have -1 ids i.e. after #2567 just renumber for now.
-        if "id" in self:
-            if -1 in self["id"]:
-                n_id = len(set(self["id"]))
-                sel = self["id"] == -1
-                self["id"].set_selected(sel, n_id)
-                self.experiment_identifiers()[n_id] = str(n_id)
-            tables = self.split_by_experiment_id()
-        else:
-            # we need an identifier to link to, so set here (or assert needed?)
-            from dxtbx.util import ersatz_uuid4
+        """Write the reflection table as a h5 file."""
 
-            assert not list(self.experiment_identifiers().values())
-            self["id"] = cctbx.array_family.flex.int(self.size(), 0)
-            self.experiment_identifiers()[0] = ersatz_uuid4()
-            tables = [self]
+        # First prepare the data. In the case where we are saving a single reflection table
+        # containing data from multiple experiments, then we must first split into
+        # a table per experiment for the h5 file.
+        # For multi-experiment datasets, ideally this is avoided and the tables can be written
+        # directly through the HDF5TableFile object
+        if "id" not in self:
+            raise RuntimeError(
+                "The 'id' column and experiment identifiers must be set to save to h5"
+            )
+        if (
+            not self.experiment_identifiers()
+            or not self.are_experiment_identifiers_consistent()
+        ):
+            raise RuntimeError("Experiment identifiers must be set to save to h5")
 
-        # Clean up any removed experiments from the identifiers map
-        self.clean_experiment_identifiers_map()
-        handle = HDF5TableFile(filename, "w")
-        handle.set_reflections(tables)
-        handle.close()
+        if -1 in self["id"]:
+            # make sure unindexed can be saved
+            n_id = len(set(self["id"])) - 1
+            self.experiment_identifiers()[n_id] = "-1"
+
+        with HDF5TableFile(filename, "w") as handle:
+            handle.set_reflections([self])
+
+        # restore original state of table if unindexed data
+        if -1 in self["id"]:
+            n_id = len(set(self["id"])) - 1
+            del self.experiment_identifiers()[n_id]
 
     @classmethod
     def from_h5(cls, filename):
 
-        handle = HDF5TableFile(filename, "r")
-        tables = handle.get_reflections()
-        handle.close()
-        table = cls.concat(tables)
+        with HDF5TableFile(filename, "r") as handle:
+            tables = handle.get_reflections()
+        if len(tables) > 1:
+            table = cls.concat(tables)
+        else:
+            table = tables[0]
         return table
 
     def as_miller_array(self, experiment, intensity="sum"):

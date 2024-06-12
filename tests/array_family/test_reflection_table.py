@@ -1157,6 +1157,8 @@ def test_to_from_h5(tmp_path):
     # The columns as lists
     table, columns = table_and_columns()
     c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
+    table["id"] = flex.int(table.size(), 0)
+    table.experiment_identifiers()[0] = "test"
 
     table.as_h5(tmp_path / "reflections.h5")
     new_table = flex.reflection_table.from_h5(tmp_path / "reflections.h5")
@@ -1176,6 +1178,7 @@ def test_to_from_h5(tmp_path):
     assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
 
     assert all(new_table["id"] == 0)
+    assert dict(new_table.experiment_identifiers()) == {0: "test"}
 
 
 def test_to_from_msgpack(tmp_path):

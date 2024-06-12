@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from math import ceil
 from typing import Dict, List, Optional
 
 import h5py
@@ -7,6 +8,7 @@ import hdf5plugin
 import numpy as np
 
 from dxtbx import flumpy
+from dxtbx.util import ersatz_uuid4
 
 import dials_array_family_flex_ext
 from dials.array_family import flex
@@ -22,20 +24,25 @@ class ReflectionListEncoder(object):
     ) -> None:
         """Encode the list of reflection tables into a per-experiment hdf5 group."""
 
-        # Create the reflection data group
-        group = handle.create_group("entry/data_processing", track_order=True)
+        # Create the reflection data group if it hasn't already been created
+        if "entry" in handle and "data_processing" in handle["entry"]:
+            group = handle["entry"]["data_processing"]
+        else:
+            group = handle.create_group("entry/data_processing", track_order=True)
 
         for table in reflections:
             identifier_map = dict(table.experiment_identifiers())
-            assert len(identifier_map) == 1
-            identifier = list(identifier_map.values())[0]
-            this_group = group.create_group(identifier)
+            if len(identifier_map) == 1:
+                name = list(identifier_map.values())[0]
+            else:
+                name = "group_" + ersatz_uuid4()
+            this_group = group.create_group(name)
             this_group.attrs["num_reflections"] = table.size()
-            ReflectionListEncoder.encode_columns(
-                this_group,
-                table,
-                ignore=["id"],
+            this_group.attrs["identifiers"] = list(identifier_map.values())
+            this_group.attrs["experiment_ids"] = flumpy.to_numpy(
+                flex.size_t(table.experiment_identifiers().keys())
             )
+            ReflectionListEncoder.encode_columns(this_group, table)
 
     @staticmethod
     def encode_columns(
@@ -112,6 +119,45 @@ class ReflectionListEncoder(object):
         )
 
 
+class ReflectionListBatchedEncoder(ReflectionListEncoder):
+    """Encoder for the reflection data."""
+
+    def __init__(self, batch_size):
+        self.batch_size = batch_size
+
+    def encode(
+        self,
+        reflections: List[flex.reflection_table],
+        handle: h5py.File,
+    ) -> None:
+        """Encode the list of reflection tables into a per-table hdf5 group."""
+
+        # Create the reflection data group if it hasn't already been created
+        if "entry" in handle and "data_processing" in handle["entry"]:
+            group = handle["entry"]["data_processing"]
+        else:
+            group = handle.create_group("entry/data_processing", track_order=True)
+
+        n_batches = int(ceil(len(reflections) / self.batch_size))
+        for i in range(n_batches):
+            subset = reflections[i * self.batch_size : (i + 1) * self.batch_size]
+            table = flex.reflection_table.concat(subset)
+            #   for table in reflections:
+            name = "group_" + ersatz_uuid4()
+            this_group = group.create_group(name)
+            this_group.attrs["num_reflections"] = table.size()
+            this_group.attrs["identifiers"] = list(
+                table.experiment_identifiers().values()
+            )
+            this_group.attrs["experiment_ids"] = flumpy.to_numpy(
+                flex.size_t(table.experiment_identifiers().keys())
+            )
+            ReflectionListEncoder.encode_columns(
+                this_group,
+                table,
+            )
+
+
 class ReflectionListDecoder(object):
     """Decoder for the reflection data."""
 
@@ -124,14 +170,17 @@ class ReflectionListDecoder(object):
 
         # Create the list of reflection tables
         tables = []
-        for i, (name, dataset) in enumerate(g.items()):
+        for dataset in g.values():
             if "num_reflections" not in dataset.attrs:
                 raise RuntimeError(
                     "Unable to understand file as h5 reflection data (no num_reflections attribute)"
                 )
             table = flex.reflection_table(int(dataset.attrs["num_reflections"]))
-            table.experiment_identifiers()[i] = str(name)
-            table["id"] = flex.int(table.size(), i)
+            identifiers = dataset.attrs["identifiers"]
+            experiment_ids = dataset.attrs["experiment_ids"]
+            for n, v in zip(experiment_ids, identifiers):
+                if v != "-1":  # special case for unindexed reflections
+                    table.experiment_identifiers()[n] = v
 
             for key in dataset:
                 if isinstance(dataset[key], h5py.Group):
@@ -146,12 +195,10 @@ class ReflectionListDecoder(object):
                     ]
                     for k in dataset[key].keys():
                         if k in names[:-1]:
-                            shoebox_arrays[k] = flumpy.from_numpy(
-                                np.array(dataset[key][k])
-                            )
+                            shoebox_arrays[k] = flumpy.from_numpy(dataset[key][k][()])
                         elif k == "bbox":
                             shoebox_arrays[k] = flex.int6(
-                                flumpy.from_numpy(np.array(dataset[key][k]).flatten())
+                                flumpy.from_numpy(dataset[key][k][()].flatten())
                             )
                         else:
                             raise RuntimeError(
@@ -174,7 +221,7 @@ class ReflectionListDecoder(object):
 
             tables.append(table)
 
-        # Return the list of reflection tables
+        # Return the list of reflection tables (as stored on disk)
         return tables
 
     @staticmethod
@@ -184,11 +231,11 @@ class ReflectionListDecoder(object):
         if len(data.shape) == 2:
             if data.shape[1] == 3 and np.issubdtype(data.dtype, np.integer):
                 # there is no such thing as flex.vec3_int, so this must be a miller index
-                new = flumpy.miller_index_from_numpy(np.array(data))
+                new = flumpy.miller_index_from_numpy(data[()])
             elif data.shape[1] == 3 or data.shape[1] == 2:  # vec3 or vec2 double
-                new = flumpy.vec_from_numpy(np.array(data))
+                new = flumpy.vec_from_numpy(data[()])
             elif data.shape[1] == 6 and np.issubdtype(data.dtype, np.integer):
-                new = flex.int6(flumpy.from_numpy(np.array(data).flatten()))
+                new = flex.int6(flumpy.from_numpy(data[()].flatten()))
                 # N.B. flumpy could support this - but int6 only currently defined in dials, so would have to
                 # move that to dxtbx first.
             else:
@@ -199,11 +246,11 @@ class ReflectionListDecoder(object):
             if data.dtype == np.dtype("O"):  # "object type", for flex.std_string
                 new = flex.std_string([s.decode("utf-8") for s in data])
             else:
-                new = flumpy.from_numpy(np.array(data))
+                new = flumpy.from_numpy(data[()])
         elif len(data.shape) == 3:
             if data.shape[1] == 3 and data.shape[2] == 3:
                 # it's a mat3 double
-                new = flumpy.mat3_from_numpy(np.array(data))
+                new = flumpy.mat3_from_numpy(data[()])
             else:
                 raise RuntimeError(
                     f"Unrecognised 3D data dimensions: {data.shape} (expected shape (N,3,3))"
@@ -233,6 +280,12 @@ class HDF5TableFile:
         self._handle.close()
         del self._handle
 
+    def __enter__(self) -> HDF5TableFile:
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        self.close()
+
     def set_data(
         self, data: List[flex.reflection_table], encoder: ReflectionListEncoder
     ) -> None:
@@ -243,9 +296,17 @@ class HDF5TableFile:
         """Get the model data using the supplied decoder."""
         return decoder.decode(self._handle)
 
-    def set_reflections(self, reflections: List[flex.reflection_table]) -> None:
+    def set_reflections(
+        self,
+        reflections: List[flex.reflection_table],
+        batch_save=False,
+        batch_size=1000,
+    ) -> None:
         """Set the reflection data."""
-        self.set_data(reflections, ReflectionListEncoder())
+        if batch_save:
+            self.set_data(reflections, ReflectionListBatchedEncoder(batch_size))
+        else:
+            self.set_data(reflections, ReflectionListEncoder())
 
     def get_reflections(self) -> List[flex.reflection_table]:
         """Get the reflection data."""
