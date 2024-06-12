@@ -225,13 +225,6 @@ class _:
                 infile.read()
             )
 
-    def as_nxmx(self, filename, expts):
-        from dials.util.nexus import get_entry, nx_reflections
-
-        self.clean_experiment_identifiers_map()
-        e = get_entry(filename, "w")
-        nx_reflections.dump(e, self, expts)
-
     def as_file(self, filename):
         """
         Write the reflection table to file in either msgpack or pickle format

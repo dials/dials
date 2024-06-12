@@ -68,7 +68,9 @@ class ReflectionListEncoder(object):
     @staticmethod
     def encode_shoebox(group: h5py.Group, data: flex.shoebox, key: str):
         """Encode a column of shoeboxes."""
-        sbdata, bg, mask, panel, bbox = data.get_shoebox_data_arrays()
+        sbdata, bg, mask = data.get_shoebox_data_arrays()
+        panel = data.panels()
+        bbox = data.bounding_boxes()
         data = flumpy.to_numpy(sbdata)
         lz4 = hdf5plugin.LZ4()
         sbox_group = group.create_group(key)
