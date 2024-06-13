@@ -21,7 +21,7 @@ class ReflectionListEncoder(object):
         reflections: List[flex.reflection_table],
         handle: h5py.File,
     ) -> None:
-        """Encode the list of reflection tables into a per-experiment hdf5 group."""
+        """Encode each reflection table to data in a hdf5 group."""
 
         # Create the reflection data group if it hasn't already been created
         if "entry" in handle and "data_processing" in handle["entry"]:
@@ -225,9 +225,6 @@ class ReflectionListDecoder(object):
 class HDF5TableFile:
     """
     Interface to on-disk representation of reflection data in hdf5 format.
-
-    Note that for a multi-experiment tables, data is saved in a per-experiment
-    table.
     """
 
     def __init__(self, filename: str, mode="w") -> None:
