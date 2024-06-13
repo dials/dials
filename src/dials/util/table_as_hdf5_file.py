@@ -179,8 +179,7 @@ class ReflectionListDecoder(object):
             identifiers = dataset.attrs["identifiers"]
             experiment_ids = dataset.attrs["experiment_ids"]
             for n, v in zip(experiment_ids, identifiers):
-                if v != "-1":  # special case for unindexed reflections
-                    table.experiment_identifiers()[n] = v
+                table.experiment_identifiers()[n] = v
 
             for key in dataset:
                 if isinstance(dataset[key], h5py.Group):
@@ -296,18 +295,28 @@ class HDF5TableFile:
         """Get the model data using the supplied decoder."""
         return decoder.decode(self._handle)
 
-    def set_reflections(
+    def add_tables(
         self,
         reflections: List[flex.reflection_table],
         batch_save=False,
         batch_size=1000,
     ) -> None:
-        """Set the reflection data."""
+        """
+        Set the reflection data.
+
+        Saves each table in the list of tables to a separate HDF5 group on disk.
+        """
         if batch_save:
             self.set_data(reflections, ReflectionListBatchedEncoder(batch_size))
         else:
             self.set_data(reflections, ReflectionListEncoder())
 
-    def get_reflections(self) -> List[flex.reflection_table]:
-        """Get the reflection data."""
+    def get_tables(self) -> List[flex.reflection_table]:
+        """
+        Get the reflection data.
+
+        This returns a list of the reflection tables as stored on disk.
+
+        Each table may contain data from multiple 'experiments' or a single experiment.
+        """
         return self.get_data(ReflectionListDecoder())

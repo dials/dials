@@ -385,31 +385,21 @@ class _:
             not self.experiment_identifiers()
             or not self.are_experiment_identifiers_consistent()
         ):
-            raise RuntimeError("Experiment identifiers must be set to save to h5")
-
-        if -1 in self["id"]:
-            # make sure unindexed can be saved
-            n_id = len(set(self["id"])) - 1
-            self.experiment_identifiers()[n_id] = "-1"
+            raise RuntimeError(
+                "Experiment identifiers must be set and be consistent to save to h5"
+            )
 
         with HDF5TableFile(filename, "w") as handle:
-            handle.set_reflections([self])
-
-        # restore original state of table if unindexed data
-        if -1 in self["id"]:
-            n_id = len(set(self["id"])) - 1
-            del self.experiment_identifiers()[n_id]
+            handle.add_tables([self])
 
     @classmethod
     def from_h5(cls, filename):
 
         with HDF5TableFile(filename, "r") as handle:
-            tables = handle.get_reflections()
+            tables = handle.get_tables()
         if len(tables) > 1:
-            table = cls.concat(tables)
-        else:
-            table = tables[0]
-        return table
+            return cls.concat(tables)
+        return tables[0]
 
     def as_miller_array(self, experiment, intensity="sum"):
         """Return a miller array with the chosen intensities.

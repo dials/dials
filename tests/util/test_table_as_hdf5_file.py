@@ -16,7 +16,7 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
     table.as_file(tmp_path / "scaled.refl")
 
     data = h5py.File(tmp_path / "scaled.refl", "r")
-    # try reading the data to check it was written as h5
+    # try reading the data to check it was written as h5 as a single group
     assert len(data["entry"]["data_processing"].items()) == 1
 
     h5_refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
@@ -30,7 +30,7 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
     # now test splitting and saving manually, both together
     split = table.split_by_experiment_id()
     with HDF5TableFile(tmp_path / "scaled2.refl", "w") as handle:
-        handle.set_reflections(split)
+        handle.add_tables(split)
 
     data = h5py.File(tmp_path / "scaled2.refl", "r")
     # try reading the two experiments to check it was written as h5
@@ -41,8 +41,8 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
 
     # now test saving manually, one at a time
     with HDF5TableFile(tmp_path / "scaled3.refl", "w") as handle:
-        handle.set_reflections([split[0]])
-        handle.set_reflections([split[1]])
+        handle.add_tables([split[0]])
+        handle.add_tables([split[1]])
 
     data = h5py.File(tmp_path / "scaled3.refl", "r")
     # try reading the two experiments to check it was written as h5
@@ -52,7 +52,7 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
     assert dset1.attrs["num_reflections"] == 5555
 
     with HDF5TableFile(tmp_path / "scaled3.refl", "r") as handle:
-        tables = handle.get_reflections()
+        tables = handle.get_tables()
 
     simple_test_equal(tables[0], split[0])
     simple_test_equal(tables[1], split[1])
