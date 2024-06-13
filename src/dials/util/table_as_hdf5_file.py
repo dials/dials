@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from math import ceil
 from typing import Dict, List, Optional
 
 import h5py
@@ -117,45 +116,6 @@ class ReflectionListEncoder(object):
         sbox_group.create_dataset(
             "panel", data=data, shape=data.shape, dtype=data.dtype, compression=lz4
         )
-
-
-class ReflectionListBatchedEncoder(ReflectionListEncoder):
-    """Encoder for the reflection data."""
-
-    def __init__(self, batch_size):
-        self.batch_size = batch_size
-
-    def encode(
-        self,
-        reflections: List[flex.reflection_table],
-        handle: h5py.File,
-    ) -> None:
-        """Encode the list of reflection tables into a per-table hdf5 group."""
-
-        # Create the reflection data group if it hasn't already been created
-        if "entry" in handle and "data_processing" in handle["entry"]:
-            group = handle["entry"]["data_processing"]
-        else:
-            group = handle.create_group("entry/data_processing", track_order=True)
-
-        n_batches = int(ceil(len(reflections) / self.batch_size))
-        for i in range(n_batches):
-            subset = reflections[i * self.batch_size : (i + 1) * self.batch_size]
-            table = flex.reflection_table.concat(subset)
-            #   for table in reflections:
-            name = "group_" + ersatz_uuid4()
-            this_group = group.create_group(name)
-            this_group.attrs["num_reflections"] = table.size()
-            this_group.attrs["identifiers"] = list(
-                table.experiment_identifiers().values()
-            )
-            this_group.attrs["experiment_ids"] = flumpy.to_numpy(
-                flex.size_t(table.experiment_identifiers().keys())
-            )
-            ReflectionListEncoder.encode_columns(
-                this_group,
-                table,
-            )
 
 
 class ReflectionListDecoder(object):
@@ -295,21 +255,13 @@ class HDF5TableFile:
         """Get the model data using the supplied decoder."""
         return decoder.decode(self._handle)
 
-    def add_tables(
-        self,
-        reflections: List[flex.reflection_table],
-        batch_save=False,
-        batch_size=1000,
-    ) -> None:
+    def add_tables(self, reflections: List[flex.reflection_table]) -> None:
         """
         Set the reflection data.
 
         Saves each table in the list of tables to a separate HDF5 group on disk.
         """
-        if batch_save:
-            self.set_data(reflections, ReflectionListBatchedEncoder(batch_size))
-        else:
-            self.set_data(reflections, ReflectionListEncoder())
+        self.set_data(reflections, ReflectionListEncoder())
 
     def get_tables(self) -> List[flex.reflection_table]:
         """

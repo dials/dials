@@ -760,7 +760,6 @@ namespace dials { namespace af { namespace boost_python {
   template <typename FloatType>
   boost::python::list get_shoebox_data_arrays(af::shared<Shoebox<FloatType> > self) {
     boost::python::list result;
-    // af::shared<Shoebox<> > sbox = self["shoebox"];
     size_t n = 0;
     for (int i = 0; i < self.size(); ++i) {
       const Shoebox<> &s1 = self[i];
