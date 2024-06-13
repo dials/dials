@@ -372,11 +372,6 @@ class _:
     def as_h5(self, filename):
         """Write the reflection table as a h5 file."""
 
-        # First prepare the data. In the case where we are saving a single reflection table
-        # containing data from multiple experiments, then we must first split into
-        # a table per experiment for the h5 file.
-        # For multi-experiment datasets, ideally this is avoided and the tables can be written
-        # directly through the HDF5TableFile object
         if "id" not in self:
             raise RuntimeError(
                 "The 'id' column and experiment identifiers must be set to save to h5"
