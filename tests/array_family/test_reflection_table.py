@@ -1133,7 +1133,7 @@ def table_and_columns():
     c6 = [(i + 1, i + 2) for i in range(10)]
     c7 = [(i + 1, i + 2, i + 3) for i in range(10)]
     c8 = [tuple(i + j for j in range(9)) for i in range(10)]
-    c9 = [(0, 4, 0, 3, 0, 1)] * 10
+    c9 = [tuple(i + j for j in range(6)) for i in range(10)]
     c10 = [(i + 1, i + 2, i + 3) for i in range(10)]
     c11 = [gen_shoebox() for _ in range(10)]
 
@@ -1164,7 +1164,7 @@ def test_to_from_h5(tmp_path):
     new_table = flex.reflection_table.from_h5(tmp_path / "reflections.h5")
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
-    assert new_table.ncols() == 12  # one more as an id column is added
+    assert new_table.ncols() == 12  # one more as an id column is needed
     assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
     assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
     assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
