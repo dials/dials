@@ -100,9 +100,7 @@ class CorrelationMatrix:
                 self.ids_to_identifiers_map.update(table.experiment_identifiers())
 
         self.labels = list(dict.fromkeys(self.ids_to_identifiers_map))
-        self._labels_all = flex.size_t()
-        for i in self.labels:
-            self._labels_all.extend(flex.size_t(1, i))
+        self._labels_all = flex.size_t(self.labels)
 
         # Filter reflections that do not meet partiality threshold or default I/Sig(I) criteria
 
@@ -123,8 +121,6 @@ class CorrelationMatrix:
 
         self.params.lattice_group = self.datasets[0].space_group_info()
         self.params.space_group = self.datasets[0].space_group_info()
-
-        self.params.cc_weights = "sigma"
 
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
