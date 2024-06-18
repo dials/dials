@@ -17,6 +17,7 @@ conda-forge::iota
 conda-forge::jinja2
 conda-forge::libboost-devel
 conda-forge::libboost-python-devel
+conda-forge::libglu
 conda-forge::matplotlib-base>=3.0.2
 conda-forge::mesa-libgl-devel-cos7-x86_64
 conda-forge::mrcfile
