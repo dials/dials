@@ -531,10 +531,10 @@ class _:
         from dials.util.multi_dataset_handling import renumber_table_id_columns
 
         tables = renumber_table_id_columns(tables)
-        first = tables[0]
-        for table in tables[1:]:
-            first.extend(table)
-        return first
+        new = dials_array_family_flex_ext.reflection_table()
+        for table in tables:
+            new.extend(table)
+        return new
 
     def match_with_reference(self, other):
         """
