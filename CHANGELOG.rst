@@ -1,3 +1,44 @@
+DIALS 3.19.1 (2024-05-23)
+=========================
+
+No significant changes.
+
+
+DIALS 3.19.0 (2024-04-17)
+=========================
+
+Features
+--------
+
+- ``dials.predict``: Allow usage when image data are not available. (`#2553 <https://github.com/dials/dials/issues/2553>`_)
+- Add ``TOFSpotFinder`` to tailor default params to time of flight experiments and add additional reflection table data. (`#2602 <https://github.com/dials/dials/issues/2602>`_)
+- ``dials.ssx_index``: Allow use of sequences indexer, pink_indexer and low_res_spot_match indexing algorithms. (`#2614 <https://github.com/dials/dials/issues/2614>`_)
+- ``dials.export``: Add option ``composition=`` to specify of asymmetric unit composition for SHELX ``.ins`` file output. (`#2623 <https://github.com/dials/dials/issues/2623>`_)
+
+
+Bugfixes
+--------
+
+- Fix building on RHEL8 and other more recent distributions. (`#1465 <https://github.com/dials/dials/issues/1465>`_)
+- ``dials.index``: Joint indexing is automatically set on for rotation data, off for still data. This can be overridden by explicit use of ``joint_indexing=``. (`#2605 <https://github.com/dials/dials/issues/2605>`_)
+- ``dials.export`` ``format=shelx``: Increased precision of unit cell parameters and their estimated standard deviations written to ``.ins`` file. (`#2624 <https://github.com/dials/dials/issues/2624>`_)
+- ``dials.ssx_index``: Don't combine detector models if individually refined. (`#2634 <https://github.com/dials/dials/issues/2634>`_)
+- ``dials.scale``: Fix error in propagation of partiality variance, when scaling still data. (`#2642 <https://github.com/dials/dials/issues/2642>`_)
+- ``dials.export``: Fix crash when exporting scaled still-shot data. (`#2646 <https://github.com/dials/dials/issues/2646>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- API: ``array_family/flex_ext.py``: remove ``nthread``s parameter from ``extract_shoeboxes``, as it was never implemented. (`#2638 <https://github.com/dials/dials/issues/2638>`_)
+
+
+Misc
+----
+
+- `#2617 <https://github.com/dials/dials/issues/2617>`_, `#2618 <https://github.com/dials/dials/issues/2618>`_, `#2619 <https://github.com/dials/dials/issues/2619>`_, `#2626 <https://github.com/dials/dials/issues/2626>`_, `#2633 <https://github.com/dials/dials/issues/2633>`_, `#2648 <https://github.com/dials/dials/issues/2648>`_
+
+
 DIALS 3.18.1 (2024-03-26)
 =========================
 

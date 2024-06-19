@@ -2,7 +2,7 @@ variables:
   CACHE_VERSION: 20201102
   isPullRequest: $[startsWith(variables['Build.SourceBranch'], 'refs/pull/')]
   PYTHON_MINIMUM_VERSION: "3.9"
-  PYTHON_TESTING_VERSION: "3.11"
+  PYTHON_TESTING_VERSION: "3.12"
 
 stages:
 - stage: prepare

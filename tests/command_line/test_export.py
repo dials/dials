@@ -538,8 +538,8 @@ def test_shelx_ins(dials_data, tmp_path):
     assert (tmp_path / "dials.ins").is_file()
 
     cell_esds = {
-        "CELL": (5.4815, 8.2158, 12.1457, 90.000, 90.000, 90.000),
-        "ZERR": (0.0005, 0.0007, 0.0011, 0.003, 0.004, 0.004),
+        "CELL": (5.48154, 8.21578, 12.14570, 90.0000, 90.0000, 90.0000),
+        "ZERR": (0.00050, 0.00073, 0.00109, 0.0034, 0.0037, 0.0037),
     }
 
     with (tmp_path / "dials.ins").open() as fh:
@@ -548,7 +548,7 @@ def test_shelx_ins(dials_data, tmp_path):
             instruction = tokens[0]
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
-                assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+                assert result == pytest.approx(cell_esds[instruction], abs=0.0001)
 
 
 def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
@@ -582,6 +582,39 @@ def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
                 assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+
+
+def test_shelx_ins_composition(dials_data, tmp_path):
+    # Call dials.export
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "intensity=scale",
+            "format=shelx",
+            "composition=C3H7NO2S",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    sfac_unit = {
+        "SFAC": "C H N O S",
+        "UNIT": "12 28 4 8 4",
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            if instruction in sfac_unit:
+                result = " ".join(tokens[1:6])
+                assert result == sfac_unit[instruction]
 
 
 def test_export_sum_or_profile_only(dials_data, tmp_path):

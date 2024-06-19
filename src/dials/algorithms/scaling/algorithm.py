@@ -641,6 +641,9 @@ def targeted_scaling_algorithm(scaler):
         scaler.make_ready_for_scaling()
         scaler.perform_scaling()
 
+        expand_and_do_outlier_rejection(scaler, calc_cov=True)
+        do_error_analysis(scaler, reselect=True)
+
     if scaler.params.scaling_options.full_matrix and (
         scaler.params.scaling_refinery.engine == "SimpleLBFGS"
     ):
@@ -648,9 +651,11 @@ def targeted_scaling_algorithm(scaler):
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,
         )
+    else:
+        scaler.perform_scaling()
 
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
-    # do_error_analysis(scaler, reselect=False)
+    do_error_analysis(scaler, reselect=False)
 
     scaler.prepare_reflection_tables_for_output()
     return scaler
