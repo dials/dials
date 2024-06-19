@@ -1048,6 +1048,9 @@ class LauePredictionParameterisation(PredictionParameterisation):
             U = self._U.select(isel)
         D = self._D.select(isel)
         wavelength = self._wavelength.select(isel)
+        fixed_rotation = self._fixed_rotation.select(isel)
+        setting_rotation = self._setting_rotation.select(isel)
+        r = self._r.select(isel)
 
         if derivatives is None:
             # get derivatives of the B/U matrix wrt the parameters
@@ -1068,14 +1071,14 @@ class LauePredictionParameterisation(PredictionParameterisation):
 
             # calculate the derivative of r for this parameter
             if b_matrix:
-                dr = self._setting_rotation * self._fixed_rotation * der * B * h
+                dr = setting_rotation * fixed_rotation * der * B * h
             else:
-                dr = self._setting_rotation * self._fixed_rotation * U * der * h
+                dr = setting_rotation * fixed_rotation * U * der * h
 
             unit_s0 = flex.vec3_double(len(dr), self._experiments[0].beam.get_unit_s0())
-            r_dot_r = self._r.dot(self._r)
+            r_dot_r = r.dot(r)
             dwavelength = -2 * unit_s0.dot(
-                ((dr * r_dot_r) - ((2 * self._r) * dr.dot(self._r))) / (r_dot_r**2)
+                ((dr * r_dot_r) - ((2 * r) * dr.dot(r))) / (r_dot_r**2)
             )
             dwavelength_dp.append(dwavelength)
 

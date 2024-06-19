@@ -243,7 +243,7 @@ class ExperimentsPredictorFactory:
                     all_tof_experiments = True
                 elif all_tof_experiments:
                     raise ValueError(
-                        "Cannot find max cell for ToF and non-ToF experiments at the same time"
+                        "Cannot create ExperimentsPredictor for ToF and non-ToF experiments at the same time"
                     )
 
                 if all_tof_experiments:
