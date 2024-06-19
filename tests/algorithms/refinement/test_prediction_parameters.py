@@ -394,7 +394,7 @@ def test_laue_prediction_parameters(dials_data):
         assert x_grads == pytest.approx(an_grads[i]["dX_dp"], abs=5.0e-5)
         assert y_grads == pytest.approx(an_grads[i]["dY_dp"], abs=5.0e-5)
         assert wavelength_grads == pytest.approx(
-            an_grads[i]["dwavelength_dp"], abs=5.0e-6
+            an_grads[i]["dwavelength_dp"], abs=5.0e-7
         )
 
     # return to the initial state

@@ -1047,7 +1047,6 @@ class LauePredictionParameterisation(PredictionParameterisation):
         else:
             U = self._U.select(isel)
         D = self._D.select(isel)
-        s1 = self._s1.select(isel)
         wavelength = self._wavelength.select(isel)
 
         if derivatives is None:
@@ -1070,58 +1069,19 @@ class LauePredictionParameterisation(PredictionParameterisation):
             # calculate the derivative of r for this parameter
             if b_matrix:
                 dr = self._setting_rotation * self._fixed_rotation * der * B * h
-                r_dot_r = self._r.dot(self._r)
-                unit_s0 = flex.vec3_double(
-                    len(dr), self._experiments[0].beam.get_unit_s0()
-                )
-
-                total_dr = dr - (unit_s0 / wavelength**2) * (
-                    (-2 / r_dot_r) * unit_s0.dot(dr)
-                )
-                dwavelength = -(wavelength**3) * total_dr.dot(s1)
-                # dwavelength2 = (-2 / r_dot_r) * unit_s0.dot(dr)
             else:
-                delta = 1e-7
                 dr = self._setting_rotation * self._fixed_rotation * U * der * h
-                unit_s0 = flex.vec3_double(
-                    len(dr), self._experiments[0].beam.get_unit_s0()
-                )
 
-                p_vals = self.get_param_vals()
-                p_idx = len(p_vals) - 6 + idx
-                current_p_val = p_vals[p_idx]
-
-                p_vals[p_idx] -= delta / 2.0
-                self.set_param_vals(p_vals)
-                q = (
-                    self._setting_rotation
-                    * self._fixed_rotation
-                    * self._experiments[0].crystal.get_A()
-                    * h
-                )
-                rev_wavelengths = -2 * ((unit_s0.dot(q)) / (q.dot(q)))
-
-                p_vals[p_idx] += delta
-                self.set_param_vals(p_vals)
-                q = (
-                    self._setting_rotation
-                    * self._fixed_rotation
-                    * self._experiments[0].crystal.get_A()
-                    * h
-                )
-                fwd_wavelengths = -2 * ((unit_s0.dot(q)) / (q.dot(q)))
-
-                p_vals[p_idx] = current_p_val
-                self.set_param_vals(p_vals)
-
-                dwavelength = fwd_wavelengths - rev_wavelengths
-                dwavelength /= delta
-
+            unit_s0 = flex.vec3_double(len(dr), self._experiments[0].beam.get_unit_s0())
+            r_dot_r = self._r.dot(self._r)
+            dwavelength = -2 * unit_s0.dot(
+                ((dr * r_dot_r) - ((2 * self._r) * dr.dot(self._r))) / (r_dot_r**2)
+            )
             dwavelength_dp.append(dwavelength)
+
             # calculate the derivative of pv for this parameter
             dpv_dp.append(D * (dr - (unit_s0 / wavelength**2) * dwavelength))
 
-        # list(self._calc_dX_dp_and_dY_dp_from_dpv_dp(self._w_inv.select(isel), self._u_w_inv.select(isel), self._v_w_inv.select(isel), dpv_dp)[0][0])
         return dpv_dp, dwavelength_dp
 
     def _xl_orientation_derivatives(

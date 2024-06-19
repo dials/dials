@@ -792,7 +792,8 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
     def _extract_squared_residuals(matches):
 
         return flex.double.concatenate(
-            matches["x_resid2"], matches["y_resid2"], matches["wavelength_resid2"]
+            matches["x_resid2"],
+            flex.double.concatenate(matches["y_resid2"], matches["wavelength_resid2"]),
         )
 
     def _rmsds_core(self, reflections):
