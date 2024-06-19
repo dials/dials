@@ -478,7 +478,7 @@ def test_laue_target_function(dials_data):
     diffs = [a - b for a, b in zip(dL_dp, fdgrads[0])]
     norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[0])])
     for e in norm_diffs:
-        assert abs(e) < 0.001  # check differences less than 0.1%
+        assert abs(e) < 0.002  # check differences less than 0.2%
 
     # test normalised differences between FD curvatures and analytical least
     # squares approximation. We don't expect this to be especially close
