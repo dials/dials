@@ -241,9 +241,10 @@ def optimize_origin_offset_local_scope(
             plt.savefig("search_scope.png")
 
             # changing value
-            trial_origin_offset = (idxs[idx_max % widegrid]) * beamr1 + (
-                idxs[idx_max // widegrid]
-            ) * beamr2
+            trial_origin_offset = (
+                (idxs[idx_max % widegrid]) * beamr1
+                + (idxs[idx_max // widegrid]) * beamr2
+            )
             return trial_origin_offset
 
         show_plot(widegrid=2 * grid + 1, excursi=scores)

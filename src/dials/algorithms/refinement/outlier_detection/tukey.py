@@ -20,7 +20,6 @@ class Tukey(CentroidOutlier):
         nproc=1,
         iqr_multiplier=1.5,
     ):
-
         if cols is None:
             cols = ["x_resid", "y_resid", "phi_resid"]
         CentroidOutlier.__init__(
@@ -39,7 +38,6 @@ class Tukey(CentroidOutlier):
         return
 
     def _detect_outliers(self, cols):
-
         from scitbx.math import five_number_summary
 
         outliers = flex.bool(len(cols[0]), False)

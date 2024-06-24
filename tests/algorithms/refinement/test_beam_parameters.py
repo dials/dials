@@ -34,7 +34,6 @@ def test_beam_parameters():
     # random initial orientations and wavelengths with a random parameter shifts
     attempts = 1000
     for i in range(attempts):
-
         # make a random beam vector and parameterise it
         sample_to_source = matrix.col.random(3, 0.5, 1.5).normalize()
         beam = bf.make_beam(sample_to_source, wavelength=random.uniform(0.8, 1.5))

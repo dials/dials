@@ -131,7 +131,6 @@ def test_rotation_angles(spotpredictor):
     for hkl, xyz in zip(
         spotpredictor.integrate_handle.hkl, spotpredictor.integrate_handle.xyzcal
     ):
-
         xds_phi = (
             spotpredictor.scan.get_oscillation(deg=False)[0]
             + xyz[2] * spotpredictor.scan.get_oscillation(deg=False)[1]
@@ -181,7 +180,6 @@ def test_image_coordinates(spotpredictor):
     for hkl, xyz in zip(
         spotpredictor.integrate_handle.hkl, spotpredictor.integrate_handle.xyzcal
     ):
-
         xds_xy = (xyz[0] - 0.5, xyz[1] - 0.5)
 
         # Select the nearest xy to use if there are 2

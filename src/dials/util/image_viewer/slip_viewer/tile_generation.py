@@ -319,7 +319,6 @@ class _Tiles:
         return value
 
     def get_spotfinder_data(self, params):
-
         pointdata = []
         test_pattern = False
         if (

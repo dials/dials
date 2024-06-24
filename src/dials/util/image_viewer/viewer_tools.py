@@ -2,7 +2,6 @@
 Various tools/controls used by the image viewer
 """
 
-
 from __future__ import annotations
 
 import wx

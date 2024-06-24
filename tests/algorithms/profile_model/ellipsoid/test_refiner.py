@@ -46,7 +46,6 @@ def first_derivative(func, x, h):
 
 
 def generate_data(experiments, reflections):
-
     from random import seed
 
     seed(0)
@@ -98,7 +97,6 @@ def generate_data(experiments, reflections):
 
 @pytest.fixture
 def testdata(test_experiment):
-
     TestData = namedtuple(
         "TestData",
         [
@@ -134,7 +132,6 @@ def testdata(test_experiment):
 
 @pytest.fixture
 def refinerdata_testdata(testdata):
-
     experiment = testdata.experiment
     reflections = testdata.reflections
 
@@ -169,9 +166,7 @@ def refinerdata_testdata(testdata):
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (
-                100
-                * exp(-0.5 * (j - 5) ** 2 / 1**2)
-                * exp(-0.5 * (i - 5) ** 2 / 1**2)
+                100 * exp(-0.5 * (j - 5) ** 2 / 1**2) * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:
@@ -330,7 +325,6 @@ def test_ConditionalDistribution(testdata):
 
 
 def test_rotate_vec3_double():
-
     vectors = np.array([[1, 1, 1]], dtype=np.float64).reshape(3, 1) / norm(
         np.array([1, 1, 1], dtype=np.float64)
     )
@@ -344,7 +338,6 @@ def test_rotate_vec3_double():
 
 
 def test_rotate_mat3_double():
-
     A = np.eye(3, dtype=np.float64)
     v1 = np.array([0, 0, 1.0], dtype=np.float64).reshape(3, 1)
     v2 = np.array([1, 1, 1.0], dtype=np.float64).reshape(3, 1)
@@ -471,7 +464,6 @@ def test_ReflectionLikelihood(testdata):
 
 
 def test_Refiner(testdata, refinerdata_testdata):
-
     experiment = testdata.experiment
     data = refinerdata_testdata
 
@@ -486,7 +478,6 @@ def test_Refiner(testdata, refinerdata_testdata):
         fix_unit_cell=True,
         fix_wavelength_spread=True,
     ):
-
         state = ModelState(
             experiment,
             parameterisation,
@@ -515,7 +506,6 @@ def test_Refiner(testdata, refinerdata_testdata):
 
 
 def test_RefinerData(testdata):
-
     experiment = testdata.experiment
     reflections = testdata.reflections
 
@@ -550,9 +540,7 @@ def test_RefinerData(testdata):
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (
-                100
-                * exp(-0.5 * (j - 5) ** 2 / 1**2)
-                * exp(-0.5 * (i - 5) ** 2 / 1**2)
+                100 * exp(-0.5 * (j - 5) ** 2 / 1**2) * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:

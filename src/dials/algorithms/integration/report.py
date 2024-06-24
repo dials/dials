@@ -92,7 +92,6 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         return report
 
     def binned_report(binner, index, data):
-
         # Create the indexers
         indexer_all = binner.indexer(index)
         indexer_sum = binner.indexer(index.select(data["sum"]))
@@ -159,7 +158,6 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         return report
 
     def resolution_bins(experiment, hkl, nbins):
-
         # Create the crystal symmetry object
         cs = crystal.symmetry(
             space_group=experiment.crystal.get_space_group(),

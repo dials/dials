@@ -89,7 +89,6 @@ def beam_centre_raw_image_px(detector, s0):
 
 
 def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
-
     # standard static beam model string
     s = str(beam)
 
@@ -172,7 +171,6 @@ def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
 
 
 def show_goniometer(goniometer):
-
     # standard static goniometer model string
     s = str(goniometer)
 
@@ -252,7 +250,6 @@ def run(args=None):
 
 
 def show_experiments(experiments, show_scan_varying=False):
-
     text = []
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
@@ -316,7 +313,6 @@ def show_experiments(experiments, show_scan_varying=False):
 
 
 def show_image_statistics(experiments, im_type):
-
     if im_type == "raw":
         raw = True
     elif im_type == "corrected":
@@ -439,7 +435,6 @@ def show_reflections(
     max_reflections=None,
     show_identifiers=False,
 ):
-
     text = []
 
     from orderedset import OrderedSet
@@ -659,7 +654,6 @@ def show_reflections(
         column = flex.std_string()
         max_element_lengths = [c.max_element_length() for c in c_strings]
         for i in range(len(c_strings[0])):
-
             column.append(
                 f"%{len(key)}s"
                 % ", ".join(

@@ -33,7 +33,6 @@ class StillsIntegrator(SimpleIntegrator):
             self.collector = StillsOutputCollector()
 
     def run(self, experiment, table):
-
         # first set ids to zero so can integrate (this is how integration
         # finds the image in the imageset)
         ids_map = dict(table.experiment_identifiers())
@@ -83,7 +82,6 @@ class StillsIntegrator(SimpleIntegrator):
 
     @staticmethod
     def integrate(experiments, table, params):
-
         _params = Parameters.from_phil(params.integration)
         experiments[0].scan = None
         _initialize_stills(experiments, _params, table)

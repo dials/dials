@@ -380,7 +380,7 @@ class SpotDensityFilter:
                 cutoff = hist.slot_centers()[i - 1] - 0.5 * hist.slot_width()
 
         sel = np.column_stack(np.where(H > cutoff))
-        for (ix, iy) in sel:
+        for ix, iy in sel:
             flags.set_selected(
                 (
                     (obs_x > xedges[ix])
@@ -460,7 +460,6 @@ class SpotFinderFactory:
                 raise RuntimeError("All experiment scans must contain time_of_flight")
 
         if contains_tof_experiments:
-
             # ToF spots from spallation sources typically have elongated tails
             if params.spotfinder.filter.max_separation < 6:
                 # Based on ISISSXD data

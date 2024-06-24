@@ -10,7 +10,6 @@ from dials.util.mp import batch_multi_node_parallel_map, multi_node_parallel_map
 
 
 def test_LoggingContext():
-
     # configure logging
     dials.util.log.config(verbosity=2)
 
@@ -68,7 +67,6 @@ def log_something(_: Any) -> List[logging.LogRecord]:
     raises=AttributeError,
 )
 def test_cached_log_records(caplog):
-
     # Generate some cached log messages in easy_mp child processes.
     results = multi_node_parallel_map(
         log_something,

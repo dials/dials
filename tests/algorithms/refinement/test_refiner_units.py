@@ -3,7 +3,6 @@ Testing for other refiner/refinement small utilities that can be tested
 alone.
 """
 
-
 from __future__ import annotations
 
 from unittest.mock import Mock, patch

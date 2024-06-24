@@ -1,4 +1,5 @@
 """Test that compute_delta_cchalf returns required values"""
+
 from __future__ import annotations
 
 import json

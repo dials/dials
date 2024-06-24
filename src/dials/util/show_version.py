@@ -6,7 +6,6 @@
 Echo the current DIALS version and build number.
 """
 
-
 from __future__ import annotations
 
 import datetime

@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 def candidate_orientation_matrices(basis_vectors, max_combinations=None):
-
     # select unique combinations of input vectors to test
     # the order of combinations is such that combinations comprising vectors
     # nearer the beginning of the input list will appear before combinations

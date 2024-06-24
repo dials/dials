@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 def rotate_crystal(crystal, Rmat, axis, angle):
-
     Amats = []
     if crystal.num_scan_points > 0:
         scan_pts = list(range(crystal.num_scan_points))
@@ -313,7 +312,6 @@ class PETSOutput:
             )
 
     def write_dyn_cif_pets(self):
-
         self._set_virtual_frames()
 
         cif_filename = self.filename_prefix + ".cif_pets"

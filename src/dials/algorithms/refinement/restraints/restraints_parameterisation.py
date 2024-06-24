@@ -86,7 +86,6 @@ class RestraintsParameterisation:
         xl_unit_cell_parameterisations=None,
         goniometer_parameterisations=None,
     ):
-
         if detector_parameterisations is None:
             detector_parameterisations = []
         if beam_parameterisations is None:
@@ -163,7 +162,6 @@ class RestraintsParameterisation:
         self._param_to_restraint.add(param_i.parameterisation)
 
     def add_restraints_to_group_xl_unit_cell(self, target, experiment_ids, sigma):
-
         # select the right parameterisations, if they exist
         if experiment_ids == "all":
             param_indices = list(self._exp_to_xluc_param.values())

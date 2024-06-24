@@ -96,7 +96,6 @@ class IntensityCalculatorFactory:
 
         data_spec = GaussianRSMultiCrystalReferenceProfileData()
         for e in experiments:
-
             sampler = CircleSampler(
                 e.detector[0].get_image_size(),
                 e.scan.get_array_range(),
@@ -176,7 +175,6 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
 
 
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data):
-
     algorithm = IntensityCalculatorFactory.create(
         data, detector_space=True, deconvolution=True
     )
@@ -312,7 +310,6 @@ def test_gaussianrs_profile_data_pickling(data):
 
     data_spec = GaussianRSMultiCrystalReferenceProfileData()
     for e in experiments:
-
         sampler = CircleSampler(
             e.detector[0].get_image_size(), e.scan.get_array_range(), num_scan_points
         )

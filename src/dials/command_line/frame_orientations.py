@@ -7,7 +7,6 @@ Take into account any scan-varying models.
 Usage: dials.frame_orientations refined.expt
 """
 
-
 from __future__ import annotations
 
 import sys

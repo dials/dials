@@ -92,7 +92,6 @@ class lbfgs_with_curvs:
 def minimize_scitbx_lbfgs(
     target, coords, use_curvatures=True, max_iterations=100, max_calls=None
 ):
-
     termination_params = scitbx.lbfgs.termination_parameters(
         max_iterations=max_iterations,
         max_calls=max_calls,

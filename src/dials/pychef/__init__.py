@@ -110,7 +110,6 @@ class Statistics:
     def __init__(
         self, intensities, dose, n_bins=8, range_min=None, range_max=None, range_width=1
     ):
-
         if isinstance(dose, flex.double):
             sorted_dose = flex.sorted(dose)
             dd = sorted_dose[1:] - sorted_dose[:-1]
@@ -195,7 +194,6 @@ class Statistics:
         self.rd = chef_stats.rd()
 
     def completeness_vs_dose_str(self):
-
         anomalous = self.intensities.anomalous_flag()
 
         title = "Completeness vs. dose:"

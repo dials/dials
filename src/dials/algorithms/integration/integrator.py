@@ -587,9 +587,9 @@ def _finalize_stills(reflections, experiments, params):
                 )
 
         # apply detector gain to summation variances
-        integrated[
-            "intensity.sum.variance"
-        ] *= params.integration.summation.detector_gain
+        integrated["intensity.sum.variance"] *= (
+            params.integration.summation.detector_gain
+        )
     if "background.sum.value" in integrated:
         if (integrated["background.sum.variance"] < 0).count(True) > 0:
             raise Sorry(
@@ -602,9 +602,9 @@ def _finalize_stills(reflections, experiments, params):
             )
             integrated = integrated.select(integrated["background.sum.variance"] > 0)
         # apply detector gain to background summation variances
-        integrated[
-            "background.sum.variance"
-        ] *= params.integration.summation.detector_gain
+        integrated["background.sum.variance"] *= (
+            params.integration.summation.detector_gain
+        )
 
     reflections = integrated
 

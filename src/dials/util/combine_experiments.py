@@ -57,7 +57,6 @@ class CombineWithReference:
         detector=None,
         params=None,
     ):
-
         self.ref_beam = beam
         self.ref_goniometer = goniometer
         self.ref_scan = scan

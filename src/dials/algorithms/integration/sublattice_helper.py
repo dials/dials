@@ -136,7 +136,6 @@ def integrate_coset(self, experiments, indexed):
     else:
         # Dump experiments to disk
         if self.params.output.coset_experiments_filename:
-
             experiments_local.as_json(self.params.output.coset_experiments_filename)
 
         if self.params.output.coset_filename:

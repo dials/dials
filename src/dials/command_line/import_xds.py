@@ -209,7 +209,6 @@ class XDSFileImporter:
 
         # Loop through the data blocks
         for i, exp in enumerate(experiments):
-
             # Print some experiment info
             print("-" * 80)
             print("Experiment %d" % i)

@@ -1,6 +1,5 @@
 """ΔCC½ algorithm definitions"""
 
-
 from __future__ import annotations
 
 import logging
@@ -26,7 +25,6 @@ logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
 
 class CCHalfFromMTZ:
-
     """
     Run a cc-half algorithm using an MTZ file.
     """
@@ -153,7 +151,6 @@ Batch offset can be specified with mtz.batch_offset=
 
 
 class CCHalfFromDials:
-
     """
     Run a cc-half algorithm using dials datafiles.
     """
@@ -383,7 +380,7 @@ class CCHalfFromDials:
                 if exp_id == exp.identifier:
                     tested.extend(list(range(imgrange[0], imgrange[1] + 1)))
             for imgrange in exp.scan.get_valid_image_ranges(exp.identifier):
-                if all([j not in tested for j in range(imgrange[0], imgrange[1] + 1)]):
+                if all(j not in tested for j in range(imgrange[0], imgrange[1] + 1)):
                     table_id = expid_to_tableid[exp.identifier]
                     exclude_images.append([f"{table_id}:{imgrange[0]}:{imgrange[1]}"])
                     logger.info(
@@ -465,7 +462,6 @@ class CCHalfFromDials:
 
 
 class DeltaCCHalf:
-
     """
     Implementation of a ΔCC½ algorithm.
     """

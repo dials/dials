@@ -117,7 +117,6 @@ def get_flex_image_multipanel(
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
     for i, panel in enumerate(detector):
-
         # Determine the pixel size for the panel (in meters), as pixel
         # sizes need not be identical.
         data = image_data[i]

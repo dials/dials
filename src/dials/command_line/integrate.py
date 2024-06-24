@@ -19,7 +19,6 @@ Examples::
   dials.integrate models.expt refined.refl background.algorithm=glm
 """
 
-
 from __future__ import annotations
 
 import logging
@@ -268,7 +267,6 @@ def sample_predictions(experiments, predicted, params):
 
     working_isel = flex.size_t()
     for iexp, exp in enumerate(experiments):
-
         sel = predicted["id"] == iexp
         isel = sel.iselection()
         nrefs = sample_size = len(isel)
@@ -315,7 +313,6 @@ def split_for_scan_range(experiments, reference, scan_range):
 
     # Only do anything is the scan range is set
     if scan_range is not None and len(scan_range) > 0:
-
         # Ensure that all experiments have the same imageset and scan
         iset = [e.imageset for e in experiments]
         scan = [e.scan for e in experiments]

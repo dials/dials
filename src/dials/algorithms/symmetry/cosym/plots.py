@@ -4,7 +4,6 @@ import numpy as np
 
 
 def plot_coords(coords, labels=None, key="cosym_coordinates"):
-
     coord_x = coords[:, 0]
     coord_y = coords[:, 1]
     assert coord_x.size == coord_y.size, (coord_x.size, coord_y.size)

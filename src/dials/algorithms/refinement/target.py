@@ -1,7 +1,6 @@
 """Contains classes used to construct a target function for refinement,
 principally Target and ReflectionManager."""
 
-
 from __future__ import annotations
 
 import math
@@ -142,7 +141,6 @@ class Target:
         restraints_parameterisation=None,
         gradient_calculation_blocksize=None,
     ):
-
         self._experiments = experiments
         self._reflection_predictor = predictor
         self._reflection_manager = reflection_manager
@@ -381,7 +379,8 @@ class Target:
         """Return a list of the matches, split into blocks according to the
         gradient_calculation_blocksize parameter and the number of processes (if relevant).
         The number of blocks will be set such that the total number of reflections
-        being processed by concurrent processes does not exceed gradient_calculation_blocksize"""
+        being processed by concurrent processes does not exceed gradient_calculation_blocksize
+        """
 
         self.update_matches()
 
@@ -566,7 +565,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         absolute_cutoffs=None,
         gradient_calculation_blocksize=None,
     ):
-
         Target.__init__(
             self,
             experiments,
@@ -601,7 +599,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_residuals_and_weights(matches) -> Tuple[flex.double, Any]:
-
         # return residuals and weights as 1d flex.double vectors
         residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
         residuals.extend(matches["phi_resid"])
@@ -614,7 +611,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_squared_residuals(matches):
-
         residuals2 = flex.double.concatenate(matches["x_resid2"], matches["y_resid2"])
         residuals2.extend(matches["phi_resid2"])
 

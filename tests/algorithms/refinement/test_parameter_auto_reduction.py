@@ -54,7 +54,6 @@ def tc():
 
 
 def test_check_and_fail(tc):
-
     # There are 823 reflections
     assert len(tc.refman.get_matches()) == 823
 
@@ -76,7 +75,6 @@ def test_check_and_fail(tc):
 
 
 def test_check_and_fix(tc):
-
     n_det = tc.det_param.num_free()
     n_beam = tc.s0_param.num_free()
     n_xlo = tc.xlo_param.num_free()
@@ -117,7 +115,6 @@ def test_check_and_fix(tc):
 
 
 def test_check_and_remove():
-
     test = _Test()
 
     # Override the single panel model and parameterisation. This test function
@@ -199,7 +196,6 @@ def test_check_and_remove():
 
 
 def test_ignore(tc):
-
     n_det = tc.det_param.num_free()
     n_beam = tc.s0_param.num_free()
     n_xlo = tc.xlo_param.num_free()

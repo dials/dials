@@ -43,7 +43,6 @@ class BeamMixin:
 
     @staticmethod
     def _compose_core(is0, ipn, mu1, mu2, nu, mu1_axis, mu2_axis):
-
         # convert angles to radians
         mu1rad, mu2rad = mu1 / 1000.0, mu2 / 1000.0
 
@@ -127,7 +126,6 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
         return
 
     def compose(self):
-
         # extract direction from the initial state
         ius0 = self._initial_state["unit_s0"]
         ipn = self._initial_state["polarization_normal"]
@@ -153,6 +151,5 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
         return
 
     def get_state(self):
-
         # only a single beam exists, so no multi_state_elt argument is allowed
         return matrix.col(self._model.get_s0())

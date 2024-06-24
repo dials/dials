@@ -112,7 +112,7 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
     # Check for single wavelength
     for exp in experiment_list:
         wl = exp.beam.get_wavelength()
-        if not any([isclose(wl, w, abs_tol=1e-4) for w in wavelengths]):
+        if not any(isclose(wl, w, abs_tol=1e-4) for w in wavelengths):
             wavelengths.append(wl)
     if len(wavelengths) > 1:
         raise ValueError("Experiments have more than one wavelength")

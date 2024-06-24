@@ -160,7 +160,6 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
     Generate a set of resolution ranges from the ice ring parameters
     """
     if params.filter is True:
-
         # Get the crystal symmetry
         crystal_symmetry = crystal.symmetry(
             unit_cell=params.unit_cell, space_group=params.space_group.group()
@@ -226,7 +225,6 @@ def generate_mask(
     # Create the mask for each panel
     masks = []
     for index, panel in enumerate(detector):
-
         mask = flex.bool(flex.grid(reversed(panel.get_image_size())), True)
 
         # Add a border around the image

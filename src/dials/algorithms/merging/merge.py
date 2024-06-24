@@ -164,7 +164,6 @@ def prepare_merged_reflection_table(
 
 
 class MTZDataClass:
-
     """Container class (i.e. Python 3.7 dataclass) for per-wavelength mtz dataset."""
 
     def __init__(
@@ -442,14 +441,14 @@ def truncate(
             "falling back to assumption of a flat, positive prior, i.e.: "
             "  |F| = sqrt((Io+sqrt(Io**2 +2sigma**2))/2.0)"
         )
-        do_french_wilson = lambda ma: ma.enforce_positive_amplitudes()
+        do_french_wilson = lambda ma: ma.enforce_positive_amplitudes()  # noqa: E731
     elif n_refl < min_reflections:
         raise ValueError(
             "Insufficient reflections for French & Wilson procedure. "
             "Either set fallback_to_flat_prior=True or truncate=False."
         )
     elif implementation == "cctbx":
-        do_french_wilson = lambda ma: ma.french_wilson(log=out)
+        do_french_wilson = lambda ma: ma.french_wilson(log=out)  # noqa: E731
     else:
         do_french_wilson = french_wilson
 
@@ -591,7 +590,6 @@ def r_free_flags_from_reference(
     params: phil.scope_extract,
     mtz_datasets: List[MTZDataClass],
 ) -> miller.array:
-
     mtz = iotbx.mtz.object(params.r_free_flags.reference)
     r_free_arrays = []
     for ma in mtz.as_miller_arrays():

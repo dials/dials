@@ -100,7 +100,6 @@ def do_spotfinding(
     experiments: ExperimentList,
     params: libtbx.phil.scope_extract,
 ) -> tuple[ExperimentList, flex.reflection_table]:
-
     # did input have identifier?
     had_identifiers = False
     if all(i != "" for i in experiments.identifiers()):
@@ -176,7 +175,6 @@ def do_spotfinding(
 
     # Save the experiments
     if params.output.experiments:
-
         logger.info(f"Saving experiments to {params.output.experiments}")
         experiments.as_file(params.output.experiments)
 

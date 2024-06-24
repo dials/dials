@@ -49,7 +49,6 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         sd_error_mm = [sde * s for sde, s in zip(sd_error, scale2)]
 
     else:
-
         # Convert Pixel coordinate into mm/rad
         x, y, z = position.parts()
         xy_mm = panel.pixel_to_millimeter(flex.vec2_double(x, y))
@@ -98,7 +97,6 @@ def tof_centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         sd_error_mm = [sde * s for sde, s in zip(sd_error, scale2)]
 
     else:
-
         # Convert Pixel coordinate into mm/tof
         x, y, z = position.parts()
         xy_mm = panel.pixel_to_millimeter(flex.vec2_double(x, y))

@@ -36,7 +36,6 @@ cross_validation_mode=multi parameter=physical.decay_interval parameter_values="
 cross_validation_mode=multi parameter=model parameter_values="array physical"
 """
 
-
 from __future__ import annotations
 
 import itertools

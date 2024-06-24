@@ -81,9 +81,10 @@ def test_for_overlaps(dials_regression: Path):
                 except IndexError:
                     continue
         for i, this_code in enumerate(mask_array):
-            assert not is_overlap(
-                this_code
-            ), "Overlapping foreground and background found at (%d, %d)" % (
-                i % shoebox.xsize(),
-                i // shoebox.xsize(),
+            assert not is_overlap(this_code), (
+                "Overlapping foreground and background found at (%d, %d)"
+                % (
+                    i % shoebox.xsize(),
+                    i // shoebox.xsize(),
+                )
             )

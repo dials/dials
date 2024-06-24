@@ -37,7 +37,6 @@ from . import geometry_phil, minimiser_phil, setup_geometry
 
 
 def test(args=[]):
-
     #############################
     # Setup experimental models #
     #############################

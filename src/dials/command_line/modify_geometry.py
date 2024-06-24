@@ -27,7 +27,6 @@ output {
 def update(
     experiments: ExperimentList, new_params: libtbx.phil.scope_extract
 ) -> ExperimentList:
-
     """
     Modify detector, beam, goniometer and scan in experiments with the values in new_params
     """
@@ -48,7 +47,6 @@ def update(
 
 @dials.util.show_mail_handle_errors()
 def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
-
     usage = "dials.modify_geometry [options] models.expt"
 
     parser = ArgumentParser(

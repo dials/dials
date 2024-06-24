@@ -339,7 +339,7 @@ class XrayFrame(XFBaseClass):
         if self.image_chooser.GetCount() >= self.CHOOSER_SIZE:
             self.image_chooser.Delete(0)
         i = self.image_chooser.GetCount()
-        if type(file_name_or_data) is dict:
+        if isinstance(file_name_or_data, dict):
             self.image_chooser.Insert(key, i, None)
         elif isinstance(file_name_or_data, chooser_wrapper):
             self.image_chooser.Insert(key, i, file_name_or_data)

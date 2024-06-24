@@ -36,7 +36,7 @@ def filter_doubled_cell(solutions):
     accepted_solutions = []
     for i1, s1 in enumerate(solutions):
         doubled_cell = False
-        for (m1, m2, m3) in (
+        for m1, m2, m3 in (
             (2, 1, 1),
             (1, 2, 1),
             (1, 1, 2),

@@ -1,7 +1,6 @@
 """Test analytical calculation of gradients of the target function versus finite
 difference calculations"""
 
-
 from __future__ import annotations
 
 

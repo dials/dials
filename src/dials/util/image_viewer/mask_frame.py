@@ -16,7 +16,6 @@ import dials.util.masking
 
 
 class FloatCtrl(_FloatCtrl):
-
     # override OnFocusLostMethod since calling event.Skip() causes bad things to
     # happen (for reasons I don't understand)
     def OnFocusLost(self, event):
@@ -571,7 +570,6 @@ class MaskSettingsPanel(wx.Panel):
         )
 
         if self._resolution_range_d_min > 0 and self._resolution_range_d_max > 0:
-
             self.params.masking.resolution_range.append(
                 (self._resolution_range_d_min, self._resolution_range_d_max)
             )
@@ -798,7 +796,6 @@ class MaskSettingsPanel(wx.Panel):
         )
 
     def DrawPolygon(self, vertices):
-
         if self._mode_polygon_layer:
             self._pyslip.DeleteLayer(self._mode_polygon_layer)
             self._mode_polygon_layer = None
@@ -916,7 +913,6 @@ class MaskSettingsPanel(wx.Panel):
         self.params.masking.untrusted.append(region)
 
     def AddUntrustedCircle(self, xc, yc, xedge, yedge):
-
         points = [(xc, yc), (xedge, yedge)]
 
         points = [self._pyslip.ConvertView2Geo(p) for p in points]

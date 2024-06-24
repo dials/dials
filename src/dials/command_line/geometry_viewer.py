@@ -335,7 +335,6 @@ class settings_window(wxtbx.utils.SettingsPanel):
         self.GetParent().viewer.OnChar(event)
 
     def add_controls(self):
-
         ctrls = self.create_controls(setting="show_panel_axes", label="Show panel axes")
         self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
 
@@ -576,7 +575,6 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
 
 @show_mail_handle_errors()
 def run(args=None):
-
     import os
 
     from dials.util.options import ArgumentParser, flatten_experiments

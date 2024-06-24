@@ -119,9 +119,11 @@ def get_image_ranges(experiments):
     # Note, if set to 1,1,for scanless experiments then first batch offset in
     # _calculate_batch_offsets is zero below, bad!
     return [
-        e.scan.get_image_range()
-        if (e.scan and e.scan.get_oscillation()[1] != 0.0)
-        else (0, 0)
+        (
+            e.scan.get_image_range()
+            if (e.scan and e.scan.get_oscillation()[1] != 0.0)
+            else (0, 0)
+        )
         for e in experiments
     ]
 

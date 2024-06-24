@@ -210,7 +210,6 @@ def _extract_or_read_imagesets(params):
 
     # Check we have some filenames
     if len(experiments) == 0:
-
         # FIXME Should probably make this smarter since it requires editing here
         # and in dials.import phil scope
         try:
@@ -224,7 +223,6 @@ def _extract_or_read_imagesets(params):
         # Check if a template has been set and print help if not, otherwise try to
         # import the images based on the template input
         if len(params.input.template) > 0:
-
             experiments = ExperimentListFactory.from_templates(
                 params.input.template,
                 image_range=params.geometry.scan.image_range,
@@ -505,7 +503,6 @@ class MetaDataUpdater:
 
         # Loop through imagesets
         for imageset in imageset_list:
-
             # Set the external lookups
             imageset = self.update_lookup(imageset, lookup)
 
@@ -827,7 +824,6 @@ def assert_single_sequence(experiments, params):
     ]
 
     if len(sequences) > 1:
-
         # Print some info about multiple sequences
         diagnose_multiple_sequences(sequences, params)
 
@@ -964,7 +960,6 @@ def do_import(
 
     # Print out info for all experiments
     for experiment in experiments:
-
         # Print some experiment info - override the output of image range
         # if appropriate
         image_range = params.geometry.scan.image_range

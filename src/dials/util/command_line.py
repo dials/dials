@@ -33,7 +33,6 @@ class ProgressBarTimer:
         if percent > 100:
             percent = 100
         if diff_time >= self._update_period or percent >= 100:
-
             # Check the difference in percentage and calculate
             # number of seconds remaining
             diff_perc = percent - self._last_perc
@@ -152,7 +151,6 @@ class ProgressBar:
             string = string + time_string
 
         else:
-
             # Truncate the string
             max_length = self._length - self._indent
             string = string[:max_length]
@@ -207,7 +205,6 @@ class Command:
 
         # Check if we want to print the time or not
         if cls.print_time:
-
             # Get the time string
             time_string = f"{time.time() - cls._start_time:.2f}s"
 
@@ -222,7 +219,6 @@ class Command:
             string = string + time_string
 
         else:
-
             # Truncate the string
             max_length = cls.max_length - cls.indent
             string = string[:max_length]

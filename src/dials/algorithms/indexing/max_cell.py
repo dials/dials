@@ -26,7 +26,6 @@ def find_max_cell(
     logger.debug("Finding suitable max_cell based on %i reflections", len(reflections))
     # Exclude potential ice-ring spots from nearest neighbour analysis if needed
     if filter_ice:
-
         ice_sel = ice_rings_selection(reflections)
         reflections = reflections.select(~ice_sel)
         logger.debug(

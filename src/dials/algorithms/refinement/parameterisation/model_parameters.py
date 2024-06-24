@@ -198,7 +198,6 @@ class ModelParameterisation:
         """
 
         if only_free:
-
             return [x for x in self._param if not x.get_fixed()]
 
         else:
@@ -214,7 +213,6 @@ class ModelParameterisation:
         """
 
         if only_free:
-
             return [x.value for x in self._param if not x.get_fixed()]
 
         else:

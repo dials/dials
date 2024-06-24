@@ -30,7 +30,6 @@ def first_derivative(func, x, h):
 
 
 def test_Simple1MosaicityParameterisation():
-
     p = Simple1MosaicityParameterisation(params=np.array([1e-3]))
 
     assert p.is_angular() is False
@@ -47,7 +46,6 @@ def test_Simple1MosaicityParameterisation():
 
 
 def test_Simple6MosaicityParameterisation():
-
     params = np.array([1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3])
 
     S6 = Simple6MosaicityParameterisation(params=params)
@@ -109,7 +107,6 @@ def test_Simple6MosaicityParameterisation():
 
 
 def test_WavelengthSpreadParameterisation():
-
     params = np.array([1e-3])
 
     p = WavelengthSpreadParameterisation(params=params)
@@ -131,7 +128,6 @@ def check_model_state_with_fixed(
     fix_unit_cell=False,
     fix_orientation=False,
 ):
-
     state = ModelState(
         experiment,
         mosaicity_parameterisation,
@@ -201,7 +197,6 @@ def check_model_state_with_fixed(
 
 
 def test_ModelState(test_experiment):
-
     experiments = [test_experiment]
 
     S1 = Simple1MosaicityParameterisation(np.array([0.1]))
@@ -244,7 +239,6 @@ def check_reflection_model_state_with_fixed(
     fix_unit_cell=False,
     fix_orientation=False,
 ):
-
     state = ModelState(
         experiment,
         mosaicity_parameterisation,
@@ -381,7 +375,6 @@ def check_reflection_model_state_with_fixed(
 
 
 def test_ReflectionModelState(test_experiment):
-
     experiments = [test_experiment]
 
     S1 = Simple1MosaicityParameterisation(np.array([0.01]))
@@ -414,7 +407,6 @@ def test_ReflectionModelState(test_experiment):
 
 
 def generate_data(experiments, reflections):
-
     from random import seed
 
     seed(0)
@@ -459,7 +451,6 @@ def generate_data(experiments, reflections):
 
 @pytest.fixture
 def testdata(test_experiment):
-
     TestData = namedtuple(
         "TestData", ["experiment", "models", "s0", "h", "ctot", "mobs", "Sobs"]
     )

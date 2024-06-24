@@ -17,7 +17,6 @@ Examples::
   dials.generate_mask models.expt d_max=2.00
 """
 
-
 from __future__ import annotations
 
 import logging

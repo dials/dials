@@ -8,7 +8,7 @@ import subprocess
 import pytest
 
 import scitbx.matrix
-from cctbx import sgtbx, uctbx
+from cctbx import crystal, sgtbx, uctbx
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 from dxtbx.serialize import load
 
@@ -414,9 +414,6 @@ def test_change_of_basis_ops_to_minimum_cell_mpro():
         relative_length_tolerance=0.05,
         absolute_angle_tolerance=2,
     )
-
-
-from cctbx import crystal
 
 
 def test_change_of_basis_ops_to_minimum_cell_with_outlier():

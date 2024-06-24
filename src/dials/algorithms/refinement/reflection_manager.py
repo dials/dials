@@ -118,7 +118,6 @@ class BlockCalculator:
     the centre of the block"""
 
     def __init__(self, experiments, reflections):
-
         self._experiments = experiments
         self._reflections = reflections
 
@@ -144,7 +143,6 @@ class BlockCalculator:
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
 
         for iexp, exp in enumerate(self._experiments):
-
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
@@ -186,7 +184,6 @@ class BlockCalculator:
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
 
         for iexp, exp in enumerate(self._experiments):
-
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
@@ -346,7 +343,6 @@ class ReflectionManager:
         outlier_detector=None,
         weighting_strategy_override=None,
     ):
-
         if len(reflections) == 0:
             raise ValueError("Empty reflections table provided to ReflectionManager")
 
@@ -600,7 +596,6 @@ class ReflectionManager:
 
         working_isel = flex.size_t()
         for iexp, exp in enumerate(self._experiments):
-
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             # refs = self._reflections.select(sel)

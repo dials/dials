@@ -3,7 +3,6 @@ Module of functions for handling operations on lists of reflection tables
 and experiment lists.
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -11,14 +10,12 @@ import logging
 
 from orderedset import OrderedSet
 
+import iotbx.phil
 from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
 
 logger = logging.getLogger("dials")
-
-import iotbx.phil
-
 phil_scope = iotbx.phil.parse(
     """
   dataset_selection {

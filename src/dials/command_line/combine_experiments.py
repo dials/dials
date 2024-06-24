@@ -13,8 +13,8 @@ from libtbx.phil import parse
 import dials.util
 from dials.array_family import flex
 from dials.util import log
-from dials.util.combine_experiments import CombineWithReference  # noqa
 from dials.util.combine_experiments import (
+    CombineWithReference,  # noqa
     combine_experiments,
     combine_experiments_no_reflections,
     do_unit_cell_clustering,
@@ -202,7 +202,6 @@ def save_combined_experiments(
     experiments_filename="combined.expt",
     reflections_filename="combined.refl",
 ):
-
     output_experiments_list: List[ExperimentList] = []
     output_reflections_list: List[flex.reflection_table] = []
     expt_names_list: List[str] = []

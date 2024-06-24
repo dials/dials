@@ -279,7 +279,6 @@ def checkdataremains(func):
     """Decorate a filtering method, to raise a ValueError if all data filtered."""
 
     def wrapper(*args, **kwargs):
-
         reflections = func(*args, **kwargs)
 
         if not reflections:

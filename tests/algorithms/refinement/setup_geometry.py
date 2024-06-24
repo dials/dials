@@ -1,6 +1,5 @@
 """Setup experimental geometry for refinement test cases"""
 
-
 from __future__ import annotations
 
 import random
@@ -25,7 +24,6 @@ class Extract:
     def __init__(
         self, master_phil, local_overrides="", cmdline_args=None, verbose=False
     ):
-
         self._verbose = verbose
 
         arg_interpreter = command_line.argument_interpreter(master_phil=master_phil)
@@ -56,7 +54,6 @@ class Extract:
         self.phil = master_phil.format(python_object=temp)
 
     def set_seed(self):
-
         if self._params.random_seed is not None:
             random.seed(self._params.random_seed)
             # set the flex random seed too
@@ -68,11 +65,9 @@ class Extract:
                 print(msg % self._params.random_seed)
 
     def build_goniometer(self):
-
         self.goniometer = GoniometerFactory.known_axis(self._params.goniometer.axis)
 
     def build_beam(self):
-
         if self._params.beam.wavelength.random:
             wavelength = random.uniform(*self._params.beam.wavelength.range)
         else:
@@ -85,7 +80,6 @@ class Extract:
         ]
 
         if self._params.beam.direction.method == "inclination":
-
             if self._params.beam.direction.inclination.random:
                 inclination = random.gauss(
                     0.0, self._params.beam.direction.inclination.angle
@@ -98,24 +92,20 @@ class Extract:
             )
 
         elif self._params.beam.direction.method == "close_to":
-
             temp = self._params.beam.direction.close_to.direction
             beam_dir = random_vector_close_to(
                 temp, sd=self._params.beam.direction.close_to.sd
             )
 
         elif self._params.beam.direction.method == "exactly":
-
             beam_dir = matrix.col(self._params.beam.direction.exactly)
 
         self.beam = BeamFactory.make_beam(unit_s0=beam_dir, wavelength=wavelength)
 
     def build_detector(self):
-
         assert self._params.detector.directions.method in ["close_to", "exactly"]
 
         if self._params.detector.directions.method == "close_to":
-
             temp = self._params.detector.directions.close_to.dir1
             dir1 = random_vector_close_to(
                 temp, sd=self._params.detector.directions.close_to.sd
@@ -127,7 +117,6 @@ class Extract:
             )
 
         elif self._params.detector.directions.method == "exactly":
-
             temp = self._params.detector.directions.exactly.dir1
             dir1 = matrix.col(temp)
 
@@ -138,14 +127,12 @@ class Extract:
         assert self._params.detector.centre.method in ["close_to", "exactly"]
 
         if self._params.detector.centre.method == "close_to":
-
             centre = random_vector_close_to(
                 self._params.detector.centre.close_to.value,
                 sd=self._params.detector.centre.close_to.sd,
             )
 
         elif self._params.detector.centre.method == "exactly":
-
             temp = self._params.detector.centre.exactly.value
             centre = matrix.col(temp)
 
@@ -168,7 +155,6 @@ class Extract:
 
     @staticmethod
     def _build_cell_vec(vec):
-
         if vec.length.random:
             length = random.uniform(*vec.length.range)
         else:
@@ -177,19 +163,16 @@ class Extract:
         assert vec.direction.method in ["close_to", "exactly"]
 
         if vec.direction.method == "close_to":
-
             x = random_vector_close_to(
                 vec.direction.close_to.direction, sd=vec.direction.close_to.sd
             )
 
         elif vec.direction.method == "exactly":
-
             x = matrix.col(vec.direction.exactly.direction)
 
         return length * x
 
     def build_crystal(self):
-
         vecs = [
             self._build_cell_vec(axis)
             for axis in (

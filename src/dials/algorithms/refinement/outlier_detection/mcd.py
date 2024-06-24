@@ -28,7 +28,6 @@ class MCD(CentroidOutlier):
         k3=100,
         threshold_probability=0.975,
     ):
-
         if cols is None:
             cols = ["x_resid", "y_resid", "phi_resid"]
         CentroidOutlier.__init__(
@@ -58,7 +57,6 @@ class MCD(CentroidOutlier):
         return
 
     def _detect_outliers(self, cols):
-
         fast_mcd = FastMCD(
             cols,
             alpha=self._alpha,

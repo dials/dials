@@ -78,7 +78,6 @@ class EllipsoidIntegrator(SimpleIntegrator):
             self.collector = EllipsoidOutputCollector()
 
     def run(self, experiment, table):
-
         # first set ids to zero so can integrate (this is how integration
         # finds the image in the imageset)
         ids_map = dict(table.experiment_identifiers())

@@ -5,6 +5,7 @@ This is separate because the non-dynamic stuff can generally be moved
 out of a setup.py, but mainly because at the moment it's how poetry
 offloads the unresolved build phases.
 """
+
 from __future__ import annotations
 
 import ast

@@ -13,8 +13,8 @@ installer_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 libtbx_path = os.path.join(installer_path, "lib")
 if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
-from libtbx.auto_build import install_distribution
-from libtbx.auto_build import installer_utils
+from libtbx.auto_build import install_distribution  # noqa: E402
+from libtbx.auto_build import installer_utils  # noqa: E402
 
 
 class installer(install_distribution.installer):

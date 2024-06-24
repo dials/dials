@@ -9,7 +9,6 @@ cctbx.python tst_orientation_refinement.py \
 "random_seed=3; engine=LBFGScurvs"
 """
 
-
 from __future__ import annotations
 
 import sys

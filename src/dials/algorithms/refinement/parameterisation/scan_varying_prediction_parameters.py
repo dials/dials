@@ -30,7 +30,6 @@ class SparseFlex:
     structural zeroes."""
 
     def __init__(self, dimension, elements, indices):
-
         if len(elements) != len(indices):
             raise ValueError(
                 "The arrays of elements and indices must be of equal length"
@@ -40,7 +39,6 @@ class SparseFlex:
         self._indices = indices
 
     def select(self, indices):
-
         try:
             indices = indices.iselection()
         except AttributeError:
@@ -96,25 +94,21 @@ class SparseFlex:
         return other
 
     def __mul__(self, other):
-
         other = self._extract_explicit_data(other)
 
         return SparseFlex(self._size, self._data * other, self._indices)
 
     def __rmul__(self, other):
-
         other = self._extract_explicit_data(other)
 
         return SparseFlex(self._size, other * self._data, self._indices)
 
     def __truediv__(self, other):
-
         other = self._extract_explicit_data(other)
 
         return SparseFlex(self._size, self._data / other, self._indices)
 
     def __add__(self, other):
-
         if not isinstance(other, SparseFlex):
             raise TypeError("Addition is only defined between two SparseFlex arrays")
 
@@ -123,7 +117,6 @@ class SparseFlex:
         return SparseFlex(self._size, self._data + other, self._indices)
 
     def __sub__(self, other):
-
         if not isinstance(other, SparseFlex):
             raise TypeError("Subtraction is only defined between two SparseFlex arrays")
 
@@ -132,13 +125,11 @@ class SparseFlex:
         return SparseFlex(self._size, self._data - other, self._indices)
 
     def dot(self, other):
-
         other = self._extract_explicit_data(other)
 
         return SparseFlex(self._size, self._data.dot(other), self._indices)
 
     def rotate_around_origin(self, direction, angle):
-
         angle = self._extract_explicit_data(angle)
         direction = self._extract_explicit_data(direction)
         return SparseFlex(
@@ -146,7 +137,6 @@ class SparseFlex:
         )
 
     def parts(self):
-
         x, y, z = self._data.parts()
         return (
             SparseFlex(self._size, x, self._indices),
@@ -161,7 +151,6 @@ class StateDerivativeCache:
     by that derivative"""
 
     def __init__(self, parameterisations=None):
-
         if parameterisations is None:
             parameterisations = []
         self._cache = dict.fromkeys(parameterisations)
@@ -200,7 +189,6 @@ class StateDerivativeCache:
 
         # Loop over the data for each parameter
         for p_data in entry:
-
             # Reconstitute full array from the cache and pack into a SparseFlex
             total_nelem = sum(pair.iselection.size() for pair in p_data)
             recon = build(total_nelem)
@@ -264,7 +252,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         xl_unit_cell_parameterisations=None,
         goniometer_parameterisations=None,
     ):
-
         if detector_parameterisations is None:
             detector_parameterisations = []
         if beam_parameterisations is None:
@@ -430,7 +417,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         self._prepare_for_compose(reflections, skip_derivatives)
 
         for iexp, exp in enumerate(self._experiments):
-
             # select the reflections of interest
             sel = reflections["id"] == iexp
             isel = sel.iselection()
@@ -453,7 +439,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
             # get state and derivatives for each block
             for block in range(flex.min(blocks), flex.max(blocks) + 1):
-
                 # determine the subset of reflections this affects
                 subsel = isel.select(blocks == block)
                 if len(subsel) == 0:
@@ -497,10 +482,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
                 # set states and derivatives for this detector
                 if dp is not None:  # detector is parameterised
                     if dp.is_multi_state():  # parameterised detector is multi panel
-
                         # loop through the panels in this detector
                         for panel_id, _ in enumerate(exp.detector):
-
                             # get the right subset of array indices to set for this panel
                             subsel2 = subsel.select(panels == panel_id)
                             if len(subsel2) == 0:
@@ -543,7 +526,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
                 else:  # set states for unparameterised detector (dp is None)
                     # loop through the panels in this detector
                     for panel_id, _ in enumerate(exp.detector):
-
                         # get the right subset of array indices to set for this panel
                         subsel2 = subsel.select(panels == panel_id)
                         if len(subsel2) == 0:

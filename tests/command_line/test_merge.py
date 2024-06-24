@@ -1,6 +1,5 @@
 """Tests for dials.merge command line program."""
 
-
 from __future__ import annotations
 
 import json

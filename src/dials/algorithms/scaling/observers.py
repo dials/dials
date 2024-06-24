@@ -100,7 +100,7 @@ def print_scaling_summary(script):
     valid_ranges = get_valid_image_ranges(script.experiments)
     image_ranges = get_image_ranges(script.experiments)
     msg = []
-    for (img, valid, refl) in zip(image_ranges, valid_ranges, script.reflections):
+    for img, valid, refl in zip(image_ranges, valid_ranges, script.reflections):
         if valid:
             if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                 msg.append(
@@ -164,9 +164,9 @@ were considered for use when refining the scaling model.
             if d_min and d_min - max_current_res > 0.005:
                 logger.info(
                     "Resolution limit suggested from CC"
-                    + "\u00BD"
+                    + "\u00bd"
                     + " fit (limit CC"
-                    + "\u00BD"
+                    + "\u00bd"
                     + "=0.3): %.2f",
                     d_min,
                 )

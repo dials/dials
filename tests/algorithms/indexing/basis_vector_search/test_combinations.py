@@ -36,7 +36,6 @@ def test_combinations(setup_rlp):
         target_symmetry_sg_only,
         target_symmetry_ref,
     ):
-
         crystal_models = combinations.candidate_orientation_matrices(
             basis_vectors, max_combinations=50
         )

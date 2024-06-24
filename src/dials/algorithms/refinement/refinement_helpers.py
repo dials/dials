@@ -1,6 +1,5 @@
 """Auxiliary functions for the refinement package"""
 
-
 from __future__ import annotations
 
 import logging
@@ -182,7 +181,6 @@ def get_fd_gradients(mp, deltas, multi_state_elt=None):
     fd_grad = []
 
     for i in range(len(deltas)):
-
         val = p_vals[i]
 
         p_vals[i] -= deltas[i] / 2.0

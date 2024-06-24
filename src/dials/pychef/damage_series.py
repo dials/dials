@@ -227,7 +227,6 @@ def _write_mtz(sel_intensities, sel_doses, fname):
 
 
 def generate_damage_series_mtz(params, doses, intensities):
-
     plots = DamageSeriesPlots(d_max=params.d_max, d_min=params.d_min)
     group_size = params.damage_series.dose_group_size
     assert group_size > 0.0
@@ -271,7 +270,6 @@ def generate_damage_series_mtz(params, doses, intensities):
 
 
 def generate_damage_series(params, experiments, reflection_table):
-
     # first set up plotting stuff
     plots = DamageSeriesPlots(d_max=params.d_max, d_min=params.d_min)
 

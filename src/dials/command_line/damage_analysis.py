@@ -116,7 +116,6 @@ include scope dials.pychef.phil_scope
 
 
 class PychefRunner:
-
     """Class to prepare input data and run the pychef algorithm."""
 
     def __init__(self, intensities, dose, params):
@@ -239,12 +238,16 @@ class PychefRunner:
         )
         logger.info(
             "Interpreting data using:\n  starting_doses=%s\n  dose_per_image=%s",
-            ", ".join("%s" % i for i in start_doses)
-            if len(set(start_doses)) > 1
-            else f" all {start_doses[0]}",
-            ", ".join("%s" % i for i in doses_per_image)
-            if len(set(doses_per_image)) > 1
-            else f" all {doses_per_image[0]}",
+            (
+                ", ".join("%s" % i for i in start_doses)
+                if len(set(start_doses)) > 1
+                else f" all {start_doses[0]}"
+            ),
+            (
+                ", ".join("%s" % i for i in doses_per_image)
+                if len(set(doses_per_image)) > 1
+                else f" all {doses_per_image[0]}"
+            ),
         )
 
         for expt, starting_dose, dose_per_img in zip(

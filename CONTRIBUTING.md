@@ -101,7 +101,7 @@ message that the code in question is special and care should be taken.
   install` - if in the libtbx ecosystem - or manually install the hooks with
   `pre-commit install`. These use the [pre-commit] tool and ensure that
   various sanity checks are run before commit, including import order,
-  formatting, syntax compatibility, basic flake8 checks, lack of conflict
+  formatting, syntax compatibility, basic Ruff checks, lack of conflict
   markers and file size limits. Basically, most of the essential rules will be
   checked automatically by this.
 - **We format python code with [black]**. This means that while writing code
@@ -110,11 +110,11 @@ message that the code in question is special and care should be taken.
   black (the pre-commit hook will help do this for you), but if for some reason
   you miss this, the whole codebase is auto-cleaned once a week. Most IDEs
   and editors have support for running formatters like black automatically.
-- **Avoid introducing new flake8 warnings** - if you feel that it's appropriate
+- **Avoid introducing new Ruff warnings** - if you feel that it's appropriate
   to ignore a warning, mark it up explicitly with a [noqa] comment. The most
   important subset of checks are run as part of the pre-commit checks, but
   please try to resolve any other valid warnings shown with a normal run of
-  flake8. The configuration in the repository turns off any warnings that
+  Ruff. The configuration in the repository turns off any warnings that
   disagree with our standard practice.
 - **We format C++ code with [clang-format]**. We use a configuration for style
   broadly compatible with what our existing prevailing style was. We don't
@@ -127,7 +127,7 @@ message that the code in question is special and care should be taken.
 [black]: https://github.com/psf/black
 [isort]: https://github.com/PyCQA/isort
 [clang-format]: https://clang.llvm.org/docs/ClangFormat.html
-[noqa]: http://flake8.pycqa.org/en/3.7.7/user/violations.html#in-line-ignoring-errors
+[noqa]: http://Ruff.pycqa.org/en/3.7.7/user/violations.html#in-line-ignoring-errors
 [PEP8]: https://www.python.org/dev/peps/pep-0008
 [Google-style]: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
 [Zen of Python]: https://www.python.org/dev/peps/pep-0020/#the-zen-of-python

@@ -190,7 +190,6 @@ class Refinery:
         tracking=None,
         max_iterations=None,
     ):
-
         # reference to PredictionParameterisation, Target and ConstraintsManager
         # objects
         self._parameters = prediction_parameterisation
@@ -515,7 +514,6 @@ class AdaptLbfgs(Refinery):
     """Adapt Refinery for L-BFGS minimiser"""
 
     def __init__(self, *args, **kwargs):
-
         Refinery.__init__(self, *args, **kwargs)
 
         self._termination_params = lbfgs.termination_parameters(
@@ -531,7 +529,6 @@ class AdaptLbfgs(Refinery):
         return self._f, self._g
 
     def compute_functional_gradients_and_curvatures(self):
-
         self.prepare_for_step()
 
         # observation terms
@@ -640,7 +637,6 @@ class LBFGScurvs(AdaptLbfgs):
         return self.run_lbfgs(curvatures=True)
 
     def compute_functional_gradients_diag(self):
-
         L, dL_dp, curvs = self.compute_functional_gradients_and_curvatures()
         self._f = L
         self._g = dL_dp
@@ -668,7 +664,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         tracking=None,
         max_iterations=None,
     ):
-
         Refinery.__init__(
             self,
             target,
@@ -695,7 +690,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         return self.x.norm()
 
     def build_up(self, objective_only=False):
-
         # code here to calculate the residuals. Rely on the target class
         # for this
 
@@ -717,7 +711,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
             blocks = self._target.split_matches_into_blocks(nproc=self._nproc)
 
             if self._nproc > 1:
-
                 # ensure the jacobian is not tracked
                 self._jacobian = None
 
@@ -854,7 +847,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         max_iterations=20,
         **kwds,
     ):
-
         AdaptLstbx.__init__(
             self,
             target,
@@ -883,7 +875,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             return
 
         while True:
-
             # set functional and gradients for the step (to add to the history)
             self._f = self.objective()
             self._g = -self.opposite_of_gradient()
@@ -979,7 +970,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         pass
 
     def _run_core(self):
-
         # add an attribute to the journal
         self.history.add_column("mu")
         self.history.add_column("nu")
@@ -1010,7 +1000,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         self.setup_mu()
 
         while True:
-
             # set functional and gradients for the step
             self._f = self.objective()
             self._g = -self.opposite_of_gradient()

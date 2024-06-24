@@ -363,16 +363,18 @@ def generate_plots(summary_data: dict) -> dict:
                 "yaxis": {"title": "RMSD (px)"},
             },
         },
-        "rmsdz": {
-            "data": rmsdz_data,
-            "layout": {
-                "title": "RMSD (dPsi) per image",
-                "xaxis": {"title": "image number"},
-                "yaxis": {"title": "RMSD dPsi (deg)"},
-            },
-        }
-        if rmsdz_data
-        else {},
+        "rmsdz": (
+            {
+                "data": rmsdz_data,
+                "layout": {
+                    "title": "RMSD (dPsi) per image",
+                    "xaxis": {"title": "image number"},
+                    "yaxis": {"title": "RMSD dPsi (deg)"},
+                },
+            }
+            if rmsdz_data
+            else {}
+        ),
         "rmsdxy_hist": {
             "data": [
                 {
@@ -398,23 +400,25 @@ def generate_plots(summary_data: dict) -> dict:
                 "barmode": "overlay",
             },
         },
-        "rmsdz_hist": {
-            "data": [
-                {
-                    "x": bin_centers_z.tolist(),
-                    "y": hist_z.tolist(),
-                    "type": "bar",
-                    "name": "RMSD dPsi",
+        "rmsdz_hist": (
+            {
+                "data": [
+                    {
+                        "x": bin_centers_z.tolist(),
+                        "y": hist_z.tolist(),
+                        "type": "bar",
+                        "name": "RMSD dPsi",
+                    },
+                ],
+                "layout": {
+                    "title": "Distribution of RMSDs (dPsi)",
+                    "xaxis": {"title": "RMSD dPsi (deg)"},
+                    "yaxis": {"title": "Number of images"},
+                    "bargap": 0,
                 },
-            ],
-            "layout": {
-                "title": "Distribution of RMSDs (dPsi)",
-                "xaxis": {"title": "RMSD dPsi (deg)"},
-                "yaxis": {"title": "Number of images"},
-                "bargap": 0,
-            },
-        }
-        if rmsdz_data
-        else {},
+            }
+            if rmsdz_data
+            else {}
+        ),
     }
     return plots

@@ -31,7 +31,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
         absolute_cutoffs=None,
         gradient_calculation_blocksize=None,
     ):
-
         Target.__init__(
             self,
             experiments,
@@ -86,7 +85,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_residuals_and_weights(matches):
-
         # return residuals and weights as 1d flex.double vectors
         residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
         residuals.extend(matches["delpsical.rad"])
@@ -100,7 +98,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_squared_residuals(matches):
-
         residuals2 = flex.double.concatenate(matches["x_resid2"], matches["y_resid2"])
         residuals2.extend(matches["delpsical2"])
 

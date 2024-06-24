@@ -74,7 +74,6 @@ def make_multi_panel(single_panel_detector):
 
     # apply small random shifts & rotations to each panel
     for p in multi_panel_detector:
-
         # perturb origin vector
         o_multiplier = random.gauss(1.0, 0.01)
         new_origin = random_vector_close_to(p.get_origin(), sd=0.1)
@@ -217,7 +216,6 @@ def test():
     # random initial orientations with a random parameter shift at each
     attempts = 100
     for i in range(attempts):
-
         # create random initial position
         det = Detector(random_panel())
         dp = DetectorParameterisationSinglePanel(det)
@@ -308,7 +306,6 @@ def test():
 
     attempts = 5
     for i in range(attempts):
-
         multi_panel_detector = make_multi_panel(det)
 
         # parameterise this detector
@@ -327,7 +324,6 @@ def test():
         # analytical gradients
 
         for j in range(9):
-
             an_ds_dp = dp.get_ds_dp(multi_state_elt=j)
             fd_ds_dp = get_fd_gradients(dp, [1.0e-7] * dp.num_free(), multi_state_elt=j)
 

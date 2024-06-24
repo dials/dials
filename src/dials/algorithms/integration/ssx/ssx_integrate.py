@@ -29,7 +29,6 @@ def generate_html_report(plots_data, filename):
 
 
 class SimpleIntegrator(ABC):
-
     """Define an interface for ssx prediction/integration processing"""
 
     def __init__(self, params):
@@ -77,7 +76,6 @@ class SimpleIntegrator(ABC):
 
 
 class NullCollector(object):
-
     """
     Defines a null data collector for cases where you don't want
     to record data during the process.
@@ -103,7 +101,6 @@ class NullCollector(object):
 
 
 class OutputCollector(object):
-
     """
     Defines a data collector to log common quantities for all algorithm choices
     for an individual image.
@@ -148,7 +145,6 @@ class OutputCollector(object):
 
 
 class OutputAggregator:
-
     """
     Simple aggregator class to aggregate data from all images and generate
     json data for output/plotting.
