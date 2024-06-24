@@ -194,7 +194,7 @@ class LatticeSearch(indexer.Indexer):
             experiments = ExperimentList()
             for i_expt, expt in enumerate(self.experiments):
                 # XXX Not sure if we still need this loop over self.experiments
-                if expt.scan is not None:
+                if expt.scan is not None and expt.scan.has_property("oscillation"):
                     start, end = expt.scan.get_oscillation_range()
                     if (end - start) > 360:
                         # only use reflections from the first 360 degrees of the scan
