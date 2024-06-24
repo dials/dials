@@ -27,6 +27,7 @@ class MCD(CentroidOutlier):
         k2=2,
         k3=100,
         threshold_probability=0.975,
+        coordinates="xy",
     ):
 
         if cols is None:
