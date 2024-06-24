@@ -244,6 +244,9 @@ class RefinerFactory:
             "flags",
             "shoebox",
             "delpsical.weights",
+            "wavelength",
+            "wavelength_cal",
+            "s0",
         ]
         # NB xyzobs.px.value & xyzcal.px required by SauterPoon outlier rejector
         # NB delpsical.weights is used by ExternalDelPsiWeightingStrategy
@@ -383,6 +386,7 @@ class RefinerFactory:
         obs["x_resid"] = x_calc - x_obs
         obs["y_resid"] = y_calc - y_obs
         obs["phi_resid"] = phi_calc - phi_obs
+        refman.update_residuals()
 
         # determine whether to do basic centroid analysis to automatically
         # determine outlier rejection block
@@ -832,6 +836,9 @@ class Refiner:
             if units == "mm":
                 header.append(name + "\n(mm)")
                 rmsd_multipliers.append(1.0)
+            elif units == "A":
+                header.append(name + "\n(A)")
+                rmsd_multipliers.append(1.0)
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
                 rmsd_multipliers.append(RAD2DEG)
@@ -907,6 +914,8 @@ class Refiner:
                 # will convert other angles in radians to degrees (e.g. for
                 # RMSD_DeltaPsi and RMSD_2theta)
                 header.append(name + "\n(deg)")
+            elif name == "RMSD_wavelength" and units == "frame":
+                header.append(name + "\n(frame)")
             else:  # skip other/unknown RMSDs
                 pass
 
@@ -928,7 +937,7 @@ class Refiner:
             scan = exp.scan
             try:
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
-            except (AttributeError, ZeroDivisionError):
+            except (AttributeError, ZeroDivisionError, RuntimeError):
                 images_per_rad = None
 
             raw_rmsds = self._target.rmsds_for_experiment(iexp)
@@ -945,6 +954,8 @@ class Refiner:
                     rmsds.append(rmsd * px_per_mm[1])
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
+                elif name == "RMSD_wavelength" and units == "frame":
+                    rmsds.append(rmsd)
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)
             rows.append([str(iexp), str(num)] + [f"{r:.5g}" for r in rmsds])
@@ -967,14 +978,14 @@ class Refiner:
     def print_panel_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""
 
-        if len(self._experiments.scans()) > 1:
+        if len(self._experiments.scans()) > 1 and not self._experiments.all_tof():
             logger.warning(
                 "Multiple scans present. Only the first scan will be used "
                 "to determine the image width for reporting RMSDs"
             )
         scan = self._experiments.scans()[0]
         images_per_rad = None
-        if scan:
+        if scan and scan.has_property("oscillation"):
             if scan.get_oscillation(deg=False)[1] != 0.0:
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
 
@@ -995,6 +1006,8 @@ class Refiner:
                     name == "RMSD_DeltaPsi" and units == "rad"
                 ):  # convert radians to degrees for reporting of stills
                     header.append(name + "\n(deg)")
+                elif name == "RMSD_wavelength" and units == "frame":
+                    header.append(name + "\n(frame)")
                 else:  # skip RMSDs that cannot be expressed in image/scan space
                     pass
 
@@ -1021,6 +1034,8 @@ class Refiner:
                         rmsds.append(rmsd * images_per_rad)
                     elif name == "RMSD_DeltaPsi" and units == "rad":
                         rmsds.append(rmsd * RAD2DEG)
+                    elif name == "RMSD_wavelength" and units == "frame":
+                        rmsds.append(rmsd)
                 rows.append([str(ipanel), str(num)] + [f"{r:.5g}" for r in rmsds])
 
             if len(rows) > 0:

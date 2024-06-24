@@ -22,6 +22,7 @@ def find_max_cell(
     filter_ice=True,
     filter_overlaps=True,
     overlaps_border=0,
+    convert_reflections_z_to_deg=True,
 ):
     logger.debug("Finding suitable max_cell based on %i reflections", len(reflections))
     # Exclude potential ice-ring spots from nearest neighbour analysis if needed
@@ -63,6 +64,7 @@ def find_max_cell(
             percentile=nearest_neighbor_percentile,
             histogram_binning=histogram_binning,
             nn_per_bin=nn_per_bin,
+            convert_reflections_z_to_deg=convert_reflections_z_to_deg,
         )
     except AssertionError as e:
         raise DialsIndexError("Failure in nearest neighbour analysis:\n" + str(e))

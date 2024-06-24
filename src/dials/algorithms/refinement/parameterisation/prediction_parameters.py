@@ -418,8 +418,13 @@ class PredictionParameterisation:
             sel = panels == ipanel
             D.set_selected(sel, D_mat)
 
+        if "s0" in reflections:
+            s0 = reflections["s0"]
+        else:
+            s0 = experiment.beam.get_s0()
+
         result = {
-            "s0": experiment.beam.get_s0(),
+            "s0": s0,
             "U": matrix.sqr(experiment.crystal.get_U()),
             "B": matrix.sqr(experiment.crystal.get_B()),
             "D": D,
@@ -967,3 +972,155 @@ class XYPhiPredictionParameterisationSparse(
     @staticmethod
     def _extend_gradient_vectors(results, m, n, keys=("dX_dp", "dY_dp", "dZ_dp")):
         return SparseGradientVectorMixin._extend_gradient_vectors(results, m, n, keys)
+
+
+class LauePredictionParameterisation(PredictionParameterisation):
+    """A basic extension to PredictionParameterisation for Laue data,
+    where gradients for the wavelength of each reflection are also considered."""
+
+    _grad_names = ("dX_dp", "dY_dp", "dwavelength_dp")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        return
+
+    def _local_setup(self, reflections):
+        self._wavelength = reflections["wavelength_cal"]
+        self._r = self._setting_rotation * self._fixed_rotation * self._UB * self._h
+        self._s0 = reflections["s0_cal"]
+        self._e_X_r = (self._setting_rotation * self._axis).cross(self._r)
+        self._e_r_s0 = (self._e_X_r).dot(self._s0)
+        self._ds0_dbeam_p = None
+        return
+
+    def _beam_derivatives(
+        self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by derivatives of the
+        beam parameterisations."""
+
+        # Get required data
+        r = self._r.select(isel)
+        e_X_r = self._e_X_r.select(isel)
+        e_r_s0 = self._e_r_s0.select(isel)
+        D = self._D.select(isel)
+
+        if ds0_dbeam_p is None:
+
+            # get the derivatives of the beam vector wrt the parameters
+            ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
+
+            ds0_dbeam_p = [
+                None if e is None else flex.vec3_double(len(r), e.elems)
+                for e in ds0_dbeam_p
+            ]
+            self._ds0_dbeam_p = ds0_dbeam_p
+
+        dphi_dp = []
+        dpv_dp = []
+
+        # loop through the parameters
+        for der in ds0_dbeam_p:
+
+            if der is None:
+                dphi_dp.append(None)
+                dpv_dp.append(None)
+                continue
+
+            # calculate the derivative of phi for this parameter
+            dphi = (der.dot(r) / e_r_s0) * -1.0
+            dphi_dp.append(dphi)
+
+            # calculate the derivative of pv for this parameter
+            dpv_dp.append(D * (e_X_r * dphi + der))
+
+        return dpv_dp, dphi_dp
+
+    def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
+        """helper function to extend the derivatives lists by derivatives of
+        generic parameterisations."""
+
+        # Get required data
+        h = self._h.select(isel)
+        if b_matrix:
+            B = self._B.select(isel)
+        else:
+            U = self._U.select(isel)
+        D = self._D.select(isel)
+        wavelength = self._wavelength.select(isel)
+        fixed_rotation = self._fixed_rotation.select(isel)
+        setting_rotation = self._setting_rotation.select(isel)
+        r = self._r.select(isel)
+
+        if derivatives is None:
+            # get derivatives of the B/U matrix wrt the parameters
+            derivatives = [
+                None if der is None else flex.mat3_double(len(isel), der.elems)
+                for der in parameterisation.get_ds_dp(use_none_as_null=True)
+            ]
+
+        dpv_dp = []
+        dwavelength_dp = []
+
+        # loop through the parameters
+        for idx, der in enumerate(derivatives):
+            if der is None:
+                dpv_dp.append(None)
+                dwavelength_dp.append(None)
+                continue
+
+            # calculate the derivative of r for this parameter
+            if b_matrix:
+                dr = setting_rotation * fixed_rotation * der * B * h
+            else:
+                dr = setting_rotation * fixed_rotation * U * der * h
+
+            unit_s0 = flex.vec3_double(len(dr), self._experiments[0].beam.get_unit_s0())
+            r_dot_r = r.dot(r)
+            dwavelength = -2 * unit_s0.dot(
+                ((dr * r_dot_r) - ((2 * r) * dr.dot(r))) / (r_dot_r**2)
+            )
+            dwavelength_dp.append(dwavelength)
+
+            # calculate the derivative of pv for this parameter
+            dpv_dp.append(D * (dr - (unit_s0 / wavelength**2) * dwavelength))
+
+        return dpv_dp, dwavelength_dp
+
+    def _xl_orientation_derivatives(
+        self, isel, parameterisation=None, dU_dxlo_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by derivatives of the
+        crystal orientation parameterisations"""
+        return self._xl_derivatives(
+            isel, dU_dxlo_p, b_matrix=True, parameterisation=parameterisation
+        )
+
+    def _xl_unit_cell_derivatives(
+        self, isel, parameterisation=None, dB_dxluc_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal unit cell parameterisations"""
+        return self._xl_derivatives(
+            isel, dB_dxluc_p, b_matrix=False, parameterisation=parameterisation
+        )
+
+    @staticmethod
+    def _calc_dX_dp_and_dY_dp_from_dpv_dp(w_inv, u_w_inv, v_w_inv, dpv_dp):
+        """helper function to calculate positional derivatives from
+        dpv_dp using the quotient rule"""
+
+        dX_dp = []
+        dY_dp = []
+
+        for der in dpv_dp:
+            if der is None:
+                dX_dp.append(None)
+                dY_dp.append(None)
+            else:
+                du_dp, dv_dp, dw_dp = der.parts()
+
+                dX_dp.append(w_inv * (du_dp - dw_dp * u_w_inv))
+                dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
+
+        return dX_dp, dY_dp
