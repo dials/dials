@@ -11,6 +11,7 @@ import logging
 
 from orderedset import OrderedSet
 
+from dxtbx.model import ExperimentList
 from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
@@ -39,6 +40,153 @@ phil_scope = iotbx.phil.parse(
   }
 """
 )
+
+
+class Expeditor(object):
+    def __init__(self, experiments, reflection_tables=None):
+
+        self.experiments = experiments
+        self.reflection_table = None
+
+        self.reflections_with_id_minus_1 = flex.reflection_table()
+        if reflection_tables:
+            if len(reflection_tables) > 1:
+                n_imagesets = 0
+                for t in reflection_tables:
+                    if "imageset_id" in t:
+                        t["imageset_id"] += n_imagesets
+                        n_imagesets += len(set(t["imageset_id"]))
+                self.reflection_table = flex.reflection_table.concat(reflection_tables)
+            else:
+                self.reflection_table = reflection_tables[0]
+            if -1 in set(self.reflection_table["id"]):
+                sel = self.reflection_table["id"] == -1
+                self.reflections_with_id_minus_1 = self.reflection_table.select(sel)
+                self.reflection_table.del_selected(sel)
+        self.crystal_locs = [
+            i for i, expt in enumerate(self.experiments) if expt.crystal
+        ]
+        self.input_has_crystalless_expts = bool(
+            len(self.crystal_locs) != len(self.experiments)
+        )
+        self.crystalless_reflection_tables = []
+
+    def get_unindexed(self):
+        return self.reflections_with_id_minus_1
+
+    def filter_experiments_with_crystals(self):
+        if not self.input_has_crystalless_expts:
+            if not self.reflection_table:
+                return self.experiments, None
+            tables = parse_multiple_datasets([self.reflection_table])
+            if not self.experiments.identifiers():
+                assign_unique_identifiers(tables, self.experiments)
+            return self.experiments, tables
+        if not self.experiments.identifiers():
+            for i, expt in enumerate(self.experiments):
+                strid = ersatz_uuid4()
+                expt.identifier = strid
+                if self.reflection_table:
+                    self.reflection_table.experiment_identifiers()[i] = strid
+
+        expts_with_crystals = ExperimentList(
+            [expt for expt in self.experiments if expt.crystal]
+        )
+        reflection_table = None
+        if self.reflection_table:
+            reflection_table = self.reflection_table.select_on_experiment_identifiers(
+                expts_with_crystals.identifiers()
+            )
+            reflection_table.reset_ids()
+
+            # record some quantities to help later when recombining
+            self.crystalless_reflection_tables = [
+                self.reflection_table.select_on_experiment_identifiers(
+                    [expt.identifier]
+                )
+                if not expt.crystal
+                else None
+                for expt in self.experiments
+            ]
+            reflection_table = reflection_table.split_by_experiment_id()
+        return expts_with_crystals, reflection_table
+
+    def combine_experiments_for_output(
+        self, experiments, reflection_tables=None, include_unindexed=False
+    ):
+        # When reflection tables exist, handle two types of input.
+        # Either the program returns a list of reflections tables, one for each experiment,
+        # or a combined table for all experiments.
+        if reflection_tables:
+            if len(experiments) != len(reflection_tables):
+                if len(reflection_tables) == 1:
+                    reflection_tables[0].assert_experiment_identifiers_are_consistent(
+                        experiments
+                    )
+                    unassigned = None
+                    new_unassigned_sel = reflection_tables[0]["id"] == -1
+                    if any(new_unassigned_sel):
+                        logger.info(f"{new_unassigned_sel.count(True)} unassigned")
+                        unassigned = reflection_tables[0].select(new_unassigned_sel)
+                    reflection_tables = reflection_tables[0].split_by_experiment_id()
+                    if unassigned and include_unindexed:
+                        reflection_tables.append(unassigned)
+                else:
+                    raise ValueError("Mismatch")
+        imagesets = self.experiments.imagesets()
+        if not self.input_has_crystalless_expts:
+            if reflection_tables:
+                for expt, table in zip(experiments, reflection_tables):
+                    if (
+                        "imageset_id" in table and imagesets
+                    ):  # strong check to guarantee
+                        table["imageset_id"] = flex.int(
+                            table.size(), imagesets.index(expt.imageset)
+                        )
+                if self.reflections_with_id_minus_1 and include_unindexed:
+                    reflection_tables.append(self.reflections_with_id_minus_1)
+                return experiments, flex.reflection_table.concat(reflection_tables)
+            return experiments, None
+
+        for i, expt, table in zip(self.crystal_locs, experiments, reflection_tables):
+            other_expts_sharing_scan = self.experiments.where(scan=expt.scan)
+            for j in other_expts_sharing_scan:
+                self.experiments[j].beam = expt.beam
+                self.experiments[j].detector = expt.detector
+                self.experiments[j].goniometer = expt.goniometer
+            self.experiments[i] = expt
+            self.crystalless_reflection_tables[i] = table
+
+        for expt, table in zip(self.experiments, self.crystalless_reflection_tables):
+            if "imageset_id" in table:
+                table["imageset_id"] = flex.int(
+                    table.size(), imagesets.index(expt.imageset)
+                )
+
+        reflections = flex.reflection_table.concat(self.crystalless_reflection_tables)
+        reflections.assert_experiment_identifiers_are_consistent(self.experiments)
+        return self.experiments, reflections
+
+    def generate_experiments_with_updated_crystal(self, experiments, crystal_id):
+        # special function to handle the awkward case of dials.rbs
+        crystals = [
+            expt.crystal for expt in self.experiments if expt.crystal is not None
+        ]
+        crystal = crystals[crystal_id]
+        expts_ids = self.experiments.where(crystal=crystal)
+        # make a copy
+        elist = copy.copy(self.experiments)
+
+        for id_, new_expt in zip(expts_ids, experiments):
+            elist[id_].crystal = new_expt.crystal
+            # also copy across beam, detector and gonio for anything sharing those models
+            scan = elist[id_].scan
+            j_expt = elist.where(scan=scan)
+            for j in j_expt:
+                elist[j].beam = new_expt.beam
+                elist[j].goniometer = new_expt.goniometer
+                elist[j].detector = new_expt.detector
+        return elist
 
 
 def generate_experiment_identifiers(experiments, identifier_type="uuid"):

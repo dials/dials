@@ -1,5 +1,5 @@
 """
-Split a sequence into a set of stills.
+Split an indexed image sequence into a set of indexed stills.
 
 Example:
 
@@ -23,7 +23,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 from dials.array_family import flex
 from dials.model.data import Shoebox
 from dials.util import show_mail_handle_errors
-from dials.util.multi_dataset_handling import generate_experiment_identifiers
+from dials.util.multi_dataset_handling import Expeditor, generate_experiment_identifiers
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.sequence_to_stills")
@@ -89,7 +89,9 @@ def sequence_to_stills(experiments, reflections, params):
             reflections["entering"] = flex.bool(len(reflections), False)
             new_reflections["entering"] = flex.bool()
         else:
-            raise RuntimeError(f"Expected key not found in reflection table: {key}")
+            raise RuntimeError(
+                f"Expected key not found in reflection table: {key}. Is the input data indexed?"
+            )
 
     for expt_id, experiment in enumerate(experiments):
         # Get the goniometer setting matrix
@@ -261,9 +263,13 @@ def run(args=None, phil=phil_scope):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    experiments, reflections = Expeditor(
+        experiments, reflections
+    ).filter_experiments_with_crystals()
+    reflections = flex.reflection_table.concat(reflections)
 
     (new_experiments, new_reflections) = sequence_to_stills(
-        experiments, reflections, params
+        experiments, [reflections], params
     )
     # Write out the output experiments, reflections
     logger.info(f"Saving stills experiments to {params.output.experiments}")

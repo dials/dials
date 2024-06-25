@@ -11,6 +11,7 @@ import dials.util
 from dials.algorithms.refinement.rotation_decomposition import (
     solve_r3_rotation_for_angles_given_axes,
 )
+from dials.util.multi_dataset_handling import Expeditor
 
 matplotlib.use("Agg")
 import matplotlib.gridspec as gridspec
@@ -101,6 +102,7 @@ class Script:
             self.parser.print_help()
             return
         experiments = flatten_experiments(params.input.experiments)
+        experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
 
         # Determine output path
         self._directory = os.path.join(params.output.directory, "scan-varying_model")

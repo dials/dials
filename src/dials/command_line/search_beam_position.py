@@ -499,6 +499,11 @@ def run(args=None):
     if params.nproc is libtbx.Auto:
         params.nproc = CPU_COUNT
 
+    if any(experiments.crystals()):
+        raise Sorry(
+            "dials.search_beam_position can only be run on the results of spotfinding"
+        )
+
     imagesets = experiments.imagesets()
     # Split all the refln tables by ID, corresponding to the respective imagesets
     reflections = [

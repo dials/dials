@@ -66,10 +66,8 @@ def run(args=None):
         parser.print_help()
         sys.exit(0)
 
-    assert len(experiments) == 1
-    imagesets = experiments.imagesets()
-
-    imageset = imagesets[0]
+    assert len(experiments.imagesets()) == 1
+    imageset = experiments.imagesets()[0]
     goniometer = imageset.get_goniometer()
     detector = imageset.get_detector()
     scan = imageset.get_scan()

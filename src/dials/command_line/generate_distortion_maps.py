@@ -199,13 +199,9 @@ def run(args=None):
         parser.print_help()
         exit()
 
-    assert len(experiments) == 1
+    assert len(experiments.imagesets()) == 1
 
-    imagesets = experiments.imagesets()
-
-    assert len(imagesets) == 1
-
-    imageset = imagesets[0]
+    imageset = experiments.imagesets()[0]
 
     if params.mode == "translate":
         op = params.translate

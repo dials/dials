@@ -11,6 +11,7 @@ from dxtbx.serialize import load
 
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import (
+    Expeditor,
     assign_unique_identifiers,
     parse_multiple_datasets,
     renumber_table_id_columns,
@@ -59,6 +60,87 @@ def reflections_024(reflections):
     reflections[1].experiment_identifiers()[1] = "2"
     reflections[2].experiment_identifiers()[4] = "4"
     return reflections
+
+
+def test_expeditor(dials_data, run_in_tmp_path):
+    # for old-style reflection tables, experiment lists
+    # the option parser gives a single elist (len N) but M tables
+    # corresponding to the M input datafiles.
+
+    # most programs that work on want the tables split into N individual tables e.g. scale, cosym,
+    # others dont e.g. refine, so then these will need concatenating
+
+    # e.g two datafiles with two sweep in
+    from dxtbx.model import Crystal
+    from dxtbx.model.experiment_list import ExperimentListFactory
+
+    from dials.util.options import reflections_and_experiments_from_files
+    from dials.util.phil import FilenameDataWrapper
+
+    loc = dials_data("semisynthetic_multilattice", pathlib=True)
+    # use the exact same process as when loading through optionparser.
+    reflections = [
+        FilenameDataWrapper(
+            filename="a",
+            data=flex.reflection_table.from_file(loc / "ag_strong_1_50.refl"),
+        ),
+        FilenameDataWrapper(
+            filename="a",
+            data=flex.reflection_table.from_file(loc / "bh_strong_1_50.refl"),
+        ),
+    ]
+    experiments = [
+        FilenameDataWrapper(
+            filename="a",
+            data=ExperimentListFactory.from_json_file(
+                loc / "ag_imported_1_50.expt", check_format=False
+            ),
+        ),
+        FilenameDataWrapper(
+            filename="a",
+            data=ExperimentListFactory.from_json_file(
+                loc / "bh_imported_1_50.expt", check_format=False
+            ),
+        ),
+    ]
+
+    reflections, experiments = reflections_and_experiments_from_files(
+        reflections, experiments
+    )
+    # move test to use indexed data
+    for expt in experiments:
+        expt.crystal = Crystal.from_dict(
+            {
+                "__id__": "crystal",
+                "real_space_a": [1.0, 0.0, 0.0],
+                "real_space_b": [0.0, 1.0, 0.0],
+                "real_space_c": [0.0, 0.0, 2.0],
+                "space_group_hall_symbol": " C 2y",
+            }
+        )
+    expeditor = Expeditor(experiments, reflections)
+    expts, refls = expeditor.filter_experiments_with_crystals()
+    assert len(expts) == 2
+    assert len(refls) == 2
+    for i, table in enumerate(refls):
+        assert set(table["id"]) == {i}
+
+    # process may reset ids:
+    refls[1]["id"] = flex.int(refls[1].size(), 0)
+
+    # now rejoin for output
+    out_expts, out_refls = expeditor.combine_experiments_for_output(expts, refls)
+    assert isinstance(out_refls, flex.reflection_table)
+    assert isinstance(out_expts, ExperimentList)
+    assert set(out_refls["id"]) == {0, 1}  # make sure correctly updated.
+    # assert set(out_refls["imageset_id"]) == set([0,1]) for indexed files
+
+    # make sure it works with only elists, where this is effectively a nullop
+    expeditor = Expeditor(experiments)
+    expts, _ = expeditor.filter_experiments_with_crystals()
+
+    # now rejoin for output
+    out_expts, _ = expeditor.combine_experiments_for_output(expts)
 
 
 def test_select_specific_datasets_using_id(experiments_024, reflections_024):

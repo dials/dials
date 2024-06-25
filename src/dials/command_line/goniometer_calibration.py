@@ -4,6 +4,7 @@ import iotbx.phil
 from scitbx import matrix
 
 import dials.util
+from dials.util.multi_dataset_handling import Expeditor
 
 help_message = """
 dials.goniometer_calibration is a tool to aid calibration of multi-axis
@@ -60,6 +61,10 @@ def run(args=None):
         return
 
     experiments = flatten_experiments(params.input.experiments)
+
+    expeditor = Expeditor(experiments)
+    experiments, _ = expeditor.filter_experiments_with_crystals()
+
     if len(experiments) <= 1:
         parser.print_help()
         return
