@@ -377,7 +377,8 @@ class CorrelationMatrix:
         linkage_mat_as_dict = linkage_matrix_to_dict(linkage_matrix)
         for d in linkage_mat_as_dict.values():
             # Difference in indexing between linkage_mat_as_dict and datasets, so have i-1
-            d["datasets"] = [self.ids_to_identifiers_map[i - 1] for i in d["datasets"]]
+            real_num = [self.labels[i - 1] for i in d["datasets"]]
+            d["datasets"] = [self.ids_to_identifiers_map[i] for i in real_num]
 
         return linkage_mat_as_dict
 
