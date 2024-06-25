@@ -169,7 +169,7 @@ Feedback
 
 If you encounter any problems using DIALS or xia2, or indeed have any other
 feedback (positive or negative - we love to hear from you either way),
-please contact dials-support@lists.sourceforge.net or xia2.support@gmail.com
-respectively.
+please contact log feedback at https://github.com/dials/dials/issues or
+https://github.com/xia2/xia2/issues respectively.
 
 .. _xia2: https://xia2.github.io/
