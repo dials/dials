@@ -65,7 +65,10 @@ class EllipsoidOutputCollector(OutputCollector):
 
     def collect_after_integration(self, experiment, reflection_table):
         super().collect_after_integration(experiment, reflection_table)
-        p = flumpy.to_numpy(reflection_table["partiality"])
+        if "partiality_applied" in reflection_table:
+            p = flumpy.to_numpy(reflection_table["partiality_applied"])
+        else:
+            p = flumpy.to_numpy(reflection_table["partiality"])
         bins = np.linspace(0, 1, 11)
         hist = np.histogram(p, bins)
         self.data["partiality"] = hist[0]
@@ -146,7 +149,12 @@ class EllipsoidIntegrator(SimpleIntegrator):
         # do we want to add unmatched i.e. strong spots which weren't predicted?
         self.collector.collect_after_prediction(predicted, table)
 
-        predicted = self.integrate(experiment, predicted, sigma_d)
+        predicted = self.integrate(
+            experiment,
+            predicted,
+            sigma_d,
+            self.params.ellipsoid.integration.partiality.apply,
+        )
         self.collector.collect_after_integration(experiment, predicted)
 
         return experiment, predicted, self.collector
@@ -230,11 +238,12 @@ class EllipsoidIntegrator(SimpleIntegrator):
         return reflection_table
 
     @staticmethod
-    def integrate(experiment, reflection_table, sigma_d):
+    def integrate(experiment, reflection_table, sigma_d, apply_p_correction=False):
         reflection_table = final_integrator(
             ExperimentList([experiment]),
             reflection_table,
             sigma_d,
+            apply_p_correction=apply_p_correction,
         )
         return reflection_table
 
