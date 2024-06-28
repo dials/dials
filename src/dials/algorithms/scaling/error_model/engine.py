@@ -7,6 +7,7 @@ import logging
 
 from dials.algorithms.refinement.engine import SimpleLBFGS
 from dials.algorithms.scaling.error_model.error_model import (
+    BasicErrorModel,
     ErrorModelA_APM,
     ErrorModelB_APM,
     ErrorModelRegressionAPM,
@@ -22,8 +23,8 @@ logger = logging.getLogger("dials")
 
 
 def run_error_model_refinement(
-    model, Ih_table, min_partiality=0.4, use_stills_filtering=False
-):
+    model: BasicErrorModel, Ih_table, min_partiality=0.4, use_stills_filtering=False
+) -> BasicErrorModel:
     """
     Refine an error model for the input data, returning the model.
 
