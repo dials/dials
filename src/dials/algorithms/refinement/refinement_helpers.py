@@ -353,6 +353,9 @@ def compute_radial_and_transverse_residuals(experiments, reflections, two_theta=
         tto = obs_lab_coords.angle(all_s0)
         ttc = calc_lab_coords.angle(all_s0)
 
+        d = all_s0.norms() / 2 / flex.sin(ttc / 2)
+        reflections["delpsidstar"] = reflections["delpsical.rad"] * flex.sqrt(4.0 / d)
+
     # The radial vector points from the center of the reflection to the beam center
     radial_vectors = (obs_lab_coords - beam_centre_lab).each_normalize()
     # The transverse vector is orthogonal to the radial vector and the beam vector

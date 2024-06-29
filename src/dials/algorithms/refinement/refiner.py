@@ -390,14 +390,16 @@ class RefinerFactory:
 
         if (
             params.refinement.reflections.outlier.algorithm == "mcd"
-            and params.refinement.reflections.outlier.mcd.coordinates
+            and params.refinement.reflections.outlier.mcd.positional_coordinates
             in ("radial_transverse", "deltatt_transverse")
         ):
             compute_radial_and_transverse_residuals(
                 experiments,
                 obs,
-                two_theta=params.refinement.reflections.outlier.mcd.coordinates
-                == "deltatt_transverse",
+                two_theta=params.refinement.reflections.outlier.mcd.positional_coordinates
+                == "deltatt_transverse"
+                or params.refinement.reflections.outlier.mcd.positional_coordinates
+                == "delpsidstar",
             )
 
         # determine whether to do basic centroid analysis to automatically
