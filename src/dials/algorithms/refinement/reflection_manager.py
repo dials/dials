@@ -265,23 +265,33 @@ class ReflectionManagerFactory:
         if params.outlier.algorithm in ("null", None):
             outlier_detector = None
         else:
-            if (
-                params.outlier.algorithm == "mcd"
-                and params.outlier.mcd.coordinates == "radial_transverse"
-            ):
-                colnames = ["r_resid", "t_resid"]
-            elif (
-                params.outlier.algorithm == "mcd"
-                and params.outlier.mcd.coordinates == "deltatt_transverse"
-            ):
-                colnames = ["twotheta_resid", "t_resid"]
+            if params.outlier.algorithm == "mcd":
+                if params.outlier.mcd.positional_coordinates in ("auto", libtbx.Auto):
+                    params.outlier.mcd.positional_coordinates = "xy"
+                if params.outlier.mcd.rotational_coordinates in ("auto", libtbx.Auto):
+                    if do_stills:
+                        params.outlier.mcd.rotational_coordinates = "null"
+                    else:
+                        params.outlier.mcd.rotational_coordinates = "deltapsi"
+
+                if params.outlier.mcd.positional_coordinates == "radial_transverse":
+                    colnames = ["r_resid", "t_resid"]
+                elif params.outlier.mcd.positional_coordinates == "deltatt_transverse":
+                    colnames = ["twotheta_resid", "t_resid"]
+                else:
+                    colnames = ["x_resid", "y_resid"]
+
+                if params.outlier.mcd.rotational_coordinates == "phi":
+                    colnames.append("phi_resid")
+                elif params.outlier.mcd.rotational_coordinates == "deltapsi":
+                    colnames.append("delpsical.rad")
+                elif params.outlier.mcd.rotational_coordinates == "delpsidstar":
+                    colnames.append("delpsidstar")
             else:
                 colnames = ["x_resid", "y_resid"]
             if do_stills:
-                colnames.append("delpsical.rad")
                 params.outlier.block_width = None
-            else:
-                colnames.append("phi_resid")
+
             from dials.algorithms.refinement.outlier_detection import (
                 CentroidOutlierFactory,
             )
