@@ -154,9 +154,9 @@ class ProfilesFrame(wx.Frame):
             # the direction through the Ewald sphere
             vals2D = profile["data"].sum(axis=0)
             cmap = copy.copy(
-                matplotlib.cm.get_cmap(
+                matplotlib.colormaps[
                     self.cmap_choice.GetString(self.cmap_choice.GetSelection())
-                )
+                ]
             )
 
             # If any X, Y position is masked down the summed Z stack then mask

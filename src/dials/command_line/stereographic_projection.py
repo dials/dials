@@ -357,7 +357,7 @@ def plot_projections(
         epochs = flex.double(epochs)
         epochs -= flex.min(epochs)
         epochs /= flex.max(epochs)
-        cmap = matplotlib.cm.get_cmap(colour_map)
+        cmap = matplotlib.colormaps[colour_map]
         colours = [cmap(e) for e in epochs]
     elif colours is None or len(colours) == 0:
         colours = ["b"] * len(projections_all)
