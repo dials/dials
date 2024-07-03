@@ -132,6 +132,8 @@ So far the data were processed with a triclinic unit cell, which is usually OK b
 
 This will look at the shape of the unit cell and determine the maximum possible symmetry based on the cell parameters, with some tolerance. Each of the possible symmetry operations will be individually tested and scored, and those operations identified as being present will be composed into the point group to be assigned to the data. An attempt is then made to estimate the space group from the presence or absence of axial reflections: this is rather less reliable than the point group determination but also less important for the scaling. After the point group has been determined the reflections will be reindexed automatically to match the correct setting, ensuring that the data are correctly prepared for scaling.
 
+.. note:: ``dials.symmetry`` will only suggest one of the 65 Sohncke space groups relevant for chiral molecules. It will not detect mirrors or glide planes.
+
 
 Scaling
 -------
