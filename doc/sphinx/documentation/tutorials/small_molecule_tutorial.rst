@@ -227,19 +227,14 @@ However these may be useful in later structure refinement.
 Exporting
 ---------
 
-The output data are by default saved in the standard DIALS reflection format, which is not particularly useful. In MX, a standard format is MTZ which includes the unit cell and symmetry information with the reflection data. This is created with
+The output data are by default saved in the standard DIALS reflection format, which is not particularly useful. DIALS is able to convert this to SHELX format though. This can be done by
 
 .. code-block:: bash
 
-  dials.export scaled.refl scaled.expt
+  dials.export scaled.refl scaled.expt format=shelx shelx.ins=lcys.ins shelx.hklout=lcys.hkl composition=CHNOS
 
-And there is a useful "jiffy" included with xia2 to convert this to SHELX format and generate .ins and .hkl files for structure solution and refinement viz:
 
-.. code-block:: bash
-
-  xia2.to_shelx scaled.mtz lcys CHNOS
-
-Such that you can then run
+So that you can then run
 
 .. code-block:: bash
 
