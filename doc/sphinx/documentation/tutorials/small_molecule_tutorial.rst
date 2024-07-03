@@ -117,7 +117,7 @@ which will integrate each sweep in sequence, again using all available cores. Af
 
 .. code-block:: bash
 
-  dials.reciprocal_lattice_viewer integrated.refl integrated.expt
+  dials.image_viewer integrated.refl integrated.expt
 
 
 
