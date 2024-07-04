@@ -783,7 +783,8 @@ class Indexer:
                 rotation_matrix_differences(self.refined_experiments.crystals())
             )
 
-        self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
+        if "xyzcal.mm" in self.refined_reflections:
+            self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
 
     def _unit_cell_volume_sanity_check(self, original_experiments, refined_experiments):
         # sanity check for unrealistic unit cell volume increase during refinement
