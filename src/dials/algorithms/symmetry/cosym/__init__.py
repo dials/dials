@@ -267,7 +267,79 @@ class CosymAnalysis(symmetry_base, Subject):
 
     def _determine_dimensions(self):
         if self.params.dimensions is Auto and self.target.dim == 2:
-            self.params.dimensions = 2
+            import statistics
+
+            from scipy import linalg
+            from scipy.stats import norm
+
+            e_vals, e_vecs = linalg.eig(self.target.rij_matrix)
+            significant_e_vals = [float(e_vals[0].real)]
+            e_vals = [float(i.real) for i in e_vals[1:]]
+            mean = statistics.mean(e_vals)
+            sigma = statistics.stdev(e_vals)
+            for i in e_vals:
+                z_score = (i - mean) / sigma
+                p_value = norm.sf(abs(z_score))
+                print(p_value)
+                if p_value < 0.001:
+                    significant_e_vals.append(i)
+
+            print(significant_e_vals)
+
+            logger.info("=" * 80)
+            logger.info(
+                "\nAutomatic determination of number of dimensions for analysis"
+            )
+            dimensions = []
+            functional = []
+            for dim in range(1, self.target.dim + 5):
+                logger.info("Testing dimension: %i", dim)
+                self.target.set_dimensions(dim)
+                max_calls = self.params.minimization.max_calls
+                self._optimise(
+                    self.params.minimization.engine,
+                    max_iterations=self.params.minimization.max_iterations,
+                    max_calls=min(20, max_calls) if max_calls else max_calls,
+                )
+                dimensions.append(dim)
+                functional.append(self.minimizer.fun)
+
+            # Find the elbow point of the curve, in the same manner as that used by
+            # distl spotfinder for resolution method 1 (Zhang et al 2006).
+            # See also dials/algorithms/spot_finding/per_image_analysis.py
+
+            x = np.array(dimensions)
+            y = np.array(functional)
+            slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
+            p_m = slopes.argmin()
+
+            x1 = matrix.col((x[p_m], y[p_m]))
+            x2 = matrix.col((x[-1], y[-1]))
+
+            gaps = []
+            v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
+
+            for i in range(p_m, len(x)):
+                x0 = matrix.col((x[i], y[i]))
+                r = x1 - x0
+                g = abs(v.dot(r))
+                gaps.append(g)
+
+            p_g = np.array(gaps).argmax()
+
+            x_g = x[p_g + p_m]
+
+            logger.info(
+                dials.util.tabulate(
+                    zip(dimensions, functional), headers=("Dimensions", "Functional")
+                )
+            )
+            logger.info("Best number of dimensions: %i", x_g)
+            self.target.set_dimensions(int(x_g))
+            logger.info("Using %i dimensions for analysis", self.target.dim)
+
+            exit()
+            # self.params.dimensions = 2
         elif self.params.dimensions is Auto:
             logger.info("=" * 80)
             logger.info(

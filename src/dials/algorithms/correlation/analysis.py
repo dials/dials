@@ -121,6 +121,7 @@ class CorrelationMatrix:
 
         self.params.lattice_group = self.datasets[0].space_group_info()
         self.params.space_group = self.datasets[0].space_group_info()
+        self.params.dimensions = 5
 
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
