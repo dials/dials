@@ -74,6 +74,17 @@ dimensions = Auto
   .type = int(value_min=2)
   .short_caption = "Dimensions"
 
+clustering
+  .short_caption = "Clustering optimisation"
+{
+  optimise_dimensions = False
+    .type = bool
+    .short_caption = "Turn on to optimise clustering dimensions"
+  significance = 0.01
+    .type = float
+    .short_caption = "Significance of eigenvalues of rij to increase dimensions"
+}
+
 use_curvatures = True
   .type = bool
   .short_caption = "Use curvatures"
@@ -266,80 +277,50 @@ class CosymAnalysis(symmetry_base, Subject):
         )
 
     def _determine_dimensions(self):
-        if self.params.dimensions is Auto and self.target.dim == 2:
-            import statistics
+        if (
+            self.params.dimensions is Auto
+            and self.target.dim == 2
+            and not self.params.clustering.optimise_dimensions
+        ):
+            self.params.dimensions = 2
 
+        elif self.params.clustering.optimise_dimensions and self.target.dim == 2:
             from scipy import linalg
-            from scipy.stats import norm
 
             e_vals, e_vecs = linalg.eig(self.target.rij_matrix)
-            significant_e_vals = [float(e_vals[0].real)]
-            e_vals = [float(i.real) for i in e_vals[1:]]
-            mean = statistics.mean(e_vals)
-            sigma = statistics.stdev(e_vals)
-            for i in e_vals:
-                z_score = (i - mean) / sigma
-                p_value = norm.sf(abs(z_score))
-                print(p_value)
-                if p_value < 0.001:
-                    significant_e_vals.append(i)
+            # significant_e_vals = [i for i in e_vals if i > 0]
 
-            print(significant_e_vals)
+            # from statistics import mean, stdev
 
-            logger.info("=" * 80)
-            logger.info(
-                "\nAutomatic determination of number of dimensions for analysis"
-            )
-            dimensions = []
-            functional = []
-            for dim in range(1, self.target.dim + 5):
-                logger.info("Testing dimension: %i", dim)
-                self.target.set_dimensions(dim)
-                max_calls = self.params.minimization.max_calls
-                self._optimise(
-                    self.params.minimization.engine,
-                    max_iterations=self.params.minimization.max_iterations,
-                    max_calls=min(20, max_calls) if max_calls else max_calls,
+            from scipy import stats
+
+            # Remove first one always large and can skew stats
+            # What to see how many other relevant ones
+            test_for_sig = e_vals[1:]
+            test_for_sig = [float(i.real) for i in test_for_sig]
+            # test_mean = mean(test_for_sig)
+            # test_std = stdev(test_for_sig)
+
+            test_z = stats.zscore(test_for_sig)
+            p_vals = stats.norm.sf(abs(test_z))
+
+            sig_p_vals = [i for i in p_vals if i < self.params.clustering.significance]
+
+            # print(len(sig_p_vals) + 1)
+            # print(len(significant_e_vals) + 1)
+
+            # Because cut first large one out of the calculation so needs +1
+            self.params.dimensions = len(sig_p_vals) + 1
+            self.target.dim = self.params.dimensions
+            if self.params.dimensions > 2:
+                logger.info("=" * 80)
+                logger.info("\nEigenvalues of rij matrix calculated:")
+                logger.debug(e_vals)
+                logger.info(
+                    f"\n{self.params.dimensions} dimensions identified from {len(sig_p_vals) +1} significantly large eigenvalues with p-value < {self.params.clustering.significance}"
                 )
-                dimensions.append(dim)
-                functional.append(self.minimizer.fun)
+                logger.info("=" * 80)
 
-            # Find the elbow point of the curve, in the same manner as that used by
-            # distl spotfinder for resolution method 1 (Zhang et al 2006).
-            # See also dials/algorithms/spot_finding/per_image_analysis.py
-
-            x = np.array(dimensions)
-            y = np.array(functional)
-            slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
-            p_m = slopes.argmin()
-
-            x1 = matrix.col((x[p_m], y[p_m]))
-            x2 = matrix.col((x[-1], y[-1]))
-
-            gaps = []
-            v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
-
-            for i in range(p_m, len(x)):
-                x0 = matrix.col((x[i], y[i]))
-                r = x1 - x0
-                g = abs(v.dot(r))
-                gaps.append(g)
-
-            p_g = np.array(gaps).argmax()
-
-            x_g = x[p_g + p_m]
-
-            logger.info(
-                dials.util.tabulate(
-                    zip(dimensions, functional), headers=("Dimensions", "Functional")
-                )
-            )
-            logger.info("Best number of dimensions: %i", x_g)
-            self.target.set_dimensions(int(x_g))
-            logger.info("Using %i dimensions for analysis", self.target.dim)
-
-            exit()
-            # self.params.dimensions = 2
         elif self.params.dimensions is Auto:
             logger.info("=" * 80)
             logger.info(
