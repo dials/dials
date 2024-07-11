@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import contextmanager
 from io import StringIO
 from typing import List, Optional, Tuple
@@ -35,7 +36,11 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
 )
 from dials.array_family import flex
-from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
+from dials.util.export_mtz import (
+    GemmiMergedMTZWriter,
+    MADMergedMTZWriter,
+    MergedMTZWriter,
+)
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.resolution_analysis import resolution_cc_half
 
@@ -213,7 +218,10 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
     if len(mtz_datasets) > 1:
         writer = MADMergedMTZWriter
     else:
-        writer = MergedMTZWriter
+        if "GEMMI_MTZ" in os.environ:
+            writer = GemmiMergedMTZWriter
+        else:
+            writer = MergedMTZWriter
 
     mtz_writer = writer(
         mtz_datasets[0].merged_array.space_group(),

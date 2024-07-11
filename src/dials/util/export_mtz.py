@@ -189,6 +189,14 @@ class MADMergedMTZWriter(MergedMTZWriter):
         )
 
 
+class GemmiMergedMTZWriter:
+    def __init__(self, space_group, unit_cell=None):
+        """If a unit cell is provided, will be used as default unless specified
+        for each crystal."""
+        self.space_group = space_group
+        self.unit_cell = unit_cell
+
+
 def add_batch_list(
     mtz,
     image_range,
