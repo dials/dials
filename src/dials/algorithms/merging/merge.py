@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from contextlib import contextmanager
 from io import StringIO
 from typing import List, Optional, Tuple
@@ -17,6 +16,11 @@ from iotbx import mtz, phil
 from iotbx.reflection_file_editor import is_rfree_array
 from iotbx.reflection_file_utils import get_r_free_flags_scores
 from mmtbx.scaling import data_statistics
+
+try:
+    import gemmi
+except ModuleNotFoundError:
+    gemmi = None
 
 from dials.algorithms.merging.reporting import (
     MergeJSONCollector,
@@ -215,13 +219,13 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
         An iotbx mtz file object.
     """
 
+    if gemmi:
+        return make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array)
+
     if len(mtz_datasets) > 1:
         writer = MADMergedMTZWriter
     else:
-        if "GEMMI_MTZ" in os.environ:
-            writer = GemmiMergedMTZWriter
-        else:
-            writer = MergedMTZWriter
+        writer = MergedMTZWriter
 
     mtz_writer = writer(
         mtz_datasets[0].merged_array.space_group(),
@@ -254,6 +258,20 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
         )
 
     return mtz_writer.mtz_file
+
+
+def make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array: miller.array = None):
+
+    writer = GemmiMergedMTZWriter
+
+    mtz_writer = writer(
+        mtz_datasets[0].merged_array.space_group(),
+        mtz_datasets[0].merged_array.unit_cell(),
+    )
+
+    mtz_writer.add_data(mtz_datasets, r_free_array)
+
+    return mtz_writer.mtz
 
 
 def merge_scaled_array(
