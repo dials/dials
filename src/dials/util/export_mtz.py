@@ -308,9 +308,10 @@ class GemmiMergedMTZWriter:
         matches = miller.match_indices(self.indices, indices)
         pairs = matches.pairs()
         isel_i = pairs.column(0)
+        isel_j = pairs.column(1)
 
         data = flex.double(len(self.indices), float("nan"))
-        data.set_selected(isel_i, column.data().as_double())
+        data.set_selected(isel_i, column.data().as_double().select(isel_j))
 
         self.mtz_data.insert(
             len(self.mtz_data.columns),
@@ -325,7 +326,7 @@ class GemmiMergedMTZWriter:
         self.mtz.add_column("SIG" + label, type_char)
 
         sigmas = flex.double(len(self.indices), float("nan"))
-        sigmas.set_selected(isel_i, column.sigmas().as_double())
+        sigmas.set_selected(isel_i, column.sigmas().as_double().select(isel_j))
 
         self.mtz_data.insert(
             len(self.mtz_data.columns),
