@@ -463,7 +463,7 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
             experiment.
 
     Returns:
-        An iotbx mtz file object.
+        A gemmi.Mtz object or an iotbx mtz object, if gemmi is not available.
     """
 
     if gemmi:
@@ -507,8 +507,10 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
     return mtz_writer.mtz_file
 
 
-def make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array: miller.array = None):
+def make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array=None):
 
+    # XXX This should replace the code in make_merged_mtz_file when
+    # MergedMTZWriter and MADMergedMTZWriter are removed
     writer = MergedMTZCreator
 
     mtz_writer = writer(
