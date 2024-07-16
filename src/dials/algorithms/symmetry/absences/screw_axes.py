@@ -121,7 +121,7 @@ class ScrewAxis(Subject):
             return self.score_axis_fourier(reflection_table, significance_level)
 
     @staticmethod
-    def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat):
+    def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat, oversample=50):
         """
         Score screw axis based on selected miller indices and I over SigI values
 
@@ -133,6 +133,8 @@ class ScrewAxis(Subject):
             Vector of signal to noise ratios with the same shape as miller_indices.
         axis_repeat : int
             The expected periodicity of the screw axis. Must be one of {2, 3, 4, 6}.
+        oversample : int
+            The amount of oversampling to use in smoothing the fourier power spectrum.
         """
         if axis_repeat not in {2, 3, 4, 6}:
             raise ValueError(
@@ -143,8 +145,20 @@ class ScrewAxis(Subject):
         miller_index = miller_index - miller_index.min()
         n = miller_index.max() + 1
         n = 6 * ((n // 6) + 1)
+
         direct_space = np.zeros(n)
         direct_space[miller_index] = i_over_sigma
+
+        if oversample is not None:
+            direct_space = np.concatenate(
+                (
+                    direct_space,
+                    np.zeros_like(
+                        direct_space,
+                        shape=len(direct_space) * oversample,
+                    ),
+                )
+            )
 
         # Fourier transform i over sigma
         fourier_space = np.abs(np.fft.fft(direct_space))
@@ -152,14 +166,16 @@ class ScrewAxis(Subject):
         # Indices for Fourier frequencies which may correspond to screw periodicities
         # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
         screw_idx = [0]
+
+        d = len(fourier_space)
         if axis_repeat == 2:
-            screw_idx += [n // 2]
+            screw_idx += [d // 2]
         elif axis_repeat == 3:
-            screw_idx += [n // 3, -n // 3]
+            screw_idx += [d // 3, -d // 3]
         elif axis_repeat == 4:
-            screw_idx += [n // 4, n // 2, -n // 4]
+            screw_idx += [d // 4, d // 2, -d // 4]
         else:
-            screw_idx += [n // 6, n // 3, n // 2, -n // 3, -n // 6]
+            screw_idx += [d // 6, d // 3, d // 2, -d // 3, -d // 6]
 
         null_idx = np.ones_like(fourier_space, dtype=bool)
         null_idx[screw_idx] = False
