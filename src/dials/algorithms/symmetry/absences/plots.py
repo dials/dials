@@ -57,9 +57,10 @@ def plot_screw_axes(screw_axes_data):
         if data["fourier_space_data"]:
             # make frequency plots
             # need to add vertical lines to indicate axis repeats
-            y_min = min(data["fourier_space_data"]["fourier_space"])
-            y_max = max(data["fourier_space_data"]["fourier_space"])
-            n = data["fourier_space_data"]["n"]
+            y = data["fourier_space_data"]["fourier_space"]
+            y_min = min(y)
+            y_max = max(y)
+            n = len(y)
             xtickvals = [float(n // 2)]
             xticktext = ["1/2", "1/3", "2/3", "1/4", "3/4", "1/6", "5/6"]
             for i in [3, 4, 6]:
@@ -72,10 +73,8 @@ def plot_screw_axes(screw_axes_data):
                 + name: {
                     "data": [
                         {
-                            "x": list(
-                                range(len(data["fourier_space_data"]["fourier_space"]))
-                            ),
-                            "y": list(data["fourier_space_data"]["fourier_space"]),
+                            "x": list(range(len(y))),
+                            "y": list(y),
                             "type": "scatter",
                             "name": "Fourier amplitudes",
                             "xaxis": "x",
