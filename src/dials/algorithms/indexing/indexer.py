@@ -995,12 +995,24 @@ class Indexer:
     def refine(self, experiments, reflections):
         from dials.algorithms.indexing.refinement import refine
 
+        properties_to_save = [
+            "xyzcal.mm",
+            "entering",
+            "wavelength_cal",
+            "s0_cal",
+            "tof_cal",
+        ]
+
         refiner, refined, outliers = refine(self.all_params, reflections, experiments)
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
+
         predicted = refiner.predict_for_indexed()
-        reflections["xyzcal.mm"] = predicted["xyzcal.mm"]
-        reflections["entering"] = predicted["entering"]
+
+        for i in properties_to_save:
+            if i in predicted:
+                reflections[i] = predicted[i]
+
         reflections.unset_flags(
             flex.bool(len(reflections), True), reflections.flags.centroid_outlier
         )
