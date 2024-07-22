@@ -18,8 +18,9 @@ from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 from .low_res_spot_match import LowResSpotMatch
 from .pinkindexer import PinkIndexer
 from .strategy import Strategy
+from .toro_indexer import ToroIndexer
 
-__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer"]
+__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer", "ToroIndexer"]
 
 
 logger = logging.getLogger(__name__)
