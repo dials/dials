@@ -375,7 +375,7 @@ void tof_extract_shoeboxes_to_reflection_table(
 
 /*
  * Extracts shoeboxes to reflection_table with each pixel corrected w.r.t
- * An incident run, an empty run, and optionally the Lorentz correction
+ * an incident run, an empty run, and optionally the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
   dials::af::reflection_table &reflection_table,
@@ -553,8 +553,7 @@ void tof_extract_shoeboxes_to_reflection_table(
 
 /*
  * Extracts shoeboxes to reflection_table with each pixel corrected w.r.t
- * An incident run, an empty run, and optionally the Lorentz correction and a
- * spherical absorption correction.
+ * an incident run, an empty run, and optionally the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
   dials::af::reflection_table &reflection_table,
