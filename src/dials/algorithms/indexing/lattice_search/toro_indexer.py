@@ -10,6 +10,8 @@ from .strategy import Strategy
 
 from dxtbx import flumpy
 
+from dxtbx.model import Crystal
+
 from scitbx import matrix
 
 import numpy
@@ -121,16 +123,16 @@ class ToroIndexer(Strategy):
         # Need the reciprocal lattice points as numpy float32 array with all x coordinates, followed by y and z coordinates consecutively in memory
         rlp = numpy.array(flumpy.to_numpy(reflections["rlp"]), dtype="float32").transpose()
 
-        output_cells, scores = self.indexer.run(rlp, self.input_cell, dist1=self.params.toro_indexer.dist1, dist3=self.params.toro_indexer.dist3, num_halfsphere_points=self.params.toro_indexer.num_halfsphere_points, max_dist=self.params.toro_indexer.max_dist, min_spots=self.params.toro_indexer.min_spots, n_output_cells=params.toro_indexer.max_output_cells)
+        output_cells, scores = self.indexer.run(rlp, self.input_cell, dist1=self.params.toro_indexer.dist1, dist3=self.params.toro_indexer.dist3, num_halfsphere_points=self.params.toro_indexer.num_halfsphere_points, max_dist=self.params.toro_indexer.max_dist, min_spots=self.params.toro_indexer.min_spots, n_output_cells=self.params.toro_indexer.max_output_cells)
 
-        cell_indices = indexer.crystals(output_cells, rlp, scores, threshold=self.params.toro_indexer.max_dist, min_spots=self.params.toro_indexer.min_spots)
+        cell_indices = self.indexer.crystals(output_cells, rlp, scores, threshold=self.params.toro_indexer.max_dist, min_spots=self.params.toro_indexer.min_spots)
 
         candidate_crystal_models = []
         for index in cell_indices:
             j = 3 * index
-            real_a = output_cells[j,:]
-            real_b = output_cells[j+1,:]
-            real_c = output_cells[j+2,:]
+            real_a = output_cells[:, j]
+            real_b = output_cells[:, j+1]
+            real_c = output_cells[:, j+2]
             crystal = Crystal(real_a, real_b, real_c) # spacegroup?
             candidate_crystal_models.append(crystal)
 
