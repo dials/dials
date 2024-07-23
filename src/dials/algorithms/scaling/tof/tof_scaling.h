@@ -196,12 +196,6 @@ const double pc[8][19] = {{-6.4910e-07,
                            0.0000e+00,
                            0.0000e+00}};
 
-/*
- * As outlined in
-// C.W Dwiggins Jnr, Rapid calculation of X-ray absorption correction factors for
-// spheres to an accuracy of 0.05%, Acta Cryst. 1975, A31, 395-396
-// https://doi.org/10.1107/S0567739475000873
- */
 double tof_pixel_spherical_absorption_correction(double pixel_data,
                                                  double muR,
                                                  double two_theta,
@@ -332,7 +326,7 @@ void tof_extract_shoeboxes_to_reflection_table(
     int6 bbox = bboxes[i];
     int panel = shoebox.panel;
 
-    // Shoeboxe data are ordered (z, y, x)
+    // Shoebox data are ordered (z, y, x)
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       int frame_z = bbox[4] + z;
       double tof = img_tof[frame_z] * std::pow(10, -6);  // (s)
@@ -490,7 +484,7 @@ void tof_extract_shoeboxes_to_reflection_table(
     int6 bbox = bboxes[i];
     int panel = shoebox.panel;
 
-    // Shoeboxe data are ordered (z, y, x)
+    // Shoebox data are ordered (z, y, x)
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       int frame_z = bbox[4] + z;
       double tof = img_tof[frame_z] * std::pow(10, -6);  // (s)
@@ -553,7 +547,8 @@ void tof_extract_shoeboxes_to_reflection_table(
 
 /*
  * Extracts shoeboxes to reflection_table with each pixel corrected w.r.t
- * an incident run, an empty run, and optionally the Lorentz correction
+ * an incident run, an empty run, a spherical absorption correction,
+ * and optionally the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
   dials::af::reflection_table &reflection_table,
@@ -666,7 +661,7 @@ void tof_extract_shoeboxes_to_reflection_table(
     int6 bbox = bboxes[i];
     int panel = shoebox.panel;
 
-    // Shoeboxe data are ordered (z, y, x)
+    // Shoebox data are ordered (z, y, x)
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       int frame_z = bbox[4] + z;
       double tof = img_tof[frame_z] * std::pow(10, -6);  // (s)
