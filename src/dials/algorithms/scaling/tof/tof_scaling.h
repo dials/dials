@@ -256,11 +256,11 @@ struct TOFCorrectionsData {
       : sample_proton_charge(sample_proton_charge),
         incident_proton_charge(incident_proton_charge),
         empty_proton_charge(empty_proton_charge),
-        sample_radius(sample_radius),
+        sample_radius(sample_radius * .1),  // Given in mm but calculated in cm
         sample_scattering_x_section(sample_scattering_x_section),
         sample_absorption_x_section(sample_absorption_x_section),
         sample_number_density(sample_number_density),
-        incident_radius(incident_radius),
+        incident_radius(incident_radius * .1),  // Given in mm but calculated in cm
         incident_scattering_x_section(incident_scattering_x_section),
         incident_absorption_x_section(incident_absorption_x_section),
         incident_number_density(incident_number_density) {
