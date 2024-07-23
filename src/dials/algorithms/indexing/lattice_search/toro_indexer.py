@@ -125,9 +125,13 @@ class ToroIndexer(Strategy):
 
         cell_indices = indexer.crystals(output_cells, rlp, scores, threshold=self.params.toro_indexer.max_dist, min_spots=self.params.toro_indexer.min_spots)
 
-        result = []
+        candidate_crystal_models = []
         for index in cell_indices:
             j = 3 * index
-            result.append(output_cells[j:j+3, :].transpose())
+            real_a = output_cells[j,:]
+            real_b = output_cells[j+1,:]
+            real_c = output_cells[j+2,:]
+            crystal = Crystal(real_a, real_b, real_c) # spacegroup?
+            candidate_crystal_models.append(crystal)
 
-        return result
+        return candidate_crystal_models
