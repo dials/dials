@@ -85,9 +85,7 @@ class ToroIndexer(Strategy):
         self._max_lattices = max_lattices
 
         if target_symmetry_primitive is None:
-            raise DialsIndexError(
-                "Target unit cell and space group must be provided for TORO"
-            )
+            raise DialsIndexError("Target unit cell must be provided for TORO")
 
         target_cell = target_symmetry_primitive.unit_cell()
         if target_cell is None:
@@ -153,7 +151,7 @@ class ToroIndexer(Strategy):
             real_a = output_cells[:, j]
             real_b = output_cells[:, j + 1]
             real_c = output_cells[:, j + 2]
-            crystal = Crystal(real_a, real_b, real_c)  # spacegroup?
+            crystal = Crystal(real_a, real_b, real_c, space_group_symbol="P1")
             candidate_crystal_models.append(crystal)
 
         return candidate_crystal_models
