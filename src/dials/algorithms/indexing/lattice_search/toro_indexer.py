@@ -2,23 +2,19 @@ from __future__ import annotations
 
 import logging
 
+# Import fast feedback indexer package (CUDA implementation of the TORO algorithm)
+# https://github.com/paulscherrerinstitute/fast-feedback-indexer/tree/main/python
+import ffbidx
+import numpy
+
 import iotbx.phil
+from dxtbx import flumpy
+from dxtbx.model import Crystal
+from scitbx import matrix
 
 from dials.algorithms.indexing import DialsIndexError
 
 from .strategy import Strategy
-
-from dxtbx import flumpy
-
-from dxtbx.model import Crystal
-
-from scitbx import matrix
-
-import numpy
-
-# Import fast feedback indexer package (CUDA implementation of the TORO algorithm)
-# https://github.com/paulscherrerinstitute/fast-feedback-indexer/tree/main/python
-import ffbidx
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +38,13 @@ toro_indexer
         .type = float(value_min=0.001, value_max=0.5)
         .help = "Reciprocal spots within this threshold contribute to the score for vector sampling"
     dist3 = 0.15
-        .type = floatvalue_min=0.001, value_max=0.8)
+        .type = float(value_min=0.001, value_max=0.8)
         .help = "Reciprocal spots within this threshold contribute to the score for cell sampling"
     num_halfsphere_points = 32768
         .type = int(value_min=8000)
         .help = "Number of sampling points on the half sphere"
     max_dist = 0.00075
-        .type = float(min_value=0.0)
+        .type = float(value_min=0.0)
         .help = "Maximum final distance between measured and calculated reciprocal spot"
     min_spots = 8
         .type = int(value_min=6)
@@ -100,11 +96,18 @@ class ToroIndexer(Strategy):
         self.params = params
 
         # Need the input_cell as numpy float32 array with all x vector coordinates, followed by y and z coordinates consecutively in memory
-        B=matrix.sqr(target_cell.fractionalization_matrix()).transpose()
-        self.input_cell = numpy.reshape(numpy.array(B, dtype="float32"), (3,3)).transpose()
+        B = matrix.sqr(target_cell.fractionalization_matrix()).transpose()
+        self.input_cell = numpy.reshape(
+            numpy.array(B, dtype="float32"), (3, 3)
+        ).transpose()
 
         # Create fast feedback indexer object (on default CUDA device)
-        self.indexer = ffbidx.Indexer(max_output_cells=params.toro_indexer.max_output_cells, max_spots=params.toro_indexer.max_spots, num_candidate_vectors=params.toro_indexer.num_candidate_vectors, redundant_calculations=params.toro_indexer.redundant_calculations)
+        self.indexer = ffbidx.Indexer(
+            max_output_cells=params.toro_indexer.max_output_cells,
+            max_spots=params.toro_indexer.max_spots,
+            num_candidate_vectors=params.toro_indexer.num_candidate_vectors,
+            redundant_calculations=params.toro_indexer.redundant_calculations,
+        )
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
@@ -121,19 +124,36 @@ class ToroIndexer(Strategy):
         """
 
         # Need the reciprocal lattice points as numpy float32 array with all x coordinates, followed by y and z coordinates consecutively in memory
-        rlp = numpy.array(flumpy.to_numpy(reflections["rlp"]), dtype="float32").transpose()
+        rlp = numpy.array(
+            flumpy.to_numpy(reflections["rlp"]), dtype="float32"
+        ).transpose()
 
-        output_cells, scores = self.indexer.run(rlp, self.input_cell, dist1=self.params.toro_indexer.dist1, dist3=self.params.toro_indexer.dist3, num_halfsphere_points=self.params.toro_indexer.num_halfsphere_points, max_dist=self.params.toro_indexer.max_dist, min_spots=self.params.toro_indexer.min_spots, n_output_cells=self.params.toro_indexer.max_output_cells)
+        output_cells, scores = self.indexer.run(
+            rlp,
+            self.input_cell,
+            dist1=self.params.toro_indexer.dist1,
+            dist3=self.params.toro_indexer.dist3,
+            num_halfsphere_points=self.params.toro_indexer.num_halfsphere_points,
+            max_dist=self.params.toro_indexer.max_dist,
+            min_spots=self.params.toro_indexer.min_spots,
+            n_output_cells=self.params.toro_indexer.max_output_cells,
+        )
 
-        cell_indices = self.indexer.crystals(output_cells, rlp, scores, threshold=self.params.toro_indexer.max_dist, min_spots=self.params.toro_indexer.min_spots)
+        cell_indices = self.indexer.crystals(
+            output_cells,
+            rlp,
+            scores,
+            threshold=self.params.toro_indexer.max_dist,
+            min_spots=self.params.toro_indexer.min_spots,
+        )
 
         candidate_crystal_models = []
         for index in cell_indices:
             j = 3 * index
             real_a = output_cells[:, j]
-            real_b = output_cells[:, j+1]
-            real_c = output_cells[:, j+2]
-            crystal = Crystal(real_a, real_b, real_c) # spacegroup?
+            real_b = output_cells[:, j + 1]
+            real_c = output_cells[:, j + 2]
+            crystal = Crystal(real_a, real_b, real_c)  # spacegroup?
             candidate_crystal_models.append(crystal)
 
         return candidate_crystal_models
