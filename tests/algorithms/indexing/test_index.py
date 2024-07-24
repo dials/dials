@@ -849,6 +849,11 @@ def test_toro_indexer(
     dials_data,
     tmp_path,
 ):
+    try:
+        import ffbidx  # noqa: F401
+    except ModuleNotFoundError:
+        pytest.skip("ffbidx not installed")
+
     data_dir = dials_data("cunir_serial_processed", pathlib=True)
     expt_file = data_dir / "imported_with_ref_5.expt"
     refl_file = data_dir / "strong_5.refl"

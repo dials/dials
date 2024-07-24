@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import logging
 
-# Import fast feedback indexer package (CUDA implementation of the TORO algorithm)
-# https://github.com/paulscherrerinstitute/fast-feedback-indexer/tree/main/python
-import ffbidx
 import numpy
 
 import iotbx.phil
@@ -15,6 +12,14 @@ from scitbx import matrix
 from dials.algorithms.indexing import DialsIndexError
 
 from .strategy import Strategy
+
+# Import fast feedback indexer package (CUDA implementation of the TORO algorithm)
+# https://github.com/paulscherrerinstitute/fast-feedback-indexer/tree/main/python
+try:
+    import ffbidx
+except ModuleNotFoundError:
+    ffbidx = None
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +86,12 @@ class ToroIndexer(Strategy):
             None
         """
         super().__init__(params=None, *args, **kwargs)
+
+        if ffbidx is None:
+            raise DialsIndexError(
+                "ToroIndexer requires fast feedback indexer. See (https://github.com/paulscherrerinstitute/fast-feedback-indexer)"
+            )
+
         self._target_symmetry_primitive = target_symmetry_primitive
         self._max_lattices = max_lattices
 
