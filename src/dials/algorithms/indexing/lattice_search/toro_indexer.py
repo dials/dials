@@ -106,9 +106,7 @@ class ToroIndexer(Strategy):
 
         # Need the input_cell as numpy float32 array with all x vector coordinates, followed by y and z coordinates consecutively in memory
         B = matrix.sqr(target_cell.fractionalization_matrix()).transpose()
-        self.input_cell = numpy.reshape(
-            numpy.array(B, dtype="float32"), (3, 3)
-        ).transpose()
+        self.input_cell = numpy.reshape(numpy.array(B, dtype="float32"), (3, 3))
 
         # Create fast feedback indexer object (on default CUDA device)
         self.indexer = ffbidx.Indexer(
