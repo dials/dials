@@ -826,7 +826,7 @@ def test_pink_indexer(
         "min_lattices=5",
         "percent_bandwidth=2",
         'known_symmetry.space_group="P 21 3"',
-        "known_symmetry.unit_cell=96.410, 96.410,96.410,90.0,90.0,90.0",
+        "known_symmetry.unit_cell=96.410,96.410,96.410,90.0,90.0,90.0",
     ]
 
     expected_unit_cell = uctbx.unit_cell((96.41, 96.41, 96.41, 90, 90, 90))
@@ -873,7 +873,7 @@ def test_toro_indexer(
         "joint_indexing=False",
         "indexing.method=TORO",
         'known_symmetry.space_group="P 21 3"',
-        "known_symmetry.unit_cell=96.410, 96.410,96.410,90.0,90.0,90.0",
+        "known_symmetry.unit_cell=96.410,96.410,96.410,90.0,90.0,90.0",
     ]
 
     expected_unit_cell = uctbx.unit_cell((96.41, 96.41, 96.41, 90, 90, 90))
