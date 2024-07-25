@@ -106,7 +106,7 @@ class ToroIndexer(Strategy):
 
         # Need the real space cell as numpy float32 array with all x vector coordinates, followed by y and z coordinates consecutively in memory
         self.input_cell = numpy.reshape(
-            numpy.array(target_cell.fractionalization_matrix(), dtype="float32"), (3, 3)
+            numpy.array(target_cell.orthogonalization_matrix(), dtype="float32"), (3, 3)
         )
 
         # Create fast feedback indexer object (on default CUDA device)
