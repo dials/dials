@@ -5,9 +5,9 @@ import logging
 import numpy
 
 import iotbx.phil
+from cctbx.sgtbx import space_group
 from dxtbx import flumpy
 from dxtbx.model import Crystal
-from scitbx import matrix
 
 from dials.algorithms.indexing import DialsIndexError
 
@@ -104,9 +104,10 @@ class ToroIndexer(Strategy):
 
         self.params = params
 
-        # Need the input_cell as numpy float32 array with all x vector coordinates, followed by y and z coordinates consecutively in memory
-        B = matrix.sqr(target_cell.fractionalization_matrix()).transpose()
-        self.input_cell = numpy.reshape(numpy.array(B, dtype="float32"), (3, 3))
+        # Need the real space cell as numpy float32 array with all x vector coordinates, followed by y and z coordinates consecutively in memory
+        self.input_cell = numpy.reshape(
+            numpy.array(target_cell.fractionalization_matrix(), dtype="float32"), (3, 3)
+        )
 
         # Create fast feedback indexer object (on default CUDA device)
         self.indexer = ffbidx.Indexer(
@@ -162,7 +163,7 @@ class ToroIndexer(Strategy):
             real_a = output_cells[:, j]
             real_b = output_cells[:, j + 1]
             real_c = output_cells[:, j + 2]
-            crystal = Crystal(real_a, real_b, real_c, space_group_symbol="P1")
+            crystal = Crystal(real_a, real_b, real_c, space_group=space_group("P1"))
             candidate_crystal_models.append(crystal)
 
         return candidate_crystal_models
