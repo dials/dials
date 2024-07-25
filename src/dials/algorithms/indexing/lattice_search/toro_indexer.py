@@ -115,7 +115,7 @@ class ToroIndexer(Strategy):
             max_output_cells=params.toro_indexer.max_output_cells,
             max_spots=params.toro_indexer.max_spots,
             num_candidate_vectors=params.toro_indexer.num_candidate_vectors,
-            redundant_computations=int(params.toro_indexer.redundant_computations),
+            redundant_computations=params.toro_indexer.redundant_computations,
         )
 
     def find_crystal_models(self, reflections, experiments):
