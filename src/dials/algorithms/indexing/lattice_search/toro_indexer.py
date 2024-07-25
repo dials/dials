@@ -163,7 +163,12 @@ class ToroIndexer(Strategy):
             real_a = output_cells[:, j]
             real_b = output_cells[:, j + 1]
             real_c = output_cells[:, j + 2]
-            crystal = Crystal(real_a, real_b, real_c, space_group=space_group("P1"))
+            crystal = Crystal(
+                real_a.tolist(),
+                real_b.tolist(),
+                real_c.tolist(),
+                space_group=space_group("P1"),
+            )
             candidate_crystal_models.append(crystal)
 
         return candidate_crystal_models
