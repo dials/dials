@@ -133,9 +133,11 @@ class ToroIndexer(Strategy):
         """
 
         # Need the reciprocal lattice points as numpy float32 array with all x coordinates, followed by y and z coordinates consecutively in memory
-        rlp = numpy.array(
-            flumpy.to_numpy(reflections["rlp"]), dtype="float32"
-        ).transpose()
+        rlp = (
+            numpy.array(flumpy.to_numpy(reflections["rlp"]), dtype="float32")
+            .transpose()
+            .copy()
+        )
 
         output_cells, scores = self.indexer.run(
             rlp,
