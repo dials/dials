@@ -36,8 +36,8 @@ toro_indexer
     num_candidate_vectors = 32
         .type = int(value_min=1)
         .help = "Number of candidate cell vectors"
-    redundant_calculations = 1
-        .type = int(value_min=0, value_max=1)
+    redundant_computations = True
+        .type = bool
         .help = "Calculate candidates for all three cell vectors"
     dist1 = 0.3
         .type = float(value_min=0.001, value_max=0.5)
@@ -115,7 +115,7 @@ class ToroIndexer(Strategy):
             max_output_cells=params.toro_indexer.max_output_cells,
             max_spots=params.toro_indexer.max_spots,
             num_candidate_vectors=params.toro_indexer.num_candidate_vectors,
-            redundant_calculations=params.toro_indexer.redundant_calculations,
+            redundant_computations=int(params.toro_indexer.redundant_computations),
         )
 
     def find_crystal_models(self, reflections, experiments):
