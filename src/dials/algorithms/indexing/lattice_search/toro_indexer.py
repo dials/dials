@@ -158,6 +158,9 @@ class ToroIndexer(Strategy):
         )
 
         candidate_crystal_models = []
+        if cell_indices is None:
+            return candidate_crystal_models
+
         for index in cell_indices:
             j = 3 * index
             real_a = output_cells[:, j]
