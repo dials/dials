@@ -23,8 +23,8 @@ except ModuleNotFoundError:
 
 logger = logging.getLogger(__name__)
 
-toro_indexer_phil_str = """
-toro_indexer
+ffb_indexer_phil_str = """
+ffb_indexer
     .expert_level = 1
 {
     max_output_cells = 32
@@ -58,7 +58,7 @@ toro_indexer
 """
 
 
-class ToroIndexer(Strategy):
+class FfbIndexer(Strategy):
     """
     A lattice search strategy using the TORO algorithm.
     For more info, see:
@@ -66,15 +66,15 @@ class ToroIndexer(Strategy):
     """
 
     phil_help = (
-        "A lattice search strategy for very fast indexing using PyTorch acceleration"
+        "A lattice search strategy for very fast indexing using Cuda acceleration"
     )
 
-    phil_scope = iotbx.phil.parse(toro_indexer_phil_str)
+    phil_scope = iotbx.phil.parse(ffb_indexer_phil_str)
 
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
     ):
-        """Construct ToroIndexer object.
+        """Construct FfbIndexer object.
 
         Args:
             target_symmetry_primitive (cctbx.crystal.symmetry): The target
@@ -89,14 +89,14 @@ class ToroIndexer(Strategy):
 
         if ffbidx is None:
             raise DialsIndexError(
-                "ToroIndexer requires fast feedback indexer. See (https://github.com/paulscherrerinstitute/fast-feedback-indexer)"
+                "ffbidx requires the fast feedback indexer package. See (https://github.com/paulscherrerinstitute/fast-feedback-indexer)"
             )
 
         self._target_symmetry_primitive = target_symmetry_primitive
         self._max_lattices = max_lattices
 
         if target_symmetry_primitive is None:
-            raise DialsIndexError("Target unit cell must be provided for TORO")
+            raise DialsIndexError("Target unit cell must be provided for ffbidx")
 
         target_cell = target_symmetry_primitive.unit_cell()
         if target_cell is None:
@@ -111,10 +111,10 @@ class ToroIndexer(Strategy):
 
         # Create fast feedback indexer object (on default CUDA device)
         self.indexer = ffbidx.Indexer(
-            max_output_cells=params.toro_indexer.max_output_cells,
-            max_spots=params.toro_indexer.max_spots,
-            num_candidate_vectors=params.toro_indexer.num_candidate_vectors,
-            redundant_computations=params.toro_indexer.redundant_computations,
+            max_output_cells=params.ffb_indexer.max_output_cells,
+            max_spots=params.ffb_indexer.max_spots,
+            num_candidate_vectors=params.ffb_indexer.num_candidate_vectors,
+            redundant_computations=params.ffb_indexer.redundant_computations,
         )
 
     def find_crystal_models(self, reflections, experiments):
@@ -141,20 +141,20 @@ class ToroIndexer(Strategy):
         output_cells, scores = self.indexer.run(
             rlp,
             self.input_cell,
-            dist1=self.params.toro_indexer.dist1,
-            dist3=self.params.toro_indexer.dist3,
-            num_halfsphere_points=self.params.toro_indexer.num_halfsphere_points,
-            max_dist=self.params.toro_indexer.max_dist,
-            min_spots=self.params.toro_indexer.min_spots,
-            n_output_cells=self.params.toro_indexer.max_output_cells,
+            dist1=self.params.ffb_indexer.dist1,
+            dist3=self.params.ffb_indexer.dist3,
+            num_halfsphere_points=self.params.ffb_indexer.num_halfsphere_points,
+            max_dist=self.params.ffb_indexer.max_dist,
+            min_spots=self.params.ffb_indexer.min_spots,
+            n_output_cells=self.params.ffb_indexer.max_output_cells,
         )
 
         cell_indices = self.indexer.crystals(
             output_cells,
             rlp,
             scores,
-            threshold=self.params.toro_indexer.max_dist,
-            min_spots=self.params.toro_indexer.min_spots,
+            threshold=self.params.ffb_indexer.max_dist,
+            min_spots=self.params.ffb_indexer.min_spots,
         )
 
         candidate_crystal_models = []

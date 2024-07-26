@@ -15,12 +15,12 @@ from scitbx.array_family import flex
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 
+from .ffb_indexer import FfbIndexer
 from .low_res_spot_match import LowResSpotMatch
 from .pinkindexer import PinkIndexer
 from .strategy import Strategy
-from .toro_indexer import ToroIndexer
 
-__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer", "ToroIndexer"]
+__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer", "FfbIndexer"]
 
 
 logger = logging.getLogger(__name__)
