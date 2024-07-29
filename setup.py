@@ -70,7 +70,7 @@ setup_kwargs = {
         "dials.index.lattice_search": [
             "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch",
             "pink_indexer = dials.algorithms.indexing.lattice_search:PinkIndexer",
-            "TORO = dials.algorithms.indexing.lattice_search:ToroIndexer",
+            "TORO = dials.algorithms.indexing.lattice_search:FfbIndexer",
         ],
         "dials.integration.background": [
             "Auto = dials.extensions.auto_background_ext:AutoBackgroundExt",

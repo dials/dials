@@ -845,7 +845,7 @@ def test_pink_indexer(
     )
 
 
-def test_toro_indexer(
+def test_ffb_indexer(
     dials_data,
     tmp_path,
 ):
@@ -871,7 +871,7 @@ def test_toro_indexer(
 
     extra_args = [
         "joint_indexing=False",
-        "indexing.method=TORO",
+        "indexing.method=ffbidx",
         'known_symmetry.space_group="P 21 3"',
         "known_symmetry.unit_cell=96.410,96.410,96.410,90.0,90.0,90.0",
     ]
