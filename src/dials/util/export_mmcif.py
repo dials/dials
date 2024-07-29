@@ -346,6 +346,17 @@ class MMCIFOutputFile:
         reflections["angle"] = reflections["xyzcal.mm"].parts()[2] * RAD2DEG
         variables_present.extend(["angle"])
 
+        if self.params.mmcif.scale and "intensity.scale.value" in reflections:
+            min_val = min(reflections["intensity.scale.value"])
+            if min_val <= self.params.mmcif.min_scale:
+                # reduce the range of data, for e.g. sortmtz analysis
+                divisor = abs(min_val) / abs(self.params.mmcif.min_scale)
+                n = len(str(divisor).split(".")[0])
+                divisor = float("1" + int(n) * "0")
+                reflections["intensity.scale.value"] /= divisor
+                reflections["intensity.scale.sigma"] /= divisor
+                reflections["scales"] /= divisor
+
         if self.params.mmcif.pdb_version == "v5_next":
             if "partiality" in reflections:
                 variables_present.extend(["partiality"])
