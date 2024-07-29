@@ -54,13 +54,25 @@ ffb_indexer
     min_spots = 8
         .type = int(value_min=6)
         .help = "Minimum number of reciprocal spots within distance max_dist"
+    simple_data_filename = None
+        .type = path
+        .help = "Optional filename for the output of a simple data file for debugging"
+        .expert_level = 2
 }
 """
 
 
+def write_simple_data_file(filename, rlp, cell):
+    """Write a simple data file for debugging."""
+    with open(filename, "w") as f:
+        f.write(" ".join(map(str, cell.ravel())) + "\n")
+        for r in rlp:
+            f.write(" ".join(map(str, r.ravel())) + "\n")
+
+
 class FfbIndexer(Strategy):
     """
-    A lattice search strategy using the TORO algorithm.
+    A lattice search strategy using a Cuda-accelerated implementation of the TORO algorithm.
     For more info, see:
     [Gasparotto P, et al. TORO Indexer: a PyTorch-based indexing algorithm for kilohertz serial crystallography. J. Appl. Cryst. 2024 57(4)](https://doi.org/10.1107/S1600576724003182)
     """
@@ -131,12 +143,15 @@ class FfbIndexer(Strategy):
             A list of candidate crystal models.
         """
 
+        rlp = numpy.array(flumpy.to_numpy(reflections["rlp"]), dtype="float32")
+
+        if self.params.ffb_indexer.simple_data_filename is not None:
+            write_simple_data_file(
+                self.params.ffb_indexer.simple_data_filename, rlp, self.input_cell
+            )
+
         # Need the reciprocal lattice points as numpy float32 array with all x coordinates, followed by y and z coordinates consecutively in memory
-        rlp = (
-            numpy.array(flumpy.to_numpy(reflections["rlp"]), dtype="float32")
-            .transpose()
-            .copy()
-        )
+        rlp = rlp.transpose().copy()
 
         output_cells, scores = self.indexer.run(
             rlp,
