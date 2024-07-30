@@ -54,6 +54,9 @@ ffb_indexer
     min_spots = 8
         .type = int(value_min=6)
         .help = "Minimum number of reciprocal spots within distance max_dist"
+    method = *ifssr ifss ifse raw
+        .type = choice
+        .help = "Refinement method (consult algorithm description)"
     simple_data_filename = None
         .type = path
         .help = "Optional filename for the output of a simple data file for debugging"
@@ -162,6 +165,7 @@ class FfbIndexer(Strategy):
             max_dist=self.params.ffb_indexer.max_dist,
             min_spots=self.params.ffb_indexer.min_spots,
             n_output_cells=self.params.ffb_indexer.max_output_cells,
+            method=self.params.ffb_indexer.method,
         )
 
         cell_indices = self.indexer.crystals(
@@ -170,6 +174,7 @@ class FfbIndexer(Strategy):
             scores,
             threshold=self.params.ffb_indexer.max_dist,
             min_spots=self.params.ffb_indexer.min_spots,
+            method=self.params.ffb_indexer.method,
         )
 
         candidate_crystal_models = []
