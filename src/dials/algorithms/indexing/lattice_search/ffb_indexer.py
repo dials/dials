@@ -58,13 +58,13 @@ ffbidx
         .type = choice
         .help = "Refinement method (consult algorithm description)"
     triml = 0.001
-        .type = float(min_value=0, max_value=0.5)
+        .type = float(value_min=0, value_max=0.5)
         .help = "lower trimming value for intermediate score calculations"
     trimh = 0.3
-        .type = float(min_value=0, max_value=0.5)
+        .type = float(value_min=0, value_max=0.5)
         .help = "higher trimming value for intermediate score calculations"
     delta = 0.1
-        .type = float(min_value=0.000001)
+        .type = float(value_min=0.000001)
         .help = "log2 curve position for intermediate score calculations, lower values will me more selective in choosing close spots"
     simple_data_filename = None
         .type = path
