@@ -135,10 +135,10 @@ class FfbIndexer(Strategy):
 
         # Create fast feedback indexer object (on default CUDA device)
         self.indexer = ffbidx.Indexer(
-            max_output_cells=params.ffbidx.max_output_cells,
-            max_spots=params.ffbidx.max_spots,
-            num_candidate_vectors=params.ffbidx.num_candidate_vectors,
-            redundant_computations=params.ffbidx.redundant_computations,
+            max_output_cells=params.max_output_cells,
+            max_spots=params.max_spots,
+            num_candidate_vectors=params.num_candidate_vectors,
+            redundant_computations=params.redundant_computations,
         )
 
     def find_crystal_models(self, reflections, experiments):
@@ -157,9 +157,9 @@ class FfbIndexer(Strategy):
 
         rlp = numpy.array(flumpy.to_numpy(reflections["rlp"]), dtype="float32")
 
-        if self.params.ffbidx.simple_data_filename is not None:
+        if self.params.simple_data_filename is not None:
             write_simple_data_file(
-                self.params.ffbidx.simple_data_filename, rlp, self.input_cell
+                self.params.simple_data_filename, rlp, self.input_cell
             )
 
         # Need the reciprocal lattice points as numpy float32 array with all x coordinates, followed by y and z coordinates consecutively in memory
@@ -168,25 +168,25 @@ class FfbIndexer(Strategy):
         output_cells, scores = self.indexer.run(
             rlp,
             self.input_cell,
-            dist1=self.params.ffbidx.dist1,
-            dist3=self.params.ffbidx.dist3,
-            num_halfsphere_points=self.params.ffbidx.num_halfsphere_points,
-            max_dist=self.params.ffbidx.max_dist,
-            min_spots=self.params.ffbidx.min_spots,
-            n_output_cells=self.params.ffbidx.max_output_cells,
-            method=self.params.ffbidx.method,
-            triml=self.params.ffbidx.triml,
-            trimh=self.params.ffbidx.trimh,
-            delta=self.params.ffbidx.delta,
+            dist1=self.params.dist1,
+            dist3=self.params.dist3,
+            num_halfsphere_points=self.params.num_halfsphere_points,
+            max_dist=self.params.max_dist,
+            min_spots=self.params.min_spots,
+            n_output_cells=self.params.max_output_cells,
+            method=self.params.method,
+            triml=self.params.triml,
+            trimh=self.params.trimh,
+            delta=self.params.delta,
         )
 
         cell_indices = self.indexer.crystals(
             output_cells,
             rlp,
             scores,
-            threshold=self.params.ffbidx.max_dist,
-            min_spots=self.params.ffbidx.min_spots,
-            method=self.params.ffbidx.method,
+            threshold=self.params.max_dist,
+            min_spots=self.params.min_spots,
+            method=self.params.method,
         )
 
         candidate_crystal_models = []
