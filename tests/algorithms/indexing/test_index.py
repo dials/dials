@@ -845,7 +845,7 @@ def test_pink_indexer(
     )
 
 
-def test_ffb_indexer(
+def test_ffbidx(
     dials_data,
     tmp_path,
 ):

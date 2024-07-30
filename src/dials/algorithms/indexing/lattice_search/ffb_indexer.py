@@ -23,8 +23,8 @@ except ModuleNotFoundError:
 
 logger = logging.getLogger(__name__)
 
-ffb_indexer_phil_str = """
-ffb_indexer
+ffbidx_phil_str = """
+ffbidx
     .expert_level = 1
 {
     max_output_cells = 32
@@ -84,7 +84,7 @@ class FfbIndexer(Strategy):
         "A lattice search strategy for very fast indexing using Cuda acceleration"
     )
 
-    phil_scope = iotbx.phil.parse(ffb_indexer_phil_str)
+    phil_scope = iotbx.phil.parse(ffbidx_phil_str)
 
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
@@ -126,10 +126,10 @@ class FfbIndexer(Strategy):
 
         # Create fast feedback indexer object (on default CUDA device)
         self.indexer = ffbidx.Indexer(
-            max_output_cells=params.ffb_indexer.max_output_cells,
-            max_spots=params.ffb_indexer.max_spots,
-            num_candidate_vectors=params.ffb_indexer.num_candidate_vectors,
-            redundant_computations=params.ffb_indexer.redundant_computations,
+            max_output_cells=params.ffbidx.max_output_cells,
+            max_spots=params.ffbidx.max_spots,
+            num_candidate_vectors=params.ffbidx.num_candidate_vectors,
+            redundant_computations=params.ffbidx.redundant_computations,
         )
 
     def find_crystal_models(self, reflections, experiments):
@@ -148,9 +148,9 @@ class FfbIndexer(Strategy):
 
         rlp = numpy.array(flumpy.to_numpy(reflections["rlp"]), dtype="float32")
 
-        if self.params.ffb_indexer.simple_data_filename is not None:
+        if self.params.ffbidx.simple_data_filename is not None:
             write_simple_data_file(
-                self.params.ffb_indexer.simple_data_filename, rlp, self.input_cell
+                self.params.ffbidx.simple_data_filename, rlp, self.input_cell
             )
 
         # Need the reciprocal lattice points as numpy float32 array with all x coordinates, followed by y and z coordinates consecutively in memory
@@ -159,22 +159,22 @@ class FfbIndexer(Strategy):
         output_cells, scores = self.indexer.run(
             rlp,
             self.input_cell,
-            dist1=self.params.ffb_indexer.dist1,
-            dist3=self.params.ffb_indexer.dist3,
-            num_halfsphere_points=self.params.ffb_indexer.num_halfsphere_points,
-            max_dist=self.params.ffb_indexer.max_dist,
-            min_spots=self.params.ffb_indexer.min_spots,
-            n_output_cells=self.params.ffb_indexer.max_output_cells,
-            method=self.params.ffb_indexer.method,
+            dist1=self.params.ffbidx.dist1,
+            dist3=self.params.ffbidx.dist3,
+            num_halfsphere_points=self.params.ffbidx.num_halfsphere_points,
+            max_dist=self.params.ffbidx.max_dist,
+            min_spots=self.params.ffbidx.min_spots,
+            n_output_cells=self.params.ffbidx.max_output_cells,
+            method=self.params.ffbidx.method,
         )
 
         cell_indices = self.indexer.crystals(
             output_cells,
             rlp,
             scores,
-            threshold=self.params.ffb_indexer.max_dist,
-            min_spots=self.params.ffb_indexer.min_spots,
-            method=self.params.ffb_indexer.method,
+            threshold=self.params.ffbidx.max_dist,
+            min_spots=self.params.ffbidx.min_spots,
+            method=self.params.ffbidx.method,
         )
 
         candidate_crystal_models = []
