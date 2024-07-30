@@ -57,6 +57,15 @@ ffbidx
     method = *ifssr ifss ifse raw
         .type = choice
         .help = "Refinement method (consult algorithm description)"
+    triml = 0.001
+        .type = float(min_value=0, max_value=0.5)
+        .help = "lower trimming value for intermediate score calculations"
+    trimh = 0.3
+        .type = float(min_value=0, max_value=0.5)
+        .help = "higher trimming value for intermediate score calculations"
+    delta = 0.1
+        .type = float(min_value=0.000001)
+        .help = "log2 curve position for intermediate score calculations, lower values will me more selective in choosing close spots"
     simple_data_filename = None
         .type = path
         .help = "Optional filename for the output of a simple data file for debugging"
@@ -166,6 +175,9 @@ class FfbIndexer(Strategy):
             min_spots=self.params.ffbidx.min_spots,
             n_output_cells=self.params.ffbidx.max_output_cells,
             method=self.params.ffbidx.method,
+            triml=self.params.ffbidx.triml,
+            trimh=self.params.ffbidx.trimh,
+            delta=self.params.ffbidx.delta,
         )
 
         cell_indices = self.indexer.crystals(
