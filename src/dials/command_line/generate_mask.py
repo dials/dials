@@ -6,6 +6,8 @@ considered "invalid" during spot finding and integration. It provides a few
 options to create simple masks using the detector trusted range, or from
 simple shapes or by setting different resolution ranges.
 
+Masks can also be combined by including them as arguments.
+
 Examples::
 
   dials.generate_mask models.expt border=5
@@ -15,6 +17,10 @@ Examples::
     untrusted.circle=200,200,100
 
   dials.generate_mask models.expt d_max=2.00
+
+  dials.generate_mask models.expt d_max=2.00 border.mask
+
+  dials.generate_mask beamcenter.mask border.mask
 """
 
 from __future__ import annotations
@@ -83,6 +89,8 @@ def generate_mask(
         experiments: An experiment list containing only one imageset.
         params: Masking parameters, having the structure defined in
             :data:`phil_scope`.
+        starting_masks: list of masks to combine together with the mask being
+            generated
 
     Returns:
         A list of masks, one for each imageset.
@@ -164,7 +172,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         args: Arguments to parse. If None, :data:`sys.argv[1:]` will be used.
     """
     # Create the parser
-    usage = "usage: dials.generate_mask [options] models.expt"
+    usage = "usage: dials.generate_mask [options] [models.expt] [masks]"
     parser = ArgumentParser(
         usage=usage,
         phil=phil,
