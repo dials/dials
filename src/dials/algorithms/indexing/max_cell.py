@@ -33,6 +33,10 @@ def find_max_cell(
         logger.debug(
             "Rejecting %i reflections at ice ring resolution", ice_sel.count(True)
         )
+        if not reflections.size():
+            raise DialsIndexError(
+                "No spots left for max cell analysis after ice-ring filtering"
+            )
 
     # need bounding box in reflections to find overlaps; this is not there if
     # spots are from XDS (for example)
