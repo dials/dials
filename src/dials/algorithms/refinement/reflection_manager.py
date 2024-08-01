@@ -234,7 +234,7 @@ class ReflectionManagerFactory:
             flex.set_random_seed(params.random_seed)
             logger.debug("Random seed set to %d", params.random_seed)
 
-        if "wavelength" in reflections:
+        if experiments.all_laue() or experiments.all_tof():
             return ReflectionManagerFactory.laue_manager(
                 experiments, reflections, params
             )
