@@ -220,6 +220,14 @@ phil_scope = parse(
               "mmcif file should comply with. v5_next adds support for"
               "recording unmerged data as well as additional scan metadata"
               "and statistics, however writing can be slow for large datasets."
+    scale = True
+      .type = bool
+      .help = "If True, apply a scale such that the minimum intensity is greater"
+              "than (less negative than) the mmcif.min_scale value below."
+    min_scale = -999999.0
+      .type = float
+      .help = "If mmcif.scale is True, scale all negative intensities such that"
+              "they are less negative than this value."
   }
 
   mosflm {
