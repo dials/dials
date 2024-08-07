@@ -33,10 +33,9 @@ namespace dials { namespace af { namespace boost_python {
         typedef typename T::experiment_map_type::iterator iterator;
         for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i) {
           iterator found = self.experiment_identifiers()->find(*i);
-          if (found == self.experiment_identifiers()->end()) {
-            throw DIALS_ERROR("Experiment identifiers do not match");
+          if (found != self.experiment_identifiers()->end()) {
+            (*new_table.experiment_identifiers())[found->first] = found->second;
           }
-          (*new_table.experiment_identifiers())[found->first] = found->second;
         }
       }
       return new_table;
