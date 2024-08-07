@@ -80,9 +80,12 @@ clustering
   optimise_dimensions = False
     .type = bool
     .short_caption = "Turn on to optimise clustering dimensions"
+  sigma = 2.5
+    .type = float
+    .short_caption = "Number of standard deviations from minimum eigenvalue of rij to determine dimensions"
   significance = 0.01
     .type = float
-    .short_caption = "Significance of eigenvalues of rij to increase dimensions"
+    .short_caption = "p-value for significance in determining significant eigenvalues of rij to determine dimensions"
 }
 
 use_curvatures = True
@@ -288,38 +291,64 @@ class CosymAnalysis(symmetry_base, Subject):
             from scipy import linalg
 
             e_vals, e_vecs = linalg.eig(self.target.rij_matrix)
-            # significant_e_vals = [i for i in e_vals if i > 0]
-
-            # from statistics import mean, stdev
-
             from scipy import stats
+
+            # TEMP DELETE THIS LATER
+
+            logger.info(e_vals)
 
             # Remove first one always large and can skew stats
             # What to see how many other relevant ones
             test_for_sig = e_vals[1:]
             test_for_sig = [float(i.real) for i in test_for_sig]
             # test_mean = mean(test_for_sig)
-            # test_std = stdev(test_for_sig)
+            test_std = stats.tstd(test_for_sig)
+            min_e_val = e_vals[-1]
 
             test_z = stats.zscore(test_for_sig)
             p_vals = stats.norm.sf(abs(test_z))
 
             sig_p_vals = [i for i in p_vals if i < self.params.clustering.significance]
-
-            # print(len(sig_p_vals) + 1)
-            # print(len(significant_e_vals) + 1)
+            sig_e_vals = [
+                i
+                for i in e_vals
+                if abs(i - min_e_val) > self.params.clustering.sigma * test_std
+            ]
+            for i in e_vals:
+                print(abs(i - min_e_val))
+                print(test_std)
+                print(self.params.clustering.sigma * test_std)
+                if abs(i - min_e_val) > self.params.clustering.sigma * test_std:
+                    print("Larger")
 
             # Because cut first large one out of the calculation so needs +1
-            self.params.dimensions = len(sig_p_vals) + 1
+            # self.params.dimensions = len(sig_p_vals) + 1
+
+            if len(sig_e_vals) < 2:
+                self.params.dimensions = 2
+            else:
+                self.params.dimensions = len(sig_e_vals)
+
             self.target.dim = self.params.dimensions
-            if self.params.dimensions > 2:
-                logger.info("=" * 80)
-                logger.info("\nEigenvalues of rij matrix calculated:")
-                logger.debug(e_vals)
+            # if self.params.dimensions > 2:
+            logger.info("=" * 80)
+            logger.info("\nEigenvalues of rij matrix calculated:")
+            logger.debug(e_vals)
+
+            if len(sig_e_vals) > 1:
                 logger.info(
-                    f"\n{self.params.dimensions} dimensions identified from {len(sig_p_vals) +1} significantly large eigenvalues with p-value < {self.params.clustering.significance}"
+                    f"\n{self.params.dimensions} dimensions identified from {len(sig_e_vals)} significantly large eigenvalues larger than {self.params.clustering.sigma}-sigma from minimum."
                 )
-                logger.info("=" * 80)
+                logger.info(
+                    f"\nBUT {len(sig_p_vals) +1} significantly large eigenvalues with p-value < {self.params.clustering.significance}"
+                )
+            else:
+                logger.info(
+                    "Less than 2 significant eigenvalues found. This is odd and have defaulted to 2-dimensions."
+                )
+            logger.info("=" * 80)
+
+            exit()
 
         elif self.params.dimensions is Auto:
             logger.info("=" * 80)
@@ -423,6 +452,7 @@ class CosymAnalysis(symmetry_base, Subject):
             "Explained variance: "
             + ", ".join(["%.2g" % v for v in pca.explained_variance_])
         )
+        logger.info(pca.components_)
         logger.info(
             "Explained variance ratio: "
             + ", ".join(["%.2g" % v for v in pca.explained_variance_ratio_])
