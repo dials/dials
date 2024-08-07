@@ -23,6 +23,7 @@ import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx.model import ExperimentType
 from scitbx import matrix
 
 import dials.extensions.glm_background_ext
@@ -1331,12 +1332,16 @@ Found %s"""
                     cctbx.array_family.flex.vec2_double(x, y)
                 )
 
-                if calculated and "wavelength_cal" in self and "s0_cal" in self:
-                    wavelength = self["wavelength_cal"].select(sel)
-                    s0 = self["s0_cal"].select(sel)
-                elif "wavelength" in self and "s0" in self:
-                    wavelength = self["wavelength"].select(sel)
-                    s0 = self["s0"].select(sel)
+                if (
+                    expt.get_type() == ExperimentType.LAUE
+                    or expt.get_type() == ExperimentType.TOF
+                ):
+                    if calculated and "wavelength_cal" in self and "s0_cal" in self:
+                        wavelength = self["wavelength_cal"].select(sel)
+                        s0 = self["s0_cal"].select(sel)
+                    elif "wavelength" in self and "s0" in self:
+                        wavelength = self["wavelength"].select(sel)
+                        s0 = self["s0"].select(sel)
                 else:
                     wavelength = expt.beam.get_wavelength()
                     s0 = expt.beam.get_s0()
