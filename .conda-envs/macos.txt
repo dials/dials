@@ -33,6 +33,7 @@ conda-forge::pip
 conda-forge::psutil
 conda-forge::pthread-stubs
 conda-forge::pybind11
+conda-forge::pyopengl
 conda-forge::pyrtf
 conda-forge::pytest
 conda-forge::pytest-forked
