@@ -183,15 +183,13 @@ class CorrelationMatrix:
 
         from scipy import linalg
 
-        e_vals, e_vecs = linalg.eig(
-            self.cosym_analysis.target.rij_matrix
-        )  # linalg.eig(self.cosym_analysis.coords)
+        e_vals, e_vecs = linalg.eig(self.cosym_analysis.target.rij_matrix)
+        # e_vals, e_vecs = linalg.eig(self.cosym_analysis.coords)
 
-        for i in self.cosym_analysis.target.rij_matrix:
-            for j in i:
-                print(j)
+        main_coords = self.cosym_analysis.target.rij_matrix
+        # main_coords = self.cosym_analysis.coords
 
-        exit()
+        # PROBLEM WITH USING RIJ - COORDS NOT REAL COORDS - BECAUSE PAIRWISE MATRIX RATHER THAN COORDS
 
         def project(coords, idx):
             higher_d_coords = np.empty((0, len(self.datasets)), dtype=complex)
@@ -209,10 +207,7 @@ class CorrelationMatrix:
         for i in range(0, len(self.datasets)):
             logger.info(f"{i + 1}-D Projection")
             if i == 0:
-                # first_coords, residual = project(self.cosym_analysis.coords, i)
-                first_coords, residual = project(
-                    self.cosym_analysis.target.rij_matrix, i
-                )
+                first_coords, residual = project(main_coords, i)
             else:
                 j = 0
                 coords, residual = project(first_coords, j + 1)
@@ -220,7 +215,7 @@ class CorrelationMatrix:
                 while j < i:
                     coords, residual = project(coords, j + 1)
                     j += 1
-            logger.info(f"Remaining residual: {residual}")
+            logger.info(f"Residual accounted for by this dimension: {residual}")
 
         exit()
 
