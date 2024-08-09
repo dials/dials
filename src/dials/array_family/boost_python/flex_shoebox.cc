@@ -757,6 +757,31 @@ namespace dials { namespace af { namespace boost_python {
     return mask;
   }
 
+  template <typename FloatType>
+  boost::python::list get_shoebox_data_arrays(af::shared<Shoebox<FloatType> > self) {
+    boost::python::list result;
+    size_t n = 0;
+    for (int i = 0; i < self.size(); ++i) {
+      const Shoebox<> &s1 = self[i];
+      n += s1.data.size();
+    }
+    size_t ntot = 0;
+    af::shared<float> data_array(n, 0);
+    af::shared<float> bg_array(n, 0);
+    af::shared<size_t> mask_array(n, 0);
+    for (int i = 0; i < self.size(); ++i) {
+      const Shoebox<> &s1 = self[i];
+      std::copy(s1.data.begin(), s1.data.end(), data_array.begin() + ntot);
+      std::copy(s1.background.begin(), s1.background.end(), bg_array.begin() + ntot);
+      std::copy(s1.mask.begin(), s1.mask.end(), mask_array.begin() + ntot);
+      ntot += s1.data.size();
+    }
+    result.append(data_array);
+    result.append(bg_array);
+    result.append(mask_array);
+    return result;
+  }
+
   /**
    * Apply the data, mask and background to the shoebox
    */
@@ -1051,6 +1076,7 @@ namespace dials { namespace af { namespace boost_python {
         .def("apply_background_mask", &apply_background_mask<FloatType>)
         .def("apply_pixel_data", &apply_pixel_data<FloatType>)
         .def("mask_neighbouring", &mask_neighbouring<FloatType>)
+        .def("get_shoebox_data_arrays", &get_shoebox_data_arrays<FloatType>)
         .def_pickle(flex_pickle_double_buffered<shoebox_type,
                                                 shoebox_to_string<FloatType>,
                                                 shoebox_from_string<FloatType> >());
