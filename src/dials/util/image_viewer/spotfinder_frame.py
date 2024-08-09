@@ -1363,7 +1363,9 @@ class SpotFrame(XrayFrame):
                 if len(all_pix_data) > 1:
                     if not self.display_foreground_circles_patch:
                         for key, value in all_pix_data.items():
-                            base_color = self.prediction_colours[key][1:]
+                            base_color = self.prediction_colours[
+                                key % len(self.prediction_colours)
+                            ][1:]
                             # dim the color so it stands apart from the prediction
                             r = base_color[0:2]
                             g = base_color[2:4]
@@ -1387,7 +1389,9 @@ class SpotFrame(XrayFrame):
                         e1 = matrix.col((1.0, 0.0))
                         e2 = matrix.col((0.0, 1.0))
                         for key, value in all_foreground_circles.items():
-                            base_color = self.prediction_colours[key][1:]
+                            base_color = self.prediction_colours[
+                                key % len(self.prediction_colours)
+                            ][1:]
                             positions = [i["position"] for i in value]
                             good_radius = flex.mean(
                                 flex.double([i["radius"] for i in value])
@@ -1812,7 +1816,7 @@ class SpotFrame(XrayFrame):
                         # Reflections with *only* strong set should get default
                         if not (reflection["flags"] == ref_list.flags.strong):
                             my_attrs["color"] = self.prediction_colours[
-                                reflection["id"]
+                                reflection["id"] % len(self.prediction_colours)
                             ]
                         lines = [
                             ((x0y0, x0y1), my_attrs),
@@ -1926,7 +1930,15 @@ class SpotFrame(XrayFrame):
 
                             if self.settings.show_predictions:
                                 predictions_data.append(
-                                    (x, y, {"colour": self.prediction_colours[i_expt]})
+                                    (
+                                        x,
+                                        y,
+                                        {
+                                            "colour": self.prediction_colours[
+                                                i_expt % len(self.prediction_colours)
+                                            ]
+                                        },
+                                    )
                                 )
 
                             if (
@@ -1973,7 +1985,7 @@ class SpotFrame(XrayFrame):
             "#a65628",
             "#f781bf",
             "#999999",
-        ] * 10
+        ]
 
         if self.viewing_stills:
             i_frame = self.images.selected_index  # NOTE, the underbar is intentional

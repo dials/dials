@@ -410,7 +410,7 @@ def run_integration(reflections, experiments, params):
     # now process each batch, and do parallel processing within a batch
     for i, b in enumerate(batches[:-1]):
         end_ = batches[i + 1]
-        logger.info(f"Processing images {b+1} to {end_}")
+        logger.info(f"Processing crystals {b+1} to {end_}")
         sub_tables = reflections[b:end_]
         sub_expts = experiments[b:end_]
 
@@ -474,13 +474,29 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     # for now - check image path and update identifiers to that of refined.expt?
     if len(set(reflections[0]["id"]).difference({-1})) > 1:
         logger.info("Attempting to split multi-still reflection table")
-        reflections = reflections[0].split_by_experiment_id()
-        if not (len(reflections) == len(experiments)):
-            raise Sorry(
-                "Unequal number of reflection tables and experiments after splitting"
-            )
+        split_reflections = reflections[0].split_by_experiment_id()
+        if len(split_reflections) != len(experiments):
+            # spots may not have been found on every image. In this case, the length
+            # of the list of reflection tables will be less than the length of experiments.
+            # Add in empty items to the list, so that this can be reported on
+            obs = set(reflections[0]["id"])
+            no_refls = set(range(len(experiments))).difference(obs)
+            # need to handle both cases where lots have no refls, or only a few do
+            for id_ in sorted(no_refls, reverse=True):
+                del experiments[id_]
+            reflections = split_reflections
+            if len(experiments) != len(reflections):
+                raise Sorry(
+                    f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
+                )
+        else:
+            reflections = split_reflections
 
     integrated_crystal_symmetries = []
+    # filter crystalless experiments
+    if len(experiments.crystals()) != len(experiments):
+        reflections = [r for r, expt in zip(reflections, experiments) if expt.crystal]
+        experiments = ExperimentList([expt for expt in experiments if expt.crystal])
 
     for i, (int_expt, int_refl, aggregator) in enumerate(
         run_integration(reflections, experiments, params)

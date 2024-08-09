@@ -9,12 +9,13 @@ import logging
 import sys
 
 import iotbx.phil
-from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx import Auto
 
 from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 from dials.util.version import dials_version
@@ -82,6 +83,12 @@ output {
     .type = path
   reflections = indexed.refl
     .type = path
+  retain_unindexed_experiments = True
+    .type = bool
+    .help = "If True, the input experiment models are extended with new crystal"
+            "models, thus the output contains a crystal-less experiment for each"
+            "imageset that matches the unindexed reflections. Setting this option"
+            "to False recovers the old behaviour of versions DIALS 3.17 and earlier."
   log = dials.index.log
     .type = str
 }
@@ -103,6 +110,179 @@ refinement {
 )
 
 working_phil = phil_scope.fetch(sources=[phil_overrides])
+
+
+def _index_single_imageset(experiments, reflections, params, log_text=None):
+    if log_text:
+        logger.info(log_text)
+
+    unindexed = [i for i in experiments if not i.crystal]
+    # handle legacy cases where no unindexed experiments:
+    if not unindexed:  # i.e. all have crystals
+        unindexed = [
+            Experiment(
+                crystal=None,
+                beam=experiments[0].beam,
+                detector=experiments[0].detector,
+                goniometer=experiments[0].goniometer,
+                scan=experiments[0].scan,
+                imageset=experiments[0].imageset,
+                profile=experiments[0].profile,
+                scaling_model=experiments[0].scaling_model,
+            )
+        ]
+        generate_experiment_identifiers(unindexed)
+        input_expts = experiments
+        known_crystal_models = [expt.crystal for expt in experiments]
+    else:
+        if any(experiments.crystals()):
+            input_expts = ExperimentList([i for i in experiments if i.crystal])
+
+            known_crystal_models = [expt.crystal for expt in input_expts]
+        else:
+            input_expts = experiments
+            known_crystal_models = None
+
+    idxr = indexer.Indexer.from_parameters(
+        reflections,
+        input_expts,
+        known_crystal_models=known_crystal_models,
+        params=params,
+    )
+    idxr.index()
+    if not params.output.retain_unindexed_experiments:
+        idx_refl = copy.deepcopy(idxr.refined_reflections)
+        idx_refl.extend(idxr.unindexed_reflections)
+        return idxr.refined_experiments, idx_refl
+
+    # update the identifiers so that the unindexed has id 0, and the rest 1,2,3.. etc
+    idxr.unindexed_reflections["id"] = flex.int(idxr.unindexed_reflections.size(), 0)
+    idxr.unindexed_reflections.experiment_identifiers()[0] = unindexed[0].identifier
+    if idxr.unindexed_reflections.size():
+        idxr.unindexed_reflections.clean_experiment_identifiers_map()
+
+    idx_refl = idxr.refined_reflections
+    for id_ in sorted(set(idx_refl["id"]), reverse=True):
+        identifier = idx_refl.experiment_identifiers()[id_]
+        del idx_refl.experiment_identifiers()[id_]
+        idx_refl.experiment_identifiers()[id_ + 1] = identifier
+    idx_refl["id"] += 1
+
+    # the refiner copies the input beam, detector and gonio, we want to share these
+    unindexed[0].detector = idxr.refined_experiments[0].detector
+    unindexed[0].beam = idxr.refined_experiments[0].beam
+    if idxr.refined_experiments[
+        0
+    ].goniometer:  # might be using the stills indexer which deletes the gonio
+        unindexed[0].goniometer = idxr.refined_experiments[0].goniometer
+
+    # Now join everything together for output
+    indexed_experiments = ExperimentList(unindexed)
+    indexed_experiments.extend(idxr.refined_experiments)
+    idx_refl.extend(idxr.unindexed_reflections)
+    idx_refl.assert_experiment_identifiers_are_consistent(indexed_experiments)
+
+    return indexed_experiments, idx_refl
+
+
+def _index_joint_indexing(experiments, reflections, params):
+
+    # first make an unindexed experiments for each imageset.
+    unindexed = [i for i in experiments if not i.crystal]
+    original_imagesets = experiments.imagesets()
+    # handle legacy cases where no unindexed experiments:
+    if not unindexed:  # i.e. all have crystals
+        unindexed = []
+        for iset in experiments.imagesets():
+            i_expt = experiments.where(imageset=iset)
+            expt_to_copy = experiments[i_expt[0]]
+            unindexed.append(
+                Experiment(
+                    crystal=None,
+                    beam=expt_to_copy.beam,
+                    detector=expt_to_copy.detector,
+                    goniometer=expt_to_copy.goniometer,
+                    scan=expt_to_copy.scan,
+                    imageset=expt_to_copy.imageset,
+                    profile=expt_to_copy.profile,
+                    scaling_model=expt_to_copy.scaling_model,
+                )
+            )
+        generate_experiment_identifiers(unindexed)
+        input_expts = experiments
+        known_crystal_models = [expt.crystal for expt in experiments]
+    else:
+        if any(experiments.crystals()):
+            input_expts = ExperimentList([i for i in experiments if i.crystal])
+            # note not just experiments.crystals(), as models may be shared.
+            known_crystal_models = [expt.crystal for expt in input_expts]
+        else:
+            input_expts = experiments
+            known_crystal_models = None
+
+    for id_ in sorted(set(reflections["id"]).difference({-1}), reverse=True):
+        del reflections.experiment_identifiers()[id_]
+    reflections["original_id"] = copy.deepcopy(reflections["imageset_id"])
+    reflections["id"] = copy.deepcopy(reflections["imageset_id"])
+    idxr = indexer.Indexer.from_parameters(
+        reflections,
+        input_expts,
+        known_crystal_models=known_crystal_models,
+        params=params,
+    )
+    idxr.index()
+    if not params.output.retain_unindexed_experiments:
+        idx_refl = copy.deepcopy(idxr.refined_reflections)
+        idx_refl.extend(idxr.unindexed_reflections)
+        return idxr.refined_experiments, idx_refl
+
+    # now want to split up so that the output is in imageset order
+    indexed_experiments = ExperimentList([])
+    indexed_reflections = flex.reflection_table()
+    n_id = 0
+    for i, iset in enumerate(original_imagesets):
+        # first sort out the unindexed
+        identifier = unindexed[i].identifier
+        sel = idxr.unindexed_reflections["original_id"] == i
+        unindexed_refl = idxr.unindexed_reflections.select(sel)
+        unindexed_refl["id"] = flex.int(unindexed_refl.size(), n_id)
+        del unindexed_refl["original_id"]
+        unindexed_refl.clean_experiment_identifiers_map()
+        unindexed_refl.experiment_identifiers()[n_id] = identifier
+        n_id += 1
+        indexed_reflections.extend(unindexed_refl)
+        indexed_experiments.append(unindexed[i])
+        # now get the indexed
+        i_expts = idxr.refined_experiments.where(imageset=iset)
+        identifiers = [idxr.refined_experiments[i].identifier for i in i_expts]
+        n_indexed_this = len(identifiers)
+        refls = idxr.refined_reflections.select_on_experiment_identifiers(identifiers)
+        refls.reset_ids()  # number from 0
+        # now reset the ids in the refls
+        for id_ in sorted(set(refls["id"]), reverse=True):
+            identifier = refls.experiment_identifiers()[id_]
+            del refls.experiment_identifiers()[id_]
+            refls.experiment_identifiers()[id_ + n_id] = identifier
+        refls["id"] += n_id
+        n_id += n_indexed_this
+        del refls["original_id"]
+        indexed_reflections.extend(refls)
+        # the refiner copies the input beam, detector and gonio, we want to share these
+        indexed_experiments[-1].detector = idxr.refined_experiments[i_expts[0]].detector
+        indexed_experiments[-1].beam = idxr.refined_experiments[i_expts[0]].beam
+        if idxr.refined_experiments[
+            i_expts[0]
+        ].goniometer:  # might be using the stills indexer which deletes the gonio
+            indexed_experiments[-1].goniometer = idxr.refined_experiments[
+                i_expts[0]
+            ].goniometer
+        for j in i_expts:
+            indexed_experiments.append(idxr.refined_experiments[j])
+    indexed_reflections.assert_experiment_identifiers_are_consistent(
+        indexed_experiments
+    )
+
+    return indexed_experiments, indexed_reflections
 
 
 def _index_experiments(
@@ -146,11 +326,6 @@ def index(experiments, reflections, params):
                     combination of sequence and stills data.
         dials.algorithms.indexing.DialsIndexError: Indexing failed.
     """
-    if experiments.crystals()[0] is not None:
-        # note not just experiments.crystals(), as models may be shared.
-        known_crystal_models = [expt.crystal for expt in experiments]
-    else:
-        known_crystal_models = None
 
     if len(reflections) == 0:
         raise ValueError("No reflection lists found in input")
@@ -181,12 +356,17 @@ def index(experiments, reflections, params):
                 "Unable to set joint_indexing automatically for a mixture of still and rotation data"
             )
 
-    if len(experiments) == 1 or params.indexing.joint_indexing:
-        indexed_experiments, indexed_reflections = _index_experiments(
+    if len(experiments.imagesets()) == 1:
+        indexed_experiments, indexed_reflections = _index_single_imageset(
             experiments,
             reflections,
             copy.deepcopy(params),
-            known_crystal_models=known_crystal_models,
+        )
+    elif params.indexing.joint_indexing:
+        indexed_experiments, indexed_reflections = _index_joint_indexing(
+            experiments,
+            reflections,
+            copy.deepcopy(params),
         )
     else:
         indexed_experiments = ExperimentList()
@@ -200,21 +380,16 @@ def index(experiments, reflections, params):
                 refl = reflections.select(reflections["imageset_id"] == iset_id)
                 i_expts = experiments.where(imageset=imgset)
                 elist = ExperimentList([experiments[i] for i in i_expts])
-                known_crystal_models_this = None
-                if known_crystal_models:
-                    known_crystal_models_this = [
-                        known_crystal_models[i] for i in i_expts
-                    ]
+                assert len(elist.imagesets()) == 1
                 refl["imageset_id"] = flex.int(
                     len(refl), 0
                 )  # _index_experiments functions requires ids numbered from 0
                 futures[
                     pool.submit(
-                        _index_experiments,
+                        _index_single_imageset,
                         elist,
                         refl,
                         copy.deepcopy(params),
-                        known_crystal_models=known_crystal_models_this,
                         log_text=f"Indexing imageset id {iset_id} ({iset_id + 1}/{len(experiments.imagesets())})",
                     )
                 ] = iset_id
@@ -224,6 +399,7 @@ def index(experiments, reflections, params):
                 try:
                     iset_id = futures[future]
                     idx_expts, idx_refl = future.result()
+                    # the result will contain an unindexed experiment followed by up to N=max_lattices experiments with crystals
                 except Exception as e:
                     print(e)
                 else:

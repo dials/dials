@@ -39,6 +39,7 @@ from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
@@ -742,11 +743,16 @@ def run(args=None, phil=working_phil):
     elif len(reference) != 1:
         sys.exit("More than 1 reflection file was given")
     else:
-        reference = reference[0]
+        reference = reference  # [0]
 
-    if reference and "shoebox" not in reference:
+    if reference and "shoebox" not in reference[0]:
         sys.exit("Error: shoebox data missing from reflection table")
 
+    experiments, reference = Expeditor(
+        experiments, reference
+    ).filter_experiments_with_crystals()
+    if reference:
+        reference = flex.reflection_table.concat(reference)
     try:
         experiments, reflections, report = run_integration(
             params, experiments, reference

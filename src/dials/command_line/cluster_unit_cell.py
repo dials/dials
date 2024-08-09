@@ -14,10 +14,7 @@ from dxtbx.model import ExperimentList
 import dials.util
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.array_family import flex
-from dials.util.multi_dataset_handling import (
-    assign_unique_identifiers,
-    parse_multiple_datasets,
-)
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
@@ -78,6 +75,10 @@ def run(args=None):
             )
             crystal_symmetries.append(arrays[0].crystal_symmetry())
     else:
+        experiments, reflections = Expeditor(
+            experiments, reflections
+        ).filter_experiments_with_crystals()
+
         crystal_symmetries = [
             crystal.symmetry(
                 unit_cell=expt.crystal.get_unit_cell(),
@@ -94,39 +95,9 @@ def run(args=None):
         if len(experiments) == 0:
             print("Clustering output can only be generated for input .expt files")
             return
-        # Possibilities: either same number of experiments and reflection files,
-        # or just one reflection file containing multiple sequences, or no
-        # reflections given
-        # Want a combined table to work on with experiment identifiers set.
 
-        def _assign_and_return_joint(experiments, reflections):
-            experiments, reflections = assign_unique_identifiers(
-                experiments, reflections
-            )
-            joint_table = flex.reflection_table()
-            for refls in reflections:
-                joint_table.extend(refls)
-            return joint_table
-
-        if len(reflections) == 1:
-            reflections = reflections[0]
-            if len(set(reflections["id"])) != len(experiments):
-                raise ValueError(
-                    f"Mismatched number of reflection tables (f{len(set(reflections['id']))}) and experiments (f{len(experiments)})"
-                )
-            if not dict(reflections.experiment_identifiers()):
-                reflections = reflections.split_by_experiment_id()
-                reflections = _assign_and_return_joint(experiments, reflections)
-
-        elif len(reflections) > 1:
-            if not len(reflections) == len(experiments):
-                reflections = parse_multiple_datasets(reflections)
-                if len(reflections) != len(experiments):
-                    raise ValueError(
-                        f"Mismatched number of reflection tables (f{len(reflections)}) and experiments (f{len(experiments)})"
-                    )
-            reflections = _assign_and_return_joint(experiments, reflections)
-        # else: no reflections given, continue and just split experiments
+        if reflections:
+            reflections = flex.reflection_table.concat(reflections)
 
         template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
         experiments_template = functools.partial(

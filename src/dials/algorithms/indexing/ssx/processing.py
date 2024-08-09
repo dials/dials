@@ -52,6 +52,7 @@ class IndexingResult:
     rmsd_dpsi: List[float] = field(default_factory=list)
     imageset_no: int = 0
     unindexed_experiment: Experiment = None
+    unindexed_reflections: flex.reflection_table = None
 
 
 loggers_to_disable = [
@@ -144,17 +145,29 @@ def index_one(
                 f"Image {image_no+1}: Failed to index with {method} method, error: {e}"
             )
             if method == method_list[-1]:
-                return None, None
+                return None, None, reflection_table
         else:
             logger.info(
                 f"Image {image_no+1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
             )
-            return idxr.refined_experiments, idxr.refined_reflections
+            # FIXME work around issue of original identifier not being propagated
+            idxr.unindexed_reflections["id"] = flex.int(
+                idxr.unindexed_reflections.size(), 0
+            )
+            idxr.unindexed_reflections.experiment_identifiers()[
+                0
+            ] = experiment.identifier
+            idxr.unindexed_reflections.clean_experiment_identifiers_map()
+            return (
+                idxr.refined_experiments,
+                idxr.refined_reflections,
+                idxr.unindexed_reflections,
+            )
 
 
 def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
     # First unpack the input and run the function
-    expts, table = index_one(
+    expts, table, unindexed_refl = index_one(
         input_to_index.experiment,
         input_to_index.reflection_table,
         input_to_index.parameters,
@@ -176,6 +189,7 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
             unindexed_experiment=input_to_index.experiment,
+            unindexed_reflections=unindexed_refl,
         )
         for id_, identifier in table.experiment_identifiers():
             selr = table.select(table["id"] == id_)
@@ -201,6 +215,7 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
             unindexed_experiment=input_to_index.experiment,
+            unindexed_reflections=unindexed_refl,
         )
 
     # If chosen, output a message to json to show live progress
@@ -230,6 +245,9 @@ def index_all_concurrent(
 ) -> Tuple[ExperimentList, flex.reflection_table, dict]:
 
     input_iterable = []
+    null_results = (
+        []
+    )  # unindexable experiments, either due to size=0 or size <params.min_spots
     results_summary = {
         i: [] for i in range(len(experiments))
     }  # create to give results in order
@@ -241,7 +259,9 @@ def index_all_concurrent(
     for n_iset, iset in enumerate(experiments.imagesets()):
         for i in range(len(iset)):
             refl_index = i + n
-            if reflections[refl_index]:
+            if reflections[refl_index] and (
+                reflections[refl_index].size() > params.min_spots
+            ):
                 expt = experiments[refl_index]
                 input_iterable.append(
                     InputToIndex(
@@ -257,11 +277,26 @@ def index_all_concurrent(
                     )
                 )
             else:  # experiments that have already been filtered
+                n_strong = 0
+                image = pathlib.Path(iset.get_image_identifier(i)).name
+                table = reflections[refl_index]
+                if table:
+                    n_strong = table.size()
+                null_results.append(
+                    IndexingResult(
+                        image=image,
+                        image_no=refl_index,
+                        imageset_no=n_iset,
+                        n_strong=n_strong,
+                        unindexed_experiment=experiments[refl_index],
+                        unindexed_reflections=table,
+                    )
+                )  # needed to allow output of unindexable expts
                 results_summary[refl_index].append(
                     {
-                        "Image": pathlib.Path(iset.get_image_identifier(i)).name,
+                        "Image": image,
                         "n_indexed": 0,
-                        "n_strong": 0,
+                        "n_strong": n_strong,
                     }
                 )
         n += len(iset)
@@ -285,6 +320,7 @@ def index_all_concurrent(
 
     sys.stdout = sys.__stdout__
     # prepare tables for output
+    results.extend(null_results)
     indexed_experiments, indexed_reflections = _join_indexing_results(
         results, experiments, original_isets, identifiers_to_scans
     )
@@ -311,10 +347,36 @@ def _join_indexing_results(
         use_gonio = experiments.goniometers()[0]
 
     n_tot = 0
-    for res in results:
+    for res in sorted(results, key=lambda a: a.image_no):
+        identifier = res.unindexed_experiment.identifier
+        scan = identifiers_to_scans[identifier]
+        expt = res.unindexed_experiment
+        expt.imageset = original_isets[res.imageset_no]
+        expt.scan = scan
+        if use_beam:
+            expt.beam = use_beam
+        if use_gonio:
+            expt.goniometer = use_gonio
+        indexed_experiments.append(res.unindexed_experiment)
+        table = res.unindexed_reflections
+
+        if not table:  # i.e. no strong spots
+            # still want to output experiment objects, so need a matching identifier in the map
+            indexed_reflections.experiment_identifiers()[n_tot] = identifier
+            n_tot += 1
+            continue
+
+        table.reset_ids()
+        ids_map = dict(table.experiment_identifiers())
+        for k in table.experiment_identifiers().keys():
+            del table.experiment_identifiers()[k]
+        table["id"] += n_tot
+        for k, v in ids_map.items():
+            table.experiment_identifiers()[k + n_tot] = v
+        n_tot += len(ids_map.keys())
+        indexed_reflections.extend(table)
+
         if res.n_indexed:
-            identifier = res.unindexed_experiment.identifier
-            scan = identifiers_to_scans[identifier]
             for expt in res.experiments:
                 expt.scan = scan
                 expt.imageset = original_isets[res.imageset_no]
@@ -328,6 +390,7 @@ def _join_indexing_results(
 
             indexed_experiments.extend(res.experiments)
             table = res.reflection_table
+            table.reset_ids()
             ids_map = dict(table.experiment_identifiers())
             for k in table.experiment_identifiers().keys():
                 del table.experiment_identifiers()[k]
@@ -410,7 +473,7 @@ def preprocess(
                 refl.map_centroids_to_reciprocal_space(elist)
             else:
                 n_filtered_out += 1
-                reflections[i] = None
+                refl["imageset_id"] = flex.int(refl.size(), 0)
                 filtered_out_images.append(i + 1)
         else:
             filtered_out_images.append(i + 1)
@@ -439,7 +502,7 @@ def preprocess(
             )
         max_cells = []
         for refl in reflections:
-            if refl:
+            if refl and refl.size() >= params.min_spots:
                 try:
                     max_cells.append(find_max_cell(refl).max_cell)
                 except (DialsIndexError, AssertionError):

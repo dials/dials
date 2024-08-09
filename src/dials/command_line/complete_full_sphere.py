@@ -16,6 +16,7 @@ from dials.algorithms.refinement import rotation_decomposition
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, flatten_experiments
 
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
@@ -63,7 +64,8 @@ class Script:
         model_shadow = params.shadow
 
         experiments = flatten_experiments(params.input.experiments)
-
+        if experiments:
+            experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
         if len(experiments) != 1:
             self.parser.print_help()
             return

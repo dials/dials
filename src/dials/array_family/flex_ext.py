@@ -1316,6 +1316,8 @@ Found %s"""
         # coordinate frame we need to look at the experiments independently
 
         for i, expt in enumerate(experiments):
+            if not expt.crystal and crystal_frame:
+                continue
             if not crystal_frame and "imageset_id" in self:
                 sel_expt = self["imageset_id"] == i
             else:

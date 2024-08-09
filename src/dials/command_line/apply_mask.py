@@ -70,7 +70,7 @@ class Script:
             return
 
         # Check number of experiments
-        n_expts = len(experiments)
+        n_expts = len(experiments.imagesets())
         n_masks = len(params.input.mask)
         if n_expts != n_masks:
             raise Sorry(

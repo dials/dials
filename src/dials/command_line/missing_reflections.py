@@ -26,6 +26,7 @@ import dials.util.log
 from dials.report.analysis import scaled_data_as_miller_array
 from dials.util import missing_reflections, tabulate
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 
@@ -75,16 +76,12 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     if not experiments or not reflections:
         parser.print_help()
         return
-    if len(reflections) != 1 and len(experiments) != len(reflections):
-        sys.exit("Number of experiments must equal the number of reflection tables")
 
-    from dials.util.multi_dataset_handling import (
-        assign_unique_identifiers,
-        parse_multiple_datasets,
-    )
-
-    reflections = parse_multiple_datasets(reflections)
-    experiments, reflections = assign_unique_identifiers(experiments, reflections)
+    experiments, reflections = Expeditor(
+        experiments, reflections
+    ).filter_experiments_with_crystals()
+    if not all(any(t.get_flags(t.flags.integrated, all=False)) for t in reflections):
+        sys.exit("dials.missing_reflections only works on integrated data")
 
     if all("inverse_scale_factor" in refl for refl in reflections):
         # Assume all arrays have been scaled

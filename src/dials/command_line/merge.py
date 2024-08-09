@@ -345,6 +345,10 @@ can be processed with dials.merge"""
                 f"""{k} not found in the reflection table.
 Only scaled data can be processed with dials.merge"""
             )
+    if not all(experiments.crystals()):
+        raise Sorry(
+            "dials.merge requires all reflection data to have a matching crystal model."
+        )
 
     try:
         if params.output.json or params.output.html:

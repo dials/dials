@@ -19,6 +19,7 @@ from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
 from dials.util import Sorry, log
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.reference import intensities_from_reference_file
 from dials.util.reindex import (
@@ -135,6 +136,13 @@ def run(args=None):
     if params.change_of_basis_op is None:
         raise Sorry("Please provide a change_of_basis_op.")
 
+    # reindex does support just reflections, in that case we don't need to worry
+    # about crystalless experiments and the program handles unindexed reflections
+    # fine. Expeditor requires an experiment list.
+    if experiments:
+        expeditor = Expeditor(experiments, reflections)
+        experiments, reflections = expeditor.filter_experiments_with_crystals()
+
     reference_crystal = None
     if params.reference.experiments is not None:
         from dxtbx.serialize import load
@@ -142,13 +150,12 @@ def run(args=None):
         reference_experiments = load.experiment_list(
             params.reference.experiments, check_format=False
         )
-        if len(reference_experiments.crystals()) == 1:
-            reference_crystal = reference_experiments.crystals()[0]
+        crystals = [expt.crystal for expt in reference_experiments if expt.crystal]
+        if len(crystals) == 1:
+            reference_crystal = crystals[0]
         else:
             # first check sg all same
-            sgs = [
-                expt.crystal.get_space_group().type().number() for expt in experiments
-            ]
+            sgs = [cryst.get_space_group().type().number() for cryst in crystals]
             if len(set(sgs)) > 1:
                 raise Sorry(
                     """The reference experiments have different space groups:
@@ -158,7 +165,7 @@ def run(args=None):
                     % ", ".join(map(str, set(sgs)))
                 )
 
-            reference_crystal = reference_experiments.crystals()[0]
+            reference_crystal = crystals[0]
             reference_crystal.set_unit_cell(
                 determine_best_unit_cell(reference_experiments)
             )
@@ -286,16 +293,19 @@ experiments file must also be specified with the option: reference.experiments= 
                 )
             raise
 
-        logger.info(
-            f"Saving reindexed experimental models to {params.output.experiments}"
-        )
-        experiments.as_file(params.output.experiments)
-
     if len(reflections):
         reflections = reindex_reflections(
             reflections, change_of_basis_op, params.hkl_offset
         )
-
+    if experiments:
+        experiments, reflections = expeditor.combine_experiments_for_output(
+            experiments, [reflections]
+        )
+        logger.info(
+            f"Saving reindexed experimental models to {params.output.experiments}"
+        )
+        experiments.as_file(params.output.experiments)
+    if reflections:
         logger.info(f"Saving reindexed reflections to {params.output.reflections}")
         reflections.as_file(params.output.reflections)
 
