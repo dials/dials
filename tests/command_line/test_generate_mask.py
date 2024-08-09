@@ -252,3 +252,19 @@ untrusted {
     with (tmp_path / masks[0]).open("rb") as fh:
         mask = pickle.load(fh)
     assert mask[0].count(False) == len(mask[0])
+
+
+def test_combine_masks(dials_data, run_in_tmp_path):
+    path = dials_data("centroid_test_data", pathlib=True)
+    experiments = ExperimentList.from_file(path / "imported_experiments.json")
+    with (path / "mask.pickle").open("rb") as fh:
+        masks = [pickle.loads(fh.read(), encoding="bytes")]
+    params = phil_scope.fetch().extract()
+
+    # Combine with existing mask
+    generate_mask(experiments, params, starting_masks=masks)
+    assert all(run_in_tmp_path.joinpath("pixels.mask").is_file() for mask in masks)
+
+    # Combine only existing masks
+    generate_mask(None, params, starting_masks=[masks[0], masks[0]])
+    assert all(run_in_tmp_path.joinpath("pixels.mask").is_file() for mask in masks)

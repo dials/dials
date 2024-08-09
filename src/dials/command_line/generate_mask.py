@@ -6,6 +6,8 @@ considered "invalid" during spot finding and integration. It provides a few
 options to create simple masks using the detector trusted range, or from
 simple shapes or by setting different resolution ranges.
 
+Masks can also be combined by including them as arguments.
+
 Examples::
 
   dials.generate_mask models.expt border=5
@@ -15,8 +17,11 @@ Examples::
     untrusted.circle=200,200,100
 
   dials.generate_mask models.expt d_max=2.00
-"""
 
+  dials.generate_mask models.expt d_max=2.00 border.mask
+
+  dials.generate_mask beamcenter.mask border.mask
+"""
 
 from __future__ import annotations
 
@@ -64,6 +69,7 @@ phil_scope = phil.parse(
 def generate_mask(
     experiments: ExperimentList,
     params: phil.scope_extract,
+    starting_masks: list = None,
 ) -> Tuple[Masks, Optional[ExperimentList]]:
     """
     Generate a pixel mask for each imageset in an experiment list.
@@ -83,6 +89,8 @@ def generate_mask(
         experiments: An experiment list containing only one imageset.
         params: Masking parameters, having the structure defined in
             :data:`phil_scope`.
+        starting_masks: list of masks to combine together with the mask being
+            generated
 
     Returns:
         A list of masks, one for each imageset.
@@ -90,6 +98,22 @@ def generate_mask(
         A copy of :param:`experiments` with the masks applied (optional,
         only returned if :attr:`params.output.experiments` is set).
     """
+
+    if starting_masks:
+        starting_mask = list(starting_masks[0])
+        for mask in starting_masks[1:]:
+            for panel_idx in range(len(starting_mask)):
+                starting_mask[panel_idx] &= mask[panel_idx]
+        starting_mask = tuple(starting_mask)
+
+    # Check if only combining masks
+    if not experiments and starting_masks:
+        # Save the mask to file
+        log.info("Writing mask to %s", params.output.mask)
+        with open(params.output.mask, "wb") as fh:
+            pickle.dump(starting_mask, fh)
+        return
+
     imagesets = experiments.imagesets()
     masks = []
 
@@ -108,6 +132,11 @@ def generate_mask(
 
     for imageset, filename in zip(imagesets, filenames):
         mask = dials.util.masking.generate_mask(imageset, params)
+        if starting_masks:
+            mask = list(mask)
+            for panel_idx in range(len(starting_mask)):
+                mask[panel_idx] &= starting_mask[panel_idx]
+            mask = tuple(mask)
         masks.append(mask)
 
         # Save the mask to file
@@ -143,7 +172,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         args: Arguments to parse. If None, :data:`sys.argv[1:]` will be used.
     """
     # Create the parser
-    usage = "usage: dials.generate_mask [options] models.expt"
+    usage = "usage: dials.generate_mask [options] [models.expt] [masks]"
     parser = ArgumentParser(
         usage=usage,
         phil=phil,
@@ -153,19 +182,43 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     )
 
     # Parse the command line arguments
-    params, options = parser.parse_args(args=args, show_diff_phil=True)
+    params, options, unhandled = parser.parse_args(
+        args=args, show_diff_phil=True, return_unhandled=True
+    )
     experiments = flatten_experiments(params.input.experiments)
 
     # Configure logging
     dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
+    # Read in any starting masks
+    remains_unhandled = []
+    starting_masks = []
+    for arg in unhandled:
+        if os.path.isfile(arg):
+            try:
+                with open(arg, "rb") as fh:
+                    mask = pickle.load(fh)
+            except Exception:
+                remains_unhandled.append(arg)
+            else:
+                if isinstance(mask, tuple):
+                    starting_masks.append(mask)
+                else:
+                    remains_unhandled.append(arg)
+    if remains_unhandled:
+        print(
+            "Couldn't recognize the following arguments:", ",".join(remains_unhandled)
+        )
+        parser.print_help()
+        return
+
     # Check number of args
-    if len(experiments) == 0:
+    if len(experiments) == 0 and len(starting_masks) == 0:
         parser.print_help()
         return
 
     # Run the script
-    generate_mask(experiments, params)
+    generate_mask(experiments, params, starting_masks=starting_masks)
 
 
 if __name__ == "__main__":
