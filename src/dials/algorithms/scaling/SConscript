@@ -5,3 +5,9 @@ env.SharedLibrary(
     source=["boost_python/scaling_helper.cc", "boost_python/scaling_ext.cc"],
     LIBS=env["LIBS"],
 )
+
+env.SharedLibrary(
+    target="#/lib/dials_tof_scaling_ext",
+    source=["tof/boost_python/tof_scaling.cc"],
+    LIBS=env["LIBS"],
+)
