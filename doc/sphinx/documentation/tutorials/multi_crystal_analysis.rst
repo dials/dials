@@ -95,7 +95,7 @@ for each dataset. This script could be written in BASH, tcsh, perl,
 ruby - whatever you feel most comfortable with. However here we will use Python,
 or more specifically :program:`dials.python` because we will take advantage of
 features in the cctbx to make it easy to write scripts that take advantage
-of `parallel execution <http://cctbx.sourceforge.net/current/python/libtbx.easy_mp.html>`_.
+of `parallel execution <https://cctbx.github.io/libtbx/libtbx.easy_mp.html>`_.
 Also we would like to read :samp:`imported.expt` with the DIALS API rather than
 extracting the sequence templates using something like :program:`grep`.
 
