@@ -181,13 +181,26 @@ class CorrelationMatrix:
             max_calls=self.cosym_analysis.params.minimization.max_calls,
         )
 
+        # FIXME THIS WILL BE GRIM
+        import copy
+
         from scipy import linalg
 
-        e_vals, e_vecs = linalg.eig(self.cosym_analysis.target.rij_matrix)
-        # e_vals, e_vecs = linalg.eig(self.cosym_analysis.coords)
+        rij = copy.copy(self.cosym_analysis.target.rij_matrix)
+        for j in range(rij.shape[0]):
+            rij[j, j] = 1
+        e_vals, e_vecs = linalg.eig(rij)
 
-        main_coords = self.cosym_analysis.target.rij_matrix
+        for val, vec in zip(e_vals, e_vecs):
+            print(val, vec)
+
+        # e_vals, e_vecs = linalg.eig(self.cosym_analysis.target.rij_matrix)
+        # e_vals, e_vecs = linalg.eig(self.cosym_analysis.coords)
+        # exit()
+
+        # main_coords = self.cosym_analysis.target.rij_matrix
         # main_coords = self.cosym_analysis.coords
+        main_coords = rij
 
         # PROBLEM WITH USING RIJ - COORDS NOT REAL COORDS - BECAUSE PAIRWISE MATRIX RATHER THAN COORDS
 
