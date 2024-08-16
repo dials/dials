@@ -11,7 +11,7 @@ try:
     from typing import Literal, TypedDict
 
     type SectionName = Literal["build", "host", "run", "test"]
-    VALID_SECTIONS = {"build", "run", "host", "test"}  # type: set[SectionName]
+    VALID_SECTIONS = ["build", "host", "run", "test"]  # type: set[SectionName]
     type Dependencies = dict[SectionName, list[Dependency]]
 
 except ImportError:
@@ -72,8 +72,10 @@ def _merge_dependency_lists(source, merge_into):
     indices = {x[0]: i for i, x in enumerate(merge_into)}
     for pkg, ver, line in source:
         if pkg is None:
-            # Lines that don't define a package always get added
-            merge_into.append(Dependency(pkg, ver, line))
+            # Lines that don't define a package always get added, as long
+            # as we don't have an identical line already.
+            if not any(x.raw_line == line for x in merge_into):
+                merge_into.append(Dependency(pkg, ver, line))
         elif pkg in indices:
             # This already exists in the target. Should we replace it?
             other_ver = merge_into[indices[pkg]][1]
@@ -262,8 +264,7 @@ if __name__ == "__main__":
         "-p",
         "--platform",
         choices=["osx", "linux", "win"],
-        help="Choose the target for handling bootstrap dependency lists. Default: %(default)s",
-        default=_native_platform(),
+        help=f"Choose the target for handling bootstrap dependency lists. Default: {_native_platform()}",
     )
     # parser.add_argument("--conda-build", action="store_const", const="conda-build", dest="kind", help="Run as though constructing a conda-build recipe")
     parser.add_argument(
@@ -287,4 +288,17 @@ if __name__ == "__main__":
             sys.exit("Error: Can only specify platform with --kind=bootstrap")
         deps = DependencySelectorParser(bootstrap=False, prebuilt_cctbx=True)
         reqs = deps.parse_files(args.sources)
-        pprint(reqs)
+        output = []
+        for section in VALID_SECTIONS:
+            if not section in reqs or not reqs[section]:
+                continue
+            output.append(f"{section}:")
+            output.extend(
+                f"    - {x.raw_line}"
+                for x in sorted(
+                    reqs[section],
+                    key=lambda x: (0 if x.raw_line.startswith("{{") else 1, x.raw_line),
+                )
+            )
+
+        print("\n".join(output))
