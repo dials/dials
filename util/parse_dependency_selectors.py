@@ -7,11 +7,12 @@ import re
 import sys
 from collections import namedtuple
 
+VALID_SECTIONS = ["build", "host", "run", "test"]  # type: list[SectionName]
+
 try:
-    from typing import Literal, TypedDict
+    from typing import Literal
 
     type SectionName = Literal["build", "host", "run", "test"]
-    VALID_SECTIONS = ["build", "host", "run", "test"]  # type: set[SectionName]
     type Dependencies = dict[SectionName, list[Dependency]]
 
 except ImportError:
