@@ -23,6 +23,17 @@ re_selector = re.compile(r"# *\[([^#]+)]$")
 re_pin = re.compile(r"""{{ *pin_compatible *\( *['"]([^'"]+)['"]""")
 
 
+def _native_platform():
+    # type: () -> Literal["osx", "win", "linux"]
+    """Gets the native platform name for selection purposes"""
+    if sys.platform == "darwin":
+        return "osx"
+    elif os.name == "nt":
+        return "win"
+    elif sys.platform.startswith("linux"):
+        return "linux"
+
+
 def _split_dependency_line(line):
     """Split a single line into (name, version, raw_line) parts"""
     # type: (str) -> Dependency
@@ -97,11 +108,13 @@ class DependencySelectorParser(object):
 
     def __init__(self, **kwargs):
         self._vars = dict(kwargs)
+        if kwargs.get("platform", None) is None:
+            kwargs["platform"] = _native_platform()
         self._vars.update(
             {
-                "osx": kwargs.get("osx", sys.platform == "darwin"),
-                "linux": kwargs.get("linux", sys.platform.startswith("linux")),
-                "win": kwargs.get("win", os.name == "nt"),
+                "osx": kwargs["platform"] == "osx",
+                "linux": kwargs["platform"] == "linux",
+                "win": kwargs["platform"] == "win",
             }
         )
 
@@ -204,10 +217,12 @@ class DependencySelectorParser(object):
         return reqs
 
 
-def preprocess_for_bootstrap(paths, prebuilt_cctbx):
-    # type: (list[str | os.PathLike], bool) -> list[str]
+def preprocess_for_bootstrap(paths, prebuilt_cctbx, platform):
+    # type: (list[str | os.PathLike], bool, str) -> list[str]
     """Do dependency file preprocessing intended for bootstrap.py"""
-    parser = DependencySelectorParser(prebuilt_cctbx=prebuilt_cctbx, bootstrap=True)
+    parser = DependencySelectorParser(
+        prebuilt_cctbx=prebuilt_cctbx, bootstrap=True, platform=platform
+    )
     reqs = parser.parse_files(paths)
     merged_req = []
     for items in reqs.values():
@@ -243,6 +258,13 @@ if __name__ == "__main__":
         help="Choose the target for handling dependency lists. Default: %(default)s",
         default="bootstrap",
     )
+    parser.add_argument(
+        "-p",
+        "--platform",
+        choices=["osx", "linux", "win"],
+        help="Choose the target for handling bootstrap dependency lists. Default: %(default)s",
+        default=_native_platform(),
+    )
     # parser.add_argument("--conda-build", action="store_const", const="conda-build", dest="kind", help="Run as though constructing a conda-build recipe")
     parser.add_argument(
         "--prebuilt-cctbx", help="Mark as using prebuilt cctbx. Implied by conda-build."
@@ -254,11 +276,15 @@ if __name__ == "__main__":
         print(
             "\n".join(
                 preprocess_for_bootstrap(
-                    args.sources, prebuilt_cctbx=args.prebuilt_cctbx
+                    args.sources,
+                    prebuilt_cctbx=args.prebuilt_cctbx,
+                    platform=args.platform,
                 )
             )
         )
     else:
+        if args.platform:
+            sys.exit("Error: Can only specify platform with --kind=bootstrap")
         deps = DependencySelectorParser(bootstrap=False, prebuilt_cctbx=True)
         reqs = deps.parse_files(args.sources)
         pprint(reqs)
