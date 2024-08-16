@@ -8,19 +8,18 @@ COPY installer/bootstrap.py .
 ENV PIP_ROOT_USER_ACTION=ignore
 ENV CMAKE_GENERATOR=Ninja
 RUN python3 bootstrap.py --cmake
-RUN cmake --install build --config
+RUN /dials/conda_base/bin/cmake --install build
+RUN /dials/conda_base/bin/python3 -mpip install modules/dxtbx modules/dials modules/xia2
 
 # Copy to final image
 FROM rockylinux:9
-COPY ./docker-entrypoint.sh .
-COPY --from=builder /dials/conda_base/dials/dials /dials/
-
-RUN chmod 0755 /docker-entrypoint.sh
-
-RUN dnf install -y glibc-locale-source 
+RUN dnf install -y glibc-locale-source
 RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 RUN echo "LANG=\"en_US.UTF-8\"" > /etc/locale.conf
 ENV LANG en_US.UTF-8
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+RUN mkdir /dials
+COPY --from=builder /dials/conda_base /dials/conda_base
+COPY --from=builder /dials/dials /dials
+ENV PATH="/dials/conda_base/bin:$PATH"
 CMD ["dials.version"]
