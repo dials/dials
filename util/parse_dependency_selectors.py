@@ -7,7 +7,17 @@ import re
 import sys
 from collections import namedtuple
 
+try:
+    from typing import Literal, TypedDict
+
+    type SectionName = Literal["build", "host", "run", "test"]
+    VALID_SECTIONS = {"build", "run", "host", "test"}  # type: set[SectionName]
+    type Dependencies = dict[SectionName, list[Dependency]]
+
+except ImportError:
+    pass
 Dependency = namedtuple("Dependency", ["name", "version", "raw_line"])
+
 
 re_selector = re.compile(r"# *\[([^#]+)]$")
 re_pin = re.compile(r"""{{ *pin_compatible *\( *['"]([^'"]+)['"]""")
@@ -19,7 +29,7 @@ def _split_dependency_line(line):
 
     # Lines that are templated get ignored here
     if "{" in line:
-        return (None, None, line)
+        return Dependency(None, None, line)
     pending = line
     # Strip off the comment/selector
     if "#" in line:
@@ -52,26 +62,27 @@ def _merge_dependency_lists(source, merge_into):
     for pkg, ver, line in source:
         if pkg is None:
             # Lines that don't define a package always get added
-            merge_into.append(pkg, ver, line)
+            merge_into.append(Dependency(pkg, ver, line))
         elif pkg in indices:
             # This already exists in the target. Should we replace it?
             other_ver = merge_into[indices[pkg]][1]
             if not other_ver and ver:
                 print(f"Merging '{line}' over {merge_into[indices[pkg]]}")
-                merge_into[indices[pkg]] = (pkg, ver, line)
+                merge_into[indices[pkg]] = Dependency(pkg, ver, line)
             elif other_ver and ver and ver != other_ver:
                 raise RuntimeError(
                     "Cannot merge requirements for %s: '%s' and '%s'"
                     % (pkg, ver, other_ver)
                 )
         else:
-            merge_into.append((pkg, ver, line))
+            merge_into.append(Dependency(pkg, ver, line))
             indices[pkg] = len(merge_into) - 1
 
 
-def _merge_dependency_dictionaries(sources):
-    # type: (list[dict[str, Dependency]]) -> dict[str, Dependency]
-    """Merge multiple parsed dependency dictionaries into one."""
+# def _merge_dependency_dictionaries(sources):
+#     # type: (list[dict[str, Dependency]]) -> dict[str, Dependency]
+#     """Merge multiple parsed dependency dictionaries into one."""
+#     Evidently WIP?
 
 
 class DependencySelectorParser(object):
@@ -127,7 +138,7 @@ class DependencySelectorParser(object):
         return "\n".join(output_lines)
 
     def parse_file(self, filename):
-        # type: (str) -> dict[str, Dependency]
+        # type: (str) -> Dependencies
         """
         Parse a dependency file into a structured dictionary.
 
@@ -141,15 +152,17 @@ class DependencySelectorParser(object):
         """
         with open(filename, "rt") as f:
             data = self.preprocess(f.read())
-        output = {}
-        current_section = None
+        output = {}  # type: Dependencies
+        current_section = None  # type: SectionName | None
         for n, line in enumerate(data.splitlines()):
             # print(f"Examining line {n}: {line} (current: {current_section})")
             if "#" in line:
                 line = line[: line.index("#")]
             line = line.strip()
             if line.endswith(":"):
-                current_section = line[:-1].strip()
+                new_section = line[:-1].strip()
+                assert new_section in VALID_SECTIONS
+                current_section = new_section
                 output[current_section] = []
             elif line.startswith("-"):
                 if not current_section:
@@ -162,7 +175,10 @@ class DependencySelectorParser(object):
                         + line
                         + "'"
                     )
-                output[current_section].append(_split_dependency_line(line[1:].strip()))
+                assert current_section in VALID_SECTIONS
+                req = _split_dependency_line(line[1:].strip())
+                the_list = output.setdefault(current_section, [])
+                the_list.append(req)
             else:
                 if line:
                     raise RuntimeError(
@@ -177,14 +193,15 @@ class DependencySelectorParser(object):
         return output
 
     def parse_files(self, filenames):
-        # type: (list[str | os.PathLike]) -> dict[str, Dependency]
+        # type: (list[str | os.PathLike]) -> Dependencies
         """Parse and merge multiple dependency files."""
-        reqs = {}  # type: dict[str, list[Dependency]]
+        reqs = {}  # type: Dependencies
         for source in filenames:
-            source_reqs = deps.parse_file(str(source))
+            source_reqs = self.parse_file(str(source))
             # Now, merge this into the previous results
             for section, items in source_reqs.items():
                 _merge_dependency_lists(items, reqs.setdefault(section, []))
+        return reqs
 
 
 def preprocess_for_bootstrap(paths, prebuilt_cctbx):
@@ -230,7 +247,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prebuilt-cctbx", help="Mark as using prebuilt cctbx. Implied by conda-build."
     )
-    parser.add_argument("source", nargs="+", help="Dependency files to merge")
+    parser.add_argument("sources", nargs="+", help="Dependency files to merge")
     args = parser.parse_args()
 
     if args.kind == "bootstrap":
