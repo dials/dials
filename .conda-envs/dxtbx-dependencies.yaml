@@ -48,8 +48,8 @@ build:
   - cross-python_{{ target_platform }} # [build_platform != target_platform] # [not bootstrap]
   - numpy # [build_platform != target_platform] # [not bootstrap]
   - pybind11 # [build_platform != target_platform] # [not bootstrap]
-  - { { compiler('cxx') } } # [not bootstrap]
-  - { { stdlib("c") } } # [not bootstrap]
+  - {{ compiler('cxx') }} # [not bootstrap]
+  - {{ stdlib('c') }} # [not bootstrap]
   - cxx-compiler # [bootstrap]
 
 host:
@@ -58,21 +58,21 @@ host:
   - hdf5
   - libboost-devel
   - libboost-python-devel
-  - numpy >=1.19,<1.21|>=1.21.5 #[bootstrap]
+  - numpy >=1.19,<1.21|>=1.21.5|<2 #[bootstrap]
   - numpy # [not bootstrap]
   - pip
   - pybind11
   - python
 
 run:
-  - { { pin_compatible('cctbx-base') } } # [not bootstrap]
-  - { { pin_compatible('hdf5') } } # [not bootstrap]
+  - {{ pin_compatible('cctbx-base') }} # [not bootstrap]
+  - {{ pin_compatible('hdf5') }} # [not bootstrap]
   - h5py
   - hdf5plugin
   - matplotlib-base >=3.0.2
   - mrcfile
   - natsort
-  - { { pin_compatible('numpy') } } # [not bootstrap]
+  - {{ pin_compatible('numpy') }} # [not bootstrap]
   - nxmx
   - orderedset
   - pint

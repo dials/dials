@@ -44,9 +44,9 @@
 build:
   - python # [build_platform != target_platform] # [not bootstrap]
   - cross-python_{{ target_platform }} # [build_platform != target_platform] # [not bootstrap]
-  - { { compiler('cxx') } } # [not bootstrap]
+  - {{ compiler('cxx') }} # [not bootstrap]
   - cxx-compiler #[bootstrap]
-  - { { stdlib("c") } } #[not bootstrap]
+  - {{ stdlib('c') }} #[not bootstrap]
   - cmake # [prebuilt_cctbx]
   - ninja # [prebuilt_cctbx]
   - requests # Used for doc builds to update release list for sphinx # [bootstrap]
@@ -94,8 +94,8 @@ host:
   - zlib #[not prebuilt_cctbx]
 
 run:
-  - { { pin_compatible('cctbx-base') } } #[not bootstrap]
-  - { { pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) } } #[not bootstrap]
+  - {{ pin_compatible('cctbx-base') }} #[not bootstrap]
+  - {{ pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) }} #[not bootstrap]
   - gemmi >=0.6.5
   - h5py >=3.1.0
   - jinja2
