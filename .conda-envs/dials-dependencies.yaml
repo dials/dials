@@ -65,6 +65,7 @@ host:
 - pthread-stubs # [bootstrap and osx]
 - libcxx # [bootstrap and osx]
 - mesa-libgl-devel-cos7-x86_64 # [linux and not prebuilt_cctbx]
+- libglu # [linux and not prebuilt_cctbx]
 ########################################################################
 # AND, a whole load of dependencies of unknown provenance. These were
 # present in the dependency list, and probably all come out of what is
@@ -79,7 +80,6 @@ host:
 - eigen  #[not prebuilt_cctbx]
 - future  #[not prebuilt_cctbx]
 - iota  #[not prebuilt_cctbx]
-- jpeg  #[not prebuilt_cctbx]
 - msgpack-python  #[not prebuilt_cctbx]
 - pillow >=5.4.1  #[not prebuilt_cctbx]
 - psutil  #[not prebuilt_cctbx]
@@ -105,12 +105,14 @@ run:
 - orderedset
 - pandas
 - pycbf #[prebuilt_cctbx]
+- pyopengl # Shouldn't be necessary with prebuilt_cctbx but they don't include this
 - python
 - scikit-learn
 - scipy
 - tabulate
 - tqdm
-- wxpython >=4.2.0
+- wxpython >=4.2.0 #[not osx]
+- wxpython >=4.2.0=*_5 #[osx]
 - python.app # [bootstrap and osx]
 - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
 
