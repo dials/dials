@@ -100,7 +100,7 @@ run:
   - h5py >=3.1.0
   - jinja2
   - matplotlib-base >=3.0.2
-  - numpy >=1.19,<1.21|>=1.21.5 #[bootstrap]
+  - numpy >=1.19,<1.21|>=1.21.5|<2 #[bootstrap]
   - numpy #[not bootstrap]
   - orderedset
   - pandas

@@ -85,7 +85,7 @@ def _merge_dependency_lists(source, merge_into):
                 merge_into[indices[pkg]] = Dependency(pkg, ver, line)
             elif other_ver and ver and ver != other_ver:
                 raise RuntimeError(
-                    "Cannot merge requirements for %s: '%s' and '%s'"
+                    "Cannot merge conflicting requirements for %s: '%s' and '%s' - only know how to merge if these are the same, or one is unbound."
                     % (pkg, ver, other_ver)
                 )
         else:
@@ -220,16 +220,17 @@ class DependencySelectorParser(object):
         return reqs
 
 
-def preprocess_for_bootstrap(paths, prebuilt_cctbx, platform):
-    # type: (list[str | os.PathLike], bool, str) -> list[str]
+def preprocess_for_bootstrap(paths, prebuilt_cctbx, platform, sections):
+    # type: (list[str | os.PathLike], bool, str, list[SectionName]) -> list[str]
     """Do dependency file preprocessing intended for bootstrap.py"""
     parser = DependencySelectorParser(
         prebuilt_cctbx=prebuilt_cctbx, bootstrap=True, platform=platform
     )
     reqs = parser.parse_files(paths)
     merged_req = []
-    for items in reqs.values():
-        _merge_dependency_lists(items, merged_req)
+    for section, items in reqs.items():
+        if section in sections or not sections:
+            _merge_dependency_lists(items, merged_req)
 
     output_lines = []
     for pkg, ver, _ in sorted(merged_req, key=lambda x: x[0]):
@@ -251,15 +252,13 @@ def test_parser():
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
-    from pprint import pprint
 
     parser = ArgumentParser()
     parser.add_argument(
-        "-k",
-        "--kind",
+        "kind",
         choices=["bootstrap", "conda-build"],
-        help="Choose the target for handling dependency lists. Default: %(default)s",
-        default="bootstrap",
+        help="Choose the target for handling dependency lists",
+        metavar="KIND",
     )
     parser.add_argument(
         "-p",
@@ -267,12 +266,41 @@ if __name__ == "__main__":
         choices=["osx", "linux", "win"],
         help=f"Choose the target for handling bootstrap dependency lists. Default: {_native_platform()}",
     )
-    # parser.add_argument("--conda-build", action="store_const", const="conda-build", dest="kind", help="Run as though constructing a conda-build recipe")
     parser.add_argument(
         "--prebuilt-cctbx", help="Mark as using prebuilt cctbx. Implied by conda-build."
     )
+    parser.add_argument(
+        "--build",
+        help="Include build section in output",
+        dest="sections",
+        action="append_const",
+        const="build",
+    )
+    parser.add_argument(
+        "--host",
+        help="Include build section in output",
+        dest="sections",
+        action="append_const",
+        const="host",
+    )
+    parser.add_argument(
+        "--test",
+        help="Include build section in output",
+        dest="sections",
+        action="append_const",
+        const="test",
+    )
+    parser.add_argument(
+        "--run",
+        help="Include build section in output",
+        dest="sections",
+        action="append_const",
+        const="run",
+    )
     parser.add_argument("sources", nargs="+", help="Dependency files to merge")
     args = parser.parse_args()
+    if not args.sections:
+        args.sections = VALID_SECTIONS
 
     if args.kind == "bootstrap":
         print(
@@ -281,6 +309,7 @@ if __name__ == "__main__":
                     args.sources,
                     prebuilt_cctbx=args.prebuilt_cctbx,
                     platform=args.platform,
+                    sections=args.sections,
                 )
             )
         )
@@ -291,7 +320,7 @@ if __name__ == "__main__":
         reqs = deps.parse_files(args.sources)
         output = []
         for section in VALID_SECTIONS:
-            if not section in reqs or not reqs[section]:
+            if section not in reqs or not reqs[section] or section not in args.sections:
                 continue
             output.append(f"{section}:")
             output.extend(
