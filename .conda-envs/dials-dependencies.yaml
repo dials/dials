@@ -1,4 +1,4 @@
-# # Conda dependencies for DXTBX on all platforms.
+# # Conda dependencies for DIALS on all platforms.
 #
 # This file is interpreted by bootstrap. it uses a HIGHLY limited subset of
 # yaml and conda-build selector preprocessing. As such, the file itself is not
