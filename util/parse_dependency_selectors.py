@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import annotations
+
 import os
 import re
 import sys
@@ -218,11 +220,27 @@ class DependencySelectorParser(object):
         return reqs
 
 
-def preprocess_for_bootstrap(paths, prebuilt_cctbx, platform, sections):
-    # type: (list[str | os.PathLike], bool, str, list[SectionName]) -> list[str]
-    """Do dependency file preprocessing intended for bootstrap.py"""
+def preprocess_for_bootstrap(paths, prebuilt_cctbx, platform=None, sections=None):
+    # type: (list[str | os.PathLike], bool, str | None, list[SectionName]|None) -> list[str]
+    """
+    Do dependency file preprocessing, intended for bootstrap.py.
+
+    Args:
+        paths: List of dependency list files to merge
+        prebuilt_cctbx: Whether this is processing for a prebuilt CCTBX
+            distribution, or not.
+        platform:
+            The platform to process the dependencies for. Default: Current.
+        sections:
+            Which sections to process (build, host, run, test). Default: All.
+
+    Returns:
+        A list of dependency strings, suitable for passing to conda/mamba install.
+    """
     parser = DependencySelectorParser(
-        prebuilt_cctbx=prebuilt_cctbx, bootstrap=True, platform=platform
+        prebuilt_cctbx=prebuilt_cctbx,
+        bootstrap=True,
+        platform=platform or _native_platform(),
     )
     reqs = parser.parse_files(paths)
     merged_req = []
