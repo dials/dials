@@ -36,11 +36,8 @@ from dxtbx.model import Experiment
 
 import dials.util.log
 from dials.array_family import flex
-from dials.util.multi_dataset_handling import (
-    parse_multiple_datasets,
-    sort_tables_to_experiments_order,
-)
-from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
+from dials.util.multi_dataset_handling import Expeditor
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 Vector = Sequence[SupportsFloat]
 
@@ -318,16 +315,13 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     # Configure the logging.
     dials.util.log.config(options.verbose, logfile=params.output.log)
 
-    # These functions are commonly used to collate the input.
-    experiments = flatten_experiments(params.input.experiments)
-    reflections_list = flatten_reflections(params.input.reflections)
-    # Work around parse_multiple_datasets dropping unindexed reflections.
-    unindexed = flex.reflection_table()
-    for r_table in reflections_list:
-        unindexed.extend(r_table.select(r_table["id"] == -1))
-    # Get a single reflection table per experiment object.
-    reflections_list = parse_multiple_datasets(reflections_list)
-    reflections_list = sort_tables_to_experiments_order(reflections_list, experiments)
+    # Collate the input.
+    reflections_list, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
+
+    expeditor = Expeditor(experiments, reflections_list)
+    experiments, reflections_list = expeditor.filter_experiments_with_crystals()
 
     # Record the density of diamond in g·cm⁻³ (for consistency with NIST tables,
     # https://doi.org/10.18434/T4D01F).
@@ -344,6 +338,9 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
             experiment, reflections, dac_norm, params.anvil.thickness, density
         )
     logger.info("Done.")
+    experiments, reflections = expeditor.combine_experiments_for_output(
+        experiments, reflections_list
+    )
 
     # Do optional experiment list file output here.
     if params.output.experiments:
@@ -351,10 +348,6 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         experiments.as_file(params.output.experiments)
     logger.info("Writing the reflection table to %s", params.output.reflections)
     # Collate reflections into a single reflection table and save it to file.
-    reflections = unindexed
-    for r_table in reflections_list:
-        reflections.extend(r_table)
-    del reflections_list
     reflections.as_file(params.output.reflections)
 
 

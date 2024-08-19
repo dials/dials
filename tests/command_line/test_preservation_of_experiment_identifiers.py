@@ -84,10 +84,14 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     experiments = load.experiment_list(indexed_expt)
     reflections = flex.reflection_table.from_file(indexed_refl)
 
-    indexed_expt_id = experiments[0].identifier
+    indexed = [expt for expt in experiments if expt.crystal]
+    indexed_expt_id = indexed[0].identifier
     assert indexed_expt_id
-    assert list(experiments.identifiers()) == [indexed_expt_id]
-    assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
+    assert list(experiments.identifiers()) == [import_expt_id, indexed_expt_id]
+    assert dict(reflections.experiment_identifiers()) == {
+        0: import_expt_id,
+        1: indexed_expt_id,
+    }
 
     # Now refine bravais setting
     result = subprocess.run(
@@ -99,7 +103,7 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
 
     assert bravais_expt.is_file()
     experiments = load.experiment_list(bravais_expt)
-    assert experiments[0].identifier == indexed_expt_id
+    assert list(experiments.identifiers()) == [import_expt_id, indexed_expt_id]
 
     # Now reindex
     result = subprocess.run(
@@ -121,8 +125,11 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     experiments = load.experiment_list(reindexed_expt)
     reflections = flex.reflection_table.from_file(reindexed_refl)
 
-    assert list(experiments.identifiers()) == [indexed_expt_id]
-    assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
+    assert list(experiments.identifiers()) == [import_expt_id, indexed_expt_id]
+    assert dict(reflections.experiment_identifiers()) == {
+        0: import_expt_id,
+        1: indexed_expt_id,
+    }
 
     # Now refine
     result = subprocess.run(
@@ -143,8 +150,11 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     experiments = load.experiment_list(refined_expt)
     reflections = flex.reflection_table.from_file(refined_refl)
 
-    assert list(experiments.identifiers()) == [indexed_expt_id]
-    assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
+    assert list(experiments.identifiers()) == [import_expt_id, indexed_expt_id]
+    assert dict(reflections.experiment_identifiers()) == {
+        0: import_expt_id,
+        1: indexed_expt_id,
+    }
 
     # Now integrate
     result = subprocess.run(

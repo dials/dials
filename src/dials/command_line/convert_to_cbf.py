@@ -67,14 +67,10 @@ def run(args=None):
         parser.print_help()
         return
 
-    if len(experiments) > 1:
-        sys.exit("Only one experiment can be processed at a time")
-    else:
-        imagesets = experiments.imagesets()
-        assert len(imagesets) == 1, len(imagesets)
-        imageset = imagesets[0]
+    if len(experiments.imagesets()) != 1:
+        sys.exit("Only one imageset can be processed at a time")
 
-    convert_to_cbf(imageset, template)
+    convert_to_cbf(experiments.imagesets()[0], template)
 
 
 if __name__ == "__main__":

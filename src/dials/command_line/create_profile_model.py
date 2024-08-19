@@ -5,6 +5,7 @@ import logging
 from libtbx.phil import parse
 
 from dials.util import show_mail_handle_errors
+from dials.util.multi_dataset_handling import Expeditor
 
 logger = logging.getLogger("dials.command_line.create_profile_model")
 
@@ -72,6 +73,11 @@ class Script:
         if len(reflections) == 0 and len(experiments) == 0:
             self.parser.print_help()
             return
+
+        experiments, reflections = Expeditor(
+            experiments, reflections
+        ).filter_experiments_with_crystals()
+
         if len(reflections) != 1:
             raise Sorry("exactly 1 reflection table must be specified")
         if len(experiments) == 0:

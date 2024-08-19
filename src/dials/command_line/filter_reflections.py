@@ -9,6 +9,7 @@ from operator import itemgetter
 from tokenize import TokenError, generate_tokens, untokenize
 
 from cctbx import uctbx
+from dxtbx.model import ExperimentList
 from libtbx.phil import parse
 
 from dials.algorithms.integration import filtering
@@ -211,13 +212,27 @@ def run_filtering(params, experiments, reflections):
                 )
                 sel = reflections["id"] >= 0
                 if sel.count(False) > 0:
-                    print(
-                        "Removing {} reflections with negative experiment id".format(
-                            sel.count(False)
-                        )
-                    )
+                    print("Removing {} unindexed reflections".format(sel.count(False)))
                 reflections = reflections.select(sel)
-                reflections.compute_d(experiments)
+                if not all(
+                    experiments.crystals()
+                ):  # handle potential crystalless expts
+                    tables = reflections.split_by_experiment_id()
+                    for expt, table in zip(experiments, tables):
+                        table.reset_ids()
+                        expts = ExperimentList([expt])
+                        if expt.crystal:
+                            table.compute_d(expts)
+                        else:
+                            if "rlp" not in table:
+                                if "xyzobs.mm.value" not in table:
+                                    table.centroid_px_to_mm(expts)
+                                table.map_centroids_to_reciprocal_space(expts)
+                            d_star_sq = flex.pow2(table["rlp"].norms())
+                            table["d"] = uctbx.d_star_sq_as_d(d_star_sq)
+                    reflections = flex.reflection_table.concat(tables)
+                else:
+                    reflections.compute_d(experiments)
             elif experiments:
                 # Calculate d-spacings from the observed reflection centroids
                 if "rlp" not in reflections:

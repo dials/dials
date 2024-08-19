@@ -17,6 +17,7 @@ from scitbx import matrix
 import dials.util
 from dials.algorithms.refinement import rotation_decomposition
 from dials.util import tabulate
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
@@ -369,7 +370,7 @@ def run(args=None):
     if len(experiments) == 0:
         parser.print_help()
         exit(0)
-
+    experiments, _ = Expeditor(experiments).filter_experiments_with_crystals()
     expt = experiments[0]
 
     if params.space_group is not None:

@@ -6,6 +6,7 @@ import math
 import numpy as np
 
 import libtbx.phil
+from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
 
@@ -77,7 +78,7 @@ def run(args=None):
 
     params, options = parser.parse_args(args, show_diff_phil=False)
     experiments = flatten_experiments(params.input.experiments)
-
+    experiments = ExperimentList([e for e in experiments if e.crystal])
     if len(experiments) == 0:
         parser.print_help()
         exit(0)

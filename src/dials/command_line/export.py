@@ -6,7 +6,9 @@ import sys
 from iotbx.phil import parse
 from libtbx import Auto
 
+from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import Expeditor
 
 logger = logging.getLogger("dials.command_line.export")
 
@@ -634,6 +636,14 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
+    if any(experiments.crystals()):
+        experiments, reflections = Expeditor(
+            experiments, reflections
+        ).filter_experiments_with_crystals()
+        if reflections:
+            reflections = [flex.reflection_table.concat(reflections)]
+        else:
+            reflections = flex.reflection_table([])
     try:
         template_list = {
             str(e.imageset.get_template())

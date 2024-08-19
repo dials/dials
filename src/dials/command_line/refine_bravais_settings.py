@@ -49,6 +49,7 @@ from dials.algorithms.indexing.bravais_settings import (
 )
 from dials.array_family import flex
 from dials.util import log
+from dials.util.multi_dataset_handling import Expeditor
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -200,6 +201,10 @@ def run(args=None):
     if len(experiments) == 0:
         parser.print_help()
         return
+    expeditor = Expeditor(experiments, [reflections])
+    experiments, reflections = expeditor.filter_experiments_with_crystals()
+    reflections = flex.reflection_table.concat(reflections)
+
     if len(experiments.crystals()) > 1:
         if params.crystal_id is not None:
             experiments, reflections = select_datasets_on_crystal_id(
@@ -237,6 +242,9 @@ def run(args=None):
         soln = int(subgroup.setting_number)
         bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
         logger.info("Saving solution %i as %s", soln, bs_json)
+        crystal_id = params.crystal_id if params.crystal_id else 0
+        expts = expeditor.generate_experiments_with_updated_crystal(expts, crystal_id)
+
         expts.as_file(os.path.join(params.output.directory, bs_json))
 
 

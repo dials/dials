@@ -87,9 +87,7 @@ def run(args=None):
         parser.print_help()
         return
 
-    reflections = reflections[0]
-
-    pseudo_integrated = indexed_as_integrated(reflections, params, experiments)
+    pseudo_integrated = indexed_as_integrated(reflections[0], params, experiments)
     pseudo_integrated.as_file(params.output.reflections)
 
     logger.info(f"\nSaved pseudo-integrated data to: {params.output.reflections}\n")
