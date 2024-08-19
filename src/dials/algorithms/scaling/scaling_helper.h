@@ -62,7 +62,7 @@ public:
     const scitbx::af::const_ref<double> values) {
     // Use sparse storage as only naverage (default 3) values per row are
     // non-zero
-    std::size_t npoints = x.size();  //# data
+    std::size_t npoints = x.size();  // # data
     DIALS_ASSERT(npoints > 1);
     matrix<double> weight(npoints, nvalues - 1);
 
