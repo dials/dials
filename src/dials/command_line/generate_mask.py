@@ -18,9 +18,9 @@ Examples::
 
   dials.generate_mask models.expt d_max=2.00
 
-  dials.generate_mask models.expt d_max=2.00 border.mask
+  dials.generate_mask models.expt d_max=2.00 existing.mask
 
-  dials.generate_mask beamcenter.mask border.mask
+  dials.generate_mask backstop.mask shadow.mask
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 import os.path
 import pickle
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import libtbx.phil as phil
 from dxtbx.format.image import ImageBool
@@ -69,7 +69,7 @@ phil_scope = phil.parse(
 def generate_mask(
     experiments: ExperimentList,
     params: phil.scope_extract,
-    starting_masks: list = None,
+    existing_masks: list = Union[None, Masks],
 ) -> Tuple[Masks, Optional[ExperimentList]]:
     """
     Generate a pixel mask for each imageset in an experiment list.
@@ -89,7 +89,7 @@ def generate_mask(
         experiments: An experiment list containing only one imageset.
         params: Masking parameters, having the structure defined in
             :data:`phil_scope`.
-        starting_masks: list of masks to combine together with the mask being
+        existing_masks: list of masks to combine with the mask being
             generated
 
     Returns:
@@ -99,19 +99,19 @@ def generate_mask(
         only returned if :attr:`params.output.experiments` is set).
     """
 
-    if starting_masks:
-        starting_mask = list(starting_masks[0])
-        for mask in starting_masks[1:]:
-            for panel_idx in range(len(starting_mask)):
-                starting_mask[panel_idx] &= mask[panel_idx]
-        starting_mask = tuple(starting_mask)
+    if existing_masks:
+        existing_mask = list(existing_masks[0])
+        for mask in existing_masks[1:]:
+            for panel_idx in range(len(existing_mask)):
+                existing_mask[panel_idx] &= mask[panel_idx]
+        existing_mask = tuple(existing_mask)
 
     # Check if only combining masks
-    if not experiments and starting_masks:
+    if not experiments and existing_masks:
         # Save the mask to file
         log.info("Writing mask to %s", params.output.mask)
         with open(params.output.mask, "wb") as fh:
-            pickle.dump(starting_mask, fh)
+            pickle.dump(existing_mask, fh)
         return
 
     imagesets = experiments.imagesets()
@@ -132,10 +132,10 @@ def generate_mask(
 
     for imageset, filename in zip(imagesets, filenames):
         mask = dials.util.masking.generate_mask(imageset, params)
-        if starting_masks:
+        if existing_masks:
             mask = list(mask)
-            for panel_idx in range(len(starting_mask)):
-                mask[panel_idx] &= starting_mask[panel_idx]
+            for panel_idx in range(len(existing_mask)):
+                mask[panel_idx] &= existing_mask[panel_idx]
             mask = tuple(mask)
         masks.append(mask)
 
@@ -172,7 +172,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         args: Arguments to parse. If None, :data:`sys.argv[1:]` will be used.
     """
     # Create the parser
-    usage = "usage: dials.generate_mask [options] [models.expt] [masks]"
+    usage = "usage: dials.generate_mask [options] [models.expt] [mask, mask, ...]"
     parser = ArgumentParser(
         usage=usage,
         phil=phil,
@@ -192,33 +192,45 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
 
     # Read in any starting masks
     remains_unhandled = []
-    starting_masks = []
+    existing_masks = []
     for arg in unhandled:
         if os.path.isfile(arg):
             try:
                 with open(arg, "rb") as fh:
-                    mask = pickle.load(fh)
+                    mask = pickle.load(fh, encoding="bytes")
             except Exception:
                 remains_unhandled.append(arg)
             else:
-                if isinstance(mask, tuple):
-                    starting_masks.append(mask)
+                if (
+                    isinstance(mask, tuple)
+                    and mask
+                    and all([type(m) is flex.bool for m in mask])
+                ):
+                    existing_masks.append(mask)
                 else:
+                    print("Invalid mask file:", arg)
                     remains_unhandled.append(arg)
     if remains_unhandled:
         print(
-            "Couldn't recognize the following arguments:", ",".join(remains_unhandled)
+            "Couldn't recognize the following arguments:", ", ".join(remains_unhandled)
         )
         parser.print_help()
         return
 
     # Check number of args
-    if len(experiments) == 0 and len(starting_masks) == 0:
+    if len(experiments) == 0 and len(existing_masks) == 0:
+        parser.print_help()
+        return
+
+    if not all(
+        m[0].focus() == p.focus() for m in zip(*existing_masks) for p in list(m)
+    ):
+        print("Not all input masks are of the same shape")
         parser.print_help()
         return
 
     # Run the script
-    generate_mask(experiments, params, starting_masks=starting_masks)
+    generate_mask(experiments, params, existing_masks=existing_masks)
 
 
 if __name__ == "__main__":
