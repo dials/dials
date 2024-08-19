@@ -3,19 +3,30 @@
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import contextmanager
 from io import StringIO
 from typing import List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 
 import iotbx.mtz
-from cctbx import miller, r_free_utils
+from cctbx import miller, r_free_utils, sgtbx, uctbx
+from dxtbx import flumpy
 from dxtbx.model import ExperimentList
 from iotbx import mtz, phil
 from iotbx.reflection_file_editor import is_rfree_array
 from iotbx.reflection_file_utils import get_r_free_flags_scores
+from libtbx import env
 from mmtbx.scaling import data_statistics
+
+from dials.util.version import dials_version
+
+try:
+    import gemmi
+except ModuleNotFoundError:
+    gemmi = None
 
 from dials.algorithms.merging.reporting import (
     MergeJSONCollector,
@@ -195,6 +206,251 @@ class MTZDataClass:
         self.merged_half_datasets = merged_half_datasets
 
 
+class MergedMTZCreator:
+    """Creates a gemmi.Mtz object for merged data."""
+
+    def __init__(
+        self, space_group: sgtbx.space_group, unit_cell: uctbx.unit_cell
+    ) -> None:
+        """
+        Initializes the MergedMTZCreator with the provided space group and unit cell.
+
+        Args:
+            space_group: The sgtbx.space_group object.
+            unit_cell: The uctbx.unit_cell object with cell parameters.
+
+        Returns:
+            None
+        """
+
+        self.space_group = space_group
+        self.unit_cell = unit_cell
+
+        mtz = gemmi.Mtz(with_base=True)
+        mtz.title = f"From {env.dispatcher_name}"
+        date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
+        if time.strftime("%Z") != "GMT":
+            date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+        mtz.history += [
+            f"From {dials_version()}, run on {date_str}",
+        ]
+        hall = space_group.type().hall_symbol()
+        ops = gemmi.symops_from_hall(hall)
+        mtz.spacegroup = gemmi.find_spacegroup_by_ops(ops)
+
+        if unit_cell:
+            mtz.set_cell_for_all(gemmi.UnitCell(*unit_cell.parameters()))
+
+        self.type_to_sig_type = {"J": "Q", "F": "Q", "G": "L", "K": "M", "D": "Q"}
+
+        self.mtz = mtz
+
+    def add_data(
+        self, mtz_datasets: List[MTZDataClass], r_free_array: miller.array = None
+    ) -> None:
+        """
+        Adds data to the MTZ object based on the provided datasets and optional R-free array.
+
+        Args:
+            mtz_datasets (List[MTZDataClass]): The list of MTZDataClass objects containing the datasets.
+            r_free_array (miller.array, optional): The optional R-free array to add.
+
+        Returns:
+            None
+        """
+
+        self._initialise_data_array(mtz_datasets)
+
+        if r_free_array:
+            self._add_column(r_free_array, label="FreeR_flag", type_char="I")
+
+        if len(mtz_datasets) > 1:
+            suffixes = [f"_WAVE{i+1}" for i in range(len(mtz_datasets))]
+        else:
+            suffixes = [""]
+
+        for i, dataset in enumerate(mtz_datasets):
+            if dataset.dataset_name is None:
+                dataset.dataset_name = "FROMDIALS"
+            if dataset.crystal_name is None:
+                dataset.crystal_name = f"crystal_{i+2}"
+            if dataset.project_name is None:
+                dataset.project_name = "DIALS"
+            d = self.mtz.add_dataset(dataset.dataset_name)
+            d.crystal_name = dataset.crystal_name
+            d.project_name = dataset.project_name
+            d.wavelength = dataset.wavelength
+
+            suffix = suffixes[i]
+            if dataset.merged_array:
+                self._add_column(dataset.merged_array, "IMEAN" + suffix, "J")
+            if dataset.multiplicities:
+                self._add_column(dataset.multiplicities, "N" + suffix, "I")
+            if dataset.amplitudes:
+                self._add_column(dataset.amplitudes, "F" + suffix, "F")
+            if dataset.merged_anomalous_array:
+                i_plus, i_minus = self._separate_anomalous(
+                    dataset.merged_anomalous_array
+                )
+                self._add_column(i_plus, "I" + suffix + "(+)", "K")
+                self._add_column(i_minus, "I" + suffix + "(-)", "K")
+            if dataset.anomalous_multiplicities:
+                n_plus, n_minus = self._separate_anomalous(
+                    dataset.anomalous_multiplicities
+                )
+                self._add_column(n_plus, "N" + suffix + "(+)", "I")
+                self._add_column(n_minus, "N" + suffix + "(-)", "I")
+            if dataset.anomalous_amplitudes:
+                f_plus, f_minus = self._separate_anomalous(dataset.anomalous_amplitudes)
+                self._add_column(f_plus, "F" + suffix + "(+)", "G")
+                self._add_column(f_minus, "F" + suffix + "(-)", "G")
+            if dataset.dano:
+                self._add_column(dataset.dano, "DANO" + suffix, "D")
+            if dataset.merged_half_datasets:
+                self._add_column(
+                    dataset.merged_half_datasets.data1, "IHALF1" + suffix, "J"
+                )
+                self._add_column(
+                    dataset.merged_half_datasets.data2, "IHALF2" + suffix, "J"
+                )
+                self._add_column(
+                    dataset.merged_half_datasets.multiplicity1, "NHALF1" + suffix, "R"
+                )
+                self._add_column(
+                    dataset.merged_half_datasets.multiplicity2, "NHALF2" + suffix, "R"
+                )
+        self.mtz.set_data(self.mtz_data)
+
+    def _initialise_data_array(self, mtz_datasets):
+        """
+        Sets the Miller indices for the data array based on the given MTZ datasets.
+
+        Args:
+            mtz_datasets (List[MTZDataClass]): A list of MTZDataClass objects
+
+        Returns:
+            None
+
+        This function creates a merged miller set by combining the indices of all the datasets.
+        The indices are kept for use by the _add_column() function. A pandas DataFrame `mtz_data`
+        is created with the indices of the merged set as rows and the columns "H", "K", and "L".
+        Other columns will be added to the DataFrame by the _add_column() function.
+        """
+
+        miller_set = miller.set(
+            crystal_symmetry=mtz_datasets[0].merged_array.crystal_symmetry(),
+            indices=mtz_datasets[0].merged_array.indices().deep_copy(),
+            anomalous_flag=False,
+        )
+        for dataset in mtz_datasets[1:]:
+            indices = dataset.merged_array.indices()
+            missing_isel = miller.match_indices(miller_set.indices(), indices).singles(
+                1
+            )
+            miller_set.indices().extend(indices.select(missing_isel))
+
+        self.indices = miller_set.indices()
+
+        self.mtz_data = pd.DataFrame(
+            flumpy.to_numpy(self.indices).astype("float32"),
+            columns=["H", "K", "L"],
+        )
+
+    def _add_column(self, column: miller.array, label: str, type_char: str):
+        """
+        Add a data column (and associated sigmas if available) to the MTZ object.
+
+        Args:
+            column (miller.array): The column to add to the MTZ object.
+            label (str): The label for the column.
+            type_char (str): The type character for the column.
+
+        This function adds column data to the MTZ object. It first adds the column
+        to the most recently added dataset of the MTZ object. Then, it matches the
+        Miller indices of the column data to those in MTZ object to find the pairs
+        of matching indices. It selects the data from the column based on the pairs
+        of matching indices and inserts them into the `mtz_data` DataFrame. If the
+        column has sigmas the steps are repeated for them too.
+
+        Returns:
+            None
+        """
+        self.mtz.add_column(label, type_char)
+
+        indices = column.indices()
+
+        matches = miller.match_indices(self.indices, indices)
+        pairs = matches.pairs()
+        isel_i = pairs.column(0)
+        isel_j = pairs.column(1)
+
+        data = flex.double(len(self.indices), float("nan"))
+        data.set_selected(isel_i, column.data().as_double().select(isel_j))
+
+        self.mtz_data.insert(
+            len(self.mtz_data.columns),
+            label,
+            flumpy.to_numpy(data).astype("float32"),
+        )
+
+        if column.sigmas() is None:
+            return
+
+        type_char = self.type_to_sig_type[type_char]
+        self.mtz.add_column("SIG" + label, type_char)
+
+        sigmas = flex.double(len(self.indices), float("nan"))
+        sigmas.set_selected(isel_i, column.sigmas().as_double().select(isel_j))
+
+        self.mtz_data.insert(
+            len(self.mtz_data.columns),
+            "SIG" + label,
+            flumpy.to_numpy(sigmas).astype("float32"),
+        )
+
+    def _separate_anomalous(
+        self, miller_array: miller.array
+    ) -> Tuple[miller.array, miller.array]:
+        """
+        Separates the anomalous pairs from a given Miller array to produce
+        two arrays: one for the positive and one for the negative hemisphere
+
+        Args:
+            miller_array (miller.array): The input Miller array.
+
+        Returns:
+            Tuple[miller.array, miller.array]: A tuple containing the positive
+            and negative anomalous arrays.
+        """
+        asu, matches = miller_array.match_bijvoet_mates()
+
+        sel = matches.pairs_hemisphere_selection("+")
+        sel.extend(matches.singles_hemisphere_selection("+"))
+
+        indices = asu.indices().select(sel)
+        data = asu.data().select(sel)
+        sigmas = None
+        if asu.sigmas() is not None:
+            sigmas = asu.sigmas().select(sel)
+
+        miller_set = miller.set(miller_array.crystal_symmetry(), indices)
+        plus_array = miller.array(miller_set, data, sigmas)
+
+        sel = matches.pairs_hemisphere_selection("-")
+        sel.extend(matches.singles_hemisphere_selection("-"))
+
+        indices = -asu.indices().select(sel)
+        data = asu.data().select(sel)
+        sigmas = None
+        if asu.sigmas() is not None:
+            sigmas = asu.sigmas().select(sel)
+
+        miller_set = miller.set(miller_array.crystal_symmetry(), indices)
+        minus_array = miller.array(miller_set, data, sigmas)
+
+        return plus_array, minus_array
+
+
 def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
     """
     Make an mtz file object for the data, adding the date, time and program.
@@ -206,8 +462,11 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
             experiment.
 
     Returns:
-        An iotbx mtz file object.
+        A gemmi.Mtz object or an iotbx mtz object, if gemmi is not available.
     """
+
+    if gemmi:
+        return make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array)
 
     if len(mtz_datasets) > 1:
         writer = MADMergedMTZWriter
@@ -245,6 +504,21 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
         )
 
     return mtz_writer.mtz_file
+
+
+def make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array=None):
+    # XXX This should replace the code in make_merged_mtz_file when
+    # MergedMTZWriter and MADMergedMTZWriter are removed
+    writer = MergedMTZCreator
+
+    mtz_writer = writer(
+        mtz_datasets[0].merged_array.space_group(),
+        mtz_datasets[0].merged_array.unit_cell(),
+    )
+
+    mtz_writer.add_data(mtz_datasets, r_free_array)
+
+    return mtz_writer.mtz
 
 
 def merge_scaled_array(

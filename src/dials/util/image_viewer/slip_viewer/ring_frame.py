@@ -59,7 +59,7 @@ class RingSettingsPanel(wx.Panel):
         # have a non-linear slider.
         self._radius = 100
         self._center = [0, 0]
-        radius_max = 2000
+        radius_max = 3000
         radius_min = 10
 
         # Radius controls.

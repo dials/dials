@@ -153,3 +153,142 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
     def get_state(self):
         # only a single beam exists, so no multi_state_elt argument is allowed
         return matrix.col(self._model.get_s0())
+
+
+class LaueBeamMixin:
+    """Mix-in class defining some functionality unique to Laue beam parameterisations
+    that can be shared by static and scan-varying versions"""
+
+    @staticmethod
+    def _build_p_list(unit_s0, goniometer, parameter_type=Parameter):
+        """Build the list of parameters, using the parameter_type callback to
+        select between versions of the Parameter class"""
+
+        # Set up the parameters
+        if goniometer:
+            spindle = matrix.col(goniometer.get_rotation_axis())
+            unit_s0_plane_dir2 = unit_s0.cross(spindle).normalize()
+            unit_s0_plane_dir1 = unit_s0_plane_dir2.cross(unit_s0).normalize()
+        else:
+            unit_s0_plane_dir1 = unit_s0.ortho().normalize()
+            unit_s0_plane_dir2 = unit_s0.cross(unit_s0_plane_dir1).normalize()
+
+        # rotation around unit_s0_plane_dir1
+        mu1 = parameter_type(0.0, unit_s0_plane_dir1, "angle (mrad)", "Mu1")
+        # rotation around unit_s0_plane_dir2
+        mu2 = parameter_type(0.0, unit_s0_plane_dir2, "angle (mrad)", "Mu2")
+
+        # build the parameter list in a specific,  maintained order
+        p_list = [mu1, mu2]
+
+        return p_list
+
+    @staticmethod
+    def _compose_core(is0, ipn, mu1, mu2, mu1_axis, mu2_axis):
+        # convert angles to radians
+        mu1rad, mu2rad = mu1 / 1000.0, mu2 / 1000.0
+
+        # compose rotation matrices and their first order derivatives
+        Mu1 = (mu1_axis).axis_and_angle_as_r3_rotation_matrix(mu1rad, deg=False)
+        dMu1_dmu1 = dR_from_axis_and_angle(mu1_axis, mu1rad, deg=False)
+
+        Mu2 = (mu2_axis).axis_and_angle_as_r3_rotation_matrix(mu2rad, deg=False)
+        dMu2_dmu2 = dR_from_axis_and_angle(mu2_axis, mu2rad, deg=False)
+
+        # compose new state
+        Mu21 = Mu2 * Mu1
+        unit_s0 = (Mu21 * is0).normalize()
+        pn_new_dir = (Mu21 * ipn).normalize()
+
+        # calculate derivatives of the beam direction wrt angles:
+        #  1) derivative wrt mu1
+        dMu21_dmu1 = Mu2 * dMu1_dmu1
+        dunit_s0_new_dir_dmu1 = dMu21_dmu1 * is0
+
+        #  2) derivative wrt mu2
+        dMu21_dmu2 = dMu2_dmu2 * Mu1
+        dunit_s0_new_dir_dmu2 = dMu21_dmu2 * is0
+
+        # calculate derivatives of the attached beam vector, converting
+        # parameters back to mrad
+        dunit_s0_dval = [
+            dunit_s0_new_dir_dmu1 / 1000.0,
+            dunit_s0_new_dir_dmu2 / 1000.0,
+            unit_s0,
+        ]
+
+        return (unit_s0, pn_new_dir), dunit_s0_dval
+
+
+class LaueBeamParameterisation(ModelParameterisation, LaueBeamMixin):
+    """A parameterisation of a Laue Beam model, where wavelength is ignored.
+
+    The Beam direction is parameterised using angles expressed in
+    mrad. A goniometer can be provided (if
+    present in the experiment) to ensure a consistent definition of the beam
+    rotation angles with respect to the spindle-beam plane."""
+
+    def __init__(self, beam, goniometer=None, experiment_ids=None):
+        """Initialise the BeamParameterisation object
+
+        Args:
+            beam: A dxtbx PolychromaticBeam object to be parameterised.
+            goniometer: An optional dxtbx Goniometer object. Defaults to None.
+            experiment_ids (list): The experiment IDs affected by this
+                parameterisation. Defaults to None, which is replaced by [0].
+        """
+        # The state of the beam model consists of the unit s0 vector that it is
+        # modelling. The initial state is the direction of this vector at the point
+        # of initialisation, plus the direction of the orthogonal polarization
+        # normal vector. Future states are composed by rotations around axes
+        # perpendicular to that direction.
+
+        # Set up the initial state
+        if experiment_ids is None:
+            experiment_ids = [0]
+        unit_s0 = matrix.col(beam.get_unit_s0())
+        istate = {
+            "unit_s0": matrix.col(unit_s0),
+            "polarization_normal": matrix.col(beam.get_polarization_normal()),
+        }
+
+        # build the parameter list
+        p_list = self._build_p_list(unit_s0, goniometer)
+
+        # set up the base class
+        ModelParameterisation.__init__(
+            self, beam, istate, p_list, experiment_ids=experiment_ids
+        )
+
+        # call compose to calculate all the derivatives
+        self.compose()
+
+        return
+
+    def compose(self):
+        # extract direction from the initial state
+        ius0 = self._initial_state["unit_s0"]
+        ipn = self._initial_state["polarization_normal"]
+
+        # extract parameters from the internal list
+        mu1, mu2 = self._param
+
+        # calculate new s0 and derivatives
+        (unit_s0, pn), self._dstate_dp = self._compose_core(
+            ius0,
+            ipn,
+            mu1.value,
+            mu2.value,
+            mu1_axis=mu1.axis,
+            mu2_axis=mu2.axis,
+        )
+
+        # now update the model with its new s0 and polarization vector
+        self._model.set_unit_s0(unit_s0)
+        self._model.set_polarization_normal(pn)
+
+        return
+
+    def get_state(self):
+        # only a single beam exists, so no multi_state_elt argument is allowed
+        return matrix.col(self._model.get_unit_s0())

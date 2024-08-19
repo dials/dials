@@ -33,6 +33,7 @@ conda-forge::pip
 conda-forge::psutil
 conda-forge::pthread-stubs
 conda-forge::pybind11
+conda-forge::pyopengl
 conda-forge::pyrtf
 conda-forge::pytest
 conda-forge::pytest-forked
@@ -52,6 +53,6 @@ conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm
 conda-forge::urllib3
-conda-forge::wxpython>=4.2.0
+conda-forge::wxpython>=4.2.0=*_5
 conda-forge::xz
 conda-forge::zlib

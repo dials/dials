@@ -10,9 +10,13 @@ from __future__ import annotations
 
 from math import pi
 
+from dxtbx.model import tof_helpers
 from scitbx.array_family import flex
 
-from dials.algorithms.spot_prediction import ScanStaticRayPredictor
+from dials.algorithms.spot_prediction import (
+    LaueReflectionPredictor,
+    ScanStaticRayPredictor,
+)
 from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor as sc
 from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor as sv
 from dials.algorithms.spot_prediction import StillsReflectionPredictor as st
@@ -81,6 +85,7 @@ class ExperimentsPredictor:
             refs = reflections.select(sel)
 
             self._predict_one_experiment(e, refs)
+            refs = self._post_predict_one_experiment(e, refs)
 
             # write predictions back to overall reflections
             reflections.set_selected(sel, refs)
@@ -91,6 +96,9 @@ class ExperimentsPredictor:
 
     def _predict_one_experiment(self, experiment, reflections):
         raise NotImplementedError()
+
+    def _post_predict_one_experiment(self, experiment, reflections):
+        return reflections
 
     def _post_prediction(self, reflections):
         """Perform tasks on the whole reflection list after prediction before
@@ -158,6 +166,50 @@ class StillsExperimentsPredictor(ExperimentsPredictor):
         predictor.for_reflection_table(reflections, UB)
 
 
+class LaueExperimentsPredictor(ExperimentsPredictor):
+    def _predict_one_experiment(self, experiment, reflections):
+        min_s0_idx = min(
+            range(len(reflections["wavelength"])),
+            key=reflections["wavelength"].__getitem__,
+        )
+
+        if "s0" not in reflections:
+            unit_s0 = experiment.beam.get_unit_s0()
+            wl = reflections["wavelength"][min_s0_idx]
+            min_s0 = (unit_s0[0] / wl, unit_s0[1] / wl, unit_s0[2] / wl)
+        else:
+            min_s0 = reflections["s0"][min_s0_idx]
+
+        dmin = experiment.detector.get_max_resolution(min_s0)
+        predictor = LaueReflectionPredictor(experiment, dmin)
+        UB = experiment.crystal.get_A()
+        predictor.for_reflection_table(reflections, UB)
+
+
+class TOFExperimentsPredictor(LaueExperimentsPredictor):
+    def _post_predict_one_experiment(self, experiment, reflections):
+        # Add ToF to xyzcal.mm
+        wavelength_cal = reflections["wavelength_cal"]
+        distance = experiment.beam.get_sample_to_source_distance() * 10**-3
+        distance = distance + (reflections["s1"].norms() * 10**-3)
+        tof_cal = tof_helpers.tof_from_wavelength(distance, wavelength_cal)  # (s)
+        x, y, z = reflections["xyzcal.mm"].parts()
+        tof_cal = tof_cal * 1e6  # (usec)
+        reflections["xyzcal.mm"] = flex.vec3_double(x, y, tof_cal)
+
+        # Add frame to xyzcal.px
+        expt_tof = experiment.scan.get_property("time_of_flight")  # (usec)
+        frames = list(range(len(expt_tof)))
+        tof_to_frame = tof_helpers.tof_to_frame_interpolator(expt_tof, frames)
+        tof_cal.set_selected(tof_cal < min(expt_tof), min(expt_tof))
+        tof_cal.set_selected(tof_cal > max(expt_tof), max(expt_tof))
+        reflection_frames = flex.double(tof_to_frame(tof_cal))
+        px, py, pz = reflections["xyzcal.px"].parts()
+        reflections["xyzcal.px"] = flex.vec3_double(px, py, reflection_frames)
+
+        return reflections
+
+
 class ExperimentsPredictorFactory:
     @staticmethod
     def from_experiments(experiments, force_stills=False, spherical_relp=False):
@@ -172,7 +224,20 @@ class ExperimentsPredictorFactory:
         if force_stills:
             predictor = StillsExperimentsPredictor(experiments)
             predictor.spherical_relp_model = spherical_relp
+
         else:
-            predictor = ScansExperimentsPredictor(experiments)
+            all_tof_experiments = False
+            for expt in experiments:
+                if expt.scan is not None and expt.scan.has_property("time_of_flight"):
+                    all_tof_experiments = True
+                elif all_tof_experiments:
+                    raise ValueError(
+                        "Cannot create ExperimentsPredictor for ToF and non-ToF experiments at the same time"
+                    )
+
+                if all_tof_experiments:
+                    predictor = TOFExperimentsPredictor(experiments)
+                else:
+                    predictor = ScansExperimentsPredictor(experiments)
 
         return predictor

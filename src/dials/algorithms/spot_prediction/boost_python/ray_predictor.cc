@@ -43,6 +43,28 @@ namespace dials { namespace algorithms { namespace boost_python {
     return result;
   }
 
+  static af::reflection_table laue_with_miller_index_array(
+    LaueRayPredictor &self,
+    const af::const_ref<cctbx::miller::index<> > &h,
+    const mat3<double> &UB) {
+    af::reflection_table result;
+    af::shared<cctbx::miller::index<> > hkl = result["miller_index"];
+    af::shared<vec3<double> > s1 = result["s1"];
+    af::shared<bool> entering = result["entering"];
+    af::shared<double> wavelength = result["wavelength"];
+    af::shared<vec3<double> > s0 = result["s0"];
+    for (std::size_t i = 0; i < h.size(); ++i) {
+      Ray ray = self(h[i], UB);
+      hkl.push_back(h[i]);
+      s1.push_back(ray.s1);
+      entering.push_back(ray.entering);
+      wavelength.push_back(self.get_wavelength());
+      s0.push_back(self.get_s0());
+    }
+    DIALS_ASSERT(result.is_consistent());
+    return result;
+  }
+
   void export_ray_predictor() {
     // Create and return the wrapper for the spot predictor object
     class_<ScanStaticRayPredictor>("ScanStaticRayPredictor", no_init)
@@ -57,6 +79,14 @@ namespace dials { namespace algorithms { namespace boost_python {
            (arg("miller_index"), arg("UB")))
       .def("__call__", &ScanStaticRayPredictor::from_reciprocal_lattice_vector)
       .def("__call__", &call_with_miller_index_array);
+  }
+
+  void export_laue_ray_predictor() {
+    class_<LaueRayPredictor>("LaueRayPredictor", no_init)
+      .def(init<vec3<double>, mat3<double>, mat3<double> >(
+        (arg("unit_s0"), arg("fixed_rotation"), arg("setting_rotation"))))
+      .def("__call__", &LaueRayPredictor::operator(), (arg("miller_index"), arg("UB")))
+      .def("__call__", &laue_with_miller_index_array);
   }
 
 }}}  // namespace dials::algorithms::boost_python

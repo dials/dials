@@ -2,20 +2,16 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
 from math import isclose
 from typing import List, Optional
 
+import gemmi
 import numpy as np
 import pandas as pd
-
-try:
-    import gemmi
-except ModuleNotFoundError as e:
-    gemmi = None
-    gemmi_import_error = e
 
 from cctbx import uctbx
 from dxtbx import flumpy
@@ -53,6 +49,11 @@ class MTZWriterBase:
     def __init__(self, space_group, unit_cell=None):
         """If a unit cell is provided, will be used as default unless specified
         for each crystal."""
+        warnings.warn(
+            "MTZWriterBase classes (MergedMTZWriter and MADMergedMTZWriter) are deprecated. Use MergedMTZCreator instead.\n",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         mtz_file = mtz.object()
         mtz_file.set_title(f"From {env.dispatcher_name}")
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
@@ -314,8 +315,6 @@ def add_batch_list(
     if max_batch_number > batch_offset:
         batch_offset = max_batch_number
 
-    if gemmi is None:
-        raise gemmi_import_error
     batch = gemmi.Mtz.Batch()
 
     # Setting fields that are the same for all batches
@@ -675,8 +674,6 @@ def export_mtz(
         )
 
     # Create the mtz file
-    if gemmi is None:
-        raise gemmi_import_error
     mtz = gemmi.Mtz(with_base=True)
     mtz.title = f"From {env.dispatcher_name}"
     date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
@@ -826,7 +823,7 @@ def log_summary(mtz):
     for col in mtz.columns:
         # col.min_value and col.max_value are not set, so we have to calculate them here
         logger.info(
-            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {col.array.min():12.6g} {col.array.max():10.6g}"
+            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {np.nanmin(col.array):12.6g} {np.nanmax(col.array):10.6g}"
         )
     logger.info(f"History ({len(mtz.history)} lines):")
     for line in mtz.history:
