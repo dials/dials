@@ -1,23 +1,21 @@
 #!/usr/bin/env python
 
-from __future__ import annotations
-
 import os
 import re
 import sys
 from collections import namedtuple
 
 VALID_SECTIONS = ["build", "host", "run", "test"]  # type: list[SectionName]
+Dependency = namedtuple("Dependency", ["name", "version", "raw_line"])
 
 try:
-    from typing import Literal
+    from typing import Literal, TypeAlias
 
-    type SectionName = Literal["build", "host", "run", "test"]
-    type Dependencies = dict[SectionName, list[Dependency]]
+    SectionName = Literal["build", "host", "run", "test"]  # type: TypeAlias
+    Dependencies = dict[SectionName, list[Dependency]]  # type: TypeAlias
 
 except ImportError:
     pass
-Dependency = namedtuple("Dependency", ["name", "version", "raw_line"])
 
 
 re_selector = re.compile(r"# *\[([^#]+)]$")
@@ -53,7 +51,7 @@ def _split_dependency_line(line):
         )
     vers = None
     if " " in pending:
-        pending, vers = pending.split(" ", maxsplit=1)
+        pending, vers = pending.split(" ", 1)
     return Dependency(pending, vers, line)
 
 
@@ -81,7 +79,7 @@ def _merge_dependency_lists(source, merge_into):
             # This already exists in the target. Should we replace it?
             other_ver = merge_into[indices[pkg]][1]
             if not other_ver and ver:
-                print(f"Merging '{line}' over {merge_into[indices[pkg]]}")
+                print("Merging '{}' over {}".format(line, merge_into[indices[pkg]]))
                 merge_into[indices[pkg]] = Dependency(pkg, ver, line)
             elif other_ver and ver and ver != other_ver:
                 raise RuntimeError(
@@ -127,7 +125,7 @@ class DependencySelectorParser(object):
         if fragment in self._vars:
             return self._vars[fragment]
         if " and " in fragment:
-            left, right = fragment.split(" and ", maxsplit=1)
+            left, right = fragment.split(" and ", 1)
             return self._parse_expression(left, pos) and self._parse_expression(
                 right, pos + fragment.index(" and ")
             )
@@ -264,7 +262,9 @@ if __name__ == "__main__":
         "-p",
         "--platform",
         choices=["osx", "linux", "win"],
-        help=f"Choose the target for handling bootstrap dependency lists. Default: {_native_platform()}",
+        help="Choose the target for handling bootstrap dependency lists. Default: {}".format(
+            _native_platform()
+        ),
     )
     parser.add_argument(
         "--prebuilt-cctbx", help="Mark as using prebuilt cctbx. Implied by conda-build."
@@ -322,9 +322,9 @@ if __name__ == "__main__":
         for section in VALID_SECTIONS:
             if section not in reqs or not reqs[section] or section not in args.sections:
                 continue
-            output.append(f"{section}:")
+            output.append(section + ":")
             output.extend(
-                f"    - {x.raw_line}"
+                "    - " + x.raw_line
                 for x in sorted(
                     reqs[section],
                     key=lambda x: (0 if x.raw_line.startswith("{{") else 1, x.raw_line),
