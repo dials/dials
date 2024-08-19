@@ -204,7 +204,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
                 if (
                     isinstance(mask, tuple)
                     and mask
-                    and all([type(m) is flex.bool for m in mask])
+                    and all(type(m) is flex.bool for m in mask)
                 ):
                     existing_masks.append(mask)
                 else:
