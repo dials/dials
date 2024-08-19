@@ -12,7 +12,7 @@
 #define DIALS_REFINEMENT_RESTRAINTS_HELPERS_H
 
 #ifndef RAD2DEG
-#define RAD2DEG(x) ((x)*57.29577951308232087721)
+#define RAD2DEG(x) ((x) * 57.29577951308232087721)
 #endif
 
 #include <scitbx/mat3.h>

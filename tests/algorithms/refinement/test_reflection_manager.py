@@ -11,7 +11,6 @@ from dials.array_family import flex
 
 
 def test_scan_margin(dials_data):
-
     # Use 4 scan data for this test
     data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     experiments = ExperimentListFactory.from_json_file(

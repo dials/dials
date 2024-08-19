@@ -240,9 +240,11 @@ def _get_cc_half_critical_values(merging_stats, cc_half_method):
         ).reversed()
     elif merging_stats.overall.cc_one_half_critical_value is not None:
         critical = [
-            b.cc_one_half_critical_value
-            if b.cc_one_half_critical_value is not None
-            else 0.0
+            (
+                b.cc_one_half_critical_value
+                if b.cc_one_half_critical_value is not None
+                else 0.0
+            )
             for b in merging_stats.bins
         ]
         return flex.double(critical).reversed()
@@ -513,7 +515,6 @@ class Resolutionizer:
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):
-
         self._params = params
         self._reference = reference
 
@@ -633,9 +634,9 @@ class Resolutionizer:
                 self._merging_statistics,
                 limit,
                 cc_half_method=self._params.cc_half_method,
-                model=tanh_fit
-                if self._params.cc_half_fit == "tanh"
-                else polynomial_fit,
+                model=(
+                    tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit
+                ),
             )
         elif metric == metrics.CC_REF:
             return self._resolution_cc_ref(limit=self._params.cc_ref)

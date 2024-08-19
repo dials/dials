@@ -1,6 +1,5 @@
 """Creation of 'corrgram' correlation matrix plots"""
 
-
 from __future__ import annotations
 
 import json
@@ -131,7 +130,6 @@ def create_correlation_plots(refiner, params):
 
         corrmats, labels = refiner.get_parameter_correlation_matrix(step, col_select)
         if [corrmats, labels].count(None) == 0:
-
             for resid_name, corrmat in corrmats.items():
                 plot_fname = fname_base + "_" + resid_name + ext
                 plt = corrgram(corrmat, labels)

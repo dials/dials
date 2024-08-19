@@ -102,7 +102,6 @@ class GaussianRSReferenceCalculatorFactory:
         # Create the spec list
         spec_list = []
         for experiment in experiments:
-
             spec = TransformSpec(
                 experiment.beam,
                 experiment.detector,

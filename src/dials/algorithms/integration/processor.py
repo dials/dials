@@ -469,11 +469,12 @@ class Task:
             else:
                 mask = imageset.get_mask(i)
                 if self.params.lookup.mask is not None:
-                    assert len(mask) == len(
-                        self.params.lookup.mask
-                    ), "Mask/Image are incorrect size %d %d" % (
-                        len(mask),
-                        len(self.params.lookup.mask),
+                    assert len(mask) == len(self.params.lookup.mask), (
+                        "Mask/Image are incorrect size %d %d"
+                        % (
+                            len(mask),
+                            len(self.params.lookup.mask),
+                        )
                     )
                     mask = tuple(
                         m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask)
