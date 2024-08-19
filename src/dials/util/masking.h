@@ -36,7 +36,7 @@ namespace dials { namespace util {
      */
     ResolutionMaskGenerator(const BeamBase &beam, const Panel &panel)
         : resolution_(
-          af::c_grid<2>(panel.get_image_size()[1], panel.get_image_size()[0])) {
+            af::c_grid<2>(panel.get_image_size()[1], panel.get_image_size()[0])) {
       vec3<double> s0 = beam.get_s0();
       double wavenumber = 1.0 / beam.get_wavelength();
       for (std::size_t j = 0; j < resolution_.accessor()[0]; ++j) {

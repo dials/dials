@@ -23,6 +23,7 @@ import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx.model import ExperimentType
 from scitbx import matrix
 
 import dials.extensions.glm_background_ext
@@ -1144,7 +1145,6 @@ class _:
         """
         self["miller_index_asu"] = cctbx.array_family.flex.miller_index(len(self))
         for idx, experiment in enumerate(experiments):
-
             # Create the crystal symmetry object
             uc = experiment.crystal.get_unit_cell()
             sg = experiment.crystal.get_space_group()
@@ -1321,7 +1321,6 @@ Found %s"""
                 sel_expt = self["id"] == i
 
             for i_panel in range(len(expt.detector)):
-
                 sel = sel_expt & (panel_numbers == i_panel)
                 if calculated:
                     x, y, z = self["xyzcal.mm"].select(sel).parts()
@@ -1331,12 +1330,16 @@ Found %s"""
                     cctbx.array_family.flex.vec2_double(x, y)
                 )
 
-                if calculated and "wavelength_cal" in self and "s0_cal" in self:
-                    wavelength = self["wavelength_cal"].select(sel)
-                    s0 = self["s0_cal"].select(sel)
-                elif "wavelength" in self and "s0" in self:
-                    wavelength = self["wavelength"].select(sel)
-                    s0 = self["s0"].select(sel)
+                if (
+                    expt.get_type() == ExperimentType.LAUE
+                    or expt.get_type() == ExperimentType.TOF
+                ):
+                    if calculated and "wavelength_cal" in self and "s0_cal" in self:
+                        wavelength = self["wavelength_cal"].select(sel)
+                        s0 = self["s0_cal"].select(sel)
+                    elif "wavelength" in self and "s0" in self:
+                        wavelength = self["wavelength"].select(sel)
+                        s0 = self["s0"].select(sel)
                 else:
                     wavelength = expt.beam.get_wavelength()
                     s0 = expt.beam.get_s0()

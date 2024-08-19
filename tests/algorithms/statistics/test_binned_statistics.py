@@ -8,7 +8,6 @@ from dials.algorithms.statistics import BinnedStatistics
 
 
 def test_partitions():
-
     vals = flex.double((1, 2, 3, 1, 2, 3, 1, 2, 3))
     bins = flex.size_t((0, 1, 3, 0, 1, 3, 0, 1, 3))
     binned_statistics = BinnedStatistics(vals, bins, 4)
@@ -26,7 +25,6 @@ def test_partitions():
 
 
 def test_median_and_iqr():
-
     # Even number of values, one bin
     vals1 = flex.double((1, 2, 3, 4))
     bins = flex.size_t([0] * len(vals1))

@@ -3,18 +3,14 @@ from __future__ import annotations
 import os
 import subprocess
 
-# Flake8 validation
-known_bad = {
-    "src/dials/algorithms/rs_mapper/__init__.py": {"F401", "F403"},
-    "src/dials/algorithms/shoebox/__init__.py": {"F401", "F403"},
-    "src/dials/nexus/__init__.py": {"F401", "F403"},
-    "src/dials/test/command_line/test_generate_distortion_maps.py": {"F841"},
-}
+# Ruff validation
+known_bad = {}
 failures = 0
 try:
-    flake8 = subprocess.run(
+    process = subprocess.run(
         [
-            "flake8",
+            "ruff",
+            "check",
             "--exit-zero",
         ],
         capture_output=True,
@@ -24,14 +20,14 @@ try:
     )
 except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
     print(
-        "##vso[task.logissue type=error;]flake8 validation failed with",
+        "##vso[task.logissue type=error;]Ruff validation failed with",
         str(e.__class__.__name__),
     )
     print(e.stdout)
     print(e.stderr)
-    print("##vso[task.complete result=Failed;]flake8 validation failed")
+    print("##vso[task.complete result=Failed;]Ruff validation failed")
     exit()
-for line in flake8.stdout.split("\n"):
+for line in process.stdout.split("\n"):
     if ":" not in line:
         continue
     filename, lineno, column, error = line.split(":", maxsplit=3)
@@ -47,5 +43,5 @@ for line in flake8.stdout.split("\n"):
         )
 
 if failures:
-    print(f"##vso[task.logissue type=warning]Found {failures} flake8 violation(s)")
-    print(f"##vso[task.complete result=Failed;]Found {failures} flake8 violation(s)")
+    print(f"##vso[task.logissue type=warning]Found {failures} Ruff violation(s)")
+    print(f"##vso[task.complete result=Failed;]Found {failures} Ruff violation(s)")

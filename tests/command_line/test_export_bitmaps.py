@@ -105,7 +105,6 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
 
 @pytest.mark.parametrize("set_imageset_index", [True, False])
 def test_export_single_cbf(dials_data, tmp_path, set_imageset_index):
-
     image = str(dials_data("centroid_test_data", pathlib=True) / "centroid_0002.cbf")
     cmd = [image, f"output.directory={tmp_path}"]
     if set_imageset_index:

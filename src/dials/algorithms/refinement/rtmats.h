@@ -12,7 +12,7 @@
 #define DIALS_REFINEMENT_RTMATS_H
 
 #ifndef DEG2RAD
-#define DEG2RAD(x) ((x)*0.01745329251994329575)
+#define DEG2RAD(x) ((x) * 0.01745329251994329575)
 #endif
 
 #include <cmath>

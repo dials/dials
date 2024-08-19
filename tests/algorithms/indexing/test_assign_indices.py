@@ -176,7 +176,6 @@ def test_assign_indices(space_group_symbol, experiment, crystal_factory):
 
 class CompareGlobalLocal:
     def __init__(self, experiment, reflections, expected_miller_indices):
-
         index_reflections_global = AssignIndicesGlobal()
         index_reflections_local = AssignIndicesLocal()
 
