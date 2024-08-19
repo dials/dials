@@ -11,7 +11,7 @@ from orderedset import OrderedSet
 
 import dxtbx.model.compare as compare
 import libtbx.phil
-from dxtbx.imageset import ImageGrid, ImageSequence
+from dxtbx.imageset import ImageSequence
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
@@ -149,13 +149,6 @@ phil_scope = libtbx.phil.parse(
       .type = bool
       .help = "If False, raise an error if multiple sequences are found"
 
-    as_grid_scan = False
-      .type = bool
-      .help = "Import as grid scan"
-
-    grid_size = None
-      .type = ints(size=2)
-      .help = "If importing as a grid scan set the size"
   }
 
   include scope dials.util.options.format_phil_scope
@@ -494,9 +487,6 @@ class MetaDataUpdater:
         """
         # Import the lookup data
         lookup = self.import_lookup_data(self.params)
-        # Convert all to ImageGrid
-        if self.params.input.as_grid_scan:
-            imageset_list = self.convert_to_grid_scan(imageset_list, self.params)
 
         # Create the experiments
         experiments = ExperimentList()
@@ -767,19 +757,6 @@ class MetaDataUpdater:
             dx=Item(data=dx, filename=dx_filename),
             dy=Item(data=dy, filename=dy_filename),
         )
-
-    def convert_to_grid_scan(self, imageset_list, params):
-        """
-        Convert the imagesets to grid scans
-        """
-        if params.input.grid_size is None:
-            raise Sorry("The input.grid_size parameter is required")
-        result = []
-        for imageset in imageset_list:
-            result.append(
-                ImageGrid.from_imageset(imageset.as_imageset(), params.input.grid_size)
-            )
-        return result
 
 
 def print_sequence_diff(sequence1, sequence2, params):
