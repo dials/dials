@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 
+import gemmi
 import pytest
 
 import iotbx.cif
@@ -217,7 +218,19 @@ def test_mtz_primitive_cell(dials_data, tmp_path):
     scaled_expt = dials_data("insulin_processed", pathlib=True) / "scaled.expt"
     scaled_refl = dials_data("insulin_processed", pathlib=True) / "scaled.refl"
 
-    # First reindex to the primitive setting
+    # Export in I23
+    subprocess.run(
+        [
+            shutil.which("dials.export"),
+            scaled_expt,
+            scaled_refl,
+            "mtz.hklout=reference.mtz",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    ).check_returncode()
+
+    # Now reindex to the primitive setting
     expts = load.experiment_list(scaled_expt, check_format=False)
     cs = expts[0].crystal.get_crystal_symmetry()
     cb_op = cs.change_of_basis_op_to_primitive_setting()
@@ -231,27 +244,29 @@ def test_mtz_primitive_cell(dials_data, tmp_path):
         cwd=tmp_path,
     ).check_returncode()
 
-    # Now export the reindexed experiments/reflections
+    # Export the reindexed experiments/reflections - internally this will
+    # reindex back to I23
     subprocess.run(
         [
             shutil.which("dials.export"),
             tmp_path / "reindexed.expt",
             tmp_path / "reindexed.refl",
+            "mtz.hklout=from_reindexed.mtz",
         ],
         cwd=tmp_path,
         capture_output=True,
     ).check_returncode()
 
-    mtz_obj = mtz.object(str(tmp_path / "scaled.mtz"))
-    cs_primitive = cs.change_basis(cb_op)
-    assert mtz_obj.space_group() == cs_primitive.space_group()
-    refl = flex.reflection_table.from_file(scaled_refl)
-    refl = refl.select(~refl.get_flags(refl.flags.bad_for_scaling, all=False))
-    for ma in mtz_obj.as_miller_arrays():
-        assert ma.crystal_symmetry().is_similar_symmetry(cs_primitive)
-        assert ma.d_max_min() == pytest.approx(
-            (flex.max(refl["d"]), flex.min(refl["d"]))
-        )
+    # Now read both files and check that relevant data are identical
+    mtz1 = gemmi.read_mtz_file(str(tmp_path / "reference.mtz"))
+    mtz2 = gemmi.read_mtz_file(str(tmp_path / "from_reindexed.mtz"))
+
+    assert mtz1.spacegroup == mtz2.spacegroup
+    assert mtz1.cell == mtz2.cell
+    assert (mtz1.array == mtz2.array).all()
+    for b1, b2 in zip(mtz1.batches, mtz2.batches):
+        assert list(b1.ints) == list(b2.ints)
+        assert list(b1.floats) == list(b2.floats)
 
 
 @pytest.mark.parametrize("compress", [None, "gz", "bz2", "xz"])
@@ -304,6 +319,17 @@ def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
     if pdb_version == "v5":
         assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
+        # check that gemmi can understand the output
+        cmd = [
+            shutil.which("gemmi"),
+            "cif2mtz",
+            tmp_path / "scaled.mmcif",
+            tmp_path / "test.mtz",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
+        assert not result.returncode and not result.stderr
+        assert (tmp_path / "test.mtz").is_file()
+
     elif pdb_version == "v5_next":
         assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()
 
@@ -523,8 +549,8 @@ def test_shelx_ins(dials_data, tmp_path):
     assert (tmp_path / "dials.ins").is_file()
 
     cell_esds = {
-        "CELL": (5.4815, 8.2158, 12.1457, 90.000, 90.000, 90.000),
-        "ZERR": (0.0005, 0.0007, 0.0011, 0.003, 0.004, 0.004),
+        "CELL": (5.48154, 8.21578, 12.14570, 90.0000, 90.0000, 90.0000),
+        "ZERR": (0.00050, 0.00073, 0.00109, 0.0034, 0.0037, 0.0037),
     }
 
     with (tmp_path / "dials.ins").open() as fh:
@@ -533,7 +559,7 @@ def test_shelx_ins(dials_data, tmp_path):
             instruction = tokens[0]
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
-                assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+                assert result == pytest.approx(cell_esds[instruction], abs=0.0001)
 
 
 def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
@@ -567,6 +593,39 @@ def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
                 assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+
+
+def test_shelx_ins_composition(dials_data, tmp_path):
+    # Call dials.export
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "intensity=scale",
+            "format=shelx",
+            "composition=C3H7NO2S",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    sfac_unit = {
+        "SFAC": "C H N O S",
+        "UNIT": "12 28 4 8 4",
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            if instruction in sfac_unit:
+                result = " ".join(tokens[1:6])
+                assert result == sfac_unit[instruction]
 
 
 def test_export_sum_or_profile_only(dials_data, tmp_path):

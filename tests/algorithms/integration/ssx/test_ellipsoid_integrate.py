@@ -22,15 +22,13 @@ def test_run_ellipsoid_refinement(dials_data):
     refls = refls.select_on_experiment_identifiers([expts[0].identifier])
     refls = reindex(refls, expts[0])
 
-    e_angular2 = {"radial": 0.0179, "angular": 0.0148}
-    e_angular4 = {"radial": 0.0179, "angular_0": 0.0207, "angular_1": 0.0029}
-    e_simple1 = {"spherical": 0.0159}
-    e_simple6 = {"min": 0.0034, "mid": 0.0113, "max": 0.02520}
+    e_simple1 = {"spherical": 0.00027709}
+    e_simple6 = {"min": 5.93276e-5, "mid": 0.00019659, "max": 0.00043976}
 
     initial_crystal = copy.deepcopy(expts[0].crystal)
     for model, expected in zip(
-        ["angular2", "angular4", "simple1", "simple6"],
-        [e_angular2, e_angular4, e_simple1, e_simple6],
+        ["simple1", "simple6"],
+        [e_simple1, e_simple6],
     ):
         elist = copy.deepcopy(expts[0:1])
         out_expt, _, __ = run_ellipsoid_refinement(
@@ -51,13 +49,12 @@ def test_run_ellipsoid_refinement(dials_data):
         elist,
         refls,
         0.00062,
-        profile_model="angular4",
+        profile_model="simple6",
         fix_orientation=True,
         fix_unit_cell=True,
     )
-    e_angular4 = {"radial": 0.0182, "angular_0": 0.0207, "angular_1": 0.0052}
     for k, v in out_expt.profiles()[0].mosaicity().items():
-        assert e_angular4[k] == pytest.approx(v, abs=1e-4)
+        assert e_simple6[k] == pytest.approx(v, abs=1e-4)
     assert out_expt[0].crystal.get_unit_cell().parameters() == pytest.approx(
         initial_crystal.get_unit_cell().parameters(), abs=1e-12
     )

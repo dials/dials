@@ -23,6 +23,7 @@ import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx.model import ExperimentType
 from scitbx import matrix
 
 import dials.extensions.glm_background_ext
@@ -30,7 +31,7 @@ import dials.extensions.simple_centroid_ext
 import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
-from dials.util.exclude_images import set_invalid_images
+from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -171,6 +172,12 @@ class _:
             )
 
         # Set images to exclude in the imagesets
+        if params.spotfinder.exclude_images_multiple:
+            params.spotfinder.exclude_images = expand_exclude_multiples(
+                experiments,
+                params.spotfinder.exclude_images_multiple,
+                params.spotfinder.exclude_images,
+            )
         experiments = set_invalid_images(experiments, params.spotfinder.exclude_images)
 
         # Get the spot-finder from the input parameters
@@ -525,10 +532,10 @@ class _:
         from dials.util.multi_dataset_handling import renumber_table_id_columns
 
         tables = renumber_table_id_columns(tables)
-        first = tables[0]
-        for table in tables[1:]:
-            first.extend(table)
-        return first
+        new = dials_array_family_flex_ext.reflection_table()
+        for table in tables:
+            new.extend(table)
+        return new
 
     def match_with_reference(self, other):
         """
@@ -931,7 +938,11 @@ class _:
 
         compute = CorrectionsMulti()
         for experiment in experiments:
-            if experiment.goniometer is not None:
+            if (
+                experiment.goniometer is not None
+                and experiment.scan is not None
+                and (experiment.scan.get_oscillation()[1] != 0.0)
+            ):
                 compute.append(
                     Corrections(
                         experiment.beam, experiment.goniometer, experiment.detector
@@ -946,7 +957,7 @@ class _:
             self["qe"] = qe
         return lp
 
-    def extract_shoeboxes(self, imageset, mask=None, nthreads=1):
+    def extract_shoeboxes(self, imageset, mask=None):
         """
         Helper function to read a load of shoebox data.
 
@@ -1311,17 +1322,33 @@ Found %s"""
                 sel_expt = self["id"] == i
 
             for i_panel in range(len(expt.detector)):
+
                 sel = sel_expt & (panel_numbers == i_panel)
                 if calculated:
-                    x, y, rot_angle = self["xyzcal.mm"].select(sel).parts()
+                    x, y, z = self["xyzcal.mm"].select(sel).parts()
                 else:
-                    x, y, rot_angle = self["xyzobs.mm.value"].select(sel).parts()
+                    x, y, z = self["xyzobs.mm.value"].select(sel).parts()
                 s1 = expt.detector[i_panel].get_lab_coord(
                     cctbx.array_family.flex.vec2_double(x, y)
                 )
-                s1 = s1 / s1.norms() * (1 / expt.beam.get_wavelength())
+
+                if (
+                    expt.get_type() == ExperimentType.LAUE
+                    or expt.get_type() == ExperimentType.TOF
+                ):
+                    if calculated and "wavelength_cal" in self and "s0_cal" in self:
+                        wavelength = self["wavelength_cal"].select(sel)
+                        s0 = self["s0_cal"].select(sel)
+                    elif "wavelength" in self and "s0" in self:
+                        wavelength = self["wavelength"].select(sel)
+                        s0 = self["s0"].select(sel)
+                else:
+                    wavelength = expt.beam.get_wavelength()
+                    s0 = expt.beam.get_s0()
+
+                s1 = s1 / s1.norms() * (1 / wavelength)
                 self["s1"].set_selected(sel, s1)
-                S = s1 - expt.beam.get_s0()
+                S = s1 - s0
                 if expt.goniometer is not None:
                     setting_rotation = matrix.sqr(
                         expt.goniometer.get_setting_rotation()
@@ -1332,12 +1359,13 @@ Found %s"""
                         sample_rotation *= matrix.sqr(expt.crystal.get_U())
 
                     self["rlp"].set_selected(sel, tuple(setting_rotation.inverse()) * S)
-                    self["rlp"].set_selected(
-                        sel,
-                        self["rlp"]
-                        .select(sel)
-                        .rotate_around_origin(rotation_axis, -rot_angle),
-                    )
+                    if expt.scan is not None and expt.scan.has_property("oscillation"):
+                        self["rlp"].set_selected(
+                            sel,
+                            self["rlp"]
+                            .select(sel)
+                            .rotate_around_origin(rotation_axis, -z),
+                        )
                     self["rlp"].set_selected(
                         sel, tuple(sample_rotation.inverse()) * self["rlp"].select(sel)
                     )
@@ -1371,8 +1399,14 @@ Found %s"""
             if not experiment.goniometer:
                 continue
             axis = matrix.col(experiment.goniometer.get_rotation_axis())
-            s0 = matrix.col(experiment.beam.get_s0())
-            vec = s0.cross(axis)
+            if "s0" in self:
+                s0 = self["s0"]
+                vec = cctbx.array_family.flex.vec3_double(len(self))
+                for i in range(len(s0)):
+                    vec[i] = matrix.col(s0[i]).cross(axis)
+            else:
+                s0 = matrix.col(experiment.beam.get_s0())
+                vec = s0.cross(axis)
             sel = self["id"] == iexp
             enterings.set_selected(sel, self["s1"].dot(vec) < 0.0)
 

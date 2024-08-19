@@ -7,12 +7,13 @@ import time
 
 import numpy as np
 
+from dxtbx.imageset import ImageSequence
 from iotbx.phil import parse
 
 import dials.extensions
 import dials.util.masking
 from dials.algorithms.background.simple import Linear2dModeller
-from dials.algorithms.spot_finding.finder import SpotFinder
+from dials.algorithms.spot_finding.finder import SpotFinder, TOFSpotFinder
 from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,10 @@ def generate_phil_scope():
     hot_mask_prefix = 'hot_mask'
       .type = str
       .help = "Prefix for the hot mask pickle file"
+
+    force_2d = False
+      .type = bool
+      .help = "Do spot finding in 2D"
 
     scan_range = None
       .help = "The range of images to use in finding spots. The ranges are"
@@ -415,12 +420,23 @@ class SpotFinderFactory:
         if params is None:
             params = phil_scope.fetch(source=parse("")).extract()
 
+        if params.spotfinder.force_2d and params.output.shoeboxes is False:
+            no_shoeboxes_2d = True
+        elif experiments is not None and params.output.shoeboxes is False:
+            no_shoeboxes_2d = False
+            all_stills = True
+            for experiment in experiments:
+                if isinstance(experiment.imageset, ImageSequence):
+                    all_stills = False
+                    break
+            if all_stills:
+                no_shoeboxes_2d = True
+        else:
+            no_shoeboxes_2d = False
+
         # Read in the lookup files
         mask = SpotFinderFactory.load_image(params.spotfinder.lookup.mask)
         params.spotfinder.lookup.mask = mask
-
-        # Configure the filter options
-        filter_spots = SpotFinderFactory.configure_filter(params)
 
         # Create the threshold strategy
         threshold_function = SpotFinderFactory.configure_threshold(params)
@@ -434,6 +450,48 @@ class SpotFinderFactory:
             params.spotfinder.mp.method = None
 
         # Setup the spot finder
+        contains_tof_experiments = False
+        for experiment in experiments:
+            if experiment.scan is None:
+                continue
+            if experiment.scan.has_property("time_of_flight"):
+                contains_tof_experiments = True
+            elif contains_tof_experiments:
+                raise RuntimeError("All experiment scans must contain time_of_flight")
+
+        if contains_tof_experiments:
+
+            # ToF spots from spallation sources typically have elongated tails
+            if params.spotfinder.filter.max_separation < 6:
+                # Based on ISISSXD data
+                # https://zenodo.org/records/4415768
+                logger.info("Increasing max allowed peak-centroid distance to 6px")
+                params.spotfinder.filter.max_separation = 6
+            filter_spots = SpotFinderFactory.configure_filter(params)
+
+            return TOFSpotFinder(
+                experiments=experiments,
+                threshold_function=threshold_function,
+                mask=params.spotfinder.lookup.mask,
+                filter_spots=filter_spots,
+                scan_range=params.spotfinder.scan_range,
+                write_hot_mask=params.spotfinder.write_hot_mask,
+                hot_mask_prefix=params.spotfinder.hot_mask_prefix,
+                mp_method=params.spotfinder.mp.method,
+                mp_nproc=params.spotfinder.mp.nproc,
+                mp_njobs=params.spotfinder.mp.njobs,
+                mp_chunksize=params.spotfinder.mp.chunksize,
+                max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction,
+                compute_mean_background=params.spotfinder.compute_mean_background,
+                region_of_interest=params.spotfinder.region_of_interest,
+                mask_generator=mask_generator,
+                min_spot_size=params.spotfinder.filter.min_spot_size,
+                max_spot_size=params.spotfinder.filter.max_spot_size,
+                min_chunksize=params.spotfinder.mp.min_chunksize,
+            )
+
+        filter_spots = SpotFinderFactory.configure_filter(params)
+
         return SpotFinder(
             threshold_function=threshold_function,
             mask=params.spotfinder.lookup.mask,
@@ -451,6 +509,7 @@ class SpotFinderFactory:
             mask_generator=mask_generator,
             min_spot_size=params.spotfinder.filter.min_spot_size,
             max_spot_size=params.spotfinder.filter.max_spot_size,
+            no_shoeboxes_2d=no_shoeboxes_2d,
             min_chunksize=params.spotfinder.mp.min_chunksize,
             is_stills=is_stills,
         )

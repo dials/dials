@@ -20,6 +20,6 @@ Rotation matrix to transform crystal 1 to crystal 2:
 {{1.000, 0.000, 0.000},
  {0.000, 1.000, 0.000},
  {0.000, 0.000, 1.000}}
-Rotation of 0.002 degrees about axis (0.916, 0.081, 0.393)
+Rotation of 0.002 degrees about axis (0.917, 0.082, 0.390)
 """
     )

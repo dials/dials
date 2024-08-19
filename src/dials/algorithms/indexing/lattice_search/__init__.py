@@ -16,9 +16,10 @@ from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 
 from .low_res_spot_match import LowResSpotMatch
+from .pinkindexer import PinkIndexer
 from .strategy import Strategy
 
-__all__ = ["Strategy", "LowResSpotMatch"]
+__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer"]
 
 
 logger = logging.getLogger(__name__)
@@ -193,7 +194,7 @@ class LatticeSearch(indexer.Indexer):
             experiments = ExperimentList()
             for i_expt, expt in enumerate(self.experiments):
                 # XXX Not sure if we still need this loop over self.experiments
-                if expt.scan is not None:
+                if expt.scan is not None and expt.scan.has_property("oscillation"):
                     start, end = expt.scan.get_oscillation_range()
                     if (end - start) > 360:
                         # only use reflections from the first 360 degrees of the scan

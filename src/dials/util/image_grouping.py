@@ -21,6 +21,7 @@ import yaml
 from yaml.loader import SafeLoader
 
 from dxtbx import flumpy
+from dxtbx.model import ExperimentList
 from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
 from dxtbx.serialize import load
 
@@ -658,6 +659,7 @@ def save_subset(input_: SplittingIterable) -> Optional[Tuple[str, FilePair]]:
         sel_identifiers = list(identifiers.select(flumpy.from_numpy(sel)))
         expts.select_on_experiment_identifiers(sel_identifiers)
         refls = refls.select_on_experiment_identifiers(sel_identifiers)
+        refls.reset_ids()
     if expts:
         exptout = (
             input_.working_directory
@@ -900,7 +902,7 @@ class GroupingImageTemplates(object):
 class GroupingImageFiles(GroupingImageTemplates):
 
     """This class provides specific implementations for when the images are h5 files.
-    The main difference from tempaltes is getting the image index.
+    The main difference from templates is getting the image index.
     """
 
     @staticmethod
@@ -1038,3 +1040,47 @@ def get_grouping_handler(parsed: ParsedYAML, grouping: str, nproc: int = 1):
     if grouping not in parsed.groupings:
         raise ValueError(f"Grouping definition {grouping} not found in parsed yaml.")
     return handler_class(parsed.groupings[grouping], nproc)
+
+
+def series_repeat_to_groupings(
+    experiments: List[ExperimentList], series_repeat: int, groupname="split_by"
+) -> ParsedYAML:
+    """
+    For a dose series data collection, attempt to create and then parse a
+    groupings yaml based on the images in the input experiments.
+
+    Callers of this function should be prepared to catch Exceptions!
+    """
+    # if all end with .h5 or .nxs then images, else template?
+
+    images = set()
+    for expts in experiments:
+        for iset in expts.imagesets():
+            images.update(iset.paths())
+
+    metalines = ""
+    if all(image.endswith(".nxs") or image.endswith(".h5") for image in images):
+        # ok assume all independent:
+        metadata = []
+        for image in images:
+            metadata.append(f"{image} : 'repeat={series_repeat}'")
+        metalines = "\n    ".join(s for s in metadata)
+    else:
+        isets = group_files_by_imageset(images)
+        metadata = []
+        for iset in isets.keys():
+            metadata.append(f"{iset} : 'repeat={series_repeat}'")
+        metalines = "\n    ".join(s for s in metadata)
+    if not metalines:
+        raise ValueError("Unable to extract images/templates from experiments")
+    grouping = f"""
+metadata:
+  dose_point:
+    {metalines}
+grouping:
+  {groupname}:
+    values:
+      - dose_point
+"""
+    parsed_yaml = ParsedYAML(yml_str=grouping)
+    return parsed_yaml

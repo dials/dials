@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
 
-def test_basic(dials_regression, tmp_path):
+def test_basic(dials_regression: Path, tmp_path):
     # Call dials.create_profile_model
     result = subprocess.run(
         [
@@ -43,7 +44,7 @@ def test_basic(dials_regression, tmp_path):
     assert sigma_m == pytest.approx(0.06833, abs=1e-3)
 
 
-def test_extended(dials_regression, tmp_path):
+def test_extended(dials_regression: Path, tmp_path):
     # Call dials.create_profile_model
     result = subprocess.run(
         [

@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import sys
 import time
 from collections import namedtuple
 from typing import Tuple
@@ -214,6 +215,13 @@ def generate_mask(
     # Get the detector and beam
     detector = imageset.get_detector()
     beam = imageset.get_beam()
+
+    # validate that the input parameters are sensible
+    if params.d_min is not None and params.d_max is not None:
+        if params.d_min > params.d_max:
+            sys.exit(
+                f"d_min = {params.d_min} > d_max = {params.d_max}: no spots will be found"
+            )
 
     # Create the mask for each panel
     masks = []

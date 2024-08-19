@@ -18,7 +18,7 @@ def slice_experiments(experiments, image_ranges):
 
     if len(experiments) != len(image_ranges):
         raise ValueError(
-            "Input experiment list and image_ranges are not of the same length"
+            f"Input experiment list and image_ranges are not of the same length ({len(experiments)} != {len(image_ranges)})"
         )
 
     for exp, sr in zip(experiments, image_ranges):
@@ -34,10 +34,7 @@ def slice_experiments(experiments, image_ranges):
         end = sr[1] - arr_start
         exp.scan.swap(exp.scan[beg:end])
         if exp.imageset is not None:
-            # Gorilla of temporary workarounds for inconsistent scan and imageset slicing
-            # https://github.com/cctbx/dxtbx/issues/213
-            offset = exp.scan.get_batch_offset()
-            exp.imageset = exp.imageset[beg + offset : end + offset]
+            exp.imageset = exp.imageset[beg:end]
 
         # account for scan-varying crystal
         if exp.crystal and exp.crystal.num_scan_points > 0:
@@ -65,6 +62,7 @@ def slice_reflections(reflections, image_ranges):
             continue
         isel = (reflections["id"] == iexp).iselection()
         frames = (reflections["xyzobs.px.value"].parts()[2]).select(isel)
+
         # reflns on image n have frames in range [n-1, n)
         in_low_lim = frames >= sr[0] - 1
         in_high_lim = frames < sr[1]

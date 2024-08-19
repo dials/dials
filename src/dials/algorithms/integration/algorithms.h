@@ -84,7 +84,7 @@ namespace dials { namespace algorithms {
     /**
      * Compute the mask for a single reflection
      * @param reflection The reflection object
-     * @param adjacent Is this an adjacent relfection?
+     * @param adjacent Is this an adjacent reflection?
      */
     virtual void operator()(af::Reflection &reflection, bool adjacent = false) const {
       func_.single(reflection.get<Shoebox<> >("shoebox"),
@@ -116,7 +116,7 @@ namespace dials { namespace algorithms {
     /**
      * Compute the mask for a single reflection
      * @param reflection The reflection object
-     * @param adjacent Is this an adjacent relfection?
+     * @param adjacent Is this an adjacent reflection?
      */
     virtual void operator()(af::Reflection &reflection, bool adjacent = false) const {
       int index = reflection.get<int>("id");

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from cctbx import crystal, miller, sgtbx
+from cctbx import crystal, miller, sgtbx, uctbx
 from scitbx.array_family import flex
 
 from dials.algorithms.merging.merge import (
@@ -33,8 +33,9 @@ def test_dano_over_sigdano():
 
 def test_generate_r_free_flags():
     ms = miller.build_set(
-        crystal_symmetry=sgtbx.space_group_info("P422").any_compatible_crystal_symmetry(
-            volume=1e5
+        crystal_symmetry=crystal.symmetry(
+            space_group_symbol="P4222",
+            unit_cell=uctbx.unit_cell((50.0, 50.0, 120.0, 90, 90, 90)),
         ),
         anomalous_flag=False,
         d_min=2,
@@ -84,7 +85,7 @@ def test_r_free_flags_from_reference(tmp_path):
     params = phil_scope.extract()
     r_free_flags = generate_r_free_flags(params, mtz_datasets)
     mtz = make_merged_mtz_file(mtz_datasets, r_free_array=r_free_flags)
-    mtz.write(str(mtz_file))
+    mtz.write_to_file(str(mtz_file))
 
     # Now actually test r_free_flags_from_reference
     params.r_free_flags.reference = str(mtz_file)

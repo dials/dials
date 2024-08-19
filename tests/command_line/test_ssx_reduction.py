@@ -68,6 +68,25 @@ def test_ssx_reduction(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.mtz").is_file()
 
+    # now try running mmcif export
+    result = subprocess.run(
+        [shutil.which("dials.export"), scale_expts, scale_refls, "format=mmcif"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.cif").is_file()
+    # check that gemmi can understand the output cif
+    cmd = [
+        shutil.which("gemmi"),
+        "cif2mtz",
+        tmp_path / "scaled.cif",
+        tmp_path / "test.mtz",
+    ]
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "test.mtz").is_file()
+
     result = subprocess.run(
         [shutil.which("dials.merge"), scale_expts, scale_refls],
         cwd=tmp_path,
@@ -91,3 +110,11 @@ def test_ssx_reduction(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "compute_delta_cchalf.html").is_file()
+
+    # will not be able to refine error model due to lack of data, but should rather exit cleanly.
+    result = subprocess.run(
+        [shutil.which("dials.refine_error_model"), scale_expts, scale_refls],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr

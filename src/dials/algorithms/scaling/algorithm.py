@@ -61,6 +61,12 @@ def prepare_input(params, experiments, reflections):
 
     #### First exclude any datasets, before the dataset is split into
     #### individual reflection tables and expids set.
+    if (params.dataset_selection.include_datasets is not None) and (
+        params.dataset_selection.use_datasets is None
+    ):
+        params.dataset_selection.use_datasets = (
+            params.dataset_selection.include_datasets
+        )
     if (
         params.dataset_selection.exclude_datasets
         or params.dataset_selection.use_datasets
@@ -635,6 +641,9 @@ def targeted_scaling_algorithm(scaler):
         scaler.make_ready_for_scaling()
         scaler.perform_scaling()
 
+        expand_and_do_outlier_rejection(scaler, calc_cov=True)
+        do_error_analysis(scaler, reselect=True)
+
     if scaler.params.scaling_options.full_matrix and (
         scaler.params.scaling_refinery.engine == "SimpleLBFGS"
     ):
@@ -642,9 +651,11 @@ def targeted_scaling_algorithm(scaler):
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,
         )
+    else:
+        scaler.perform_scaling()
 
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
-    # do_error_analysis(scaler, reselect=False)
+    do_error_analysis(scaler, reselect=False)
 
     scaler.prepare_reflection_tables_for_output()
     return scaler

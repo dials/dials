@@ -5,6 +5,7 @@ import logging
 import os
 import pickle
 import random
+from pathlib import Path
 
 import pytest
 
@@ -1385,7 +1386,7 @@ def test_as_miller_array():
         _ = table.as_miller_array(experiment, intensity="2")
 
 
-def test_map_centroids_to_reciprocal_space(dials_regression):
+def test_map_centroids_to_reciprocal_space(dials_regression: Path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
     expts_path = os.path.join(data_dir, "experiments_import.json")
@@ -1442,7 +1443,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     )
 
 
-def test_calculate_entering_flags(dials_regression):
+def test_calculate_entering_flags(dials_regression: Path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
     experiments_path = os.path.join(data_dir, "experiments_import.json")
@@ -1601,11 +1602,12 @@ def test_concat():
     ids2[0] = "c"
     ids2[1] = "d"
 
-    table1 = flex.reflection_table.concat([table1, table2])
+    table3 = flex.reflection_table.concat([table1, table2])
+    ids3 = dict(table3.experiment_identifiers())
 
-    assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
-    assert list(ids1.keys()) == [0, 1, 2, 3]
-    assert list(ids1.values()) == ["a", "b", "c", "d"]
+    assert list(table3["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
+    assert list(ids3.keys()) == [0, 1, 2, 3]
+    assert list(ids3.values()) == ["a", "b", "c", "d"]
 
     # test empty tables
     table1 = flex.reflection_table()

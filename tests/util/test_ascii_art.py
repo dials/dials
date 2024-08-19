@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import os
 import pickle
+from pathlib import Path
 
 
-def test_spot_counts_per_image_plot(dials_regression):
+def test_spot_counts_per_image_plot(dials_regression: Path):
     from dials.util import ascii_art
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")

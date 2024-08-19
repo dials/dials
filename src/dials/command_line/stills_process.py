@@ -156,9 +156,10 @@ def _control_phil_str():
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
-    integration_pickle = int-%d-%s.pickle
+    integration_pickle = None
       .type = str
-      .help = Filename for cctbx.xfel-style integration pickle files
+      .expert_level = 3
+      .help = Filename for legacy cxi.merge integration pickle files. Example: int-%d-%s.pickle
   }
 
   mp {
@@ -276,7 +277,7 @@ def _dials_phil_str():
       transformation = 6
         .type = int(value_min=0, value_max=6)
         .multiple = False
-        .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distince coset results. \
+        .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distance coset results. \
                 0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
                 See Sauter and Zwart, Acta D (2009) 65:553
     }
@@ -1003,9 +1004,9 @@ class Processor:
         if not self.params.mp.debug.output_debug_logs:
             return
 
-        from xfel.cxi.cspad_ana import cspad_tbx  # XXX move to common timestamp format
+        from serialtbx.util.time import timestamp  # XXX move to common timestamp format
 
-        ts = cspad_tbx.evt_timestamp()  # Now
+        ts = timestamp()  # Now
         debug_file_handle = open(self.debug_file_path, "a")
         if string == "":
             debug_file_handle.write("\n")
@@ -1406,7 +1407,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     )
 
         if self.params.dispatch.coset:
-            from xfel.util.sublattice_helper import integrate_coset
+            from dials.algorithms.integration.sublattice_helper import integrate_coset
 
             integrate_coset(self, experiments, indexed)
 
@@ -1603,7 +1604,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             return
 
         if self.params.output.integration_pickle is not None:
-            from xfel.command_line.frame_extractor import ConstructFrame
+            from serialtbx.util.construct_frame import ConstructFrame
 
             # Split everything into separate experiments for pickling
             for e_number, experiment in enumerate(experiments):

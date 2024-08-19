@@ -7,6 +7,7 @@ import numpy as np
 
 import iotbx.phil
 from cctbx import uctbx
+from dxtbx.model import ExperimentType
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
 
@@ -87,10 +88,14 @@ def beam_centre_raw_image_px(detector, s0):
     return x_px + offset[0], y_px + offset[1]
 
 
-def show_beam(detector, beam):
+def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
 
     # standard static beam model string
     s = str(beam)
+
+    # time of flight experiments have no scan points
+    if experiment_type == ExperimentType.TOF:
+        return s
 
     # report whether the beam is scan-varying
     if beam.num_scan_points > 0:
@@ -263,16 +268,20 @@ def show_experiments(experiments, show_scan_varying=False):
         except AttributeError:
             pass
         text.append(str(expt.detector))
+        if expt.get_type() == ExperimentType.TOF:
+            min_wavelength = min(expt.beam.get_wavelength_range())
+            s0 = tuple([i / min_wavelength for i in expt.beam.get_unit_s0()])
+        else:
+            s0 = expt.beam.get_s0()
         text.append(
-            "Max resolution (at corners): %f"
-            % (expt.detector.get_max_resolution(expt.beam.get_s0()))
+            "Max resolution (at corners): %f" % (expt.detector.get_max_resolution(s0))
         )
         text.append(
             "Max resolution (inscribed):  %f"
-            % (expt.detector.get_max_inscribed_resolution(expt.beam.get_s0()))
+            % (expt.detector.get_max_inscribed_resolution(s0))
         )
         text.append("")
-        text.append(show_beam(expt.detector, expt.beam))
+        text.append(show_beam(expt.detector, expt.beam, expt.get_type()))
         if expt.scan is not None:
             text.append(str(expt.scan))
         if expt.goniometer is not None:
@@ -315,7 +324,7 @@ def show_image_statistics(experiments, im_type):
     else:
         raise ValueError(f"Unknown im_type: {im_type}")
 
-    # To show image statistics, check_format has to be true. So we have to reinstatiate
+    # To show image statistics, check_format has to be true. So we have to reinstantiate
     # the experiment list here
     try:
         experiments = ExperimentListFactory.from_json(

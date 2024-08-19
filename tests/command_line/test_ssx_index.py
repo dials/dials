@@ -13,7 +13,6 @@ from dxtbx.serialize import load
 from dials.command_line.ssx_index import run
 
 
-@pytest.mark.xfel
 def test_ssx_index_reference_geometry(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = ssx / "imported_with_ref_5.expt"
@@ -47,14 +46,20 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     assert data["filtered_images"] == [4]
 
 
-@pytest.mark.xfel
-def test_ssx_index_no_reference_geometry(dials_data, tmp_path):
+@pytest.mark.parametrize("indexer", ["stills", "sequences"])
+def test_ssx_index_no_reference_geometry(dials_data, tmp_path, indexer):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = ssx / "imported_no_ref_5.expt"
     refls = ssx / "strong_5.refl"
 
     result = subprocess.run(
-        [shutil.which("dials.ssx_index"), expts, refls, "-vv"],
+        [
+            shutil.which("dials.ssx_index"),
+            expts,
+            refls,
+            f"stills.indexer={indexer}",
+            "-vv",
+        ],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -64,9 +69,14 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path):
     assert (tmp_path / "indexed.expt").is_file()
     assert (tmp_path / "dials.ssx_index.html").is_file()
     experiments = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
-    assert (
-        len(experiments) == 3
-    )  # only 3 out of the 5 get indexed if no reference geometry
+    if indexer == "stills":
+        assert (
+            len(experiments) == 3
+        )  # only 3 out of the 5 get indexed if no reference geometry
+    elif indexer == "sequences":
+        assert (
+            len(experiments) == 5
+        )  # all 5 get indexed, albeit some with questionably high rmsds.
 
 
 def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
@@ -81,14 +91,21 @@ def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
     assert len(experiments) == 0
 
 
-@pytest.mark.xfel
 def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = str(ssx / "imported_with_ref_5.expt")
     refls = str(ssx / "strong_5.refl")
 
     # invoke the run function
-    run([expts, refls, "max_lattices=2", "unit_cell=96.4,96.4,96.4,90,90,90"])
+    run(
+        [
+            expts,
+            refls,
+            "max_lattices=2",
+            "unit_cell=96.4,96.4,96.4,90,90,90",
+            "method=fft1d+real_space_grid_search",
+        ]
+    )
 
     assert os.path.exists("indexed.refl")
     assert os.path.exists("indexed.expt")
@@ -105,3 +122,8 @@ def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     assert (
         len(experiments) == 2
     )  # only 2 out of the 5 images get indexed without real space grid search
+
+    # test we can run the pink_indexer method through ssx_index also
+    run([expts, refls, "method=pink_indexer", "unit_cell=96.4,96.4,96.4,90,90,90"])
+    experiments = load.experiment_list("indexed.expt", check_format=False)
+    assert len(experiments) == 5

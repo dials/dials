@@ -9,7 +9,11 @@ from pathlib import Path
 import pytest
 
 from dxtbx.imageset import ImageSequence
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
+
+from dials.command_line.dials_import import ManualGeometryUpdater
+from dials.util.options import geometry_phil_scope
 
 
 @pytest.mark.parametrize("use_beam", ["True", "False"])
@@ -134,6 +138,92 @@ def test_can_import_multiple_sequences(dials_data, tmp_path):
         assert experiment.identifier != ""
 
 
+def test_invert_axis_with_two_sequences_sharing_a_goniometer(dials_data, tmp_path):
+    # Test for regression of https://github.com/dials/dials/issues/2467
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+    del image_files[4]  # Delete filename to force two sequences
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=experiments_multiple_sequences.expt",
+            "invert_rotation_axis=True",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "experiments_multiple_sequences.expt").is_file()
+
+    experiments = load.experiment_list(tmp_path / "experiments_multiple_sequences.expt")
+    assert len(experiments.goniometers()) == 1
+    assert experiments.goniometers()[0].get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+
+def test_ManualGeometryUpdater_inverts_axis(dials_data):
+    # Test behaviour of inverting axes with multiple imagesets as suggested in
+    # https://github.com/dials/dials/pull/2469#discussion_r1278264665
+
+    # Create four imagesets, first two share a goniometer model, second two
+    # have independent inverted goniometer models
+    filenames = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+    experiments = ExperimentListFactory.from_filenames(filenames[0:3])
+    experiments.extend(ExperimentListFactory.from_filenames(filenames[2:5]))
+    experiments.extend(ExperimentListFactory.from_filenames(filenames[4:7]))
+    experiments.extend(ExperimentListFactory.from_filenames(filenames[7:9]))
+    imagesets = experiments.imagesets()
+    imagesets[1].set_goniometer(imagesets[0].get_goniometer())
+    imagesets[2].get_goniometer().set_rotation_axis((-1.0, 0, 0))
+    imagesets[3].get_goniometer().set_rotation_axis((-1.0, 0, 0))
+
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Set the manual geometry parameters. The hierarchy.group should be unset
+    # here, to model how the scope_extract appears to the ManualGeometryUpdater
+    # during a dials.import run.
+    params = geometry_phil_scope.extract()
+    params.geometry.goniometer.invert_rotation_axis = True
+    params.geometry.detector.hierarchy.group = []
+
+    mgu = ManualGeometryUpdater(params=params)
+
+    # Update the first imageset (affects first two, which share a gonio)
+    mgu(imagesets[0])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Run the updater on the second (should not invert again)
+    mgu(imagesets[1])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Run on the third (should invert only that one)
+    mgu(imagesets[2])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (-1.0, 0.0, 0.0)
+
+    # Run on the fourth (should invert only that one)
+    mgu(imagesets[3])
+    assert imagesets[0].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[1].get_goniometer().get_rotation_axis() == (-1, 0, 0)
+    assert imagesets[2].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+    assert imagesets[3].get_goniometer().get_rotation_axis() == (1.0, 0.0, 0.0)
+
+
 def test_with_mask(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
@@ -239,7 +329,7 @@ def test_override_geometry(dials_data, tmp_path):
     assert goniometer.get_fixed_rotation() == (0, 1, 2, 3, 4, 5, 6, 7, 8)
     assert goniometer.get_setting_rotation() == (8, 7, 6, 5, 4, 3, 2, 1, 0)
     assert scan.get_image_range() == (1, 4)
-    assert scan.get_oscillation() == (1, 2)
+    assert scan.get_oscillation() == pytest.approx((1, 2))
 
 
 def test_import_beam_centre(dials_data, tmp_path):
@@ -286,8 +376,8 @@ def test_import_beam_centre(dials_data, tmp_path):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression, tmp_path):
-    # test slow_fast_beam_centre with a multi-panel CS-PAD image
+def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
+    # test fast_slow_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,
         "image_examples",
@@ -337,6 +427,59 @@ def test_fast_slow_beam_centre(dials_regression, tmp_path):
     o = matrix.col(ref_imset.get_detector()[0].get_origin())
     ref_offsets = []
     for p in ref_imset.get_detector():
+        intra_pnl = o - matrix.col(p.get_origin())
+        ref_offsets.append(intra_pnl.length())
+    assert offsets == pytest.approx(ref_offsets)
+
+
+def test_distance_multi_panel(dials_regression: pathlib.Path, tmp_path):
+    # test setting the distance with a multi-panel CS-PAD image
+    impath = os.path.join(
+        dials_regression,
+        "image_examples",
+        "LCLS_cspad_nexus",
+        "idx-20130301060858401.cbf",
+    )
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "distance=100",
+            "output.experiments=distance.expt",
+            impath,
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "distance.expt").is_file()
+
+    experiments = load.experiment_list(tmp_path / "distance.expt")
+    detector = experiments[0].detector
+    # all distances should be 100
+    assert all(p.get_distance() == pytest.approx(100) for p in detector)
+
+    # check relative panel positions have not changed
+    from scitbx import matrix
+
+    o = matrix.col(detector[0].get_origin())
+    offsets = []
+    for p in detector:
+        intra_pnl = o - matrix.col(p.get_origin())
+        offsets.append(intra_pnl.length())
+
+    result = subprocess.run(
+        [shutil.which("dials.import"), "output.experiments=reference.expt", impath],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "reference.expt").is_file()
+
+    ref_exp = load.experiment_list(tmp_path / "reference.expt")
+    ref_detector = ref_exp[0].detector
+    o = matrix.col(ref_detector[0].get_origin())
+    ref_offsets = []
+    for p in ref_detector:
         intra_pnl = o - matrix.col(p.get_origin())
         ref_offsets.append(intra_pnl.length())
     assert offsets == pytest.approx(ref_offsets)
@@ -705,7 +848,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     assert len(experiments3.scans()) == 5  # four for sacla stills, 1 for centroid data
 
 
-def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
+def test_convert_stills_to_sequences_nonh5(dials_regression: pathlib.Path, tmp_path):
     image_path = Path(
         dials_regression,
         "image_examples",
@@ -731,6 +874,22 @@ def test_convert_stills_to_sequences_nonh5(dials_regression, tmp_path):
     assert len(experiments.imagesets()) == 1
     assert isinstance(experiments.imagesets()[0], ImageSequence)
     assert len(experiments.scans()) == 1  # only one image example here
+
+
+def test_import_still_sequence(dials_data, tmp_path):
+    ssx = dials_data("cunir_serial", pathlib=True)
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            os.fspath(ssx / "merlin0047_1700*.cbf"),
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    experiments = load.experiment_list(tmp_path / "imported.expt")
+    assert len(experiments) == 5
+    assert len(experiments.imagesets()) == 1
 
 
 def test_import_grid_scan(dials_data, tmp_path):

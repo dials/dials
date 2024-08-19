@@ -6,11 +6,15 @@ the corresponding reflections.
 
 from __future__ import annotations
 
+import logging
+
 from orderedset import OrderedSet
 
 import iotbx.phil
 
 from dials.array_family import flex
+
+logger = logging.getLogger(__name__)
 
 phil_scope = iotbx.phil.parse(
     """
@@ -25,6 +29,15 @@ phil_scope = iotbx.phil.parse(
             "exclude_images='0:150:200 1:200:250'"
     .short_caption = "Exclude images"
     .expert_level = 1
+
+  exclude_images_multiple = None
+    .type = int(value_min=2)
+    .help = "Exclude this single image and each multiple of this image number in"
+            "each experiment. This is provided as a convenient shorthand to"
+            "specify image exclusions for cRED data, where the scan of"
+            "diffraction images is interrupted at regular intervals by a crystal"
+            "positioning image (typically every 20th image)."
+    .expert_level = 2
 """
 )
 
@@ -45,7 +58,7 @@ def get_valid_image_ranges(experiments):
     """Extract valid image ranges from experiments, returning None if no scan"""
     valid_images_ranges = []
     for exp in experiments:
-        if exp.scan:
+        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
             valid_images_ranges.append(exp.scan.get_valid_image_ranges(exp.identifier))
         else:
             valid_images_ranges.append(None)
@@ -58,7 +71,7 @@ def set_initial_valid_image_ranges(experiments):
     Also this function can be called for a mix of sequences and scanless experiments.
     """
     for exp in experiments:
-        if exp.scan:
+        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
             if not exp.scan.get_valid_image_ranges(exp.identifier):
                 exp.scan.set_valid_image_ranges(
                     exp.identifier, [exp.scan.get_image_range()]
@@ -69,7 +82,7 @@ def set_initial_valid_image_ranges(experiments):
 def get_selection_for_valid_image_ranges(reflection_table, experiment):
     """Determine a selection for the reflection table corresponding to reflections
     that are located in valid image ranges (according to zobs.px.value)."""
-    if experiment.scan:
+    if experiment.scan and (experiment.scan.get_oscillation()[1] != 0.0):
         valid_ranges = experiment.scan.get_valid_image_ranges(experiment.identifier)
         if valid_ranges:
             valid_mask = flex.bool(reflection_table.size(), False)
@@ -200,6 +213,43 @@ def set_invalid_images(experiments, exclude_images):
         for index in rejects.iselection():
             experiment.imageset.mark_for_rejection(index, True)
     return experiments
+
+
+def expand_exclude_multiples(experiments, exclude_images_multiple, exclude_images):
+    """Expand an integer exclude_images_multiple into the appropriate exclude_images
+    string, and then append that to the current exclude_images parameter. For example,
+    with a single experiment of 90 images and exclude_images_multiple=20, the
+    expanded string would be '0:20:20,0:40:40,0:60:60,0:80:80'. This then excludes
+    the 20th image and each multiple thereof."""
+
+    extra_excludes = []
+    for i, experiment in enumerate(experiments):
+        if not experiment.scan:
+            continue
+        first_image, last_image = experiment.scan.get_image_range()
+        first_exclude = (
+            (first_image - 1) // exclude_images_multiple + 1
+        ) * exclude_images_multiple
+        excludes = list(range(first_exclude, last_image + 1, exclude_images_multiple))
+        exclude_str = ",".join([f"{i}:{e}:{e}" for e in excludes])
+        extra_excludes.append(
+            [
+                exclude_str,
+            ]
+        )
+    if extra_excludes:
+        logger.info(
+            f"The exclude_images_multiple={exclude_images_multiple} parameter has been expanded to:"
+        )
+        for e in extra_excludes:
+            logger.info(f"  exclude_images={e[0]}")
+
+    if exclude_images is None:
+        exclude_images = []
+
+    exclude_images.extend(extra_excludes)
+
+    return exclude_images
 
 
 """
