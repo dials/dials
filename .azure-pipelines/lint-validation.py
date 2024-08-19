@@ -10,6 +10,7 @@ try:
     process = subprocess.run(
         [
             "ruff",
+            "check",
             "--exit-zero",
         ],
         capture_output=True,
