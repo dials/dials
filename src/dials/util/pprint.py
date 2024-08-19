@@ -52,7 +52,6 @@ def profile3d(p, vmin=None, vmax=None):
 
 
 if __name__ == "__main__":
-
     from dials.array_family import flex
 
     a1 = flex.double(

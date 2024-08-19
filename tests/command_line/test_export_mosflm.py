@@ -36,9 +36,7 @@ def test_export_mosflm(dials_regression: Path, tmp_path):
   0.83360283 -0.53598726 -0.13350648
      42.2717     42.2720     39.6704     90.0001     89.9993     89.9998
        0.000       0.000       0.000
-""".strip(
-            "\n"
-        )
+""".strip("\n")
     )
     assert (tmp_path / "mosflm" / "mosflm.in").is_file()
     lines = (tmp_path / "mosflm" / "mosflm.in").read_text()
@@ -51,8 +49,6 @@ SYMMETRY 89
 BEAM 220.002 212.478
 DISTANCE 190.1800
 MATRIX index.mat
-""".strip(
-            "\n"
-        )
+""".strip("\n")
         % (dials_regression, os.path.sep)
     )
