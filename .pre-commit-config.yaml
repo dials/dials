@@ -14,7 +14,7 @@ repos:
   - id: no-commit-to-branch
     name: "Don't commit to 'main' directly"
 
-- repo: https://github.com/charliermarsh/ruff-pre-commit
+- repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.6.1
   hooks:
     - id: ruff
