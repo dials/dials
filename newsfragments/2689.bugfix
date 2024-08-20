@@ -1,1 +1,0 @@
-Change Docker base image to rockylinux:8 as centos:7 is EOL

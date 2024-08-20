@@ -1,1 +1,0 @@
-Add explicit tests that executable ``gemmi`` is present, before using it.
