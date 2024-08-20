@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # ruff: noqa: I002
 
+import logging
 import os
 import re
 import sys
@@ -10,7 +11,7 @@ VALID_SECTIONS = ["build", "host", "run", "test"]  # type: list[SectionName]
 Dependency = namedtuple("Dependency", ["name", "version", "raw_line"])
 
 try:
-    from typing import Literal, TypeAlias  # noqa: F401
+    from typing import Any, Literal, TypeAlias  # noqa: F401
 
     SectionName = Literal["build", "host", "run", "test"]  # type: TypeAlias
     Dependencies = dict[SectionName, list[Dependency]]  # type: TypeAlias
@@ -80,7 +81,9 @@ def _merge_dependency_lists(source, merge_into):
             # This already exists in the target. Should we replace it?
             other_ver = merge_into[indices[pkg]][1]
             if not other_ver and ver:
-                print("Merging '{}' over {}".format(line, merge_into[indices[pkg]]))
+                logging.debug(
+                    "Merging '{}' over {}".format(line, merge_into[indices[pkg]])
+                )
                 merge_into[indices[pkg]] = Dependency(pkg, ver, line)
             elif other_ver and ver and ver != other_ver:
                 raise RuntimeError(
@@ -143,7 +146,6 @@ class DependencySelectorParser(object):
 
             if match:
                 if self._parse_expression(match.group(1)):
-                    # print(f"... Passed: {line}")
                     output_lines.append(line)
             elif re_pin.search(line):
                 # Ignore pin_compatible dependencies
@@ -170,7 +172,6 @@ class DependencySelectorParser(object):
         output = {}  # type: Dependencies
         current_section = None  # type: SectionName | None
         for n, line in enumerate(data.splitlines()):
-            # print(f"Examining line {n}: {line} (current: {current_section})")
             if "#" in line:
                 line = line[: line.index("#")]
             line = line.strip()
@@ -269,11 +270,16 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
+    # parser.add_argument(
+    #     "kind",
+    #     choices=["bootstrap", "conda-build"],
+    #     help="Choose the target for handling dependency lists",
+    #     metavar="KIND",
+    # )
     parser.add_argument(
-        "kind",
-        choices=["bootstrap", "conda-build"],
-        help="Choose the target for handling dependency lists",
-        metavar="KIND",
+        "--conda-build",
+        help="Generate structured conda-build-style output",
+        action="store_true",
     )
     parser.add_argument(
         "-p",
@@ -314,12 +320,18 @@ if __name__ == "__main__":
         action="append_const",
         const="run",
     )
+    parser.add_argument(
+        "-v", "--verbose", help="Show debugging output", action="store_true"
+    )
     parser.add_argument("sources", nargs="+", help="Dependency files to merge")
     args = parser.parse_args()
     if not args.sections:
         args.sections = VALID_SECTIONS
 
-    if args.kind == "bootstrap":
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO, format="%(message)s"
+    )
+    if not args.conda_build:
         print(
             "\n".join(
                 preprocess_for_bootstrap(
@@ -332,7 +344,7 @@ if __name__ == "__main__":
         )
     else:
         if args.platform:
-            sys.exit("Error: Can only specify platform with --kind=bootstrap")
+            sys.exit("Error: Can only specify platform with plain-list mode.")
         deps = DependencySelectorParser(bootstrap=False, prebuilt_cctbx=True)
         reqs = deps.parse_files(args.sources)
         output = []
