@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-
-from __future__ import annotations
+# ruff: noqa: I002
 
 import os
 import re
@@ -11,7 +10,7 @@ VALID_SECTIONS = ["build", "host", "run", "test"]  # type: list[SectionName]
 Dependency = namedtuple("Dependency", ["name", "version", "raw_line"])
 
 try:
-    from typing import Literal, TypeAlias
+    from typing import Literal, TypeAlias  # noqa: F401
 
     SectionName = Literal["build", "host", "run", "test"]  # type: TypeAlias
     Dependencies = dict[SectionName, list[Dependency]]  # type: TypeAlias
