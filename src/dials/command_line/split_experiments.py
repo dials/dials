@@ -340,7 +340,6 @@ class Script:
                 save_chunk(chunk_counter, chunk_expts, chunk_refls)
         else:
             for i, experiment in enumerate(experiments):
-
                 experiment_filename = experiments_template(index=i)
                 print("Saving experiment %d to %s" % (i, experiment_filename))
                 ExperimentList([experiment]).as_json(experiment_filename)

@@ -369,7 +369,6 @@ class Indexer:
     def from_parameters(
         reflections, experiments, known_crystal_models=None, params=None
     ):
-
         if known_crystal_models is not None:
             from dials.algorithms.indexing.known_orientation import (
                 IndexerKnownOrientation,
@@ -527,9 +526,7 @@ class Indexer:
             if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
-                cutoff_fraction = (
-                    self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-                )
+                cutoff_fraction = self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
                 d_spacings = 1 / self.reflections["rlp"].norms()
                 d_min_indexed = flex.min(d_spacings.select(self.indexed_reflections))
                 min_reflections_for_indexing = cutoff_fraction * len(
@@ -944,13 +941,10 @@ class Indexer:
         params = self.params.max_cell_estimation
         if self.params.max_cell is libtbx.Auto:
             if self.params.known_symmetry.unit_cell is not None:
-                uc_params = (
-                    self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
-                )
+                uc_params = self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
                 self.params.max_cell = params.multiplier * max(uc_params[:3])
                 logger.info("Using max_cell: %.1f Angstrom", self.params.max_cell)
             else:
-
                 convert_reflections_z_to_deg = True
                 all_tof_experiments = False
                 for expt in self.experiments:

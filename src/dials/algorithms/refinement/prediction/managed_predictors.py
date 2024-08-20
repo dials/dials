@@ -6,7 +6,6 @@
   the naive assumption that the relp is already in reflecting position
 """
 
-
 from __future__ import annotations
 
 from math import pi
@@ -81,7 +80,6 @@ class ExperimentsPredictor:
         """Predict for all reflections at the current model geometry"""
 
         for iexp, e in enumerate(self._experiments):
-
             # select the reflections for this experiment only
             sel = reflections["id"] == iexp
             refs = reflections.select(sel)
@@ -97,7 +95,6 @@ class ExperimentsPredictor:
         return reflections
 
     def _predict_one_experiment(self, experiment, reflections):
-
         raise NotImplementedError()
 
     def _post_predict_one_experiment(self, experiment, reflections):
@@ -112,7 +109,6 @@ class ExperimentsPredictor:
 
 class ScansExperimentsPredictor(ExperimentsPredictor):
     def _predict_one_experiment(self, experiment, reflections):
-
         # scan-varying
         if "ub_matrix" in reflections:
             predictor = sv(experiment)
@@ -128,7 +124,6 @@ class ScansExperimentsPredictor(ExperimentsPredictor):
             predictor.for_reflection_table(reflections, UB)
 
     def _post_prediction(self, reflections):
-
         if "xyzobs.mm.value" in reflections:
             reflections = self._match_full_turns(reflections)
 
@@ -163,11 +158,9 @@ class ScansExperimentsPredictor(ExperimentsPredictor):
 
 
 class StillsExperimentsPredictor(ExperimentsPredictor):
-
     spherical_relp_model = False
 
     def _predict_one_experiment(self, experiment, reflections):
-
         predictor = st(experiment, spherical_relp=self.spherical_relp_model)
         UB = experiment.crystal.get_A()
         predictor.for_reflection_table(reflections, UB)
@@ -175,7 +168,6 @@ class StillsExperimentsPredictor(ExperimentsPredictor):
 
 class LaueExperimentsPredictor(ExperimentsPredictor):
     def _predict_one_experiment(self, experiment, reflections):
-
         min_s0_idx = min(
             range(len(reflections["wavelength"])),
             key=reflections["wavelength"].__getitem__,
@@ -196,7 +188,6 @@ class LaueExperimentsPredictor(ExperimentsPredictor):
 
 class TOFExperimentsPredictor(LaueExperimentsPredictor):
     def _post_predict_one_experiment(self, experiment, reflections):
-
         # Add ToF to xyzcal.mm
         wavelength_cal = reflections["wavelength_cal"]
         distance = experiment.beam.get_sample_to_source_distance() * 10**-3
@@ -222,7 +213,6 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
 class ExperimentsPredictorFactory:
     @staticmethod
     def from_experiments(experiments, force_stills=False, spherical_relp=False):
-
         # Determine whether or not to use a stills predictor
         if not force_stills:
             for exp in experiments:
@@ -236,7 +226,6 @@ class ExperimentsPredictorFactory:
             predictor.spherical_relp_model = spherical_relp
 
         else:
-
             all_tof_experiments = False
             for expt in experiments:
                 if expt.scan is not None and expt.scan.has_property("time_of_flight"):

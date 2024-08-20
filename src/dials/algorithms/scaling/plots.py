@@ -1059,7 +1059,6 @@ in 3D.
 
 
 def plot_array_decay_plot(array_model):
-
     decay_comp = array_model.components["decay"]
     configdict = array_model.configdict
 

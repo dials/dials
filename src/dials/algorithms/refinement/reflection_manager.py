@@ -124,7 +124,6 @@ class BlockCalculator:
     the centre of the block"""
 
     def __init__(self, experiments, reflections):
-
         self._experiments = experiments
         self._reflections = reflections
 
@@ -150,7 +149,6 @@ class BlockCalculator:
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
 
         for iexp, exp in enumerate(self._experiments):
-
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
@@ -192,7 +190,6 @@ class BlockCalculator:
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
 
         for iexp, exp in enumerate(self._experiments):
-
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
@@ -255,7 +252,6 @@ class ReflectionManagerFactory:
         reflections: flex.reflection_table,
         params: libtbx.phil.scope_extract,
     ) -> StillsReflectionManager:
-
         refman = StillsReflectionManager
 
         ## Outlier detection
@@ -314,7 +310,6 @@ class ReflectionManagerFactory:
         reflections: flex.reflection_table,
         params: libtbx.phil.scope_extract,
     ) -> ReflectionManager:
-
         refman = ReflectionManager
 
         ## Outlier detection
@@ -371,7 +366,6 @@ class ReflectionManagerFactory:
         reflections: flex.reflection_table,
         params: libtbx.phil.scope_extract,
     ) -> LaueReflectionManager:
-
         all_tof_experiments = False
         for expt in experiments:
             if expt.scan is not None and expt.scan.has_property("time_of_flight"):
@@ -444,8 +438,10 @@ class ReflectionManagerFactory:
     @staticmethod
     def get_weighting_strategy_override(
         params: libtbx.phil.scope_extract,
-    ) -> weighting_strategies.StatisticalWeightingStrategy | weighting_strategies.ConstantWeightingStrategy:
-
+    ) -> (
+        weighting_strategies.StatisticalWeightingStrategy
+        | weighting_strategies.ConstantWeightingStrategy
+    ):
         if params.weighting_strategy.override == "statistical":
             return weighting_strategies.StatisticalWeightingStrategy()
 
@@ -504,7 +500,6 @@ class ReflectionManager:
         outlier_detector=None,
         weighting_strategy_override=None,
     ):
-
         if len(reflections) == 0:
             raise ValueError("Empty reflections table provided to ReflectionManager")
 
@@ -758,7 +753,6 @@ class ReflectionManager:
 
         working_isel = flex.size_t()
         for iexp, exp in enumerate(self._experiments):
-
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             # refs = self._reflections.select(sel)
@@ -974,7 +968,6 @@ class StillsReflectionManager(ReflectionManager):
 
 
 class LaueReflectionManager(ReflectionManager):
-
     _weighting_strategy = weighting_strategies.LaueStatisticalWeightingStrategy()
     experiment_type = "laue"
 
@@ -991,7 +984,6 @@ class LaueReflectionManager(ReflectionManager):
         weighting_strategy_override=None,
         wavelength_weight=1e7,
     ):
-
         if len(reflections) == 0:
             raise ValueError("Empty reflections table provided to ReflectionManager")
 
@@ -1159,7 +1151,6 @@ class TOFReflectionManager(LaueReflectionManager):
         weighting_strategy_override=None,
         wavelength_weight=1e7,
     ):
-
         super().__init__(
             reflections=reflections,
             experiments=experiments,

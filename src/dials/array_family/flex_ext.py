@@ -1145,7 +1145,6 @@ class _:
         """
         self["miller_index_asu"] = cctbx.array_family.flex.miller_index(len(self))
         for idx, experiment in enumerate(experiments):
-
             # Create the crystal symmetry object
             uc = experiment.crystal.get_unit_cell()
             sg = experiment.crystal.get_space_group()
@@ -1322,7 +1321,6 @@ Found %s"""
                 sel_expt = self["id"] == i
 
             for i_panel in range(len(expt.detector)):
-
                 sel = sel_expt & (panel_numbers == i_panel)
                 if calculated:
                     x, y, z = self["xyzcal.mm"].select(sel).parts()

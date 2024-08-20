@@ -8,7 +8,6 @@ Usage:
     dials.integrate integrated.expt refined.refl background.algorithm=gmodel gmodel.robust.algorithm=True gmodel.model=background.pickle
 """
 
-
 from __future__ import annotations
 
 import logging

@@ -231,7 +231,6 @@ def add_batch_list(
             and experiment.crystal.num_scan_points > 0
             and experiment.goniometer
         ):
-
             # Get the index of the image in the sequence e.g. first => 0, second => 1
             image_index = i + i0 - experiment.scan.get_image_range()[0]
 
@@ -667,7 +666,6 @@ def export_mtz(
         logger.debug("Keeping existing batches")
     image_ranges = get_image_ranges(experiment_list)
     if len(unique_offsets) != len(batch_offsets):
-
         raise ValueError(
             "Duplicate batch offsets detected: %s"
             % ", ".join(
@@ -932,7 +930,6 @@ def convert_to_cambridge(experiments):
 
 
 def rotate_crystal(crystal, Rmat, axis, angle):
-
     Amats = []
     if crystal.num_scan_points > 0:
         scan_pts = list(range(crystal.num_scan_points))

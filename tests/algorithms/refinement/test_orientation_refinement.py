@@ -9,7 +9,6 @@ cctbx.python tst_orientation_refinement.py \
 "random_seed=3; engine=LBFGScurvs"
 """
 
-
 from __future__ import annotations
 
 import sys
@@ -83,7 +82,6 @@ from . import geometry_phil, minimiser_phil, setup_geometry, setup_minimiser
 
 
 def test(args=[]):
-
     #############################
     # Setup experimental models #
     #############################

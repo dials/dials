@@ -7,11 +7,9 @@ class html_report:
         self.external_dependencies = external_dependencies
 
     def header(self):
-
         assert self.external_dependencies in ("remote", "local", "embed")
 
         if self.external_dependencies == "remote":
-
             plotly_js = (
                 '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>'
             )
@@ -150,7 +148,6 @@ class html_report:
         return html_header
 
     def css(self):
-
         return """
 body {
   /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
@@ -183,9 +180,7 @@ body {
         document.body);
   </script>
 </body>
-""" % (
-            "\n".join(content.html() for content in self._content)
-        )
+""" % ("\n".join(content.html() for content in self._content))
 
         return html_body
 
@@ -216,9 +211,7 @@ class panel_group:
 <div class="panel-group">
   %s
 </div>
-""" % (
-            "\n".join(p.html() for p in self._panels)
-        )
+""" % ("\n".join(p.html() for p in self._panels))
         return html
 
 
@@ -294,7 +287,6 @@ class plotly_graph:
         return javascript
 
     def html(self):
-
         return "\n".join(
             (
                 '<div class="col-xs-6 col-sm-6 col-md-4 plot" id="%s"></div>'
@@ -316,9 +308,7 @@ class container_fluid:
 <div class="container-fluid">
 %s
 </div>
-""" % "\n".join(
-            content.html() for content in self._content
-        )
+""" % "\n".join(content.html() for content in self._content)
         return html
 
 
@@ -334,9 +324,7 @@ class div:
 <div>
 %s
 </div>
-""" % "\n".join(
-            content.html() for content in self._content
-        )
+""" % "\n".join(content.html() for content in self._content)
         return html
 
 

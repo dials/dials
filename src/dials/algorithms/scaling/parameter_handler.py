@@ -44,7 +44,6 @@ class scaling_active_parameter_manager(active_parameter_manager):
 
 
 class ScalingParameterManagerGenerator(ParameterManagerGenerator):
-
     """Class to generate parameter manager for scaling."""
 
     def __init__(self, data_managers, target, mode, shared=None):
