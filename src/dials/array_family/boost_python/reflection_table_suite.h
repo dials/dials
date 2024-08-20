@@ -20,12 +20,13 @@ namespace dials { namespace af { namespace boost_python {
      * @returns The new table with the requested rows
      */
     template <typename T>
-    T select_rows_index(const T &self,
-                        const scitbx::af::const_ref<std::size_t> &index) {
+    T select_rows_index_base(const T &self,
+                        const scitbx::af::const_ref<std::size_t> &index,
+                        const bool preserve_ids) {
       T new_table = flex_table_suite::select_rows_index(self, index);
 
       // Get the id column (if it exists) and make a set of unique values
-      if (self.contains("id")) {
+      if (preserve_ids && self.contains("id")) {
         af::shared<int> col = new_table["id"];
         std::set<int> new_ids(col.begin(), col.end());
 
@@ -41,6 +42,18 @@ namespace dials { namespace af { namespace boost_python {
       return new_table;
     }
 
+    template <typename T>
+    T select_rows_index(const T &self,
+                        const scitbx::af::const_ref<std::size_t> &index) {
+      return select_rows_index_base(self, index, true);
+    }
+    template <typename T>
+    T select_rows_index_fast(const T &self,
+                        const scitbx::af::const_ref<std::size_t> &index) {
+      return select_rows_index_base(self, index, false);
+    }
+                             
+
     /**
      * Select a number of rows from the table via an index array
      * @param self The current table
@@ -51,11 +64,24 @@ namespace dials { namespace af { namespace boost_python {
     T select_rows_flags(const T &self, const af::const_ref<bool> &flags) {
       DIALS_ASSERT(self.nrows() == flags.size());
       af::shared<std::size_t> index;
+      index.reserve(flags.size());
       for (std::size_t i = 0; i < flags.size(); ++i) {
         if (flags[i]) index.push_back(i);
       }
       return select_rows_index(self, index.const_ref());
     }
+
+    template <typename T>
+    T select_rows_flags_fast(const T &self, const af::const_ref<bool> &flags) {
+      DIALS_ASSERT(self.nrows() == flags.size());
+      af::shared<std::size_t> index;
+      index.reserve(flags.size());
+      for (std::size_t i = 0; i < flags.size(); ++i) {
+        if (flags[i]) index.push_back(i);
+      }
+      return select_rows_index_fast(self, index.const_ref());
+    }
+
 
     /**
      * Adds missing experiment identifiers to self that are in other

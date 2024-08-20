@@ -28,6 +28,8 @@
 #include <cctbx/miller.h>
 #include <dials/array_family/boost_python/reflection_table_suite.h>
 
+#include <chrono>
+
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
@@ -41,6 +43,170 @@ namespace dials { namespace af { namespace boost_python {
 
   using namespace dxtbx::af;
 
+  template <typename T>
+  void initialize_next_hkl(T &self) {
+    self.i_next_hkl_ = 0;
+    const af::shared< cctbx::miller::index<> > hkl_vals = self["miller_index_asymmetric"];
+    self.next_hkl_ = hkl_vals[0];
+  }
+
+  template <typename T>
+  T get_next_hkl_reflection_table_base(T &self, bool preserve_ids) {
+    af::shared<std::size_t> matching_indices;
+    matching_indices.reserve(self.nrows());
+    const af::shared< cctbx::miller::index<> > hkl_vals = self["miller_index_asymmetric"];
+    cctbx::miller::index<> hkl_ref = hkl_vals[self.i_next_hkl_];
+    while (
+        self.i_next_hkl_ < self.nrows() && 
+        hkl_vals[self.i_next_hkl_] == hkl_ref) 
+    {
+      matching_indices.push_back(self.i_next_hkl_);
+      self.i_next_hkl_ += 1;
+    }
+    return reflection_table_suite::select_rows_index_base(self, matching_indices.const_ref(), preserve_ids);
+  }
+
+  template <typename T>
+  T get_next_hkl_reflection_table_(T &self) {
+    return get_next_hkl_reflection_table_base(self, true);
+  }
+  template <typename T>
+  T get_next_hkl_reflection_table_fast(T &self) {
+    return get_next_hkl_reflection_table_base(self, false);
+  }
+
+  template <typename T>
+  T merge_reflections_2(T &self, int min_multiplicity) {
+    auto t0 = std::chrono::high_resolution_clock::now();
+    af::shared<cctbx::miller::index<> > r_hkl;
+    af::shared<double> r_intensity;
+    af::shared<double> r_sigma;
+    af::shared<int> r_mult;
+//    r_hkl.reserve(self.size());
+//    r_intensity.reserve(self.size());
+//    r_sigma.reserve(self.size());
+//    r_mult.reserve(self.size());
+
+    af::shared<cctbx::miller::index<> > hkl_vals = self["miller_index_asymmetric"];
+    af::shared<double> intensity_vals = self["intensity.sum.value"];
+    af::shared<double> variance_vals = self["intensity.sum.variance"];
+    double weight_sum = 0;
+    double weighted_intensity_sum = 0;
+    std::size_t count = 0;
+
+    cctbx::miller::index<> hkl_ref = hkl_vals[0];
+    auto t_setup = std::chrono::high_resolution_clock::now()-t0;
+    for (int i=0; i<self.size(); i++) {
+      if (hkl_vals[i] == hkl_ref) {
+        double weight = 1/variance_vals[i];
+        if (weight <= 0) continue;
+        weighted_intensity_sum += intensity_vals[i] * weight;
+        weight_sum += weight;
+        count += 1;
+      }
+      else {
+        if (count >= min_multiplicity) {
+          r_hkl.push_back(hkl_ref);
+          r_intensity.push_back(weighted_intensity_sum / weight_sum);
+          r_sigma.push_back(1/std::sqrt(weight_sum));
+          r_mult.push_back(count);
+        }
+        hkl_ref = hkl_vals[i];
+        weighted_intensity_sum = intensity_vals[i]/variance_vals[i];
+        weight_sum = 1/variance_vals[i];
+        count = 1;
+      }
+    }
+    if (count >= min_multiplicity) {
+      r_hkl.push_back(hkl_ref);
+      r_intensity.push_back(weighted_intensity_sum / weight_sum);
+      r_sigma.push_back(1/std::sqrt(weight_sum));
+      r_mult.push_back(count);
+    }
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+
+    T result(r_hkl.size());
+//    flex_table_suite::setitem_column(result, "miller_index", r_hkl.const_ref());
+//    flex_table_suite::setitem_column(result, "intensity", r_intensity.const_ref());
+//    flex_table_suite::setitem_column(result, "sigma", r_sigma.const_ref());
+//    flex_table_suite::setitem_column(result, "multiplicity", r_mult.const_ref());
+    result["miller_index"] = r_hkl;
+    result["intensity"] = r_intensity;
+    result["sigma"] = r_sigma;
+    result["multiplicity"] = r_mult;
+    T result_(result);
+    auto t_total = std::chrono::high_resolution_clock::now()-t0;
+    auto t_shutdown = std::chrono::high_resolution_clock::now()-t1;
+    std::cout<<"setup: "<<std::chrono::duration_cast<std::chrono::nanoseconds>(t_setup).count()<<", shutdown: "<<std::chrono::duration_cast<std::chrono::nanoseconds>(t_shutdown).count()<<", total: "<<std::chrono::duration_cast<std::chrono::nanoseconds>(t_total).count()<<std::endl;
+    return result_;
+
+
+
+
+
+  }
+
+  template <typename T>
+  T merge_reflections_(T &self, int min_multiplicity) {
+    T result;
+    af::shared<cctbx::miller::index<> > r_hkl;
+    af::shared<double> r_intensity;
+    af::shared<double> r_sigma;
+    af::shared<std::size_t> r_mult;
+    r_hkl.reserve(self.size());
+    r_intensity.reserve(self.size());
+    r_sigma.reserve(self.size());
+    r_mult.reserve(self.size());
+    initialize_next_hkl(self);
+    T refls = get_next_hkl_reflection_table_base(self, false);
+    while (refls.size() != 0) {
+      af::shared<double> var_temp = refls["intensity.sum.variance"];
+      af::shared<std::size_t> indices;
+      for (int i=0; i<refls.size(); i++) {
+        if (var_temp[i] > 0.0) indices.push_back(i);
+      }
+      if (indices.size() < refls.size()) {
+        refls = reflection_table_suite::select_rows_index(refls, indices.const_ref());
+      }
+      if (refls.size() > min_multiplicity) {
+        af::shared<cctbx::miller::index<> > hkl_vals = refls["miller_index_asymmetric"];
+        af::shared<double> intensity_vals = refls["intensity.sum.value"];
+        af::shared<double> variance_vals = refls["intensity.sum.variance"];
+        cctbx::miller::index<> hkl = hkl_vals[0];
+        af::shared<double> weight_vals, weighted_intensity_vals;
+        weight_vals.reserve(refls.size());
+        weighted_intensity_vals.reserve(refls.size());
+        for (int i=0; i<refls.size(); i++) {
+          weight_vals.push_back(1.0 / variance_vals[i]);
+          weighted_intensity_vals.push_back(intensity_vals[i] * weight_vals[i]);
+        }
+        float i_mean = 
+          sum(weighted_intensity_vals.const_ref()) / sum(weight_vals.const_ref());
+        float sig_i_mean = 1/std::sqrt(sum(weight_vals.const_ref()));
+        r_hkl.push_back(hkl);
+        r_intensity.push_back(i_mean);
+        r_sigma.push_back(sig_i_mean);
+        r_mult.push_back(refls.size());
+      }
+      refls = get_next_hkl_reflection_table_base(self, false);
+    }
+    flex_table_suite::setitem_column(result, "miller_index", r_hkl.const_ref());
+    flex_table_suite::setitem_column(result, "intensity", r_intensity.const_ref());
+    flex_table_suite::setitem_column(result, "sigma", r_sigma.const_ref());
+    flex_table_suite::setitem_column(result, "multiplicity", r_mult.const_ref());
+
+    
+    return result;
+  }
+
+  template <typename T>
+  std::size_t get_i_next_hkl(T self) {
+    return self.i_next_hkl_;
+  }
+    
+
+  
   /**
    * Construct a reflection table from a list of observations and shoeboxes
    * @param o The observation
@@ -918,6 +1084,10 @@ namespace dials { namespace af { namespace boost_python {
         .def("__init__",
              make_constructor(&make_from_observation_and_shoebox<flex_table_type>))
         .def("help_keys", &help_keys<flex_table_type>)
+        .def("get_next_hkl_reflection_table_", &get_next_hkl_reflection_table_<flex_table_type>)
+        .def("initialize_next_hkl", &initialize_next_hkl<flex_table_type>)
+        .def("merge_reflections_", &merge_reflections_2<flex_table_type>)
+        .def("get_i_next_hkl", &get_i_next_hkl<flex_table_type>)
         .def("compute_ray_intersections", &compute_ray_intersections<flex_table_type>)
         .def("get_flags",
              &get_flags<flex_table_type>,
@@ -947,6 +1117,10 @@ namespace dials { namespace af { namespace boost_python {
              &reflection_table_suite::select_using_experiment<flex_table_type>)
         .def("select",
              &reflection_table_suite::select_using_experiments<flex_table_type>)
+        .def("select_fast",
+             &reflection_table_suite::select_rows_index_fast<flex_table_type>)
+        .def("select_fast",
+             &reflection_table_suite::select_rows_flags_fast<flex_table_type>)
         .def("__getitem__", &reflection_table_suite::getitem_slice<flex_table_type>)
         .def("extend", &reflection_table_suite::extend<flex_table_type>)
         .def("update", &reflection_table_suite::update<flex_table_type>)

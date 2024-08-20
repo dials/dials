@@ -73,6 +73,9 @@ namespace dials { namespace af {
       return experiment_identifiers_;
     }
 
+    cctbx::miller::index<> next_hkl_; 
+    std::size_t i_next_hkl_;
+
   protected:
     std::shared_ptr<experiment_map_type> experiment_identifiers_;
   };
