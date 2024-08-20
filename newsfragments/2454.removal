@@ -1,2 +1,0 @@
-`dials.import`: remove useless as_grid_scan option as misleading. To import as stills set scan.oscillation=0,0
-
