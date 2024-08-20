@@ -4,7 +4,12 @@ from __future__ import annotations
 import shutil
 import subprocess
 
+import pytest
 
+
+@pytest.mark.skipif(
+    shutil.which("gemmi") is None, reason="Could not find gemmi executable"
+)
 def test_ssx_reduction(dials_data, tmp_path):
     """
     Check that dials.cosym, dials.scale, dials.export and dials.merge run
@@ -77,7 +82,6 @@ def test_ssx_reduction(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.cif").is_file()
     # check that gemmi can understand the output cif
-    assert shutil.which("gemmi"), "Could not find GEMMI executable"
     cmd = [
         shutil.which("gemmi"),
         "cif2mtz",

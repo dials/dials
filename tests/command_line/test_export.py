@@ -294,6 +294,9 @@ def test_mmcif(compress, hklout, dials_data, tmp_path):
     assert (tmp_path / hklin).is_file()
 
 
+@pytest.mark.skipif(
+    shutil.which("gemmi") is None, reason="Could not find gemmi executable"
+)
 @pytest.mark.parametrize("pdb_version", ["v5", "v5_next"])
 def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     """Call dials.export format=mmcif after scaling"""
@@ -320,7 +323,6 @@ def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     if pdb_version == "v5":
         assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
         # check that gemmi can understand the output
-        assert shutil.which("gemmi"), "Could not find GEMMI executable"
         cmd = [
             shutil.which("gemmi"),
             "cif2mtz",
