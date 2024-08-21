@@ -10,15 +10,15 @@ import logging
 import numpy as np
 import pandas as pd
 from orderedset import OrderedSet
+from scipy import sparse
 
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
-logger = logging.getLogger(__name__)
-from scipy import sparse
-
 from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
+
+logger = logging.getLogger(__name__)
 
 
 def _lattice_lower_upper_index(lattices, lattice_id):
@@ -32,7 +32,14 @@ def _lattice_lower_upper_index(lattices, lattice_id):
 
 
 def _compute_rij_matrix_one_row_block(
-    i, lattices, data, indices, sym_ops, patterson_group, weights=True, min_pairs=3
+    i,
+    lattices,
+    data,
+    indices,
+    sym_ops,
+    patterson_group,
+    weights=True,
+    min_pairs=3,
 ):
     cs = data.crystal_symmetry()
     n_lattices = len(lattices)
@@ -55,13 +62,11 @@ def _compute_rij_matrix_one_row_block(
     cb_ops = [sgtbx.change_of_basis_op(cb_op_k) for cb_op_k in sym_ops]
 
     for j in range(n_lattices):
-
         j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
         intensities_j = data.data()[j_lower:j_upper]
         sigmas_j = data.sigmas()[j_lower:j_upper]
 
         for k, cb_op_k in enumerate(cb_ops):
-
             indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
 
             for kk, cb_op_kk in enumerate(cb_ops):
@@ -74,7 +79,7 @@ def _compute_rij_matrix_one_row_block(
 
                 key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
                 if key in rij_cache:
-                    cc, n = rij_cache[key]
+                    cc, n, n_pairs = rij_cache[key]
                 else:
                     indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
 
@@ -104,18 +109,26 @@ def _compute_rij_matrix_one_row_block(
                         data=intensities_i.select(isel_i),
                         sigmas=sigmas_i.select(isel_i),
                     )
-                    corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
-                        ma_i, ma_j, assume_index_matching=True
-                    )[0]
-                    if neff:
-                        cc = corr
-                        n = neff
-                    else:
+                    n_pairs = ma_i.size()
+                    if ma_i.size() < min_pairs:
                         n, cc = (None, None)
+                    else:
+                        corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
+                            ma_i, ma_j, assume_index_matching=True
+                        )[0]
+                        if neff:
+                            cc = corr
+                            n = neff
+                        else:
+                            n, cc = (None, None)
 
-                    rij_cache[key] = (cc, n)
+                    rij_cache[key] = (cc, n, n_pairs)
 
-                if n is None or cc is None or (min_pairs is not None and n < min_pairs):
+                if (
+                    n is None
+                    or cc is None
+                    or (min_pairs is not None and n_pairs < min_pairs)
+                ):
                     continue
                 if weights:
                     wij_row.append(ik)
@@ -318,8 +331,11 @@ class Target:
         if wij_matrix is not None:
             wij_matrix = wij_matrix.toarray().astype(np.float64)
             if self._weights == "standard_error":
-                sel = np.where(wij_matrix > 2)
-                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 2))
+                # N.B. using effective n due to sigma weighting, which can be below 2
+                # but approches 1 in the limit, so rather say efective sample size
+                # for standard error calc is n-1
+                sel = np.where(wij_matrix > 1)
+                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 1))
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
 

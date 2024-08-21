@@ -126,7 +126,6 @@ class LatticeSearch(indexer.Indexer):
                 break
 
     def find_candidate_crystal_models(self):
-
         candidate_crystal_models = []
         if self._lattice_search_strategy:
             candidate_crystal_models = (
@@ -162,7 +161,6 @@ class LatticeSearch(indexer.Indexer):
         return experiments
 
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
-
         from dials.algorithms.indexing import model_evaluation
 
         solution_scorer = self.params.basis_vector_combinations.solution_scorer
@@ -194,7 +192,7 @@ class LatticeSearch(indexer.Indexer):
             experiments = ExperimentList()
             for i_expt, expt in enumerate(self.experiments):
                 # XXX Not sure if we still need this loop over self.experiments
-                if expt.scan is not None:
+                if expt.scan is not None and expt.scan.has_property("oscillation"):
                     start, end = expt.scan.get_oscillation_range()
                     if (end - start) > 360:
                         # only use reflections from the first 360 degrees of the scan
@@ -353,7 +351,6 @@ class BasisVectorSearch(LatticeSearch):
         return candidate_crystal_models
 
     def find_candidate_orientation_matrices(self, candidate_basis_vectors):
-
         candidate_crystal_models = combinations.candidate_orientation_matrices(
             candidate_basis_vectors,
             max_combinations=self.params.basis_vector_combinations.max_combinations,
@@ -383,7 +380,6 @@ class BasisVectorSearch(LatticeSearch):
         return candidate_crystal_models
 
     def optimise_basis_vectors(self):
-
         optimised_basis_vectors = optimise.optimise_basis_vectors(
             self.reflections["rlp"].select(self._used_in_indexing),
             self.candidate_basis_vectors,
@@ -393,7 +389,6 @@ class BasisVectorSearch(LatticeSearch):
         ]
 
     def debug_show_candidate_basis_vectors(self):
-
         vectors = self.candidate_basis_vectors
 
         logger.debug("Candidate basis vectors:")

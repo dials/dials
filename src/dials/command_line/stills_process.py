@@ -560,7 +560,6 @@ class Script:
             log.config(verbosity=options.verbose, logfile=logfile)
 
         else:
-
             # Configure logging
             log.config(verbosity=options.verbose, logfile="dials.process.log")
 
@@ -1016,7 +1015,6 @@ class Processor:
         debug_file_handle.close()
 
     def process_experiments(self, tag, experiments):
-
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
         self.tag = tag
@@ -1377,7 +1375,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             # Dump experiments to disk
             if self.params.output.refined_experiments_filename:
-
                 experiments.as_json(self.params.output.refined_experiments_filename)
 
             if self.params.output.indexed_filename:
@@ -1542,7 +1539,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             # Dump experiments to disk
             if self.params.output.integrated_experiments_filename:
-
                 experiments.as_json(self.params.output.integrated_experiments_filename)
 
             if self.params.output.integrated_filename:
@@ -1809,19 +1805,11 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                         dest=destrank,
                     )
 
-                    self.all_imported_experiments = (
-                        self.all_strong_reflections
-                    ) = (
+                    self.all_imported_experiments = self.all_strong_reflections = (
                         self.all_indexed_experiments
-                    ) = (
-                        self.all_indexed_reflections
-                    ) = (
+                    ) = self.all_indexed_reflections = (
                         self.all_integrated_experiments
-                    ) = (
-                        self.all_integrated_reflections
-                    ) = (
-                        self.all_coset_experiments
-                    ) = (
+                    ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
 
@@ -1830,7 +1818,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_imported_experiments) > 0
                 and self.params.output.experiments_filename
             ):
-
                 self.all_imported_experiments.as_json(
                     self.params.output.experiments_filename
                 )
@@ -1847,7 +1834,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_indexed_experiments) > 0
                 and self.params.output.refined_experiments_filename
             ):
-
                 self.all_indexed_experiments.as_json(
                     self.params.output.refined_experiments_filename
                 )
@@ -1864,7 +1850,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_integrated_experiments) > 0
                 and self.params.output.integrated_experiments_filename
             ):
-
                 self.all_integrated_experiments.as_json(
                     self.params.output.integrated_experiments_filename
                 )
@@ -1883,7 +1868,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     len(self.all_coset_experiments) > 0
                     and self.params.output.coset_experiments_filename
                 ):
-
                     self.all_coset_experiments.as_json(
                         self.params.output.coset_experiments_filename
                     )

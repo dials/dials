@@ -188,7 +188,6 @@ def do_cluster_analysis(crystal_symmetries, params):
     print(clustering)
 
     if params.plot.show or params.plot.name:
-
         if params.plot.log:
             ax.set_yscale("symlog", linthresh=1)
         else:

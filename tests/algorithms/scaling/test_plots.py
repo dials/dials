@@ -117,7 +117,6 @@ def test_plot_array_modulation_plot():
 
 
 def test_plot_scaling_models():
-
     physical_dict = {
         "__id__": "physical",
         "is_scaled": True,

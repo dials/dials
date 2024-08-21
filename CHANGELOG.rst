@@ -1,3 +1,81 @@
+DIALS 3.21.0 (2024-08-20)
+=========================
+
+Features
+--------
+
+- Add classes to support time-of-flight and Laue indexing and refinement. (`#2662 <https://github.com/dials/dials/issues/2662>`_)
+- ``dials.symmetry``: Allow free selection of ``significance_level`` in the range [0,1]. (`#2696 <https://github.com/dials/dials/issues/2696>`_)
+- ``dials.export``: Add support for exporting still data in mmcif format that GEMMI can read. (`#2709 <https://github.com/dials/dials/issues/2709>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.index``: Fix a ``pink_indexer`` error that caused failures for images with electron diffraction geometry. (`#2680 <https://github.com/dials/dials/issues/2680>`_)
+- ``dials.correlation_matrix``: Correctly select datasets for output json after filtering, when used by multiplex. (`#2681 <https://github.com/dials/dials/issues/2681>`_)
+- ``dials.index``: Avoid mm to px conversion when the ``refinement_protocol`` is set to do no refinement, as the required data are not available. (`#2687 <https://github.com/dials/dials/issues/2687>`_)
+- Avoid deprecated ``matplotlib.cm.get_cmap`` calls (`#2688 <https://github.com/dials/dials/issues/2688>`_)
+- Change Docker base image to rockylinux:8 as centos:7 is EOL (`#2689 <https://github.com/dials/dials/issues/2689>`_)
+- ``dials.image_viewer``: Increase the maximum resolution for the ring tool radius. This was too small for new detectors. (`#2697 <https://github.com/dials/dials/issues/2697>`_)
+- ``dials.index``: Fix potential crash in max_cell estimation when all spots are at the resolution of ice rings. (`#2699 <https://github.com/dials/dials/issues/2699>`_)
+- ``dials.merge``: Use GEMMI to output merged MTZs, for consistency with ``dials.export`` (`#2700 <https://github.com/dials/dials/issues/2700>`_)
+- ``dials.reciprocal_lattice_viewer``: Fix middle mouse drag to translate function. (`#2707 <https://github.com/dials/dials/issues/2707>`_)
+- Performance improvement for selections from large reflection tables. For a table containing 165k experiment identifiers the speedup is 1000x (12 minutes per call). (`#2718 <https://github.com/dials/dials/issues/2718>`_)
+
+
+Improved Documentation
+----------------------
+
+- Docstrings and type hints are added to the ``reindex_experiments`` and ``reindex_reflections`` functions to make it easier to use these outside the ``dials.reindex`` program. (`#2683 <https://github.com/dials/dials/issues/2683>`_)
+- Improvements to the small molecule tutorial. (`#2692 <https://github.com/dials/dials/issues/2692>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- `dials.import`: remove useless as_grid_scan option as misleading. To import as stills set scan.oscillation=0,0 (`#2454 <https://github.com/dials/dials/issues/2454>`_)
+
+
+Misc
+----
+
+- `#2675 <https://github.com/dials/dials/issues/2675>`_, `#2702 <https://github.com/dials/dials/issues/2702>`_, `#2714 <https://github.com/dials/dials/issues/2714>`_, `#2715 <https://github.com/dials/dials/issues/2715>`_, `#2723 <https://github.com/dials/dials/issues/2723>`_
+
+
+DIALS 3.20.0 (2024-06-19)
+=========================
+
+Features
+--------
+
+- New tool: ``dials.correlation_matrix``: A new command-line tool for correlation and cosine similarity clustering of multi-crystal datasets, independent of ``xia2.multiplex``. It provides HTML output, including clustering heatmaps, dendrograms and corresponding ``dials.cosym`` graphs. (`#2632 <https://github.com/dials/dials/issues/2632>`_)
+- DIALS is now compatible with Python 3.12. (`#2651 <https://github.com/dials/dials/issues/2651>`_)
+- ``dials.scale``: Add filtering options to default basic error model to allow error modelling of stills data. (`#2654 <https://github.com/dials/dials/issues/2654>`_)
+- ``dials.cosym``: Add alternative weighting during cosym CC calculation with a new ``cc_weights=`` option. (`#2666 <https://github.com/dials/dials/issues/2666>`_)
+- ``dials.correlation_matrix``: Add tables with cluster information to html output. (`#2671 <https://github.com/dials/dials/issues/2671>`_)
+- New tool: ``dials.split_still_data`` for splitting dials-processed still data based on image number (e.g. dose series). (`#2672 <https://github.com/dials/dials/issues/2672>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.find_rotation_axis``: Correctly set the orientation of the rotation axis for a multi-axis goniometer. (`#2658 <https://github.com/dials/dials/issues/2658>`_)
+- Fix ``dials.show`` beam checks for time of flight experiments. (`#2660 <https://github.com/dials/dials/issues/2660>`_)
+- When masking, raise an error if ``d_min > d_max`` (where no spots would be found). (`#2664 <https://github.com/dials/dials/issues/2664>`_)
+- ``dials.cosym``: Make function return structure correctly, in the recently added ``cc_weights=`` option. (`#2668 <https://github.com/dials/dials/issues/2668>`_)
+- ``dials.find_rotation_axis``: Add reflection selection criteria, to avoid runs that use a very large amount of memory. (`#2670 <https://github.com/dials/dials/issues/2670>`_)
+- ``dials.cosym``: For ``cc_weights=sigma``, ensure correct filtering based on min_pairs parameters. (`#2673 <https://github.com/dials/dials/issues/2673>`_)
+- ``dials.cosym``: Fix to give more accurate cc calculation when running with a ``space_group=`` set. (`#2674 <https://github.com/dials/dials/issues/2674>`_)
+- Fix ``flex.reflection_table.concat``, to not modify in-place. (`#2679 <https://github.com/dials/dials/issues/2679>`_)
+
+
+Misc
+----
+
+- `#2613 <https://github.com/dials/dials/issues/2613>`_, `#2616 <https://github.com/dials/dials/issues/2616>`_, `#2641 <https://github.com/dials/dials/issues/2641>`_, `#2667 <https://github.com/dials/dials/issues/2667>`_
+
+
 DIALS 3.19.1 (2024-05-23)
 =========================
 

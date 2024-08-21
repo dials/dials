@@ -246,7 +246,6 @@ def test_invalid_yml(tmp_path):
     reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
 )
 def test_real_h5_example(tmp_path, dials_data):
-
     """This test tests a few use cases on processed data derived from h5 format."""
     fpath1 = (
         "/dls/mx/data/nt30330/nt30330-15/VMXi-AB1698/well_42/images/image_58766.nxs"
@@ -395,7 +394,6 @@ grouping:
     reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
 )
 def test_real_cbf_example(tmp_path, dials_data):
-
     """This test tests a few use cases on real cbf data, using the template
     metadata definition.
 

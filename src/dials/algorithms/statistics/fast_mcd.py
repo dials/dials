@@ -306,7 +306,6 @@ class FastMCD:
 
         trials = []
         for i in range(self._n_trials):
-
             H1 = self.form_initial_subset(h=self._h, data=self._data)
             T1, S1 = self.means_and_covariance(H1)
             detS1 = S1.matrix_determinant_via_lu()
@@ -314,7 +313,6 @@ class FastMCD:
             # perform concentration steps
             detScurr, Tcurr, Scurr = detS1, T1, S1
             for j in range(self._k1):  # take maximum of k1 steps
-
                 Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detSnew = Snew.matrix_determinant_via_lu()
@@ -369,11 +367,9 @@ class FastMCD:
         trials = []
         h_frac = self._h / self._n
         for group in groups:
-
             h_sub = int(len(group[0]) * h_frac)
             gp_trials = []
             for i in range(n_trials):
-
                 H1 = self.form_initial_subset(h=h_sub, data=group)
                 T1, S1 = self.means_and_covariance(H1)
                 detS1 = S1.matrix_determinant_via_lu()
@@ -381,7 +377,6 @@ class FastMCD:
                 # perform concentration steps
                 detScurr, Tcurr, Scurr = detS1, T1, S1
                 for j in range(self._k1):  # take k1 steps
-
                     Hnew = self.concentration_step(h_sub, group, Tcurr, Scurr)
                     Tnew, Snew = self.means_and_covariance(Hnew)
                     detSnew = Snew.matrix_determinant_via_lu()
@@ -403,10 +398,8 @@ class FastMCD:
         mrgd_trials = []
         h_mrgd = int(sample_size * h_frac)
         for trial in trials:
-
             detScurr, Tcurr, Scurr = trial
             for j in range(self._k2):  # take k2 steps
-
                 Hnew = self.concentration_step(h_mrgd, sampled, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detSnew = Snew.matrix_determinant_via_lu()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import pathlib
 import shutil
 import subprocess
@@ -47,8 +48,6 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     for i in range(1, 6):
         assert tmp_path.joinpath(f"nuggets/nugget_integrated_{i}.json").is_file()
 
-
-import json
 
 expected_simple1 = {
     "likelihood": 171374.174649,

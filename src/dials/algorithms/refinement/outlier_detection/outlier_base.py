@@ -27,7 +27,6 @@ class CentroidOutlier:
         block_width=None,
         nproc=1,
     ):
-
         # column names of the data in which to look for outliers
         if cols is None:
             cols = ["x_resid", "y_resid", "phi_resid"]
@@ -248,7 +247,6 @@ class CentroidOutlier:
 
         # loop over the completed jobs
         for i, job in enumerate(jobs3):
-
             iexp = job["id"]
             ipanel = job["panel"]
             nref = len(job["indices"])
@@ -299,7 +297,6 @@ class CentroidOutlier:
 
         msg = None
         if nref >= self._min_num_obs:
-
             # get the subset of data as a list of columns
             cols = [data[col] for col in self._cols]
 
@@ -487,7 +484,6 @@ phil_scope = parse(phil_str)
 class CentroidOutlierFactory:
     @staticmethod
     def from_parameters_and_colnames(params, colnames):
-
         # id the relevant scope for the requested method
         method = params.outlier.algorithm
         if method == "null":
@@ -549,7 +545,6 @@ class CentroidOutlierFactory:
 
 
 if __name__ == "__main__":
-
     # test construction
     params = phil_scope.extract()
     params.outlier.algorithm = "tukey"

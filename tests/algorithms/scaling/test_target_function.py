@@ -351,9 +351,7 @@ def test_target_gradient_calculation_finite_difference(
         grad = target.calculate_gradients(scaler.Ih_table.blocked_data_list[0])
         res, _ = target.compute_residuals(scaler.Ih_table.blocked_data_list[0])
 
-        assert (
-            res > 1e-8
-        ), """residual should not be zero, or the gradient test
+        assert res > 1e-8, """residual should not be zero, or the gradient test
         below will not really be working!"""
 
         # Now compare to finite difference
