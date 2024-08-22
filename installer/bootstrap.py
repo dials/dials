@@ -952,10 +952,10 @@ def run_tests():
     )
 
 
-def refresh_build(prebuilt_cctbx):
+def refresh_build():
     print("Running libtbx.refresh")
     run_indirect_command(
-        "libtbx.refresh" if prebuilt_cctbx else os.path.join("bin", "libtbx.refresh"),
+        os.path.join("bin", "libtbx.refresh"),
         args=[],
     )
 
@@ -1101,7 +1101,7 @@ add_subdirectory(dials)
     )
 
 
-def configure_build(config_flags, prebuilt_cctbx):
+def configure_build(config_flags):
     conda_python = _get_base_python()
 
     # write a new-style environment setup script
@@ -1119,12 +1119,6 @@ def configure_build(config_flags, prebuilt_cctbx):
         config_flags.append("--cxxstd=c++14")
 
     print("Setting up build directory")
-    if prebuilt_cctbx:
-        run_indirect_command(
-            command="libtbx.configure",
-            args=["cbflib", "dials", "dxtbx", "prime", "xia2"],
-        )
-        return
 
     configcmd = [
         os.path.join("..", "modules", "cctbx_project", "libtbx", "configure.py"),
@@ -1152,20 +1146,16 @@ def configure_build(config_flags, prebuilt_cctbx):
     )
 
 
-def make_build(prebuilt_cctbx):
+def make_build():
     try:
         nproc = len(os.sched_getaffinity(0))
     except AttributeError:
         nproc = multiprocessing.cpu_count()
-    if prebuilt_cctbx:
-        command = "libtbx.scons"
-    else:
-        command = os.path.join("bin", "libtbx.scons")
+    command = os.path.join("bin", "libtbx.scons")
 
     run_indirect_command(command, args=["-j", str(nproc)])
-    if not prebuilt_cctbx:
-        # run build again to make sure everything is built
-        run_indirect_command(command, args=["-j", str(nproc)])
+    # run build again to make sure everything is built
+    run_indirect_command(command, args=["-j", str(nproc)])
 
 
 def make_build_cmake():
@@ -1297,9 +1287,9 @@ be passed separately with quotes to avoid confusion (e.g
             configure_build_cmake()
             make_build_cmake()
         else:
-            configure_build(options.config_flags, prebuilt_cctbx=options.prebuilt_cctbx)
-            make_build(prebuilt_cctbx=options.prebuilt_cctbx)
-            refresh_build(prebuilt_cctbx=options.prebuilt_cctbx)
+            configure_build(options.config_flags)
+            make_build()
+            refresh_build()
         install_precommit(options.cmake)
 
     # Tests, tests
