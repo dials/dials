@@ -174,7 +174,15 @@ def install_micromamba(python, cmake):
     ]
     extra_deps = []
     if cmake:
-        extra_deps = ["cctbx-base=" + _prebuilt_cctbx_base, "pycbf", "cmake"]
+        extra_deps = [
+            "cctbx-base=" + _prebuilt_cctbx_base,
+            "pycbf",
+            "cmake",
+            "pre-commit",
+        ]
+        if _prebuilt_cctbx_base == "2024.7":
+            # Known minor incompatibility causes this to otherwise be removed
+            extra_deps.append("libboost-python-devel")
         # If we're running from an explicit requirements file, then we
         # need to install extra dependencies in a separate stage
         with open(filename) as dep_file:
@@ -183,10 +191,6 @@ def install_micromamba(python, cmake):
         if not is_explicit_reqs:
             command_list.extend(extra_deps)
             extra_deps = []
-
-    if os.name == "nt":
-        # Installing pre-commit via precommittbx does not work on windows
-        command_list.append("pre-commit")
 
     print(
         "{text} dials environment from {filename} with Python {python}".format(
@@ -207,7 +211,6 @@ def install_micromamba(python, cmake):
             mamba_prefix,
             "install",
             "--yes",
-            "--freeze-installed",
             "--channel",
             "conda-forge",
             "--override-channels",
