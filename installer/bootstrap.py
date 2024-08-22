@@ -11,7 +11,6 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
-import json
 import multiprocessing.pool
 import os
 import platform
@@ -24,7 +23,6 @@ import sys
 import tarfile
 import threading
 import time
-import warnings
 import zipfile
 
 try:  # Python 3
@@ -153,209 +151,6 @@ def install_micromamba(python, cmake):
         # Installing pre-commit via precommittbx does not work on windows
         command_list.append("pre-commit")
 
-    print(
-        "{text} dials environment from {filename} with Python {python}".format(
-            text=text_messages[0], filename=filename, python=python
-        )
-    )
-    for retry in range(5):
-        retry += 1
-        try:
-            run_command(
-                command=command_list,
-                workdir=".",
-            )
-        except Exception:
-            print(
-                """
-*******************************************************************************
-There was a failure in constructing the conda environment.
-Attempt {retry} of 5 will start {retry} minute(s) from {t}.
-*******************************************************************************
-""".format(retry=retry, t=time.asctime())
-            )
-            time.sleep(retry * 60)
-        else:
-            break
-    else:
-        sys.exit(
-            """
-The conda environment could not be constructed. Please check that there is a
-working network connection for downloading conda packages.
-"""
-        )
-    print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
-    with open(os.path.join(prefix, ".condarc"), "w") as fh:
-        fh.write(
-            """
-changeps1: False
-channels:
-  - conda-forge
-""".lstrip()
-        )
-
-
-def install_miniconda(location):
-    """Download and install Miniconda3"""
-    if sys.platform.startswith("linux"):
-        filename = "Miniconda3-latest-Linux-x86_64.sh"
-    elif sys.platform == "darwin":
-        filename = "Miniconda3-latest-MacOSX-x86_64.sh"
-    elif os.name == "nt":
-        filename = "Miniconda3-latest-Windows-x86_64.exe"
-    else:
-        raise NotImplementedError(
-            "Unsupported platform %s / %s" % (os.name, sys.platform)
-        )
-    url = "https://repo.anaconda.com/miniconda/" + filename
-    filename = os.path.join(location, filename)
-
-    print("Downloading {url}:".format(url=url), end=" ")
-    result = download_to_file(url, filename)
-    if result in (0, -1):
-        sys.exit("Miniconda download failed")
-
-    # run the installer
-    if os.name == "nt":
-        command = [
-            filename,
-            "/InstallationType=JustMe",
-            "/RegisterPython=0",
-            "/AddToPath=0",
-            "/S",
-            "/D=" + location,
-        ]
-    else:
-        command = ["/bin/sh", filename, "-b", "-u", "-p", location]
-
-    print("Installing Miniconda")
-    run_command(command=command, workdir=".")
-
-
-def install_conda(python, cmake):
-    # Find relevant conda base installation
-    conda_base = os.path.realpath("miniconda")
-    if os.name == "nt":
-        conda_exe = os.path.join(conda_base, "Scripts", "conda.exe")
-    else:
-        conda_exe = os.path.join(conda_base, "bin", "conda")
-
-    # default environment file for users
-    environment_file = os.path.join(
-        os.path.expanduser("~"), ".conda", "environments.txt"
-    )
-
-    def get_environments():
-        """Return a set of existing conda environment paths"""
-        try:
-            with open(environment_file) as f:
-                paths = f.readlines()
-        except IOError:
-            paths = []
-        environments = set(  # noqa: C401 # Python 2.7 compatibility
-            os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
-        )
-        env_dirs = (
-            os.path.join(conda_base, "envs"),
-            os.path.join(os.path.expanduser("~"), ".conda", "envs"),
-        )
-        for env_dir in env_dirs:
-            if os.path.isdir(env_dir):
-                for d in os.listdir(env_dir):
-                    d = os.path.join(env_dir, d)
-                    if os.path.isdir(d):
-                        environments.add(d)
-
-        return environments
-
-    if os.path.isdir(conda_base) and os.path.isfile(conda_exe):
-        print("Using miniconda installation from", conda_base)
-    else:
-        print("Installing miniconda into", conda_base)
-        install_miniconda(conda_base)
-
-    # verify consistency and check conda version
-    if not os.path.isfile(conda_exe):
-        sys.exit("Conda executable not found at " + conda_exe)
-
-    environments = get_environments()
-
-    conda_info = subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
-    if sys.version_info.major > 2:
-        conda_info = conda_info.decode("latin-1")
-    conda_info = json.loads(conda_info)
-    for env in environments:
-        if env not in conda_info["envs"]:
-            print("Consistency check:", env, "not in environments:")
-            print(conda_info["envs"])
-            warnings.warn(
-                """
-There is a mismatch between the conda settings in your home directory
-and what "conda info" is reporting. This is not a fatal error, but if
-an error is encountered, please check that your conda installation and
-environments exist and are working.
-""",
-                RuntimeWarning,
-            )
-
-    # identify packages required for environment
-    if os.name == "nt":
-        conda_platform = "windows"
-    elif sys.platform == "darwin":
-        conda_platform = "macos"
-    else:
-        conda_platform = "linux"
-    filename = os.path.join(
-        "modules",
-        "dials",
-        ".conda-envs",
-        "{platform}.txt".format(platform=conda_platform),
-    )
-    if not os.path.isfile(filename):
-        raise RuntimeError(
-            "The file {filename} is not available".format(filename=filename)
-        )
-
-    python_requirement = "conda-forge::python=%s.*" % python
-
-    # make a new environment directory
-    prefix = os.path.realpath("conda_base")
-
-    # install a new environment or update and existing one
-    if prefix in environments:
-        command = "install"
-        text_messages = ["Updating", "update of"]
-    else:
-        command = "create"
-        text_messages = ["Installing", "installation into"]
-    command_list = [
-        conda_exe,
-        command,
-        "--prefix",
-        prefix,
-        "--file",
-        filename,
-        "--yes",
-        "--channel",
-        "conda-forge",
-        "--override-channels",
-        python_requirement,
-    ]
-    if cmake:
-        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
-        command_list.extend(["pycbf", "cmake", "pre-commit"])
-
-    if os.name == "nt":
-        command_list = [
-            "cmd.exe",
-            "/C",
-            " ".join(
-                [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
-                + command_list
-            )
-            .replace("<", "^<")
-            .replace(">", "^>"),
-        ]
     print(
         "{text} dials environment from {filename} with Python {python}".format(
             text=text_messages[0], filename=filename, python=python
@@ -1441,12 +1236,6 @@ be passed separately with quotes to avoid confusion (e.g
         ),
     )
     parser.add_argument(
-        "--conda",
-        help="Use miniconda instead of micromamba for the base installation step",
-        default=False,
-        action="store_true",
-    )
-    parser.add_argument(
         "--clean",
         help="Remove temporary conda environments and package caches after installation",
         default=False,
@@ -1468,20 +1257,12 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Build base packages
     if "base" in options.actions:
-        if options.conda:
-            install_conda(
-                options.python,
-                cmake=options.cmake,
-            )
-            if options.clean:
-                shutil.rmtree(os.path.realpath("miniconda"))
-        else:
-            install_micromamba(
-                options.python,
-                cmake=options.cmake,
-            )
-            if options.clean:
-                shutil.rmtree(os.path.realpath("micromamba"))
+        install_micromamba(
+            options.python,
+            cmake=options.cmake,
+        )
+        if options.clean:
+            shutil.rmtree(os.path.realpath("micromamba"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:
