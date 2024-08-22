@@ -172,13 +172,14 @@ def install_micromamba(python, cmake):
         "mamba",
         python_requirement,
     ]
+    extra_deps = []
     if cmake:
+        extra_deps = ["cctbx-base=" + _prebuilt_cctbx_base, "pycbf", "cmake"]
         # If we're running from an explicit requirements file, then we
         # need to install extra dependencies in a separate stage
         with open(filename) as dep_file:
             is_explicit_reqs = "@EXPLICIT" in dep_file.read()
 
-        extra_deps = ["cctbx-base=" + _prebuilt_cctbx_base, "pycbf", "cmake"]
         if not is_explicit_reqs:
             command_list.extend(extra_deps)
             extra_deps = []
@@ -206,6 +207,7 @@ def install_micromamba(python, cmake):
             mamba_prefix,
             "install",
             "--yes",
+            "--freeze-installed",
             "--channel",
             "conda-forge",
             "--override-channels",
