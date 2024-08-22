@@ -61,7 +61,7 @@ def make_executable(filepath):
         os.chmod(filepath, mode)
 
 
-def install_micromamba(python, include_cctbx, cmake):
+def install_micromamba(python, cmake):
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
@@ -145,10 +145,10 @@ def install_micromamba(python, include_cctbx, cmake):
         "mamba",
         python_requirement,
     ]
-    if include_cctbx or cmake:
-        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
+        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
         command_list.extend(["pycbf", "cmake"])
+
     if os.name == "nt":
         # Installing pre-commit via precommittbx does not work on windows
         command_list.append("pre-commit")
@@ -232,7 +232,7 @@ def install_miniconda(location):
     run_command(command=command, workdir=".")
 
 
-def install_conda(python, include_cctbx, cmake):
+def install_conda(python, cmake):
     # Find relevant conda base installation
     conda_base = os.path.realpath("miniconda")
     if os.name == "nt":
@@ -341,10 +341,10 @@ environments exist and are working.
         "--override-channels",
         python_requirement,
     ]
-    if include_cctbx or cmake:
-        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
     if cmake:
+        command_list.append("cctbx-nightly::cctbx-base=" + _prebuilt_cctbx_base)
         command_list.extend(["pycbf", "cmake", "pre-commit"])
+
     if os.name == "nt":
         command_list = [
             "cmd.exe",
@@ -1453,14 +1453,6 @@ be passed separately with quotes to avoid confusion (e.g
         action="store_true",
     )
     parser.add_argument(
-        # Use the conda-forge cctbx package instead of compiling cctbx from scratch
-        # This is not currently supported outside of CI builds
-        "--prebuilt-cctbx",
-        help=argparse.SUPPRESS,
-        default=False,
-        action="store_true",
-    )
-    parser.add_argument(
         "--cmake",
         help="Use the CMake build system. Implies --prebuilt-cctbx.",
         action="store_true",
@@ -1479,7 +1471,6 @@ be passed separately with quotes to avoid confusion (e.g
         if options.conda:
             install_conda(
                 options.python,
-                include_cctbx=options.prebuilt_cctbx,
                 cmake=options.cmake,
             )
             if options.clean:
@@ -1487,7 +1478,6 @@ be passed separately with quotes to avoid confusion (e.g
         else:
             install_micromamba(
                 options.python,
-                include_cctbx=options.prebuilt_cctbx,
                 cmake=options.cmake,
             )
             if options.clean:
