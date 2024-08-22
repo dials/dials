@@ -28,7 +28,6 @@
 #include <cctbx/miller.h>
 #include <dials/array_family/boost_python/reflection_table_suite.h>
 
-#include <chrono>
 
 namespace dials { namespace af { namespace boost_python {
 
@@ -77,15 +76,10 @@ namespace dials { namespace af { namespace boost_python {
 
   template <typename T>
   T merge_reflections_2(T &self, int min_multiplicity) {
-    auto t0 = std::chrono::high_resolution_clock::now();
     af::shared<cctbx::miller::index<> > r_hkl;
     af::shared<double> r_intensity;
     af::shared<double> r_sigma;
     af::shared<int> r_mult;
-//    r_hkl.reserve(self.size());
-//    r_intensity.reserve(self.size());
-//    r_sigma.reserve(self.size());
-//    r_mult.reserve(self.size());
 
     af::shared<cctbx::miller::index<> > hkl_vals = self["miller_index_asymmetric"];
     af::shared<double> intensity_vals = self["intensity.sum.value"];
@@ -95,7 +89,6 @@ namespace dials { namespace af { namespace boost_python {
     std::size_t count = 0;
 
     cctbx::miller::index<> hkl_ref = hkl_vals[0];
-    auto t_setup = std::chrono::high_resolution_clock::now()-t0;
     for (int i=0; i<self.size(); i++) {
       if (hkl_vals[i] == hkl_ref) {
         double weight = 1/variance_vals[i];
@@ -124,22 +117,14 @@ namespace dials { namespace af { namespace boost_python {
       r_mult.push_back(count);
     }
 
-    auto t1 = std::chrono::high_resolution_clock::now();
 
     T result(r_hkl.size());
-//    flex_table_suite::setitem_column(result, "miller_index", r_hkl.const_ref());
-//    flex_table_suite::setitem_column(result, "intensity", r_intensity.const_ref());
-//    flex_table_suite::setitem_column(result, "sigma", r_sigma.const_ref());
-//    flex_table_suite::setitem_column(result, "multiplicity", r_mult.const_ref());
     result["miller_index"] = r_hkl;
     result["intensity"] = r_intensity;
     result["sigma"] = r_sigma;
     result["multiplicity"] = r_mult;
-    T result_(result);
-    auto t_total = std::chrono::high_resolution_clock::now()-t0;
-    auto t_shutdown = std::chrono::high_resolution_clock::now()-t1;
-    std::cout<<"setup: "<<std::chrono::duration_cast<std::chrono::nanoseconds>(t_setup).count()<<", shutdown: "<<std::chrono::duration_cast<std::chrono::nanoseconds>(t_shutdown).count()<<", total: "<<std::chrono::duration_cast<std::chrono::nanoseconds>(t_total).count()<<std::endl;
-    return result_;
+    //return T(result);
+    return result;
 
 
 
