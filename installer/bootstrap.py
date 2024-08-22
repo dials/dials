@@ -59,6 +59,35 @@ def make_executable(filepath):
         os.chmod(filepath, mode)
 
 
+def _run_conda_retry(command_list):
+    for retry in range(5):
+        retry += 1
+        try:
+            run_command(
+                command=command_list,
+                workdir=".",
+            )
+        except Exception:
+            print(
+                """
+*******************************************************************************
+There was a failure in constructing the conda environment.
+Attempt {retry} of 5 will start {retry} minute(s) from {t}.
+*******************************************************************************
+""".format(retry=retry, t=time.asctime())
+            )
+            time.sleep(retry * 60)
+        else:
+            break
+    else:
+        sys.exit(
+            """
+The conda environment could not be constructed. Please check that there is a
+working network connection for downloading conda packages.
+"""
+        )
+
+
 def install_micromamba(python, cmake):
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
@@ -144,8 +173,15 @@ def install_micromamba(python, cmake):
         python_requirement,
     ]
     if cmake:
-        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
-        command_list.extend(["pycbf", "cmake"])
+        # If we're running from an explicit requirements file, then we
+        # need to install extra dependencies in a separate stage
+        with open(filename) as dep_file:
+            is_explicit_reqs = "@EXPLICIT" in dep_file.read()
+
+        extra_deps = ["cctbx-base=" + _prebuilt_cctbx_base, "pycbf", "cmake"]
+        if not is_explicit_reqs:
+            command_list.extend(extra_deps)
+            extra_deps = []
 
     if os.name == "nt":
         # Installing pre-commit via precommittbx does not work on windows
@@ -156,32 +192,27 @@ def install_micromamba(python, cmake):
             text=text_messages[0], filename=filename, python=python
         )
     )
-    for retry in range(5):
-        retry += 1
-        try:
-            run_command(
-                command=command_list,
-                workdir=".",
-            )
-        except Exception:
-            print(
-                """
-*******************************************************************************
-There was a failure in constructing the conda environment.
-Attempt {retry} of 5 will start {retry} minute(s) from {t}.
-*******************************************************************************
-""".format(retry=retry, t=time.asctime())
-            )
-            time.sleep(retry * 60)
-        else:
-            break
-    else:
-        sys.exit(
-            """
-The conda environment could not be constructed. Please check that there is a
-working network connection for downloading conda packages.
-"""
-        )
+
+    _run_conda_retry(command_list)
+    # If we wanted extra dependencies, and couldn't install them directly, run again
+    if extra_deps:
+        command_list = [
+            mamba,
+            "--no-env",
+            "--no-rc",
+            "--prefix",
+            prefix,
+            "--root-prefix",
+            mamba_prefix,
+            "install",
+            "--yes",
+            "--channel",
+            "conda-forge",
+            "--override-channels",
+            "mamba",
+        ] + extra_deps
+        _run_conda_retry(command_list)
+
     print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
     with open(os.path.join(prefix, ".condarc"), "w") as fh:
         fh.write(
