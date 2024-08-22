@@ -29,9 +29,9 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictorFactory,
 )
 from dials.algorithms.refinement.refinement_helpers import (
+    compute_radial_and_transverse_residuals,
     ordinal_number,
     string_sel,
-    compute_radial_and_transverse_residuals,
 )
 from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
 from dials.algorithms.refinement.reflection_manager import (
