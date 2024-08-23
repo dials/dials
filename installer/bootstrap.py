@@ -1264,7 +1264,7 @@ be passed separately with quotes to avoid confusion (e.g
     )
     parser.add_argument(
         "--cmake",
-        help="Use the CMake build system. Implies --prebuilt-cctbx.",
+        help="Use the CMake build system. Implies use of a prebuilt cctbx.",
         action="store_true",
     )
 
