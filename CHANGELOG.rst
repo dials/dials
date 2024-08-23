@@ -1,3 +1,12 @@
+DIALS 3.21.1 (2024-08-23)
+=========================
+
+Bugfixes
+--------
+
+- CMake build can now be used for release branches. (`#2727 <https://github.com/dials/dials/issues/2727>`_)
+
+
 DIALS 3.21.0 (2024-08-20)
 =========================
 
