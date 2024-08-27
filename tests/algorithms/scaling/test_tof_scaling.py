@@ -12,9 +12,10 @@ from dials_tof_scaling_ext import (
 
 
 def test_tof_extract_shoeboxes(dials_data):
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_data("isis_sxd_nacl_processed", pathlib=True), "imported.expt")
+    image_file = join(
+        dials_data("isis_sxd_example_data", pathlib=True), "sxd_nacl_run.nxs"
     )
+    experiments = ExperimentListFactory.from_filenames([image_file])
     reflections = flex.reflection_table.from_msgpack_file(
         join(dials_data("isis_sxd_nacl_processed", pathlib=True), "strong.refl")
     )
