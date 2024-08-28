@@ -124,7 +124,7 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
     ]
     if not is_cmake:
         expected_dependency_lists.append(
-            "modules/dials/.conda_envs/cctbx-dependencies.yaml"
+            "modules/dials/.conda-envs/cctbx-dependencies.yaml"
         )
 
     for reqfile in expected_dependency_lists:
@@ -142,7 +142,8 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
         [
             sys.executable,
             "modules/dials/util/parse_dependency_selectors.py",
-            "--" + platform_selectors[conda_platform],
+            "-p",
+            platform_selectors[conda_platform],
         ]
         + expected_dependency_lists
     )
