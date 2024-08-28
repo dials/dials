@@ -80,7 +80,7 @@ run:
   - jinja2
   - matplotlib-base >=3.0.2
   - msgpack-python
-  - numpy >=1.19,<1.21|>=1.21.5|<2 #[bootstrap]
+  - numpy >=1.21.5,<2 #[bootstrap]
   - numpy #[not bootstrap]
   - orderedset
   - pandas
