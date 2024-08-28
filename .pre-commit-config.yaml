@@ -13,7 +13,7 @@ repos:
     args: ['--maxkb=200']
   - id: check-yaml
     args: ['--allow-multiple-documents']
-    exclude: ^.conda-envs/.*-dependencies.yaml
+    exclude: ^(.conda-envs/.*-dependencies.yaml|dependencies.yaml)$
   - id: no-commit-to-branch
     name: "Don't commit to 'main' directly"
 
