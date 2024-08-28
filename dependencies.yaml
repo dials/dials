@@ -57,9 +57,10 @@ build:
   - biopython # Used for doc builds #[bootstrap]
   - docutils #[bootstrap]
   - setuptools
+  - pre-commit #[bootstrap]
 
 host:
-  - cctbx-base #[prebuilt_cctbx]
+  - cctbx-base =2024 #[prebuilt_cctbx]
   - dxtbx ={{ version_xy }} #[not bootstrap]
   - libboost-devel
   - libboost-python-devel
