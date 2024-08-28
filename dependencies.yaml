@@ -53,6 +53,10 @@ build:
   - sphinx >=4 #[bootstrap]
   - conda # [bootstrap]
   - mamba # [bootstrap]
+  - alabaster # Used for doc builds # [bootstrap]
+  - biopython # Used for doc builds #[bootstrap]
+  - docutils #[bootstrap]
+  - setuptools
 
 host:
   - cctbx-base #[prebuilt_cctbx]
@@ -66,32 +70,6 @@ host:
   - libcxx # [bootstrap and osx]
   - mesa-libgl-devel-cos7-x86_64 # [linux and not prebuilt_cctbx]
   - libglu # [linux and not prebuilt_cctbx]
-  ########################################################################
-  # AND, a whole load of dependencies of unknown provenance. These were
-  # present in the dependency list, and probably all come out of what is
-  # necessary to physically built cctbx, hence their categorisation. If
-  # any of these are used directly by dxtbx, dials or xia2, then they
-  # should be moved to the appropriate place.
-  - alabaster #[not prebuilt_cctbx]
-  - biopython #[not prebuilt_cctbx]
-  - bzip2 #[not prebuilt_cctbx]
-  - c-compiler
-  - docutils #[not prebuilt_cctbx]
-  - eigen #[not prebuilt_cctbx]
-  - future #[not prebuilt_cctbx]
-  - iota #[not prebuilt_cctbx]
-  - msgpack-python #[not prebuilt_cctbx]
-  - pillow >=5.4.1 #[not prebuilt_cctbx]
-  - psutil #[not prebuilt_cctbx]
-  - pyrtf #[not prebuilt_cctbx]
-  - reportlab #[not prebuilt_cctbx]
-  - scons #[not prebuilt_cctbx]
-  - setuptools #[not prebuilt_cctbx]
-  - six #[not prebuilt_cctbx]
-  - sqlite #[not prebuilt_cctbx]
-  - urllib3 #[not prebuilt_cctbx]
-  - xz #[not prebuilt_cctbx]
-  - zlib #[not prebuilt_cctbx]
 
 run:
   - {{ pin_compatible('cctbx-base') }} #[not bootstrap]
@@ -100,13 +78,17 @@ run:
   - h5py >=3.1.0
   - jinja2
   - matplotlib-base >=3.0.2
+  - msgpack-python
   - numpy >=1.19,<1.21|>=1.21.5|<2 #[bootstrap]
   - numpy #[not bootstrap]
   - orderedset
   - pandas
+  - pillow >=5.4.1
+  - psutil
   - pycbf #[prebuilt_cctbx]
   - pyopengl # Shouldn't be necessary with prebuilt_cctbx but they don't include this
   - python
+  - reportlab
   - scikit-learn
   - scipy
   - tabulate
