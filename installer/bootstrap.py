@@ -120,7 +120,7 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
     expected_dependency_lists = [
         "modules/dials/dependencies.yaml",
         "modules/dxtbx/dependencies.yaml",
-        "modules/xia2/dependencies.yaml",
+        # "modules/xia2/dependencies.yaml",
     ]
     if not is_cmake:
         expected_dependency_lists.append(
