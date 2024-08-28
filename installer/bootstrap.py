@@ -148,8 +148,8 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
         + expected_dependency_lists
     )
 
-    filename = "modules/dials/.conda_envs/requirements.txt"
-    with open(filename, "w") as f:
+    filename = "modules/dials/.conda-envs/requirements.txt"
+    with open(filename, "wb") as f:
         f.write(results)
     return filename
 
@@ -176,6 +176,7 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
+
     url = "https://micro.mamba.pm/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
