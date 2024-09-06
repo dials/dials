@@ -17,6 +17,7 @@ from libtbx import Auto
 from scitbx.array_family import flex
 
 import dials.util.version
+from dials.algorithms.symmetry import median_unit_cell
 from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,12 @@ class MMCIFOutputFile:
     def make_cif_block(self, experiments, reflections):
         """Write the data to a cif block"""
         # Select reflections
-        selection = reflections.get_flags(reflections.flags.integrated, all=True)
+        # if rotation, get reflections integrated by both integration methods
+        # else if stills, only summation integrated reflections are available.
+        if all(e.scan and e.scan.get_oscillation()[1] != 0.0 for e in experiments):
+            selection = reflections.get_flags(reflections.flags.integrated, all=True)
+        else:
+            selection = reflections.get_flags(reflections.flags.integrated, all=False)
         reflections = reflections.select(selection)
 
         # Filter out bad variances and other issues, but don't filter on ice rings
@@ -210,7 +216,8 @@ class MMCIFOutputFile:
         epochs = []
         for exp in experiments:
             wls.append(round(exp.beam.get_wavelength(), 5))
-            epochs.append(exp.scan.get_epochs()[0])
+            if exp.scan:
+                epochs.append(exp.scan.get_epochs()[0])
         unique_wls = set(wls)
         cif_block["_exptl_crystal.id"] = 1  # links to crystal_id
         cif_block["_diffrn.id"] = 1  # links to diffrn_id
@@ -225,10 +232,34 @@ class MMCIFOutputFile:
         # _diffrn_detector.pdbx_collection_date = (Date of collection yyyy-mm-dd)
         # _diffrn_detector.type = (full name of detector e.g. DECTRIS PILATUS3 2M)
         # One date is required, so if multiple just use the first date.
-        min_epoch = min(epochs)
-        date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
         cif_block["_diffrn_detector.diffrn_id"] = 1
-        cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
+        if epochs:  # some still expts have scans, but some don't
+            min_epoch = min(epochs)
+            date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
+            cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
+
+        # add some symmetry information
+        sginfo = experiments[0].crystal.get_space_group().info()
+        symbol = sginfo.type().universal_hermann_mauguin_symbol()
+        number = sginfo.type().number()
+        symmetry_block = iotbx.cif.model.block()
+        symmetry_block["_symmetry.entry_id"] = "DIALS"
+        symmetry_block["_symmetry.space_group_name_H-M"] = symbol
+        symmetry_block["_symmetry.Int_Tables_number"] = number
+        cif_block.update(symmetry_block)
+
+        # add a loop with cell values (median if multi-crystal)
+        median_cell = median_unit_cell(experiments)
+        a, b, c, al, be, ga = median_cell.parameters()
+        cell_block = iotbx.cif.model.block()
+        cell_block["_cell.entry_id"] = "DIALS"
+        cell_block["_cell.length_a"] = f"{a:.4f}"
+        cell_block["_cell.length_b"] = f"{b:.4f}"
+        cell_block["_cell.length_c"] = f"{c:.4f}"
+        cell_block["_cell.angle_alpha"] = f"{al:.4f}"
+        cell_block["_cell.angle_beta"] = f"{be:.4f}"
+        cell_block["_cell.angle_gamma"] = f"{ga:.4f}"
+        cif_block.update(cell_block)
 
         # Write reflection data
         # Required columns
@@ -314,6 +345,17 @@ class MMCIFOutputFile:
         # Should always exist
         reflections["angle"] = reflections["xyzcal.mm"].parts()[2] * RAD2DEG
         variables_present.extend(["angle"])
+
+        if self.params.mmcif.scale and "intensity.scale.value" in reflections:
+            min_val = min(reflections["intensity.scale.value"])
+            if min_val <= self.params.mmcif.min_scale:
+                # reduce the range of data, for e.g. sortmtz analysis
+                divisor = abs(min_val) / abs(self.params.mmcif.min_scale)
+                n = len(str(divisor).split(".")[0])
+                divisor = float("1" + int(n) * "0")
+                reflections["intensity.scale.value"] /= divisor
+                reflections["intensity.scale.sigma"] /= divisor
+                reflections["scales"] /= divisor
 
         if self.params.mmcif.pdb_version == "v5_next":
             if "partiality" in reflections:

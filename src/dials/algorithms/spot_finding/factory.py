@@ -460,7 +460,6 @@ class SpotFinderFactory:
                 raise RuntimeError("All experiment scans must contain time_of_flight")
 
         if contains_tof_experiments:
-
             # ToF spots from spallation sources typically have elongated tails
             if params.spotfinder.filter.max_separation < 6:
                 # Based on ISISSXD data

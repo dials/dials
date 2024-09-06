@@ -14,7 +14,6 @@ Examples::
   dials.refine indexed.expt indexed.refl scan_varying=(False/True/Auto)
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -257,7 +256,6 @@ def run_macrocycle(params, reflections, experiments):
 
 
 def _find_disjoint_sets(experiments):
-
     # Extract parameterisable models from the experiments
     models = []
     for experiment in experiments:

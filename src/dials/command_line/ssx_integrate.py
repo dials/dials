@@ -297,7 +297,6 @@ def wrap_integrate_one(input_to_integrate: InputToIntegrate):
 
 
 def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
-
     # create iterable
     input_iterable: List[InputToIntegrate] = []
     from dxtbx.imageset import ImageSequence, ImageSet
@@ -417,9 +416,11 @@ def run_integration(reflections, experiments, params):
         integrated_experiments, integrated_reflections = process_batch(
             sub_tables, sub_expts, configuration, batch_offset=b
         )
-        yield integrated_experiments, integrated_reflections, configuration[
-            "aggregator"
-        ]
+        yield (
+            integrated_experiments,
+            integrated_reflections,
+            configuration["aggregator"],
+        )
 
 
 @show_mail_handle_errors()

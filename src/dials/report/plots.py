@@ -109,7 +109,6 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
 
 
 def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
-
     reduced_batches = batch_manager.reduced_batches
     shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
     if len(annotations) > 30:
@@ -229,7 +228,6 @@ class _xtriage_output(printed_output):
 
 
 def xtriage_output(xanalysis):
-
     with StringIO() as xs:
         xout = _xtriage_output(xs)
         try:
@@ -524,7 +522,6 @@ class IntensityStatisticsPlots:
         }
 
     def second_moments_plot(self):
-
         acentric = self.merged_intensities.select_acentric()
         centric = self.merged_intensities.select_centric()
         if acentric.size():
@@ -654,7 +651,6 @@ class ResolutionPlotsAndStats:
             d_star_sq_bins, nticks=5
         )
         if self.dataset_statistics.r_split:
-
             d.update(
                 {
                     "r_split": {
@@ -688,15 +684,19 @@ class ResolutionPlotsAndStats:
 
         if method == "sigma_tau":
             cc_one_half_bins = [
-                bin_stats.cc_one_half_sigma_tau
-                if bin_stats.cc_one_half_sigma_tau
-                else 0.0
+                (
+                    bin_stats.cc_one_half_sigma_tau
+                    if bin_stats.cc_one_half_sigma_tau
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
-                bin_stats.cc_one_half_sigma_tau_critical_value
-                if bin_stats.cc_one_half_sigma_tau_critical_value
-                else 0.0
+                (
+                    bin_stats.cc_one_half_sigma_tau_critical_value
+                    if bin_stats.cc_one_half_sigma_tau_critical_value
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
         else:
@@ -705,9 +705,11 @@ class ResolutionPlotsAndStats:
                 for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
-                bin_stats.cc_one_half_critical_value
-                if bin_stats.cc_one_half_critical_value
-                else 0.0
+                (
+                    bin_stats.cc_one_half_critical_value
+                    if bin_stats.cc_one_half_critical_value
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
         cc_anom_bins = [
@@ -715,9 +717,11 @@ class ResolutionPlotsAndStats:
             for bin_stats in self.dataset_statistics.bins
         ]
         cc_anom_critical_value_bins = [
-            bin_stats.cc_anom_critical_value
-            if bin_stats.cc_anom_critical_value
-            else 0.0
+            (
+                bin_stats.cc_anom_critical_value
+                if bin_stats.cc_anom_critical_value
+                else 0.0
+            )
             for bin_stats in self.dataset_statistics.bins
         ]
 
@@ -727,9 +731,9 @@ class ResolutionPlotsAndStats:
                 cc_half=cc_one_half_bins,
                 cc_anom=cc_anom_bins if not self.is_centric else None,
                 cc_half_critical_values=cc_one_half_critical_value_bins,
-                cc_anom_critical_values=cc_anom_critical_value_bins
-                if not self.is_centric
-                else None,
+                cc_anom_critical_values=(
+                    cc_anom_critical_value_bins if not self.is_centric else None
+                ),
                 cc_half_fit=None,
                 d_min=None,
             )
@@ -876,7 +880,6 @@ class ResolutionPlotsAndStats:
         }
 
     def merging_statistics_table(self, cc_half_method=None):
-
         headers = [
             "Resolution (Å)",
             "N(obs)",
@@ -951,7 +954,6 @@ class ResolutionPlotsAndStats:
         return merging_stats_table
 
     def overall_statistics_table(self, cc_half_method=None):
-
         headers = ["", "Overall", "Low resolution", "High resolution"]
 
         stats = (
@@ -1010,12 +1012,12 @@ class ResolutionPlotsAndStats:
         if self.anomalous_dataset_statistics:
             o_anom = self.anomalous_dataset_statistics.overall
             h_anom = self.anomalous_dataset_statistics.bins[-1]
-            data[
-                "Anomalous completeness (%)"
-            ] = f"{(o_anom.anom_completeness * 100):.2f} ({(h_anom.anom_completeness * 100):.2f})"
-            data[
-                "Anomalous multiplicity"
-            ] = f"{o_anom.mean_redundancy:.2f} ({h_anom.mean_redundancy:.2f})"
+            data["Anomalous completeness (%)"] = (
+                f"{(o_anom.anom_completeness * 100):.2f} ({(h_anom.anom_completeness * 100):.2f})"
+            )
+            data["Anomalous multiplicity"] = (
+                f"{o_anom.mean_redundancy:.2f} ({h_anom.mean_redundancy:.2f})"
+            )
         else:
             data["Anomalous completeness (%)"] = "-"
             data["Anomalous multiplicity"] = "-"
@@ -1062,7 +1064,6 @@ class AnomalousPlotter:
         return d
 
     def del_anom_correlation_ratio(self, unmerged_intensities):
-
         acentric = unmerged_intensities.select_acentric()
         centric = unmerged_intensities.select_centric()
         correl_ratios_acentric, correl_ratios_centric = ([], [])

@@ -16,7 +16,6 @@ import dials.util.masking
 
 
 class FloatCtrl(_FloatCtrl):
-
     # override OnFocusLostMethod since calling event.Skip() causes bad things to
     # happen (for reasons I don't understand)
     def OnFocusLost(self, event):
@@ -571,7 +570,6 @@ class MaskSettingsPanel(wx.Panel):
         )
 
         if self._resolution_range_d_min > 0 and self._resolution_range_d_max > 0:
-
             self.params.masking.resolution_range.append(
                 (self._resolution_range_d_min, self._resolution_range_d_max)
             )
@@ -687,8 +685,31 @@ class MaskSettingsPanel(wx.Panel):
                 self._circle_radius = None
                 return
             elif self._mode_polygon:
-                self._mode_polygon_points.append(click_posn)
+                xgeo, ygeo = self._pyslip.ConvertView2Geo(click_posn)
+                xc, yc = self._pyslip.tiles.map_relative_to_picture_fast_slow(
+                    xgeo, ygeo
+                )
+                p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(yc, xc)
+
+                if p_id < 0:
+                    return
+
+                # polygon must be within a single panel
+                if len(self._mode_polygon_points) > 0:
+                    xgeo0, ygeo0 = self._mode_polygon_points[0]
+                    xc0, yc0 = self._pyslip.tiles.map_relative_to_picture_fast_slow(
+                        xgeo0, ygeo0
+                    )
+                    _, _, p_id0 = self._pyslip.tiles.flex_image.picture_to_readout(
+                        yc0, xc0
+                    )
+
+                    if p_id0 != p_id:
+                        return
+
+                self._mode_polygon_points.append((xgeo, ygeo))
                 self.DrawPolygon(self._mode_polygon_points)
+
         event.Skip()
 
     def OnLeftUp(self, event):
@@ -699,12 +720,16 @@ class MaskSettingsPanel(wx.Panel):
                 self._rectangle_x1y1 = click_posn
                 x0, y0 = self._rectangle_x0y0
                 x1, y1 = self._rectangle_x1y1
-                self.AddUntrustedRectangle(x0, y0, x1, y1)
-                self._pyslip.DeleteLayer(self._mode_rectangle_layer)
-                self._mode_rectangle_layer = None
-                self.mode_rectangle_button.SetValue(False)
-                self.OnUpdate(event)
-                return
+                try:
+                    self.AddUntrustedRectangle(x0, y0, x1, y1)
+                except Exception as e:
+                    wx.MessageBox(str(e))
+                finally:
+                    self._pyslip.DeleteLayer(self._mode_rectangle_layer)
+                    self._mode_rectangle_layer = None
+                    self.mode_rectangle_button.SetValue(False)
+                    self.OnUpdate(event)
+                    return
 
             elif self._mode_circle and self._circle_xy is not None:
                 xc, yc = self._circle_xy
@@ -713,7 +738,7 @@ class MaskSettingsPanel(wx.Panel):
                 try:
                     self.AddUntrustedCircle(xc, yc, xedge, yedge)
                 except Exception as e:
-                    print(e)
+                    wx.MessageBox(str(e))
                 finally:
                     self._pyslip.DeleteLayer(self._mode_circle_layer)
                     self._mode_circle_layer = None
@@ -798,7 +823,6 @@ class MaskSettingsPanel(wx.Panel):
         )
 
     def DrawPolygon(self, vertices):
-
         if self._mode_polygon_layer:
             self._pyslip.DeleteLayer(self._mode_polygon_layer)
             self._mode_polygon_layer = None
@@ -809,10 +833,7 @@ class MaskSettingsPanel(wx.Panel):
         for i in range(len(vertices) - 1):
             polygon_data.append(
                 (
-                    (
-                        self._pyslip.ConvertView2Geo(vertices[i]),
-                        self._pyslip.ConvertView2Geo(vertices[i + 1]),
-                    ),
+                    (vertices[i], vertices[i + 1]),
                     d,
                 )
             )
@@ -831,7 +852,6 @@ class MaskSettingsPanel(wx.Panel):
         if len(vertices) < 4:
             return
         vertices.append(vertices[0])
-        vertices = [self._pyslip.ConvertView2Geo(v) for v in vertices]
         vertices = [
             self._pyslip.tiles.map_relative_to_picture_fast_slow(*v) for v in vertices
         ]
@@ -916,7 +936,6 @@ class MaskSettingsPanel(wx.Panel):
         self.params.masking.untrusted.append(region)
 
     def AddUntrustedCircle(self, xc, yc, xedge, yedge):
-
         points = [(xc, yc), (xedge, yedge)]
 
         points = [self._pyslip.ConvertView2Geo(p) for p in points]

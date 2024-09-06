@@ -600,28 +600,19 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         model = gltbx.util.get_gl_modelview_matrix()
         proj = gltbx.util.get_gl_projection_matrix()
         view = gltbx.util.get_gl_viewport()
-        winx = []
-        winy = []
-        winz = []
         rc = self.rotation_center
         rc_eye = gltbx.util.object_as_eye_coordinates(rc)
-        assert glu.gluProject(rc[0], rc[1], rc[2], model, proj, view, winx, winy, winz)
-        objx = []
-        objy = []
-        objz = []
+        winx, winy, winz = glu.gluProject(rc[0], rc[1], rc[2], model, proj, view)
         win_height = max(1, self.w)
-        assert glu.gluUnProject(
-            winx[0],
-            winy[0] + 0.5 * win_height,
-            winz[0],
+        objx, objy, objz = glu.gluUnProject(
+            winx,
+            winy + 0.5 * win_height,
+            winz,
             model,
             proj,
             view,
-            objx,
-            objy,
-            objz,
         )
-        dist = v3distsq((objx[0], objy[0], objz[0]), rc) ** 0.5
+        dist = v3distsq((objx, objy, objz), rc) ** 0.5
         scale = abs(dist / (0.5 * win_height))
         x, y = event.GetX(), event.GetY()
         gltbx.util.translate_object(scale, x, y, self.xmouse, self.ymouse)

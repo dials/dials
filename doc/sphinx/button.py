@@ -9,6 +9,7 @@ BUTTON_TEMPLATE = jinja2.Template(
     '<a href="{{ link }}" class="button"><span>{{ text }}</span></a>'
 )
 
+
 # placeholder node for document graph
 class button_node(nodes.General, nodes.Element):
     pass

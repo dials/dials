@@ -28,7 +28,7 @@ steps:
     dials-data
     pytest-cov
     pytest-timeout" >> modules/dials/${{ parameters.conda_environment }}
-    python modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION) --prebuilt-cctbx
+    python modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION) --cmake
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
 
