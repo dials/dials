@@ -225,7 +225,7 @@ class ScrewAxis(Subject):
 
     def score_axis_direct(self, reflection_table, significance_level=0.95):
         """Score the axis given a reflection table of data."""
-        assert significance_level in [0.95, 0.975, 0.99]
+
         self.get_all_suitable_reflections(reflection_table)
 
         expected_sel = self.miller_axis_vals.iround() % self.axis_repeat == 0
@@ -257,8 +257,7 @@ class ScrewAxis(Subject):
         # sanity check - is most of intensity in 'expected' channel?
         intensity_test = self.mean_I_sigma > (20.0 * self.mean_I_sigma_abs)
 
-        cutoffs = {0.95: 1.645, 0.975: 1.960, 0.99: 2.326}
-        cutoff = cutoffs[significance_level]
+        cutoff = norm.ppf(significance_level)
 
         if z_score_absent > cutoff and not intensity_test:
             # z > 1.65 in only 5% of cases for normal dist

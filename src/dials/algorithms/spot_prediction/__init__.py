@@ -161,7 +161,6 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False, **kwa
 
 
 def LaueReflectionPredictor(experiment, dmin: float):
-
     return dials_algorithms_spot_prediction_ext.LaueReflectionPredictor(
         experiment.beam,
         experiment.detector,

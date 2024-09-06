@@ -377,7 +377,6 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
 
 
 def compute_prediction_probability(experiment, reflection_table):
-
     # Get stuff from experiment
     s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
     s0_length = norm(s0)

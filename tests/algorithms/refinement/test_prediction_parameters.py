@@ -47,7 +47,6 @@ from .setup_geometry import Extract
 
 
 def test():
-
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50
   geometry.parameters.crystal.c.length.range = 10 50"""

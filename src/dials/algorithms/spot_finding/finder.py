@@ -698,7 +698,6 @@ class SpotFinder:
         reflections = flex.reflection_table()
 
         for j, imageset in enumerate(imagesets):
-
             # Find the strong spots in the sequence
             logger.info(
                 "-" * 80 + "\nFinding strong spots in imageset %d\n" + "-" * 80, j
@@ -837,7 +836,6 @@ class SpotFinder:
         """
         # Write the hot mask
         if self.write_hot_mask:
-
             # Create the hot pixel mask
             hot_mask = tuple(
                 flex.bool(flex.grid(p.get_image_size()[::-1]), True)
@@ -887,7 +885,6 @@ class TOFSpotFinder(SpotFinder):
         max_spot_size=20,
         min_chunksize=50,
     ):
-
         super().__init__(
             threshold_function=threshold_function,
             mask=mask,
@@ -913,7 +910,6 @@ class TOFSpotFinder(SpotFinder):
         self.experiments = experiments
 
     def _correct_centroid_tof(self, reflections):
-
         """
         Sets the centroid of the spot to the peak position along the
         time of flight, as this tends to more accurately represent the true
@@ -927,7 +923,6 @@ class TOFSpotFinder(SpotFinder):
         return reflections
 
     def _post_process(self, reflections):
-
         reflections = self._correct_centroid_tof(reflections)
 
         # Filter any reflections outside of the tof range
@@ -961,7 +956,6 @@ class TOFSpotFinder(SpotFinder):
             unit_s0 = expt.beam.get_unit_s0()
 
             for i_panel in range(len(expt.detector)):
-
                 sel = sel_expt & (panel_numbers == i_panel)
                 x, y, tof = reflections["xyzobs.mm.value"].select(sel).parts()
                 px, py, frame = reflections["xyzobs.px.value"].select(sel).parts()

@@ -30,7 +30,6 @@ class Script:
         )
 
     def run(self, args=None):
-
         from dials.util.options import flatten_reflections
         from dials.viewer.viewer_interface import extract_n_show
 

@@ -823,9 +823,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     # also add in something that is sequences, for completess
     centroid_image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )[
-        :3
-    ]  # just three images
+    )[:3]  # just three images
     result = subprocess.run(
         [
             shutil.which("dials.import"),

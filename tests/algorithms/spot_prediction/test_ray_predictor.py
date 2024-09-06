@@ -131,7 +131,6 @@ def test_rotation_angles(raypredictor):
     for hkl, xyz in zip(
         raypredictor.integrate_handle.hkl, raypredictor.integrate_handle.xyzcal
     ):
-
         # Calculate the XDS phi value
         xds_phi = (
             raypredictor.scan.get_oscillation(deg=False)[0]

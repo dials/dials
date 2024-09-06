@@ -65,7 +65,6 @@ class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
         reflections = super().calculate_weights(reflections)
 
         if "delpsical.weights" not in reflections:
-
             raise DialsRefineConfigError(
                 'The key "delpsical.weights" is expected within the input reflections'
             )
@@ -99,7 +98,6 @@ class ConstantWeightingStrategy:
 
 
 class LaueStatisticalWeightingStrategy(StatisticalWeightingStrategy):
-
     """
     Variance in z estimated from sqrt(x^2+y^2)
     """
@@ -111,7 +109,6 @@ class LaueStatisticalWeightingStrategy(StatisticalWeightingStrategy):
         self._wavelength_weight = wavelength_weight
 
     def calculate_weights(self, reflections):
-
         reflections = super().calculate_weights(reflections)
 
         wx, wy, _ = reflections["xyzobs.mm.weights"].parts()
@@ -122,7 +119,6 @@ class LaueStatisticalWeightingStrategy(StatisticalWeightingStrategy):
 
 
 class LaueMixedWeightingStrategy(StatisticalWeightingStrategy):
-
     """
     Use statistical weighting for x and y, and constant weighting for z
     """
@@ -134,7 +130,6 @@ class LaueMixedWeightingStrategy(StatisticalWeightingStrategy):
         self._wavelength_weight = wavelength_weight
 
     def calculate_weights(self, reflections):
-
         reflections = super().calculate_weights(reflections)
 
         wx, wy, wz = reflections["xyzobs.mm.weights"].parts()

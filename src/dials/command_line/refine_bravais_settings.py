@@ -29,7 +29,6 @@ Examples::
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 """
 
-
 from __future__ import annotations
 
 import collections

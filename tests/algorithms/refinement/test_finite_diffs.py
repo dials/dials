@@ -67,6 +67,7 @@ from .setup_geometry import Extract
 """Test analytical calculation of gradients of the target function versus finite
 difference calculations"""
 
+
 # function for calculating finite difference gradients of the target function
 def get_fd_gradients(target, pred_param, deltas):
     """Calculate centered finite difference gradients for each of the
@@ -114,7 +115,6 @@ def get_fd_gradients(target, pred_param, deltas):
 
 
 def test(args=[]):
-
     # Local functions
     def random_direction_close_to(vector, sd=0.5):
         return vector.rotate_around_origin(

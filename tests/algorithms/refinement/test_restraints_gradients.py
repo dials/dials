@@ -3,7 +3,6 @@ Figure out correct gradient expressions required for crystal unit cell
 restraints
 """
 
-
 from __future__ import annotations
 
 import math
@@ -145,7 +144,6 @@ def test(dials_data):
 
     # look at each parameter
     for i, dO in enumerate(dO_dp):
-
         # print
         # print "***** PARAMETER {0} *****".format(i)
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20...3.30 FATAL_ERROR)
 
 project(dials)
 
@@ -91,6 +91,7 @@ install(
         dials_pychef_ext
         dials_refinement_helpers_ext
         dials_scaling_ext
+        dials_tof_scaling_ext
         dials_util_ext
         dials_util_streambuf_test_ext
         dials_viewer_ext
