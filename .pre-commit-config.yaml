@@ -1,5 +1,7 @@
 ci:
   skip: [no-images]
+  autoupdate_schedule: quarterly
+
 repos:
 # Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks
