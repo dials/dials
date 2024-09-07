@@ -1094,14 +1094,16 @@ class SpotFrame(XrayFrame):
                 for j, rd in enumerate(image_data):
                     data = image_data_i[j]
 
-                    if self.params.show_mask:
-                        masks[i].set_selected(data == MASK_VAL, True)
-
                     if mode == "max":
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
                     else:
                         rd += data
+
+                if self.params.show_mask:
+                    image_masks = self.images[i_frame + i].get_mask()
+                    for merged_mask, image_mask in zip(masks, image_masks):
+                        merged_mask.set_selected(~image_mask, True)
 
             # /= stack_images to put on consistent scale with single image
             # so that -1 etc. handled correctly (mean mode)
