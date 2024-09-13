@@ -6,6 +6,8 @@ import wx
 from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
 
 import wxtbx
+from scitbx import matrix
+from scitbx.array_family import flex
 from wxtbx import metallicbutton
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
@@ -13,6 +15,7 @@ from wxtbx.phil_controls.intctrl import IntCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
 
 import dials.util.masking
+from dials.algorithms.polygon import clip
 
 
 class FloatCtrl(_FloatCtrl):
@@ -576,8 +579,6 @@ class MaskSettingsPanel(wx.Panel):
             self._resolution_range_d_min = 0
             self._resolution_range_d_max = 0
 
-        from dials.util import masking
-
         untrusted_rectangle = self.untrusted_rectangle_ctrl.GetValue().strip()
         if len(untrusted_rectangle.strip()) > 0:
             rectangle = untrusted_rectangle.strip().replace(",", " ").split(" ")
@@ -588,7 +589,7 @@ class MaskSettingsPanel(wx.Panel):
             except Exception:
                 pass
             else:
-                untrusted = masking.phil_scope.extract().untrusted[0]
+                untrusted = dials.util.masking.phil_scope.extract().untrusted[0]
                 untrusted.panel = panel
                 untrusted.rectangle = rectangle
                 self.params.masking.untrusted.append(untrusted)
@@ -604,7 +605,7 @@ class MaskSettingsPanel(wx.Panel):
             except Exception:
                 pass
             else:
-                untrusted = masking.phil_scope.extract().untrusted[0]
+                untrusted = dials.util.masking.phil_scope.extract().untrusted[0]
                 untrusted.panel = panel
                 untrusted.polygon = polygon
                 self.params.masking.untrusted.append(untrusted)
@@ -619,7 +620,7 @@ class MaskSettingsPanel(wx.Panel):
             except Exception:
                 pass
             else:
-                untrusted = masking.phil_scope.extract().untrusted[0]
+                untrusted = dials.util.masking.phil_scope.extract().untrusted[0]
                 untrusted.panel = panel
                 untrusted.circle = circle
                 self.params.masking.untrusted.append(untrusted)
@@ -691,11 +692,11 @@ class MaskSettingsPanel(wx.Panel):
                 )
                 p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(yc, xc)
 
-                if p_id < 0:
-                    return
+                # if p_id < 0:
+                #    return
 
                 # polygon must be within a single panel
-                if len(self._mode_polygon_points) > 0:
+                if False and len(self._mode_polygon_points) > 0:
                     xgeo0, ygeo0 = self._mode_polygon_points[0]
                     xc0, yc0 = self._pyslip.tiles.map_relative_to_picture_fast_slow(
                         xgeo0, ygeo0
@@ -794,8 +795,6 @@ class MaskSettingsPanel(wx.Panel):
         xc, yc = self._pyslip.ConvertView2Geo((xc, yc))
         xedge, yedge = self._pyslip.ConvertView2Geo((xedge, yedge))
 
-        from scitbx import matrix
-
         center = matrix.col((xc, yc))
         edge = matrix.col((xedge, yedge))
         r = (center - edge).length()
@@ -851,34 +850,68 @@ class MaskSettingsPanel(wx.Panel):
     def AddUntrustedPolygon(self, vertices):
         if len(vertices) < 4:
             return
+
+        # flex_image works in (slow, fast) coordinates, while others are in (fast, slow).
         vertices.append(vertices[0])
         vertices = [
             self._pyslip.tiles.map_relative_to_picture_fast_slow(*v) for v in vertices
         ]
+        flex_vertices = flex.vec2_double(vertices)
 
-        point_ = []
-        panel_id = None
-        for p in vertices:
-            p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
-            assert p_id >= 0, "Point must be within a panel"
-            if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
-            panel_id = p_id
-            point_.append((p0, p1))
-        vertices = point_
+        numerical_fudges = [(0, 0), (-1, 0), (+1, 0), (0, -1), (0, +1)]
 
-        from libtbx.utils import flat_list
+        for i, panel in enumerate(self._pyslip.tiles.raw_image.get_detector()):
+            # Get sensor bounding boxes in the projected coordinate system
+            panel_size = panel.get_image_size()
+            panel_corners = [
+                (0, 0),
+                (panel_size[0], 0),
+                (panel_size[0], panel_size[1]),
+                (0, panel_size[1]),
+            ]
 
-        from dials.util import masking
+            panel_corners_picture = []
+            for corner in panel_corners:
+                p = self._pyslip.tiles.flex_image.tile_readout_to_picture(
+                    i, corner[1], corner[0]
+                )
+                panel_corners_picture.append((p[1], p[0]))
+            panel_corners_picture = flex.vec2_double(panel_corners_picture)
 
-        region = masking.phil_scope.extract().untrusted[0]
-        points = flat_list(vertices)
-        region.polygon = [int(p) for p in points]
-        region.panel = panel_id
+            # and intersect with the user-drawn polygon.
+            clipped = clip.simple_with_convex(flex_vertices, panel_corners_picture)
+            if len(clipped) == 0:
+                clipped = clip.simple_with_convex(
+                    flex_vertices, panel_corners_picture.reversed()
+                )
+            if len(clipped) > 0:
+                print(vertices)
+                print("Intersected with panel", i, list(clipped))
+                print(list(panel_corners_picture))
 
-        self.params.masking.untrusted.append(region)
+                point_ = []
+                for p in clipped:
+                    # Because of numerical errors in converting between the projected coordinate system
+                    # and the panel coordinate system, we have to allow some errors.
+                    # Moving around one pixel is enough to bring the point inside a panel.
+
+                    for f in numerical_fudges:
+                        p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
+                            p[1] + f[1], p[0] + f[0]
+                        )
+                        if p_id >= 0:
+                            break
+                    assert p_id == i
+
+                    point_.append((p0, p1))
+
+                from libtbx.utils import flat_list
+
+                region = dials.util.masking.phil_scope.extract().untrusted[0]
+                region.polygon = [int(p) for p in flat_list(point_)]
+                region.panel = i
+
+                self.params.masking.untrusted.append(region)
 
     def AddUntrustedRectangle(self, x0, y0, x1, y1):
         x0, y0 = self._pyslip.ConvertView2Geo((x0, y0))
@@ -927,9 +960,7 @@ class MaskSettingsPanel(wx.Panel):
         x1 = min(panel.get_image_size()[0], x1)
         y1 = min(panel.get_image_size()[1], y1)
 
-        from dials.util import masking
-
-        region = masking.phil_scope.extract().untrusted[0]
+        region = dials.util.masking.phil_scope.extract().untrusted[0]
         region.rectangle = [int(x0), int(x1), int(y0), int(y1)]
         region.panel = panel_id
 
@@ -958,17 +989,13 @@ class MaskSettingsPanel(wx.Panel):
 
         (xc, yc), (xedge, yedge) = points
 
-        from scitbx import matrix
-
         center = matrix.col((xc, yc))
         edge = matrix.col((xedge, yedge))
         r = (center - edge).length()
         if r == 0:
             return
 
-        from dials.util import masking
-
-        region = masking.phil_scope.extract().untrusted[0]
+        region = dials.util.masking.phil_scope.extract().untrusted[0]
         region.circle = [int(xc), int(yc), int(r)]
         region.panel = panel_id
 
