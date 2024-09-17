@@ -205,15 +205,7 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
         "use_known_lattice_group",
     ),
     [
-        pytest.param(
-            "P2",
-            None,
-            None,
-            10,
-            False,
-            False,
-            marks=pytest.mark.xfail(reason="cosym invalid reindex bug #2486"),
-        ),
+        ("P2", None, None, 10, False, False),
         ("P3", None, None, 20, False, False),
         ("I23", None, 2, 10, False, False),
         ("P422", (79, 79, 37, 90, 90, 90), None, 10, True, False),
