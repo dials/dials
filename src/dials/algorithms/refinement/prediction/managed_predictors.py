@@ -213,31 +213,24 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
 class ExperimentsPredictorFactory:
     @staticmethod
     def from_experiments(experiments, force_stills=False, spherical_relp=False):
-        # Determine whether or not to use a stills predictor
+        assert experiments.all_same_type(), "Cannot create ExperimentsPredictor for a mixture of experiments with different types"
+
+        if experiments.all_tof():
+            return TOFExperimentsPredictor
+        elif experiments.all_laue():
+            return LaueExperimentsPredictor
+
         if not force_stills:
             for exp in experiments:
                 if exp.goniometer is None:
                     force_stills = True
                     break
 
-        # Construct the predictor
         if force_stills:
             predictor = StillsExperimentsPredictor(experiments)
             predictor.spherical_relp_model = spherical_relp
 
         else:
-            all_tof_experiments = False
-            for expt in experiments:
-                if expt.scan is not None and expt.scan.has_property("time_of_flight"):
-                    all_tof_experiments = True
-                elif all_tof_experiments:
-                    raise ValueError(
-                        "Cannot create ExperimentsPredictor for ToF and non-ToF experiments at the same time"
-                    )
-
-                if all_tof_experiments:
-                    predictor = TOFExperimentsPredictor(experiments)
-                else:
-                    predictor = ScansExperimentsPredictor(experiments)
+            predictor = ScansExperimentsPredictor(experiments)
 
         return predictor
