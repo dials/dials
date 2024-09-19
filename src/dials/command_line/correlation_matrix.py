@@ -132,7 +132,9 @@ def run(args=None):
         html = template.stream(
             page_title="DIALS Correlation Matrix",
             cc_cluster_json=matrices.cc_json,
+            cc_cluster_table=matrices.cc_table,
             cos_angle_cluster_json=matrices.cos_json,
+            cos_angle_cluster_table=matrices.cos_table,
             image_range_tables=[matrices.table_list],
             cosym_graphs=matrices.rij_graphs,
         )

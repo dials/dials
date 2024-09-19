@@ -21,6 +21,7 @@ import yaml
 from yaml.loader import SafeLoader
 
 from dxtbx import flumpy
+from dxtbx.model import ExperimentList
 from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
 from dxtbx.serialize import load
 
@@ -79,6 +80,7 @@ grouping:
 """
 
 EPS = 1e-9
+
 
 ## Define classes for defining the metadata type and values/location.
 # class to wrap some metadata
@@ -388,7 +390,7 @@ class ParsedYAML(object):
         return self._groupings
 
     def _parse_metadata(self, metadata: dict):
-        for (name, metadict) in metadata.items():
+        for name, metadict in metadata.items():
             # name is e.g. timepoint, metadict is image : file
             self.metadata_items[name] = ImgToMetadataDict()
             for image, meta in metadict.items():
@@ -398,9 +400,9 @@ class ParsedYAML(object):
                     raise ValueError(
                         f"Image {image} not listed in 'images:' in input yaml"
                     )
-                if type(meta) is float or type(meta) is int:
+                if isinstance(meta, float) or isinstance(meta, int):
                     self.metadata_items[name][imgfile] = ConstantMetadataForFile(meta)
-                elif type(meta) is str:
+                elif isinstance(meta, str):
                     if meta.startswith("repeat="):
                         try:
                             n = int(meta.split("=")[1])
@@ -482,9 +484,7 @@ class ParsedYAML(object):
                     self._groupings[groupby].add_metadata_for_image(
                         imagefile, metaforname
                     )
-            self._groupings[groupby].add_tolerances(
-                {n: t for n, t in zip(values, tolerances)}
-            )
+            self._groupings[groupby].add_tolerances(dict(zip(values, tolerances)))
             self._groupings[groupby].check_consistent()
 
 
@@ -675,7 +675,6 @@ def save_subset(input_: SplittingIterable) -> Optional[Tuple[str, FilePair]]:
 
 
 class GroupingImageTemplates(object):
-
     """Class that takes a parsed group and determines the groupings and mappings
     required to split input data into groups.
 
@@ -697,7 +696,6 @@ class GroupingImageTemplates(object):
         metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
         groups: List[_MetaDataGroup],
     ) -> dict[ImageFile, _GroupInfo]:
-
         # Ok now we have the groupings of the metadata. Now find which groups each
         # file contains.
         # Purpose here is to create an object that will allow easy allocation from
@@ -812,9 +810,9 @@ class GroupingImageTemplates(object):
 
     def write_groupids_into_files(self, data_file_pairs: List[FilePair]) -> None:
         "Write a group_id column into the reflection table"
-        expt_file_to_groupsdata: Dict[
-            Path, GroupsForExpt
-        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
+        expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = (
+            self._get_expt_file_to_groupsdata(data_file_pairs)
+        )
 
         def set_group_id_column(
             filepair: FilePair,
@@ -855,10 +853,9 @@ class GroupingImageTemplates(object):
         params: Any = None,
         prefix: str = "",
     ):
-
-        expt_file_to_groupsdata: Dict[
-            Path, GroupsForExpt
-        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
+        expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = (
+            self._get_expt_file_to_groupsdata(data_file_pairs)
+        )
         template = "{name}group_{index:0{maxindexlength:d}d}"
         name_template = functools.partial(
             template.format,
@@ -899,7 +896,6 @@ class GroupingImageTemplates(object):
 
 
 class GroupingImageFiles(GroupingImageTemplates):
-
     """This class provides specific implementations for when the images are h5 files.
     The main difference from templates is getting the image index.
     """
@@ -909,7 +905,6 @@ class GroupingImageFiles(GroupingImageTemplates):
         metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
         groups: List[_MetaDataGroup],
     ) -> dict[ImageFile, _GroupInfo]:
-
         # Ok now we have the groupings of the metadata. Now find which groups each
         # file contains.
         # Purpose here is to create an object that will allow easy allocation from
@@ -1039,3 +1034,47 @@ def get_grouping_handler(parsed: ParsedYAML, grouping: str, nproc: int = 1):
     if grouping not in parsed.groupings:
         raise ValueError(f"Grouping definition {grouping} not found in parsed yaml.")
     return handler_class(parsed.groupings[grouping], nproc)
+
+
+def series_repeat_to_groupings(
+    experiments: List[ExperimentList], series_repeat: int, groupname="split_by"
+) -> ParsedYAML:
+    """
+    For a dose series data collection, attempt to create and then parse a
+    groupings yaml based on the images in the input experiments.
+
+    Callers of this function should be prepared to catch Exceptions!
+    """
+    # if all end with .h5 or .nxs then images, else template?
+
+    images = set()
+    for expts in experiments:
+        for iset in expts.imagesets():
+            images.update(iset.paths())
+
+    metalines = ""
+    if all(image.endswith(".nxs") or image.endswith(".h5") for image in images):
+        # ok assume all independent:
+        metadata = []
+        for image in images:
+            metadata.append(f"{image} : 'repeat={series_repeat}'")
+        metalines = "\n    ".join(s for s in metadata)
+    else:
+        isets = group_files_by_imageset(images)
+        metadata = []
+        for iset in isets.keys():
+            metadata.append(f"{iset} : 'repeat={series_repeat}'")
+        metalines = "\n    ".join(s for s in metadata)
+    if not metalines:
+        raise ValueError("Unable to extract images/templates from experiments")
+    grouping = f"""
+metadata:
+  dose_point:
+    {metalines}
+grouping:
+  {groupname}:
+    values:
+      - dose_point
+"""
+    parsed_yaml = ParsedYAML(yml_str=grouping)
+    return parsed_yaml

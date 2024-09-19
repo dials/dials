@@ -1,15 +1,63 @@
-[tool.black]
-include='\.pyi?$|/SConscript$|/libtbx_config$'
-
 [tool.towncrier]
 package = "dials"
 package_dir = ".."
 filename = "CHANGELOG.rst"
 issue_format = "`#{issue} <https://github.com/dials/dials/issues/{issue}>`_"
 
-[tool.isort]
-sections="FUTURE,STDLIB,THIRDPARTY,CCTBX,FIRSTPARTY,LOCALFOLDER"
-known_firstparty="dials_*"
-known_cctbx="boost,boost_adaptbx,cbflib_adaptbx,cctbx,chiltbx,clipper_adaptbx,cma_es,cootbx,crys3d,cudatbx,dxtbx,fable,fast_linalg,fftw3tbx,gltbx,iota,iotbx,libtbx,mmtbx,omptbx,prime,rstbx,scitbx,simtbx,smtbx,spotfinder,tbxx,ucif,wxtbx,xfel"
-profile="black"
+[tool.ruff.lint]
+select = ["E", "F", "W", "C4", "I"]
+unfixable = ["F841"]
+# E501 line too long (handled by formatter)
+# E741 Ambiguous variable name (We have lots of meaningful I, L, l)
+ignore = ["E501", "E741"]
 
+[tool.ruff.lint.per-file-ignores]
+"installer/**.py" = ["I"]
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["dials_*", "dials"]
+required-imports = ["from __future__ import annotations"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "cctbx",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+"cctbx" = [
+    "boost",
+    "boost_adaptbx",
+    "cbflib_adaptbx",
+    "cctbx",
+    "chiltbx",
+    "clipper_adaptbx",
+    "cma_es",
+    "cootbx",
+    "crys3d",
+    "cudatbx",
+    "dxtbx",
+    "fable",
+    "fast_linalg",
+    "fftw3tbx",
+    "gltbx",
+    "iota",
+    "iotbx",
+    "libtbx",
+    "mmtbx",
+    "omptbx",
+    "prime",
+    "rstbx",
+    "scitbx",
+    "serialtbx",
+    "simtbx",
+    "smtbx",
+    "spotfinder",
+    "tbxx",
+    "ucif",
+    "wxtbx",
+    "xfel",
+]

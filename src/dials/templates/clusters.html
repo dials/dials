@@ -41,6 +41,9 @@
                                     <div class="panel-body">
 
                                         <div class="container-fluid">
+                                            {{ macros.table(cc_cluster_table,
+                                                has_column_header=true,
+                                                has_row_header=true) }}
                                             {{ macros.plotly_graph("cc_cluster", cc_cluster_json, style="dendrogram-plot") }}
                                         </div>
                                     </div>
@@ -57,6 +60,9 @@
                                     <div class="panel-body">
 
                                         <div class="container-fluid">
+                                            {{ macros.table(cos_angle_cluster_table,
+                                                has_column_header=true,
+                                                has_row_header=true) }}
                                             {{ macros.plotly_graph("cos_angle_cluster", cos_angle_cluster_json, style="dendrogram-plot") }}
                                         </div>
 

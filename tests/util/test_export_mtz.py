@@ -2,7 +2,6 @@
 Unit testing for the export_mtz.py routines
 """
 
-
 from __future__ import annotations
 
 import itertools

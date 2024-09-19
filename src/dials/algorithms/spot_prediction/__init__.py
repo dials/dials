@@ -3,6 +3,7 @@ from __future__ import annotations
 import dials_algorithms_spot_prediction_ext
 from dials_algorithms_spot_prediction_ext import (
     IndexGenerator,
+    LaueRayPredictor,
     NaveStillsReflectionPredictor,
     PixelLabeller,
     PixelToMillerIndex,
@@ -32,6 +33,8 @@ __all__ = [
     "StillsDeltaPsiReflectionPredictor",
     "StillsRayPredictor",
     "StillsReflectionPredictor",
+    "LaueRayPredictor",
+    "LaueReflectionPredictor",
 ]
 
 
@@ -150,6 +153,18 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False, **kwa
     return StillsDeltaPsiReflectionPredictor(
         experiment.beam,
         experiment.detector,
+        experiment.crystal.get_A(),
+        experiment.crystal.get_unit_cell(),
+        experiment.crystal.get_space_group().type(),
+        dmin,
+    )
+
+
+def LaueReflectionPredictor(experiment, dmin: float):
+    return dials_algorithms_spot_prediction_ext.LaueReflectionPredictor(
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
         experiment.crystal.get_A(),
         experiment.crystal.get_unit_cell(),
         experiment.crystal.get_space_group().type(),

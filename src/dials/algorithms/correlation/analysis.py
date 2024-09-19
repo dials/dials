@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import sys
@@ -12,11 +13,14 @@ from scipy.cluster import hierarchy
 import iotbx.phil
 from dxtbx.model import ExperimentList
 from libtbx.phil import scope_extract
+from scitbx.array_family import flex
 
+from dials.algorithms.correlation.cluster import ClusterInfo
 from dials.algorithms.correlation.plots import linkage_matrix_to_dict, to_plotly_json
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.array_family.flex import reflection_table
+from dials.util import tabulate
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
@@ -53,6 +57,7 @@ class CorrelationMatrix:
         experiments: ExperimentList,
         reflections: list[reflection_table],
         params: scope_extract = None,
+        ids_to_identifiers_map: dict = None,
     ):
         """
         Set up the required cosym preparations for determining the correlation matricies
@@ -70,6 +75,7 @@ class CorrelationMatrix:
             params = phil_scope.extract()
         self.params = params
         self._reflections = []
+        self.ids_to_identifiers_map = ids_to_identifiers_map
 
         if len(reflections) == len(experiments):
             for refl, expt in zip(reflections, experiments):
@@ -87,9 +93,14 @@ class CorrelationMatrix:
         )
 
         # Used for optional json creation that is in a format friendly for import and analysis (for future development)
-        self.ids_to_identifiers_map = {}
-        for table in self._reflections:
-            self.ids_to_identifiers_map.update(table.experiment_identifiers())
+        # Also to retain dataset ids when used in multiplex
+        if self.ids_to_identifiers_map is None:
+            self.ids_to_identifiers_map = {}
+            for table in self._reflections:
+                self.ids_to_identifiers_map.update(table.experiment_identifiers())
+
+        self.labels = list(dict.fromkeys(self.ids_to_identifiers_map))
+        self._labels_all = flex.size_t(self.labels)
 
         # Filter reflections that do not meet partiality threshold or default I/Sig(I) criteria
 
@@ -99,6 +110,8 @@ class CorrelationMatrix:
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
+
+        self.unmerged_datasets = datasets
 
         # Merge intensities to prepare for cosym analysis
 
@@ -183,9 +196,25 @@ class CorrelationMatrix:
         ) = self.compute_correlation_coefficient_matrix(
             self.cosym_analysis.target.rij_matrix
         )
+
+        self.correlation_clusters = self.cluster_info(
+            linkage_matrix_to_dict(self.cc_linkage_matrix)
+        )
+
+        logger.info("\nIntensity correlation clustering summary:")
+        self.cc_table = ClusterInfo.as_table(self.correlation_clusters)
+        logger.info(tabulate(self.cc_table, headers="firstrow", tablefmt="rst"))
         self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix(
             self.cosym_analysis.coords
         )
+
+        self.cos_angle_clusters = self.cluster_info(
+            linkage_matrix_to_dict(self.cos_linkage_matrix)
+        )
+
+        logger.info("\nCos(angle) clustering summary:")
+        self.cos_table = ClusterInfo.as_table(self.cos_angle_clusters)
+        logger.info(tabulate(self.cos_table, headers="firstrow", tablefmt="rst"))
 
     @staticmethod
     def compute_correlation_coefficient_matrix(
@@ -203,7 +232,7 @@ class CorrelationMatrix:
 
         """
 
-        logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)\n")
+        logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)")
 
         # Make diagonals equal to 1 (each dataset correlated with itself)
         np.fill_diagonal(correlation_matrix, 1)
@@ -243,7 +272,7 @@ class CorrelationMatrix:
 
         """
         logger.info(
-            "Calculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)\n"
+            "\nCalculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)"
         )
 
         # Convert coordinates to cosine distances and then reversed so closer cosine distances have higher values to match CC matrix
@@ -255,6 +284,52 @@ class CorrelationMatrix:
 
         return cos_angle, cos_linkage_matrix
 
+    def cluster_info(self, cluster_dict: dict) -> list:
+        """
+        Generate list of cluster objects with associated statistics.
+        Args:
+            cluster_dict(dict): dictionary of clusters (generated from linkage_matrix_to_dict)
+
+        Returns:
+            info(list): list of ClusterInfo objects to describe all clusters of a certain type (ie correlation or cos angle)
+        """
+
+        info = []
+        for cluster_id, cluster in cluster_dict.items():
+            uc_params = [flex.double() for i in range(6)]
+            for j in cluster["datasets"]:
+                uc_j = self.datasets[j - 1].unit_cell().parameters()
+                for i in range(6):
+                    uc_params[i].append(uc_j[i])
+            average_uc = [flex.mean(uc_params[i]) for i in range(6)]
+            intensities_cluster = []
+            labels_cluster = []
+            ids = [self._labels_all[id - 1] for id in cluster["datasets"]]
+            for idx, k in zip(self._labels_all, self.unmerged_datasets):
+                if idx in ids:
+                    intensities_cluster.append(k)
+                    labels_cluster.append(idx)
+            merged = None
+            for d in intensities_cluster:
+                if merged is None:
+                    merged = copy.deepcopy(d)
+                else:
+                    merged = merged.concatenate(d, assert_is_similar_symmetry=False)
+            merging = merged.merge_equivalents()
+            merged_intensities = merging.array()
+            multiplicities = merging.redundancies()
+            info.append(
+                ClusterInfo(
+                    cluster_id,
+                    labels_cluster,
+                    flex.mean(multiplicities.data().as_double()),
+                    merged_intensities.completeness(),
+                    unit_cell=average_uc,
+                    height=cluster.get("height"),
+                )
+            )
+        return info
+
     def convert_to_html_json(self):
         """
         Prepares the required dataset tables and converts analysis into the required format for HTML output.
@@ -265,11 +340,13 @@ class CorrelationMatrix:
         self.cc_json = to_plotly_json(
             self.correlation_matrix,
             self.cc_linkage_matrix,
+            labels=self.labels,
             matrix_type="correlation",
         )
         self.cos_json = to_plotly_json(
             self.cos_angle,
             self.cos_linkage_matrix,
+            labels=self.labels,
             matrix_type="cos_angle",
         )
 
@@ -300,7 +377,8 @@ class CorrelationMatrix:
         linkage_mat_as_dict = linkage_matrix_to_dict(linkage_matrix)
         for d in linkage_mat_as_dict.values():
             # Difference in indexing between linkage_mat_as_dict and datasets, so have i-1
-            d["datasets"] = [self.ids_to_identifiers_map[i - 1] for i in d["datasets"]]
+            real_num = [self.labels[i - 1] for i in d["datasets"]]
+            d["datasets"] = [self.ids_to_identifiers_map[i] for i in real_num]
 
         return linkage_mat_as_dict
 
