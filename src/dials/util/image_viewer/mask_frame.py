@@ -694,22 +694,6 @@ class MaskSettingsPanel(wx.Panel):
                 )
                 p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(yc, xc)
 
-                # if p_id < 0:
-                #    return
-
-                # polygon must be within a single panel
-                if False and len(self._mode_polygon_points) > 0:
-                    xgeo0, ygeo0 = self._mode_polygon_points[0]
-                    xc0, yc0 = self._pyslip.tiles.map_relative_to_picture_fast_slow(
-                        xgeo0, ygeo0
-                    )
-                    _, _, p_id0 = self._pyslip.tiles.flex_image.picture_to_readout(
-                        yc0, xc0
-                    )
-
-                    if p_id0 != p_id:
-                        return
-
                 self._mode_polygon_points.append((xgeo, ygeo))
                 self.DrawPolygon(self._mode_polygon_points)
 
