@@ -689,10 +689,6 @@ class MaskSettingsPanel(wx.Panel):
                 return
             elif self._mode_polygon:
                 xgeo, ygeo = self._pyslip.ConvertView2Geo(click_posn)
-                xc, yc = self._pyslip.tiles.map_relative_to_picture_fast_slow(
-                    xgeo, ygeo
-                )
-                p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(yc, xc)
 
                 self._mode_polygon_points.append((xgeo, ygeo))
                 self.DrawPolygon(self._mode_polygon_points)
