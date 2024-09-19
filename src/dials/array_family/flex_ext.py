@@ -390,7 +390,6 @@ class _:
 
     @classmethod
     def from_h5(cls, filename):
-
         with HDF5TableFile(filename, "r") as handle:
             tables = handle.get_tables()
         if len(tables) > 1:

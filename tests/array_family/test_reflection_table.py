@@ -1182,7 +1182,6 @@ def test_to_from_h5(tmp_path):
 
 
 def test_to_from_msgpack(tmp_path):
-
     table, columns = table_and_columns()
     c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
 
