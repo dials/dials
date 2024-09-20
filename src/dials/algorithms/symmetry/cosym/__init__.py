@@ -75,17 +75,14 @@ dimensions = Auto
   .short_caption = "Dimensions"
 
 clustering
-  .short_caption = "Clustering optimisation"
+  .short_caption = "Options for clustering behaviour"
 {
   optimise_dimensions = False
     .type = bool
-    .short_caption = "Turn on to optimise clustering dimensions"
-  sigma = 2.5
-    .type = float
-    .short_caption = "Number of standard deviations from minimum eigenvalue of rij to determine dimensions"
-  significance = 0.01
-    .type = float
-    .short_caption = "p-value for significance in determining significant eigenvalues of rij to determine dimensions"
+    .short_caption = "Set to True for optimisation of dimensions during dataset clustering"
+  outlier_rejection = False
+    .type = bool
+    .short_caption = "Set to True for outlier rejection when optimising dimensions during dataset clustering"
 }
 
 use_curvatures = True
@@ -255,6 +252,8 @@ class CosymAnalysis(symmetry_base, Subject):
             else:
                 params.nproc = 1
 
+        self.number_of_datasets = len(intensities)
+
     def _intialise_target(self):
         if self.params.dimensions is Auto:
             dimensions = None
@@ -277,9 +276,11 @@ class CosymAnalysis(symmetry_base, Subject):
             weights=self.params.weights,
             cc_weights=self.params.cc_weights,
             nproc=self.params.nproc,
+            outlier_rejection=self.params.clustering.outlier_rejection,
         )
 
     def _determine_dimensions(self):
+
         if (
             self.params.dimensions is Auto
             and self.target.dim == 2
@@ -287,77 +288,20 @@ class CosymAnalysis(symmetry_base, Subject):
         ):
             self.params.dimensions = 2
 
-        elif self.params.clustering.optimise_dimensions and self.target.dim == 2:
-            from scipy import linalg
-
-            e_vals, e_vecs = linalg.eig(self.target.rij_matrix)
-            from scipy import stats
-
-            # TEMP DELETE THIS LATER
-
-            logger.info(e_vals)
-
-            # Remove first one always large and can skew stats
-            # What to see how many other relevant ones
-            test_for_sig = e_vals[1:]
-            test_for_sig = [float(i.real) for i in test_for_sig]
-            # test_mean = mean(test_for_sig)
-            test_std = stats.tstd(test_for_sig)
-            min_e_val = e_vals[-1]
-
-            test_z = stats.zscore(test_for_sig)
-            p_vals = stats.norm.sf(abs(test_z))
-
-            sig_p_vals = [i for i in p_vals if i < self.params.clustering.significance]
-            sig_e_vals = [
-                i
-                for i in e_vals
-                if abs(i - min_e_val) > self.params.clustering.sigma * test_std
-            ]
-            for i in e_vals:
-                print(abs(i - min_e_val))
-                print(test_std)
-                print(self.params.clustering.sigma * test_std)
-                if abs(i - min_e_val) > self.params.clustering.sigma * test_std:
-                    print("Larger")
-
-            # Because cut first large one out of the calculation so needs +1
-            # self.params.dimensions = len(sig_p_vals) + 1
-
-            if len(sig_e_vals) < 2:
-                self.params.dimensions = 2
-            else:
-                self.params.dimensions = len(sig_e_vals)
-
-            self.target.dim = self.params.dimensions
-            # if self.params.dimensions > 2:
-            logger.info("=" * 80)
-            logger.info("\nEigenvalues of rij matrix calculated:")
-            logger.debug(e_vals)
-
-            if len(sig_e_vals) > 1:
-                logger.info(
-                    f"\n{self.params.dimensions} dimensions identified from {len(sig_e_vals)} significantly large eigenvalues larger than {self.params.clustering.sigma}-sigma from minimum."
-                )
-                logger.info(
-                    f"\nBUT {len(sig_p_vals) +1} significantly large eigenvalues with p-value < {self.params.clustering.significance}"
-                )
-            else:
-                logger.info(
-                    "Less than 2 significant eigenvalues found. This is odd and have defaulted to 2-dimensions."
-                )
-            logger.info("=" * 80)
-
-            exit()
-
         elif self.params.dimensions is Auto:
+
+            if self.params.clustering.optimise_dimensions:
+                dims_to_test = self.number_of_datasets
+            else:
+                dims_to_test = self.target.dim
+
             logger.info("=" * 80)
             logger.info(
                 "\nAutomatic determination of number of dimensions for analysis"
             )
             dimensions = []
             functional = []
-            for dim in range(1, self.target.dim + 1):
+            for dim in range(1, dims_to_test + 1):
                 logger.debug("Testing dimension: %i", dim)
                 self.target.set_dimensions(dim)
                 max_calls = self.params.minimization.max_calls
@@ -366,8 +310,18 @@ class CosymAnalysis(symmetry_base, Subject):
                     max_iterations=self.params.minimization.max_iterations,
                     max_calls=min(20, max_calls) if max_calls else max_calls,
                 )
+
+                # if self.params.clustering.optimise_dimensions:
+                # Currently only doing outlier rejection for cluster analysis
+                # score = self.target.compute_functional_with_outlier_rejection(self.minimizer.x)
+                # else:
+                # score = self.minimizer.fun
+                score = self.target.compute_functional(
+                    self.minimizer.x, score_mode=True
+                )
+
                 dimensions.append(dim)
-                functional.append(self.minimizer.fun)
+                functional.append(score)
 
             # Find the elbow point of the curve, in the same manner as that used by
             # distl spotfinder for resolution method 1 (Zhang et al 2006).
@@ -399,8 +353,16 @@ class CosymAnalysis(symmetry_base, Subject):
                     zip(dimensions, functional), headers=("Dimensions", "Functional")
                 )
             )
+
+            # Dimensions must be >= 2 for clustering
             logger.info("Best number of dimensions: %i", x_g)
-            self.target.set_dimensions(int(x_g))
+            if self.params.clustering.optimise_dimensions and int(x_g) < 2:
+                logger.info(
+                    "As a minimum of 2-dimensions is required for cosine-angle clustering, dimensions have been set to 2."
+                )
+                self.target.set_dimensions(2)
+            else:
+                self.target.set_dimensions(int(x_g))
             logger.info("Using %i dimensions for analysis", self.target.dim)
 
     def run(self):

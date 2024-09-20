@@ -121,7 +121,12 @@ class CorrelationMatrix:
 
         self.params.lattice_group = self.datasets[0].space_group_info()
         self.params.space_group = self.datasets[0].space_group_info()
-        # self.params.clustering.optimise_dimensions = True
+
+        # If dimensions are optimised for clustering, need cc_weights=sigma
+        # Otherwise results end up being nonsensical even for high-quality data
+        if self.params.clustering.optimise_dimensions:
+            self.params.cc_weights = "sigma"
+            self.params.clustering.outlier_rejection = True
 
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
@@ -172,66 +177,6 @@ class CorrelationMatrix:
 
         return filtered_datasets
 
-    def determine_cosine_dimensions(self):
-        self.cosym_analysis.params.dimensions = len(self.datasets)
-        self.cosym_analysis.target.dim = len(self.datasets)
-        self.cosym_analysis._optimise(
-            self.cosym_analysis.params.minimization.engine,
-            max_iterations=self.cosym_analysis.params.minimization.max_iterations,
-            max_calls=self.cosym_analysis.params.minimization.max_calls,
-        )
-
-        # FIXME THIS WILL BE GRIM
-        import copy
-
-        from scipy import linalg
-
-        rij = copy.copy(self.cosym_analysis.target.rij_matrix)
-        for j in range(rij.shape[0]):
-            rij[j, j] = 1
-        e_vals, e_vecs = linalg.eig(rij)
-
-        for val, vec in zip(e_vals, e_vecs):
-            print(val, vec)
-
-        # e_vals, e_vecs = linalg.eig(self.cosym_analysis.target.rij_matrix)
-        # e_vals, e_vecs = linalg.eig(self.cosym_analysis.coords)
-        # exit()
-
-        # main_coords = self.cosym_analysis.target.rij_matrix
-        # main_coords = self.cosym_analysis.coords
-        main_coords = rij
-
-        # PROBLEM WITH USING RIJ - COORDS NOT REAL COORDS - BECAUSE PAIRWISE MATRIX RATHER THAN COORDS
-
-        def project(coords, idx):
-            higher_d_coords = np.empty((0, len(self.datasets)), dtype=complex)
-            dim_res = 0
-            vec = e_vecs[idx]
-            for i in coords:
-                projection = (np.dot(i, vec) / np.dot(vec, vec)) * vec
-                squished_coord = np.subtract(i, projection)
-                higher_d_coords = np.append(higher_d_coords, [squished_coord], axis=0)
-                residual = np.linalg.norm(squished_coord)
-                dim_res += residual
-
-            return higher_d_coords, dim_res
-
-        for i in range(0, len(self.datasets)):
-            logger.info(f"{i + 1}-D Projection")
-            if i == 0:
-                first_coords, residual = project(main_coords, i)
-            else:
-                j = 0
-                coords, residual = project(first_coords, j + 1)
-                j += 1
-                while j < i:
-                    coords, residual = project(coords, j + 1)
-                    j += 1
-            logger.info(f"Residual accounted for by this dimension: {residual}")
-
-        exit()
-
     def calculate_matrices(self):
         """
         Runs the required algorithms within dials.cosym to calculate the rij matrix and optimise the coordinates.
@@ -243,9 +188,6 @@ class CorrelationMatrix:
         self.cosym_analysis._intialise_target()
 
         # Cosym proceedures to calculate the cos-angle matrix
-
-        self.determine_cosine_dimensions()
-
         self.cosym_analysis._determine_dimensions()
         self.cosym_analysis._optimise(
             self.cosym_analysis.params.minimization.engine,
