@@ -546,7 +546,6 @@ class Target:
             grad = -2 * x @ (wrij_matrix - np.multiply(self.wij_matrix, x.T @ x))
         else:
             grad = -2 * x @ (self.rij_matrix - x.T @ x)
-
         return grad.flatten()
 
     def curvatures(self, x: np.ndarray) -> np.ndarray:
