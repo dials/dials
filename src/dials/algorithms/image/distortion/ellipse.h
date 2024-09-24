@@ -17,9 +17,8 @@ namespace dials { namespace algorithms {
     CreateEllipticalDistortionMaps(const Panel &panel) : panel_(panel) {
       std::size_t xsize = panel_.get_image_size()[0];
       std::size_t ysize = panel_.get_image_size()[1];
-      scitbx::af::c_grid<2> grid(ysize, xsize);
-      scitbx::af::versa<double, scitbx::af::c_grid<2>> dx_(grid, 0.0);
-      scitbx::af::versa<double, scitbx::af::c_grid<2>> dy_(grid, 0.0);
+      dx_.resize(scitbx::af::c_grid<2>(ysize, xsize));
+      dy_.resize(scitbx::af::c_grid<2>(ysize, xsize));
     };
 
     scitbx::af::versa<double, scitbx::af::c_grid<2>> get_dx() const {
