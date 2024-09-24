@@ -216,9 +216,9 @@ class ExperimentsPredictorFactory:
         assert experiments.all_same_type(), "Cannot create ExperimentsPredictor for a mixture of experiments with different types"
 
         if experiments.all_tof():
-            return TOFExperimentsPredictor
+            return TOFExperimentsPredictor(experiments)
         elif experiments.all_laue():
-            return LaueExperimentsPredictor
+            return LaueExperimentsPredictor(experiments)
 
         if not force_stills:
             for exp in experiments:
