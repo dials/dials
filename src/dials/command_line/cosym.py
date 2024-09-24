@@ -71,10 +71,6 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
-min_reflections = 10
-  .type = int(value_min=1)
-  .help = "The minimum number of reflections per experiment."
-
 seed = 230
   .type = int(value_min=0)
 
@@ -189,17 +185,9 @@ class cosym(Subject):
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-        n = len(datasets)
         datasets = [
-            ma.as_non_anomalous_array().merge_equivalents().array()
-            for ma in datasets
-            if ma.size() >= self.params.min_reflections
+            ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
-        n_after = len(datasets)
-        if n_after < n:
-            logger.info(
-                f"\nRemoved {n-n_after} dataset(s) with < {self.params.min_reflections} reflections after filtering.\n"
-            )
 
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.
