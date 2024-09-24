@@ -1,5 +1,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <scitbx/mat2.h>
+#include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <dials/algorithms/image/distortion/ellipse.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
@@ -8,7 +10,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_create_elliptical_distortion_maps() {
     class_<CreateEllipticalDistortionMaps>("CreateEllipticalDistortionMaps", no_init)
-      .def(init<const Panel &>((arg("panel"))))
+      .def(init<const Panel &, scitbx::mat2<double> >(
+        (arg("panel"), arg("ellipse_matrix"))))
       .def("get_dx", &CreateEllipticalDistortionMaps::get_dx)
       .def("get_dy", &CreateEllipticalDistortionMaps::get_dy);
   }

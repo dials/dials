@@ -7,6 +7,7 @@ import pickle
 from iotbx import phil
 from scitbx import matrix
 
+from dials.algorithms.image.distortion import CreateEllipticalDistortionMaps
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments
@@ -137,6 +138,9 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     distortion_map_y = []
 
     for panel in detector:
+        map_maker = CreateEllipticalDistortionMaps(panel, M)
+        map_maker.get_dx()
+        map_maker.get_dy()
         size_x, size_y = panel.get_pixel_size()
         nx, ny = panel.get_image_size()
         dx = flex.double(flex.grid(ny, nx), 0.0)

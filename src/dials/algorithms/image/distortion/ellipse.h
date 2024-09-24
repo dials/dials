@@ -3,9 +3,11 @@
 
 #include <scitbx/array_family/ref.h>
 #include <scitbx/array_family/shared.h>
+#include <scitbx/mat2.h>
 
 #include <scitbx/array_family/accessors/c_grid.h>
 #include <scitbx/array_family/versa.h>
+#include <scitbx/array_family/versa_matrix.h>
 #include <dxtbx/model/detector.h>
 
 namespace dials { namespace algorithms {
@@ -14,7 +16,9 @@ namespace dials { namespace algorithms {
 
   class CreateEllipticalDistortionMaps {
   public:
-    CreateEllipticalDistortionMaps(const Panel &panel) : panel_(panel) {
+    CreateEllipticalDistortionMaps(const Panel &panel,
+                                   scitbx::mat2<double> ellipse_matrix)
+        : panel_(panel), M_(ellipse_matrix) {
       std::size_t xsize = panel_.get_image_size()[0];
       std::size_t ysize = panel_.get_image_size()[1];
       dx_.resize(scitbx::af::c_grid<2>(ysize, xsize));
@@ -34,6 +38,7 @@ namespace dials { namespace algorithms {
 
     scitbx::af::versa<double, scitbx::af::c_grid<2>> dx_;
     scitbx::af::versa<double, scitbx::af::c_grid<2>> dy_;
+    scitbx::mat2<double> M_;
   };
 
 }}  // namespace dials::algorithms
