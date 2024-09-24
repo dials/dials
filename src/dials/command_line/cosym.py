@@ -186,9 +186,10 @@ class cosym(Subject):
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-
         datasets = [
-            ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
+            ma.as_non_anomalous_array().merge_equivalents().array()
+            for ma in datasets
+            if ma.size() > self.params.min_reflections
         ]
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.
@@ -465,8 +466,13 @@ def run(args=None):
 
     if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
-    cosym_instance.run()
-    cosym_instance.export()
+    try:
+        cosym_instance.run()
+    except RuntimeError as e:
+        logger.info(e)
+        sys.exit(0)
+    else:
+        cosym_instance.export()
 
 
 if __name__ == "__main__":
