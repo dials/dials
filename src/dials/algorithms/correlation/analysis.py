@@ -48,6 +48,7 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
   .help = "Datasets are only accepted if unit cell angles fall within this absolute tolerance of the median cell angles."
+<<<<<<< HEAD
 
 min_reflections = 10
   .type = int(value_min=1)
@@ -70,6 +71,8 @@ significant_clusters {
     .type = float(value_min=0, value_max=1)
     .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
 }
+=======
+>>>>>>> 10544d54f (Remove duplicate from phil scope)
 """,
     process_includes=True,
 )
