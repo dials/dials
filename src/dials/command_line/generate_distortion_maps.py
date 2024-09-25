@@ -48,8 +48,6 @@ scope = phil.parse(
 
   ellipse
     .help = "Options for correcting for elliptical distortion of images."
-            "Defaults set for correction of datasets published in"
-            "https://doi.org/10.1107/S2059798317010348"
   {
     phi = 45.0
       .type = float
