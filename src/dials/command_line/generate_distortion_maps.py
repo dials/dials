@@ -4,6 +4,7 @@ import logging
 import math
 import pickle
 
+import libtbx
 from iotbx import phil
 from scitbx import matrix
 
@@ -50,22 +51,22 @@ scope = phil.parse(
             "Defaults set for correction of datasets published in"
             "https://doi.org/10.1107/S2059798317010348"
   {
-    phi = -21.0
+    phi = 45.0
       .type = float
-      .help = "Acute angle of one principal axis of the ellipse from the fast"
+      .help = "Acute angle of the first axis of the ellipse from the fast"
               "axis of the first panel of the detector"
     l1 = 1.0
       .type = float
       .help = "Scale factor for first axis of the ellipse"
 
-    l2 = 0.956
+    l2 = 0.95
       .type = float
       .help = "Scale factor for second axis of the ellipse"
 
-    centre_xy = 33.2475,33.2475
+    centre_xy = Auto
       .type = floats(size=2)
       .help = "Centre of the ellipse in millimetres along fast, slow of the"
-              "first panel"
+              "first panel. If Auto, this will be set to the beam centre."
   }
 
   output {
@@ -194,6 +195,10 @@ def run(args=None):
         dx, dy = make_dx_dy_translate(imageset, op.dx, op.dy)
     elif params.mode == "ellipse":
         op = params.ellipse
+        if op.centre_xy is libtbx.Auto:
+            s0 = imageset.get_beam().get_s0()
+            panel = imageset.get_detector()[0]
+            op.centre_xy = panel.get_bidirectional_ray_intersection(s0)
         logger.info(
             "Generating elliptical map with phi={}, l1={}, "
             "l2={}, centre_xy={},{}".format(op.phi, op.l1, op.l2, *op.centre_xy)
