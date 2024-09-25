@@ -122,15 +122,6 @@ def ellipse_matrix_form(phi, l1, l2):
 def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     detector = imageset.get_detector()
 
-    # Get fast and slow axes from the first panel. These will form the X and Y
-    # directions for the Cartesian coordinates of the correction map
-    p0 = detector[0]
-    f0, s0 = matrix.col(p0.get_fast_axis()), matrix.col(p0.get_slow_axis())
-
-    # Get the lab coordinate of the centre of the ellipse
-    topleft = matrix.col(p0.get_pixel_lab_coord((0, 0)))
-    mid = topleft + centre_xy[0] * f0 + centre_xy[1] * s0
-
     # Get matrix describing the elliptical distortion
     M = ellipse_matrix_form(phi, l1, l2)
 
@@ -138,32 +129,9 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     distortion_map_y = []
 
     for panel in detector:
-        map_maker = CreateEllipticalDistortionMaps(panel, M)
-        map_maker.get_dx()
-        map_maker.get_dy()
-        size_x, size_y = panel.get_pixel_size()
-        nx, ny = panel.get_image_size()
-        dx = flex.double(flex.grid(ny, nx), 0.0)
-        dy = flex.double(flex.grid(ny, nx), 0.0)
-        elt = 0
-        for j in range(ny):
-            for i in range(nx):
-                # Get the X,Y coordinate of this pixel in the frame of the correction
-                # map, which has its origin at the centre of the ellipse and is aligned
-                # along fast, slow of the first panel.
-                lab = matrix.col(panel.get_pixel_lab_coord((i + 0.5, j + 0.5)))
-                offset = lab - mid
-                x = offset.dot(f0)  # undistorted X coordinate (mm)
-                y = offset.dot(s0)  # undistorted Y coordinate (mm)
-                distort = M * matrix.col((x, y))  # distorted by ellipse matrix
-
-                # store correction in units of the pixel size
-                dx[elt] = (x - distort[0]) / size_x
-                dy[elt] = (y - distort[1]) / size_y
-                elt += 1
-        # Add results for this panel
-        distortion_map_x.append(dx)
-        distortion_map_y.append(dy)
+        map_maker = CreateEllipticalDistortionMaps(panel, M, centre_xy)
+        distortion_map_x.append(map_maker.get_dx())
+        distortion_map_y.append(map_maker.get_dy())
 
     distortion_map_x = tuple(distortion_map_x)
     distortion_map_y = tuple(distortion_map_y)
