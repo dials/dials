@@ -311,11 +311,6 @@ class CosymAnalysis(symmetry_base, Subject):
                     max_calls=min(20, max_calls) if max_calls else max_calls,
                 )
 
-                # if self.params.clustering.optimise_dimensions:
-                # Currently only doing outlier rejection for cluster analysis
-                # score = self.target.compute_functional_with_outlier_rejection(self.minimizer.x)
-                # else:
-                # score = self.minimizer.fun
                 score = self.target.compute_functional(
                     self.minimizer.x, score_mode=True
                 )

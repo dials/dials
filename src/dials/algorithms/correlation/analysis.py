@@ -124,6 +124,7 @@ class CorrelationMatrix:
 
         # If dimensions are optimised for clustering, need cc_weights=sigma
         # Otherwise results end up being nonsensical even for high-quality data
+        # Outlier rejection was also found to be beneficial for optimising clustering dimensionality
         if self.params.clustering.optimise_dimensions:
             self.params.cc_weights = "sigma"
             self.params.clustering.outlier_rejection = True

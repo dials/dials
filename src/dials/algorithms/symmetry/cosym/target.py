@@ -487,18 +487,6 @@ class Target:
         f = 0.5 * inliers.sum()
         return f
 
-    # def compute_functional_with_outlier_rejection(self, x: np.ndarray) -> float:
-    # assert (x.size // self.dim) == (len(self._lattices) * len(self.sym_ops))
-    # x = x.reshape((self.dim, x.size // self.dim))
-    # elements = np.square(self.rij_matrix - x.T @ x)
-    # if self.wij_matrix is not None:
-    # np.multiply(self.wij_matrix, elements, out=elements)
-    # q1, q2, q3 = np.quantile(elements, (0.25, 0.5, 0.75))
-    # inliers = elements[elements < q2 + (q3 - q1)]
-
-    # f = 0.5 * inliers.sum()
-    # return f
-
     def compute_gradients_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the gradients at coordinates `x` using finite differences.
 
