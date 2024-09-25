@@ -311,9 +311,12 @@ class CosymAnalysis(symmetry_base, Subject):
                     max_calls=min(20, max_calls) if max_calls else max_calls,
                 )
 
-                score = self.target.compute_functional(
-                    self.minimizer.x, score_mode=True
-                )
+                if self.params.clustering.optimise_dimensions:
+                    score = self.target.compute_functional(
+                        self.minimizer.x, score_mode=True
+                    )
+                else:
+                    score = self.minimizer.fun
 
                 dimensions.append(dim)
                 functional.append(score)
