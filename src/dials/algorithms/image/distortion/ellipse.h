@@ -1,13 +1,10 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_DISTORTION_ELLIPSE_H
 #define DIALS_ALGORITHMS_IMAGE_DISTORTION_ELLIPSE_H
 
-#include <scitbx/array_family/ref.h>
-#include <scitbx/array_family/shared.h>
-#include <scitbx/mat2.h>
-#include <scitbx/vec2.h>
-
 #include <scitbx/array_family/accessors/c_grid.h>
 #include <scitbx/array_family/versa.h>
+#include <scitbx/mat2.h>
+#include <scitbx/vec2.h>
 #include <dxtbx/model/detector.h>
 
 namespace dials { namespace algorithms {
