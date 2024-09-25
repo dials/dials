@@ -22,34 +22,33 @@ namespace dials { namespace algorithms {
   public:
     CreateEllipticalDistortionMaps(const Panel &panel,
                                    const mat2<double> ellipse_matrix,
-                                   const vec2<double> centre_xy)
-        : panel_(panel), M_(ellipse_matrix) {
-      std::size_t xsize = panel_.get_image_size()[0];
-      std::size_t ysize = panel_.get_image_size()[1];
+                                   const vec2<double> centre_xy) {
+      std::size_t xsize = panel.get_image_size()[0];
+      std::size_t ysize = panel.get_image_size()[1];
       dx_.resize(scitbx::af::c_grid<2>(ysize, xsize));
       dy_.resize(scitbx::af::c_grid<2>(ysize, xsize));
 
       // Get fast and slow axes from the first panel. These will form the X and Y
       // directions for the Cartesian coordinates of the correction map
-      vec3<double> fast = panel_.get_fast_axis();
-      vec3<double> slow = panel_.get_slow_axis();
+      vec3<double> fast = panel.get_fast_axis();
+      vec3<double> slow = panel.get_slow_axis();
 
       // Get the lab coordinate of the centre of the ellipse
-      vec3<double> topleft = panel_.get_pixel_lab_coord(vec2<double>(0, 0));
+      vec3<double> topleft = panel.get_pixel_lab_coord(vec2<double>(0, 0));
       vec3<double> mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow;
 
       for (std::size_t j = 0; j < ysize; ++j) {
         for (std::size_t i = 0; i < xsize; ++i) {
-          vec3<double> lab = panel_.get_pixel_lab_coord(vec2<double>(i + 0.5, j + 0.5));
+          vec3<double> lab = panel.get_pixel_lab_coord(vec2<double>(i + 0.5, j + 0.5));
           vec3<double> offset = lab - mid;
           double x = offset * fast;  // undistorted X coordinate (mm)
           double y = offset * slow;  // undistorted Y coordinate (mm)
           vec2<double> distort =
-            M_ * vec2<double>(x, y);  // distorted by ellipse matrix
+            ellipse_matrix * vec2<double>(x, y);  // distorted by ellipse matrix
 
           // store correction in units of the pixel size
-          dx_(j, i) = (x - distort[0]) / panel_.get_pixel_size()[0];
-          dy_(j, i) = (y - distort[1]) / panel_.get_pixel_size()[1];
+          dx_(j, i) = (x - distort[0]) / panel.get_pixel_size()[0];
+          dy_(j, i) = (y - distort[1]) / panel.get_pixel_size()[1];
         }
       }
     };
@@ -63,11 +62,8 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    const Panel &panel_;
-
     scitbx::af::versa<double, scitbx::af::c_grid<2>> dx_;
     scitbx::af::versa<double, scitbx::af::c_grid<2>> dy_;
-    mat2<double> M_;
   };
 
 }}  // namespace dials::algorithms
