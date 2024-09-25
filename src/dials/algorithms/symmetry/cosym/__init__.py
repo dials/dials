@@ -280,7 +280,6 @@ class CosymAnalysis(symmetry_base, Subject):
         )
 
     def _determine_dimensions(self):
-
         if (
             self.params.dimensions is Auto
             and self.target.dim == 2
@@ -289,7 +288,6 @@ class CosymAnalysis(symmetry_base, Subject):
             self.params.dimensions = 2
 
         elif self.params.dimensions is Auto:
-
             if self.params.clustering.optimise_dimensions:
                 dims_to_test = self.number_of_datasets
             else:
