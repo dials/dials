@@ -11,8 +11,12 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_create_elliptical_distortion_maps() {
     class_<CreateEllipticalDistortionMaps>("CreateEllipticalDistortionMaps", no_init)
-      .def(init<const Panel &, scitbx::mat2<double>, scitbx::vec2<double> >(
-        (arg("panel"), arg("ellipse_matrix"), arg("centre_xy"))))
+      .def(init<const Panel &,
+                scitbx::mat2<double>,
+                scitbx::vec3<double>,
+                scitbx::vec3<double>,
+                scitbx::vec3<double>>(
+        (arg("panel"), arg("ellipse_matrix"), arg("fast"), arg("slow"), arg("mid"))))
       .def("get_dx", &CreateEllipticalDistortionMaps::get_dx)
       .def("get_dy", &CreateEllipticalDistortionMaps::get_dy);
   }

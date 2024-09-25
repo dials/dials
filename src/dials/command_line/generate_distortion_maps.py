@@ -122,6 +122,15 @@ def ellipse_matrix_form(phi, l1, l2):
 def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     detector = imageset.get_detector()
 
+    # Get fast and slow axes from the first panel. These will form the X and Y
+    # directions for the Cartesian coordinates of the correction map
+    p0 = detector[0]
+    fast, slow = matrix.col(p0.get_fast_axis()), matrix.col(p0.get_slow_axis())
+
+    # Get the lab coordinate of the centre of the ellipse
+    topleft = matrix.col(p0.get_pixel_lab_coord((0, 0)))
+    mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow
+
     # Get matrix describing the elliptical distortion
     M = ellipse_matrix_form(phi, l1, l2)
 
@@ -129,7 +138,7 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     distortion_map_y = []
 
     for panel in detector:
-        map_maker = CreateEllipticalDistortionMaps(panel, M, centre_xy)
+        map_maker = CreateEllipticalDistortionMaps(panel, M, fast, slow, mid)
         distortion_map_x.append(map_maker.get_dx())
         distortion_map_y.append(map_maker.get_dy())
 

@@ -8,7 +8,6 @@
 
 #include <scitbx/array_family/accessors/c_grid.h>
 #include <scitbx/array_family/versa.h>
-#include <scitbx/array_family/versa_matrix.h>
 #include <dxtbx/model/detector.h>
 
 namespace dials { namespace algorithms {
@@ -22,20 +21,13 @@ namespace dials { namespace algorithms {
   public:
     CreateEllipticalDistortionMaps(const Panel &panel,
                                    const mat2<double> ellipse_matrix,
-                                   const vec2<double> centre_xy) {
+                                   const vec3<double> fast,
+                                   const vec3<double> slow,
+                                   const vec3<double> mid) {
       std::size_t xsize = panel.get_image_size()[0];
       std::size_t ysize = panel.get_image_size()[1];
       dx_.resize(scitbx::af::c_grid<2>(ysize, xsize));
       dy_.resize(scitbx::af::c_grid<2>(ysize, xsize));
-
-      // Get fast and slow axes from the first panel. These will form the X and Y
-      // directions for the Cartesian coordinates of the correction map
-      vec3<double> fast = panel.get_fast_axis();
-      vec3<double> slow = panel.get_slow_axis();
-
-      // Get the lab coordinate of the centre of the ellipse
-      vec3<double> topleft = panel.get_pixel_lab_coord(vec2<double>(0, 0));
-      vec3<double> mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow;
 
       for (std::size_t j = 0; j < ysize; ++j) {
         for (std::size_t i = 0; i < xsize; ++i) {
