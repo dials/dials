@@ -164,7 +164,6 @@ class Target:
         dimensions=None,
         nproc=1,
         cc_weights=None,
-        outlier_rejection=False,
     ):
         r"""Initialise a Target object.
 
@@ -244,8 +243,6 @@ class Target:
             self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights()
         else:
             self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
-
-        self.outlier_rejection = outlier_rejection
 
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
@@ -458,7 +455,7 @@ class Target:
 
         return rij, wij
 
-    def compute_functional(self, x: np.ndarray, score_mode=False) -> float:
+    def compute_functional(self, x: np.ndarray) -> float:
         """Compute the target function at coordinates `x`.
 
         Args:
@@ -475,17 +472,22 @@ class Target:
         elements = np.square(self.rij_matrix - x.T @ x)
         if self.wij_matrix is not None:
             np.multiply(self.wij_matrix, elements, out=elements)
-        if score_mode:
-            if self.outlier_rejection:
-                q1, q2, q3 = np.quantile(elements, (0.25, 0.5, 0.75))
-                inliers = elements[elements < q2 + (q3 - q1)]
-            else:
-                inliers = elements
-        else:
-            inliers = elements
-
-        f = 0.5 * inliers.sum()
+        f = 0.5 * elements.sum()
         return f
+
+    def compute_functional_score_for_dimension_assessment(
+        self, x: np.ndarray, outlier_rejection: bool = True
+    ) -> float:
+        if not outlier_rejection:
+            return self.compute_functional(x)
+        x = x.reshape((self.dim, x.size // self.dim))
+        elements = np.square(self.rij_matrix - x.T @ x)
+        if self.wij_matrix is not None:
+            np.multiply(self.wij_matrix, elements, out=elements)
+
+        q1, q2, q3 = np.quantile(elements, (0.25, 0.5, 0.75))
+        inliers = elements[elements < q2 + (q3 - q1)]
+        return 0.5 * inliers.sum()
 
     def compute_gradients_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the gradients at coordinates `x` using finite differences.

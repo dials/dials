@@ -12,6 +12,7 @@ from scipy.cluster import hierarchy
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
+from libtbx import Auto
 from libtbx.phil import scope_extract
 from scitbx.array_family import flex
 
@@ -49,6 +50,15 @@ min_reflections = 10
 """,
     process_includes=True,
 )
+phil_overrides = phil_scope.fetch(
+    source=iotbx.phil.parse(
+        """\
+cc_weights=sigma
+weights=standard_error
+"""
+    )
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 class CorrelationMatrix:
@@ -125,9 +135,8 @@ class CorrelationMatrix:
         # If dimensions are optimised for clustering, need cc_weights=sigma
         # Otherwise results end up being nonsensical even for high-quality data
         # Outlier rejection was also found to be beneficial for optimising clustering dimensionality
-        if self.params.clustering.optimise_dimensions:
-            self.params.cc_weights = "sigma"
-            self.params.clustering.outlier_rejection = True
+        if self.params.dimensions is Auto and self.params.cc_weights != "sigma":
+            raise ValueError("To optimise dimensions, cc_weights=sigma is required.")
 
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
@@ -189,7 +198,11 @@ class CorrelationMatrix:
         self.cosym_analysis._intialise_target()
 
         # Cosym proceedures to calculate the cos-angle matrix
-        self.cosym_analysis._determine_dimensions()
+        if self.params.dimensions is Auto:
+            self.cosym_analysis._determine_dimensions(
+                self.cosym_analysis.number_of_datasets,
+                outlier_rejection=self.params.outlier_rejection,
+            )
         self.cosym_analysis._optimise(
             self.cosym_analysis.params.minimization.engine,
             max_iterations=self.cosym_analysis.params.minimization.max_iterations,

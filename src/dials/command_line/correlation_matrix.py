@@ -23,11 +23,14 @@ logger = logging.getLogger("dials.algorithms.correlation.analysis")
 
 phil_scope = iotbx.phil.parse(
     """\
-include scope dials.algorithms.correlation.analysis.phil_scope
+include scope dials.algorithms.correlation.analysis.working_phil
 
 seed = 42
   .type = int(value_min=0)
 
+outlier_rejection = True
+  .type = bool
+  .help = "Use outlier rejection when optimising dimensions of analysis."
 output {
   log = dials.correlation_matrix.log
     .type = str
