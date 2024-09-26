@@ -198,10 +198,18 @@ class CorrelationMatrix:
         self.cosym_analysis._intialise_target()
 
         # Cosym proceedures to calculate the cos-angle matrix
+        if (
+            len(self.unmerged_datasets)
+            <= self.params.dimensionality_assessment.maximum_dimensions
+        ):
+            dims_to_test = len(self.unmerged_datasets)
+        else:
+            dims_to_test = self.params.dimensionality_assessment.maximum_dimensions
+
         if self.params.dimensions is Auto:
             self.cosym_analysis._determine_dimensions(
-                self.cosym_analysis.number_of_datasets,
-                outlier_rejection=self.params.outlier_rejection,
+                dims_to_test,
+                outlier_rejection=self.params.dimensionality_assessment.outlier_rejection,
             )
         self.cosym_analysis._optimise(
             self.cosym_analysis.params.minimization.engine,
