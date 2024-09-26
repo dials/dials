@@ -38,6 +38,9 @@ logger = logging.getLogger(__name__)
 phil_scope = iotbx.phil.parse(
     """\
 
+seed = 230
+  .type = int(value_min=0)
+
 normalisation = kernel quasi *ml_iso ml_aniso
   .type = choice
 
@@ -266,7 +269,6 @@ class CosymAnalysis(symmetry_base, Subject):
         )
 
     def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
-
         logger.info("=" * 80)
         logger.info("\nAutomatic determination of number of dimensions for analysis")
         dimensions = []
@@ -380,7 +382,6 @@ class CosymAnalysis(symmetry_base, Subject):
             "Explained variance: "
             + ", ".join(["%.2g" % v for v in pca.explained_variance_])
         )
-        logger.info(pca.components_)
         logger.info(
             "Explained variance ratio: "
             + ", ".join(["%.2g" % v for v in pca.explained_variance_ratio_])
