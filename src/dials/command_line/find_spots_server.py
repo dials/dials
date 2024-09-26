@@ -366,6 +366,9 @@ def main(nproc, port):
 def run(args=None):
     usage = "dials.find_spots_server [options]"
 
+    if sys.platform.startswith("win"):
+        sys.exit(f"{sys.platform()} unsupported for {sys.argv[0]}")
+
     parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
     params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
