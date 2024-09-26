@@ -11,7 +11,7 @@ from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 from scipy.sparse import csc_matrix
 
 from cctbx import crystal, miller, sgtbx, uctbx
