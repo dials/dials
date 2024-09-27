@@ -118,9 +118,6 @@ class cosym(Subject):
             logger.info(f"Using space group {space_group_info} from reference")
             self.params.space_group = space_group_info
 
-        print(self.params.seed)
-        exit()
-
         self._reflections = []
         for refl, expt in zip(reflections, experiments):
             sel = get_selection_for_valid_image_ranges(refl, expt)
