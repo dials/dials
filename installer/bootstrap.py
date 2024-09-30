@@ -1263,9 +1263,10 @@ be passed separately with quotes to avoid confusion (e.g
         action="store_true",
     )
     parser.add_argument(
-        "--cmake",
-        help="Use the CMake build system. Implies use of a prebuilt cctbx.",
-        action="store_true",
+        "--libtbx",
+        help="Use the libtbx build system, compiling cctbx from scratch.",
+        action="store_false",
+        dest="cmake",
     )
 
     options = parser.parse_args()
