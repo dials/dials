@@ -47,6 +47,15 @@ absolute_angle_tolerance = 2
 min_reflections = 10
   .type = int(value_min=1)
   .help = "The minimum number of reflections per experiment."
+
+dimensionality_assessment {
+  outlier_rejection = True
+    .type = bool
+    .help = "Use outlier rejection when determining optimal dimensions for analysis."
+  maximum_dimensions = 50
+    .type = int
+    .help = "Maximum number of dimensions to test for reasonable processing time"
+}
 """,
     process_includes=True,
 )
