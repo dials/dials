@@ -25,6 +25,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
+  using dxtbx::model::Probe;
   using scitbx::vec3;
 
   /**
@@ -117,7 +118,8 @@ namespace dials { namespace algorithms {
         : s0_(beam.get_s0()),
           pn_(beam.get_polarization_normal()),
           pf_(beam.get_polarization_fraction()),
-          m2_(goniometer.get_rotation_axis()) {
+          m2_(goniometer.get_rotation_axis()),
+          probe_(beam.get_probe()) {
       // Deprecated constructor
     }
 
@@ -133,7 +135,8 @@ namespace dials { namespace algorithms {
           pn_(beam.get_polarization_normal()),
           pf_(beam.get_polarization_fraction()),
           m2_(goniometer.get_rotation_axis()),
-          det_(detector) {}
+          det_(detector),
+          probe_(beam.get_probe()) {}
 
     /**
      * @param beam The beam model.
@@ -145,7 +148,8 @@ namespace dials { namespace algorithms {
           pn_(beam.get_polarization_normal()),
           pf_(beam.get_polarization_fraction()),
           m2_(0, 0, 0),
-          det_(detector) {}
+          det_(detector),
+          probe_(beam.get_probe()) {}
 
     /**
      * Perform the LP correction. If no rotation axis is specified then do the
@@ -178,6 +182,7 @@ namespace dials { namespace algorithms {
     double pf_;
     vec3<double> m2_;
     Detector det_;
+    Probe probe_;
   };
 
   /**
