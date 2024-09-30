@@ -2170,7 +2170,7 @@ class SpotSettingsPanel(wx.Panel):
         grid.Add(self.brightness_txt_ctrl, 0, wx.ALL, 3)
         # Add a slider brightness control
         self.brightness_ctrl = wx.Slider(
-            self, -1, size=(150, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
+            self, -1, size=(200, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
         )
         self.brightness_ctrl.SetMin(1)
         self.brightness_ctrl.SetMax(1000)
