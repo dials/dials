@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
 
   /**
-   * Compute the LP correction for a single reflection. Note that the
+   * Compute the X-ray LP correction for a single reflection. Note that the
    * polarization factor follows the XDS convention, in which a value of 0.5
    * implies an unpolarized beam, rather than the MOSFLM definition in which
    * an unpolarized beam has a polarization factor of 0.0. See the section
@@ -61,8 +61,8 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Compute the Stills LP correction for a single reflection. Note that the
-   * polarization fraction follows XDS convention, in which a value of 0.5
+   * Compute the Stills X-ray LP correction for a single reflection. Note that
+   * the polarization fraction follows XDS convention, in which a value of 0.5
    * implies an unpolarized beam, rather than the MOSFLM definition in which
    * an unpolarized beam has a polarization factor of 0.0.
    * @param s0 The direct beam vector
@@ -153,7 +153,8 @@ namespace dials { namespace algorithms {
 
     /**
      * Perform the LP correction. If no rotation axis is specified then do the
-     * stills lorentz correction
+     * stills LP correction. If the beam type is not X-ray then the polarization
+     * correction is null.
      * @param s1 The diffracted beam vector
      * @returns L / P The correction
      */
