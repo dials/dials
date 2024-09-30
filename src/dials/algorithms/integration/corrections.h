@@ -159,9 +159,17 @@ namespace dials { namespace algorithms {
      */
     double lp(vec3<double> s1) const {
       if (m2_.length() > 0) {
-        return lp_correction(s0_, pn_, pf_, m2_, s1);
+        if (probe_ == Probe::xray) {
+          return lp_correction(s0_, pn_, pf_, m2_, s1);
+        } else {
+          return std::abs(s1 * (m2_.cross(s0_))) / (s0_.length() * s1.length());
+        }
       } else {
-        return stills_lp_correction(s0_, pn_, pf_, s1);
+        if (probe_ == Probe::xray) {
+          return stills_lp_correction(s0_, pn_, pf_, s1);
+        } else {
+          return 1.0;
+        }
       }
     }
 
