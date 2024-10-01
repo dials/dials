@@ -1169,13 +1169,15 @@ def make_build_cmake():
     if os.name == "nt":
         run_indirect_command(cmake_exe, ["--build", ".", "--config", "RelWithDebInfo"])
     else:
-        if hasattr(os, "sched_getaffinity"):
-            cpu = os.sched_getaffinity()
-        else:
-            cpu = multiprocessing.cpu_count()
-        if not isinstance(cpu, int):
-            cpu = 1
-        run_indirect_command(cmake_exe, ["--build", ".", "--parallel", str(cpu)])
+        parallel = []
+        if "CMAKE_GENERATOR" not in os.environ:
+            if hasattr(os, "sched_getaffinity"):
+                cpu = os.sched_getaffinity()
+            else:
+                cpu = multiprocessing.cpu_count()
+            if isinstance(cpu, int):
+                parallel = ["--parallel", str(cpu)]
+        run_indirect_command(cmake_exe, ["--build", "."] + parallel)
 
 
 def repository_at_tag(string):
