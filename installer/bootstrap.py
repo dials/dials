@@ -1017,9 +1017,20 @@ def _get_cmake_exe():
 
 def refresh_build_cmake():
     conda_python = _get_base_python()
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dxtbx"])
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dials"])
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/xia2"])
+    run_indirect_command(
+        conda_python,
+        [
+            "-mpip",
+            "install",
+            "--no-deps",
+            "-e",
+            "../modules/dxtbx",
+            "-e",
+            "../modules/dials",
+            "-e",
+            "../modules/xia2",
+        ],
+    )
 
 
 def configure_build_cmake():
