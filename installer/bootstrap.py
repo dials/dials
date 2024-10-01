@@ -24,6 +24,7 @@ import tarfile
 import threading
 import time
 import zipfile
+import multiprocessing
 
 try:  # Python 3
     from urllib.error import HTTPError, URLError
@@ -1168,7 +1169,13 @@ def make_build_cmake():
     if os.name == "nt":
         run_indirect_command(cmake_exe, ["--build", ".", "--config", "RelWithDebInfo"])
     else:
-        run_indirect_command(cmake_exe, ["--build", "."])
+        if hasattr(os, "sched_getaffinity"):
+            cpu = os.sched_getaffinity()
+        else:
+            cpu = multiprocessing.cpu_count()
+        if not isinstance(cpu, int):
+            cpu = 1
+        run_indirect_command(cmake_exe, ["--build", ".", "--parallel", str(cpu)])
 
 
 def repository_at_tag(string):
