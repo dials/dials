@@ -37,7 +37,8 @@ steps:
 
 # Build and install dxtbx
 - script: |
-    source activate conda_base/
+    set -euo pipefail
+    source conda_base/etc/profile.d/conda.sh
     git clone https://github.com/cctbx/dxtbx ./modules/dxtbx
     mkdir build_dxtbx
     cd build_dxtbx
@@ -52,8 +53,9 @@ steps:
 
 # Build DIALS using the bootstrap script
 - bash: |
-    source activate conda_base/
-    set -eux
+    set -euxo pipefail
+    source conda_base/etc/profile.d/conda.sh
+    set -x
     export CXXFLAGS="-isystem$(Pipeline.Workspace)/conda_base ${CXXFLAGS:-}"
     mkdir build_dials
     cd build_dials
@@ -68,7 +70,8 @@ steps:
 
 # Extract the dials-data version so we can correctly cache regression data.
 - bash: |
-    source activate conda_base/
+    set -euxo pipefail
+    source conda_base/etc/profile.d/conda.sh
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
     mkdir -p data
@@ -97,7 +100,7 @@ steps:
 
 # Finally, run the full regression test suite
 - bash: |
-    source activate conda_base/
+    source conda_base/etc/profile.d/conda.sh
     set -eux
     export DIALS_DATA=${PWD}/data
     export PYTHONDEVMODE=1
