@@ -138,11 +138,10 @@ def test_index_i04_weak_data_fft3d(dials_regression: pathlib.Path, tmp_path):
     )
 
 
-def test_index_trypsin_four_lattice_P212121(dials_regression: pathlib.Path, tmp_path):
-    # synthetic trypsin multi-lattice dataset (4 lattices)
-    data_dir = dials_regression / "indexing_test_data" / "trypsin"
-    pickle_path = data_dir / "P1_X6_1_2_3_4.pickle"
-    sequence_path = data_dir / "experiments_P1_X6_1_2_3_4.json"
+def test_index_trypsin_two_lattice_P212121(dials_data, tmp_path):
+    data_dir = dials_data("semisynthetic_multilattice", pathlib=True)
+    strong_path = data_dir / "ag_strong_1_50.refl"
+    sequence_path = data_dir / "ag_imported_1_50.expt"
     extra_args = [
         "indexing.method=real_space_grid_search",
         "reflections_per_degree=10",
@@ -155,12 +154,12 @@ def test_index_trypsin_four_lattice_P212121(dials_regression: pathlib.Path, tmp_
         "max_cell=70",
     ]
     expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.28, 0.30, 0.006)
+    expected_rmsds = (0.31, 0.49, 0.002)
     expected_hall_symbol = " P 2ac 2ab"
     n_expected_lattices = 1
 
     run_indexing(
-        pickle_path,
+        strong_path,
         sequence_path,
         tmp_path,
         extra_args,
