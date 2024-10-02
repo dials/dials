@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from pathlib import Path
 
 
-def test(dials_data: Path, tmp_path):
+def test(dials_data, tmp_path):
     data_dir = dials_data("insulin_processed", pathlib=True)
     experiments_path = data_dir / "indexed.expt"
     pickle_path = data_dir / "indexed.refl"
