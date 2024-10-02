@@ -407,13 +407,13 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method
     )
 
 
-def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
+def test_multiple_experiments(dials_data: pathlib.Path, tmp_path):
     # Test indexing 4 lysozyme still shots in a single dials.index job
     #   - the first image doesn't index
     #   - the last three images do index
-    data_dir = dials_regression / "indexing_test_data" / "i24_lysozyme_stills"
-    pickle_path = data_dir / "strong.pickle"
-    experiments_json = data_dir / "imported_experiments.json"
+    data_dir = dials_data("indexing_test_data")
+    reflections_path = data_dir / "i24_lyso_still-strong.pickle"
+    experiments_json = data_dir / "i24_lyso_still-imported.json"
 
     expected_unit_cell = uctbx.unit_cell((38.06, 78.78, 78.91, 90, 90, 90))
     expected_hall_symbol = " P 1"
@@ -426,7 +426,7 @@ def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
     ]
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         experiments_json,
         tmp_path,
         extra_args,
