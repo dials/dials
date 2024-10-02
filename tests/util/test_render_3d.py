@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import random
 
 import pytest
@@ -12,17 +11,14 @@ from dials.util.reciprocal_lattice import Render3d
 
 
 @pytest.fixture
-def multi_sequence_data(dials_regression):
+def multi_sequence_data(dials_data):
+    data_dir = dials_data("indexing_test_data", pathlib=True)
     experiments = load.experiment_list(
-        os.path.join(
-            dials_regression, "indexing_test_data", "multi_sweep", "experiments.json"
-        ),
+        data_dir / "multi_sweep-experiments.json",
         check_format=False,
     )
     reflections = flex.reflection_table.from_file(
-        os.path.join(
-            dials_regression, "indexing_test_data", "multi_sweep", "indexed.pickle"
-        )
+        data_dir / "multi_sweep-indexed.pickle",
     )
     return {"reflections": reflections, "experiments": experiments}
 
