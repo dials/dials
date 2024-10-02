@@ -441,6 +441,7 @@ def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
 
 
 def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
+    # 1440 images of 1° rotation each
     data_dir = dials_regression / "indexing_test_data" / "4rotation"
     pickle_path = data_dir / "strong.pickle"
     sequence_path = data_dir / "experiments.json"
