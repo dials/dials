@@ -170,25 +170,23 @@ def test_index_trypsin_two_lattice_P212121(dials_data, tmp_path):
     )
 
 
-def test_index_i04_weak_data_fft1d(dials_regression: pathlib.Path, tmp_path):
-    # thaumatin
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
-    pickle_path = data_dir / "full.pickle"
-    sequence_path = data_dir / "experiments_import.json"
+def test_index_insulin_fft1d(dials_data, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    reflections_path = data_dir / "strong.refl"
+    sequence_path = data_dir / "imported.expt"
     extra_args = [
         "n_macro_cycles=2",
         "indexing.method=fft1d",
         "bin_size_fraction=0.25",
-        "image_range=1,20",
-        "image_range=250,270",
-        "image_range=520,540",
+        "image_range=1,5",
+        "image_range=41,45",
     ]
-    expected_unit_cell = uctbx.unit_cell((57.7, 57.7, 149.9, 90, 90, 90))
-    expected_rmsds = (0.06, 0.05, 0.0005)
+    expected_unit_cell = uctbx.unit_cell((67.7, 67.7, 67.7, 109.5, 109.5, 109.5))
+    expected_rmsds = (0.05, 0.04, 0.005)
     expected_hall_symbol = " P 1"
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         sequence_path,
         tmp_path,
         extra_args,
