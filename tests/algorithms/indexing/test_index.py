@@ -263,14 +263,12 @@ def test_index_peak_search_clean(dials_data, tmp_path):
 
 
 @pytest.mark.parametrize("specify_unit_cell", [False, True])
-def test_index_imosflm_tutorial(
-    dials_regression: pathlib.Path, tmp_path, specify_unit_cell
-):
+def test_index_imosflm_tutorial(dials_data, tmp_path, specify_unit_cell):
     # test on spots derived from imosflm tutorial data:
     # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
-    data_dir = dials_regression / "indexing_test_data" / "imosflm_hg_mar"
-    pickle_path = data_dir / "strong.pickle"
-    sequence_path = data_dir / "experiments.json"
+    data_dir = dials_data("indexing_test_data")
+    reflections_path = data_dir / "imosflm_hg_mar-strong.pickle"
+    sequence_path = data_dir / "imosflm_hg_mar-experiments.json"
 
     unit_cell = uctbx.unit_cell((58.373, 58.373, 155.939, 90, 90, 120))
     hall_symbol = '-R 3 2"'
@@ -289,7 +287,7 @@ def test_index_imosflm_tutorial(
     expected_rmsds = (0.08, 0.11, 0.004)
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         sequence_path,
         tmp_path,
         extra_args,
