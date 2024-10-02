@@ -232,27 +232,27 @@ def test_index_trypsin_index_assignment_local(dials_data, tmp_path):
     )
 
 
-def test_index_peak_search_clean(dials_regression: pathlib.Path, tmp_path):
-    # test indexing from single image of i04_weak_data
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
-    pickle_path = data_dir / "first_image.pickle"
-    sequence_path = data_dir / "experiments_import.json"
+def test_index_peak_search_clean(dials_data, tmp_path):
+    # test indexing from single image of insulin
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    reflections_path = data_dir / "strong.refl"
+    sequence_path = data_dir / "imported.expt"
     extra_args = [
         "indexing.method=fft3d",
-        "known_symmetry.space_group=P4",
-        "known_symmetry.unit_cell=57.8,57.8,150,90,90,90",
+        "known_symmetry.space_group=I23",
+        "known_symmetry.unit_cell=78.1,78.1,78.1,90,90,90",
         "peak_search=clean",
         "min_samples=15",
         "n_macro_cycles=4",
         "reciprocal_space_grid.d_min=4",
     ]
 
-    expected_unit_cell = uctbx.unit_cell((57.8, 57.8, 150, 90, 90, 90))
-    expected_rmsds = (0.06, 0.07, 0.003)
-    expected_hall_symbol = " P 4"
+    expected_unit_cell = uctbx.unit_cell((78.1, 78.1, 78.1, 90, 90, 90))
+    expected_rmsds = (0.03, 0.03, 0.005)
+    expected_hall_symbol = " I 2 2 3"
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         sequence_path,
         tmp_path,
         extra_args,
