@@ -196,11 +196,10 @@ def test_index_insulin_fft1d(dials_data, tmp_path):
     )
 
 
-def test_index_trypsin_index_assignment_local(dials_regression: pathlib.Path, tmp_path):
-    # synthetic trypsin multi-lattice dataset (3 lattices)
-    data_dir = dials_regression / "indexing_test_data" / "trypsin"
-    pickle_path = data_dir / "P1_X6_1_2_3.pickle"
-    sequence_path = data_dir / "experiments_P1_X6_1_2_3.json"
+def test_index_trypsin_index_assignment_local(dials_data, tmp_path):
+    data_dir = dials_data("semisynthetic_multilattice", pathlib=True)
+    reflections_path = data_dir / "ag_strong_1_50.refl"
+    sequence_path = data_dir / "ag_imported_1_50.expt"
     extra_args = [
         "indexing.method=real_space_grid_search",
         "d_min_start=3",
@@ -210,18 +209,17 @@ def test_index_trypsin_index_assignment_local(dials_regression: pathlib.Path, tm
         "image_range=0,10",
         "beam.fix=all",
         "detector.fix=all",
-        "max_lattices=3",
+        "max_lattices=2",
         "index_assignment.method=local",
         "nearest_neighbours=50",
     ]
-
     expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.33, 0.40, 0.0024)
+    expected_rmsds = (0.32, 0.41, 0.004)
     expected_hall_symbol = " P 2ac 2ab"
-    n_expected_lattices = 3
+    n_expected_lattices = 2
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         sequence_path,
         tmp_path,
         extra_args,
