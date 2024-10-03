@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import copy
+import os
 import random
+from pathlib import Path
 
 import pytest
 
@@ -224,12 +226,16 @@ class CompareGlobalLocal:
         )
 
 
-def test_index_reflections(dials_data):
-    data_dir = dials_data("insulin_processed", pathlib=True)
-    experiments_json = data_dir / "indexed.expt"
+def test_index_reflections(dials_regression: Path):
+    experiments_json = os.path.join(
+        dials_regression, "indexing_test_data", "i04_weak_data", "experiments.json"
+    )
     experiments = load.experiment_list(experiments_json, check_format=False)
-    reflections_refl = data_dir / "indexed.refl"
-    reflections = flex.reflection_table.from_file(reflections_refl)
+    reflections = flex.reflection_table.from_file(
+        os.path.join(
+            dials_regression, "indexing_test_data", "i04_weak_data", "full.pickle"
+        )
+    )
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
     reflections["imageset_id"] = flex.int(len(reflections), 0)
@@ -237,7 +243,7 @@ def test_index_reflections(dials_data):
     AssignIndicesGlobal(tolerance=0.3)(reflections, experiments)
     assert "miller_index" in reflections
     counts = reflections["id"].counts()
-    assert dict(counts) == {-1: 1136, 0: 21697}
+    assert dict(counts) == {-1: 1390, 0: 114692}
 
 
 def test_local_multiple_rotations(dials_data):
