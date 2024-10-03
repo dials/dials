@@ -782,7 +782,7 @@ class XrayFrame(XFBaseClass):
                 row_list = range(start_y_tile, stop_y_tile)
                 y_pix_start = start_y_tile * self.pyslip.tile_size_y - y_offset
 
-                bitmap = wx.Bitmap(x2 - x1, y2 - y1)
+                bitmap = wx.Bitmap(int(x2 - x1), int(y2 - y1))
                 dc = wx.MemoryDC()
                 dc.SelectObject(bitmap)
 
@@ -791,7 +791,10 @@ class XrayFrame(XFBaseClass):
                     y_pix = y_pix_start
                     for y in row_list:
                         dc.DrawBitmap(
-                            self.pyslip.tiles.GetTile(x, y), x_pix, y_pix, False
+                            self.pyslip.tiles.GetTile(x, y),
+                            int(x_pix),
+                            int(y_pix),
+                            False,
                         )
                         y_pix += self.pyslip.tile_size_y
                     x_pix += self.pyslip.tile_size_x
