@@ -209,10 +209,10 @@ Goniometer:
     )
 
 
-def test_dials_show_multi_panel_i23(dials_regression: Path):
-    path = os.path.join(
-        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
-    )
+def test_dials_show_multi_panel_i23(dials_data):
+    data_dir = dials_data("image_examples", pathlib=True)
+    path = data_dir / "DLS_I23_germ_13KeV_0001.cbf"
+
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
