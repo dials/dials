@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import copy
 import functools
+import os
+from pathlib import Path
 
 import pytest
 
@@ -149,12 +151,13 @@ def test_ModelRank():
     )
 
 
-def test_ModelEvaluation(dials_data):
-    data_dir = dials_data("insulin_processed", pathlib=True)
-    refl_path = data_dir / "strong.refl"
-    sequence_path = data_dir / "imported.expt"
+def test_ModelEvaluation(dials_regression: Path):
+    # thaumatin
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+    pickle_path = os.path.join(data_dir, "full.pickle")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
 
-    input_reflections = flex.reflection_table.from_file(refl_path)
+    input_reflections = flex.reflection_table.from_file(pickle_path)
     input_experiments = load.experiment_list(sequence_path, check_format=False)
 
     input_reflections = input_reflections.select(
@@ -174,16 +177,12 @@ def test_ModelEvaluation(dials_data):
         {
             "__id__": "crystal",
             "real_space_a": (
-                -32.079304182817744,
-                3.9897390466188085,
-                59.432272192079594,
+                20.007058080503633,
+                49.721143642677994,
+                16.636052132572846,
             ),
-            "real_space_b": (47.12749637329339, -48.40122986436945, 3.0100906327736925),
-            "real_space_c": (
-                29.458914822232188,
-                59.30444356589996,
-                -13.753999130175169,
-            ),
+            "real_space_b": (-15.182202482876685, 24.93846318493148, -50.7116866438356),
+            "real_space_c": (-135.23051191036296, 41.14539066294313, 55.41374425160883),
             "space_group_hall_symbol": " P 1",
         }
     )
@@ -192,10 +191,10 @@ def test_ModelEvaluation(dials_data):
     assign_indices(reflections, experiments)
     result = evaluator.evaluate(experiments, reflections)
     assert result is not None
-    assert result.n_indexed == 13147
-    assert result.fraction_indexed == pytest.approx(0.5757894275828844)
+    assert result.n_indexed == 7313
+    assert result.fraction_indexed == pytest.approx(0.341155066244)
     assert result.rmsds == pytest.approx(
-        (0.047112188342754324, 0.045292848426853285, 0.004261592361199683)
+        (0.10214846695020922, 0.12958139231286528, 0.001097870074690081)
     )
 
 
