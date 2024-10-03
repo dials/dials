@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import copy
 import logging
-import os
 import pickle
 import random
-from pathlib import Path
 
 import pytest
 
@@ -1386,10 +1384,10 @@ def test_as_miller_array():
         _ = table.as_miller_array(experiment, intensity="2")
 
 
-def test_map_centroids_to_reciprocal_space(dials_regression: Path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    expts_path = os.path.join(data_dir, "experiments_import.json")
+def test_map_centroids_to_reciprocal_space(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    expts_path = data_dir / "experiments_import.json"
 
     refl = flex.reflection_table.from_file(pickle_path)
     expts = load.experiment_list(expts_path, check_format=False)
@@ -1443,10 +1441,10 @@ def test_map_centroids_to_reciprocal_space(dials_regression: Path):
     )
 
 
-def test_calculate_entering_flags(dials_regression: Path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    experiments_path = os.path.join(data_dir, "experiments_import.json")
+def test_calculate_entering_flags(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    experiments_path = data_dir / "experiments_import.json"
 
     refl = flex.reflection_table.from_pickle(pickle_path)
     experiments = load.experiment_list(experiments_path, check_format=False)
