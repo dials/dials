@@ -112,21 +112,23 @@ def run_indexing(
     return _indexing_result(indexed_reflections, experiments_list, rmsds)
 
 
-def test_index_insulin_fft3d(dials_data, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
-    reflections_path = data_dir / "strong.refl"
-    sequence_path = data_dir / "imported.expt"
+def test_index_i04_weak_data_fft3d(dials_regression: pathlib.Path, tmp_path):
+    # thaumatin
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+    pickle_path = os.path.join(data_dir, "full.pickle")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
     extra_args = [
         "bin_size_fraction=0.25",
-        "image_range=1,5",
-        "image_range=41,45",
+        "image_range=1,20",
+        "image_range=250,270",
+        "image_range=520,540",
     ]
-    expected_unit_cell = uctbx.unit_cell((67.7, 67.7, 67.7, 109.5, 109.5, 109.5))
-    expected_rmsds = (0.05, 0.04, 0.005)
+    expected_unit_cell = uctbx.unit_cell((57.7, 57.7, 149.8, 90, 90, 90))
+    expected_rmsds = (0.05, 0.04, 0.0005)
     expected_hall_symbol = " P 1"
 
     run_indexing(
-        reflections_path,
+        pickle_path,
         sequence_path,
         tmp_path,
         extra_args,
