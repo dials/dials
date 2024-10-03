@@ -236,9 +236,9 @@ def test_index_trypsin_index_assignment_local(dials_data, tmp_path):
     )
 
 
-def test_index_peak_search_clean(dials_regression: pathlib.Path, tmp_path):
+def test_index_peak_search_clean(dials_data, tmp_path):
     # test indexing from single image of i04_weak_data
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
+    data_dir = dials_data("i04_weak_data")
     pickle_path = data_dir / "first_image.pickle"
     sequence_path = data_dir / "experiments_import.json"
     extra_args = [
