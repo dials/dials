@@ -14,10 +14,10 @@ from dxtbx.serialize import load
 from dials.command_line import refine_bravais_settings
 
 
-def test_refine_bravais_settings_i04_weak_data(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_i04_weak_data(dials_data, tmp_path):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "indexed.pickle"
+    experiments_path = data_dir / "experiments.json"
     result = subprocess.run(
         [
             shutil.which("dials.refine_bravais_settings"),
@@ -63,10 +63,10 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression: Path, tmp_path)
     assert bravais_summary["9"]["rmsd"] == pytest.approx(0.047, abs=1e-2)
 
 
-def test_refine_bravais_settings_multi_sweep(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_multi_sweep(dials_data, tmp_path):
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = data_dir / "multi_sweep-indexed.pickle"
+    experiments_path = data_dir / "multi_sweep-experiments.json"
     result = subprocess.run(
         [shutil.which("dials.refine_bravais_settings"), pickle_path, experiments_path],
         cwd=tmp_path,
