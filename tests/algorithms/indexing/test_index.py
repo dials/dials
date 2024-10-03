@@ -927,8 +927,8 @@ def test_unconventional_P1_cell(dials_data, tmp_path, cell_params):
     )
 
 
-def test_real_space_grid_search_no_unit_cell(dials_regression: pathlib.Path, tmp_path):
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
+def test_real_space_grid_search_no_unit_cell(dials_data, tmp_path):
+    data_dir = dials_data("i04_weak_data")
     experiments_json = data_dir / "experiments_import.json"
     pickle_path = data_dir / "full.pickle"
     commands = [
