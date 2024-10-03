@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 import pytest
 
@@ -14,14 +13,12 @@ from dials.command_line import search_beam_position
 from ..algorithms.indexing.test_index import run_indexing
 
 
-def test_search_i04_weak_data_image_range(
-    mocker, run_in_tmp_path, dials_regression: Path
-):
+def test_search_i04_weak_data_image_range(mocker, run_in_tmp_path, dials_data):
     """Perform a beam-centre search and check that the output is sane."""
 
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    reflection_file = os.path.join(data_dir, "full.pickle")
-    experiments_file = os.path.join(data_dir, "experiments_import.json")
+    data_dir = dials_data("i04_weak_data")
+    reflection_file = data_dir / "full.pickle"
+    experiments_file = data_dir / "experiments_import.json"
 
     args = [
         experiments_file,
@@ -54,7 +51,7 @@ def test_search_i04_weak_data_image_range(
     assert shift.elems == pytest.approx((0.27, -0.12, 0.0), abs=1e-1)
 
 
-def test_search_multiple(run_in_tmp_path, dials_regression: Path):
+def test_search_multiple(run_in_tmp_path, dials_data):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
@@ -66,13 +63,13 @@ def test_search_multiple(run_in_tmp_path, dials_regression: Path):
     in detector origin.
     """
 
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path1 = os.path.join(data_dir, "strong_P1_X6_1_0-1.pickle")
-    pickle_path2 = os.path.join(data_dir, "strong_P1_X6_2_0-1.pickle")
-    experiments_path1 = os.path.join(data_dir, "experiments_P1_X6_1.json")
-    experiments_path2 = os.path.join(data_dir, "experiments_P1_X6_2.json")
+    data_dir = dials_data("semisynthetic_multilattice")
+    refl_path1 = str(data_dir / "ag_strong_1_50.refl")
+    refl_path2 = str(data_dir / "bh_strong_1_50.refl")
+    experiments_path1 = str(data_dir / "ag_imported_1_50.expt")
+    experiments_path2 = str(data_dir / "bh_imported_1_50.expt")
 
-    args = [experiments_path1, experiments_path2, pickle_path1, pickle_path2]
+    args = [experiments_path1, experiments_path2, refl_path1, refl_path2]
     search_beam_position.run(args)
     assert os.path.exists("optimised.expt")
 
@@ -83,7 +80,7 @@ def test_search_multiple(run_in_tmp_path, dials_regression: Path):
     shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
         detector_2[0].get_origin()
     )
-    assert shift.elems == pytest.approx((-0.518, 0.192, 0.0), abs=1e-1)
+    assert shift.elems == pytest.approx((-0.090, -0.168, 0.0), abs=1e-1)
 
 
 def test_index_after_search(dials_data, run_in_tmp_path):
