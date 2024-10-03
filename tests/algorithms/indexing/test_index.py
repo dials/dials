@@ -172,9 +172,9 @@ def test_index_trypsin_two_lattice_P212121(dials_data, tmp_path):
     )
 
 
-def test_index_i04_weak_data_fft1d(dials_regression: pathlib.Path, tmp_path):
+def test_index_i04_weak_data_fft1d(dials_data, tmp_path):
     # thaumatin
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
+    data_dir = dials_data("i04_weak_data")
     pickle_path = data_dir / "full.pickle"
     sequence_path = data_dir / "experiments_import.json"
     extra_args = [
