@@ -51,7 +51,6 @@ setup_kwargs = {
     ],
     "entry_points": {
         "libtbx.precommit": ["dials=dials"],
-        "libtbx.dispatcher.script": ["pytest=pytest"],
         "dxtbx.profile_model": [
             "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt",
             "ellipsoid = dials.extensions.ellipsoid_profile_model_ext:EllipsoidProfileModelExt",
