@@ -84,13 +84,9 @@ Crystal:
     )
 
 
-def test_dials_show_i04_weak_data(dials_regression: Path):
-    path = os.path.join(
-        dials_regression,
-        "indexing_test_data",
-        "i04_weak_data",
-        "experiments_import.json",
-    )
+def test_dials_show_i04_weak_data(dials_data):
+    data_dir = dials_data("i04_weak_data", pathlib=True)
+    path = data_dir / "experiments_import.json"
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
