@@ -21,8 +21,8 @@ def test_search_i04_weak_data_image_range(mocker, run_in_tmp_path, dials_data):
     experiments_file = data_dir / "experiments_import.json"
 
     args = [
-        experiments_file,
-        reflection_file,
+        str(experiments_file),
+        str(reflection_file),
         "image_range=1,10",
         "image_range=251,260",
         "image_range=531,540",
