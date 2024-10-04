@@ -365,11 +365,12 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.beam_fast_ctrl.SetBackgroundColour(self.GetBackgroundColour())
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.panel_sizer.Add(box)
+        # box = wx.BoxSizer(wx.HORIZONTAL)
+        grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
+        self.panel_sizer.Add(grid)
         label = wx.StaticText(self, -1, "Beam centre (mm)")
-        box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        box.Add(self.beam_fast_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.beam_fast_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_fast_ctrl)
 
         self.beam_slow_ctrl = floatspin.FloatSpin(
@@ -378,7 +379,8 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.beam_slow_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.beam_slow_ctrl.SetBackgroundColour(self.GetBackgroundColour())
-        box.Add(self.beam_slow_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(wx.StaticText(self, -1, ""), 0, wx.EXPAND)
+        grid.Add(self.beam_slow_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_slow_ctrl)
 
         self.marker_size_ctrl = floatspin.FloatSpin(
