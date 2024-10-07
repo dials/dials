@@ -1289,8 +1289,17 @@ be passed separately with quotes to avoid confusion (e.g
         action="store_false",
         dest="cmake",
     )
+    parser.add_argument(
+        "--cmake",
+        action="store_true",
+        dest="removed_cmake",
+        help=argparse.SUPPRESS,
+    )
 
     options = parser.parse_args()
+    if options.removed_cmake:
+        # User passed the obsolete parameter
+        sys.exit("Error: --cmake is now the default, please remove --cmake.")
 
     print("Performing actions:", " ".join(options.actions))
 
