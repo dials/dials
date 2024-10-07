@@ -1112,7 +1112,8 @@ add_subdirectory(dials)
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
-            "-DHDF5_ROOT=" + conda_base_root,
+            "-DHDF5_DIR=" + conda_base_root,
+            "-DPython_ROOT_DIR=" + conda_base_root,
         ]
         + extra_args,
     )
@@ -1183,7 +1184,7 @@ def make_build_cmake():
         parallel = []
         if "CMAKE_GENERATOR" not in os.environ:
             if hasattr(os, "sched_getaffinity"):
-                cpu = os.sched_getaffinity()
+                cpu = os.sched_getaffinity(0)
             else:
                 cpu = multiprocessing.cpu_count()
             if isinstance(cpu, int):
