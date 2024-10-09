@@ -156,7 +156,6 @@ def compute_posterior_moments_acentric(
     expected_intensities: np.ndarray,
     h_min: int = -4,
 ) -> PosteriorMoments:
-
     h = (intensities / sigmas) - np.abs(sigmas / expected_intensities)
     logger.debug(f"h range: {h.min():.4f} - {h.max():.4f}")
     i_sig_min = h_min + 0.3
@@ -204,7 +203,6 @@ def compute_posterior_moments_centric(
     expected_intensities: np.ndarray,
     h_min: int = -4,
 ) -> PosteriorMoments:
-
     h = (intensities / sigmas) - np.abs(sigmas / (2 * expected_intensities))
     logger.debug(f"h range: {h.min():.4f} - {h.max():.4f}")
     i_sig_min = h_min + 0.3

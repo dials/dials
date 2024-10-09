@@ -90,7 +90,6 @@ class RadialProfileThresholdDebug:
     # DispersionThresholdDebug object for those, while overriding the final_mask
     # method. This wrapper class handles that.
     def __init__(self, imageset, n_iqr, blur, n_bins):
-
         self.imageset = imageset
         params = find_spots_phil_scope.extract()
         params.spotfinder.threshold.radial_profile.blur = blur
@@ -120,7 +119,6 @@ def calculate_isoresolution_lines(
     n_rays=720,
     binning=1,
 ):
-
     # Calculate 2θ angles
     wavelength = beam.get_wavelength()
     twotheta = uctbx.d_star_sq_as_two_theta(uctbx.d_as_d_star_sq(spacings), wavelength)
@@ -133,7 +131,6 @@ def calculate_isoresolution_lines(
     ring_data = []
     resolution_text_data = []
     for tt, d in zip(twotheta, spacings):
-
         # Generate rays at 2θ
         cone_base_centre = beamvec * math.cos(tt)
         cone_base_radius = (beamvec * math.sin(tt)).length()
@@ -586,7 +583,6 @@ class SpotFrame(XrayFrame):
         return True
 
     def drawUntrustedPolygons(self):
-
         # remove any previous selection
         if self.sel_image_polygon_layer:
             self.pyslip.DeleteLayer(self.sel_image_polygon_layer)
@@ -613,7 +609,6 @@ class SpotFrame(XrayFrame):
                 circle = region.circle
 
             if polygon is not None:
-
                 assert len(polygon) % 2 == 0, "Polygon must contain 2D coords"
                 vertices = []
                 for i in range(int(len(polygon) / 2)):
@@ -823,7 +818,7 @@ class SpotFrame(XrayFrame):
             "placement": "cc",
             "colour": "red",
         }
-        for (txt_x, txt_y, txt_str) in res_labels:
+        for txt_x, txt_y, txt_str in res_labels:
             x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(txt_x, txt_y)
             resolution_text_data.append((x, y, txt_str, metadata))
 
@@ -1087,27 +1082,37 @@ class SpotFrame(XrayFrame):
             if not isinstance(image_data, tuple):
                 image_data = (image_data,)
 
-            i_frame = self.image_chooser.GetClientData(
-                self.image_chooser.GetSelection()
-            ).index
-            imageset = self.images.selected.image_set
+            if self.params.show_mask:
+                masks = tuple(i == MASK_VAL for i in image_data)
 
+            i_frame = self.image_chooser.GetSelection()
             for i in range(1, self.params.stack_images):
-                if (i_frame + i) >= len(imageset):
+                if (i_frame + i) >= len(self.images):
                     break
-                image_data_i = imageset[i_frame + i]
+
+                image_data_i = self.images[i_frame + i].get_image_data()
                 for j, rd in enumerate(image_data):
                     data = image_data_i[j]
+
                     if mode == "max":
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
                     else:
                         rd += data
 
+                if self.params.show_mask:
+                    image_masks = self.images[i_frame + i].get_mask()
+                    for merged_mask, image_mask in zip(masks, image_masks):
+                        merged_mask.set_selected(~image_mask, True)
+
             # /= stack_images to put on consistent scale with single image
             # so that -1 etc. handled correctly (mean mode)
             if mode == "mean":
                 image_data = tuple(i / self.params.stack_images for i in image_data)
+
+            if self.params.show_mask:
+                for rd, mask in zip(image_data, masks):
+                    rd = rd.as_1d().set_selected(mask.as_1d(), MASK_VAL)
 
             # Don't show summed images with overloads
             self.pyslip.tiles.set_image_data(image_data, show_saturated=False)
@@ -1201,7 +1206,6 @@ class SpotFrame(XrayFrame):
         return image_data
 
     def _calculate_dispersion_debug(self, image):
-
         # hash current settings
         dispersion_debug_list_hash = hash(
             (
@@ -1674,7 +1678,6 @@ class SpotFrame(XrayFrame):
         return result
 
     def _reflection_overlay_data(self, i_frame):
-
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
@@ -1749,7 +1752,7 @@ class SpotFrame(XrayFrame):
                     ):
                         shoebox = reflection["shoebox"]
                         iz = i_frame - z0 if not self.viewing_stills else 0
-                        if not reflection["id"] in all_pix_data:
+                        if reflection["id"] not in all_pix_data:
                             all_pix_data[reflection["id"]] = []
 
                             all_foreground_circles[reflection["id"]] = []
@@ -1962,7 +1965,6 @@ class SpotFrame(XrayFrame):
         }
 
     def get_spotfinder_data(self):
-
         self.prediction_colours = [
             "#e41a1c",
             "#377eb8",
@@ -2703,7 +2705,6 @@ class SpotSettingsPanel(wx.Panel):
         self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
-
         button = event.GetEventObject()
         selected = button.GetLabelText()
 

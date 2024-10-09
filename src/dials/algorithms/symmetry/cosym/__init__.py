@@ -531,7 +531,6 @@ class CosymAnalysis(symmetry_base, Subject):
 
 class SymmetryAnalysis:
     def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
-
         import scipy.spatial.distance as ssd
 
         self.subgroups = subgroups

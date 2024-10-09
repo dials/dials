@@ -177,9 +177,7 @@ class OutlierRejectionBase:
 
     def __init__(self, Ih_table, zmax):
         """Set up and run the outlier rejection algorithm."""
-        assert (
-            Ih_table.n_work_blocks == 1
-        ), """
+        assert Ih_table.n_work_blocks == 1, """
 Outlier rejection algorithms require an Ih_table with nblocks = 1"""
         # Note: could be possible to code for nblocks > 1
         self._Ih_table_block = Ih_table.blocked_data_list[0]
@@ -232,9 +230,7 @@ class TargetedOutlierRejection(OutlierRejectionBase):
 
     def __init__(self, Ih_table, zmax, target):
         """Set a target Ih_table and run the outlier rejection."""
-        assert (
-            target.n_work_blocks == 1
-        ), """
+        assert target.n_work_blocks == 1, """
 Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
         self._target_Ih_table_block = target.blocked_data_list[0]
         self._target_Ih_table_block.calc_Ih()

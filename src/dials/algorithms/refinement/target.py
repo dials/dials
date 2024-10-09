@@ -1,7 +1,6 @@
 """Contains classes used to construct a target function for refinement,
 principally Target and ReflectionManager."""
 
-
 from __future__ import annotations
 
 import math
@@ -77,18 +76,14 @@ class TargetFactory:
                 + " not recognised"
             )
 
-        all_tof_experiments = False
-        for expt in experiments:
-            if expt.scan is not None and expt.scan.has_property("time_of_flight"):
-                all_tof_experiments = True
-            elif all_tof_experiments:
-                raise ValueError(
-                    "Cannot refine ToF and non-ToF experiments at the same time"
-                )
-
-        if all_tof_experiments:
+        if experiments.all_tof():
             from dials.algorithms.refinement.target import (
                 TOFLeastSquaresResidualWithRmsdCutoff as targ,
+            )
+
+        elif experiments.all_laue():
+            from dials.algorithms.refinement.target import (
+                LaueLeastSquaresResidualWithRmsdCutoff as targ,
             )
 
         # Determine whether the target is in X, Y, Phi space or just X, Y to choose
@@ -156,7 +151,6 @@ class Target:
         restraints_parameterisation=None,
         gradient_calculation_blocksize=None,
     ):
-
         self._experiments = experiments
         self._reflection_predictor = predictor
         self._reflection_manager = reflection_manager
@@ -399,7 +393,8 @@ class Target:
         """Return a list of the matches, split into blocks according to the
         gradient_calculation_blocksize parameter and the number of processes (if relevant).
         The number of blocks will be set such that the total number of reflections
-        being processed by concurrent processes does not exceed gradient_calculation_blocksize"""
+        being processed by concurrent processes does not exceed gradient_calculation_blocksize
+        """
 
         self.update_matches()
 
@@ -584,7 +579,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         absolute_cutoffs=None,
         gradient_calculation_blocksize=None,
     ):
-
         Target.__init__(
             self,
             experiments,
@@ -619,7 +613,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_residuals_and_weights(matches) -> Tuple[flex.double, Any]:
-
         # return residuals and weights as 1d flex.double vectors
         residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
         residuals.extend(matches["phi_resid"])
@@ -632,7 +625,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_squared_residuals(matches):
-
         residuals2 = flex.double.concatenate(matches["x_resid2"], matches["y_resid2"])
         residuals2.extend(matches["phi_resid2"])
 
@@ -719,7 +711,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoffSparse(
 
 
 class LaueLeastSquaresResidualWithRmsdCutoff(Target):
-
     """A Laue implementation of the target class providing a least squares
     residual in terms of detector impact position X, Y, and observed
     wavelength"""
@@ -739,7 +730,6 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
         absolute_cutoffs: Optional[list] = None,
         gradient_calculation_blocksize=None,
     ):
-
         Target.__init__(
             self,
             experiments,
@@ -776,7 +766,6 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_residuals_and_weights(matches):
-
         # return residuals and weights as 1d flex.double vectors
         residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
 
@@ -790,14 +779,12 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
 
     @staticmethod
     def _extract_squared_residuals(matches):
-
         return flex.double.concatenate(
             matches["x_resid2"],
             flex.double.concatenate(matches["y_resid2"], matches["wavelength_resid2"]),
         )
 
     def _rmsds_core(self, reflections):
-
         """calculate unweighted RMSDs for the specified reflections"""
 
         resid_x = flex.sum(reflections["x_resid2"])
@@ -858,13 +845,11 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
 
 
 class TOFLeastSquaresResidualWithRmsdCutoff(LaueLeastSquaresResidualWithRmsdCutoff):
-
     _grad_names = ["dX_dp", "dY_dp", "dwavelength_dp"]
     rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_wavelength", "RMSD_wavelength"]
     rmsd_units = ["mm", "mm", "A", "frame"]
 
     def _rmsds_core(self, reflections):
-
         """calculate unweighted RMSDs for the specified reflections"""
 
         resid_x = flex.sum(reflections["x_resid2"])

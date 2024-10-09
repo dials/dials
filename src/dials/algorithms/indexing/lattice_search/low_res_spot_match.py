@@ -471,7 +471,6 @@ class LowResSpotMatch(Strategy):
         return result
 
     def _extend_by_candidates(self, graph):
-
         existing_ids = [e["spot_id"] for e in graph.vertices]
         obs_relps = [matrix.col(self.spots[e]["rlp"]) for e in existing_ids]
         exp_relps = [e["rlp_datum"] for e in graph.vertices]
@@ -532,7 +531,6 @@ class LowResSpotMatch(Strategy):
 
     @staticmethod
     def _fit_U_from_superposed_points(reference, other):
-
         # Add the origin to both sets of points
         reference.append((0, 0, 0))
         other.append((0, 0, 0))
@@ -542,7 +540,6 @@ class LowResSpotMatch(Strategy):
         return fit.r
 
     def _fit_crystal_model(self, graph):
-
         vertices = graph.vertices
 
         # Reciprocal lattice points of the observations
@@ -556,7 +553,6 @@ class LowResSpotMatch(Strategy):
         UB = U * self.Bmat
 
         if self._params.bootstrap_crystal:
-
             # Attempt to index the low resolution spots
             from dials_algorithms_indexing_ext import AssignIndices
 

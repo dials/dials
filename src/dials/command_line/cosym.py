@@ -297,7 +297,7 @@ class cosym(Subject):
                 self.params.absolute_angle_tolerance,
                 subgroup,
             )
-            for (expt, refl) in zip(self._experiments, self._reflections):
+            for expt, refl in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
         elif (
@@ -305,7 +305,7 @@ class cosym(Subject):
             != sgtbx.change_of_basis_op("a,b,c").as_xyz()
         ):
             cb_op = subgroup["cb_op_inp_best"]
-            for (expt, refl) in zip(self._experiments, self._reflections):
+            for expt, refl in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
         # if either of the above are not true, then we are already in the best cell.

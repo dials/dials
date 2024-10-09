@@ -282,7 +282,6 @@ class Simple1Angular1MosaicityParameterisation(BaseParameterisation):
         return d1
 
     def first_derivatives_angular(self):
-
         b2 = self.params[1]
         d2 = np.array(
             [[2 * b2, 0, 0], [0, 2 * b2, 0], [0, 0, 0]], dtype=np.float64
@@ -354,7 +353,6 @@ class Simple1Angular3MosaicityParameterisation(BaseParameterisation):
         return d1
 
     def first_derivatives_angular(self):
-
         b1 = self.params[1]
         b2 = self.params[2]
         b3 = self.params[3]
@@ -452,7 +450,6 @@ class Simple6Angular1MosaicityParameterisation(BaseParameterisation):
         return ds
 
     def first_derivatives_angular(self):
-
         b2 = self.params[6]
         d2 = np.array(
             [[2 * b2, 0, 0], [0, 2 * b2, 0], [0, 0, 0]], dtype=np.float64
@@ -545,7 +542,6 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         return ds
 
     def first_derivatives_angular(self):
-
         b1 = self.params[6]
         b2 = self.params[7]
         b3 = self.params[8]
@@ -658,7 +654,9 @@ class ModelState(object):
     def U_params(self, params) -> None:
         try:
             self._U_parameterisation.set_param_vals(tuple(float(i) for i in params))
-        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+        except (
+            ValueError
+        ) as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
             raise RuntimeError(f"Error setting U parameterisation: {e}")
 
     @property
@@ -670,7 +668,9 @@ class ModelState(object):
     def B_params(self, params) -> None:
         try:
             self._B_parameterisation.set_param_vals(tuple(float(i) for i in params))
-        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+        except (
+            ValueError
+        ) as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
             raise RuntimeError(f"Error setting B parameterisation: {e}")
 
     @property
