@@ -17,7 +17,11 @@ from libtbx.phil import scope_extract
 from scitbx.array_family import flex
 
 from dials.algorithms.correlation.cluster import ClusterInfo
-from dials.algorithms.correlation.plots import linkage_matrix_to_dict, to_plotly_json
+from dials.algorithms.correlation.plots import (
+    linkage_matrix_to_dict,
+    plot_dims,
+    to_plotly_json,
+)
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.array_family.flex import reflection_table
@@ -216,7 +220,7 @@ class CorrelationMatrix:
             dims_to_test = self.params.dimensionality_assessment.maximum_dimensions
 
         if self.params.dimensions is Auto:
-            self.cosym_analysis._determine_dimensions(
+            self._dim, self._func = self.cosym_analysis._determine_dimensions(
                 dims_to_test,
                 outlier_rejection=self.params.dimensionality_assessment.outlier_rejection,
             )
@@ -252,6 +256,10 @@ class CorrelationMatrix:
         logger.info("\nCos(angle) clustering summary:")
         self.cos_table = ClusterInfo.as_table(self.cos_angle_clusters)
         logger.info(tabulate(self.cos_table, headers="firstrow", tablefmt="rst"))
+
+        logger.info("\nEvaluating Significant Clusters from Cosine-Angle Coordinates:")
+        self.cluster_cosine_coords()
+        logger.info("\nSOME MESSAGE HERE ABOUT HOW MANY CLUSTERS")
 
     @staticmethod
     def compute_correlation_coefficient_matrix(
@@ -320,6 +328,60 @@ class CorrelationMatrix:
         cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
 
         return cos_angle, cos_linkage_matrix
+
+    def cluster_cosine_coords(self):
+        """
+        Cluster cosine coords based on xxxxxxxxxxx
+        Args:
+            XXXXXXXXXXX
+        Returns:
+            XXXXXXXXXX
+        """
+
+        # from sklearn.cluster import DBSCAN
+        # from sklearn.mixture import GaussianMixture
+        # from sklearn.cluster import AffinityPropagation
+        from sklearn.cluster import OPTICS
+
+        # proximity_distance = 0.1
+        # Crudely say number of dimensions = number of groups
+        # ( Number of datasets / number of dimensions ) * 50% as a buffer???
+
+        min_points = int(
+            (len(self.unmerged_datasets) / self.cosym_analysis.target.dim) * 0.5
+        )
+
+        if min_points < 3:
+            min_points = 3
+
+        """
+        logger.info("DBSCAN")
+        dbscan_model = DBSCAN(eps=proximity_distance, min_samples=min_points)
+        dbscan_model.fit(self.cosym_analysis.coords)
+        logger.info(dbscan_model.labels_)
+        logger.info("Gaussian Mixture")
+        gaussian_model = GaussianMixture(n_components=self.cosym_analysis.target.dim)
+        gaussian_model.fit(self.cosym_analysis.coords)
+        gaussian_result = gaussian_model.predict(self.cosym_analysis.coords)
+        logger.info(gaussian_result)
+        logger.info("Affinity Propagation")
+        model = AffinityPropagation(damping=0.7)
+        model.fit(self.cosym_analysis.coords)
+        affinity_result = model.predict(self.cosym_analysis.coords)
+        logger.info(affinity_result)
+
+        """
+
+        logger.info("OPTICS")
+
+        # optics_model = OPTICS(eps=proximity_distance, min_samples=min_points)
+        optics_model = OPTICS(min_samples=min_points)
+
+        optics_model.fit(self.cosym_analysis.coords)
+
+        logger.info(optics_model.labels_)
+
+        self.cluster_labels = optics_model.labels_
 
     def cluster_info(self, cluster_dict: dict) -> list:
         """
@@ -393,9 +455,24 @@ class CorrelationMatrix:
             plot_rij_histogram(self.correlation_matrix, key="cosym_rij_histogram_sg")
         )
 
-        self.rij_graphs.update(
-            plot_coords(self.cosym_analysis.coords, key="cosym_coordinates_sg")
-        )
+        self.rij_graphs.update(plot_dims(self._dim, self._func))
+
+        dim_list = list(range(0, self.cosym_analysis.target.dim))
+
+        projections = [
+            (a, b) for idx, a in enumerate(dim_list) for b in dim_list[idx + 1 :]
+        ]
+
+        for i in projections:
+            self.rij_graphs.update(
+                plot_coords(
+                    self.cosym_analysis.coords,
+                    self.cluster_labels,
+                    key="cosym_coordinates_" + str(i[0]) + "_" + str(i[1]),
+                    dim1=i[0],
+                    dim2=i[1],
+                )
+            )
 
         # Generate the table for the html that lists all datasets and image paths present in the analysis
 
