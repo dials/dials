@@ -473,6 +473,20 @@ class Target:
         f = 0.5 * elements.sum()
         return f
 
+    def compute_functional_score_for_dimension_assessment(
+        self, x: np.ndarray, outlier_rejection: bool = True
+    ) -> float:
+        if not outlier_rejection:
+            return self.compute_functional(x)
+        x = x.reshape((self.dim, x.size // self.dim))
+        elements = np.square(self.rij_matrix - x.T @ x)
+        if self.wij_matrix is not None:
+            np.multiply(self.wij_matrix, elements, out=elements)
+
+        q1, q2, q3 = np.quantile(elements, (0.25, 0.5, 0.75))
+        inliers = elements[elements < q2 + (q3 - q1)]
+        return 0.5 * inliers.sum()
+
     def compute_gradients_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the gradients at coordinates `x` using finite differences.
 
