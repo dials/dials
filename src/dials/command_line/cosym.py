@@ -75,9 +75,6 @@ min_reflections = 10
   .type = int(value_min=1)
   .help = "The minimum number of reflections per experiment."
 
-seed = 230
-  .type = int(value_min=0)
-
 output {
   suffix = "_reindexed"
     .type = str

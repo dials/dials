@@ -38,6 +38,9 @@ logger = logging.getLogger(__name__)
 phil_scope = iotbx.phil.parse(
     """\
 
+seed = 230
+  .type = int(value_min=0)
+
 normalisation = kernel quasi *ml_iso ml_aniso
   .type = choice
 
@@ -265,65 +268,73 @@ class CosymAnalysis(symmetry_base, Subject):
             nproc=self.params.nproc,
         )
 
-    def _determine_dimensions(self):
-        if self.params.dimensions is Auto and self.target.dim == 2:
-            self.params.dimensions = 2
-        elif self.params.dimensions is Auto:
-            logger.info("=" * 80)
-            logger.info(
-                "\nAutomatic determination of number of dimensions for analysis"
+    def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
+        logger.info("=" * 80)
+        logger.info("\nAutomatic determination of number of dimensions for analysis")
+        dimensions = []
+        functional = []
+        for dim in range(1, dims_to_test + 1):
+            logger.debug("Testing dimension: %i", dim)
+            self.target.set_dimensions(dim)
+            max_calls = self.params.minimization.max_calls
+            self._optimise(
+                self.params.minimization.engine,
+                max_iterations=self.params.minimization.max_iterations,
+                max_calls=min(20, max_calls) if max_calls else max_calls,
             )
-            dimensions = []
-            functional = []
-            for dim in range(1, self.target.dim + 1):
-                logger.debug("Testing dimension: %i", dim)
-                self.target.set_dimensions(dim)
-                max_calls = self.params.minimization.max_calls
-                self._optimise(
-                    self.params.minimization.engine,
-                    max_iterations=self.params.minimization.max_iterations,
-                    max_calls=min(20, max_calls) if max_calls else max_calls,
-                )
-                dimensions.append(dim)
-                functional.append(self.minimizer.fun)
 
-            # Find the elbow point of the curve, in the same manner as that used by
-            # distl spotfinder for resolution method 1 (Zhang et al 2006).
-            # See also dials/algorithms/spot_finding/per_image_analysis.py
-
-            x = np.array(dimensions)
-            y = np.array(functional)
-            slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
-            p_m = slopes.argmin()
-
-            x1 = matrix.col((x[p_m], y[p_m]))
-            x2 = matrix.col((x[-1], y[-1]))
-
-            gaps = []
-            v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
-
-            for i in range(p_m, len(x)):
-                x0 = matrix.col((x[i], y[i]))
-                r = x1 - x0
-                g = abs(v.dot(r))
-                gaps.append(g)
-
-            p_g = np.array(gaps).argmax()
-
-            x_g = x[p_g + p_m]
-
-            logger.info(
-                dials.util.tabulate(
-                    zip(dimensions, functional), headers=("Dimensions", "Functional")
+            dimensions.append(dim)
+            functional.append(
+                self.target.compute_functional_score_for_dimension_assessment(
+                    self.minimizer.x, outlier_rejection
                 )
             )
-            logger.info("Best number of dimensions: %i", x_g)
+
+        # Find the elbow point of the curve, in the same manner as that used by
+        # distl spotfinder for resolution method 1 (Zhang et al 2006).
+        # See also dials/algorithms/spot_finding/per_image_analysis.py
+
+        x = np.array(dimensions)
+        y = np.array(functional)
+        slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
+        p_m = slopes.argmin()
+
+        x1 = matrix.col((x[p_m], y[p_m]))
+        x2 = matrix.col((x[-1], y[-1]))
+
+        gaps = []
+        v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
+
+        for i in range(p_m, len(x)):
+            x0 = matrix.col((x[i], y[i]))
+            r = x1 - x0
+            g = abs(v.dot(r))
+            gaps.append(g)
+
+        p_g = np.array(gaps).argmax()
+
+        x_g = x[p_g + p_m]
+
+        logger.info(
+            dials.util.tabulate(
+                zip(dimensions, functional), headers=("Dimensions", "Functional")
+            )
+        )
+
+        logger.info("Best number of dimensions: %i", x_g)
+        if int(x_g) < 2:
+            logger.info(
+                "As a minimum of 2-dimensions is required, dimensions have been set to 2."
+            )
+            self.target.set_dimensions(2)
+        else:
             self.target.set_dimensions(int(x_g))
-            logger.info("Using %i dimensions for analysis", self.target.dim)
+        logger.info("Using %i dimensions for analysis", self.target.dim)
 
     def run(self):
         self._intialise_target()
-        self._determine_dimensions()
+        if self.params.dimensions is Auto and self.target.dim != 2:
+            self._determine_dimensions(self.target.dim)
         self._optimise(
             self.params.minimization.engine,
             max_iterations=self.params.minimization.max_iterations,
@@ -335,6 +346,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
+        np.random.seed(self.params.seed)
         NN = len(set(self.dataset_ids))
         n_sym_ops = len(self.target.sym_ops)
 
