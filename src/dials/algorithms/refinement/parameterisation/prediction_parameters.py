@@ -981,6 +981,88 @@ class LauePredictionParameterisation(PredictionParameterisation):
         self._ds0_dbeam_p = None
         return
 
+    def get_gradients(self, reflections, callback=None):
+        """Calculate gradients of the prediction formula with respect to each
+        of the parameters of the contained models, for all of the reflections.
+        This method sets up required quantities relevant to the current step of
+        refinement and then loops over the parameterisations of each type extending
+        a results list each time."""
+
+        # Set up arrays of quantities of interest for each reflection
+        self._nref = len(reflections)
+        self._D = flex.mat3_double(self._nref)
+        self._s0 = flex.vec3_double(self._nref)
+        self._U = flex.mat3_double(self._nref)
+        self._B = flex.mat3_double(self._nref)
+        self._axis = flex.vec3_double(self._nref, (0.0, 1.0, 0.0))
+        self._fixed_rotation = flex.mat3_double(self._nref, (1, 0, 0, 0, 1, 0, 0, 0, 1))
+        self._setting_rotation = flex.mat3_double(
+            self._nref, (1, 0, 0, 0, 1, 0, 0, 0, 1)
+        )
+
+        # Set up experiment to index mapping
+        self._experiment_to_idx = []
+
+        # Populate values in these arrays
+        for iexp, exp in enumerate(self._experiments):
+            sel = reflections["id"] == iexp
+            isel = sel.iselection()
+            self._experiment_to_idx.append(isel)
+            subref = reflections.select(sel)
+            states = self._get_model_data_for_experiment(exp, subref)
+
+            self._D.set_selected(sel, states["D"])
+            self._s0.set_selected(sel, states["s0"])
+            self._U.set_selected(sel, states["U"])
+            self._B.set_selected(sel, states["B"])
+            if exp.goniometer:
+                self._setting_rotation.set_selected(sel, states["S"])
+                self._axis.set_selected(sel, exp.goniometer.get_rotation_axis_datum())
+                self._fixed_rotation.set_selected(
+                    sel, exp.goniometer.get_fixed_rotation()
+                )
+
+        # Other derived values
+        self._h = reflections["miller_index"].as_vec3_double()
+        self._UB = self._U * self._B
+        self._s1 = reflections["s1"]
+        self._pv = self._D * self._s1  # 'projection vector' for the ray along s1.
+
+        # Quantities derived from pv, precalculated for efficiency
+        u, v, w = self._pv.parts()
+        assert w.all_ne(0)
+        self._w_inv = 1.0 / w
+        self._u_w_inv = u * self._w_inv
+        self._v_w_inv = v * self._w_inv
+
+        # Reset a pointer to the parameter number
+        self._iparam = 0
+
+        # Do additional setup specified by derived classes
+        self._local_setup(reflections)
+
+        # Set up empty list in which to store gradients
+        results = []
+
+        # loop over detector parameterisations and extend results
+        results = self._grads_detector_loop(reflections, results, callback=callback)
+
+        # loop over the beam parameterisations and extend results
+        results = self._grads_beam_loop(reflections, results, callback=callback)
+
+        # loop over the crystal orientation parameterisations and extend results
+        results = self._grads_xl_orientation_loop(
+            reflections, results, callback=callback
+        )
+
+        # loop over the crystal unit cell parameterisations and extend results
+        results = self._grads_xl_unit_cell_loop(reflections, results, callback=callback)
+
+        # loop over the goniometer parameterisations and extend results
+        results = self._grads_goniometer_loop(reflections, results, callback=callback)
+
+        return results
+
     def _beam_derivatives(
         self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None
     ):

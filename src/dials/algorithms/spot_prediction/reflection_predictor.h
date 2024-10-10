@@ -1335,7 +1335,7 @@ namespace dials { namespace algorithms {
      */
     LaueReflectionPredictor(const PolychromaticBeam &beam,
                             const Detector &detector,
-                            const Goniometer &goniometer,
+                            boost::optional<const Goniometer> goniometer,
                             mat3<double> ub,
                             const cctbx::uctbx::unit_cell &unit_cell,
                             const cctbx::sgtbx::space_group_type &space_group_type,
@@ -1347,10 +1347,12 @@ namespace dials { namespace algorithms {
           unit_cell_(unit_cell),
           space_group_type_(space_group_type),
           dmin_(dmin),
-          predict_ray_(beam.get_unit_s0(),
-                       goniometer.get_fixed_rotation(),
-                       goniometer.get_setting_rotation()) {}
-
+          predict_ray_(
+            beam.get_unit_s0(),
+            goniometer ? goniometer->get_fixed_rotation()
+                       : mat3<double>(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+            goniometer ? goniometer->get_setting_rotation()
+                       : mat3<double>(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)) {}
     /**
      * Predict all reflection.
      * @returns reflection table.
@@ -1361,9 +1363,10 @@ namespace dials { namespace algorithms {
     }
 
     af::reflection_table all_reflections_for_asu(double phi) {
-      mat3<double> fixed_rotation = goniometer_.get_fixed_rotation();
-      mat3<double> setting_rotation = goniometer_.get_setting_rotation();
-      vec3<double> rotation_axis = goniometer_.get_rotation_axis();
+      DIALS_ASSERT(goniometer_.has_value());
+      mat3<double> fixed_rotation = goniometer_->get_fixed_rotation();
+      mat3<double> setting_rotation = goniometer_->get_setting_rotation();
+      vec3<double> rotation_axis = goniometer_->get_rotation_axis();
       mat3<double> rotation =
         scitbx::math::r3_rotation::axis_and_angle_as_matrix(rotation_axis, phi);
       vec3<double> unit_s0 = beam_.get_unit_s0();
@@ -1628,7 +1631,7 @@ namespace dials { namespace algorithms {
   protected:
     PolychromaticBeam beam_;
     Detector detector_;
-    Goniometer goniometer_;
+    boost::optional<Goniometer> goniometer_;
     Scan scan_;
     mat3<double> ub_;
     cctbx::uctbx::unit_cell unit_cell_;
