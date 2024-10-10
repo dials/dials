@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 
 from cctbx import sgtbx
@@ -39,6 +40,11 @@ def determine_reindex_operator_against_reference(test_miller_set, reference_mill
             """Space groups are not equal. Can only reindex against a
 reference dataset if both dataset are in the same spacegroup."""
         )
+
+    # Work around surprising behaviour of common_sets, as reported in
+    # https://github.com/dials/dials/issues/2451
+    if test_miller_set is reference_miller_set:
+        test_miller_set = copy.deepcopy(reference_miller_set)
 
     twin_ops = twin_laws(miller_array=test_miller_set.eliminate_sys_absent()).operators
     twin_ops = [sgtbx.change_of_basis_op(op.operator.as_xyz()) for op in twin_ops]
