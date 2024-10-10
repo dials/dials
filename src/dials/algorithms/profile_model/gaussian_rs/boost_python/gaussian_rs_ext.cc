@@ -297,10 +297,10 @@ namespace dials {
 
       // Export zeta factor functions
       def("zeta_factor",
-          (double (*)(vec3<double>, vec3<double>, vec3<double>)) & zeta_factor,
+          (double (*)(vec3<double>, vec3<double>, vec3<double>))&zeta_factor,
           (arg("m2"), arg("s0"), arg("s1")));
       def("zeta_factor",
-          (double (*)(vec3<double>, vec3<double>)) & zeta_factor,
+          (double (*)(vec3<double>, vec3<double>))&zeta_factor,
           (arg("m2"), arg("e1")));
       def("zeta_factor", &zeta_factor_array, (arg("m2"), arg("s0"), arg("s1")));
       def("zeta_factor",
