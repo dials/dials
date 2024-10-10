@@ -1,0 +1,1 @@
+Fix reciprocal lattice viewer not working with polychromatic data due to call to beam.get_s0().
