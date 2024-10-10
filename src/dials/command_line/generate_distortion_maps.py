@@ -4,9 +4,11 @@ import logging
 import math
 import pickle
 
+import libtbx
 from iotbx import phil
 from scitbx import matrix
 
+from dials.algorithms.image.distortion import CreateEllipticalDistortionMaps
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments
@@ -46,25 +48,23 @@ scope = phil.parse(
 
   ellipse
     .help = "Options for correcting for elliptical distortion of images."
-            "Defaults set for correction of datasets published in"
-            "https://doi.org/10.1107/S2059798317010348"
   {
-    phi = -21.0
+    phi = 45.0
       .type = float
-      .help = "Acute angle of one principal axis of the ellipse from the fast"
+      .help = "Acute angle of the first axis of the ellipse from the fast"
               "axis of the first panel of the detector"
     l1 = 1.0
       .type = float
       .help = "Scale factor for first axis of the ellipse"
 
-    l2 = 0.956
+    l2 = 0.95
       .type = float
       .help = "Scale factor for second axis of the ellipse"
 
-    centre_xy = 33.2475,33.2475
+    centre_xy = Auto
       .type = floats(size=2)
       .help = "Centre of the ellipse in millimetres along fast, slow of the"
-              "first panel"
+              "first panel. If Auto, this will be set to the beam centre."
   }
 
   output {
@@ -124,11 +124,11 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     # Get fast and slow axes from the first panel. These will form the X and Y
     # directions for the Cartesian coordinates of the correction map
     p0 = detector[0]
-    f0, s0 = matrix.col(p0.get_fast_axis()), matrix.col(p0.get_slow_axis())
+    fast, slow = matrix.col(p0.get_fast_axis()), matrix.col(p0.get_slow_axis())
 
     # Get the lab coordinate of the centre of the ellipse
     topleft = matrix.col(p0.get_pixel_lab_coord((0, 0)))
-    mid = topleft + centre_xy[0] * f0 + centre_xy[1] * s0
+    mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow
 
     # Get matrix describing the elliptical distortion
     M = ellipse_matrix_form(phi, l1, l2)
@@ -137,29 +137,9 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     distortion_map_y = []
 
     for panel in detector:
-        size_x, size_y = panel.get_pixel_size()
-        nx, ny = panel.get_image_size()
-        dx = flex.double(flex.grid(ny, nx), 0.0)
-        dy = flex.double(flex.grid(ny, nx), 0.0)
-        elt = 0
-        for j in range(ny):
-            for i in range(nx):
-                # Get the X,Y coordinate of this pixel in the frame of the correction
-                # map, which has its origin at the centre of the ellipse and is aligned
-                # along fast, slow of the first panel.
-                lab = matrix.col(panel.get_pixel_lab_coord((i + 0.5, j + 0.5)))
-                offset = lab - mid
-                x = offset.dot(f0)  # undistorted X coordinate (mm)
-                y = offset.dot(s0)  # undistorted Y coordinate (mm)
-                distort = M * matrix.col((x, y))  # distorted by ellipse matrix
-
-                # store correction in units of the pixel size
-                dx[elt] = (x - distort[0]) / size_x
-                dy[elt] = (y - distort[1]) / size_y
-                elt += 1
-        # Add results for this panel
-        distortion_map_x.append(dx)
-        distortion_map_y.append(dy)
+        map_maker = CreateEllipticalDistortionMaps(panel, M, fast, slow, mid)
+        distortion_map_x.append(map_maker.get_dx())
+        distortion_map_y.append(map_maker.get_dy())
 
     distortion_map_x = tuple(distortion_map_x)
     distortion_map_y = tuple(distortion_map_y)
@@ -213,6 +193,10 @@ def run(args=None):
         dx, dy = make_dx_dy_translate(imageset, op.dx, op.dy)
     elif params.mode == "ellipse":
         op = params.ellipse
+        if op.centre_xy is libtbx.Auto:
+            s0 = imageset.get_beam().get_s0()
+            panel = imageset.get_detector()[0]
+            op.centre_xy = panel.get_bidirectional_ray_intersection(s0)
         logger.info(
             "Generating elliptical map with phi={}, l1={}, "
             "l2={}, centre_xy={},{}".format(op.phi, op.l1, op.l2, *op.centre_xy)

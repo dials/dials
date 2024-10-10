@@ -66,6 +66,7 @@ install(
         dials_algorithms_image_fill_holes_ext
         dials_algorithms_image_filter_ext
         dials_algorithms_image_threshold_ext
+        dials_algorithms_image_distortion_ext
         dials_algorithms_indexing_ext
         dials_algorithms_integration_bayes_ext
         dials_algorithms_integration_ext
