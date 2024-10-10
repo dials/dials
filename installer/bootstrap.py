@@ -110,7 +110,7 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
-    url = "https://micromamba.snakepit.net/api/micromamba/{0}/1.5.10".format(conda_arch)
+    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
