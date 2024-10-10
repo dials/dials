@@ -473,7 +473,8 @@ class CorrelationMatrix:
             plot_rij_histogram(self.correlation_matrix, key="cosym_rij_histogram_sg")
         )
 
-        self.rij_graphs.update(plot_dims(self._dim, self._func))
+        if self.params.dimensions == Auto:
+            self.rij_graphs.update(plot_dims(self._dim, self._func))
 
         dim_list = list(range(0, self.cosym_analysis.target.dim))
 
