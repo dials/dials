@@ -7,7 +7,7 @@ WORKDIR /dials
 COPY installer/bootstrap.py .
 ENV PIP_ROOT_USER_ACTION=ignore
 ENV CMAKE_GENERATOR=Ninja
-RUN python3 bootstrap.py --cmake
+RUN python3 bootstrap.py
 RUN /dials/conda_base/bin/cmake --install build
 RUN /dials/conda_base/bin/python3 -mpip install modules/dxtbx modules/dials modules/xia2
 

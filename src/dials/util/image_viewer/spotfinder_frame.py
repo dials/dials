@@ -1082,27 +1082,37 @@ class SpotFrame(XrayFrame):
             if not isinstance(image_data, tuple):
                 image_data = (image_data,)
 
-            i_frame = self.image_chooser.GetClientData(
-                self.image_chooser.GetSelection()
-            ).index
-            imageset = self.images.selected.image_set
+            if self.params.show_mask:
+                masks = tuple(i == MASK_VAL for i in image_data)
 
+            i_frame = self.image_chooser.GetSelection()
             for i in range(1, self.params.stack_images):
-                if (i_frame + i) >= len(imageset):
+                if (i_frame + i) >= len(self.images):
                     break
-                image_data_i = imageset[i_frame + i]
+
+                image_data_i = self.images[i_frame + i].get_image_data()
                 for j, rd in enumerate(image_data):
                     data = image_data_i[j]
+
                     if mode == "max":
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
                     else:
                         rd += data
 
+                if self.params.show_mask:
+                    image_masks = self.images[i_frame + i].get_mask()
+                    for merged_mask, image_mask in zip(masks, image_masks):
+                        merged_mask.set_selected(~image_mask, True)
+
             # /= stack_images to put on consistent scale with single image
             # so that -1 etc. handled correctly (mean mode)
             if mode == "mean":
                 image_data = tuple(i / self.params.stack_images for i in image_data)
+
+            if self.params.show_mask:
+                for rd, mask in zip(image_data, masks):
+                    rd = rd.as_1d().set_selected(mask.as_1d(), MASK_VAL)
 
             # Don't show summed images with overloads
             self.pyslip.tiles.set_image_data(image_data, show_saturated=False)

@@ -8,6 +8,7 @@ import enum
 import logging
 import math
 import typing
+import warnings
 
 import numpy as np
 import scipy.optimize
@@ -91,8 +92,9 @@ def tanh_fit(x, y, degree=None, n_obs=None):
     p0 = np.array([0.2, 0.4])  # starting parameter estimates
     sigma = np.array(standard_errors)
     x = np.array(x)
-
-    result = scipy.optimize.curve_fit(tanh_cchalf, x, y, p0, sigma=sigma)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", scipy.optimize.OptimizeWarning)
+        result = scipy.optimize.curve_fit(tanh_cchalf, x, y, p0, sigma=sigma)
 
     r = result[0][0]
     s0 = result[0][1]

@@ -139,8 +139,8 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     for panel in detector:
         size_x, size_y = panel.get_pixel_size()
         nx, ny = panel.get_image_size()
-        dx = flex.double(flex.grid(nx, ny), 0.0)
-        dy = flex.double(flex.grid(nx, ny), 0.0)
+        dx = flex.double(flex.grid(ny, nx), 0.0)
+        dy = flex.double(flex.grid(ny, nx), 0.0)
         elt = 0
         for j in range(ny):
             for i in range(nx):

@@ -226,6 +226,7 @@ def index(experiments, reflections, params):
                     idx_expts, idx_refl = future.result()
                 except Exception as e:
                     print(e)
+                    raise
                 else:
                     if idx_expts is None:
                         continue

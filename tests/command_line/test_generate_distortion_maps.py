@@ -20,7 +20,7 @@ def make_detector():
     quickly"""
     pixel_size_x = 0.1
     pixel_size_y = 0.1
-    npixels_per_panel_x = 50
+    npixels_per_panel_x = 40
     npixels_per_panel_y = 50
     distance = 100
     fast = matrix.col((1, 0, 0))
@@ -141,6 +141,7 @@ def test_elliptical_distortion(run_in_tmp_path):
     # All together expect the 4 dy maps to look something like this:
     #
     # /-----------\ /-----------\
+    # |-4 -4 -4 -4| |-4 -4 -4 -4|
     # |-3 -3 -3 -3| |-3 -3 -3 -3|
     # |-2 -2 -2 -2| |-2 -2 -2 -2|
     # |-1 -1 -1 -1| |-1 -1 -1 -1|
@@ -151,6 +152,7 @@ def test_elliptical_distortion(run_in_tmp_path):
     # | 1  1  1  1| | 1  1  1  1|
     # | 2  2  2  2| | 2  2  2  2|
     # | 3  3  3  3| | 3  3  3  3|
+    # | 4  4  4  4| | 4  4  4  4|
     # \-----------/ \-----------/
 
     # So the fundamental data is all in the first column of first panel's map
@@ -170,7 +172,7 @@ def test_elliptical_distortion(run_in_tmp_path):
     assert col0[0] == pytest.approx(corr_px)
 
     # Test (1) from above list for panel 0
-    for i in range(1, 50):
+    for i in range(1, d[0].get_image_size()[0]):
         assert (col0 == dy[0].matrix_copy_column(i)).all_eq(True)
 
     # Test (2)
@@ -184,5 +186,5 @@ def test_elliptical_distortion(run_in_tmp_path):
 
     # Test (1) for panel 2 as well, which then covers everything needed
     col0 = dy[2].matrix_copy_column(0)
-    for i in range(1, 50):
+    for i in range(1, d[0].get_image_size()[0]):
         assert (col0 == dy[2].matrix_copy_column(i)).all_eq(True)
