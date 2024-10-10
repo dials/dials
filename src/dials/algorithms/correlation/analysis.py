@@ -9,6 +9,7 @@ from collections import OrderedDict
 import numpy as np
 import scipy.spatial.distance as ssd
 from scipy.cluster import hierarchy
+from sklearn.cluster import OPTICS
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
@@ -59,6 +60,15 @@ dimensionality_assessment {
   maximum_dimensions = 50
     .type = int
     .help = "Maximum number of dimensions to test for reasonable processing time"
+}
+
+significant_clusters {
+  output = False
+    .type = bool
+    .help = "Toggle to output expt/refl files for significant clusters as determined by OPTICS clustering on cosine angle coordinates"
+  min_points_buffer = 0.5
+    .type = float(value_min=0, value_max=1)
+    .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
 }
 """,
     process_includes=True,
@@ -259,7 +269,13 @@ class CorrelationMatrix:
 
         logger.info("\nEvaluating Significant Clusters from Cosine-Angle Coordinates:")
         self.cluster_cosine_coords()
-        logger.info("\nSOME MESSAGE HERE ABOUT HOW MANY CLUSTERS")
+
+        if self.params.significant_clusters.output:
+            self.output_clusters()
+        else:
+            logger.info(
+                "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
+            )
 
     @staticmethod
     def compute_correlation_coefficient_matrix(
@@ -331,57 +347,59 @@ class CorrelationMatrix:
 
     def cluster_cosine_coords(self):
         """
-        Cluster cosine coords based on xxxxxxxxxxx
-        Args:
-            XXXXXXXXXXX
-        Returns:
-            XXXXXXXXXX
+        Cluster cosine coords using the OPTICS algorithm to determine significant clusters.
         """
 
-        # from sklearn.cluster import DBSCAN
-        # from sklearn.mixture import GaussianMixture
-        # from sklearn.cluster import AffinityPropagation
-        from sklearn.cluster import OPTICS
-
-        # proximity_distance = 0.1
-        # Crudely say number of dimensions = number of groups
-        # ( Number of datasets / number of dimensions ) * 50% as a buffer???
-
         min_points = int(
-            (len(self.unmerged_datasets) / self.cosym_analysis.target.dim) * 0.5
+            (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
+            * self.params.significant_clusters.min_points_buffer
         )
+
+        # Minimum number required to make sense for such algorithms
 
         if min_points < 3:
             min_points = 3
 
-        """
-        logger.info("DBSCAN")
-        dbscan_model = DBSCAN(eps=proximity_distance, min_samples=min_points)
-        dbscan_model.fit(self.cosym_analysis.coords)
-        logger.info(dbscan_model.labels_)
-        logger.info("Gaussian Mixture")
-        gaussian_model = GaussianMixture(n_components=self.cosym_analysis.target.dim)
-        gaussian_model.fit(self.cosym_analysis.coords)
-        gaussian_result = gaussian_model.predict(self.cosym_analysis.coords)
-        logger.info(gaussian_result)
-        logger.info("Affinity Propagation")
-        model = AffinityPropagation(damping=0.7)
-        model.fit(self.cosym_analysis.coords)
-        affinity_result = model.predict(self.cosym_analysis.coords)
-        logger.info(affinity_result)
+        logger.info("Using OPTICS Algorithm (M. Ankerst et al, 1999, ACM SIGMOD)")
 
-        """
+        # Fit OPTICS model and determine number of clusters
 
-        logger.info("OPTICS")
-
-        # optics_model = OPTICS(eps=proximity_distance, min_samples=min_points)
         optics_model = OPTICS(min_samples=min_points)
 
         optics_model.fit(self.cosym_analysis.coords)
 
-        logger.info(optics_model.labels_)
-
         self.cluster_labels = optics_model.labels_
+
+        # Match each dataset to an OPTICS cluster and make them Cluster Objects
+
+        unique_labels = sorted(dict.fromkeys(self.cluster_labels))
+
+        if -1 in unique_labels:
+            unique_labels.remove(-1)
+
+        outliers = 0
+        for i in self.cluster_labels:
+            if i == -1:
+                outliers += 1
+
+        logger.info(
+            f"OPTICS identified {len(unique_labels)} clusters and {outliers} outlier datasets."
+        )
+
+        sig_cluster_dict = OrderedDict()
+
+        for i in unique_labels:
+            ids = []
+            for clust, data in zip(self.cluster_labels, self.labels):
+                if i == clust:
+                    ids.append(data + 1)
+            cluster_dict = {"datasets": ids}
+            sig_cluster_dict[i] = cluster_dict
+
+        self.significant_clusters = self.cluster_info(sig_cluster_dict)
+
+        for i in self.significant_clusters:
+            logger.info(i)
 
     def cluster_info(self, cluster_dict: dict) -> list:
         """
@@ -515,3 +533,21 @@ class CorrelationMatrix:
 
         with open(self.params.output.json, "w") as f:
             json.dump(combined_json_dict, f)
+
+    def output_clusters(self):
+        """
+        Output dials .expt/.refl files for each significant cluster identified in the OPTICS analysis of the cosine angle clustering.
+        """
+
+        from dials.array_family import flex
+
+        for i in self.significant_clusters:
+            expts = ExperimentList()
+            refls = flex.reflection_table()
+            for idx in i.labels:
+                expts.append(self._experiments[idx])
+                refls.extend(self._reflections[idx])
+            expts.as_file(f"cluster_{i.cluster_id}.expt")
+            refls.as_file(f"cluster_{i.cluster_id}.refl")
+
+        logger.info("Identified clusters output as .expt/.refl files.")

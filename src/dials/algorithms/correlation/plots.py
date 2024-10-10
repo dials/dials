@@ -47,7 +47,15 @@ def linkage_matrix_to_dict(linkage_matrix: np.ndarray) -> OrderedDict:
     return link_dict
 
 
-def plot_dims(dims, funcs):
+def plot_dims(dims: list, funcs: list) -> dict:
+    """
+    Prepares a plotly-style plot of the dimension optimisation procedure.
+    Args:
+        dims(list): list of dimensions tested
+        funcs(list): resulting functional when the tested number of dimensions is used in the cos-angle clustering procedure
+    Returns:
+        d(dict): dimensionallity analysis plot saved as a dictionary for future plotting
+    """
     d = {
         "dimensions": {
             "data": [
