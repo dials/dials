@@ -54,7 +54,7 @@ def plot_dims(dims: list, funcs: list) -> dict:
         dims(list): list of dimensions tested
         funcs(list): resulting functional when the tested number of dimensions is used in the cos-angle clustering procedure
     Returns:
-        d(dict): dimensionallity analysis plot saved as a dictionary for future plotting
+        d(dict): dimensionality analysis plot saved as a dictionary for future plotting
     """
     d = {
         "dimensions": {
