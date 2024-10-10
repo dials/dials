@@ -1,0 +1,87 @@
+on: push
+
+env:
+  # Python minimum version is used for testing full libtbx-bootstrap
+  PYTHON_MINIMUM_VERSION: "3.9"
+  # Testing version is used for everything else
+  PYTHON_TESTING_VERSION: "3.12"
+
+jobs:
+  build_test:
+    name: Build/Test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macOS, windows]
+        buildsys: [CMake, libtbx]
+        exclude:
+          - os: macOS
+            buildsys: libtbx
+          - os: windows
+            buildsys: libtbx
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          path: modules/dials
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
+      - name: Prepare for Base Environment
+        shell: bash
+        run: |
+          OS="$(python -c "print('${{ runner.os }}'.lower())")"
+          echo "ninja
+          pytest-md
+          dials-data
+          pytest-cov
+          pytest-timeout" >> modules/dials/.conda-envs/${OS}.txt
+          if [[ ${{ matrix.buildsys }} == 'libtbx' ]]; then
+            echo "BOOTSTRAP_FLAGS=--libtbx" >> $GITHUB_ENV
+          else
+            echo "BOOTSTRAP_BUILD_FLAGS=--config-flags='-DCMAKE_UNITY_BUILD=true'" >> $GITHUB_ENV
+          fi
+          echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
+          # These needed by windows
+          echo "$(pwd)/conda_base/Scripts" >> $GITHUB_PATH
+          echo "$(pwd)/conda_base/Library/bin" >> $GITHUB_PATH
+          echo "$(pwd)/conda_base/" >> $GITHUB_PATH
+      - name: Install Base Environment
+        shell: bash
+        run: |
+          python modules/dials/installer/bootstrap.py update base \
+            --python "${{ matrix.buildsys == 'CMake' && env.PYTHON_TESTING_VERSION || env.PYTHON_MINIMUM_VERSION }}" \
+            ${BOOTSTRAP_FLAGS}
+      - if: runner.os != 'Windows'
+        run: echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+      - name: Build
+        shell: bash
+        run: python modules/dials/installer/bootstrap.py build ${BOOTSTRAP_FLAGS} ${BOOTSTRAP_BUILD_FLAGS}
+      - name: Prepare for cache restoration
+        shell: bash
+        run: |
+          set -x
+          find . -name "dials.data*"
+          echo "DIALS_DATA_VERSION_FULL=$(dials.data info -v | grep version.full)" >> $GITHUB_ENV
+          echo "DIALS_DATA_VERSION=$(dials.data info -v | grep version.major_minor)" >> $GITHUB_ENV
+          echo "DIALS_DATA=${PWD}/data" >> $GITHUB_ENV
+          echo "CURRENT_WEEK=$(date +W%W)" >> $GITHUB_ENV
+          echo "TODAY_ISO=$(date +%Y%m%d)" >> $GITHUB_ENV
+      - name: Restore Cache
+        uses: actions/cache@v4
+        with:
+          key: "${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-${{ env.DIALS_DATA_VERSION_FULL }}"
+          restore-keys: |
+            ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-
+            ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-
+          path: ${{ github.workspace }}/data
+      - name: Run pytest
+        uses: pavelzw/pytest-action@510c5e90c360a185039bea56ce8b3e7e51a16507 # v2.2.0
+        with:
+          verbose: true
+          emoji: false
+          job-summary: true
+          custom-arguments: modules/dials --regression
+          click-to-expand: true
+          custom-pytest: ${{ matrix.buildsys == 'CMake' && 'pytest' || 'build/bin/libtbx.python -mpytest' }}
