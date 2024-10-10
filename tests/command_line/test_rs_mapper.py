@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pathlib
 import shutil
 import subprocess
 
@@ -37,8 +36,9 @@ def test_rs_mapper(dials_data, tmp_path):
     assert flex.mean(m.data) == pytest.approx(0.01892407052218914, abs=1e-6)
 
 
-def test_multi_panel(dials_regression: pathlib.Path, tmp_path):
-    image = dials_regression / "image_examples" / "DLS_I23" / "germ_13KeV_0001.cbf"
+def test_multi_panel(dials_data, tmp_path):
+    data_dir = dials_data("image_examples", pathlib=True)
+    image = data_dir / "DLS_I23_germ_13KeV_0001.cbf"
 
     result = subprocess.run(
         [
