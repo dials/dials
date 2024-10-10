@@ -47,6 +47,41 @@ def linkage_matrix_to_dict(linkage_matrix: np.ndarray) -> OrderedDict:
     return link_dict
 
 
+def plot_dims(dims: list, funcs: list) -> dict:
+    """
+    Prepares a plotly-style plot of the dimension optimisation procedure.
+    Args:
+        dims(list): list of dimensions tested
+        funcs(list): resulting functional when the tested number of dimensions is used in the cos-angle clustering procedure
+    Returns:
+        d(dict): dimensionality analysis plot saved as a dictionary for future plotting
+    """
+    d = {
+        "dimensions": {
+            "data": [
+                {
+                    "x": dims,
+                    "y": funcs,
+                    "type": "line",
+                    "name": "Dimension Functionals",
+                }
+            ],
+            "layout": {
+                "title": "Residual for each tested dimension",
+                "xaxis": {"title": "Dimension"},
+                "yaxis": {"title": "Functional"},
+            },
+            "help": """\
+A line graph showing the residual remaining in the minimisation for
+each tested dimension. The chosen number of dimensions occurs when the
+residual drops into the level of the noise as determined by an elbow plot
+analysis (Zhang et al 2006).
+""",
+        }
+    }
+    return d
+
+
 def to_plotly_json(
     correlation_matrix: np.ndarray,
     linkage_matrix: np.ndarray,

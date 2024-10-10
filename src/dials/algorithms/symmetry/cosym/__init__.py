@@ -331,6 +331,8 @@ class CosymAnalysis(symmetry_base, Subject):
             self.target.set_dimensions(int(x_g))
         logger.info("Using %i dimensions for analysis", self.target.dim)
 
+        return dimensions, functional
+
     def run(self):
         self._intialise_target()
         if self.params.dimensions is Auto and self.target.dim != 2:

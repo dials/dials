@@ -3,9 +3,9 @@ from __future__ import annotations
 import numpy as np
 
 
-def plot_coords(coords, labels=None, key="cosym_coordinates"):
-    coord_x = coords[:, 0]
-    coord_y = coords[:, 1]
+def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
+    coord_x = coords[:, dim1]
+    coord_y = coords[:, dim2]
     assert coord_x.size == coord_y.size, (coord_x.size, coord_y.size)
 
     if labels is None:
@@ -21,7 +21,9 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
     matplotlib.use("Agg")
     from matplotlib import pyplot as plt
 
-    colours = plt.cm.Spectral(np.linspace(0, 1, n_clusters)).tolist()
+    # Decimal places are used to avoid the start and end of the spectral map which are black (reserved for outliers) and white (does not show)
+
+    colours = plt.cm.nipy_spectral(np.linspace(0.1, 0.9, n_clusters)).tolist()
 
     if -1 in unique_labels:
         colours.insert(0, (0, 0, 0, 1))
@@ -47,8 +49,17 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
             "data": data,
             "layout": {
                 "title": "Cosym coordinates",
-                "xaxis": {"range": [-1, 1], "constrain": "domain"},
-                "yaxis": {"range": [-1, 1], "scaleanchor": "x", "constrain": "domain"},
+                "xaxis": {
+                    "title": f"Axis {dim1}",
+                    "range": [-1, 1],
+                    "constrain": "domain",
+                },
+                "yaxis": {
+                    "title": f"Axis {dim2}",
+                    "range": [-1, 1],
+                    "scaleanchor": "x",
+                    "constrain": "domain",
+                },
             },
             "help": """\
 The outcome of the dials.cosym multi-dimensional scaling procedure projected on to two
@@ -57,7 +68,8 @@ set. The lengths of the vectors are inversely related to the amount of random er
 each data set, and can be interpreted as an estimate of the CC* values. The angular
 separation between any pair, or groups, of vectors is a measure of the systematic
 differences between the data sets, for example as a result of an indexing ambiguity,
-or the presence of non-isomorphism.
+or the presence of non-isomorphism. Where higher dimensions have been used for the analysis,
+additional representations are given.
 """,
         }
     }
