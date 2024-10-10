@@ -12,6 +12,7 @@ from scipy.cluster import hierarchy
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
+from libtbx import Auto
 from libtbx.phil import scope_extract
 from scitbx.array_family import flex
 
@@ -46,9 +47,27 @@ absolute_angle_tolerance = 2
 min_reflections = 10
   .type = int(value_min=1)
   .help = "The minimum number of reflections per experiment."
+
+dimensionality_assessment {
+  outlier_rejection = True
+    .type = bool
+    .help = "Use outlier rejection when determining optimal dimensions for analysis."
+  maximum_dimensions = 50
+    .type = int
+    .help = "Maximum number of dimensions to test for reasonable processing time"
+}
 """,
     process_includes=True,
 )
+phil_overrides = phil_scope.fetch(
+    source=iotbx.phil.parse(
+        """\
+cc_weights=sigma
+weights=standard_error
+"""
+    )
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 class CorrelationMatrix:
@@ -122,6 +141,12 @@ class CorrelationMatrix:
         self.params.lattice_group = self.datasets[0].space_group_info()
         self.params.space_group = self.datasets[0].space_group_info()
 
+        # If dimensions are optimised for clustering, need cc_weights=sigma
+        # Otherwise results end up being nonsensical even for high-quality data
+        # Outlier rejection was also found to be beneficial for optimising clustering dimensionality
+        if self.params.dimensions is Auto and self.params.cc_weights != "sigma":
+            raise ValueError("To optimise dimensions, cc_weights=sigma is required.")
+
         self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
 
     def _merge_intensities(self, datasets: list) -> list:
@@ -182,7 +207,19 @@ class CorrelationMatrix:
         self.cosym_analysis._intialise_target()
 
         # Cosym proceedures to calculate the cos-angle matrix
-        self.cosym_analysis._determine_dimensions()
+        if (
+            len(self.unmerged_datasets)
+            <= self.params.dimensionality_assessment.maximum_dimensions
+        ):
+            dims_to_test = len(self.unmerged_datasets)
+        else:
+            dims_to_test = self.params.dimensionality_assessment.maximum_dimensions
+
+        if self.params.dimensions is Auto:
+            self.cosym_analysis._determine_dimensions(
+                dims_to_test,
+                outlier_rejection=self.params.dimensionality_assessment.outlier_rejection,
+            )
         self.cosym_analysis._optimise(
             self.cosym_analysis.params.minimization.engine,
             max_iterations=self.cosym_analysis.params.minimization.max_iterations,
