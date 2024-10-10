@@ -229,8 +229,13 @@ class CorrelationMatrix:
         else:
             dims_to_test = self.params.dimensionality_assessment.maximum_dimensions
 
+        self._dimension_optimisation_data = {}
+
         if self.params.dimensions is Auto:
-            self._dim, self._func = self.cosym_analysis._determine_dimensions(
+            (
+                self._dimension_optimisation_data["dimensions"],
+                self._dimension_optimisation_data["functional"],
+            ) = self.cosym_analysis._determine_dimensions(
                 dims_to_test,
                 outlier_rejection=self.params.dimensionality_assessment.outlier_rejection,
             )
@@ -473,8 +478,13 @@ class CorrelationMatrix:
             plot_rij_histogram(self.correlation_matrix, key="cosym_rij_histogram_sg")
         )
 
-        if self.params.dimensions == Auto:
-            self.rij_graphs.update(plot_dims(self._dim, self._func))
+        if self._dimension_optimisation_data:
+            self.rij_graphs.update(
+                plot_dims(
+                    self._dimension_optimisation_data["dimensions"],
+                    self._dimension_optimisation_data["functional"],
+                )
+            )
 
         dim_list = list(range(0, self.cosym_analysis.target.dim))
 
