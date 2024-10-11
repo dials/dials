@@ -355,17 +355,26 @@ class CorrelationMatrix:
         Cluster cosine coords using the OPTICS algorithm to determine significant clusters.
         """
 
-        min_points = int(
-            (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
-            * self.params.significant_clusters.min_points_buffer
-        )
+        logger.info("Using OPTICS Algorithm (M. Ankerst et al, 1999, ACM SIGMOD)")
 
         # Minimum number required to make sense for such algorithms
 
-        if min_points < 3:
-            min_points = 3
+        min_points = max(
+            5,
+            int(
+                (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
+                * self.params.significant_clusters.min_points_buffer
+            ),
+        )
 
-        logger.info("Using OPTICS Algorithm (M. Ankerst et al, 1999, ACM SIGMOD)")
+        # Check for very small datasets
+        if len(self.unmerged_datasets) < min_points:
+            min_points = len(self.unmerged_datasets)
+            logger.info(
+                "WARNING: less than 5 samples present, OPTICS not optimised for very small datasets."
+            )
+
+        logger.info(f"Setting Minimum Samples to {min_points}")
 
         # Fit OPTICS model and determine number of clusters
 
@@ -393,11 +402,24 @@ class CorrelationMatrix:
 
         sig_cluster_dict = OrderedDict()
 
+        # Seems complex to deal with cases where datasets have been filtered
+        # and fit into how other code already set up
+
+        for_cluster_ids = list(range(1, len(self.labels) + 1))
+
+        # Set up number of clusters
         for i in unique_labels:
             ids = []
-            for clust, data in zip(self.cluster_labels, self.labels):
+            # Iterate through cluster labels from OPTICS to match to IDS
+            for main_idx, clust in enumerate(self.cluster_labels):
                 if i == clust:
-                    ids.append(data + 1)
+                    # Pre-existing code requieres +1 to everything
+                    for idx1, val1 in enumerate(for_cluster_ids):
+                        # Real labels start at 0
+                        for idx2, val2 in enumerate(self.labels):
+                            # Need to match index due to some datasets possibly being filtered out
+                            if idx1 == idx2 and idx1 == main_idx:
+                                ids.append(val1)
             cluster_dict = {"datasets": ids}
             sig_cluster_dict[i] = cluster_dict
 
