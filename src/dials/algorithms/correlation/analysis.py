@@ -576,11 +576,12 @@ class CorrelationMatrix:
 
         for i in self.significant_clusters:
             expts = ExperimentList()
-            refls = flex.reflection_table()
+            refls = []
             for idx in i.labels:
                 expts.append(self._experiments[idx])
-                refls.extend(self._reflections[idx])
+                refls.append(self._reflections[idx])
+            joint_refl = flex.reflection_table.concat(refls)
             expts.as_file(f"cluster_{i.cluster_id}.expt")
-            refls.as_file(f"cluster_{i.cluster_id}.refl")
+            joint_refl.as_file(f"cluster_{i.cluster_id}.refl")
 
         logger.info("Identified clusters output as .expt/.refl files.")
