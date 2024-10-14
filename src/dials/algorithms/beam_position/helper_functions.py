@@ -7,9 +7,11 @@ from typing import List, Optional, Tuple
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from attr import dataclass
+from dataclasses import dataclass
 from matplotlib import gridspec
 from matplotlib.patches import Circle
+
+matplotlib.use('Agg')
 
 
 @dataclass
@@ -31,7 +33,8 @@ class PlotParams:
 
     Note
     ----
-    span_xy: (xmin, xmax, ymin, ymax) highlighted regions in x- and y-directions
+    span_xy: (xmin, xmax, ymin, ymax) highlighted regions in x and
+        y-directions
     """
 
     image: np.ndarray
@@ -97,15 +100,24 @@ def decorate_plot(
     ax.axhline(beam_y, lw=0.5, c="white")
 
 
-def remove_percentiles(image, percentile=0.999):
+def remove_pixels_by_intensity(image, percent=0.0):
+
+    if percent < 0 or percent >= 100:
+        raise ValueError('Exclude intensity percent outside of 0 to 100 range')
+
+    keep_percent = 1.0 - percent * 0.01
 
     pixels_1d = np.sort(image.flatten())
     ntot = len(pixels_1d)
-    ncut = int(ntot * 0.999)
-    icut = pixels_1d[ncut]
-    image[image > icut] = 0
+    ncut = int(ntot * keep_percent)
+    image_copy = np.array(image)
 
-    return image
+    if ncut == ntot:
+        return image_copy
+
+    icut = pixels_1d[ncut]
+    image_copy[image > icut] = 0
+    return image_copy
 
 
 def plot_profile(params: PlotParams):
@@ -149,9 +161,12 @@ def plot_profile(params: PlotParams):
     )
 
     bx, by = params.beam_position
-    ax_x.text(0.0, 1.05, f"({bx:.0f}, {by:.0f})", transform=ax_x.transAxes)
-    ax_x.text(0.4, 1.05, f"max: {params.image.max():.2f}", transform=ax_x.transAxes)
-    ax_x.text(0.9, 1.05, f"avg: {params.image.mean():.2f}", transform=ax_x.transAxes)
+    ax_x.text(0.0, 1.05, f"({bx:.0f}, {by:.0f})",
+              transform=ax_x.transAxes)
+    ax_x.text(0.4, 1.05, f"max: {params.image.max():.2f}",
+              transform=ax_x.transAxes)
+    ax_x.text(0.9, 1.05, f"avg: {params.image.mean():.2f}",
+              transform=ax_x.transAxes)
 
     # Plot projected profiles
     for px in params.profiles_x:
@@ -161,34 +176,47 @@ def plot_profile(params: PlotParams):
 
     decorate_plot(params.image, ax, ax_x, ax_y, params.beam_position)
 
+    print(f"Filename '{params.filename}'")
     plt.savefig(params.filename, dpi=400)
     plt.close(fig)
 
 
 def normalize(array):
-    """Normalize a 1D numpy array"""
-    array_max = array.max()
-    return array / array_max
+    """Apply a pedestal and normalize a 1D numpy array"""
+
+    min_value = array.min()
+
+    if min_value < 0:
+        positive_array = array + abs(min_value)   # Add pedestal
+    else:
+        positive_array = np.array(array)
+
+    max_value = positive_array.max()
+
+    return positive_array / max_value
 
 
-def smooth(a: np.ndarray, width: int = 1):
+def smooth(curve, width=2):
     """
-    Smooth a 1D numpy array `a` with a rectangle convolution.
+    Smooth a 1D numpy array `curve` with a rectangle convolution.
     The rectangle width is 2*half_width.
     """
 
-    smooth_a = 0 * a
-    n = len(a)
+    smooth_curve = 0 * curve
+    n = len(curve)
 
     half_width = int(width / 2)
+
+    if half_width <= 0:
+        half_width = 1
 
     for i in range(n):
 
         if i < half_width:
-            smooth_a[i] = a[0 : i + half_width].mean()
+            smooth_curve[i] = curve[0:i + half_width].mean()
         elif i > n - half_width:
-            smooth_a[i] = a[i - half_width :].mean()
+            smooth_curve[i] = curve[i - half_width:].mean()
         else:
-            smooth_a[i] = a[i - half_width : i + half_width].mean()
+            smooth_curve[i] = curve[i - half_width:i + half_width].mean()
 
-    return smooth_a
+    return smooth_curve

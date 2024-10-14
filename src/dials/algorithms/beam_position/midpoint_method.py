@@ -1,296 +1,212 @@
 """Define a class that searches for beam position using midpoint method"""
 from __future__ import annotations
 
-import random
-from dataclasses import dataclass
-from typing import List, Optional, Tuple
-
+from collections import namedtuple
 import numpy as np
 
 from dials.algorithms.beam_position.helper_functions import (
-    Line2D,
-    PlotParams,
-    normalize,
-    plot_profile,
-    remove_percentiles,
-    smooth,
+    remove_pixels_by_intensity
 )
+from dials.algorithms.beam_position.project_profile import project
 
 
-@dataclass
-class MidpointMethodParams:
+Midpoint = namedtuple('Midpoint', ['x', 'y', 'width'])
+
+
+class MidpointMethodSolver:
+
+    def __init__(self, image, params, axis='x'):
+
+        percent = params.projection.midpoint.exclude_intensity_percent
+        cw = params.projection.midpoint.convolution_width
+        self.axis = axis
+
+        if axis == 'x':
+            exclude_range = params.projection.exclude_pixel_range_y
+            dead_range = params.projection.midpoint.dead_range_x
+            if dead_range == 'None':
+                dead_range = None
+
+        elif axis == 'y':
+            exclude_range = params.projection.exclude_pixel_range_x
+            dead_range = params.projection.midpoint.dead_range_y
+            if dead_range == 'None':
+                dead_range = None
+
+        else:
+            raise ValueError(f"Unknown axis: {axis}")
+
+        clean_image = remove_pixels_by_intensity(image, percent=percent)
+
+        profile, max_value = project(clean_image, axis=axis, method='average',
+                                     exclude_range=exclude_range,
+                                     convolution_width=cw)
+
+        self.params = params
+        self.profile = profile
+        self.max_value = max_value
+        self.dead_range = dead_range
+
+    def find_beam_position(self):
+
+        m = self.params.projection.midpoint
+        intersection_range = m.intersection_range
+        convolution_width = m.convolution_width
+        ignore_width = m.intersection_min_width
+
+        dead_range = self.dead_range
+        profile = np.array(self.profile)
+
+        start, stop, step = check_intersection_param(intersection_range)
+
+        intersection_positions = np.arange(start, stop, step)
+
+        midpoint_groups = []
+
+        for level in intersection_positions:
+
+            midpoints = middle(profile, level,
+                               dead_range=dead_range,
+                               smooth_width=convolution_width,
+                               ignore_width=ignore_width)
+
+            for midpoint in midpoints:
+                add_midpoint_to_group(midpoint_groups, midpoint)
+
+        sorted_groups = sort_by_average_width(midpoint_groups)
+
+        beam_position = pick_by_occurrence(sorted_groups)
+
+        self.groups_of_midpoints = sorted_groups
+        self.beam_position = beam_position
+
+        return beam_position
+
+    def plot(self, figure):
+
+        indices = np.arange(0, len(self.profile))
+
+        if self.axis == 'x':
+            ax = figure.axis_x
+            ax.axvline(self.beam_position, c='C3', lw=1)
+            ax.plot(indices, self.profile, lw=1, c='gray')
+            for midpoint_group in self.groups_of_midpoints:
+                x_vals = [m.x for m in midpoint_group]
+                y_vals = [m.y for m in midpoint_group]
+                ax.plot(x_vals, y_vals, marker='o', ms=1, lw=0)
+            ax.text(0.01, 0.95, 'method: midpoint', va='top', ha='left',
+                    transform=ax.transAxes, fontsize=8)
+            label = 'Imax = %.0f' % self.max_value
+            ax.text(0.01, 0.75, label, va='top', ha='left',
+                    transform=ax.transAxes, fontsize=8)
+
+        elif self.axis == 'y':
+            ax = figure.axis_y
+            ax.axhline(self.beam_position, c='C3', lw=1)
+            ax.plot(self.profile, indices, lw=1, c='gray')
+            for midpoint_group in self.groups_of_midpoints:
+                y_vals = [m.x for m in midpoint_group]
+                x_vals = [m.y for m in midpoint_group]
+                ax.plot(x_vals, y_vals, marker='o', ms=1, lw=0)
+            ax.text(0.95, 0.99, 'method: midpoint', va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=8)
+            label = 'Imax = %.0f' % self.max_value
+            ax.text(0.75, 0.99, label, va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=8)
+
+        else:
+            raise ValueError(f"Unknown axis: {self.axis}")
+
+
+def pick_by_occurrence(midpoint_groups, nmax=3):
     """
-    Parameters for the midpoint method
-
-    Parameters
-    ---------
-    data_slice : Tuple[int, int, int], optional
-        Slicing indices (start, stop, step) for the projected profiles data.
-        Should be between 0 and 1 since data is normalized.
-        Default is (0.3, 0.9, 0.01).
-    convolution_width : int, optional
-        The width of the convolution kernel. Default is 20 (pixels).
-    exclude_range_x : List[Tuple[int, int]], optional
-        List of pixel ranges of the form (start, stop) to exclude from
-        the projected profile along the x-axis. Default is None.
-    exclude_range_y : List[Tuple[int, int]], optional
-        List of pixel ranges of the form (start, stop) to exclude from
-        the projected profile along the y-axis. Default is None.
-    per_image : bool
-        If True, compute beam position for each image individually, and return
-        the average. If False, return the beam position computed from the
-        average image. Default is False.
-    plot : bool, optional
-        Plot the diffraction image with the computed beam center.
-        Default is False.
+    Check which group of midpoints has the highest number and return
+    its average position. Consider only the first nmax groups.
     """
 
-    data_slice: Tuple[float, float, float] = (0.3, 0.9, 0.01)
-    convolution_width: int = 20
-    exclude_range_x: Tuple[float, float] = None
-    exclude_range_y: Tuple[float, float] = None  # (510, 550)
-    per_image: bool = False
-    plot: bool = False
+    occurences = [len(group) for group in midpoint_groups[0:nmax]]
+    max_occurence = max(occurences)
+    max_index = occurences.index(max_occurence)
+    selected_group = midpoint_groups[max_index]
+
+    average_position = np.array([m.x for m in selected_group]).mean()
+
+    return average_position
 
 
-def pick_by_occurrence(peaks: List[List[float]]):
-    """ "
-    Pick the average position of the peaks with the highest occurrence
-    """
+def add_midpoint_to_group(groups_of_midpoints, midpoint,
+                          distance_threshold=40):
 
-    occurences = [len(p) for p in peaks]
+    for i, group in enumerate(groups_of_midpoints):
 
-    if len(peaks) >= 3:
-        max_occurence = max(occurences[0:3])
-        max_index = occurences.index(max_occurence)
-        average = np.mean(peaks[max_index])
-    elif len(peaks) == 2:
-        max_occurence = max(occurences[0:2])
-        max_index = occurences.index(max_occurence)
-        average = np.mean(peaks[max_index])
-    else:
-        average = np.mean(peaks[0])
-    return average
+        avg_x = np.array([m.x for m in group]).mean()
 
+        if abs(midpoint.x - avg_x) <= distance_threshold:
+            group.append(midpoint)
+            return
 
-def beam_position_from_midpoint(
-    image: np.ndarray,
-    params: MidpointMethodParams,
-    discard_percentile: float = 0.01,
-    plot_filename: Optional[str] = "beam_position_from_midpoint.png",
-) -> Tuple[float, float]:
-    """
-    Compute beam position from a diffraction image using the midpoint method
-
-    Parameters
-    ----------
-    image : 2D numpy.ndarray
-        A single diffraction image.
-    params : MidpointMethodParams
-        Parameters for the midpoint method.
-    discard_percentile : float, optional
-        The percentage of pixels to exclude (set to zero intensity).
-        For example if set to 1 then 1 % of pixels with highest intensity
-        will be removed. Default is 0.1 (%).
-    plot_filename : str, optional
-        Filename to save the plot.
-
-    Returns
-    -------
-    x, y : Tuple[float, float]
-        The beam center position in pixels (x, y).
-    """
-
-    img_clean = remove_percentiles(image, percentile=1 - discard_percentile * 0.01)
-
-    profile_x, midpoints_x, levels_x = find_midpoint(img_clean, params, axis="x")
-    profile_y, midpoints_y, levels_y = find_midpoint(img_clean, params, axis="y")
-
-    x0 = pick_by_occurrence(midpoints_x)
-    y0 = pick_by_occurrence(midpoints_y)
-
-    print(f"From midpoint: ({x0:.2f}, {y0:.2f})")
-
-    if params.plot:
-
-        indices_x = np.arange(len(profile_x))
-        line_x = [Line2D(indices_x, profile_x)]
-
-        for midpoints, levels in zip(midpoints_x, levels_x):
-            rand_color = (random.random(), random.random(), random.random())
-            line_x.append(
-                Line2D(midpoints, levels, c=rand_color, lw=0.0, marker="o", ms=0.5)
-            )
-
-        indices_y = np.arange(len(profile_y))
-        line_y = [Line2D(profile_y, indices_y)]
-
-        for midpoints, levels in zip(midpoints_y, levels_y):
-
-            rand_color = (random.random(), random.random(), random.random())
-
-            line_y.append(
-                Line2D(levels, midpoints, c=rand_color, lw=0.0, marker="o", ms=0.5)
-            )
-
-        p = PlotParams(
-            image,
-            profiles_x=line_x,
-            profiles_y=line_y,
-            beam_position=(x0, y0),
-            span_xy=None,
-            filename=plot_filename,
-        )
-
-        plot_profile(p)
-
-    return x0, y0
-
-
-def add_peak_and_width(
-    peaks: List[List[float]],
-    widths: List[List[float]],
-    levels: List[List[float]],
-    m: Tuple[float, float, float],
-    threshold=40,
-):
-
-    new_peak, new_width, ycut = m
-
-    # Iterate through existing peaks and widths
-    for i, peak_list in enumerate(peaks):
-
-        avg_peak = sum(peak_list) / len(peak_list)
-
-        if abs(new_peak - avg_peak) <= threshold:
-            # Add new peak to the sublist and corresponding width to widths list
-            peak_list.append(new_peak)
-            widths[i].append(new_width)
-            levels[i].append(ycut)
-            return  # Exit function after adding peak and width
-
-    # If no sublist satisfies the condition, create a new sublist
-    peaks.append([new_peak])
-    widths.append([new_width])
-    levels.append([ycut])
+    # If midpoint is too far from existing groups, create a new group
+    new_group = [midpoint]
+    groups_of_midpoints.append(new_group)
 
     return
 
 
-def sort_peak_by_occurence(
-    peaks: List[List[float]], widths: List[List[float]], levels: List[List[float]]
-) -> Tuple[List[List[float]], List[float], List[List[float]]]:
-    """
-    Sort peaks by average width
-    """
-
-    average_widths = [sum(width_list) / len(width_list) for width_list in widths]
-    zipped_data = list(zip(peaks, levels, average_widths))
-
-    sorted_data = sorted(zipped_data, key=lambda x: x[2], reverse=True)
-
-    sorted_peaks, sorted_levels, sorted_average_widths = zip(*sorted_data)
-
-    return sorted_peaks, sorted_levels, sorted_average_widths
+def average_width(midpoint_group):
+    total_width = sum([midpoint.width for midpoint in midpoint_group])
+    return total_width / len(midpoint_group)
 
 
-def find_midpoint(
-    image: np.ndarray, params: MidpointMethodParams, axis: str = "x"
-) -> Tuple[np.ndarray, float]:
-    """
-    Project the diffraction image and determine the beam center using the
-    midpoint method
+def sort_by_average_width(midpoint_groups):
 
-    Parameters
-    ---------
-    image : 2D numpy.ndarray
-        The diffraction image.
-    params : MidpointMethodParams
-        Parameters for the midpoint method.
-    axis : str, optional
-        Either 'x' or 'y' to get the projected profile. Default is 'x'.
+    widths = [average_width(group) for group in midpoint_groups]
 
-    Returns
-    -------
-    profile, avg_midpoint: Tuple[np.ndarray, float]
-        The `profile` is the averaged and convoluted projection of the
-        image data along the specified axis, while the `avg_midpoint`
-        is the average midpoint computed in the `data_slice`
-        selected range.
-    """
+    combined = list(zip(widths, midpoint_groups))
+    sorted_combined = sorted(combined, key=lambda x: x[0])
+    sorted_widths, sorted_groups_of_midpoints = zip(*sorted_combined)
 
-    if axis == "x":
-        profile = image[:, :].mean(axis=0)
-        exclude_range = params.exclude_range_x
-    elif axis == "y":
-        profile = image[:, :].mean(axis=1)
-        exclude_range = params.exclude_range_y
-    else:
-        msg = f"Unknown projection axis '{axis}'. Use either 'x' or 'y'."
-        raise ValueError(msg)
+    # Reverse order
+    sorted_widths = sorted_widths[::-1]
+    sorted_groups_of_midpoints = sorted_groups_of_midpoints[::-1]
 
-    profile[profile < 0] = 0  # Kill negative pixels
-
-    profile = smooth(profile, width=params.convolution_width)
-    profile = normalize(profile)
-
-    start, stop, step = params.data_slice
-    levels = np.arange(start, stop, step)
-
-    midpoints = []
-    widths = []
-    levels_out = []
-
-    for level in levels:
-
-        mid_list = middle(profile, level, exclude_range, params.convolution_width)
-
-        for m in mid_list:
-
-            add_peak_and_width(midpoints, widths, levels_out, m)
-
-    midpoints, levels_out, widths = sort_peak_by_occurence(
-        midpoints, widths, levels_out
-    )
-    return profile, midpoints, levels_out
+    return sorted_groups_of_midpoints
 
 
-def middle(a, ycut, exclude_range, smooth_width):
-    """Compute all the crossings between a and ycut
-       and return the middle of the range of the crossings
+def middle(profile, level, dead_range, smooth_width, ignore_width):
+    """Compute midpoints when level line crosses the profile
 
     Parameters
     ----------
-    a : 1D numpy.ndarray
-        The 1D array to search for crossings.
-    ycut : float
-        The y value at which to search for crossings.
-    exclude_range : List[Tuple[int, int]]
-        A list of tuples defining the ranges to exclude from the search.
-    smooth_width : int
+    profile: 1D numpy.ndarray
+    level: float
+        The y value at which to search for midpoints.
+    dead_range: list of ints
+        A list defining the ranges where the beam is hidden.
+        For exampe, [256,289,382,522] would define ranges 256-289 and 382-522.
+    smooth_width: int
         The width of the smoothing window.
+    ignore_width: int
+        Ignore all crossings shorter than this width.
 
     Returns
     -------
-    crossings : List[Tuple[int, int, int]]
-        A list containing the middle points of all crossings,
-        their widths and the ycut.
+    crossings : List of Midpoint tuples
+        A list containing the middle points of all crossings.
     """
 
-    # Mark the crossings
-    a[a < 0.001] = 0.001
+    profile[profile < 0.001] = 0.001
 
-    b = np.array(a)
-    b[b > ycut] = -1
+    b = np.array(profile)
+    b[b > level] = -1
 
-    # Mark the excluded regions
-    if exclude_range is not None:
-        exclude_range = list(exclude_range)
-        n_range = int(len(exclude_range) / 2)
-        for i in range(n_range):
-            start = int(exclude_range[i])
-            end = int(exclude_range[i + 1])
-            b[start - smooth_width : end + smooth_width] = -2
+    # Mark the dead regions
+    if dead_range:
+        dead_range = list(dead_range)
+        n = int(len(dead_range) / 2)
+        for i in range(n):
+            start = int(dead_range[i])
+            end = int(dead_range[i + 1])
+            b[start - smooth_width:end + smooth_width] = -2
 
     transitions = np.where(np.diff(np.sign(b)))[0] + 1
 
@@ -302,9 +218,40 @@ def middle(a, ycut, exclude_range, smooth_width):
             good_crossing = not (b[start] == -2 or b[end - 1] == -2)
 
             if good_crossing:
-                midpoint = (start + end) / 2
+                midpoint_position = (start + end) / 2
                 width = end - start
-                if width > 10:
-                    crossings.append((midpoint, width, ycut))
+                if width > ignore_width:
+                    point = Midpoint(midpoint_position, level, width)
+                    crossings.append(point)
 
     return crossings
+
+
+def check_intersection_param(midpoint_range):
+
+    if len(midpoint_range) != 3:
+        msg = "Midpoint method error! Intersection range requires three "
+        msg += " floats (start, stop, step) ranging from 0 to 1"
+        raise ValueError(msg)
+
+    start, stop, step = midpoint_range
+
+    for val in midpoint_range:
+        if not (isinstance(val, float) or isinstance(val, int)):
+            msg = f"The value {val} in intersection range in midpoint method "
+            msg + "is neither a float nor an int"
+            raise ValueError(msg)
+
+    if (start < 0) or (start > 1):
+        msg = "Midpoint method error!\n"
+        msg += "The start of the intersection range outside of "
+        msg += " the (0, 1) interval."
+        raise ValueError(msg)
+
+    if (stop < 0) or (stop > 1):
+        msg = "Midpoint method error!\n"
+        msg += "The end of the intersection range outside of "
+        msg += " the (0, 1) interval."
+        raise ValueError(msg)
+
+    return start, stop, step

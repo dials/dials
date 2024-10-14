@@ -6,7 +6,6 @@ import copy
 import itertools
 import logging
 import math
-import random
 import sys
 
 import iotbx.phil
@@ -23,13 +22,13 @@ from scitbx.array_family import flex
 from scitbx.simplex import simplex_opt
 
 import dials.util
-from dials.algorithms.beam_position.midpoint_method import (
-    MidpointMethodParams,
-    beam_position_from_midpoint,
+from dials.algorithms.beam_position.compute_beam_position import (
+        compute_beam_position
 )
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
-from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.options import (ArgumentParser,
+                                reflections_and_experiments_from_files)
 from dials.util.slice import slice_reflections
 from dials.util.system import CPU_COUNT
 
@@ -37,29 +36,29 @@ logger = logging.getLogger("dials.command_line.search_beam_position")
 
 help_message = """
 
-Search for a better beam centre using the results of spot finding. Based on
-method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
+A function to find beam center from diffraction images
 
-Examples::
 
+The default method (based on the work of Sauter et al., J. Appl. Cryst.
+37, 399-409 (2004)) is using the results from spot finding.
+
+Example:
   dials.search_beam_position imported.expt strong.refl
-  dials.search_beam_position method=avg_projection imported.exp
-  dials.search_beam_position method=max_projection imported.exp
+
+Other methods are based on horizontal and vertical projection, and only
+require an imported experiment.
+
+Examples:
+  dials.search_beam_position method_x=midpoint imported.exp
+  dials.search_beam_position method_x=midpoint method_y=maximum imported.exp
+
 """
 
 phil_scope = iotbx.phil.parse(
     """
-method = default midpoint maximum inversion
-slice = ":::"
-  .type = str
-  .help = "A slice (similar to slicing in Numpy) used to select specific images "
-          "in the dataset."
-plot = False
-  .help = "Plot the diffraction image with the computed beam center."
-  .type = bool
-verbose = True
-  .help = "Print the beam center position to the output."
-  .type = bool
+
+method = default projection
+
 default {
     nproc = Auto
       .type = int(value_min=1)
@@ -78,13 +77,14 @@ default {
     max_reflections = 10000
       .type = int(value_min=1)
       .help = "Maximum number of reflections to use in the search for better"
-              "experimental model. If the number of input reflections is greater"
-              "then a random subset of reflections will be used."
+              "experimental model. If the number of input reflections is "
+              "greater then a random subset of reflections will be used."
     mm_search_scope = 4.0
       .help = "Global radius of origin offset search."
       .type = float(value_min=0)
     wide_search_binning = 2
-      .help = "Modify the coarseness of the wide grid search for the beam centre."
+      .help = "Modify the coarseness of the wide grid search for "
+              "the beam centre."
       .type = float(value_min=0)
     n_macro_cycles = 1
       .type = int
@@ -94,64 +94,111 @@ default {
     seed = 42
       .type = int(value_min=0)
 }
-midpoint {
-    data_slice = (0.3, 0.9, 0.01)
-      .type = floats
-      .help = "Projected data range where to compute the midpoints."
-    convolution_width = 20
-      .help = "Width of the convolution kernel used for smoothing (in pixels)."
-      .type = int
-    exclude_range_x = None
-      .type = floats
-      .help = "List of pixel ranges of the form (start, stop) to exclude from"
-              " the projected profile along the x-axis."
-    exclude_range_y = None
-      .type = floats
-      .help = "List of pixel ranges of the form (start, stop) to exclude from"
-              " the projected profile along the y-axis."
+
+projection {
+
+    method_x = midpoint maximum inversion
+    method_y = midpoint maximum inversion
+
+    image_range = ":::"
+    .type = str
+    .help = "A range of indices (similar to slicing in Numpy) "
+            "used to select specific images in the dataset."
+
+    plot = True
+    .type = bool
+    .help = "Plot the image with computed beam center."
+
+    verbose = True
+    .type = bool
+    .help = "Print the beam center position to the output."
+
+    exclude_pixel_range_x = None
+    .type = floats
+    .help = "List of comma-separated pixel ranges to "
+            "exclude from projection along the y-axis "
+            "(e.g, start_1:end_1:step_1,start_2:end_2:step_2). "
+            "Similarly to Numpy, parts can be ommited (e.g. ::step). "
+
+    exclude_pixel_range_y = None
+    .type = floats
+    .help = "List of comma-separated pixel ranges to "
+            "exclude from projection along the y-axis. "
+            "See `exclude_pixel_range_x` for more details. "
+
     per_image = False
-      .help = "Compute the midpoints for each image individually."
-              "Otherwise, compute for all images and average."
-      .type = bool
-}
-maximum {
-    bad_pixel_threshold = 20000
+    .type = bool
+    .help = "Compute the midpoints for each image individually."
+          "Otherwise, compute for all images and average."
+
+    color_cutoff = None
+    .type = float
+
+    midpoint {
+        exclude_intensity_percent = 0
+        .type = float
+        .help = "Set all pixels above this value to zero."
+
+        intersection_range = (0.3, 0.9, 0.01)
+        .type = floats
+        .help = "Compute midpoints in this range (start, stop, step)."
+
+        convolution_width = 20
+        .type = int
+        .help = "Width of the convolution kernel used for "
+                "smoothing (pixels)."
+
+        dead_range_x = None
+        dead_range_y = None
+
+        intersection_min_width = 10
+        .type = int
+
+    }
+
+    maximum {
+
+        bad_pixel_threshold = None
+      .type = int
       .help = "Set all pixels above this value to zero."
-      .type = int
-    bin_step = 10
-      .type = int
-      .help = "Distance in pixels between neighboring bins (pixels)."
-    bin_width = 20
-      .type = int
-      .help = "Width of the bin used to find the region"
-              " of max intensity (pixels)."
-    convolution_width = 2
-      .type = int
-      .help = "Width of the convolution kernel used for smoothing (pixels)."
-    n_convolutions = 2
-      .type = int
-      .help = "Number of times the projected profile is smoothed."
-}
-inversion {
-    guess_position = None
-      .type = ints(size=2)
-      .help = "Initial guess for the beam position (x, y) in pixels."
-    inversion_window_width = 100
-      .type = int
-      .help = "The width of the window used for the inversion method."
-    bad_pixel_threshold = 20000
-      .help = "Set all pixels above this value to zero."
-      .type = int
-    filename = 'fig.png'
-      .type = str
-      .help = "Filename to save the plot."
+
+        convolution_width = 1
+        .type = int
+        .help = "Width of the convolution kernel used for "
+                " smoothing (in pixels)."
+
+        bin_step = 10
+        .type = int
+        .help = "Distance in pixels between neighboring bins."
+
+        bin_width = 20
+        .type = int
+        .help = "Width of the bin used to find the region "
+                "of max intensity (pixels)."
+    }
+
+    inversion {
+
+         guess_position = None
+         .type = ints(size=2)
+         .help = "Initial guess for the beam position (x, y) in pixels. "
+                 "If not supplied it will be set to center of the image."
+
+         inversion_window_width = 100
+         .type = int
+         .help = "Do profile inversion within this window (in pixels)."
+    }
 
 }
+
 output {
   experiments = optimised.expt
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
+  figure = 'fig.png'
+      .type = str
+      .help = "Filename where to save the beam position plot."
 }
 """
 )
@@ -166,12 +213,13 @@ def optimize_origin_offset_local_scope(
     wide_search_binning=1,
     plot_search_scope=False,
 ):
-    """Local scope: find the optimal origin-offset closest to the current overall detector position
-    (local minimum, simple minimization)"""
+    """Local scope: find the optimal origin-offset closest to the current
+    overall detector position (local minimum, simple minimization)"""
 
     beam = experiments[0].beam
     s0 = matrix.col(beam.get_s0())
-    # construct two vectors that are perpendicular to the beam.  Gives a basis for refining beam
+    # construct two vectors that are perpendicular to the beam.
+    # Gives a basis for refining beam
     axis = matrix.col((1, 0, 0))
     beamr0 = s0.cross(axis).normalize()
     beamr1 = beamr0.cross(s0).normalize()
@@ -189,7 +237,8 @@ def optimize_origin_offset_local_scope(
         widegrid = 2 * grid + 1
 
         def get_experiment_score_for_coord(x, y):
-            new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
+            new_origin_offset = (x * plot_px_sz * beamr1 +
+                                 y * plot_px_sz * beamr2)
             return sum(
                 _get_origin_offset_score(
                     new_origin_offset,
@@ -219,7 +268,8 @@ def optimize_origin_offset_local_scope(
             raise Sorry("No valid scores")
         sel = scores > (0.9 * flex.max(scores))
         for i in sel.iselection():
-            offset = (idxs[i % widegrid]) * beamr1 + (idxs[i // widegrid]) * beamr2
+            offset = ((idxs[i % widegrid]) * beamr1 +
+                      (idxs[i // widegrid]) * beamr2)
             potential_offsets.append(offset.elems)
             # print offset.length(), scores[i]
         wide_search_offset = matrix.col(
@@ -246,7 +296,8 @@ def optimize_origin_offset_local_scope(
                 self.offset += self.wide_search_offset
 
         def target(self, vector):
-            trial_origin_offset = vector[0] * 0.2 * beamr1 + vector[1] * 0.2 * beamr2
+            trial_origin_offset = (vector[0] * 0.2 * beamr1 +
+                                   vector[1] * 0.2 * beamr2)
             if self.wide_search_offset is not None:
                 trial_origin_offset += self.wide_search_offset
             target = 0
@@ -268,7 +319,8 @@ def optimize_origin_offset_local_scope(
         scores = flex.double()
         for y in range(-grid, grid + 1):
             for x in range(-grid, grid + 1):
-                new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
+                new_origin_offset = (x * plot_px_sz * beamr1 +
+                                     y * plot_px_sz * beamr2)
                 score = 0
                 for i, experiment in enumerate(experiments):
                     score += _get_origin_offset_score(
@@ -300,7 +352,8 @@ def optimize_origin_offset_local_scope(
             plt.clabel(CS, inline=1, fontsize=10, fmt="%6.3f")
             plt.title("Wide scope search for detector origin offset")
             plt.scatter([0.0], [0.0], color="g", marker="o")
-            plt.scatter([new_offset[0]], [new_offset[1]], color="r", marker="*")
+            plt.scatter([new_offset[0]], [new_offset[1]], color="r",
+                        marker="*")
             plt.scatter(
                 [idxs[idx_max % widegrid]],
                 [idxs[idx_max // widegrid]],
@@ -323,7 +376,8 @@ def optimize_origin_offset_local_scope(
 
     new_experiments = copy.deepcopy(experiments)
     for expt in new_experiments:
-        expt.detector = dps_extended.get_new_detector(expt.detector, new_offset)
+        expt.detector = dps_extended.get_new_detector(expt.detector,
+                                                      new_offset)
     return new_experiments
 
 
@@ -345,12 +399,15 @@ def _get_origin_offset_score(
     return _sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
 
 
-def _sum_score_detail(reciprocal_space_vectors, solutions, granularity=None, amax=None):
-    """Evaluates the probability that the trial value of (S0_vector | origin_offset) is correct,
-    given the current estimate and the observations.  The trial value comes through the
-    reciprocal space vectors, and the current estimate comes through the short list of
-    DPS solutions. Actual return value is a sum of NH terms, one for each DPS solution, each ranging
-    from -1.0 to 1.0"""
+def _sum_score_detail(reciprocal_space_vectors, solutions,
+                      granularity=None, amax=None):
+
+    """Evaluates the probability that the trial value of
+    (S0_vector | origin_offset) is correct, given the current estimate and the
+    observations. The trial value comes through the reciprocal space vectors,
+    and the current estimate comes through the short list of DPS solutions.
+    Actual return value is a sum of NH terms, one for each DPS solution,
+    each ranging from -1.0 to 1.0"""
 
     nh = min(solutions.size(), 20)  # extended API
     sum_score = 0.0
@@ -536,7 +593,12 @@ def discover_better_experimental_model(
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    usage = "dials.search_beam_position [options] imported.expt strong.refl"
+
+    usage = """
+    dials.search_beam_position imported.expt strong.refl
+    dials.search_beam_position method=midpoint imported.exp
+    dials.search_beam_position method_x=midpoint method_y=maximum imported.exp
+    """
 
     parser = ArgumentParser(
         usage=usage,
@@ -552,7 +614,9 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
-    if params.method[0] == "default":
+    if (params.method[0] == "default" and not
+            (len(params.projection.method_x) == 1 or
+             len(params.projection.method_y) == 1)):
 
         if len(experiments) == 0 or len(reflections) == 0:
             parser.print_help()
@@ -567,11 +631,11 @@ def run(args=None):
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
-    if params.nproc is libtbx.Auto:
-        params.nproc = CPU_COUNT
+        if params.nproc is libtbx.Auto:
+            params.nproc = CPU_COUNT
 
-        if params.labelit.nproc is libtbx.Auto:
-            params.labelit.nproc = available_cores()
+        # if params.labelit.nproc is libtbx.Auto:
+        #    params.labelit.nproc = available_cores()
 
         imagesets = experiments.imagesets()
         # Split all the refln tables by ID, corresponding to the respective imagesets
@@ -608,55 +672,35 @@ def run(args=None):
             )
             logger.info("")
 
-        logger.info("Saving optimised experiments to %s", params.output.experiments)
+        logger.info("Saving optimised experiments to %s",
+                    params.output.experiments)
         experiments.as_file(params.output.experiments)
 
-    elif params.method[0] == "midpoint":
+    else:  # Other methods (midpoint, maximum, inversion)
+
+        # TODO: Implement image ranges
 
         if len(experiments) == 0:
             parser.print_help()
             sys.exit(0)
 
         imagesets = experiments.imagesets()
-        p = params.midpoint
 
-        if len(imagesets) != 1:
-            print("Number of imagesets not equal to one.")
-            print("Setting per_image = True.")
-            p.per_image = True
-
-        method_params = MidpointMethodParams(
-            data_slice=p.data_slice,
-            convolution_width=p.convolution_width,
-            exclude_range_x=p.exclude_range_x,
-            exclude_range_y=p.exclude_range_y,
-            plot=params.plot,
-            per_image=p.per_image,
-        )
-
-        # import sys
-        # sys.exit(0)
-
-        for ims_index, image_set in enumerate(imagesets):
+        for set_index, image_set in enumerate(imagesets):
             num_images = image_set.size()
 
-            import numpy as np
-
-            if p.per_image:
+            if params.projection.per_image:
                 for index in range(num_images):
+
                     image = image_set.get_corrected_data(index)
                     image = flumpy.to_numpy(image[0])
 
                     mask = image_set.get_mask(0)
                     mask = flumpy.to_numpy(mask[0])
 
-                    np.savez(f"image_{ims_index:04d}.npz", data=image, mask=mask)
-
                     image[mask == 0] = 0
 
-                    filename = "beam_position_from_midpoint"
-                    filename += f"_{ims_index:02d}_{index:04d}.png"
-                    beam_position_from_midpoint(image, method_params)
+                    compute_beam_position(image, params, index)
             else:
                 for index in range(num_images):
                     image = image_set.get_corrected_data(index)
@@ -670,22 +714,17 @@ def run(args=None):
                 image = avg_image / num_images
                 mask = image_set.get_mask(0)
                 mask = flumpy.to_numpy(mask[0])
-
                 image[mask == 0] = 0
 
-                filename = "beam_position_from_midpoint.png"
+                compute_beam_position(image, params)
 
-                beam_position_from_midpoint(
-                    image, method_params, plot_filename=filename
-                )
-
-    else:
-        print(f"Unknown method: {params.method[0]}")
-        msg = "Possible choices: labelit (default),"
-        msg += " avg_projection, max_projection"
-        print(msg)
-        parser.print_help()
-        sys.exit(0)
+#    else:
+#        print(f"Unknown method: {params.method[0]}")
+#        msg = "Possible choices: labelit (default),"
+#        msg += " avg_projection, max_projection"
+#        print(msg)
+#        parser.print_help()
+#        sys.exit(0)
 
 
 if __name__ == "__main__":
