@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 phil_scope = iotbx.phil.parse(
     """\
 min_reflections = 10
-  .type = int(value_min=1)
+  .type = int(value_min=0)
   .help = "The minimum number of merged reflections per experiment required to perform cosym analysis."
 
 seed = 230
@@ -169,28 +169,29 @@ class CosymAnalysis(symmetry_base, Subject):
         )
 
         # remove those with less than min_reflections after setup.
-        to_remove = []
-        min_id = 0
-        histy = flex.histogram(
-            self.dataset_ids.as_double(),
-            min_id - 0.5,
-            max_id + 0.5,
-            n_slots=max_id + 1 - min_id,
-        )
-        vals = histy.slots()
-        for i, _ in enumerate(range(min_id, max_id + 1)):
-            n = vals[i]
-            if n < params.min_reflections:
-                to_remove.append(i)
-        if to_remove:
-            logger.info(
-                f"Removing datasets {', '.join(str(i) for i in to_remove)} with < {params.min_reflections} reflections"
+        if params.min_reflections:
+            to_remove = []
+            min_id = 0
+            histy = flex.histogram(
+                self.dataset_ids.as_double(),
+                min_id - 0.5,
+                max_id + 0.5,
+                n_slots=max_id + 1 - min_id,
             )
-            sel = flex.bool(self.intensities.size(), True)
-            for i in to_remove:
-                sel.set_selected(self.dataset_ids == i, False)
-            self.intensities = self.intensities.select(sel)
-            self.dataset_ids = self.dataset_ids.select(sel)
+            vals = histy.slots()
+            for i, _ in enumerate(range(min_id, max_id + 1)):
+                n = vals[i]
+                if n < params.min_reflections:
+                    to_remove.append(i)
+            if to_remove:
+                logger.info(
+                    f"Removing datasets {', '.join(str(i) for i in to_remove)} with < {params.min_reflections} reflections"
+                )
+                sel = flex.bool(self.intensities.size(), True)
+                for i in to_remove:
+                    sel.set_selected(self.dataset_ids == i, False)
+                self.intensities = self.intensities.select(sel)
+                self.dataset_ids = self.dataset_ids.select(sel)
 
         self.params = params
         if self.params.space_group is not None:
