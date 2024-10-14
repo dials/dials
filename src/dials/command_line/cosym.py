@@ -71,13 +71,6 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
-min_reflections = 10
-  .type = int(value_min=1)
-  .help = "The minimum number of reflections per experiment."
-
-seed = 230
-  .type = int(value_min=0)
-
 output {
   suffix = "_reindexed"
     .type = str
@@ -189,10 +182,10 @@ class cosym(Subject):
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
+
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.
             # The purpose of the reference is to help the clustering, not guarantee the indexing solution.
@@ -468,8 +461,13 @@ def run(args=None):
 
     if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
-    cosym_instance.run()
-    cosym_instance.export()
+    try:
+        cosym_instance.run()
+    except RuntimeError as e:
+        logger.info(e)
+        sys.exit(0)
+    else:
+        cosym_instance.export()
 
 
 if __name__ == "__main__":

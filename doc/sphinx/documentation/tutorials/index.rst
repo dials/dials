@@ -36,7 +36,6 @@ Advanced command-line tutorials
    correcting_poor_initial_geometry_tutorial
    centring_vs_pseudocentring
    multi_lattice_tutorial
-   multi_crystal_symmetry_and_scaling
    metrology_corrections
    multi_crystal_analysis
    br_lyso_multi

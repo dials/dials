@@ -24,6 +24,7 @@ import tarfile
 import threading
 import time
 import zipfile
+import multiprocessing
 
 try:  # Python 3
     from urllib.error import HTTPError, URLError
@@ -109,7 +110,7 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
-    url = "https://micro.mamba.pm/api/micromamba/{0}/latest".format(conda_arch)
+    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -1016,9 +1017,20 @@ def _get_cmake_exe():
 
 def refresh_build_cmake():
     conda_python = _get_base_python()
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dxtbx"])
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dials"])
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/xia2"])
+    run_indirect_command(
+        conda_python,
+        [
+            "-mpip",
+            "install",
+            "--no-deps",
+            "-e",
+            "../modules/dxtbx",
+            "-e",
+            "../modules/dials",
+            "-e",
+            "../modules/xia2",
+        ],
+    )
 
 
 def configure_build_cmake():
@@ -1100,7 +1112,8 @@ add_subdirectory(dials)
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
-            "-DHDF5_ROOT=" + conda_base_root,
+            "-DHDF5_DIR=" + conda_base_root,
+            "-DPython_ROOT_DIR=" + conda_base_root,
         ]
         + extra_args,
     )
@@ -1168,7 +1181,15 @@ def make_build_cmake():
     if os.name == "nt":
         run_indirect_command(cmake_exe, ["--build", ".", "--config", "RelWithDebInfo"])
     else:
-        run_indirect_command(cmake_exe, ["--build", "."])
+        parallel = []
+        if "CMAKE_GENERATOR" not in os.environ:
+            if hasattr(os, "sched_getaffinity"):
+                cpu = os.sched_getaffinity(0)
+            else:
+                cpu = multiprocessing.cpu_count()
+            if isinstance(cpu, int):
+                parallel = ["--parallel", str(cpu)]
+        run_indirect_command(cmake_exe, ["--build", "."] + parallel)
 
 
 def repository_at_tag(string):
@@ -1263,12 +1284,22 @@ be passed separately with quotes to avoid confusion (e.g
         action="store_true",
     )
     parser.add_argument(
+        "--libtbx",
+        help="Use the libtbx build system, compiling cctbx from scratch.",
+        action="store_false",
+        dest="cmake",
+    )
+    parser.add_argument(
         "--cmake",
-        help="Use the CMake build system. Implies use of a prebuilt cctbx.",
         action="store_true",
+        dest="removed_cmake",
+        help=argparse.SUPPRESS,
     )
 
     options = parser.parse_args()
+    if options.removed_cmake:
+        # User passed the obsolete parameter
+        sys.exit("Error: --cmake is now the default, please remove --cmake.")
 
     print("Performing actions:", " ".join(options.actions))
 
