@@ -49,10 +49,6 @@ absolute_angle_tolerance = 2
   .type = float(value_min=0)
   .help = "Datasets are only accepted if unit cell angles fall within this absolute tolerance of the median cell angles."
 
-min_reflections = 10
-  .type = int(value_min=1)
-  .help = "The minimum number of reflections per experiment."
-
 dimensionality_assessment {
   outlier_rejection = True
     .type = bool
