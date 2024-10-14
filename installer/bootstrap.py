@@ -856,15 +856,10 @@ def update_sources(options):
                 ("xia2/xia2", "main"),
             )
         }
-        if options.prebuilt_cctbx:
-            repositories["cctbx_project"]["branch-local"] = (
-                "releases/" + _prebuilt_cctbx_base
-            )
-        else:
-            repositories["cctbx_project"] = {
-                "base-repository": "dials/cctbx_project",
-                "branch-local": "dials-3.23",
-            }
+        repositories["cctbx_project"] = {
+            "base-repository": "dials/cctbx_project",
+            "branch-local": "dials-3.23",
+        }
     else:
         # Only what we need for CMake
         repositories = {
