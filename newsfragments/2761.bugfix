@@ -1,2 +1,0 @@
-Ensure correct results from the ``determine_reindex_operator_against_reference``
-function when the test and reference miller sets are the same object.
