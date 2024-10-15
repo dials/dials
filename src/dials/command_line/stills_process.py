@@ -1448,9 +1448,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     refls["id"] = flex.int(len(refls), len(new_experiments))
                     # refls.reset_ids()
                     del refls.experiment_identifiers()[expt_id]
-                    refls.experiment_identifiers()[
-                        len(new_experiments)
-                    ] = expt.identifier
+                    refls.experiment_identifiers()[len(new_experiments)] = (
+                        expt.identifier
+                    )
                     new_reflections.extend(refls)
                     new_experiments.append(expt)
                 else:
