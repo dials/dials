@@ -1,1 +1,0 @@
-``dials.integrate``: Ensure the polarization correction is only performed for X-ray data (not electron nor neutron).

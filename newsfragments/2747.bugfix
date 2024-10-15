@@ -1,1 +1,0 @@
-``dials.find_spots_server``: fix multiprocessing to use fork on macOS and on all platforms (and needed for Python 3.14)
