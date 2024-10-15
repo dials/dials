@@ -1,4 +1,7 @@
-from dials.algorithms.beam_position import MidpointMethodSolver
+from dials.algorithms.beam_position import (
+        MidpointMethodSolver,
+        MaximumMethodSolver
+)
 from dials.algorithms.beam_position.plot import Figure
 
 
@@ -8,9 +11,13 @@ def compute_beam_position(image, params, index=None):
 
     if method_x == 'midpoint':
         solver_x = MidpointMethodSolver(image, params, axis='x')
+    elif method_x == 'maximum':
+        solver_x = MaximumMethodSolver(image, params, axis='x')
 
     if method_y == 'midpoint':
         solver_y = MidpointMethodSolver(image, params, axis='y')
+    elif method_y == 'maximum':
+        solver_y = MaximumMethodSolver(image, params, axis='y')
 
     x = solver_x.find_beam_position()
     y = solver_y.find_beam_position()

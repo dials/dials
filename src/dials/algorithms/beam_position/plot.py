@@ -51,8 +51,10 @@ class Figure:
         self.main_axis.set_xlabel(r"Pixel index X")
         self.main_axis.set_ylabel(r"Pixel index Y")
 
-        if not params.projection.color_cutoff == "None":
+        if params.projection.color_cutoff:
             vmax = float(params.projection.color_cutoff)
+        else:
+            vmax = image.max()
         img = self.main_axis.imshow(image, cmap="jet", aspect="auto",
                                     origin="lower", rasterized=True,
                                     interpolation="none",
@@ -75,7 +77,7 @@ class Figure:
         # Plot circles around the beam center
         diagonal_width = np.sqrt(width_x**2 + width_y**2)
         radial_distance = diagonal_width / 10
-        radii = np.arange(0, diagonal_width, radial_distance)
+        radii = np.arange(0, 2*diagonal_width, radial_distance)
         for radius in radii:
             c = Circle((beam_x, beam_y), radius, facecolor="none",
                        edgecolor="white", lw=0.7, ls=(1, (2, 2)))

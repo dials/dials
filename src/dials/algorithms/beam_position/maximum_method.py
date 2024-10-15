@@ -1,0 +1,115 @@
+"""Define a class that searches for beam position using midpoint method"""
+from __future__ import annotations
+from collections import namedtuple
+import numpy as np
+from dials.algorithms.beam_position.project_profile import project
+
+
+class MaximumMethodSolver:
+
+    def __init__(self, image, params, axis='x'):
+
+        cw = params.projection.maximum.convolution_width
+        threshold = params.projection.maximum.bad_pixel_threshold
+        nc = params.projection.maximum.n_convolutions
+        self.axis = axis
+
+        if axis == 'x':
+            exclude_range = params.projection.exclude_pixel_range_y
+        elif axis == 'y':
+            exclude_range = params.projection.exclude_pixel_range_x
+        else:
+            raise ValueError(f"Unknown axis: {axis}")
+
+        # Clean image
+        clean_image = np.array(image)
+        min_value = clean_image.min()
+
+        if threshold:
+            clean_image[clean_image < threshold] = min_value
+
+        profile_max, max_from_max = project(clean_image, axis=axis,
+                                            method='max',
+                                            exclude_range=exclude_range,
+                                            convolution_width=1)
+
+        profile_mean, max_from_mean = project(clean_image, axis=axis,
+                                              method='average',
+                                              exclude_range=exclude_range,
+                                              convolution_width=cw,
+                                              n_convolutions=nc)
+
+        self.params = params
+        self.profile_max = profile_max
+        self.profile_mean = profile_mean
+        self.max_value = max_from_max
+        self.bin_width = params.projection.maximum.bin_width
+        self.bin_step = params.projection.maximum.bin_step
+        self.n_convolutions = params.projection.maximum.n_convolutions
+
+    def find_beam_position(self):
+
+        Bin = namedtuple('Bin', ['value', 'start', 'end'])
+
+        n = len(self.profile_max)
+
+        if self.bin_width > n:
+            msg = 'Error in MaximumMethodSolver: bin_width='
+            msg += f"{self.bin_width} larger than image dimension {n}"
+            raise ValueError(msg)
+
+        n_end = ((n - self.bin_width) // self.bin_step) * self.bin_step
+
+        bins = []
+
+        for start in np.arange(0, n_end, self.bin_step):
+            value = self.profile_mean[start:start + self.bin_width].sum()
+            bins.append(Bin(value, start, start + self.bin_width))
+
+        max_bin = sorted(bins, key=lambda x: x.value, reverse=True)[0]
+
+        selected = np.array(self.profile_max)
+        min_value = selected.min()
+        selected[0:max_bin.start] = min_value
+        selected[max_bin.end:] = min_value
+
+        beam_position = np.argmax(selected)
+
+        self.beam_position = beam_position
+        self.bin_start = max_bin.start
+        self.bin_end = max_bin.end
+
+        return beam_position
+
+    def plot(self, figure):
+
+        indices = np.arange(0, len(self.profile_max))
+
+        if self.axis == 'x':
+            ax = figure.axis_x
+            ax.axvspan(self.bin_start, self.bin_end, color='#BEBEBE',
+                       alpha=0.5)
+            ax.axvline(self.beam_position, c='C3', lw=1)
+
+            ax.plot(indices, self.profile_max, lw=1, c='gray')
+            ax.plot(indices, self.profile_mean, lw=1, c='C2')
+
+            ax.text(0.01, 0.95, 'method: maximum', va='top', ha='left',
+                    transform=ax.transAxes, fontsize=8)
+            label = 'Imax = %.0f' % self.max_value
+            ax.text(0.01, 0.75, label, va='top', ha='left',
+                    transform=ax.transAxes, fontsize=8)
+        elif self.axis == 'y':
+            ax = figure.axis_y
+            ax.axhspan(self.bin_start, self.bin_end, color='#BEBEBE',
+                       alpha=0.5)
+            ax.axhline(self.beam_position, c='C3', lw=1)
+            ax.plot(self.profile_max, indices, lw=1, c='gray')
+            ax.plot(self.profile_mean, indices, lw=1, c='C2')
+            ax.text(0.95, 0.99, 'method: maximum', va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=8)
+            label = 'Imax = %.0f' % self.max_value
+            ax.text(0.75, 0.99, label, va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=8)
+        else:
+            raise ValueError(f"Unknown axis: {self.axis}")

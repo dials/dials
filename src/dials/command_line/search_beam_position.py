@@ -159,8 +159,11 @@ projection {
     maximum {
 
         bad_pixel_threshold = None
-      .type = int
-      .help = "Set all pixels above this value to zero."
+        .type = int
+        .help = "Set all pixels above this value to zero."
+
+        n_convolutions = 1
+        .type = int
 
         convolution_width = 1
         .type = int

@@ -5,7 +5,7 @@ from dials.algorithms.beam_position.helper_functions import (
 
 
 def project(image, axis='x', method='max', exclude_range=None,
-            convolution_width=1):
+            convolution_width=1, n_convolutions=1):
 
     if axis == "x":
         proj_axis = 0
@@ -21,7 +21,9 @@ def project(image, axis='x', method='max', exclude_range=None,
     elif method == 'average':
         profile = image[:, :].mean(axis=proj_axis)
 
-    profile = smooth(profile, width=convolution_width)
+    for i in range(n_convolutions):
+        profile = smooth(profile, width=convolution_width)
+
     max_value = profile.max()
     profile = normalize(profile)
 
