@@ -242,7 +242,7 @@ class PeakCentroidDistanceFilter:
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered %d of %d spots by peak-centroid distance", num_after, num_before
+            f"Filtered {num_after} of {num_before} spots by peak-centroid distance"
         )
         return flags
 
@@ -332,7 +332,7 @@ class BackgroundGradientFilter:
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered %d of %d spots by background gradient", num_after, num_before
+            f"Filtered {num_after} of {num_before} spots by background gradient"
         )
         return flags
 
@@ -398,7 +398,7 @@ class SpotDensityFilter:
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
-        logger.info("Filtered %d of %d spots by spot density", num_after, num_before)
+        logger.info(f"Filtered {num_after} of {num_before} spots by spot density")
         return flags
 
 
