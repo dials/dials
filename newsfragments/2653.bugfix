@@ -1,0 +1,1 @@
+``dials.index``: ensure reflections associated with removed experiments are reset to unindexed.

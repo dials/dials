@@ -1,6 +1,5 @@
 """Creation of 'corrgram' correlation matrix plots"""
 
-
 from __future__ import annotations
 
 import json
@@ -63,7 +62,6 @@ def corrgram(corrmat, labels):
         import matplotlib
 
         matplotlib.use("Agg")
-        import matplotlib.cm as cm
         import matplotlib.pyplot as plt
     except ImportError as e:
         logger.info("matplotlib modules not available " + str(e), exc_info=True)
@@ -71,7 +69,7 @@ def corrgram(corrmat, labels):
 
     plt.figure(1)
     ax = plt.subplot(1, 1, 1, aspect="equal")
-    clrmap = cm.get_cmap("bwr")
+    clrmap = matplotlib.colormaps["bwr"]
 
     for x in range(nr):
         for y in range(nr):
@@ -132,7 +130,6 @@ def create_correlation_plots(refiner, params):
 
         corrmats, labels = refiner.get_parameter_correlation_matrix(step, col_select)
         if [corrmats, labels].count(None) == 0:
-
             for resid_name, corrmat in corrmats.items():
                 plot_fname = fname_base + "_" + resid_name + ext
                 plt = corrgram(corrmat, labels)

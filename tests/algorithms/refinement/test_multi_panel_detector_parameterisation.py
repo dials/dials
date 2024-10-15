@@ -5,7 +5,6 @@ single panel detector, and a geometrically identical 3x3 panel detector,
 ensuring the results are the same.
 """
 
-
 from __future__ import annotations
 
 from collections import namedtuple
@@ -89,7 +88,6 @@ master_phil = parse(
 
 @pytest.fixture(scope="session")
 def init_test():
-
     models = setup_geometry.Extract(master_phil)
 
     single_panel_detector = models.detector
@@ -216,7 +214,6 @@ def init_test():
 
 
 def test(init_test):
-
     single_panel_detector = init_test.experiments_single_panel.detectors()[0]
     multi_panel_detector = init_test.experiments_multi_panel.detectors()[0]
     beam = init_test.experiments_single_panel.beams()[0]
@@ -362,7 +359,6 @@ def test(init_test):
 
 
 def test_equivalence_of_python_and_cpp_multipanel_algorithms(init_test):
-
     multi_panel_detector = init_test.experiments_multi_panel.detectors()[0]
     beam = init_test.experiments_single_panel.beams()[0]
 

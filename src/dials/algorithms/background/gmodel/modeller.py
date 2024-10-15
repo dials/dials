@@ -51,7 +51,6 @@ class Modeller:
         self.detector_mask = None
 
     def add_image(self, frame, image, mask, reflections):
-
         height, width = image.all()
 
         _, _, _, _, z0, z1 = reflections["bbox"].parts()
@@ -90,7 +89,6 @@ class Modeller:
 
 class Creator:
     def __init__(self, experiment, params):
-
         self.modeller = None
         self.background = None
         self.experiment = experiment

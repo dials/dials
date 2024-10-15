@@ -278,7 +278,6 @@ Summary of input data:
         # Compute CC1/2 minus each dataset
         cchalf_i = {}
         for dataset in dataset_lookup:
-
             # Find all observations from this dataset and create a lookup based on
             # miller index
             index_lookup = defaultdict(list)

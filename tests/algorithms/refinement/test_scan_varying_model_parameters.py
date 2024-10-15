@@ -290,7 +290,6 @@ def test_ScanVaryingCrystalOrientationParameterisation_intervals(
     phi3_data = []
     step_size = (vmp.image_range[1] - vmp.image_range[0]) / num_points
     for t in [vmp.image_range[0] + e * step_size for e in range(num_points + 1)]:
-
         # collect data for plot
         smooth_at.append(t)
         phi1_data.append(xl_op._smoother.value_weight(t, xl_op._param[0])[0])

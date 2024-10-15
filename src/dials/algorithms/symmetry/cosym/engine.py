@@ -56,7 +56,10 @@ class lbfgs_with_curvs:
         f, g, curvs = self.compute_functional_gradients_and_curvatures()
 
         # Curvatures of zero will cause a crash, because their inverse is taken.
-        assert curvs.all_gt(0.0)
+        if not curvs.all_gt(0.0):
+            raise RuntimeError(
+                "Zero curvature(s) encountered during minimization, minimization stopped."
+            )
         diags = 1.0 / curvs
         return f, g, diags
 
@@ -92,7 +95,6 @@ class lbfgs_with_curvs:
 def minimize_scitbx_lbfgs(
     target, coords, use_curvatures=True, max_iterations=100, max_calls=None
 ):
-
     termination_params = scitbx.lbfgs.termination_parameters(
         max_iterations=max_iterations,
         max_calls=max_calls,
