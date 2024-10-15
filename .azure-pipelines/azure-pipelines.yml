@@ -2,7 +2,7 @@ variables:
   CACHE_VERSION: 20201102
   isPullRequest: $[startsWith(variables['Build.SourceBranch'], 'refs/pull/')]
   PYTHON_MINIMUM_VERSION: "3.9"
-  PYTHON_TESTING_VERSION: "3.11"
+  PYTHON_TESTING_VERSION: "3.12"
 
 stages:
 - stage: prepare
@@ -37,10 +37,10 @@ stages:
 
       - bash: |
           set -eux
-          pip install flake8
+          pip install ruff
           cd repository
-          python .azure-pipelines/flake8-validation.py
-        displayName: Flake8 validation
+          python .azure-pipelines/lint-validation.py
+        displayName: Ruff validation
 
       # Set up constants for further build steps
       - bash: |

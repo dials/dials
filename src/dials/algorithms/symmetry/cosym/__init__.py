@@ -21,8 +21,10 @@ from cctbx import miller, sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from scitbx import matrix
+from scitbx.array_family import flex
 
 import dials.util
+import dials.util.system
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry import median_unit_cell, symmetry_base
 from dials.algorithms.symmetry.cosym import engine as cosym_engine
@@ -35,6 +37,12 @@ logger = logging.getLogger(__name__)
 
 phil_scope = iotbx.phil.parse(
     """\
+min_reflections = 10
+  .type = int(value_min=0)
+  .help = "The minimum number of merged reflections per experiment required to perform cosym analysis."
+
+seed = 230
+  .type = int(value_min=0)
 
 normalisation = kernel quasi *ml_iso ml_aniso
   .type = choice
@@ -79,6 +87,15 @@ use_curvatures = True
 weights = count standard_error
   .type = choice
   .short_caption = "Weights"
+  .help = "If not None, a weights matrix is used in the cosym procedure."
+          "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
+          "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
+          "the sqrt of (1-CC*2)/(n-2), where (n-2) are the degrees of freedom in a pairwise CC calculation."
+cc_weights = None sigma
+  .type = choice
+  .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
+          "freedom in the cosym procedure."
+          "weights=sigma uses the intensity uncertainties to perform inverse variance weighting during the cc calculation."
 
 min_pairs = 3
   .type = int(value_min=1)
@@ -99,10 +116,9 @@ minimization
     .short_caption = "Maximum number of calls"
 }
 
-nproc = None
+nproc = Auto
   .type = int(value_min=1)
-  .help = "Deprecated"
-  .deprecated = True
+  .help = "Number of processes"
 """
 )
 
@@ -136,6 +152,7 @@ class CosymAnalysis(symmetry_base, Subject):
                 0 <= seed_dataset < len(intensities)
             ), "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
 
+        max_id = len(intensities) - 1
         super().__init__(
             intensities,
             normalisation=params.normalisation,
@@ -150,6 +167,31 @@ class CosymAnalysis(symmetry_base, Subject):
         Subject.__init__(
             self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
         )
+
+        # remove those with less than min_reflections after setup.
+        if params.min_reflections:
+            to_remove = []
+            min_id = 0
+            histy = flex.histogram(
+                self.dataset_ids.as_double(),
+                min_id - 0.5,
+                max_id + 0.5,
+                n_slots=max_id + 1 - min_id,
+            )
+            vals = histy.slots()
+            for i, _ in enumerate(range(min_id, max_id + 1)):
+                n = vals[i]
+                if n < params.min_reflections:
+                    to_remove.append(i)
+            if to_remove:
+                logger.info(
+                    f"Removing datasets {', '.join(str(i) for i in to_remove)} with < {params.min_reflections} reflections"
+                )
+                sel = flex.bool(self.intensities.size(), True)
+                for i in to_remove:
+                    sel.set_selected(self.dataset_ids == i, False)
+                self.intensities = self.intensities.select(sel)
+                self.dataset_ids = self.dataset_ids.select(sel)
 
         self.params = params
         if self.params.space_group is not None:
@@ -200,6 +242,21 @@ class CosymAnalysis(symmetry_base, Subject):
             )
             self.input_space_group = self.intensities.space_group()
 
+            # ensure still unique after mapping - merge equivalents in the higher symmetry
+            new_intensities = None
+            new_dataset_ids = flex.int([])
+            for d in set(self.dataset_ids):
+                sel = self.dataset_ids == d
+                these_i = self.intensities.select(sel)
+                these_merged = these_i.merge_equivalents().array()
+                if not new_intensities:
+                    new_intensities = these_merged
+                else:
+                    new_intensities = new_intensities.concatenate(these_merged)
+                new_dataset_ids.extend(flex.int(these_merged.size(), d))
+            self.intensities = new_intensities
+            self.dataset_ids = new_dataset_ids
+
         else:
             self.input_space_group = None
 
@@ -208,6 +265,13 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
+        # N.B. currently only multiprocessing used if cc_weights=sigma
+        if self.params.nproc is Auto:
+            if self.params.cc_weights == "sigma":
+                params.nproc = dials.util.system.CPU_COUNT
+                logger.info("Setting nproc={}".format(params.nproc))
+            else:
+                params.nproc = 1
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -229,67 +293,79 @@ class CosymAnalysis(symmetry_base, Subject):
             lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
+            cc_weights=self.params.cc_weights,
+            nproc=self.params.nproc,
         )
 
-    def _determine_dimensions(self):
-        if self.params.dimensions is Auto and self.target.dim == 2:
-            self.params.dimensions = 2
-        elif self.params.dimensions is Auto:
-            logger.info("=" * 80)
-            logger.info(
-                "\nAutomatic determination of number of dimensions for analysis"
+    def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
+        logger.info("=" * 80)
+        logger.info("\nAutomatic determination of number of dimensions for analysis")
+        dimensions = []
+        functional = []
+        for dim in range(1, dims_to_test + 1):
+            logger.debug("Testing dimension: %i", dim)
+            self.target.set_dimensions(dim)
+            max_calls = self.params.minimization.max_calls
+            self._optimise(
+                self.params.minimization.engine,
+                max_iterations=self.params.minimization.max_iterations,
+                max_calls=min(20, max_calls) if max_calls else max_calls,
             )
-            dimensions = []
-            functional = []
-            for dim in range(1, self.target.dim + 1):
-                logger.debug("Testing dimension: %i", dim)
-                self.target.set_dimensions(dim)
-                max_calls = self.params.minimization.max_calls
-                self._optimise(
-                    self.params.minimization.engine,
-                    max_iterations=self.params.minimization.max_iterations,
-                    max_calls=min(20, max_calls) if max_calls else max_calls,
-                )
-                dimensions.append(dim)
-                functional.append(self.minimizer.fun)
 
-            # Find the elbow point of the curve, in the same manner as that used by
-            # distl spotfinder for resolution method 1 (Zhang et al 2006).
-            # See also dials/algorithms/spot_finding/per_image_analysis.py
-
-            x = np.array(dimensions)
-            y = np.array(functional)
-            slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
-            p_m = slopes.argmin()
-
-            x1 = matrix.col((x[p_m], y[p_m]))
-            x2 = matrix.col((x[-1], y[-1]))
-
-            gaps = []
-            v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
-
-            for i in range(p_m, len(x)):
-                x0 = matrix.col((x[i], y[i]))
-                r = x1 - x0
-                g = abs(v.dot(r))
-                gaps.append(g)
-
-            p_g = np.array(gaps).argmax()
-
-            x_g = x[p_g + p_m]
-
-            logger.info(
-                dials.util.tabulate(
-                    zip(dimensions, functional), headers=("Dimensions", "Functional")
+            dimensions.append(dim)
+            functional.append(
+                self.target.compute_functional_score_for_dimension_assessment(
+                    self.minimizer.x, outlier_rejection
                 )
             )
-            logger.info("Best number of dimensions: %i", x_g)
+
+        # Find the elbow point of the curve, in the same manner as that used by
+        # distl spotfinder for resolution method 1 (Zhang et al 2006).
+        # See also dials/algorithms/spot_finding/per_image_analysis.py
+
+        x = np.array(dimensions)
+        y = np.array(functional)
+        slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
+        p_m = slopes.argmin()
+
+        x1 = matrix.col((x[p_m], y[p_m]))
+        x2 = matrix.col((x[-1], y[-1]))
+
+        gaps = []
+        v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
+
+        for i in range(p_m, len(x)):
+            x0 = matrix.col((x[i], y[i]))
+            r = x1 - x0
+            g = abs(v.dot(r))
+            gaps.append(g)
+
+        p_g = np.array(gaps).argmax()
+
+        x_g = x[p_g + p_m]
+
+        logger.info(
+            dials.util.tabulate(
+                zip(dimensions, functional), headers=("Dimensions", "Functional")
+            )
+        )
+
+        logger.info("Best number of dimensions: %i", x_g)
+        if int(x_g) < 2:
+            logger.info(
+                "As a minimum of 2-dimensions is required, dimensions have been set to 2."
+            )
+            self.target.set_dimensions(2)
+        else:
             self.target.set_dimensions(int(x_g))
-            logger.info("Using %i dimensions for analysis", self.target.dim)
+        logger.info("Using %i dimensions for analysis", self.target.dim)
+
+        return dimensions, functional
 
     def run(self):
         self._intialise_target()
-        self._determine_dimensions()
+        if self.params.dimensions is Auto and self.target.dim != 2:
+            self._determine_dimensions(self.target.dim)
         self._optimise(
             self.params.minimization.engine,
             max_iterations=self.params.minimization.max_iterations,
@@ -301,6 +377,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
+        np.random.seed(self.params.seed)
         NN = len(set(self.dataset_ids))
         n_sym_ops = len(self.target.sym_ops)
 
@@ -485,7 +562,6 @@ class CosymAnalysis(symmetry_base, Subject):
 
 class SymmetryAnalysis:
     def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
-
         import scipy.spatial.distance as ssd
 
         self.subgroups = subgroups

@@ -53,9 +53,9 @@ def flex_histogram(z, char="*", width=60, height=10):
 
     max_count = flex.max(counts)
     total_counts = flex.sum(counts)
-    assert total_counts == len(
-        z
-    ), "Only found %d out of %d reflections for histogram" % (total_counts, len(z))
+    assert total_counts == len(z), (
+        "Only found %d out of %d reflections for histogram" % (total_counts, len(z))
+    )
     counts *= height / max_count
     counts = counts.iround()
 

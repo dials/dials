@@ -4,7 +4,7 @@ import logging
 
 import gemmi
 import numpy as np
-from scipy.spatial.transform.rotation import Rotation
+from scipy.spatial.transform import Rotation
 
 import iotbx.phil
 from dxtbx.model import Crystal
@@ -50,11 +50,12 @@ def rotvec_to_quaternion(rotvec, deg=False, eps=1e-32):
     if deg:
         alpha = np.deg2rad(alpha)
     a2 = 0.5 * alpha
+    sa2 = np.sin(a2)
     w = np.cos(a2)
-    x = np.sin(a2) * ax[..., 0]
-    y = np.sin(a2) * ax[..., 1]
-    z = np.sin(a2) * ax[..., 2]
-    return np.stack((w, x, y, z), axis=-1)
+    x = sa2 * ax[..., 0]
+    y = sa2 * ax[..., 1]
+    z = sa2 * ax[..., 2]
+    return np.stack((x, y, z, w), axis=-1)
 
 
 def quaternion_multiply(a, b):
@@ -62,24 +63,24 @@ def quaternion_multiply(a, b):
     Multiply two quaternions, return a*b
     """
     # Expand a
-    aw = a[..., 0]
-    ax = a[..., 1]
-    ay = a[..., 2]
-    az = a[..., 3]
+    ax = a[..., 0]
+    ay = a[..., 1]
+    az = a[..., 2]
+    aw = a[..., 3]
 
     # Expand b
-    bw = b[..., 0]
-    bx = b[..., 1]
-    by = b[..., 2]
-    bz = b[..., 3]
+    bx = b[..., 0]
+    by = b[..., 1]
+    bz = b[..., 2]
+    bw = b[..., 3]
 
     # Calculate result
-    w = aw * bw - ax * bx - ay * by - az * bz
     x = aw * bx + ax * bw + ay * bz - az * by
     y = aw * by - ax * bz + ay * bw + az * bx
     z = aw * bz + ax * by - ay * bx + az * bw
+    w = aw * bw - ax * bx - ay * by - az * bz
 
-    return np.dstack((w, x, y, z))
+    return np.dstack((x, y, z, w))
 
 
 def norm2(array, axis=-1, keepdims=False):
@@ -288,11 +289,12 @@ class Indexer:
         # Discretize scaled rotvecs
         scale_max = np.arctan(np.pi / 4.0)
         bins = np.linspace(-scale_max, scale_max, voxel_grid_points)
-        # This is how you would calculate the bin centers if you cared to extract the rotation matrix directly
-        # bin_centers = np.concatenate(
-        #    (bins[[0]], 0.5 * (bins[1:] + bins[:-1]), bins[[-1]])
-        # )
         idx = np.digitize(scaled_rotvec, bins)
+
+        # This is how to calculate the bin centers to extract the rotation matrix from the voxel grid
+        bin_centers = np.concatenate(
+            (bins[[0]], 0.5 * (bins[1:] + bins[:-1]), bins[[-1]])
+        )
 
         # Map discretized rotvecs into voxel grid
         n = voxel_grid_points + 1
@@ -319,35 +321,19 @@ class Indexer:
         cutoff = np.sort(voxels.flatten())[-min_lattices]
         peaks = np.column_stack(np.where(voxels >= cutoff))
         for peak in peaks:
-            assignment = np.zeros_like(mask)
-            assignment[i, j] = (idx == peak).all(-1).any(-1)
-            refl_id, miller_id = np.where(assignment)
-
-            # Use a bootstrap approach to estimate the UB matrix
-            n = len(refl_id)
-            num_bootstraps = 100
-            bs_idx = np.random.choice(n, (num_bootstraps, n))
-
-            refl_id = refl_id[bs_idx]
-            miller_id = miller_id[bs_idx]
-
-            h = Hall[miller_id]
-            s = s1_hat[refl_id]
-
-            # Assign everything to be the nominal wavelength
-            wav = self.wav_peak
-            k = np.reciprocal(wav)
-            UB = (
-                k
-                * (s - s0_hat).transpose(0, 2, 1)
-                @ np.linalg.pinv(h.transpose(0, 2, 1))
-            )
-            yield UB.mean(0)
+            v = bin_centers[peak]
+            l = norm2(v)
+            theta = np.tan(l) * 4.0
+            rotvec = theta * v / l
+            U = Rotation.from_rotvec(rotvec).as_matrix()
+            UB = U @ self.B
+            yield UB
 
 
 class PinkIndexer(Strategy):
     """
     A lattice search strategy using the pinkIndexer algorithm.
+
     For more info, see:
     [Gevorkov Y, et al. pinkIndexer – a universal indexer for pink-beam X-ray and electron diffraction snapshots. Acta Cryst A. 2020 Mar 1;76(2):121–31.](https://doi.org/10.1107/S2053273319015559)
     """
@@ -364,10 +350,13 @@ class PinkIndexer(Strategy):
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
     ):
         """Construct PinkIndexer object.
+
         Args:
             target_symmetry_primitive (cctbx.crystal.symmetry): The target
                 crystal symmetry and unit cell
+
             max_lattices (int): The maximum number of lattice models to find
+
             params (phil,optional): Phil params
         """
         super().__init__(params=None, *args, **kwargs)

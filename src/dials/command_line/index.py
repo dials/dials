@@ -10,6 +10,7 @@ import sys
 
 import iotbx.phil
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx import Auto
 
 from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
@@ -69,7 +70,7 @@ indexing {
       .type = ints(size=2)
       .multiple = True
 
-    joint_indexing = True
+    joint_indexing = Auto
       .type = bool
 
 }
@@ -167,6 +168,19 @@ def index(experiments, reflections, params):
     if params.indexing.image_range:
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
+    if params.indexing.joint_indexing is Auto:
+        if all(e.is_still() for e in experiments):
+            params.indexing.joint_indexing = False
+            logger.info("Disabling joint_indexing for still data")
+        elif all(not e.is_still() for e in experiments):
+            params.indexing.joint_indexing = True
+            if len(experiments) > 1:
+                logger.info("Enabling joint_indexing for rotation data")
+        else:
+            raise ValueError(
+                "Unable to set joint_indexing automatically for a mixture of still and rotation data"
+            )
+
     if len(experiments) == 1 or params.indexing.joint_indexing:
         indexed_experiments, indexed_reflections = _index_experiments(
             experiments,
@@ -210,8 +224,8 @@ def index(experiments, reflections, params):
                 try:
                     iset_id = futures[future]
                     idx_expts, idx_refl = future.result()
-                except Exception as e:
-                    print(e)
+                except DialsIndexError as e:
+                    logger.warning(str(e))
                 else:
                     if idx_expts is None:
                         continue

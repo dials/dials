@@ -377,7 +377,7 @@ def test_import_beam_centre(dials_data, tmp_path):
 
 
 def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
-    # test slow_fast_beam_centre with a multi-panel CS-PAD image
+    # test fast_slow_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,
         "image_examples",
@@ -427,6 +427,59 @@ def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
     o = matrix.col(ref_imset.get_detector()[0].get_origin())
     ref_offsets = []
     for p in ref_imset.get_detector():
+        intra_pnl = o - matrix.col(p.get_origin())
+        ref_offsets.append(intra_pnl.length())
+    assert offsets == pytest.approx(ref_offsets)
+
+
+def test_distance_multi_panel(dials_regression: pathlib.Path, tmp_path):
+    # test setting the distance with a multi-panel CS-PAD image
+    impath = os.path.join(
+        dials_regression,
+        "image_examples",
+        "LCLS_cspad_nexus",
+        "idx-20130301060858401.cbf",
+    )
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "distance=100",
+            "output.experiments=distance.expt",
+            impath,
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "distance.expt").is_file()
+
+    experiments = load.experiment_list(tmp_path / "distance.expt")
+    detector = experiments[0].detector
+    # all distances should be 100
+    assert all(p.get_distance() == pytest.approx(100) for p in detector)
+
+    # check relative panel positions have not changed
+    from scitbx import matrix
+
+    o = matrix.col(detector[0].get_origin())
+    offsets = []
+    for p in detector:
+        intra_pnl = o - matrix.col(p.get_origin())
+        offsets.append(intra_pnl.length())
+
+    result = subprocess.run(
+        [shutil.which("dials.import"), "output.experiments=reference.expt", impath],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "reference.expt").is_file()
+
+    ref_exp = load.experiment_list(tmp_path / "reference.expt")
+    ref_detector = ref_exp[0].detector
+    o = matrix.col(ref_detector[0].get_origin())
+    ref_offsets = []
+    for p in ref_detector:
         intra_pnl = o - matrix.col(p.get_origin())
         ref_offsets.append(intra_pnl.length())
     assert offsets == pytest.approx(ref_offsets)
@@ -770,9 +823,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     # also add in something that is sequences, for completess
     centroid_image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )[
-        :3
-    ]  # just three images
+    )[:3]  # just three images
     result = subprocess.run(
         [
             shutil.which("dials.import"),

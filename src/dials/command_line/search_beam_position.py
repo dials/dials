@@ -23,9 +23,9 @@ from scitbx.simplex import simplex_opt
 import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger("dials.command_line.search_beam_position")
 
@@ -241,9 +241,10 @@ def optimize_origin_offset_local_scope(
             plt.savefig("search_scope.png")
 
             # changing value
-            trial_origin_offset = (idxs[idx_max % widegrid]) * beamr1 + (
-                idxs[idx_max // widegrid]
-            ) * beamr2
+            trial_origin_offset = (
+                (idxs[idx_max % widegrid]) * beamr1
+                + (idxs[idx_max // widegrid]) * beamr2
+            )
             return trial_origin_offset
 
         show_plot(widegrid=2 * grid + 1, excursi=scores)
@@ -497,7 +498,7 @@ def run(args=None):
         random.seed(params.seed)
 
     if params.nproc is libtbx.Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
 
     imagesets = experiments.imagesets()
     # Split all the refln tables by ID, corresponding to the respective imagesets

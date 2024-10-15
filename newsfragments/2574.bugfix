@@ -1,1 +1,0 @@
-``dials.cosym``: Filter out datasets that can't be mapped through a consistent best cell, rather than exiting.

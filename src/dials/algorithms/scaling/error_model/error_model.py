@@ -42,6 +42,15 @@ phil_scope = phil.parse(
                   "determine both parameters concurrently. If minimisation=None,"
                   "the model parameters are fixed to their initial or given values."
           .expert_level = 3
+        stills {
+            min_Isigma = 2.0
+              .type=float
+              .help = "Minimum uncorrected I/sigma for individual reflections used in error model optimisation"
+            min_multiplicity = 4
+              .type = int
+              .help = "Only reflections with at least this multiplicity (after Isigma filtering) are"
+                      "used in error model optimisation."
+        }
         min_Ih = 25.0
             .type = float
             .help = "Reflections with expected intensity above this value are to."
@@ -94,7 +103,6 @@ def calc_deltahl(Ih_table, n_h, sigmaprime) -> np.array:
 
 
 class ErrorModelRegressionAPM:
-
     """Parameter manager for error model minimisation using the linear
     regression method.
 
@@ -162,7 +170,6 @@ class ErrorModelRegressionAPM:
 
 
 class ErrorModelA_APM:
-
     """Parameter manager for minimising A component with individual minimizer"""
 
     def __init__(self, model):
@@ -183,7 +190,6 @@ class ErrorModelA_APM:
 
 
 class ErrorModelB_APM:
-
     """Parameter manager for minimising Bcomponent with individual minimizer"""
 
     def __init__(self, model):
@@ -206,7 +212,6 @@ class ErrorModelB_APM:
 
 
 class ErrorModelBinner:
-
     """A binner for the error model data.
 
     Data are binned based on Ih, and methods are available for
@@ -248,7 +253,10 @@ class ErrorModelBinner:
         n = self.Ih_table.size
         self.binning_info["n_reflections"] = n
         summation_matrix = sparse.matrix(n, self.n_bins)
+        # calculate expected intensity value in pixels on scale of each image
         Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
+        if "partiality" in self.Ih_table.Ih_table:
+            Ih *= self.Ih_table.Ih_table["partiality"].to_numpy()
         size_order = flex.sort_permutation(flumpy.from_numpy(Ih), reverse=True)
         Imax = Ih.max()
         min_Ih = Ih.min()
@@ -349,7 +357,6 @@ class ErrorModelBinner:
 
 
 class BComponent:
-
     """The basic error model B parameter component"""
 
     def __init__(self, initial_value=0.02):
@@ -358,7 +365,6 @@ class BComponent:
 
 
 class AComponent:
-
     """The basic error model A parameter component"""
 
     def __init__(self, initial_value=1.00):
@@ -367,7 +373,6 @@ class AComponent:
 
 
 class BasicErrorModel:
-
     """Definition of a basic two-parameter error model."""
 
     min_reflections_required = 250
@@ -375,7 +380,6 @@ class BasicErrorModel:
     id_ = "basic"
 
     def __init__(self, a=None, b=None, basic_params=None):
-
         """
         A basic two-parameter error model s'^2 = a^2(s^2 + (bI)^2)
 
@@ -383,7 +387,6 @@ class BasicErrorModel:
         see if a user specified fixed value is set. If no fixed values are given
         then the model starts with the default parameters a=1.0 b=0.02
         """
-
         self.free_components = []
         self.sortedy = None
         self.sortedx = None
@@ -408,14 +411,19 @@ class BasicErrorModel:
         if not basic_params.b:
             self._active_parameters.append("b")
 
-    def configure_for_refinement(self, Ih_table, min_partiality=0.4):
+    def configure_for_refinement(
+        self, Ih_table, min_partiality=0.4, use_stills_filtering=False
+    ):
         """
         Add data to allow error model refinement.
 
         Raises: ValueError if insufficient reflections left after filtering.
         """
         self.filtered_Ih_table = self.filter_unsuitable_reflections(
-            Ih_table, self.params, min_partiality
+            Ih_table,
+            self.params,
+            min_partiality,
+            use_stills_filtering,
         )
         # always want binning info so that can calc for output.
         self.binner = ErrorModelBinner(
@@ -455,8 +463,19 @@ class BasicErrorModel:
         return self.filtered_Ih_table.size
 
     @classmethod
-    def filter_unsuitable_reflections(cls, Ih_table, error_params, min_partiality):
+    def filter_unsuitable_reflections(
+        cls, Ih_table, error_params, min_partiality, use_stills_filtering
+    ):
         """Filter suitable reflections for minimisation."""
+        if use_stills_filtering:
+            return filter_unsuitable_reflections_stills(
+                Ih_table,
+                error_params.stills.min_multiplicity,
+                error_params.stills.min_Isigma,
+                min_partiality=min_partiality,
+                min_reflections_required=cls.min_reflections_required,
+                min_Ih=error_params.min_Ih,
+            )
         return filter_unsuitable_reflections(
             Ih_table,
             min_Ih=error_params.min_Ih,
@@ -521,13 +540,13 @@ class BasicErrorModel:
                 "  Type: basic",
                 f"  Parameters: a = {a:.5f}, b = {b:.5f}",
                 "  Error model formula: "
-                + "\u03C3"
+                + "\u03c3"
                 + "'"
                 + "\xb2"
                 + " = a"
                 + "\xb2"
                 + "("
-                + "\u03C3\xb2"
+                + "\u03c3\xb2"
                 " + (bI)" + "\xb2" + ")",
                 "  estimated I/sigma asymptotic limit: %s" % ISa,
                 "",
@@ -568,6 +587,49 @@ class BasicErrorModel:
                 "",
             )
         )
+
+
+def filter_unsuitable_reflections_stills(
+    Ih_table,
+    min_multiplicity,
+    min_Isigma,
+    min_partiality,
+    min_reflections_required,
+    min_Ih,
+):
+    """Filter suitable reflections for minimisation."""
+
+    if "partiality" in Ih_table.Ih_table:
+        sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
+        Ih_table = Ih_table.select(sel)
+
+    sel = (Ih_table.intensities / (Ih_table.variances**0.5)) >= min_Isigma
+    Ih_table = Ih_table.select(sel)
+
+    Ih = Ih_table.Ih_values * Ih_table.inverse_scale_factors
+    if "partiality" in Ih_table.Ih_table:
+        Ih *= Ih_table.Ih_table["partiality"].to_numpy()
+    sel = Ih > min_Ih
+    Ih_table = Ih_table.select(sel)
+
+    n_h = Ih_table.calc_nh()
+    sigmaprime = calc_sigmaprime([1.0, 0.0], Ih_table)
+    delta_hl = calc_deltahl(Ih_table, n_h, sigmaprime)
+    # Optimise on the central bulk distribution of the data - avoid the few
+    # reflections in the long tails.
+    sel = np.abs(delta_hl) < 6.0
+    Ih_table = Ih_table.select(sel)
+
+    sel = Ih_table.calc_nh() >= min_multiplicity
+    Ih_table = Ih_table.select(sel)
+    n = Ih_table.size
+
+    if n < min_reflections_required:
+        raise ValueError(
+            "Insufficient reflections (%s < %s) to perform error modelling."
+            % (n, min_reflections_required)
+        )
+    return Ih_table
 
 
 def filter_unsuitable_reflections(

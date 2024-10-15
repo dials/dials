@@ -2,7 +2,6 @@
 Test combination of multiple experiments and reflections files.
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -411,7 +410,6 @@ def test_combine_nsubset(
 
 
 def test_failed_tolerance_error(dials_data, monkeypatch):
-
     """Test that we get a sensible error message on tolerance failures"""
     # Select some experiments to use for combining
     data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
