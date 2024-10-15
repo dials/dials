@@ -365,9 +365,7 @@ def table_1_stats(
             anomalous_statistics.overall.delta_i_mean_over_sig_delta_i_mean
         ]
         if selected_anomalous_statistics:
-            anom_probability_plot = (
-                selected_anomalous_statistics.overall.anom_probability_plot_expected_delta
-            )
+            anom_probability_plot = selected_anomalous_statistics.overall.anom_probability_plot_expected_delta
             if anom_probability_plot is not None:
                 stats["Anomalous slope"] = [anom_probability_plot.slope]
             stats["dF/F"] = [selected_anomalous_statistics.overall.anom_signal]

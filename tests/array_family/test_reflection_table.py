@@ -1602,11 +1602,12 @@ def test_concat():
     ids2[0] = "c"
     ids2[1] = "d"
 
-    table1 = flex.reflection_table.concat([table1, table2])
+    table3 = flex.reflection_table.concat([table1, table2])
+    ids3 = dict(table3.experiment_identifiers())
 
-    assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
-    assert list(ids1.keys()) == [0, 1, 2, 3]
-    assert list(ids1.values()) == ["a", "b", "c", "d"]
+    assert list(table3["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
+    assert list(ids3.keys()) == [0, 1, 2, 3]
+    assert list(ids3.values()) == ["a", "b", "c", "d"]
 
     # test empty tables
     table1 = flex.reflection_table()

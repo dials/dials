@@ -214,11 +214,11 @@ def test(cmdline_overrides=[]):
         phi_grads /= delta
 
         try:
-            for (a, b) in zip(x_grads, an_grads[i]["dX_dp"]):
+            for a, b in zip(x_grads, an_grads[i]["dX_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
-            for (a, b) in zip(y_grads, an_grads[i]["dY_dp"]):
+            for a, b in zip(y_grads, an_grads[i]["dY_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
-            for (a, b) in zip(phi_grads, an_grads[i]["dphi_dp"]):
+            for a, b in zip(phi_grads, an_grads[i]["dphi_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
         except AssertionError:
             print(f"Failure for {p_names[i]}")
@@ -230,7 +230,6 @@ def test(cmdline_overrides=[]):
 
 
 def test_SparseFlex_scalars():
-
     size = 100
 
     # Make a dense double array with 50% explicit zeroes
@@ -269,7 +268,6 @@ def test_SparseFlex_scalars():
 
 
 def test_SparseFlex_matrix_and_vector_arithmetic():
-
     size = 100
 
     # Make a dense vec3 array with 50% explicit zeroes
@@ -350,7 +348,6 @@ def test_SparseFlex_matrix_and_vector_arithmetic():
 
 
 def test_SparseFlex_vec3_only_methods():
-
     size = 100
 
     # Make a dense vec3 array with 50% explicit zeroes
@@ -402,7 +399,6 @@ def test_SparseFlex_vec3_only_methods():
 
 
 def test_SparseFlex_select():
-
     size = 100
 
     # Make a dense double array with 50% explicit zeroes
@@ -514,10 +510,8 @@ def test_SparseFlex_select_intersection(random_order):
 
 
 def test_intersection_i_seqs_speed():
-
     exec_times = []
     for i in range(100):
-
         size = 10000
 
         sel1 = flex.random_selection(size, int(size / 2))
@@ -568,7 +562,6 @@ def test_intersection_i_seqs_speed():
 
 @pytest.mark.parametrize("element_type", ["vec3", "mat3"])
 def test_ReconstituteDerivatives(element_type):
-
     if element_type == "vec3":
         n = 3
         build = build_reconstitute_derivatives_vec3

@@ -332,7 +332,6 @@ def test_deconvolve_3_with_no_background():
 
     Ical = [[], [], []]
     for it in range(1):
-
         # Copy profile
         c = flex.double(flex.grid(40, 9, 9))
         for i in range(p.all()[0]):
@@ -365,7 +364,6 @@ def test_deconvolve_3_with_no_background():
 
 
 def test_deconvolve_3_with_flat_background():
-
     np.random.seed(0)
 
     I0 = [1000, 2000, 3000]
@@ -375,7 +373,6 @@ def test_deconvolve_3_with_flat_background():
 
     Ical = [[], [], []]
     for it in range(1):
-
         # Copy profile
         c = flex.double(flex.grid(40, 9, 9))
         for i in range(p.all()[0]):
@@ -419,7 +416,6 @@ def test_deconvolve_7_with_no_background():
 
     Ical = [[], [], [], [], [], [], []]
     for it in range(1):
-
         # Copy profile
         c = flex.double(flex.grid(40, 40, 40))
         for i in range(p.all()[0]):
@@ -469,7 +465,6 @@ def test_deconvolve_7_with_flat_background():
 
     Ical = [[], [], [], [], [], [], []]
     for it in range(1):
-
         # Copy profile
         c = flex.double(flex.grid(40, 40, 40))
         for i in range(p.all()[0]):

@@ -88,7 +88,7 @@ namespace dials { namespace algorithms {
       vec2<double> phi;
       try {
         phi = calculate_rotation_angles_(pstar0);
-      } catch (error const&) {
+      } catch (error const &) {
         return rays;
       }
 
@@ -124,7 +124,7 @@ namespace dials { namespace algorithms {
       vec2<double> phi;
       try {
         phi = calculate_rotation_angles_(pstar0);
-      } catch (error const&) {
+      } catch (error const &) {
         return rays;
       }
 
@@ -248,6 +248,63 @@ namespace dials { namespace algorithms {
     vec3<double> s0_;
     vec3<double> m2_;
     vec3<double> s0_m2_plane;
+  };
+
+  /**
+   * Class to predict s1 rays for Laue data
+   */
+  class LaueRayPredictor {
+  public:
+    typedef cctbx::miller::index<> miller_index;
+
+    LaueRayPredictor(const vec3<double> unit_s0,
+                     mat3<double> fixed_rotation,
+                     mat3<double> setting_rotation)
+        : unit_s0_(unit_s0),
+          fixed_rotation_(fixed_rotation),
+          setting_rotation_(setting_rotation)
+
+    {
+      DIALS_ASSERT(unit_s0_.length() > 0.0);
+    }
+
+    /**
+     * For a given miller index and UB matrix, calculates the predicted s1 ray.
+     * The LaueRayPredictor wavelength and s0 variables are updated during the
+     * calculation, so that they can be monitored for convergence.
+     * @param h The miller index
+     * @param ub The UB matrix
+     * @returns Ray
+     */
+    Ray operator()(const miller_index &h, const mat3<double> &ub) {
+      // Calculate the reciprocal lattice vector
+      vec3<double> q = setting_rotation_ * fixed_rotation_ * ub * h;
+
+      // Calculate the wavelength required to meet the diffraction condition
+      // (starting from q.q + 2q.s0 = 0)
+      wavelength_ = -2 * ((unit_s0_ * q) / (q * q));
+      s0_ = unit_s0_ / wavelength_;
+      DIALS_ASSERT(s0_.length() > 0);
+
+      // Calculate the Ray (default zero angle and 'entering' as false)
+      vec3<double> s1 = s0_ + q;
+      return Ray(s1, 0.0, false);
+    }
+
+    double get_wavelength() const {
+      return wavelength_;
+    }
+
+    vec3<double> get_s0() const {
+      return s0_;
+    }
+
+  private:
+    const vec3<double> unit_s0_;
+    double wavelength_;
+    vec3<double> s0_;
+    mat3<double> fixed_rotation_;
+    mat3<double> setting_rotation_;
   };
 
 }}  // namespace dials::algorithms

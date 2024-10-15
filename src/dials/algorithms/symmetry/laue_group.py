@@ -167,7 +167,6 @@ class LaueGroupAnalysis(symmetry_base):
             self.cc_sig_fac = 0
 
     def _estimate_cc_true(self):
-
         # A1.2. Estimation of E(CC; S).
 
         # (i)

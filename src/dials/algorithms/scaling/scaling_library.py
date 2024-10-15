@@ -253,15 +253,11 @@ def create_Ih_table(
     Allow an unequal number of experiments and reflections, as only need to
     extract one space group value (can optionally check all same if many)."""
     if selections:
-        assert len(selections) == len(
-            reflections
-        ), """Must have an equal number of
+        assert len(selections) == len(reflections), """Must have an equal number of
     reflection tables and selections in the input lists."""
     space_group_0 = experiments[0].crystal.get_space_group()
     for experiment in experiments:
-        assert (
-            experiment.crystal.get_space_group() == space_group_0
-        ), """The space
+        assert experiment.crystal.get_space_group() == space_group_0, """The space
     groups of all experiments must be equal."""
     input_tables = []
     indices_lists = []
@@ -385,7 +381,6 @@ class MergedHalfDatasets:
 
 
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
-
     """A class to extend iotbx merging statistics."""
 
     def __init__(self, *args, additional_stats=False, seed=0, **kwargs):

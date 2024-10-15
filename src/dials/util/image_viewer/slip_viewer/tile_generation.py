@@ -319,7 +319,6 @@ class _Tiles:
         return value
 
     def get_spotfinder_data(self, params):
-
         pointdata = []
         test_pattern = False
         if (
@@ -439,7 +438,7 @@ class _Tiles:
         beam = self.raw_image.get_beam()
         if detector is None or beam is None:
             return None
-        beam = beam.get_s0()
+        beam = beam.get_unit_s0()
 
         if readout is None:
             return None

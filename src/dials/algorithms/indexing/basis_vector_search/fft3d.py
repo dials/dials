@@ -200,7 +200,6 @@ class FFT3D(Strategy):
         return self.candidate_basis_vectors, used_in_indexing
 
     def _fft(self, reciprocal_lattice_vectors, d_min):
-
         (
             reciprocal_space_grid,
             used_in_indexing,
