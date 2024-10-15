@@ -785,13 +785,31 @@ namespace dials { namespace af { namespace boost_python {
    * @returns The reflection table
    */
   reflection_table reflection_table_from_msgpack(boost::python::object packed) {
+    if (!PyBytes_Check(packed.ptr())) {
+      PyErr_SetString(PyExc_TypeError, "Input is not a valid bytes-like object");
+      boost::python::throw_error_already_set();
+    }
+
     const char *data = PyBytes_AsString(packed.ptr());
     std::size_t size = PyBytes_Size(packed.ptr());
-    msgpack::unpacked result;
-    std::size_t off = 0;
-    msgpack::unpack(result, data, size, off, reflection_table_reference_func);
-    reflection_table r = result.get().as<reflection_table>();
-    return r;
+
+    if (data == NULL || size == 0) {
+      PyErr_SetString(PyExc_ValueError, "Input bytes are invalid or empty");
+      boost::python::throw_error_already_set();
+    }
+
+    try {
+      msgpack::unpacked result;
+      std::size_t off = 0;
+      msgpack::unpack(result, data, size, off, reflection_table_reference_func);
+
+      reflection_table r = result.get().as<reflection_table>();
+      return r;
+    } catch (const std::exception &e) {
+      PyErr_SetString(PyExc_RuntimeError, e.what());
+      boost::python::throw_error_already_set();
+    }
+    return reflection_table();
   }
 
   /*

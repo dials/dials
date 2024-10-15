@@ -364,7 +364,7 @@ class XrayFrame(XFBaseClass):
         # FIXME assumes all detector elements use the same millimeter-to-pixel convention
         try:
             # determine if the beam intersects one of the panels
-            panel_id, (x_mm, y_mm) = detector.get_ray_intersection(beam.get_s0())
+            panel_id, (x_mm, y_mm) = detector.get_ray_intersection(beam.get_unit_s0())
         except RuntimeError as e:
             if not ("DXTBX_ASSERT(" in str(e) and ") failure" in str(e)):
                 # unknown exception from dxtbx
@@ -374,12 +374,14 @@ class XrayFrame(XFBaseClass):
             lowest_res = 0
             for p_id, panel in enumerate(detector):
                 w, h = panel.get_image_size()
-                res = panel.get_resolution_at_pixel(beam.get_s0(), (w // 2, h // 2))
+                res = panel.get_resolution_at_pixel(
+                    beam.get_unit_s0(), (w // 2, h // 2)
+                )
                 if res > lowest_res:
                     panel_id = p_id
                     lowest_res = res
             try:
-                x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_s0())
+                x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_unit_s0())
             except RuntimeError:
                 # cope with cases like https://github.com/dials/dials/issues/2478
                 x_mm, y_mm = detector[panel_id].get_bidirectional_ray_intersection(
@@ -782,7 +784,7 @@ class XrayFrame(XFBaseClass):
                 row_list = range(start_y_tile, stop_y_tile)
                 y_pix_start = start_y_tile * self.pyslip.tile_size_y - y_offset
 
-                bitmap = wx.Bitmap(x2 - x1, y2 - y1)
+                bitmap = wx.Bitmap(int(x2 - x1), int(y2 - y1))
                 dc = wx.MemoryDC()
                 dc.SelectObject(bitmap)
 
@@ -791,7 +793,10 @@ class XrayFrame(XFBaseClass):
                     y_pix = y_pix_start
                     for y in row_list:
                         dc.DrawBitmap(
-                            self.pyslip.tiles.GetTile(x, y), x_pix, y_pix, False
+                            self.pyslip.tiles.GetTile(x, y),
+                            int(x_pix),
+                            int(y_pix),
+                            False,
                         )
                         y_pix += self.pyslip.tile_size_y
                     x_pix += self.pyslip.tile_size_x

@@ -173,7 +173,7 @@ class StillsIndexer(Indexer):
                 )
 
             # discard nearly overlapping lattices on the same shot
-            if self._check_have_similar_crystal_models(experiments):
+            if self._remove_similar_crystal_models(experiments):
                 break
 
             self.indexed_reflections = self.reflections["id"] > -1

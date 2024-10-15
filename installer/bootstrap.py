@@ -110,7 +110,7 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
-    url = "https://micromamba.snakepit.net/api/micromamba/{0}/1.5.10".format(conda_arch)
+    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -1112,7 +1112,8 @@ add_subdirectory(dials)
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
-            "-DHDF5_ROOT=" + conda_base_root,
+            "-DHDF5_DIR=" + conda_base_root,
+            "-DPython_ROOT_DIR=" + conda_base_root,
         ]
         + extra_args,
     )
@@ -1183,7 +1184,7 @@ def make_build_cmake():
         parallel = []
         if "CMAKE_GENERATOR" not in os.environ:
             if hasattr(os, "sched_getaffinity"):
-                cpu = os.sched_getaffinity()
+                cpu = os.sched_getaffinity(0)
             else:
                 cpu = multiprocessing.cpu_count()
             if isinstance(cpu, int):
@@ -1288,8 +1289,17 @@ be passed separately with quotes to avoid confusion (e.g
         action="store_false",
         dest="cmake",
     )
+    parser.add_argument(
+        "--cmake",
+        action="store_true",
+        dest="removed_cmake",
+        help=argparse.SUPPRESS,
+    )
 
     options = parser.parse_args()
+    if options.removed_cmake:
+        # User passed the obsolete parameter
+        sys.exit("Error: --cmake is now the default, please remove --cmake.")
 
     print("Performing actions:", " ".join(options.actions))
 

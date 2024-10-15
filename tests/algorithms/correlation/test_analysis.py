@@ -75,7 +75,7 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
     matrices.output_json()
     assert pathlib.Path("dials.correlation_matrix.json").is_file()
 
-    expected_ids = [[1, 3], [0, 1, 3]]
+    expected_ids = [[0, 3], [0, 1, 3]]
 
     # Check main algorithm correct with filtering
     for i, j in zip(matrices.correlation_clusters, expected_ids):
