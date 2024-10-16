@@ -23,10 +23,7 @@ logger = logging.getLogger("dials.algorithms.correlation.analysis")
 
 phil_scope = iotbx.phil.parse(
     """\
-include scope dials.algorithms.correlation.analysis.phil_scope
-
-seed = 42
-  .type = int(value_min=0)
+include scope dials.algorithms.correlation.analysis.working_phil
 
 output {
   log = dials.correlation_matrix.log
