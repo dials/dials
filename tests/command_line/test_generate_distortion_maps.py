@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
 import pickle
-from pathlib import Path
 
 import pytest
 
@@ -52,13 +50,12 @@ def make_detector():
     return d
 
 
-def test_translate(dials_regression: Path, run_in_tmp_path):
+def test_translate(dials_data, run_in_tmp_path):
     """Test as written in https://github.com/dials/dials/issues/471. This
     is pretty slow!"""
 
-    # use the i04_weak_data for this test
-    data_dir = os.path.join(dials_regression, "image_examples", "DLS_I04")
-    image_path = os.path.join(data_dir, "grid_full_cbf_0005.cbf")
+    data_dir = dials_data("centroid_test_data", pathlib=True)
+    image_path = data_dir / "centroid_0001.cbf"
 
     # Generate distortion maps
     cmd = f"dials.generate_distortion_maps {image_path} dx=1 dy=2"
