@@ -144,7 +144,7 @@ jobs:
             ${{ github.workspace }}/dist/dials-v3-22-0/modules/xfel_regression/.git/lfs
       - name: Update Regression Data
         run: |
-          cd modules/xfel_regression
+          cd dist/dials-v3-22-0/modules/xfel_regression
           git lfs install --local
           git lfs pull
           echo "DIALS_DATA=${{ github.workspace }}/data" >> $GITHUB_ENV
