@@ -139,6 +139,7 @@ jobs:
         run: |
           source dials_env.sh
           mkdir tests
+          cd tests
           libtbx.run_tests_parallel module=xfel_regression nproc=auto && {
             echo "XFEL regression tests passed on Python $(PYTHON_VERSION) $(Agent.OS)" > ../xfel-regression.output
           } || {
