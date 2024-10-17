@@ -159,7 +159,7 @@ jobs:
           libtbx.run_tests_parallel module=xfel_regression nproc=auto && {
             echo "XFEL regression tests passed on Python $(PYTHON_VERSION) $(Agent.OS)" > ../xfel-regression.output
           } || {
-            echo "::error XFEL-regression tests failed"
+            echo "::error ::XFEL-regression tests failed"
             echo "(test exit)"
             exit 1
           }
