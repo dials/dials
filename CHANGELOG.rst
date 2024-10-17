@@ -1,3 +1,12 @@
+DIALS 3.22.1 (2024-10-17)
+=========================
+
+Bugfixes
+--------
+
+- Fix problem causing incorrect resolution values in viewers. (`#2765 <https://github.com/dials/dials/issues/2765>`_)
+
+
 DIALS 3.22.0 (2024-10-15)
 =========================
 
