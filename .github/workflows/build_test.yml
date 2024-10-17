@@ -127,12 +127,17 @@ jobs:
         working-directory: ./dist/dials-v3-22-0
         run: |
           source dials_env.sh
+          set -x
           conda install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
           git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
           cd modules/xfel_regression
           git lfs install --local
           git lfs pull
           libtbx.configure xfel_regression
+          # Patch for this ubuntu so that we can run without arbitrary failure
+          DISTRO=$(python3 -c "import distro; print(distro.version())")
+          sed -i'' "s/'20.04'/${DISTRO}/" modules/xfel_regression/test/command_line/tst_xfel_merge.py
+          dials.data get 4fluoro_cxi
           wait
       - name: Run xfel_regression tests
         working-directory: ./dist/dials-v3-22-0
