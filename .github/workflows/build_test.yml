@@ -114,7 +114,7 @@ jobs:
       - name: Install DIALS
         run: |
           set -x
-          wget https://github.com/dials/dials/releases/download/v3.22.0/dials-v3-22-0-linux-x86_64.tar.xz
+          wget -nv https://github.com/dials/dials/releases/download/v3.22.0/dials-v3-22-0-linux-x86_64.tar.xz
           # tar -xf dials-installer-dev.tar.gz
           tar -xf dials-v3-22-0-linux-x86_64.tar.xz
           cd dials-installer
