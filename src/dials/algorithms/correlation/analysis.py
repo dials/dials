@@ -23,7 +23,7 @@ from dials.algorithms.correlation.plots import (
     plot_dims,
     to_plotly_json,
 )
-from dials.algorithms.symmetry.cosym import CosymAnalysis
+from dials.algorithms.symmetry.cosym import CosymAnalysis, cosym_scope
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.array_family.flex import reflection_table
 from dials.util import tabulate
@@ -39,15 +39,7 @@ partiality_threshold = 0.4
   .type = float(value_min=0, value_max=1)
   .help = "Use reflections with a partiality greater than the threshold."
 
-include scope dials.algorithms.symmetry.cosym.phil_scope
-
-relative_length_tolerance = 0.05
-  .type = float(value_min=0)
-  .help = "Datasets are only accepted if unit cell lengths fall within this relative tolerance of the median cell lengths."
-
-absolute_angle_tolerance = 2
-  .type = float(value_min=0)
-  .help = "Datasets are only accepted if unit cell angles fall within this absolute tolerance of the median cell angles."
+%s
 
 dimensionality_assessment {
   outlier_rejection = True
@@ -63,7 +55,8 @@ significant_clusters {
     .type = float(value_min=0, value_max=1)
     .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
 }
-""",
+"""
+    % cosym_scope,
     process_includes=True,
 )
 phil_overrides = phil_scope.fetch(
@@ -145,8 +138,10 @@ class CorrelationMatrix:
 
         # Set required params for cosym to skip symmetry determination and reduce dimensions
 
-        self.params.lattice_group = self.datasets[0].space_group_info()
-        self.params.space_group = self.datasets[0].space_group_info()
+        self.params.__inject__("lattice_group", self.datasets[0].space_group_info())
+        self.params.__inject__("space_group", self.datasets[0].space_group_info())
+        self.params.__inject__("lattice_symmetry_max_delta", 0.0)
+        self.params.__inject__("best_monoclinic_beta", True)
 
         # If dimensions are optimised for clustering, need cc_weights=sigma
         # Otherwise results end up being nonsensical even for high-quality data
