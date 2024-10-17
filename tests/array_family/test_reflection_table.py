@@ -1160,8 +1160,8 @@ def test_to_from_h5(tmp_path):
     table["id"] = flex.int(table.size(), 0)
     table.experiment_identifiers()[0] = "test"
 
-    table.as_h5(tmp_path / "reflections.h5")
-    new_table = flex.reflection_table.from_h5(tmp_path / "reflections.h5")
+    table.as_hdf5(tmp_path / "reflections.h5")
+    new_table = flex.reflection_table.from_hdf5(tmp_path / "reflections.h5")
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
     assert new_table.ncols() == 12  # one more as an id column is needed

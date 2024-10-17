@@ -17,7 +17,7 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
 
     data = h5py.File(tmp_path / "scaled.refl", "r")
     # try reading the data to check it was written as h5 as a single group
-    assert len(data["entry"]["data_processing"].items()) == 1
+    assert len(data["dials"]["processing"].items()) == 1
 
     h5_refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
 
@@ -34,10 +34,10 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
 
     data = h5py.File(tmp_path / "scaled2.refl", "r")
     # try reading the two experiments to check it was written as h5
-    dset0 = data["entry"]["data_processing"]["0"]
-    dset1 = data["entry"]["data_processing"]["1"]
-    assert dset0.attrs["num_reflections"] == 4417
-    assert dset1.attrs["num_reflections"] == 5555
+    dset0 = data["dials"]["processing"]["0"]
+    dset1 = data["dials"]["processing"]["1"]
+    assert dset0["intensity.sum.value"].shape == (4417,)
+    assert dset1["intensity.sum.value"].shape == (5555,)
 
     # now test saving manually, one at a time
     with HDF5TableFile(tmp_path / "scaled3.refl", "w") as handle:
@@ -46,10 +46,10 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
 
     data = h5py.File(tmp_path / "scaled3.refl", "r")
     # try reading the two experiments to check it was written as h5
-    dset0 = data["entry"]["data_processing"]["0"]
-    dset1 = data["entry"]["data_processing"]["1"]
-    assert dset0.attrs["num_reflections"] == 4417
-    assert dset1.attrs["num_reflections"] == 5555
+    dset0 = data["dials"]["processing"]["0"]
+    dset1 = data["dials"]["processing"]["1"]
+    assert dset0["intensity.sum.value"].shape == (4417,)
+    assert dset1["intensity.sum.value"].shape == (5555,)
 
     with HDF5TableFile(tmp_path / "scaled3.refl", "r") as handle:
         tables = handle.get_tables()

@@ -24,10 +24,10 @@ class ReflectionListEncoder(object):
         """Encode each reflection table to data in a hdf5 group."""
 
         # Create the reflection data group if it hasn't already been created
-        if "entry" in handle and "data_processing" in handle["entry"]:
-            group = handle["entry"]["data_processing"]
+        if "dials" in handle and "processing" in handle["dials"]:
+            group = handle["dials"]["processing"]
         else:
-            group = handle.create_group("entry/data_processing", track_order=True)
+            group = handle.create_group("dials/processing", track_order=True)
 
         for table in reflections:
             identifier_map = dict(table.experiment_identifiers())
@@ -36,7 +36,6 @@ class ReflectionListEncoder(object):
             else:
                 name = "group_" + ersatz_uuid4()
             this_group = group.create_group(name)
-            this_group.attrs["num_reflections"] = table.size()
             this_group.attrs["identifiers"] = list(identifier_map.values())
             this_group.attrs["experiment_ids"] = flumpy.to_numpy(
                 flex.size_t(table.experiment_identifiers().keys())
@@ -126,16 +125,12 @@ class ReflectionListDecoder(object):
         """Decode the data to a list of reflection tables."""
 
         # Get the group containing the reflection data
-        g = handle["entry/data_processing"]
+        g = handle["dials/processing"]
 
         # Create the list of reflection tables
         tables = []
         for dataset in g.values():
-            if "num_reflections" not in dataset.attrs:
-                raise RuntimeError(
-                    "Unable to understand file as h5 reflection data (no num_reflections attribute)"
-                )
-            table = flex.reflection_table(int(dataset.attrs["num_reflections"]))
+            table = flex.reflection_table([])
             identifiers = dataset.attrs["identifiers"]
             experiment_ids = dataset.attrs["experiment_ids"]
             for n, v in zip(experiment_ids, identifiers):

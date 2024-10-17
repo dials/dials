@@ -233,7 +233,7 @@ class _:
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
         elif os.getenv("DIALS_USE_H5"):
-            self.as_h5(filename)
+            self.as_hdf5(filename)
         else:
             self.as_msgpack_file(filename)
 
@@ -248,7 +248,7 @@ class _:
             )
         except RuntimeError:
             try:
-                return dials_array_family_flex_ext.reflection_table.from_h5(filename)
+                return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
             except OSError:
                 return dials_array_family_flex_ext.reflection_table.from_pickle(
                     filename
@@ -370,26 +370,26 @@ class _:
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def as_h5(self, filename):
-        """Write the reflection table as a h5 file."""
+    def as_hdf5(self, filename):
+        """Write the reflection table as a hdf5 file."""
 
         if "id" not in self:
             raise RuntimeError(
-                "The 'id' column and experiment identifiers must be set to save to h5"
+                "The 'id' column and experiment identifiers must be set to save to hdf5"
             )
         if (
             not self.experiment_identifiers()
             or not self.are_experiment_identifiers_consistent()
         ):
             raise RuntimeError(
-                "Experiment identifiers must be set and be consistent to save to h5"
+                "Experiment identifiers must be set and be consistent to save to hdf5"
             )
 
         with HDF5TableFile(filename, "w") as handle:
             handle.add_tables([self])
 
     @classmethod
-    def from_h5(cls, filename):
+    def from_hdf5(cls, filename):
         with HDF5TableFile(filename, "r") as handle:
             tables = handle.get_tables()
         if len(tables) > 1:
