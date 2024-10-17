@@ -1,8 +1,4 @@
-on:
-  push:
-  pull_request:
-    types:
-      - synchronize
+on: [push, pull_request]
 
 env:
   # Python minimum version is used for testing full libtbx-bootstrap
@@ -108,20 +104,10 @@ jobs:
 
   #     - uses: insurgent-lab/is-in-pr-action@129df59687402c4a9c81a9a9e88d7448cdbba541 # v0.2.0
 
-  is-in-pr:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: insurgent-lab/is-in-pr-action@v0.2.0
-        id: isInPR
-    outputs:
-      result: ${{ steps.isInPR.outputs.result }}
-
   test_xfel:
     name: Test XFEL
     runs-on: ubuntu-latest
-    needs: [is-in-pr]
-    if: ${{ needs.is-in-pr.outputs.result == 'true' }}
+    if: ${{ github.event_name == 'pull_request' }}
     steps:
       # - uses: actions/download-artifact@v4
 
