@@ -127,7 +127,7 @@ jobs:
         working-directory: ./dist/dials-v3-22-0
         run: |
           source dials_env.sh
-          mamba install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
+          conda install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
           git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
           cd modules/xfel_regression
           git lfs install --local
