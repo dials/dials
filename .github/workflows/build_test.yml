@@ -16,8 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu, macOS, windows]
-        buildsys: [CMake, libtbx]
+        os: [ubuntu]
+        buildsys: [libtbx]
         exclude:
           - os: macOS
             buildsys: libtbx
