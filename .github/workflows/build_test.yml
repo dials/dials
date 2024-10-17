@@ -121,8 +121,8 @@ jobs:
           ./install --prefix=../dist
           cd ..
           rm -rf ./dials-installer*
-          echo "$(pwd)/dist/conda_base/bin" >> $GITHUB_PATH
-          echo "$(pwd)/dist/build/bin" >> $GITHUB_PATH
+          echo "$(pwd)/dist/dials-v3-22-0/conda_base/bin" >> $GITHUB_PATH
+          echo "$(pwd)/dist/dials-v3-22-0/build/bin" >> $GITHUB_PATH
       - name: Install XFEL-regression
         working-directory: ./dist/dials-v3-22-0
         run: |
