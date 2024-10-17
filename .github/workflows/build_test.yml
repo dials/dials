@@ -129,16 +129,26 @@ jobs:
           source dials_env.sh
           set -x
           conda install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
-          git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
-          cd modules/xfel_regression
-          git lfs install --local
-          git lfs pull
+          GIT_LFS_SKIP_SMUDGE=1 git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
           libtbx.configure xfel_regression
           # Patch for this ubuntu so that we can run without arbitrary failure
           DISTRO=$(python3 -c "import distro; print(distro.version())")
-          sed -i'' "s/'20.04'/${DISTRO}/" test/command_line/tst_xfel_merge.py
+          sed -i'' "s/'20.04'/${DISTRO}/" modules/xfel_regression/test/command_line/tst_xfel_merge.py
+          python3 -c "import distro; print(distro.id(), distro.name(), distro.version())"
+      - name: Restore Cache
+        uses: actions/cache@v4
+        with:
+          key: "xfel-regression"
+          path:
+            - ${{ github.workspace }}/data
+            - ${{ github.workspace }}/dist/dials-v3-22-0/modules/xfel_regression/.git/lfs
+      - name: Update Regression Data
+        run: |
+          cd modules/xfel_regression
+          git lfs install --local
+          git lfs pull
+          echo "DIALS_DATA=${{ github.workspace }}/data" >> $GITHUB_ENV
           dials.data get 4fluoro_cxi
-          wait
       - name: Run xfel_regression tests
         working-directory: ./dist/dials-v3-22-0
         run: |
