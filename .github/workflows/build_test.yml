@@ -126,6 +126,7 @@ jobs:
       - name: Install XFEL-regression
         working-directory: ./dist/dials-v3-22-0
         run: |
+          source dials_env.sh
           mamba install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
           git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
           cd modules/xfel_regression
@@ -134,7 +135,9 @@ jobs:
           libtbx.configure xfel_regression
           wait
       - name: Run xfel_regression tests
+        working-directory: ./dist/dials-v3-22-0
         run: |
+          source dials_env.sh
           mkdir tests
           libtbx.run_tests_parallel module=xfel_regression nproc=auto && {
             echo "XFEL regression tests passed on Python $(PYTHON_VERSION) $(Agent.OS)" > ../xfel-regression.output
