@@ -139,9 +139,9 @@ jobs:
         uses: actions/cache@v4
         with:
           key: "xfel-regression"
-          path:
-            - "${{ github.workspace }}/data"
-            - "${{ github.workspace }}/dist/dials-v3-22-0/modules/xfel_regression/.git/lfs"
+          path: |
+            ${{ github.workspace }}/data
+            ${{ github.workspace }}/dist/dials-v3-22-0/modules/xfel_regression/.git/lfs
       - name: Update Regression Data
         run: |
           cd modules/xfel_regression
