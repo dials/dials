@@ -66,6 +66,7 @@ loggers_to_disable = [
     "dials.algorithms.indexing.indexer",
     "dials.algorithms.indexing.lattice_search",
     "dials.algorithms.indexing.lattice_search.low_res_spot_match",
+    "dials.algorithms.indexing.lattice_search.ffb_indexer",
 ]
 debug_loggers_to_disable = [
     "dials.algorithms.indexing.symmetry",
