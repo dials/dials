@@ -133,7 +133,7 @@ jobs:
           libtbx.configure xfel_regression
           # Patch for this ubuntu so that we can run without arbitrary failure
           DISTRO=$(python3 -c "import distro; print(distro.version())")
-          sed -i'' "s/'20.04'/${DISTRO}/" modules/xfel_regression/test/command_line/tst_xfel_merge.py
+          sed -i'' "s/20.04/${DISTRO}/" modules/xfel_regression/test/command_line/tst_xfel_merge.py
           python3 -c "import distro; print(distro.id(), distro.name(), distro.version())"
       - name: Restore Cache
         uses: actions/cache@v4
@@ -146,8 +146,9 @@ jobs:
         run: |
           cd dist/dials-v3-22-0/modules/xfel_regression
           git lfs install --local
-          git lfs pull
           echo "DIALS_DATA=${{ github.workspace }}/data" >> $GITHUB_ENV
+          set -x
+          git lfs pull
           dials.data get 4fluoro_cxi
       - name: Run xfel_regression tests
         working-directory: ./dist/dials-v3-22-0
