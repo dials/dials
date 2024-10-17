@@ -140,8 +140,8 @@ jobs:
         with:
           key: "xfel-regression"
           path:
-            - ${{ github.workspace }}/data
-            - ${{ github.workspace }}/dist/dials-v3-22-0/modules/xfel_regression/.git/lfs
+            - "${{ github.workspace }}/data"
+            - "${{ github.workspace }}/dist/dials-v3-22-0/modules/xfel_regression/.git/lfs"
       - name: Update Regression Data
         run: |
           cd modules/xfel_regression
