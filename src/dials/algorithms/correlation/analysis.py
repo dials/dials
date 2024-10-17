@@ -59,9 +59,6 @@ dimensionality_assessment {
 }
 
 significant_clusters {
-  output = False
-    .type = bool
-    .help = "Toggle to output expt/refl files for significant clusters as determined by OPTICS clustering on cosine angle coordinates"
   min_points_buffer = 0.5
     .type = float(value_min=0, value_max=1)
     .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
@@ -270,13 +267,6 @@ class CorrelationMatrix:
 
         logger.info("\nEvaluating Significant Clusters from Cosine-Angle Coordinates:")
         self.cluster_cosine_coords()
-
-        if self.params.significant_clusters.output:
-            self.output_clusters()
-        else:
-            logger.info(
-                "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
-            )
 
     @staticmethod
     def compute_correlation_coefficient_matrix(
