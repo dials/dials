@@ -118,13 +118,13 @@ jobs:
           # tar -xf dials-installer-dev.tar.gz
           tar -xf dials-v3-22-0-linux-x86_64.tar.xz
           cd dials-installer
-          ./install --prefix=../dist --raw-prefix
+          ./install --prefix=../dist
           cd ..
           rm -rf ./dials-installer*
           echo "$(pwd)/dist/conda_base/bin" >> $GITHUB_PATH
           echo "$(pwd)/dist/build/bin" >> $GITHUB_PATH
       - name: Install XFEL-regression
-        working-directory: ./dist
+        working-directory: ./dist/dials-v3-22-0
         run: |
           mamba install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
           git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
