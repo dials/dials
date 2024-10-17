@@ -136,7 +136,7 @@ jobs:
           libtbx.configure xfel_regression
           # Patch for this ubuntu so that we can run without arbitrary failure
           DISTRO=$(python3 -c "import distro; print(distro.version())")
-          sed -i'' "s/'20.04'/${DISTRO}/" modules/xfel_regression/test/command_line/tst_xfel_merge.py
+          sed -i'' "s/'20.04'/${DISTRO}/" test/command_line/tst_xfel_merge.py
           dials.data get 4fluoro_cxi
           wait
       - name: Run xfel_regression tests
