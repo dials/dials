@@ -1,11 +1,14 @@
 from dials.algorithms.beam_position import (
         MidpointMethodSolver,
-        MaximumMethodSolver
+        MaximumMethodSolver,
+        InversionMethodSolver
 )
 from dials.algorithms.beam_position.plot import Figure
 
 
-def compute_beam_position(image, params, index=None):
+def compute_beam_position(image, params,
+                          image_index=None,
+                          imageset_index=None):
 
     method_x, method_y = resolve_projection_methods(params)
 
@@ -13,16 +16,30 @@ def compute_beam_position(image, params, index=None):
         solver_x = MidpointMethodSolver(image, params, axis='x')
     elif method_x == 'maximum':
         solver_x = MaximumMethodSolver(image, params, axis='x')
+    elif method_x == 'inversion':
+        solver_x = InversionMethodSolver(image, params, axis='x')
 
     if method_y == 'midpoint':
         solver_y = MidpointMethodSolver(image, params, axis='y')
     elif method_y == 'maximum':
         solver_y = MaximumMethodSolver(image, params, axis='y')
+    elif method_y == 'inversion':
+        solver_y = InversionMethodSolver(image, params, axis='y')
 
     x = solver_x.find_beam_position()
     y = solver_y.find_beam_position()
 
-    fig = Figure('fig.png')
+    if image_index:
+        image_str = '_img_%05d' % image_index
+    else:
+        image_str = ''
+
+    if imageset_index:
+        imageset_str = '_set_%05d' % imageset_index
+    else:
+        imageset_str = ''
+
+    fig = Figure(f"beam_position{imageset_str}{image_str}.png")
 
     fig.plot_main(image, params, beam_position=(x, y))
     solver_x.plot(fig)

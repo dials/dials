@@ -1,180 +1,107 @@
+"""Define a class that searches for beam position using midpoint method"""
 from __future__ import annotations
-
-# Import dataclass
-from dataclasses import dataclass
-from typing import Tuple
-
-import matplotlib
 import numpy as np
-
-from dials.algorithms.beam_position.helper_functions import (
-    Line2D,
-    PlotParams,
-    normalize,
-    plot_profile,
-)
-
-matplotlib.use("Agg")
+from dials.algorithms.beam_position.project_profile import project
+from dials.algorithms.beam_position.helper_functions import normalize
 
 
-@dataclass
-class InversionMethodParams:
-    """
-    Parameters for the inversion method
+class InversionMethodSolver:
 
-    Parameters
-    ----------
-    guess_position : Tuple[int, int], optional
-        The guess beam position (x0, y0) in pixels. Inversion calculation
-        is performed only in a window centered around x0 (or y0).
-        If not provided, the method will set (x0, y0) to the image center.
-    inversion_window_width : int, optional
-        The width of the inversion window in pixels. Default is 50 (pixels).
-    bad_pixel_threshold : int, optional
-        The threshold for bad pixels. All pixels above this value will be set
-        to zero. Default is 20000.
-    plot : bool, optional
-        Whether to plot the inversion results. Default is False.
-    verbose : bool, optional
-        Whether to print beam position to the output. Default is True.
-    filename : str, optional
-        The filename for the plot. Default is 'fig.png'.
-    """
+    def __init__(self, image, params, axis='x'):
 
-    guess_position: Tuple[int, int] = None
-    inversion_window_width: int = 50
-    bad_pixel_threshold: int = 20000
-    plot: bool = False
-    verbose: bool = True
-    filename: str = "fig.png"
+        background_cutoff = params.projection.inversion.background_cutoff
+        threshold = params.projection.inversion.bad_pixel_threshold
+        self.axis = axis
 
-
-def beam_position_from_inversion(
-    image: np.ndarray,
-    params: InversionMethodParams,
-) -> Tuple[float, float]:
-
-    """
-    Compute the beam position using the inversion method
-
-    Parameters
-    ----------
-    image : 2D numpy.ndarray
-        The diffraction image.
-    params : InversionMethodParams
-        Parameters for the inversion method.
-
-    Returns
-    -------
-    beam_position : Tuple[float, float]
-        The beam position (x, y) in pixels.
-    """
-
-    image[image > params.bad_pixel_threshold] = 0
-
-    data_x = find_inversion_max(image, params, axis="x")
-    data_y = find_inversion_max(image, params, axis="y")
-
-    bx = data_x["beam_position"]
-    by = data_y["beam_position"]
-
-    if params.verbose:
-        print(f"Beam position from inversion: ({bx:.2f}, {by:.2f})")
-
-    if params.plot:
-
-        i1, i2 = data_x["bin_position"]
-        j1, j2 = data_y["bin_position"]
-        span_xy = i1, i2, j1, j2
-
-        p = PlotParams(
-            image,
-            profiles_x=data_x["profile"],
-            profiles_y=data_y["profile"],
-            beam_position=(bx, by),
-            span_xy=span_xy,
-            filename=params.filename,
-        )
-
-        plot_profile(p)
-
-    return bx, by
-
-
-def find_inversion_max(image, params: InversionMethodParams, axis="x") -> dict:
-    """
-    Compute the beam position using the inversion method
-
-    Parameters
-    ----------
-    image : 2D numpy.ndarray
-        The diffraction image.
-    params : InversionMethodParams
-        Parameters for the inversion method.
-    axis : str, optional
-        Either 'x' or 'y'.
-
-    Returns
-    -------
-    data : dict
-        A dictionary containing projected profile and beam position.
-    """
-
-    if params.guess_position is not None:
-        if len(params.guess_position) != 2:
-            raise ValueError("Beam position must be a tuple of two ints")
-
-    if params.guess_position is not None:
-        if axis == "x":
-            center = params.guess_position[0]
+        if axis == 'x':
+            exclude_range = params.projection.exclude_pixel_range_y
+        elif axis == 'y':
+            exclude_range = params.projection.exclude_pixel_range_x
         else:
-            center = params.guess_position[1]
-    else:
-        center = None
+            raise ValueError(f"Unknown axis: {axis}")
 
-    if axis == "x":
-        profile = image[:, :].max(axis=0)
-    elif axis == "y":
-        profile = image[:, :].max(axis=1)
-    else:
-        msg = f"Unknown projection axis '{axis}'. Use either 'x' or 'y'."
-        raise ValueError(msg)
+        clean_image = np.array(image)
 
-    n = len(profile)
-    if center is None:
-        center = int(n / 2)
+        print('Threshold', threshold)
+        if threshold:
+            clean_image[clean_image > threshold] = 0.0
+        if background_cutoff:
+            clean_image[clean_image < background_cutoff] = 0.0
 
-    profile = normalize(profile)
-    profile_indices = np.arange(n)
+        profile_max, max_from_max = project(clean_image, axis=axis,
+                                            method='max',
+                                            exclude_range=exclude_range,
+                                            convolution_width=1)
+        self.params = params
+        self.profile_max = profile_max
+        self.max_value = max_from_max
 
-    indices = np.arange(
-        center - params.inversion_window_widthwidth,
-        center + params.inversion_window_width,
-        1,
-    )
-    correlations = []
-    for index in indices:
-        correlations.append(invert_and_correlate(profile, index))
+    def find_beam_position(self):
 
-    correlations = np.array(correlations)
-    index = correlations.argmax()
+        n = len(self.profile_max)
+        guess_position = self.params.projection.inversion.guess_position
+        window_width = self.params.projection.inversion.inversion_window_width
 
-    data = {}
+        if guess_position:
+            if len(guess_position) != 2:
+                msg = "guess_position must be a tuple of two ints"
+                raise ValueError(msg)
+            guess_x, guess_y = guess_position
+            if self.axis == "x":
+                center = guess_position[0]
+            else:
+                center = guess_position[1]
+        else:
+            center = int(n / 2)
 
-    line_profile = Line2D(profile_indices, profile, c="C0", lw=1.0)
-    inversion_profile = Line2D(indices, correlations, c="C3", lw=0.5)
-    lines = [line_profile, inversion_profile]
+        indices = np.arange(center - window_width,
+                            center + window_width, 1)
 
-    data["profile"] = lines
-    data["beam_position"] = indices[0] + index
+        correlations = 0 * self.profile_max
 
-    return data
+        for i in indices:
+            correlations[i] = invert_and_correlate(self.profile_max, i)
+
+        correlations = normalize(correlations)
+
+        self.beam_position = correlations.argmax()
+        self.correlations = correlations
+
+        return float(self.beam_position)
+
+    def plot(self, figure):
+
+        n = len(self.profile_max)
+        indices = np.arange(n)
+
+        if self.axis == 'x':
+            ax = figure.axis_x
+            ax.axvline(self.beam_position, c='C3', lw=1)
+            ax.plot(indices, self.profile_max, lw=1, c='gray')
+            ax.plot(indices, self.correlations, lw=1, c='C2')
+            ax.text(0.01, 0.95, 'method: inversion', va='top', ha='left',
+                    transform=ax.transAxes, fontsize=8)
+            label = 'Imax = %.0f' % self.max_value
+            ax.text(0.01, 0.75, label, va='top', ha='left',
+                    transform=ax.transAxes, fontsize=8)
+        elif self.axis == 'y':
+            ax = figure.axis_y
+            ax.axhline(self.beam_position, c='C3', lw=1)
+            ax.plot(self.profile_max, indices, lw=1, c='gray')
+            ax.plot(self.correlations, indices, lw=1, c='C2')
+            ax.text(0.95, 0.99, 'method: inversion', va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=8)
+            label = 'Imax = %.0f' % self.max_value
+            ax.text(0.75, 0.99, label, va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=8)
+        else:
+            raise ValueError(f"Unknown axis: {self.axis}")
 
 
 def invert_and_correlate(x, index):
-    """Given an 1D array x, compute inverted array inv_x
-    (inversion around an element with index 'index')
-    and return a sum of (x * inv_x).
+    """
+    Given an 1D array x, compute inverted array inv_x (inversion around an
+    element with an index 'index') and return a sum of x * inv_x.
     """
 
     inv_x = np.zeros(len(x))
@@ -184,14 +111,14 @@ def invert_and_correlate(x, index):
     # Compute the inverted 1D array
     if index <= half:
         left = x[0:index]
-        right = x[index : 2 * index]
+        right = x[index:2*index]
         inv_x[0:index] = right[::-1]
-        inv_x[index : 2 * index] = left[::-1]
+        inv_x[index:2*index] = left[::-1]
     else:
         right = x[index:]
         width = len(right)
-        left = x[index - width : index]
-        inv_x[index - width : index] = right[::-1]
+        left = x[index - width:index]
+        inv_x[index - width:index] = right[::-1]
         inv_x[index:] = left[::-1]
 
-    return np.sum(x * inv_x)
+    return np.mean(x * inv_x)        # Could try with mean instead of sum

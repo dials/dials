@@ -182,6 +182,10 @@ projection {
 
     inversion {
 
+        bad_pixel_threshold = None
+        .type = int
+        .help = "Set all pixels above this value to zero."
+
          guess_position = None
          .type = ints(size=2)
          .help = "Initial guess for the beam position (x, y) in pixels. "
@@ -190,6 +194,9 @@ projection {
          inversion_window_width = 100
          .type = int
          .help = "Do profile inversion within this window (in pixels)."
+
+         background_cutoff = None
+         .type = int
     }
 
 }
@@ -687,9 +694,12 @@ def run(args=None):
             parser.print_help()
             sys.exit(0)
 
+        print('Getting imagesets...')
         imagesets = experiments.imagesets()
 
         for set_index, image_set in enumerate(imagesets):
+
+            print('Set index', set_index)
             num_images = image_set.size()
 
             if params.projection.per_image:
@@ -703,7 +713,8 @@ def run(args=None):
 
                     image[mask == 0] = 0
 
-                    compute_beam_position(image, params, index)
+                    compute_beam_position(image, params, index, set_index)
+
             else:
                 for index in range(num_images):
                     image = image_set.get_corrected_data(index)
