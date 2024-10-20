@@ -57,7 +57,7 @@ Examples:
 phil_scope = iotbx.phil.parse(
     """
 
-method = default projection
+method = default midpoint maximum inversion
 
 default {
     nproc = Auto
@@ -197,6 +197,11 @@ projection {
 
          background_cutoff = None
          .type = int
+
+        convolution_width = 1
+        .type = int
+        .help = "Width of the convolution kernel used for "
+                " smoothing (in pixels)."
     }
 
 }
@@ -694,12 +699,11 @@ def run(args=None):
             parser.print_help()
             sys.exit(0)
 
-        print('Getting imagesets...')
         imagesets = experiments.imagesets()
+        num_imagesets = len(imagesets)
 
         for set_index, image_set in enumerate(imagesets):
 
-            print('Set index', set_index)
             num_images = image_set.size()
 
             if params.projection.per_image:
@@ -713,7 +717,10 @@ def run(args=None):
 
                     image[mask == 0] = 0
 
-                    compute_beam_position(image, params, index, set_index)
+                    x, y = compute_beam_position(image, params, index,
+                                                 set_index)
+                    print_progress(index, num_images, set_index,
+                                   num_imagesets, x, y)
 
             else:
                 for index in range(num_images):
@@ -724,6 +731,8 @@ def run(args=None):
                         avg_image = image
                     else:
                         avg_image = avg_image + image
+                    print_progress(index, num_images, set_index, num_imagesets,
+                                   x=None, y=None)
 
                 image = avg_image / num_images
                 mask = image_set.get_mask(0)
@@ -732,13 +741,39 @@ def run(args=None):
 
                 compute_beam_position(image, params)
 
-#    else:
-#        print(f"Unknown method: {params.method[0]}")
-#        msg = "Possible choices: labelit (default),"
-#        msg += " avg_projection, max_projection"
-#        print(msg)
-#        parser.print_help()
-#        sys.exit(0)
+
+def print_progress(image_index, n_images, set_index, n_sets, x, y,
+                   bar_length=40):
+
+    image_index += 1
+    set_index += 1
+
+    percent_images = 1.0 * image_index / n_images
+    percent_sets = 1.0 * set_index / n_sets
+
+    move_up = "\033[F"
+
+    img_bar_full = int(percent_images * bar_length)
+    image_bar = "="*img_bar_full + " "*(bar_length - img_bar_full)
+
+    set_bar_full = int(percent_sets * bar_length)
+    set_bar = "=" * set_bar_full + " " * (bar_length - set_bar_full)
+
+    bar = f" Set:   [{set_bar}] {100*percent_sets:0.2f} % "
+    bar += f"{set_index:4d}/{n_sets:d}\n"
+    bar += f" Image: [{image_bar}] {100*percent_images:0.2f} % "
+    bar += f"{image_index:4d}/{n_images}\n"
+
+    if abs(percent_sets - 1.0) < 1.e-15 and abs(percent_images - 1.0) < 1.e-15:
+        end_str = "\n"
+    else:
+        end_str = f"{move_up}{move_up}\r"
+
+    if x is None or y is None:
+        bar += end_str
+    else:
+        bar += f" Beam XY: ({x}, {y}){end_str}"
+    print(bar, end="")
 
 
 if __name__ == "__main__":

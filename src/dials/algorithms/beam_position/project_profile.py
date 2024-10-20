@@ -1,11 +1,12 @@
 from dials.algorithms.beam_position.helper_functions import (
-    normalize,
+    normalize as norm,
     smooth
 )
 
 
 def project(image, axis='x', method='max', exclude_range=None,
-            convolution_width=1, n_convolutions=1):
+            convolution_width=1, n_convolutions=1,
+            normalize=True):
 
     if axis == "x":
         proj_axis = 0
@@ -25,6 +26,7 @@ def project(image, axis='x', method='max', exclude_range=None,
         profile = smooth(profile, width=convolution_width)
 
     max_value = profile.max()
-    profile = normalize(profile)
+    if normalize:
+        profile = norm(profile)
 
     return profile, max_value

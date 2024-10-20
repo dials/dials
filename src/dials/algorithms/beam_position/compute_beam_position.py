@@ -45,8 +45,9 @@ def compute_beam_position(image, params,
     solver_x.plot(fig)
     solver_y.plot(fig)
 
-    print('Solved xy', x, y)
     fig.save_and_close()
+
+    return x, y
 
     # if params.bad_pixel_threshold:
     #    image[np.where(image > params.bad_pixel_threshold)] = 0
@@ -63,33 +64,48 @@ def compute_beam_position(image, params,
 
 def resolve_projection_methods(params):
     """
-    Resolves which method to use along x and y direction.
+    Resolves which method to use along the x and the y direction.
     """
-
-    p = params.projection
-
-    # Only method_x supplied
-    if len(p.method_x) == 1 and len(p.method_y) > 1:
-        p.method_y = p.method_x
-    # Only method_y supplied
-    elif len(p.method_y) == 1 and len(p.method_x) > 1:
-        p.method_x = p.method_y
-
-    # Check if both options are set
-    if not (len(p.method_x) == 1 and len(p.method_y) == 1):
-        msg = "Projection method_x and method_y require a single option"
-        raise ValueError(msg)
 
     options = ['midpoint', 'maximum', 'inversion']
 
-    if not (p.method_x[0] in options):
-        msg = "Wrong projection method along the x: '%s' \n" % p.method_x[0]
+    p = params.projection
+    resolved_method_x = None
+    resolved_method_y = None
+
+    if params.method[0] in options and (len(params.method) == 1):
+
+        resolved_method_x = params.method[0]
+        resolved_method_y = params.method[0]
+
+    # Parameters `method_x` and `method_y` overwrite the `method` parameter
+    # Only `method_x` supplied
+    # Note that by default `method_x` and `method_y` hold a list of all options
+    if len(p.method_x) == 1 and len(p.method_y) > 1:
+
+        resolved_method_x = p.method_x[0]
+
+        # If no `method` is set, assume same method along x and y
+        if params.method == 'default':
+            resolved_method_y = p.method_x[0]
+
+    # Only `method_y` supplied
+    elif len(p.method_y) == 1 and len(p.method_x) > 1:
+
+        resolved_method_y = p.method_y[0]
+
+        # If no `method` is set, assume same method along x and y
+        if params.method == 'default':
+            resolved_method_x = p.method_y[0]
+
+    if not (resolved_method_x in options):
+        msg = f"Wrong projection method along the x: {resolved_method_x} \n"
         msg += "Correct options: 'midpoint', 'maximum', or 'inversion'"
         raise ValueError(msg)
 
-    if not (p.method_x[0] in options):
-        msg = "Wrong projection method along the x: '%s' \n" % p.method_x[0]
+    if not (resolved_method_y in options):
+        msg = f"Wrong projection method along the y: {resolved_method_y} \n"
         msg += "Correct options: 'midpoint', 'maximum', or 'inversion'"
         raise ValueError(msg)
 
-    return p.method_x[0], p.method_y[0]
+    return resolved_method_x, resolved_method_y

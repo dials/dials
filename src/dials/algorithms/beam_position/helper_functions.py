@@ -208,7 +208,7 @@ def smooth(curve, width=2):
     half_width = int(width / 2)
 
     if half_width <= 0:
-        half_width = 1
+        return np.array(curve)
 
     for i in range(n):
 

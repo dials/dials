@@ -1,12 +1,9 @@
 import matplotlib.pyplot as plt
 # from collections import namedtuple
-from matplotlib.ticker import MultipleLocator
+# from matplotlib.ticker import MultipleLocator
 from matplotlib import gridspec
 import numpy as np
 from matplotlib.patches import Circle
-import matplotlib
-
-matplotlib.use('Agg')
 
 
 class Figure:
@@ -28,28 +25,29 @@ class Figure:
     def plot_main(self, image, params, title=None, beam_position=None):
 
         ny, nx = image.shape
+
+        intensity_max = image.max()
+        intensity_min = image.min()
+
         nx_half = int(nx / 2)
         ny_half = int(ny / 2)
         width_x = int(nx / 2)
         width_y = int(ny / 2)
 
-        self.axis_x.set_xlim(nx_half - width_x, nx_half + width_x)
-        self.axis_y.set_ylim(ny_half - width_y, ny_half + width_y)
+        self.axis_x.set_xlim(0, nx)
+        self.axis_y.set_ylim(0, ny)
 
-        mloc = MultipleLocator(0.1)
-        self.axis_y.xaxis.set_minor_locator(mloc)
+        # mloc = MultipleLocator(0.1)
+        # self.axis_x.yaxis.set_minor_locator(mloc)
 
-        mloc = MultipleLocator(0.1)
-        self.axis_x.yaxis.set_minor_locator(mloc)
+        # self.axis_x.set_yticks([0, 0.5, 1.0])
+        # self.axis_y.set_xticks([0, 0.5, 1.0])
 
-        self.axis_x.set_yticks([0, 0.5, 1.0])
-        self.axis_y.set_xticks([0, 0.5, 1.0])
+        # self.axis_x.set_ylim(-0.20, 1.1)
+        # self.axis_y.set_xlim(-0.20, 1.1)
 
-        self.axis_x.set_ylim(-0.20, 1.1)
-        self.axis_y.set_xlim(-0.20, 1.1)
-
-        self.main_axis.set_xlabel(r"Pixel index X")
-        self.main_axis.set_ylabel(r"Pixel index Y")
+        self.main_axis.set_xlabel(r"Pixel Index X")
+        self.main_axis.set_ylabel(r"Pixel Index Y")
 
         if params.projection.color_cutoff:
             vmax = float(params.projection.color_cutoff)
@@ -92,20 +90,36 @@ class Figure:
         self.axis_x.tick_params(axis='y', colors='blue')
 
         label = "beam (x, y):"
-        self.axis_x.text(1.05, 1.00, label, va='top', fontsize=8,
+        self.axis_x.text(1.02, 1.00, label, va='top', fontsize=8,
                          ha='left', transform=self.axis_x.transAxes)
 
         beam_position_str = f"({beam_x:.0f}, {beam_y:.0f})"
-        self.axis_x.text(1.05, 0.85, beam_position_str, va='top', fontsize=8,
+        self.axis_x.text(1.02, 0.85, beam_position_str, va='top', fontsize=8,
                          ha='left', transform=self.axis_x.transAxes)
+
+        label = "dimensions (nx, ny):"
+        self.axis_x.text(1.02, 0.70, label, va='top', fontsize=8,
+                         ha='left', transform=self.axis_x.transAxes)
+
+        dimensions = f"({nx:.0f}, {ny:.0f})"
+        self.axis_x.text(1.02, 0.55, dimensions, va='top', fontsize=8,
+                         ha='left', transform=self.axis_x.transAxes)
+
+        label = f"Imax: {intensity_max:.0f} "
+        self.axis_x.text(1.02, 0.40, label, va='top', fontsize=8,
+                         ha='left', transform=self.axis_x.transAxes)
+
+        label = f"Imin: {intensity_min:.0f} "
+        self.axis_x.text(1.02, 0.25, label, va='top', fontsize=8,
+                         ha='left', transform=self.axis_x.transAxes)
+
         if title:
             self.main_axis.text(0.15, 0.999, title, va='top', ha='left',
                                 transform=self.fig.transFigure, fontsize=8)
 
     def save_and_close(self):
 
-        print(f"Filename '{self.filename}'")
-        plt.savefig(self.filename, dpi=400)
+        plt.savefig(self.filename, dpi=600)
         plt.close(self.fig)
 
 

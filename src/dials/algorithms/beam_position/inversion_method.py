@@ -22,7 +22,6 @@ class InversionMethodSolver:
 
         clean_image = np.array(image)
 
-        print('Threshold', threshold)
         if threshold:
             clean_image[clean_image > threshold] = 0.0
         if background_cutoff:
@@ -31,7 +30,8 @@ class InversionMethodSolver:
         profile_max, max_from_max = project(clean_image, axis=axis,
                                             method='max',
                                             exclude_range=exclude_range,
-                                            convolution_width=1)
+                                            convolution_width=1,
+                                            normalize=False)
         self.params = params
         self.profile_max = profile_max
         self.max_value = max_from_max
@@ -62,7 +62,8 @@ class InversionMethodSolver:
         for i in indices:
             correlations[i] = invert_and_correlate(self.profile_max, i)
 
-        correlations = normalize(correlations)
+        scale = 0.8 * self.profile_max.max()      # Scale for plotting
+        correlations = scale * normalize(correlations)
 
         self.beam_position = correlations.argmax()
         self.correlations = correlations
@@ -77,25 +78,41 @@ class InversionMethodSolver:
         if self.axis == 'x':
             ax = figure.axis_x
             ax.axvline(self.beam_position, c='C3', lw=1)
-            ax.plot(indices, self.profile_max, lw=1, c='gray')
+            ax.plot(indices, self.profile_max, lw=1, c='blue', label='profile')
+
             ax.plot(indices, self.correlations, lw=1, c='C2')
+
             ax.text(0.01, 0.95, 'method: inversion', va='top', ha='left',
                     transform=ax.transAxes, fontsize=8)
             label = 'Imax = %.0f' % self.max_value
             ax.text(0.01, 0.75, label, va='top', ha='left',
                     transform=ax.transAxes, fontsize=8)
+            ax.legend(loc=(0.7, 0.7), labelspacing=0.5, borderpad=0,
+                      columnspacing=3.5, handletextpad=0.4, fontsize=8,
+                      handlelength=2.0, handleheight=0.7, frameon=False)
+
         elif self.axis == 'y':
+
             ax = figure.axis_y
             ax.axhline(self.beam_position, c='C3', lw=1)
-            ax.plot(self.profile_max, indices, lw=1, c='gray')
+            ax.plot(self.profile_max, indices, lw=1, c='blue', label='profile')
+
             ax.plot(self.correlations, indices, lw=1, c='C2')
+
             ax.text(0.95, 0.99, 'method: inversion', va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=8)
             label = 'Imax = %.0f' % self.max_value
             ax.text(0.75, 0.99, label, va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=8)
+            ax.legend(loc=(0.1, 0.1), labelspacing=0.5, borderpad=0,
+                      columnspacing=3.5, handletextpad=0.4,
+                      fontsize=8, handlelength=2.0, handleheight=0.7,
+                      frameon=False)
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
+
+        # Set matplotlib legend
+        # handles, labels = ax.get_legend_handles_labels()
 
 
 def invert_and_correlate(x, index):
