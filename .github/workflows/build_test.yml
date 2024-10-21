@@ -112,6 +112,7 @@ jobs:
       - name: Install DIALS
         run: |
           set -x
+          ls -R
           tar -xf dials-installer-dev.tar.gz
           cd dials-installer
           echo "CI" > VERSION # To ensure we know the exact install path
