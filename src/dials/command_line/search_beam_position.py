@@ -25,6 +25,9 @@ import dials.util
 from dials.algorithms.beam_position.compute_beam_position import (
         compute_beam_position
 )
+from dials.algorithms.beam_position.helper_functions import (
+    get_indices_from_slices
+)
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
 from dials.util.options import (ArgumentParser,
@@ -100,10 +103,16 @@ projection {
     method_x = midpoint maximum inversion
     method_y = midpoint maximum inversion
 
-    image_range = ":::"
+    image_ranges = "::"
     .type = str
-    .help = "A range of indices (similar to slicing in Numpy) "
-            "used to select specific images in the dataset."
+    .help = "A list of comma-separated numpy slices "
+            "used to select specific images in the dataset. "
+            "(e.g. 0:5:2,1,7:15)."
+
+    imageset_ranges = "::"
+    .type = str
+    .help = "A list of comma-separated numpy slices "
+            "used to select specific imagesets (see image_range)."
 
     plot = True
     .type = bool
@@ -706,16 +715,34 @@ def run(args=None):
             sys.exit(0)
 
         imagesets = experiments.imagesets()
-        num_imagesets = len(imagesets)
 
-        for set_index, image_set in enumerate(imagesets):
+        imageset_ranges = params.projection.imageset_ranges
+        image_ranges = params.projection.image_ranges
+
+        selected_set_indices = get_indices_from_slices(len(imagesets),
+                                                       imageset_ranges)
+        selected_sets = [imagesets[i] for i in selected_set_indices]
+        num_imagesets = len(selected_sets)
+
+        for set_run_index in range(num_imagesets):
+
+            set_index = selected_set_indices[set_run_index]
+
+            image_set = selected_sets[set_run_index]
 
             num_images = image_set.size()
 
-            if params.projection.per_image:
-                for index in range(num_images):
+            selected_image_indices = get_indices_from_slices(num_images,
+                                                             image_ranges)
 
-                    image = image_set.get_corrected_data(index)
+            num_selected_images = len(selected_image_indices)
+
+            if params.projection.per_image:
+                for image_run_index in range(num_selected_images):
+
+                    image_index = selected_image_indices[image_run_index]
+
+                    image = image_set.get_corrected_data(image_index)
                     image = flumpy.to_numpy(image[0])
 
                     mask = image_set.get_mask(0)
@@ -723,30 +750,39 @@ def run(args=None):
 
                     image[mask == 0] = 0
 
-                    x, y = compute_beam_position(image, params, index,
+                    x, y = compute_beam_position(image, params, image_index,
                                                  set_index)
-                    print_progress(index, num_images, set_index,
-                                   num_imagesets, x, y)
-                print()
-
+                    print_progress(image_index=image_run_index,
+                                   n_images=num_selected_images,
+                                   set_index=set_run_index,
+                                   n_sets=num_imagesets, x=x, y=y)
             else:
-                for index in range(num_images):
-                    image = image_set.get_corrected_data(index)
+                for image_run_index in range(num_selected_images):
+
+                    image_index = selected_image_indices[image_run_index]
+
+                    image = image_set.get_corrected_data(image_index)
                     image = flumpy.to_numpy(image[0])
 
-                    if index == 0:
+                    if image_run_index == 0:
                         avg_image = image
                     else:
                         avg_image = avg_image + image
-                    print_progress(index, num_images, set_index, num_imagesets,
+                    print_progress(image_index=image_run_index,
+                                   n_images=num_selected_images,
+                                   set_index=set_run_index,
+                                   n_sets=num_imagesets,
                                    x=None, y=None)
 
-                image = avg_image / num_images
+                image = avg_image / num_selected_images
                 mask = image_set.get_mask(0)
                 mask = flumpy.to_numpy(mask[0])
                 image[mask == 0] = 0
 
                 compute_beam_position(image, params)
+
+        if params.projection.per_image:
+            print()
 
 
 def print_progress(image_index, n_images, set_index, n_sets, x, y,

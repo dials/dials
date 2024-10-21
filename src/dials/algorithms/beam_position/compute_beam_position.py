@@ -29,12 +29,12 @@ def compute_beam_position(image, params,
     x = solver_x.find_beam_position()
     y = solver_y.find_beam_position()
 
-    if image_index:
+    if image_index is not None:
         image_str = '_img_%05d' % image_index
     else:
         image_str = ''
 
-    if imageset_index:
+    if imageset_index is not None:
         imageset_str = '_set_%05d' % imageset_index
     else:
         imageset_str = ''

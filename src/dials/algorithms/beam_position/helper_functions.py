@@ -220,3 +220,33 @@ def smooth(curve, width=2):
             smooth_curve[i] = curve[i - half_width:i + half_width].mean()
 
     return smooth_curve
+
+
+def get_indices_from_slices(nmax, slices):
+    """
+    Takes a string of comma-separated numpy slices (e.g. "::2, 2, 3:5:7")
+    and turns it into a list of indices. The indices are selected from a range
+    [0, nmax] using each slice, and each comma-separated component is included
+    in the final array.
+    """
+
+    indices = np.array([], dtype=np.dtype('uint'))
+    full_range = np.arange(0, nmax, dtype=np.dtype('uint'))
+
+    for slice_str in slices.split(','):
+        slice_str = slice_str.replace(' ', '')
+        parsed_slice = parse_numpy_slice(slice_str)
+        selected = full_range[parsed_slice]
+        indices = np.append(indices, selected)
+
+    return np.unique(indices)
+
+
+def parse_numpy_slice(slice_str):
+
+    if slice_str is None:
+        return None
+    try:
+        return eval(f"np.s_[{slice_str}]")
+    except Exception as e:
+        raise ValueError(f"Invalid slice format: {slice_str}") from e

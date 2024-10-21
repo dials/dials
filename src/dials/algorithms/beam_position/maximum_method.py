@@ -88,7 +88,7 @@ class MaximumMethodSolver:
         if self.axis == 'x':
             ax = figure.axis_x
             ax.axvspan(self.bin_start, self.bin_end, color='#BEBEBE',
-                       alpha=0.5)
+                       alpha=0.5, lw=0)
             ax.axvline(self.beam_position, c='C3', lw=1)
 
             ax.plot(indices, self.profile_max, lw=1, c='gray')
@@ -102,7 +102,7 @@ class MaximumMethodSolver:
         elif self.axis == 'y':
             ax = figure.axis_y
             ax.axhspan(self.bin_start, self.bin_end, color='#BEBEBE',
-                       alpha=0.5)
+                       alpha=0.5, lw=0)
             ax.axhline(self.beam_position, c='C3', lw=1)
             ax.plot(self.profile_max, indices, lw=1, c='gray')
             ax.plot(self.profile_mean, indices, lw=1, c='C2')
