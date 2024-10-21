@@ -59,7 +59,7 @@ jobs:
       - name: Build
         run: python modules/dials/installer/bootstrap.py build ${BOOTSTRAP_FLAGS} ${BOOTSTRAP_BUILD_FLAGS}
       - name: Create Installer
-        if: runner.buildsys == 'libtbx'
+        if: matrix.buildsys == 'libtbx'
         run: |
           mamba install -yp ./conda_base conda-pack
           pip3 uninstall dxtbx xia2
@@ -70,7 +70,7 @@ jobs:
             --readme          modules/dials/LICENSE \
             --binary          tmp/dials-installer-dev
       - uses: actions/upload-artifact@v4
-        if: runner.buildsys == 'libtbx'
+        if: matrix.buildsys == 'libtbx'
         with:
           path: dist/dials-installer-dev.tar.gz
           if-no-files-found: error
