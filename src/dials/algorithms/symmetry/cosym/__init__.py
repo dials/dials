@@ -56,6 +56,7 @@ best_monoclinic_beta = True
   .short_caption = "Best monoclinic β"
 """
 
+# these parameters are required for the core cosym procedure for e.g. non-symmetry based isomorphism analysis
 cosym_scope = """
 min_reflections = 10
   .type = int(value_min=0)
