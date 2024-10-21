@@ -25,10 +25,8 @@ class MaximumMethodSolver:
         clean_image = np.array(image)
         min_value = clean_image.min()
 
-        print('Threshold', threshold)
         if threshold:
             clean_image[clean_image > threshold] = min_value
-        print('Clean image', clean_image)
 
         profile_max, max_from_max = project(clean_image, axis=axis,
                                             method='max',

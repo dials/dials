@@ -49,18 +49,6 @@ def compute_beam_position(image, params,
 
     return x, y
 
-    # if params.bad_pixel_threshold:
-    #    image[np.where(image > params.bad_pixel_threshold)] = 0
-
-    # If plot make plotting skeleton
-
-    # Compute and plot along x
-    # Compute and plot along y
-
-    # Plot along the central region with excluded points
-
-    # Save figure and return
-
 
 def resolve_projection_methods(params):
     """

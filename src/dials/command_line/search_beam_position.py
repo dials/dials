@@ -114,17 +114,23 @@ projection {
     .help = "Print the beam center position to the output."
 
     exclude_pixel_range_x = None
-    .type = floats
-    .help = "List of comma-separated pixel ranges to "
-            "exclude from projection along the y-axis "
-            "(e.g, start_1:end_1:step_1,start_2:end_2:step_2). "
-            "Similarly to Numpy, parts can be ommited (e.g. ::step). "
+    .type = ints
+    .multiple = True
+    .help = "List of commaseparated pairs of numbers specifying pixel ranges "
+            "in the x direction to exclude from projection to the y axis "
+            "(e.g, exclude_pixel_range_x=200,350,700,800 would exclude ranges "
+            " 200 to 350 and 700 to 800). Indexing assumes Python (and C) "
+            "conventions. First pixel has index 0, last pixel has "
+            "index N - 1 (here N is the number of pixels along the x axis). "
+            "Last pixel in the range is not included, e.g. '0,N'  "
+            "would exclude the entire range, while 0,3 would exclude "
+            "pixels 0, 1, and 2."
 
     exclude_pixel_range_y = None
-    .type = floats
-    .help = "List of comma-separated pixel ranges to "
-            "exclude from projection along the y-axis. "
-            "See `exclude_pixel_range_x` for more details. "
+    .type = ints
+    .multiple = True
+    .help = "List of pixel ranges to exclude from projection "
+            "along the y-axis. See `exclude_pixel_range_x` for more details."
 
     per_image = False
     .type = bool
@@ -721,6 +727,7 @@ def run(args=None):
                                                  set_index)
                     print_progress(index, num_images, set_index,
                                    num_imagesets, x, y)
+                print()
 
             else:
                 for index in range(num_images):
@@ -765,7 +772,7 @@ def print_progress(image_index, n_images, set_index, n_sets, x, y,
     bar += f"{image_index:4d}/{n_images}\n"
 
     if abs(percent_sets - 1.0) < 1.e-15 and abs(percent_images - 1.0) < 1.e-15:
-        end_str = "\n"
+        end_str = ""
     else:
         end_str = f"{move_up}{move_up}\r"
 

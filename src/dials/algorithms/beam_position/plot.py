@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 from matplotlib.patches import Circle
+from dials.algorithms.beam_position.project_profile import (
+    convert_range_into_spans
+)
 
 
 class Figure:
@@ -116,6 +119,19 @@ class Figure:
         if title:
             self.main_axis.text(0.15, 0.999, title, va='top', ha='left',
                                 transform=self.fig.transFigure, fontsize=8)
+
+        ranges_x = params.projection.exclude_pixel_range_x
+        spans_x = convert_range_into_spans(ranges_x)
+
+        ranges_y = params.projection.exclude_pixel_range_y
+        spans_y = convert_range_into_spans(ranges_y)
+
+        for span in spans_x:
+            self.main_axis.axvspan(span.min, span.max, color="white",
+                                   alpha=0.3, lw=0)
+        for span in spans_y:
+            self.main_axis.axhspan(span.min, span.max, color="white",
+                                   alpha=0.3, lw=0)
 
     def save_and_close(self):
 
