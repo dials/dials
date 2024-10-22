@@ -155,6 +155,7 @@ jobs:
           job-summary: true
           custom-arguments: dials-CI/modules/dials --regression
           click-to-expand: true
+          custom-pytest: dials-CI/build/bin/libtbx.python -mpytest
 
   test_xfel:
     name: Test XFEL
