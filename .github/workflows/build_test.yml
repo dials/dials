@@ -7,75 +7,75 @@ env:
   PYTHON_TESTING_VERSION: "3.12"
 
 jobs:
-  # build_test:
-  #   name: Build/Test
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: [ubuntu, macOS, windows]
-  #       exclude:
-  #         - os: macOS
-  #           buildsys: libtbx
-  #         - os: windows
-  #           buildsys: libtbx
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   runs-on: ${{ matrix.os }}-latest
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         path: modules/dials
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
-  #     - name: Prepare for Base Environment
-  #       run: |
-  #         OS="$(python -c "print('${{ runner.os }}'.lower())")"
-  #         echo "ninja
-  #         pytest-md
-  #         dials-data
-  #         pytest-cov
-  #         pytest-timeout" >> modules/dials/.conda-envs/${OS}.txt
-  #         echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
-  #         # These needed by windows
-  #         echo "$(pwd)/conda_base/Scripts" >> $GITHUB_PATH
-  #         echo "$(pwd)/conda_base/Library/bin" >> $GITHUB_PATH
-  #         echo "$(pwd)/conda_base/" >> $GITHUB_PATH
-  #     - name: Install Base Environment
-  #       run: |
-  #         python modules/dials/installer/bootstrap.py update base \
-  #           --python "${{ env.PYTHON_TESTING_VERSION }}"
-  #     - if: runner.os != 'Windows'
-  #       run: echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
-  #     - name: Build
-  #       run: python modules/dials/installer/bootstrap.py build --config-flags='-DCMAKE_UNITY_BUILD=true'
-  #     - name: Prepare for cache restoration
-  #       run: |
-  #         set -x
-  #         find . -name "dials.data*"
-  #         echo "DIALS_DATA_VERSION_FULL=$(dials.data info -v | grep version.full)" >> $GITHUB_ENV
-  #         echo "DIALS_DATA_VERSION=$(dials.data info -v | grep version.major_minor)" >> $GITHUB_ENV
-  #         echo "DIALS_DATA=${PWD}/data" >> $GITHUB_ENV
-  #         echo "CURRENT_WEEK=$(date +W%W)" >> $GITHUB_ENV
-  #         echo "TODAY_ISO=$(date +%Y%m%d)" >> $GITHUB_ENV
-  #     - name: Restore Cache
-  #       uses: actions/cache@v4
-  #       with:
-  #         key: "${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-${{ env.DIALS_DATA_VERSION_FULL }}"
-  #         restore-keys: |
-  #           ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-
-  #           ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-
-  #         path: ${{ github.workspace }}/data
-  #     - name: Run pytest
-  #       uses: pavelzw/pytest-action@510c5e90c360a185039bea56ce8b3e7e51a16507 # v2.2.0
-  #       with:
-  #         verbose: true
-  #         emoji: false
-  #         job-summary: true
-  #         custom-arguments: modules/dials --regression
-  #         click-to-expand: true
+  build_test:
+    name: Build/Test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macOS, windows]
+        exclude:
+          - os: macOS
+            buildsys: libtbx
+          - os: windows
+            buildsys: libtbx
+    defaults:
+      run:
+        shell: bash
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          path: modules/dials
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
+      - name: Prepare for Base Environment
+        run: |
+          OS="$(python -c "print('${{ runner.os }}'.lower())")"
+          echo "ninja
+          pytest-md
+          dials-data
+          pytest-cov
+          pytest-timeout" >> modules/dials/.conda-envs/${OS}.txt
+          echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
+          # These needed by windows
+          echo "$(pwd)/conda_base/Scripts" >> $GITHUB_PATH
+          echo "$(pwd)/conda_base/Library/bin" >> $GITHUB_PATH
+          echo "$(pwd)/conda_base/" >> $GITHUB_PATH
+      - name: Install Base Environment
+        run: |
+          python modules/dials/installer/bootstrap.py update base \
+            --python "${{ env.PYTHON_TESTING_VERSION }}"
+      - if: runner.os != 'Windows'
+        run: echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+      - name: Build
+        run: python modules/dials/installer/bootstrap.py build --config-flags='-DCMAKE_UNITY_BUILD=true'
+      - name: Prepare for cache restoration
+        run: |
+          set -x
+          find . -name "dials.data*"
+          echo "DIALS_DATA_VERSION_FULL=$(dials.data info -v | grep version.full)" >> $GITHUB_ENV
+          echo "DIALS_DATA_VERSION=$(dials.data info -v | grep version.major_minor)" >> $GITHUB_ENV
+          echo "DIALS_DATA=${PWD}/data" >> $GITHUB_ENV
+          echo "CURRENT_WEEK=$(date +W%W)" >> $GITHUB_ENV
+          echo "TODAY_ISO=$(date +%Y%m%d)" >> $GITHUB_ENV
+      - name: Restore Cache
+        uses: actions/cache@v4
+        with:
+          key: "${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-${{ env.DIALS_DATA_VERSION_FULL }}"
+          restore-keys: |
+            ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-
+            ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-
+          path: ${{ github.workspace }}/data
+      - name: Run pytest
+        uses: pavelzw/pytest-action@510c5e90c360a185039bea56ce8b3e7e51a16507 # v2.2.0
+        with:
+          verbose: true
+          emoji: false
+          job-summary: true
+          custom-arguments: modules/dials --regression
+          click-to-expand: true
 
   build_libtbx:
     name: libtbx build
