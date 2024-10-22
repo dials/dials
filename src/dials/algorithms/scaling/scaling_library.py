@@ -545,6 +545,7 @@ def merging_stats_from_scaled_array(
     use_internal_variance=False,
     anomalous=True,
     additional_stats=False,
+    cc_one_half_significance_level=0.01,
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -561,7 +562,7 @@ def merging_stats_from_scaled_array(
             sigma_filtering=None,
             eliminate_sys_absent=False,
             use_internal_variance=use_internal_variance,
-            cc_one_half_significance_level=0.01,
+            cc_one_half_significance_level=cc_one_half_significance_level,
             additional_stats=additional_stats,
         )
     except (RuntimeError, Sorry) as e:
@@ -588,7 +589,7 @@ def merging_stats_from_scaled_array(
                     n_bins=n_bins,
                     anomalous=True,
                     sigma_filtering=None,
-                    cc_one_half_significance_level=0.01,
+                    cc_one_half_significance_level=cc_one_half_significance_level,
                     eliminate_sys_absent=False,
                     use_internal_variance=use_internal_variance,
                     additional_stats=additional_stats,
