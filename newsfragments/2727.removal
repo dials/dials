@@ -1,1 +1,0 @@
-``bootstrap.py`` no longer accepts ``--prebuilt-cctbx``. This was only ever supported in CI. If you want to build a distribution with prebuilt cctbx, please use the ``--cmake`` flag and build instead.

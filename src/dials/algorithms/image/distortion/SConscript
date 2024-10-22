@@ -1,0 +1,7 @@
+Import("env")
+
+sources = ["boost_python/distortion_ext.cc"]
+
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_image_distortion_ext", source=sources, LIBS=env["LIBS"]
+)

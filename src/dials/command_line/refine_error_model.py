@@ -28,6 +28,7 @@ from dials.algorithms.scaling.error_model.error_model import (
     BasicErrorModel,
     calc_deltahl,
     calc_sigmaprime,
+    extract_error_model_groups,
 )
 from dials.algorithms.scaling.error_model.error_model_target import (
     calculate_regression_x_y,
@@ -42,6 +43,7 @@ from dials.algorithms.scaling.scaling_library import choose_initial_scaling_inte
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import log, show_mail_handle_errors
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -80,7 +82,9 @@ phil_scope = phil.parse(
 )
 
 
-def refine_error_model(params, experiments, reflection_tables):
+def refine_error_models(
+    params, experiments, reflection_tables
+) -> List[BasicErrorModel | None]:
     """Do error model refinement."""
 
     # prepare relevant data for datastructures
@@ -103,12 +107,6 @@ def refine_error_model(params, experiments, reflection_tables):
             )
         reflection_tables[i] = table
     space_group = experiments[0].crystal.get_space_group()
-    Ih_table = IhTable(
-        reflection_tables,
-        space_group,
-        additional_cols=["partiality"],
-        anomalous=True,
-    )
 
     use_stills_filtering = True
     for expt in experiments:
@@ -116,45 +114,71 @@ def refine_error_model(params, experiments, reflection_tables):
             use_stills_filtering = False
             break
     # now do the error model refinement
-    model = BasicErrorModel(basic_params=params.basic)
-    try:
-        model = run_error_model_refinement(
-            model, Ih_table, params.min_partiality, use_stills_filtering
+    minimisation_groups = extract_error_model_groups(params, len(reflection_tables))
+
+    models = []
+    for g in minimisation_groups:
+        sub_tables = [reflection_tables[i] for i in g]
+        Ih_table = IhTable(
+            sub_tables,
+            space_group,
+            additional_cols=["partiality"],
+            anomalous=True,
         )
-    except (ValueError, RuntimeError) as e:
-        logger.info(e)
-    else:
-        return model
+        model = BasicErrorModel(basic_params=params.basic)
+        try:
+            model = run_error_model_refinement(
+                model, Ih_table, params.min_partiality, use_stills_filtering
+            )
+        except (ValueError, RuntimeError) as e:
+            logger.info(e)
+            models.append(None)
+        else:
+            models.append(model)
+    return models
 
 
-def make_output(model, params):
+def make_output(models, params):
     """Get relevant data from the model and make html report."""
 
     if not (params.output.html or params.output.json):
         return
+    d = {"error_model_plots": {}, "error_model_summary": ""}
+    if len(models) == 1:
+        d["error_model_summary"] = str(models[0])
+    else:
+        d["error_model_summary"] = ""
+        for i, e in enumerate(models):
+            if e is not None:
+                indices = [str(j + 1) for j, x in enumerate(models) if e is x]
+                d["error_model_summary"] += (
+                    f"\nError model {i+1}, applied to sweeps {', '.join(indices)}:"
+                    + str(e)
+                )
+    for i, model in enumerate(models):
+        data = {}
+        if model:
+            table = model.filtered_Ih_table
+            data["intensity"] = flumpy.from_numpy(table.intensities)
+            sigmaprime = calc_sigmaprime(model.parameters, table)
+            data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+            data["inv_scale"] = table.inverse_scale_factors
+            data["sigma"] = flumpy.from_numpy(sigmaprime * table.inverse_scale_factors)
+            data["binning_info"] = model.binner.binning_info
 
-    data = {}
-    table = model.filtered_Ih_table
-    data["intensity"] = flumpy.from_numpy(table.intensities)
-    sigmaprime = calc_sigmaprime(model.parameters, table)
-    data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
-    data["inv_scale"] = table.inverse_scale_factors
-    data["sigma"] = flumpy.from_numpy(sigmaprime * table.inverse_scale_factors)
-    data["binning_info"] = model.binner.binning_info
-    d = {"error_model_plots": {}}
-    d["error_model_plots"].update(normal_probability_plot(data))
-    d["error_model_plots"].update(
-        i_over_sig_i_vs_i_plot(data["intensity"], data["sigma"])
-    )
-    d["error_model_plots"].update(error_model_variance_plot(data))
+            d["error_model_plots"].update(normal_probability_plot(data, label=i + 1))
+            d["error_model_plots"].update(
+                i_over_sig_i_vs_i_plot(data["intensity"], data["sigma"], label=i + 1)
+            )
+            d["error_model_plots"].update(error_model_variance_plot(data, label=i + 1))
 
-    if params.basic.minimisation == "regression":
-        x, y = calculate_regression_x_y(model.filtered_Ih_table)
-        data["regression_x"] = x
-        data["regression_y"] = y
-        data["model_a"] = model.parameters[0]
-        data["model_b"] = model.parameters[1]
-        d["error_model_plots"].update(error_regression_plot(data))
+            if params.basic.minimisation == "regression":
+                x, y = calculate_regression_x_y(model.filtered_Ih_table)
+                data["regression_x"] = x
+                data["regression_y"] = y
+                data["model_a"] = model.parameters[0]
+                data["model_b"] = model.parameters[1]
+                d["error_model_plots"].update(error_regression_plot(data, label=i + 1))
 
     if params.output.html:
         logger.info("Writing html report to: %s", params.output.html)
@@ -165,12 +189,13 @@ def make_output(model, params):
             ]
         )
         env = Environment(loader=loader)
-        template = env.get_template("simple_report.html")
+        template = env.get_template("error_model_report.html")
         html = template.render(
             page_title="DIALS error model refinement report",
             panel_title="Error distribution plots",
             panel_id="error_model_plots",
             graphs=d["error_model_plots"],
+            error_model_summary=d["error_model_summary"],
         )
         with open(params.output.html, "wb") as f:
             f.write(html.encode("utf-8", "xmlcharrefreplace"))
@@ -203,6 +228,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    reflections = parse_multiple_datasets(reflections)
 
     log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())
@@ -211,10 +237,10 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
-    model = refine_error_model(params, experiments, reflections)
+    models = refine_error_models(params, experiments, reflections)
 
-    if model:
-        make_output(model, params)
+    if models:
+        make_output(models, params)
     logger.info("Finished")
 
 

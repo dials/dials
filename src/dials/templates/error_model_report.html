@@ -1,0 +1,39 @@
+{% extends "report_base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>{{ page_title }}</h1>
+</div>
+
+{% if error_model_summary %}
+<div>
+    <h2>Error model details</h2>
+    <div class="panel panel-default">
+        <div class="panel-heading" data-toggle="collapse" data-target="#collapse_errorsummary">
+            <h4 class="panel-title">
+                <a> Error model parameters </a>
+            </h4>
+        </div>
+        <div id="collapse_errorsummary" class="panel-collapse collapse in">
+            <div class="panel-body">
+                <div class="container-fluid">
+                    <div>
+                        <p style="white-space: pre-wrap">{{ error_model_summary }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endif %}
+
+<div>
+  <div class="panel-group">
+      {{ macros.panel(panel_title, panel_id, graphs, show=True) }}
+  </div>
+</div>
+
+
+{% endblock %}

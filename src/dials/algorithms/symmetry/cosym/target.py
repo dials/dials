@@ -65,7 +65,6 @@ def _compute_rij_matrix_one_row_block(
         j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
         intensities_j = data.data()[j_lower:j_upper]
         sigmas_j = data.sigmas()[j_lower:j_upper]
-
         for k, cb_op_k in enumerate(cb_ops):
             indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
 
@@ -138,6 +137,11 @@ def _compute_rij_matrix_one_row_block(
                 rij_col.append(jk)
                 rij_data.append(cc)
 
+    if weights and not any(wij_data):
+        raise RuntimeError(
+            f"Unable to calculate any correlations for dataset index {i} ({len(intensities_i)} reflections)."
+            + "\nIncreasing min_reflections may overcome this problem."
+        )
     rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
     if weights:
         wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
@@ -316,7 +320,6 @@ class Target:
             ]
             for future in concurrent.futures.as_completed(futures):
                 rij, wij = future.result()
-
                 if rij_matrix is None:
                     rij_matrix = rij
                 else:
@@ -448,6 +451,16 @@ class Target:
 
             # Symmetrise the wij matrix
             wij += wij.T
+
+            for i in range(wij.shape[0]):
+                if not any(wij[i, :]):
+                    while i > n_lattices:
+                        i -= n_lattices
+                    n_refl = sum(self._lattice_ids == i)
+                    raise RuntimeError(
+                        f"Unable to calculate any correlations for dataset index {i} ({n_refl} reflections)."
+                        + "\nIncreasing min_reflections may overcome this problem."
+                    )
         else:
             wij = None
 
@@ -472,6 +485,20 @@ class Target:
             np.multiply(self.wij_matrix, elements, out=elements)
         f = 0.5 * elements.sum()
         return f
+
+    def compute_functional_score_for_dimension_assessment(
+        self, x: np.ndarray, outlier_rejection: bool = True
+    ) -> float:
+        if not outlier_rejection:
+            return self.compute_functional(x)
+        x = x.reshape((self.dim, x.size // self.dim))
+        elements = np.square(self.rij_matrix - x.T @ x)
+        if self.wij_matrix is not None:
+            np.multiply(self.wij_matrix, elements, out=elements)
+
+        q1, q2, q3 = np.quantile(elements, (0.25, 0.5, 0.75))
+        inliers = elements[elements < q2 + (q3 - q1)]
+        return 0.5 * inliers.sum()
 
     def compute_gradients_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the gradients at coordinates `x` using finite differences.
