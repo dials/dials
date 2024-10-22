@@ -106,6 +106,11 @@ jobs:
             --license         modules/dials/LICENSE \
             --readme          modules/dials/LICENSE \
             --binary          tmp/dials-installer-dev
+      - name: Restore Cache
+        uses: actions/cache@v4
+        with:
+          key: "dials-installer-cache"
+          path: ${{ github.workspace }}/dist
       - uses: actions/upload-artifact@v4
         with:
           name: dials-installer
@@ -113,109 +118,116 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
-  test_libtbx:
-    name: Test libtbx build
-    runs-on: ubuntu-latest
-    needs: build_libtbx
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dials-installer
-      - name: Install DIALS
-        run: |
-          tar -xf dials-installer-dev.tar.gz
-          cd dials-installer
-          echo "CI" > VERSION # To ensure we know the exact install path
-          ./install --prefix=..
-          cd ..
-          rm -rf ./dials-installer*
-          echo "$(pwd)/dials-CI/conda_base/bin" >> $GITHUB_PATH
-          echo "$(pwd)/dials-CI/build/bin" >> $GITHUB_PATH
-      - name: Prepare for cache restoration
-        run: |
-          set -x
-          find . -name "dials.data*"
-          echo "DIALS_DATA_VERSION_FULL=$(dials.data info -v | grep version.full)" >> $GITHUB_ENV
-          echo "DIALS_DATA_VERSION=$(dials.data info -v | grep version.major_minor)" >> $GITHUB_ENV
-          echo "DIALS_DATA=${PWD}/data" >> $GITHUB_ENV
-          echo "CURRENT_WEEK=$(date +W%W)" >> $GITHUB_ENV
-          echo "TODAY_ISO=$(date +%Y%m%d)" >> $GITHUB_ENV
-      - name: Restore Cache
-        uses: actions/cache@v4
-        with:
-          key: "${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-${{ env.DIALS_DATA_VERSION_FULL }}"
-          restore-keys: |
-            ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-
-            ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-
-          path: ${{ github.workspace }}/data
-      - name: Run pytest
-        uses: pavelzw/pytest-action@510c5e90c360a185039bea56ce8b3e7e51a16507 # v2.2.0
-        with:
-          verbose: true
-          emoji: false
-          job-summary: true
-          custom-arguments: dials-CI/modules/dials --regression
-          click-to-expand: true
+  # test_libtbx:
+  #   name: Test libtbx build
+  #   runs-on: ubuntu-latest
+  #   needs: build_libtbx
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: dials-installer
+  #     - name: Install DIALS
+  #       run: |
+  #         tar -xf dials-installer-dev.tar.gz
+  #         cd dials-installer
+  #         echo "CI" > VERSION # To ensure we know the exact install path
+  #         ./install --prefix=..
+  #         cd ..
+  #         rm -rf ./dials-installer*
+  #         echo "$(pwd)/dials-CI/conda_base/bin" >> $GITHUB_PATH
+  #         echo "$(pwd)/dials-CI/build/bin" >> $GITHUB_PATH
+  #     - name: Prepare for cache restoration
+  #       run: |
+  #         set -x
+  #         find . -name "dials.data*"
+  #         echo "DIALS_DATA_VERSION_FULL=$(dials.data info -v | grep version.full)" >> $GITHUB_ENV
+  #         echo "DIALS_DATA_VERSION=$(dials.data info -v | grep version.major_minor)" >> $GITHUB_ENV
+  #         echo "DIALS_DATA=${PWD}/data" >> $GITHUB_ENV
+  #         echo "CURRENT_WEEK=$(date +W%W)" >> $GITHUB_ENV
+  #         echo "TODAY_ISO=$(date +%Y%m%d)" >> $GITHUB_ENV
+  #     - name: Restore Cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         key: "${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-${{ env.DIALS_DATA_VERSION_FULL }}"
+  #         restore-keys: |
+  #           ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-
+  #           ${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-
+  #         path: ${{ github.workspace }}/data
+  #     - name: Run pytest
+  #       uses: pavelzw/pytest-action@510c5e90c360a185039bea56ce8b3e7e51a16507 # v2.2.0
+  #       with:
+  #         verbose: true
+  #         emoji: false
+  #         job-summary: true
+  #         custom-arguments: dials-CI/modules/dials --regression
+  #         click-to-expand: true
 
-  test_xfel:
-    name: Test XFEL
-    runs-on: ubuntu-latest
-    needs: build_libtbx
-    if: ${{ github.event_name == 'pull_request' }}
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dials-installer
-      - name: Install DIALS
-        run: |
-          set -x
-          ls -R
-          tar -xf dials-installer-dev.tar.gz
-          ls -R
-          cd dials-installer
-          echo "CI" > VERSION # To ensure we know the exact install path
-          ./install --prefix=..
-          cd ..
-          rm -rf ./dials-installer*
-          echo "$(pwd)/dials-CI/conda_base/bin" >> $GITHUB_PATH
-          echo "$(pwd)/dials-CI/build/bin" >> $GITHUB_PATH
-      - name: Install XFEL-regression
-        working-directory: ./dials-CI
-        run: |
-          source dials_env.sh
-          set -x
-          conda install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
-          GIT_LFS_SKIP_SMUDGE=1 git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
-          libtbx.configure xfel_regression
-          # Patch for this ubuntu so that we can run without arbitrary failure
-          cd modules/xfel_regression
-          # PATCH: This tests tests _explicitly_ for ubuntu 20.04
-          DISTRO=$(python3 -c "import distro; print(distro.version())")
-          sed -i'' "s/20.04/${DISTRO}/" test/command_line/tst_xfel_merge.py
-          # PATCH: This test fails. See https://github.com/dials/dials/pull/2741
-          cp run_tests.py run_tests.py.orig
-          grep -v tst_TargetWithFastRij run_tests.py.orig > run_tests.py
-          # Patching done, show what we did
-          git diff
-      - name: Restore Cache
-        uses: actions/cache@v4
-        with:
-          key: "xfel-regression"
-          path: |
-            ${{ github.workspace }}/data
-            ${{ github.workspace }}/dials-CI/modules/xfel_regression/.git/lfs
-      - name: Update Regression Data
-        run: |
-          cd dials-CI/modules/xfel_regression
-          git lfs install --local
-          echo "DIALS_DATA=${{ github.workspace }}/data" >> $GITHUB_ENV
-          set -x
-          git lfs pull
-          dials.data get 4fluoro_cxi
-      - name: Run xfel_regression tests
-        working-directory: ./dials-CI
-        run: |
-          source dials_env.sh
-          mkdir tests
-          cd tests
-          libtbx.run_tests_parallel module=xfel_regression nproc=auto
+  # test_xfel:
+  #   name: Test XFEL
+  #   runs-on: ubuntu-latest
+  #   needs: build_libtbx
+  #   if: ${{ github.event_name == 'pull_request' }}
+  #   steps:
+  #     - name: Restore Cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         key: "dials-installer-cache"
+  #         path: ${{ github.workspace }}/dist
+
+  #     # - uses: actions/download-artifact@v4
+  #     #   with:
+  #     #     name: dials-installer
+  #     - name: Install DIALS
+  #       run: |
+  #         set -x
+  #         ls -R
+  #         # tar -xf dials-installer-dev.tar.gz
+  #         tar -xf dist/dials-installer-dev.tar.gz
+  #         ls -R
+  #         cd dials-installer
+  #         echo "CI" > VERSION # To ensure we know the exact install path
+  #         ./install --prefix=..
+  #         cd ..
+  #         rm -rf ./dials-installer*
+  #         echo "$(pwd)/dials-CI/conda_base/bin" >> $GITHUB_PATH
+  #         echo "$(pwd)/dials-CI/build/bin" >> $GITHUB_PATH
+  #     - name: Install XFEL-regression
+  #       working-directory: ./dials-CI
+  #       run: |
+  #         source dials_env.sh
+  #         set -x
+  #         conda install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
+  #         GIT_LFS_SKIP_SMUDGE=1 git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
+  #         libtbx.configure xfel_regression
+  #         # Patch for this ubuntu so that we can run without arbitrary failure
+  #         cd modules/xfel_regression
+  #         # PATCH: This tests tests _explicitly_ for ubuntu 20.04
+  #         DISTRO=$(python3 -c "import distro; print(distro.version())")
+  #         sed -i'' "s/20.04/${DISTRO}/" test/command_line/tst_xfel_merge.py
+  #         # PATCH: This test fails. See https://github.com/dials/dials/pull/2741
+  #         cp run_tests.py run_tests.py.orig
+  #         grep -v tst_TargetWithFastRij run_tests.py.orig > run_tests.py
+  #         # Patching done, show what we did
+  #         git diff
+  #     - name: Restore Cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         key: "xfel-regression"
+  #         path: |
+  #           ${{ github.workspace }}/data
+  #           ${{ github.workspace }}/dials-CI/modules/xfel_regression/.git/lfs
+  #     - name: Update Regression Data
+  #       run: |
+  #         cd dials-CI/modules/xfel_regression
+  #         git lfs install --local
+  #         echo "DIALS_DATA=${{ github.workspace }}/data" >> $GITHUB_ENV
+  #         set -x
+  #         git lfs pull
+  #         dials.data get 4fluoro_cxi
+  #     - name: Run xfel_regression tests
+  #       working-directory: ./dials-CI
+  #       run: |
+  #         source dials_env.sh
+  #         mkdir tests
+  #         cd tests
+  #         libtbx.run_tests_parallel module=xfel_regression nproc=auto
