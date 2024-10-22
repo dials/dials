@@ -115,12 +115,12 @@ jobs:
         run: |
           set -x
           ls -R
-          tar -xf dials-installer-dev.tar.gz
+          tar -xf artifact/dials-installer-dev.tar.gz
           cd dials-installer
           echo "CI" > VERSION # To ensure we know the exact install path
           ./install --prefix=..
           cd ..
-          rm -rf ./dials-installer*
+          rm -rf ./dials-installer* ./artifact
           echo "$(pwd)/dials-CI/conda_base/bin" >> $GITHUB_PATH
           echo "$(pwd)/dials-CI/build/bin" >> $GITHUB_PATH
       - name: Install XFEL-regression
