@@ -183,8 +183,6 @@ jobs:
           ls -R
           # tar -xf dials-installer-dev.tar.gz
           tar -xf dist/dials-installer-dev.tar.gz
-          ls
-          ls *
           cd dials-installer-dev
           echo "CI" > VERSION # To ensure we know the exact install path
           ./install --prefix=..
@@ -205,9 +203,6 @@ jobs:
           # PATCH: This tests tests _explicitly_ for ubuntu 20.04
           DISTRO=$(python3 -c "import distro; print(distro.version())")
           sed -i'' "s/20.04/${DISTRO}/" test/command_line/tst_xfel_merge.py
-          # PATCH: This test fails. See https://github.com/dials/dials/pull/2741
-          cp run_tests.py run_tests.py.orig
-          grep -v tst_TargetWithFastRij run_tests.py.orig > run_tests.py
           # Patching done, show what we did
           git diff
       - name: Restore Cache
