@@ -185,7 +185,7 @@ jobs:
           tar -xf dist/dials-installer-dev.tar.gz
           ls
           ls *
-          cd dials-installer
+          cd dials-installer-dev
           echo "CI" > VERSION # To ensure we know the exact install path
           ./install --prefix=..
           cd ..
