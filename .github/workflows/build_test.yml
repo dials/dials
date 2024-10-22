@@ -74,6 +74,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: matrix.buildsys == 'libtbx'
         with:
+          name: dials-installer
           path: dist/dials-installer-dev.tar.gz
           if-no-files-found: error
           compression-level: 0
@@ -111,11 +112,14 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/download-artifact@v4
+        with:
+          name: dials-installer
       - name: Install DIALS
         run: |
           set -x
+          tar -xf artifact/dials-installer-dev.tar.gz || true
+          tar -xf dials-installer/dials-installer-dev.tar.gz || true
           ls -R
-          tar -xf artifact/dials-installer-dev.tar.gz
           cd dials-installer
           echo "CI" > VERSION # To ensure we know the exact install path
           ./install --prefix=..
