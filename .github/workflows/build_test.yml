@@ -85,7 +85,10 @@ jobs:
           python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
       - name: Install Base Environment
         run: |
-          echo "pytest-md\ndials-data\npytest-cov\npytest-timeout" >> modules/dials/.conda-envs/linux.txt
+          echo "pytest-md
+          dials-data
+          pytest-cov
+          pytest-timeout" >> modules/dials/.conda-envs/linux.txt
           python modules/dials/installer/bootstrap.py update base \
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
             --libtbx
