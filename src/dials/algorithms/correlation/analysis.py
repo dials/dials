@@ -57,7 +57,7 @@ significant_clusters {
     .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
   xi = 0.05
     .type = float(value_min=0, value_max=1)
-    .help = ""
+    .help = "xi parameter to determine min steepness to define cluster boundary"
 }
 """
     % cosym_scope,
