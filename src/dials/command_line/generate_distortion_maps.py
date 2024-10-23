@@ -8,7 +8,7 @@ import libtbx
 from iotbx import phil
 from scitbx import matrix
 
-from dials.algorithms.image.distortion import CreateEllipticalDistortionMaps
+from dials.algorithms.image.distortion import PlaneLinearTransformationMaps
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments
@@ -177,7 +177,7 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     distortion_map_y = []
 
     for panel in detector:
-        map_maker = CreateEllipticalDistortionMaps(panel, M, fast, slow, mid)
+        map_maker = PlaneLinearTransformationMaps(panel, M, fast, slow, mid)
         distortion_map_x.append(map_maker.get_dx())
         distortion_map_y.append(map_maker.get_dy())
 
