@@ -83,7 +83,7 @@ Matthew Webber.
 
 .. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`Boost.Python`: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/index.html
-.. _`cctbx`: http://cctbx.sourceforge.net/
+.. _`cctbx`: https://github.com/cctbx
 .. _`CCP4`: http://www.ccp4.ac.uk/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/Home.html
 .. _`Dr Gwyndaf Evans`: http://www.diamond.ac.uk/Beamlines/Mx/VMXm/Staff/Evans.html
