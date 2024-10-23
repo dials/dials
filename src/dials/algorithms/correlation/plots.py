@@ -138,7 +138,8 @@ It defines the minimum steepness between two points on the plot for a cluster bo
 parameter can be tailored like other dials input parameters. A larger value of xi will be less sensitive to
 boundaries (and thus may join more similar clusters), while a smaller value of xi will tend to include
 more datasets in clusters that may be better described as noise. NOTE: the dataset numbers on the x-axis
-DO NOT correspond with the dataset ids.
+DO NOT correspond with the dataset ids. For more information, see documentation from scikit-learn implementation:
+https://scikit-learn.org/stable/modules/generated/sklearn.cluster.OPTICS.html
 """,
         }
     }
