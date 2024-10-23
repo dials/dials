@@ -80,7 +80,10 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
 def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=10.0):
     # first calculate normalised intensities and set in the Ih_table.
     intensities = Ih_table.as_miller_array(experiment.crystal.get_unit_cell())
-    normalised_intensities = quasi_normalisation(intensities)
+    try:
+        normalised_intensities = quasi_normalisation(intensities)
+    except AssertionError:
+        return [np.array([], dtype=np.uint64)] * Ih_table.n_datasets
 
     sel = normalised_intensities.data() > (emax**2)
     n_e2_outliers = sel.count(True)
@@ -174,9 +177,7 @@ class OutlierRejectionBase:
 
     def __init__(self, Ih_table, zmax):
         """Set up and run the outlier rejection algorithm."""
-        assert (
-            Ih_table.n_work_blocks == 1
-        ), """
+        assert Ih_table.n_work_blocks == 1, """
 Outlier rejection algorithms require an Ih_table with nblocks = 1"""
         # Note: could be possible to code for nblocks > 1
         self._Ih_table_block = Ih_table.blocked_data_list[0]
@@ -229,9 +230,7 @@ class TargetedOutlierRejection(OutlierRejectionBase):
 
     def __init__(self, Ih_table, zmax, target):
         """Set a target Ih_table and run the outlier rejection."""
-        assert (
-            target.n_work_blocks == 1
-        ), """
+        assert target.n_work_blocks == 1, """
 Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
         self._target_Ih_table_block = target.blocked_data_list[0]
         self._target_Ih_table_block.calc_Ih()

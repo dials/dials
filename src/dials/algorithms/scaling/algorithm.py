@@ -61,6 +61,12 @@ def prepare_input(params, experiments, reflections):
 
     #### First exclude any datasets, before the dataset is split into
     #### individual reflection tables and expids set.
+    if (params.dataset_selection.include_datasets is not None) and (
+        params.dataset_selection.use_datasets is None
+    ):
+        params.dataset_selection.use_datasets = (
+            params.dataset_selection.include_datasets
+        )
     if (
         params.dataset_selection.exclude_datasets
         or params.dataset_selection.use_datasets
@@ -266,7 +272,6 @@ class ScalingAlgorithm:
                 self.params.scaling_options.only_target
                 or self.params.scaling_options.reference
             ):
-
                 self.scaler = targeted_scaling_algorithm(self.scaler)
                 return
             # Now pass to a multiscaler ready for next round of scaling.
@@ -400,9 +405,11 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
                 if counter == 1:
                     results.initial_expids_and_image_ranges = [
-                        (exp.identifier, exp.scan.get_image_range())
-                        if exp.scan
-                        else None
+                        (
+                            (exp.identifier, exp.scan.get_image_range())
+                            if exp.scan
+                            else None
+                        )
                         for exp in self.experiments
                     ]
 
@@ -578,7 +585,6 @@ def scaling_algorithm(scaler):
         scaler.params.reflection_selection.intensity_choice == "combine"
         or scaler.params.scaling_options.outlier_rejection
     ):
-
         expand_and_do_outlier_rejection(scaler)
 
         do_intensity_combination(scaler, reselect=True)
@@ -599,7 +605,6 @@ def scaling_algorithm(scaler):
         need_to_rescale = True
 
     if scaler.params.scaling_options.full_matrix:
-
         scaler.perform_scaling(
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,
@@ -635,6 +640,9 @@ def targeted_scaling_algorithm(scaler):
         scaler.make_ready_for_scaling()
         scaler.perform_scaling()
 
+        expand_and_do_outlier_rejection(scaler, calc_cov=True)
+        do_error_analysis(scaler, reselect=True)
+
     if scaler.params.scaling_options.full_matrix and (
         scaler.params.scaling_refinery.engine == "SimpleLBFGS"
     ):
@@ -642,9 +650,11 @@ def targeted_scaling_algorithm(scaler):
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,
         )
+    else:
+        scaler.perform_scaling()
 
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
-    # do_error_analysis(scaler, reselect=False)
+    do_error_analysis(scaler, reselect=False)
 
     scaler.prepare_reflection_tables_for_output()
     return scaler

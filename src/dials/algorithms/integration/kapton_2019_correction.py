@@ -247,10 +247,10 @@ class KaptonTape_2019:
                 return int_edge_pts
             elif len(set(int_edge_pts)) == 2:
                 sys.exit(
-                    "Insuffient number of intersection points to define both Kapton edges"
+                    "Insufficient number of intersection points to define both Kapton edges"
                 )
             else:
-                # Find different permuations of intersecting kapton edge points that won't
+                # Find different permutations of intersecting kapton edge points that won't
                 # result in kapton_edges defined by identical points
                 if (
                     int_edge_pts[0] == int_edge_pts[1]
@@ -264,7 +264,7 @@ class KaptonTape_2019:
             """
             Function to orient the detector edge points counterclockwise
             such that the first edge point index is in the upper left quadrant
-            (i.e., -x, +y). This isn't explictly necessary but nevertheless useful
+            (i.e., -x, +y). This isn't explicitly necessary but nevertheless useful
             b/c the function abs_bounding_lines_on_image always assumes that the
             detector edges used to help calculate the Kapton absorption max and edge
             are a parallel to the y-axis. This function enforces that a convention
@@ -321,7 +321,7 @@ class KaptonTape_2019:
             det_edge_pt1, det_edge_pt2, int_edge_pt1, int_edge_pt2
         ):
             """
-            Function to create vectors that descibe the distance btw two points where rays from
+            Function to create vectors that describe the distance btw two points where rays from
             Kapton edges intersect with detector relative to detector edges
             """
             dist_det_edge_x = det_edge_pt2[0] - det_edge_pt1[0]
@@ -559,18 +559,22 @@ class image_kapton_correction:
             ), "Kapton param sigmas must be non-negative"
             self.kapton_params_maxes = [
                 [
-                    self.kapton_params[i] + self.kapton_params_sigmas[j]
-                    if j == i
-                    else self.kapton_params[i]
+                    (
+                        self.kapton_params[i] + self.kapton_params_sigmas[j]
+                        if j == i
+                        else self.kapton_params[i]
+                    )
                     for i in range(4)
                 ]
                 for j in range(4)
             ]
             self.kapton_params_mins = [
                 [
-                    max(self.kapton_params[i] - self.kapton_params_sigmas[j], 0.001)
-                    if j == i
-                    else self.kapton_params[i]
+                    (
+                        max(self.kapton_params[i] - self.kapton_params_sigmas[j], 0.001)
+                        if j == i
+                        else self.kapton_params[i]
+                    )
                     for i in range(3)
                 ]
                 + [a]
@@ -657,7 +661,7 @@ class image_kapton_correction:
         if plot:
             from matplotlib import pyplot as plt
 
-            for (title, data) in [("corrections", corrections), ("sigmas", sigmas)]:
+            for title, data in [("corrections", corrections), ("sigmas", sigmas)]:
                 plt.hist(data, 20)
                 plt.title(title)
                 plt.show()

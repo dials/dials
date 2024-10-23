@@ -798,7 +798,8 @@ namespace dials { namespace algorithms {
       std::size_t i = 0;
       offset_.push_back(0);
       for (std::size_t j = 0; j < n; ++j) {
-        while (i < indices_.size() && bbox[indices_[i]][5] - zstart <= j + 1) i++;
+        while (i < indices_.size() && bbox[indices_[i]][5] - zstart <= j + 1)
+          i++;
         offset_.push_back(i);
       }
       DIALS_ASSERT(offset_.size() == n + 1);

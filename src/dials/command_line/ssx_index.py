@@ -41,8 +41,8 @@ from dials.algorithms.indexing.ssx.analysis import (
 )
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
 try:
@@ -79,7 +79,7 @@ refinement {
 
 phil_scope = phil.parse(
     """
-method = *fft1d *real_space_grid_search
+method = *fft1d *real_space_grid_search pink_indexer low_res_spot_match
     .type = choice(multi=True)
 nproc = Auto
     .type = int
@@ -151,7 +151,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     if params.nproc is Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
 
     if params.nproc > 1:
         params.indexing.nproc = params.nproc
@@ -167,7 +167,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         sys.exit(f"Error: {e}")
 
     summary_table = make_summary_table(summary_data)
-    logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
+    logger.info("\nSummary of images successfully indexed\n" + summary_table)
 
     n_images = reduce(
         lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0

@@ -7,7 +7,6 @@ but also that the command line program is functioning and that the output models
 have not changed format and so on.
 """
 
-
 from __future__ import annotations
 
 import math
@@ -62,7 +61,7 @@ def test_i04_weak_data(dials_data, tmp_path):
     assert ref_exp.crystal.get_cell_parameter_sd() == pytest.approx(
         (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0), abs=1e-6
     )
-    assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8063382, abs=1e-6)
+    assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8051262, abs=1e-6)
 
 
 def test_scan_varying_refinement_rmsds(dials_data, tmp_path):

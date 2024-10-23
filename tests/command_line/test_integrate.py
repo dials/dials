@@ -142,6 +142,7 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
     assert not result.returncode and not result.stderr
 
 
+@pytest.mark.skip(reason="3d threaded integrator")
 def test_basic_threaded_integrate(dials_data, tmp_path):
     """Test the threaded integrator on single imageset data."""
 

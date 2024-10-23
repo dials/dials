@@ -7,16 +7,21 @@ import sys
 import numpy as np
 
 import iotbx.phil
-from cctbx import sgtbx
+from cctbx import crystal, sgtbx
 
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
-from dials.algorithms.symmetry.cosym import CosymAnalysis, extract_reference_intensities
+from dials.algorithms.symmetry.cosym import (
+    CosymAnalysis,
+    change_of_basis_op_to_best_cell,
+    extract_reference_intensities,
+)
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.array_family import flex
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
+    median_unit_cell,
 )
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
@@ -65,13 +70,6 @@ relative_length_tolerance = 0.05
 
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
-
-min_reflections = 10
-  .type = int(value_min=1)
-  .help = "The minimum number of reflections per experiment."
-
-seed = 230
-  .type = int(value_min=0)
 
 output {
   suffix = "_reindexed"
@@ -157,10 +155,11 @@ class cosym(Subject):
             if not cb_op
         ]
         if len(exclude):
+            exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
             logger.info(
                 f"Rejecting {len(exclude)} datasets from cosym analysis "
                 f"(couldn't determine consistent cb_op to minimum cell):\n"
-                f"{exclude}",
+                f"dataset indices: {exclude_indices}",
             )
             self._experiments, self._reflections = select_datasets_on_identifiers(
                 self._experiments, self._reflections, exclude_datasets=exclude
@@ -183,10 +182,10 @@ class cosym(Subject):
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
+
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.
             # The purpose of the reference is to help the clustering, not guarantee the indexing solution.
@@ -250,6 +249,10 @@ class cosym(Subject):
             reindexing_ops = reindexing_ops[:-1]
         else:
             unique_ids = set(self.cosym_analysis.dataset_ids)
+
+        input_cell = median_unit_cell(self._experiments)
+        # first apply the reindexing operators to the input cell (P1, not the best cell), to get
+        # all datasets consistently indexed.
         for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
@@ -257,20 +260,67 @@ class cosym(Subject):
             )
             expt = self._experiments[dataset_id]
             refl = self._reflections[dataset_id]
-            if subgroup is not None:
-                cb_op = subgroup["cb_op_inp_best"] * cb_op
+            expt.crystal = expt.crystal.change_basis(cb_op)
+            refl["miller_index"] = cb_op.apply(refl["miller_index"])
+
+        # cosym reindexing may change the cell setting, so in some cases we need to
+        # redetermine the cb_op from the current cell to the best cell.
+        # This is an issue when the reindexing operators of the lattice symmetry changes the
+        # cell settings, e.g. if the lattice has a higher symmetry.
+
+        input_cs = crystal.symmetry(
+            space_group=sgtbx.space_group("P1"),
+            unit_cell=input_cell,
+        )
+        # Determine if there is the potential for the cell setting to change.
+        new_cells = []
+        for cb in reindexing_ops:
+            new = input_cs.change_basis(sgtbx.change_of_basis_op(cb))
+            new_cells.append(new.unit_cell())
+        reindex_changes_cell = any(
+            not input_cell.is_similar_to(
+                new, relative_length_tolerance=0.0001, absolute_angle_tolerance=0.0001
+            )
+            for new in new_cells
+        )
+
+        if reindex_changes_cell:
+            # need to find the new reindexing operator to transform to the best cell.
+            cb_op = change_of_basis_op_to_best_cell(
+                self._experiments,
+                self.params.lattice_symmetry_max_delta,
+                self.params.relative_length_tolerance,
+                self.params.absolute_angle_tolerance,
+                subgroup,
+            )
+            for expt, refl in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
+                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+        elif (
+            subgroup["cb_op_inp_best"].as_xyz()
+            != sgtbx.change_of_basis_op("a,b,c").as_xyz()
+        ):
+            cb_op = subgroup["cb_op_inp_best"]
+            for expt, refl in zip(self._experiments, self._reflections):
+                expt.crystal = expt.crystal.change_basis(cb_op)
+                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+        # if either of the above are not true, then we are already in the best cell.
+
+        # we are now in the same setting as the best cell, so can set the space group and
+        # 'symmetrize' the cell
+        for expt in self._experiments:
+            if not self.params.space_group:
                 expt.crystal.set_space_group(
                     subgroup["best_subsym"].space_group().build_derived_acentric_group()
                 )
             else:
-                expt.crystal = expt.crystal.change_basis(cb_op)
+                expt.crystal.set_space_group(self.params.space_group.group())
             expt.crystal.set_unit_cell(
                 expt.crystal.get_space_group().average_unit_cell(
                     expt.crystal.get_unit_cell()
                 )
             )
-            refl["miller_index"] = cb_op.apply(refl["miller_index"])
+
         # Allow for the case where some datasets are filtered out.
         if len(reindexing_ops) < len(self._experiments):
             to_delete = [
@@ -411,8 +461,13 @@ def run(args=None):
 
     if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
-    cosym_instance.run()
-    cosym_instance.export()
+    try:
+        cosym_instance.run()
+    except RuntimeError as e:
+        logger.info(e)
+        sys.exit(0)
+    else:
+        cosym_instance.export()
 
 
 if __name__ == "__main__":

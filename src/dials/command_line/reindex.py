@@ -39,7 +39,7 @@ provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
 basis operator will also be applied to the space group in the indexed.expt
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
-Alternatively, to reindex an integated dataset in the case of indexing ambiguity,
+Alternatively, to reindex an integrated dataset in the case of indexing ambiguity,
 a reference dataset (models.expt and reflection.refl) in the same space
 group can be specified. In this case, any potential twin operators are tested,
 and the dataset is reindexed to the setting that gives the highest correlation
@@ -103,7 +103,6 @@ output {
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-
     usage = "dials.reindex [options] indexed.expt indexed.refl"
 
     parser = ArgumentParser(
@@ -159,8 +158,8 @@ def run(args=None):
                 )
 
             reference_crystal = reference_experiments.crystals()[0]
-            reference_crystal.unit_cell = determine_best_unit_cell(
-                reference_experiments
+            reference_crystal.set_unit_cell(
+                determine_best_unit_cell(reference_experiments)
             )
 
     if params.reference.reflections is not None:
@@ -209,7 +208,6 @@ experiments file must also be specified with the option: reference.experiments= 
             raise Sorry("No reflections remain after filtering the test dataset")
 
     elif params.reference.file:
-
         wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
 
         reference_miller_set = intensities_from_reference_file(

@@ -6,7 +6,7 @@ import setuptools
 
 from build import build
 
-__version_tag__ = "3.17.dev"
+__version_tag__ = "3.22.dev"
 
 setup_kwargs = {
     "name": "dials",
@@ -51,7 +51,6 @@ setup_kwargs = {
     ],
     "entry_points": {
         "libtbx.precommit": ["dials=dials"],
-        "libtbx.dispatcher.script": ["pytest=pytest"],
         "dxtbx.profile_model": [
             "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt",
             "ellipsoid = dials.extensions.ellipsoid_profile_model_ext:EllipsoidProfileModelExt",
@@ -68,7 +67,8 @@ setup_kwargs = {
             "real_space_grid_search = dials.algorithms.indexing.basis_vector_search:RealSpaceGridSearch",
         ],
         "dials.index.lattice_search": [
-            "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch"
+            "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch",
+            "pink_indexer = dials.algorithms.indexing.lattice_search:PinkIndexer",
         ],
         "dials.integration.background": [
             "Auto = dials.extensions.auto_background_ext:AutoBackgroundExt",

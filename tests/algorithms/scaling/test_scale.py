@@ -982,7 +982,7 @@ def test_target_scale_handle_bad_dataset(dials_data, tmp_path):
     command = [
         shutil.which("dials.scale"),
         "reflection_selection.method=intensity_ranges",
-        "Isigma_range=20.0,0.0",
+        "Isigma_range=18.0,0.0",
         "full_matrix=None",
         os.fspath(location / "integrated.refl"),
         os.fspath(location / "integrated.expt"),

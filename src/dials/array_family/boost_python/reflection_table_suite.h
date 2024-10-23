@@ -32,12 +32,9 @@ namespace dials { namespace af { namespace boost_python {
         // Copy across identifiers for ids in new table
         typedef typename T::experiment_map_type::const_iterator const_iterator;
         for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i) {
-          for (const_iterator it = self.experiment_identifiers()->begin();
-               it != self.experiment_identifiers()->end();
-               ++it) {
-            if (it->first == *i) {
-              (*new_table.experiment_identifiers())[it->first] = it->second;
-            }
+          const_iterator found = self.experiment_identifiers()->find(*i);
+          if (found != self.experiment_identifiers()->end()) {
+            (*new_table.experiment_identifiers())[found->first] = found->second;
           }
         }
       }
@@ -177,7 +174,7 @@ namespace dials { namespace af { namespace boost_python {
     /**
      * Update the table with column data from another table. New columns are added
      * to the table and existing columns are over-written by columns from the
-     * other table. Before updating, missing experiment identifers from other are
+     * other table. Before updating, missing experiment identifiers from other are
      * added to self.
      * @param self The current table
      * @param other The other table

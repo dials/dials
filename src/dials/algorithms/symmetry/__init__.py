@@ -6,9 +6,6 @@ This module provides a base class for symmetry determination algorithms.
 from __future__ import annotations
 
 import logging
-
-logger = logging.getLogger(__name__)
-
 from io import StringIO
 
 import libtbx
@@ -20,6 +17,16 @@ from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
 from dials.util.normalisation import quasi_normalisation
+
+logger = logging.getLogger(__name__)
+
+
+def median_unit_cell(experiments):
+    uc_params = [flex.double() for i in range(6)]
+    for c in experiments.crystals():
+        for i, p in enumerate(c.get_unit_cell().parameters()):
+            uc_params[i].append(p)
+    return uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
 
 
 class symmetry_base:
@@ -154,6 +161,7 @@ class symmetry_base:
         elif method == "ml_aniso":
             normalise = self.ml_aniso_normalisation
 
+        normalised_intensities = None
         for i in range(int(flex.max(self.dataset_ids) + 1)):
             logger.info("\n" + "-" * 80 + "\n")
             logger.info("Normalising intensities for dataset %i\n", i + 1)
@@ -171,12 +179,10 @@ class symmetry_base:
                     method,
                     exc_info=True,
                 )
-                return
-            if i == 0:
+            if not normalised_intensities:
                 normalised_intensities = intensities
             else:
                 normalised_intensities = normalised_intensities.concatenate(intensities)
-
         self.intensities = normalised_intensities.set_info(
             self.intensities.info()
         ).set_observation_type_xray_intensity()
@@ -243,11 +249,15 @@ class symmetry_base:
             normalisation = absolute_scaling.ml_aniso_absolute_scaling(
                 intensities, n_residues=n_residues
             )
+            if not normalisation.p_scale:
+                raise RuntimeError("Unsuccessful normalisation")
             u_star = normalisation.u_star
         else:
             normalisation = absolute_scaling.ml_iso_absolute_scaling(
                 intensities, n_residues=n_residues
             )
+            if not (normalisation.b_wilson and normalisation.p_scale):
+                raise RuntimeError("Unsuccessful normalisation")
             u_star = adptbx.b_as_u(
                 adptbx.u_iso_as_u_star(intensities.unit_cell(), normalisation.b_wilson)
             )

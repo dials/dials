@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 import math
 
+import pkg_resources
+
 from libtbx import Auto, phil
 
 from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
@@ -48,8 +50,6 @@ from dials_scaling_ext import (
 )
 
 logger = logging.getLogger("dials")
-
-import pkg_resources
 
 base_model_phil_str = """\
 correction.fix = None
@@ -457,7 +457,6 @@ def _add_absorption_component_to_physically_derived_model(model, reflection_tabl
 
 
 class DoseDecay(ScalingModelBase):
-
     """A model similar to the physical model, where an exponential decay
     component is used plus a relative B-factor per sweep, with no absorption
     surface by default. Most suitable for multi-crystal datasets."""

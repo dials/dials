@@ -35,6 +35,7 @@ class InputToIndex:
     image_no: int = 0
     method_list: List[str] = field(default_factory=list)
     known_crystal_models: Optional[List[Crystal]] = None
+    imageset_no: int = 0
 
 
 @dataclass
@@ -49,17 +50,22 @@ class IndexingResult:
     rmsd_x: List[float] = field(default_factory=list)
     rmsd_y: List[float] = field(default_factory=list)
     rmsd_dpsi: List[float] = field(default_factory=list)
+    imageset_no: int = 0
+    unindexed_experiment: Experiment = None
 
 
 loggers_to_disable = [
     "dials.algorithms.refinement.reflection_processor",
     "dials.algorithms.refinement.refiner",
     "dials.algorithms.refinement.reflection_manager",
+    "dials.algorithms.refinement.outlier_detection.outlier_base",
     "dials.algorithms.indexing.stills_indexer",
     "dials.algorithms.indexing.nave_parameters",
     "dials.algorithms.indexing.basis_vector_search.real_space_grid_search",
     "dials.algorithms.indexing.basis_vector_search.combinations",
     "dials.algorithms.indexing.indexer",
+    "dials.algorithms.indexing.lattice_search",
+    "dials.algorithms.indexing.lattice_search.low_res_spot_match",
 ]
 debug_loggers_to_disable = [
     "dials.algorithms.indexing.symmetry",
@@ -69,7 +75,6 @@ debug_loggers_to_disable = [
 
 
 class manage_loggers(object):
-
     """
     A contextmanager for reducing logging levels for the underlying code of
     parallel ssx programs.
@@ -101,7 +106,7 @@ class manage_loggers(object):
                 logging.getLogger(name).setLevel(logging.INFO)
 
     def __exit__(self, ex_type, ex_value, ex_traceback):
-        # Reenable the disabled loggers or reset logging levels.
+        # Re-enable the disabled loggers or reset logging levels.
         if self.individual_log_verbosity < 2:
             for logname in self.loggers:
                 logging.getLogger(logname).disabled = False
@@ -120,8 +125,8 @@ def index_one(
     image_no: int,
     known_crystal_models: List[Crystal] = None,
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
-
     elist = ExperimentList([experiment])
+    params.indexing.nproc = 1  # make sure none of the processes try to spawn multiprocessing within existing multiprocessing.
     for method in method_list:
         params.indexing.method = method
         idxr = Indexer.from_parameters(
@@ -167,15 +172,20 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             table,
             expts,
             n_strong=n_strong,
+            imageset_no=input_to_index.imageset_no,
+            unindexed_experiment=input_to_index.experiment,
         )
         for id_, identifier in table.experiment_identifiers():
             selr = table.select(table["id"] == id_)
             calx, caly, _ = selr["xyzcal.px"].parts()
             obsx, obsy, _ = selr["xyzobs.px.value"].parts()
-            delpsi = selr["delpsical.rad"]
+            if "delpsical.rad" in selr:
+                delpsi = selr["delpsical.rad"]
+                rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
+            else:
+                rmsd_z = 0.0
             rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
             rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
-            rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
             n_id_ = calx.size()
             result.n_indexed.append(n_id_)
             result.rmsd_x.append(rmsd_x)
@@ -187,6 +197,8 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             input_to_index.image_identifier,
             input_to_index.image_no,
             n_strong=n_strong,
+            imageset_no=input_to_index.imageset_no,
+            unindexed_experiment=input_to_index.experiment,
         )
 
     # If chosen, output a message to json to show live progress
@@ -214,7 +226,6 @@ def index_all_concurrent(
     params: phil.scope_extract,
     method_list: List[str],
 ) -> Tuple[ExperimentList, flex.reflection_table, dict]:
-
     input_iterable = []
     results_summary = {
         i: [] for i in range(len(experiments))
@@ -222,16 +233,13 @@ def index_all_concurrent(
 
     # Create a suitable iterable for passing to pool.map
     n = 0
-    for iset in experiments.imagesets():
+    original_isets = list(experiments.imagesets())
+    identifiers_to_scans = {expt.identifier: expt.scan for expt in experiments}
+    for n_iset, iset in enumerate(experiments.imagesets()):
         for i in range(len(iset)):
             refl_index = i + n
             if reflections[refl_index]:
                 expt = experiments[refl_index]
-                scan = iset.get_scan()
-                if scan:
-                    idx_0 = i  # slicing index
-                    new_iset = iset[idx_0 : idx_0 + 1]
-                    expt.imageset = new_iset
                 input_iterable.append(
                     InputToIndex(
                         reflection_table=reflections[refl_index],
@@ -242,6 +250,7 @@ def index_all_concurrent(
                         ).name,
                         image_no=refl_index,
                         method_list=method_list,
+                        imageset_no=n_iset,
                     )
                 )
             else:  # experiments that have already been filtered
@@ -273,7 +282,9 @@ def index_all_concurrent(
 
     sys.stdout = sys.__stdout__
     # prepare tables for output
-    indexed_experiments, indexed_reflections = _join_indexing_results(results)
+    indexed_experiments, indexed_reflections = _join_indexing_results(
+        results, experiments, original_isets, identifiers_to_scans
+    )
 
     results_summary = _add_results_to_summary_dict(results_summary, results)
 
@@ -282,12 +293,36 @@ def index_all_concurrent(
 
 def _join_indexing_results(
     results: List[IndexingResult],
+    experiments,
+    original_isets,
+    identifiers_to_scans,
 ) -> Tuple[ExperimentList, flex.reflection_table]:
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
+
+    use_beam = None
+    use_gonio = None
+    if len(experiments.beams()) == 1:
+        use_beam = experiments.beams()[0]
+    if len(experiments.goniometers()):  # need a placeholder gonio
+        use_gonio = experiments.goniometers()[0]
+
     n_tot = 0
     for res in results:
         if res.n_indexed:
+            identifier = res.unindexed_experiment.identifier
+            scan = identifiers_to_scans[identifier]
+            for expt in res.experiments:
+                expt.scan = scan
+                expt.imageset = original_isets[res.imageset_no]
+                res.reflection_table["imageset_id"] = flex.int(
+                    res.reflection_table.size(), res.imageset_no
+                )
+                if use_beam:
+                    expt.beam = use_beam
+                if use_gonio:
+                    expt.goniometer = use_gonio
+
             indexed_experiments.extend(res.experiments)
             table = res.reflection_table
             ids_map = dict(table.experiment_identifiers())
@@ -414,11 +449,11 @@ def preprocess(
         if n_cells > 20:
             centile_95_pos = int(math.floor(0.95 * n_cells))
             limit = sorted_cells[centile_95_pos]
-            logger.info(f"Setting max cell to {limit:.1f} " + "\u212B")
+            logger.info(f"Setting max cell to {limit:.1f} " + "\u212b")
             params.indexing.max_cell = limit
         else:
             params.indexing.max_cell = sorted_cells[-1]
-            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212B")
+            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212b")
 
     # Determine which methods to try
     method_list = params.method
@@ -438,7 +473,6 @@ def index(
     observed: flex.reflection_table,
     params: phil.scope_extract,
 ) -> Tuple[ExperimentList, flex.reflection_table, dict]:
-
     if params.output.nuggets:
         params.output.nuggets = pathlib.Path(
             params.output.nuggets
@@ -459,9 +493,13 @@ def index(
         method_list,
     )
 
-    # combine detector models if not already
-    if (len(indexed_experiments.detectors())) > 1:
-        combine = CombineWithReference(detector=indexed_experiments[0].detector)
+    # combine detector models if all the same (i.e. haven't been refined in indexing),
+    # to enable use case of joint refinement.
+    detector_0 = indexed_experiments[0].detector if indexed_experiments else None
+    if (len(indexed_experiments.detectors()) > 1) and all(
+        d == detector_0 for d in indexed_experiments.detectors()[1:]
+    ):
+        combine = CombineWithReference(detector=detector_0)
         elist = ExperimentList()
         for expt in indexed_experiments:
             elist.append(combine(expt))

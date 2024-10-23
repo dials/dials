@@ -10,6 +10,7 @@ import sys
 
 import iotbx.phil
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx import Auto
 
 from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
@@ -69,7 +70,7 @@ indexing {
       .type = ints(size=2)
       .multiple = True
 
-    joint_indexing = True
+    joint_indexing = Auto
       .type = bool
 
 }
@@ -105,7 +106,11 @@ working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def _index_experiments(
-    experiments, reflections, params, known_crystal_models=None, log_text=None
+    experiments,
+    reflections,
+    params,
+    known_crystal_models=None,
+    log_text=None,
 ):
     if log_text:
         logger.info(log_text)
@@ -142,7 +147,8 @@ def index(experiments, reflections, params):
         dials.algorithms.indexing.DialsIndexError: Indexing failed.
     """
     if experiments.crystals()[0] is not None:
-        known_crystal_models = experiments.crystals()
+        # note not just experiments.crystals(), as models may be shared.
+        known_crystal_models = [expt.crystal for expt in experiments]
     else:
         known_crystal_models = None
 
@@ -162,6 +168,19 @@ def index(experiments, reflections, params):
     if params.indexing.image_range:
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
+    if params.indexing.joint_indexing is Auto:
+        if all(e.is_still() for e in experiments):
+            params.indexing.joint_indexing = False
+            logger.info("Disabling joint_indexing for still data")
+        elif all(not e.is_still() for e in experiments):
+            params.indexing.joint_indexing = True
+            if len(experiments) > 1:
+                logger.info("Enabling joint_indexing for rotation data")
+        else:
+            raise ValueError(
+                "Unable to set joint_indexing automatically for a mixture of still and rotation data"
+            )
+
     if len(experiments) == 1 or params.indexing.joint_indexing:
         indexed_experiments, indexed_reflections = _index_experiments(
             experiments,
@@ -175,34 +194,43 @@ def index(experiments, reflections, params):
         with concurrent.futures.ProcessPoolExecutor(
             max_workers=params.indexing.nproc
         ) as pool:
-            futures = []
-            for i_expt, expt in enumerate(experiments):
-                refl = reflections.select(reflections["imageset_id"] == i_expt)
-                refl["imageset_id"] = flex.size_t(len(refl), 0)
-                futures.append(
+            futures = {}
+            # we might have multiple lattices per imageset, so need to select on imageset rather than experiment
+            for iset_id, imgset in enumerate(experiments.imagesets()):
+                refl = reflections.select(reflections["imageset_id"] == iset_id)
+                i_expts = experiments.where(imageset=imgset)
+                elist = ExperimentList([experiments[i] for i in i_expts])
+                known_crystal_models_this = None
+                if known_crystal_models:
+                    known_crystal_models_this = [
+                        known_crystal_models[i] for i in i_expts
+                    ]
+                refl["imageset_id"] = flex.int(
+                    len(refl), 0
+                )  # _index_experiments functions requires ids numbered from 0
+                futures[
                     pool.submit(
                         _index_experiments,
-                        ExperimentList([expt]),
+                        elist,
                         refl,
                         copy.deepcopy(params),
-                        known_crystal_models=known_crystal_models,
-                        log_text=f"Indexing experiment id {i_expt} ({i_expt + 1}/{len(experiments)})",
+                        known_crystal_models=known_crystal_models_this,
+                        log_text=f"Indexing imageset id {iset_id} ({iset_id + 1}/{len(experiments.imagesets())})",
                     )
-                )
+                ] = iset_id
+
             tables_list = []
             for future in concurrent.futures.as_completed(futures):
                 try:
+                    iset_id = futures[future]
                     idx_expts, idx_refl = future.result()
-                except Exception as e:
-                    print(e)
+                except DialsIndexError as e:
+                    logger.warning(str(e))
                 else:
                     if idx_expts is None:
                         continue
-                    # Update the experiment ids by incrementing by the number of indexed
-                    # experiments already in the list
-                    ##FIXME below, is i_expt correct - or should it be the
-                    # index of the 'future'?
-                    idx_refl["imageset_id"] = flex.size_t(idx_refl.size(), i_expt)
+                    # reset the imageset id to the original
+                    idx_refl["imageset_id"] = flex.int(idx_refl.size(), iset_id)
                     tables_list.append(idx_refl)
                     indexed_experiments.extend(idx_expts)
         indexed_reflections = flex.reflection_table.concat(tables_list)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import sys
 import time
 from collections import namedtuple
 from typing import Tuple
@@ -159,7 +160,6 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
     Generate a set of resolution ranges from the ice ring parameters
     """
     if params.filter is True:
-
         # Get the crystal symmetry
         crystal_symmetry = crystal.symmetry(
             unit_cell=params.unit_cell, space_group=params.space_group.group()
@@ -215,10 +215,16 @@ def generate_mask(
     detector = imageset.get_detector()
     beam = imageset.get_beam()
 
+    # validate that the input parameters are sensible
+    if params.d_min is not None and params.d_max is not None:
+        if params.d_min > params.d_max:
+            sys.exit(
+                f"d_min = {params.d_min} > d_max = {params.d_max}: no spots will be found"
+            )
+
     # Create the mask for each panel
     masks = []
     for index, panel in enumerate(detector):
-
         mask = flex.bool(flex.grid(reversed(panel.get_image_size())), True)
 
         # Add a border around the image

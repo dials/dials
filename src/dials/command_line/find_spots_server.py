@@ -21,8 +21,8 @@ from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 from dials.command_line.index import phil_scope as index_phil_scope
 from dials.command_line.integrate import phil_scope as integrate_phil_scope
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -352,7 +352,9 @@ def main(nproc, port):
     print(time.asctime(), "Serving %d processes on port %d" % (nproc, port))
 
     for j in range(nproc - 1):
-        proc = multiprocessing.Process(target=serve, args=(httpd,))
+        proc = multiprocessing.get_context(method="fork").Process(
+            target=serve, args=(httpd,)
+        )
         proc.daemon = True
         proc.start()
     serve(httpd)
@@ -364,14 +366,13 @@ def main(nproc, port):
 def run(args=None):
     usage = "dials.find_spots_server [options]"
 
-    # Python 3.8 on macOS... needs fork
-    if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
-        multiprocessing.set_start_method("fork")
+    if sys.platform.startswith("win"):
+        sys.exit(f"{sys.platform()} unsupported for {sys.argv[0]}")
 
     parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
     params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
     main(params.nproc, params.port)
 
 

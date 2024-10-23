@@ -365,9 +365,7 @@ def table_1_stats(
             anomalous_statistics.overall.delta_i_mean_over_sig_delta_i_mean
         ]
         if selected_anomalous_statistics:
-            anom_probability_plot = (
-                selected_anomalous_statistics.overall.anom_probability_plot_expected_delta
-            )
+            anom_probability_plot = selected_anomalous_statistics.overall.anom_probability_plot_expected_delta
             if anom_probability_plot is not None:
                 stats["Anomalous slope"] = [anom_probability_plot.slope]
             stats["dF/F"] = [selected_anomalous_statistics.overall.anom_signal]
@@ -425,7 +423,7 @@ def make_merging_statistics_summary(dataset_statistics):
     max_lengths = [max(len(s) for s in col) for col in vals]
     hasasterisk = [any("*" in v for v in col) for col in vals]
     header = ""
-    min_separator = 2  # min whitespace between values in a colum
+    min_separator = 2  # min whitespace between values in a column
 
     # First format the header, adjusting max length if necessary.
     for i, (name, ml, hasaster) in enumerate(zip(names, max_lengths, hasasterisk)):

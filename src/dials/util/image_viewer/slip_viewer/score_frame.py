@@ -141,7 +141,7 @@ class ScoreSettingsPanel(wx.Panel):
             path = dialog.GetPath()
             if path != "":
                 stream = open(path, "w")
-                for (key, score) in _scores.items():
+                for key, score in _scores.items():
                     if score is None:
                         print(f"{key} None", file=stream)
                     else:

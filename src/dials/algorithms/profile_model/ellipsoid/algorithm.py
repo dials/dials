@@ -60,14 +60,6 @@ ellipsoid_algorithm_phil_scope = parse(
 
   }
 
-  debug {
-    output {
-      shoeboxes = False
-        .type = bool
-    }
-  }
-
-
 """
     % FULL_PARTIALITY
 )
@@ -286,7 +278,7 @@ def refine_profile(
     LL_tolerance=1e-6,
 ):
     """Do the profile refinement"""
-    logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
+    logger.info("\n" + "=" * 80 + "\nRefining profile parameters")
 
     # Create the parameterisation
     state = ModelState(
@@ -325,7 +317,7 @@ def refine_crystal(
         return
 
     initial_cell_volume = experiment.crystal.get_unit_cell().volume()
-    logger.info("\n" + "=" * 80 + "\nRefining crystal parmameters")
+    logger.info("\n" + "=" * 80 + "\nRefining crystal parameters")
 
     # Create the parameterisation
     state = ModelState(
@@ -385,7 +377,6 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
 
 
 def compute_prediction_probability(experiment, reflection_table):
-
     # Get stuff from experiment
     s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
     s0_length = norm(s0)

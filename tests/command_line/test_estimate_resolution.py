@@ -41,12 +41,12 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
     )
     captured = capsys.readouterr()
     expected_output = (
-        "Resolution rmerge:        1.34",
-        "Resolution cc_half:       1.56",
+        "Resolution rmerge:        1.33",
+        "Resolution cc_half:       1.58",
         "Resolution cc_ref:        1.3",
         "Resolution I/sig:         1.53",
         "Resolution Mn(I/sig):     1.51",
-        "Resolution Mn(I)/Mn(sig): 1.50",
+        "Resolution Mn(I)/Mn(sig): 1.49",
     )
     for line in expected_output:
         assert line in captured.out
@@ -109,7 +109,7 @@ def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
     captured = capsys.readouterr()
 
     expected_output = (
-        "Resolution fit against cc_half failed: No reflections left for fitting",
+        "Resolution fit against cc_half failed: Not enough reflections for fitting",
         "Resolution Mn(I/sig):     0.62",
     )
     for line in expected_output:

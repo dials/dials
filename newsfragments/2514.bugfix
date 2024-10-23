@@ -1,1 +1,0 @@
-The ``exclude_images_multiple`` parameter is adjusted to work correctly for scans that do not start with image number 1.

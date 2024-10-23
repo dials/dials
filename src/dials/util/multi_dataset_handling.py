@@ -3,7 +3,6 @@ Module of functions for handling operations on lists of reflection tables
 and experiment lists.
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -11,14 +10,12 @@ import logging
 
 from orderedset import OrderedSet
 
+import iotbx.phil
 from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
 
 logger = logging.getLogger("dials")
-
-import iotbx.phil
-
 phil_scope = iotbx.phil.parse(
     """
   dataset_selection {
@@ -27,6 +24,10 @@ phil_scope = iotbx.phil.parse(
       .help = "Choose a subset of datasets, based on the dataset id (as defined
                in the reflection table), to use from a multi-dataset input."
       .expert_level = 2
+    include_datasets = None
+      .type = ints
+      .help = "An alias for use_datasets option"
+      .expert_level = 3
     exclude_datasets = None
       .type = ints
       .help = "Choose a subset of datasets, based on the dataset id (as defined

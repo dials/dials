@@ -58,7 +58,7 @@ def get_valid_image_ranges(experiments):
     """Extract valid image ranges from experiments, returning None if no scan"""
     valid_images_ranges = []
     for exp in experiments:
-        if exp.scan:
+        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
             valid_images_ranges.append(exp.scan.get_valid_image_ranges(exp.identifier))
         else:
             valid_images_ranges.append(None)
@@ -71,7 +71,7 @@ def set_initial_valid_image_ranges(experiments):
     Also this function can be called for a mix of sequences and scanless experiments.
     """
     for exp in experiments:
-        if exp.scan:
+        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
             if not exp.scan.get_valid_image_ranges(exp.identifier):
                 exp.scan.set_valid_image_ranges(
                     exp.identifier, [exp.scan.get_image_range()]
@@ -82,7 +82,7 @@ def set_initial_valid_image_ranges(experiments):
 def get_selection_for_valid_image_ranges(reflection_table, experiment):
     """Determine a selection for the reflection table corresponding to reflections
     that are located in valid image ranges (according to zobs.px.value)."""
-    if experiment.scan:
+    if experiment.scan and (experiment.scan.get_oscillation()[1] != 0.0):
         valid_ranges = experiment.scan.get_valid_image_ranges(experiment.identifier)
         if valid_ranges:
             valid_mask = flex.bool(reflection_table.size(), False)

@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 import logging
 import sys
-from io import StringIO
 from typing import List, Tuple
 
 from dxtbx.model import ExperimentList
@@ -30,7 +29,7 @@ from dials.util.exclude_images import (
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
 )
-from dials.util.export_mtz import match_wavelengths
+from dials.util.export_mtz import log_summary, match_wavelengths
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -359,10 +358,8 @@ Only scaled data can be processed with dials.merge"""
         raise Sorry(e)
 
     logger.info("\nWriting reflections to %s", (params.output.mtz))
-    out = StringIO()
-    mtz_file.show_summary(out=out)
-    logger.info(out.getvalue())
-    mtz_file.write(params.output.mtz)
+    log_summary(mtz_file)
+    mtz_file.write_to_file(params.output.mtz)
 
     if params.output.json:
         with open(params.output.json, "w", encoding="utf-8") as f:

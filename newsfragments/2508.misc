@@ -1,1 +1,0 @@
-``dials.reindex``: reusable functions have been moved into a separate module in the ``util`` directory.
