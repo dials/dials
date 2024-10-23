@@ -359,11 +359,18 @@ class CorrelationMatrix:
 
         # Fit OPTICS model and determine number of clusters
 
-        optics_model = OPTICS(min_samples=min_points)
+        optics_model = OPTICS(
+            min_samples=min_points, xi=self.params.significant_clusters.xi
+        )
 
         optics_model.fit(self.cosym_analysis.coords)
 
         self.cluster_labels = optics_model.labels_
+
+        # Reachability plot data
+
+        self.optics_reachability = optics_model.reachability_[optics_model.ordering_]
+        self.optics_reachability_labels = optics_model.labels_[optics_model.ordering_]
 
         # Match each dataset to an OPTICS cluster and make them Cluster Objects
 
@@ -488,6 +495,14 @@ class CorrelationMatrix:
                     self._dimension_optimisation_data["functional"],
                 )
             )
+
+        # self.rij_graphs.update(
+        # plot_reachability(
+        # np.arange(len(self.optics_reachability)),
+        # self.optics_reachability,
+        # self.optics_reachability_labels,
+        # )
+        # )
 
         dim_list = list(range(0, self.cosym_analysis.target.dim))
 
