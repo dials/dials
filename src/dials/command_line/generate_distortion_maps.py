@@ -118,6 +118,46 @@ def ellipse_matrix_form(phi, l1, l2):
     return matrix.sqr((a11, a12, a21, a22))
 
 
+def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
+    """Return the matrix for the transformation from an ellipse to a circle
+    where the first axis makes an angle phi in degrees with the X axis and the
+    scale factors for the axes are l1 and l2.
+    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf"""
+
+    phi = math.radians(phi)
+    cphi = math.cos(phi)
+    sphi = math.sin(phi)
+    sqrtl1 = math.sqrt(l1)
+    sqrtl2 = math.sqrt(l2)
+
+    a11 = sqrtl1 * cphi
+    a12 = -sqrtl1 * sphi
+    a21 = sqrtl2 * sphi
+    a22 = sqrtl2 * cphi
+
+    return matrix.sqr((a11, a12, a21, a22))
+
+
+def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
+    """Return the matrix for the transformation from a circle to an ellipse
+    where the first axis makes an angle phi in degrees with the X axis and the
+    scale factors for the axes are l1 and l2.
+    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf"""
+
+    phi = math.radians(phi)
+    cphi = math.cos(phi)
+    sphi = math.sin(phi)
+    m1 = 1.0 / math.sqrt(l1)
+    m2 = 1.0 / math.sqrt(l2)
+
+    a11 = m1 * cphi
+    a12 = m2 * sphi
+    a21 = -m1 * sphi
+    a22 = m2 * cphi
+
+    return matrix.sqr((a11, a12, a21, a22))
+
+
 def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     detector = imageset.get_detector()
 
