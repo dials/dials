@@ -21,6 +21,7 @@ from dials.algorithms.correlation.cluster import ClusterInfo
 from dials.algorithms.correlation.plots import (
     linkage_matrix_to_dict,
     plot_dims,
+    plot_reachability,
     to_plotly_json,
 )
 from dials.algorithms.symmetry.cosym import CosymAnalysis, cosym_scope
@@ -54,6 +55,9 @@ significant_clusters {
   min_points_buffer = 0.5
     .type = float(value_min=0, value_max=1)
     .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
+  xi = 0.05
+    .type = float(value_min=0, value_max=1)
+    .help = ""
 }
 """
     % cosym_scope,
@@ -496,13 +500,13 @@ class CorrelationMatrix:
                 )
             )
 
-        # self.rij_graphs.update(
-        # plot_reachability(
-        # np.arange(len(self.optics_reachability)),
-        # self.optics_reachability,
-        # self.optics_reachability_labels,
-        # )
-        # )
+        self.rij_graphs.update(
+            plot_reachability(
+                np.arange(len(self.optics_reachability)),
+                self.optics_reachability,
+                self.optics_reachability_labels,
+            )
+        )
 
         dim_list = list(range(0, self.cosym_analysis.target.dim))
 
