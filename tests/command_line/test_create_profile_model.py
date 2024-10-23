@@ -8,23 +8,14 @@ from pathlib import Path
 import pytest
 
 
-def test_basic(dials_regression: Path, tmp_path):
+def test_basic(dials_data, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
     # Call dials.create_profile_model
     result = subprocess.run(
         [
             shutil.which("dials.create_profile_model"),
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "i04-weak-data2",
-                "experiments.json",
-            ),
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "i04-weak-data2",
-                "indexed.pickle",
-            ),
+            data_dir / "indexed.expt",
+            data_dir / "indexed.refl",
             "sigma_m_algorithm=basic",
         ],
         cwd=tmp_path,
@@ -40,27 +31,18 @@ def test_basic(dials_regression: Path, tmp_path):
     )
     sigma_b = experiments[0].profile.sigma_b(deg=True)
     sigma_m = experiments[0].profile.sigma_m(deg=True)
-    assert sigma_b == pytest.approx(0.02446, abs=1e-3)
-    assert sigma_m == pytest.approx(0.06833, abs=1e-3)
+    assert sigma_b == pytest.approx(0.0539, abs=1e-3)
+    assert sigma_m == pytest.approx(0.1873, abs=1e-3)
 
 
-def test_extended(dials_regression: Path, tmp_path):
+def test_extended(dials_data: Path, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
     # Call dials.create_profile_model
     result = subprocess.run(
         [
             shutil.which("dials.create_profile_model"),
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "i04-weak-data2",
-                "experiments.json",
-            ),
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "i04-weak-data2",
-                "indexed.pickle",
-            ),
+            data_dir / "indexed.expt",
+            data_dir / "indexed.refl",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -75,5 +57,5 @@ def test_extended(dials_regression: Path, tmp_path):
     )
     sigma_b = experiments[0].profile.sigma_b(deg=True)
     sigma_m = experiments[0].profile.sigma_m(deg=True)
-    assert sigma_b == pytest.approx(0.02446, abs=1e-3)
-    assert sigma_m == pytest.approx(0.04187, abs=1e-3)
+    assert sigma_b == pytest.approx(0.0539, abs=1e-3)
+    assert sigma_m == pytest.approx(0.1584, abs=1e-3)
