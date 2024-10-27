@@ -20,6 +20,7 @@ from rstbx.phil.phil_preferences import indexing_api_defs
 from scitbx import matrix
 from scitbx.array_family import flex
 from scitbx.simplex import simplex_opt
+import numpy as np
 
 import dials.util
 from dials.algorithms.beam_position.compute_beam_position import (
@@ -144,7 +145,20 @@ projection {
     per_image = False
     .type = bool
     .help = "Compute the midpoints for each image individually."
-          "Otherwise, compute for all images and average."
+            "Otherwise, compute for all images and average."
+
+    save_average_image = False
+    .type = bool
+    .help = "Saves the average diffraction image to an npz file "
+            "(i.e. average_image.npz). Works only when per_image=False. "
+            "Use this to save the average image (for the given image_ranges) "
+            "for later use (see the load_average_image option). "
+
+    load_average_image = False
+    .type = bool
+    .help = "Loads the average diffraction image from an npz file. "
+            "Works only when per_image=False. If an average image was saved "
+            "before, DIALS will use that image instead of computing it again."
 
     color_cutoff = None
     .type = float
@@ -757,27 +771,36 @@ def run(args=None):
                                    set_index=set_run_index,
                                    n_sets=num_imagesets, x=x, y=y)
             else:
-                for image_run_index in range(num_selected_images):
+                save_img = params.projection.save_average_image 
+                load_img = params.projection.load_average_image
+                
+                if not load_img:
+                    for image_run_index in range(num_selected_images):
 
-                    image_index = selected_image_indices[image_run_index]
+                        image_index = selected_image_indices[image_run_index]
 
-                    image = image_set.get_corrected_data(image_index)
-                    image = flumpy.to_numpy(image[0])
+                        image = image_set.get_corrected_data(image_index)
+                        image = flumpy.to_numpy(image[0])
 
-                    if image_run_index == 0:
-                        avg_image = image
-                    else:
-                        avg_image = avg_image + image
-                    print_progress(image_index=image_run_index,
-                                   n_images=num_selected_images,
-                                   set_index=set_run_index,
-                                   n_sets=num_imagesets,
-                                   x=None, y=None)
+                        if image_run_index == 0:
+                            avg_image = image
+                        else:
+                            avg_image = avg_image + image
+                        print_progress(image_index=image_run_index,
+                                       n_images=num_selected_images,
+                                       set_index=set_run_index,
+                                       n_sets=num_imagesets,
+                                       x=None, y=None)
 
-                image = avg_image / num_selected_images
-                mask = image_set.get_mask(0)
-                mask = flumpy.to_numpy(mask[0])
-                image[mask == 0] = 0
+                    image = avg_image / num_selected_images
+                    mask = image_set.get_mask(0)
+                    mask = flumpy.to_numpy(mask[0])
+                    image[mask == 0] = 0
+                    if save_img:
+                        np.savez('average_image.npz', image=image)
+                else:
+                    data = np.load('average_image.npz')
+                    image = data['image']
 
                 compute_beam_position(image, params)
 
