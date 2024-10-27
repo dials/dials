@@ -177,11 +177,11 @@ def middle(profile, level, dead_range, smooth_width, ignore_width):
 
     Parameters
     ----------
-    profile: 1D numpy.ndarray
+    profile: 1D numpy array of floats
     level: float
         The y value at which to search for midpoints.
     dead_range: list of ints
-        A list defining the ranges where the beam is hidden.
+        A list defining ranges where the beam is hidden.
         For exampe, [256,289,382,522] would define ranges 256-289 and 382-522.
     smooth_width: int
         The width of the smoothing window.
@@ -211,18 +211,19 @@ def middle(profile, level, dead_range, smooth_width, ignore_width):
     transitions = np.where(np.diff(np.sign(b)))[0] + 1
 
     crossings = []
-    for i in range(0, len(transitions), 2):
+    for i in range(0, len(transitions)-1):
         start = transitions[i]
-        if i + 1 < len(transitions):
-            end = transitions[i + 1]
-            good_crossing = not (b[start] == -2 or b[end - 1] == -2)
+        end = transitions[i + 1]
 
-            if good_crossing:
-                midpoint_position = (start + end) / 2
-                width = end - start
-                if width > ignore_width:
-                    point = Midpoint(midpoint_position, level, width)
-                    crossings.append(point)
+        positive_crossing = b[start+1] < 0
+        good_crossing = not (b[start] == -2 or b[end - 1] == -2)
+
+        if good_crossing and positive_crossing:
+            midpoint_position = (start + end) / 2
+            width = end - start
+            if width > ignore_width:
+                point = Midpoint(midpoint_position, level, width)
+                crossings.append(point)
 
     return crossings
 
