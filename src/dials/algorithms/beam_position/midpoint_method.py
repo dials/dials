@@ -23,15 +23,19 @@ class MidpointMethodSolver:
 
         if axis == 'x':
             exclude_range = params.projection.exclude_pixel_range_y
-            dead_range = params.projection.midpoint.dead_range_x
-            if dead_range == 'None':
+            dead_range = params.projection.midpoint.dead_pixel_range_x
+            if len(dead_range) == 0:
                 dead_range = None
+            else:
+                dead_range = dead_range[0]
 
         elif axis == 'y':
             exclude_range = params.projection.exclude_pixel_range_x
-            dead_range = params.projection.midpoint.dead_range_y
-            if dead_range == 'None':
+            dead_range = params.projection.midpoint.dead_pixel_range_y
+            if len(dead_range) == 0:
                 dead_range = None
+            else:
+                dead_range = dead_range[0]
 
         else:
             raise ValueError(f"Unknown axis: {axis}")
@@ -73,11 +77,16 @@ class MidpointMethodSolver:
             for midpoint in midpoints:
                 add_midpoint_to_group(midpoint_groups, midpoint)
 
-        sorted_groups = sort_by_average_width(midpoint_groups)
+        if len(midpoint_groups) != 0:
+            sorted_groups = sort_by_average_width(midpoint_groups)
 
-        beam_position = pick_by_occurrence(sorted_groups)
+            beam_position = pick_by_occurrence(sorted_groups)
 
-        self.groups_of_midpoints = sorted_groups
+            self.groups_of_midpoints = sorted_groups
+        else:
+            beam_position = 0
+            self.groups_of_midpoints = []
+
         self.beam_position = beam_position
 
         return beam_position
@@ -89,7 +98,11 @@ class MidpointMethodSolver:
         if self.axis == 'x':
             ax = figure.axis_x
             ax.axvline(self.beam_position, c='C3', lw=1)
-            ax.plot(indices, self.profile, lw=1, c='gray')
+            ax.plot(indices, self.profile, lw=1, c='gray',
+                    label='avg. projection')
+
+            plot_dead_pixel_ranges(ax, self.params, axis='x')
+
             for midpoint_group in self.groups_of_midpoints:
                 x_vals = [m.x for m in midpoint_group]
                 y_vals = [m.y for m in midpoint_group]
@@ -99,11 +112,18 @@ class MidpointMethodSolver:
             label = 'Imax = %.0f' % self.max_value
             ax.text(0.01, 0.75, label, va='top', ha='left',
                     transform=ax.transAxes, fontsize=8)
+            ax.legend(loc=(0.6, 0.7), labelspacing=0.5, borderpad=0,
+                      columnspacing=3.5, handletextpad=0.4, fontsize=7,
+                      handlelength=2.0, handleheight=0.7, frameon=False)
 
         elif self.axis == 'y':
             ax = figure.axis_y
             ax.axhline(self.beam_position, c='C3', lw=1)
-            ax.plot(self.profile, indices, lw=1, c='gray')
+            ax.plot(self.profile, indices, lw=1, c='gray',
+                    label='avg. projection')
+
+            plot_dead_pixel_ranges(ax, self.params, axis='y')
+
             for midpoint_group in self.groups_of_midpoints:
                 y_vals = [m.x for m in midpoint_group]
                 x_vals = [m.y for m in midpoint_group]
@@ -114,8 +134,33 @@ class MidpointMethodSolver:
             ax.text(0.75, 0.99, label, va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=8)
 
+            ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
+                      columnspacing=3.5, handletextpad=0.4, fontsize=7,
+                      handlelength=1.5, handleheight=0.4, frameon=False)
+
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
+
+
+def plot_dead_pixel_ranges(ax, params, axis='x'):
+
+    if axis == 'x':
+        pixel_range = params.projection.midpoint.dead_pixel_range_x
+    elif axis == 'y':
+        pixel_range = params.projection.midpoint.dead_pixel_range_y
+
+    if len(pixel_range) > 0:
+        pixel_range = pixel_range[0]
+
+    n = int(len(pixel_range) / 2)
+
+    for i in range(n):
+        start = pixel_range[i]
+        end = pixel_range[i+1]
+        if axis == 'x':
+            ax.axvspan(start, end, color='#BEBEBE', alpha=0.3, lw=0)
+        if axis == 'y':
+            ax.axhspan(start, end, color='#BEBEBE', alpha=0.3, lw=0)
 
 
 def pick_by_occurrence(midpoint_groups, nmax=3):
@@ -163,6 +208,7 @@ def sort_by_average_width(midpoint_groups):
 
     combined = list(zip(widths, midpoint_groups))
     sorted_combined = sorted(combined, key=lambda x: x[0])
+
     sorted_widths, sorted_groups_of_midpoints = zip(*sorted_combined)
 
     # Reverse order
@@ -206,7 +252,7 @@ def middle(profile, level, dead_range, smooth_width, ignore_width):
         for i in range(n):
             start = int(dead_range[i])
             end = int(dead_range[i + 1])
-            b[start - smooth_width:end + smooth_width] = -2
+            b[start:end] = -2
 
     transitions = np.where(np.diff(np.sign(b)))[0] + 1
 

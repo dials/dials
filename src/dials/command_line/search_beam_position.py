@@ -126,7 +126,7 @@ projection {
     exclude_pixel_range_x = None
     .type = ints
     .multiple = True
-    .help = "List of commaseparated pairs of numbers specifying pixel ranges "
+    .help = "List of comma-separated pairs of numbers specifying pixel ranges "
             "in the x direction to exclude from projection to the y axis "
             "(e.g, exclude_pixel_range_x=200,350,700,800 would exclude ranges "
             " 200 to 350 and 700 to 800). Indexing assumes Python (and C) "
@@ -177,8 +177,21 @@ projection {
         .help = "Width of the convolution kernel used for "
                 "smoothing (pixels)."
 
-        dead_range_x = None
-        dead_range_y = None
+        dead_pixel_range_x = None
+        .type = ints
+        .multiple = True
+        .help = "List of comma-separated pairs of numbers specifying pixel "
+                "ranges in the x direction to exclude from midpoint "
+                "calculation. Indexing assumes same rules as with "
+                "exclude_pixel_range_x(y)"
+
+        dead_pixel_range_y = None
+        .type = ints
+        .multiple = True
+        .help = "List of comma-separated pairs of numbers specifying pixel "
+                "ranges in the y direction to exclude from midpoint "
+                "calculation. Indexing assumes same rules as with "
+                "exclude_pixel_range_x(y)"
 
         intersection_min_width = 10
         .type = int
@@ -220,7 +233,7 @@ projection {
          .help = "Initial guess for the beam position (x, y) in pixels. "
                  "If not supplied it will be set to center of the image."
 
-         inversion_window_width = 100
+         inversion_window_width = 400
          .type = int
          .help = "Do profile inversion within this window (in pixels)."
 
@@ -838,7 +851,7 @@ def print_progress(image_index, n_images, set_index, n_sets, x, y,
     if x is None or y is None:
         bar += end_str
     else:
-        bar += f" Beam XY: ({x}, {y}){end_str}"
+        bar += f" Beam XY: ({x:.1f}, {y:.1f})          {end_str}"
     print(bar, end="")
 
 

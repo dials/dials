@@ -91,25 +91,38 @@ class MaximumMethodSolver:
                        alpha=0.5, lw=0)
             ax.axvline(self.beam_position, c='C3', lw=1)
 
-            ax.plot(indices, self.profile_max, lw=1, c='gray')
-            ax.plot(indices, self.profile_mean, lw=1, c='C2')
+            ax.plot(indices, self.profile_max, lw=1, c='gray',
+                    label='max. projection')
+            ax.plot(indices, self.profile_mean, lw=1, c='C2',
+                    label='avg. projection')
 
             ax.text(0.01, 0.95, 'method: maximum', va='top', ha='left',
                     transform=ax.transAxes, fontsize=8)
             label = 'Imax = %.0f' % self.max_value
             ax.text(0.01, 0.75, label, va='top', ha='left',
                     transform=ax.transAxes, fontsize=8)
+
+            ax.legend(loc=(0.6, 0.7), labelspacing=0.5, borderpad=0,
+                      columnspacing=3.5, handletextpad=0.4, fontsize=7,
+                      handlelength=1.5, handleheight=0.7, frameon=False)
+
         elif self.axis == 'y':
             ax = figure.axis_y
             ax.axhspan(self.bin_start, self.bin_end, color='#BEBEBE',
                        alpha=0.5, lw=0)
             ax.axhline(self.beam_position, c='C3', lw=1)
-            ax.plot(self.profile_max, indices, lw=1, c='gray')
-            ax.plot(self.profile_mean, indices, lw=1, c='C2')
+            ax.plot(self.profile_max, indices, lw=1, c='gray',
+                    label='max. projection')
+            ax.plot(self.profile_mean, indices, lw=1, c='C2',
+                    label='avg. projection')
             ax.text(0.95, 0.99, 'method: maximum', va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=8)
             label = 'Imax = %.0f' % self.max_value
             ax.text(0.75, 0.99, label, va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=8)
+
+            ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
+                      columnspacing=3.5, handletextpad=0.4, fontsize=7,
+                      handlelength=1.5, handleheight=0.7, frameon=False)
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
