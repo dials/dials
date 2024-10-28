@@ -1,3 +1,25 @@
+DIALS 3.23.0 (2024-10-28)
+=========================
+
+Features
+--------
+
+- ``dials.refine_error_model``: Allow grouped and individual error model refinements. (`#2685 <https://github.com/dials/dials/issues/2685>`_)
+- ``dials.correlation_matrix``: Include reachability plot for visualisation of coordinate-clustering (`#2778 <https://github.com/dials/dials/issues/2778>`_)
+
+
+Bugfixes
+--------
+
+- Change logger statements in spot finding to use f-strings to ensure logger info is always printed correctly. (`#2678 <https://github.com/dials/dials/issues/2678>`_)
+
+
+Misc
+----
+
+- `#2579 <https://github.com/dials/dials/issues/2579>`_, `#2769 <https://github.com/dials/dials/issues/2769>`_, `#2776 <https://github.com/dials/dials/issues/2776>`_
+
+
 DIALS 3.22.0 (2024-10-15)
 =========================
 
