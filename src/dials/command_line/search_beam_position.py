@@ -102,66 +102,73 @@ default {
 projection {
 
     method_x = midpoint maximum inversion
+    .type = str
+    .help = "The projection method along the x-axis."
+
     method_y = midpoint maximum inversion
+    .type = str
+    .help = "The projection method along the y-axis."
 
     image_ranges = "::"
     .type = str
-    .help = "A list of comma-separated numpy slices "
-            "used to select specific images in the dataset. "
-            "(e.g. 0:5:2,1,7:15)."
+    .help = "A list of comma-separated numpy slices used to select specific "
+            "images in the dataset (e.g. 0:5:2,1,7:15)."
 
     imageset_ranges = "::"
     .type = str
-    .help = "A list of comma-separated numpy slices "
-            "used to select specific imagesets (see image_range)."
+    .help = "A list of comma-separated numpy slices used to select specific "
+            "imagesets (see image_ranges)."
 
     plot = True
     .type = bool
-    .help = "Plot the image with computed beam center."
+    .help = "Plot the diffraction image with the computed beam center."
 
     verbose = True
     .type = bool
-    .help = "Print the beam center position to the output."
+    .help = "Print the beam position to the output."
 
     exclude_pixel_range_x = None
     .type = ints
     .multiple = True
     .help = "List of comma-separated pairs of numbers specifying pixel ranges "
-            "in the x direction to exclude from projection to the y axis "
-            "(e.g, exclude_pixel_range_x=200,350,700,800 would exclude ranges "
-            " 200 to 350 and 700 to 800). Indexing assumes Python (and C) "
-            "conventions. First pixel has index 0, last pixel has "
-            "index N - 1 (here N is the number of pixels along the x axis). "
-            "Last pixel in the range is not included, e.g. '0,N'  "
-            "would exclude the entire range, while 0,3 would exclude "
-            "pixels 0, 1, and 2."
+            "in the x direction to exclude from projection to the y-axis "
+            "(e.g., exclude_pixel_range_x=20,350,700,800 would exclude ranges "
+            "20-350 and 700-800). Indexing assumes Python (or C) "
+            "conventions. The first pixel has an index 0, the last pixel has "
+            "an index N-1 (here N is the number of pixels along the x-axis). "
+            "The last pixel in the range is not included, e.g., '0,N' would "
+            "exclude the entire range, while '0,3' would exclude pixels 0, 1, "
+            "and 2."
 
     exclude_pixel_range_y = None
     .type = ints
     .multiple = True
-    .help = "List of pixel ranges to exclude from projection "
-            "along the y-axis. See `exclude_pixel_range_x` for more details."
+    .help = "List of pixel ranges to exclude from projection to the y-axis. "
+            "See `exclude_pixel_range_x` for more details."
 
     per_image = False
     .type = bool
-    .help = "Compute the midpoints for each image individually."
-            "Otherwise, compute for all images and average."
+    .help = "Compute the beam position for each image. Otherwise, compute the "
+            "beam position for a single (average) image."
 
     save_average_image = False
     .type = bool
     .help = "Saves the average diffraction image to an npz file "
-            "(i.e. average_image.npz). Works only when per_image=False. "
-            "Use this to save the average image (for the given image_ranges) "
-            "for later use (see the load_average_image option). "
+            "(i.e., average_image.npz). Works only when per_image=False. "
+            "Use this to save the average image for later use "
+            "(see the load_average_image option)."
 
     load_average_image = False
     .type = bool
-    .help = "Loads the average diffraction image from an npz file. "
-            "Works only when per_image=False. If an average image was saved "
+    .help = "Load the average diffraction image from an npz file. "
+            "Works only when `per_image=False`. If an average image was saved "
             "before, DIALS will use that image instead of computing it again."
 
     color_cutoff = None
     .type = float
+    .help = "The maximum of the colorbar range in the plotted beam position "
+            "figure. Use this option to adjust the visibility of the plotted "
+            "diffraction image."
 
     midpoint {
         exclude_intensity_percent = 0
@@ -170,31 +177,31 @@ projection {
 
         intersection_range = (0.3, 0.9, 0.01)
         .type = floats
-        .help = "Compute midpoints in this range (start, stop, step)."
+        .help = "Compute midpoints in this range (start, end, step)."
 
         convolution_width = 80
         .type = int
-        .help = "Width of the convolution kernel used for "
-                "smoothing (pixels)."
+        .help = "Convolution kernel width used for smoothing (in pixels)."
 
         dead_pixel_range_x = None
         .type = ints
         .multiple = True
         .help = "List of comma-separated pairs of numbers specifying pixel "
                 "ranges in the x direction to exclude from midpoint "
-                "calculation. Indexing assumes same rules as with "
-                "exclude_pixel_range_x(y)"
+                "calculation. Indexing assumes the same rules as with "
+                "the exclude_pixel_range_x."
 
         dead_pixel_range_y = None
         .type = ints
         .multiple = True
         .help = "List of comma-separated pairs of numbers specifying pixel "
                 "ranges in the y direction to exclude from midpoint "
-                "calculation. Indexing assumes same rules as with "
-                "exclude_pixel_range_x(y)"
+                "calculation. Indexing assumes the same rules as with "
+                "exclude_pixel_range_y."
 
         intersection_min_width = 10
         .type = int
+        .help = "Do not consider midpoint intersections below this width."
 
     }
 
@@ -206,20 +213,22 @@ projection {
 
         n_convolutions = 1
         .type = int
+        .help = "The number of smoothing convolutions."
 
         convolution_width = 1
         .type = int
-        .help = "Width of the convolution kernel used for "
-                " smoothing (in pixels)."
-
-        bin_step = 10
-        .type = int
-        .help = "Distance in pixels between neighboring bins."
+        .help = "Convolution kernel width used for smoothing (in pixels)."
 
         bin_width = 20
         .type = int
-        .help = "Width of the bin used to find the region "
+        .help = "The width of the averaging bin used to find the region "
                 "of max intensity (pixels)."
+
+        bin_step = 10
+        .type = int
+        .help = "Distance in pixels between neighboring bins used to find the "
+                "region of maximal intensity."
+
     }
 
     inversion {
@@ -228,21 +237,22 @@ projection {
         .type = int
         .help = "Set all pixels above this value to zero."
 
-         guess_position = None
-         .type = ints(size=2)
-         .help = "Initial guess for the beam position (x, y) in pixels. "
-                 "If not supplied it will be set to center of the image."
+        guess_position = None
+        .type = ints(size=2)
+        .help = "Initial guess for the beam position (x, y) in pixels. "
+                "If not supplied, it will be set to the center of the image."
 
-         inversion_window_width = 400
-         .type = int
-         .help = "Do profile inversion within this window (in pixels)."
+        inversion_window_width = 400
+        .type = int
+        .help = "Do profile inversion within this window (in pixels)."
 
-         background_cutoff = None
-         .type = int
+        background_cutoff = None
+        .type = int
+        .help = "Set all the pixels with intensity above this value to zero."
 
         convolution_width = 1
         .type = int
-        .help = "Convolution kernel width used for smoothing (in pixels)"
+        .help = "Convolution kernel width used for smoothing (in pixels)."
     }
 
 }
@@ -252,9 +262,6 @@ output {
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
-  figure = 'fig.png'
-      .type = str
-      .help = "Filename where to save the beam position plot."
 }
 """
 )
@@ -778,14 +785,15 @@ def run(args=None):
 
                     x, y = compute_beam_position(image, params, image_index,
                                                  set_index)
-                    print_progress(image_index=image_run_index,
-                                   n_images=num_selected_images,
-                                   set_index=set_run_index,
-                                   n_sets=num_imagesets, x=x, y=y)
+                    if params.projection.verbose:
+                        print_progress(image_index=image_run_index,
+                                       n_images=num_selected_images,
+                                       set_index=set_run_index,
+                                       n_sets=num_imagesets, x=x, y=y)
             else:
-                save_img = params.projection.save_average_image 
+                save_img = params.projection.save_average_image
                 load_img = params.projection.load_average_image
-                
+
                 if not load_img:
                     for image_run_index in range(num_selected_images):
 
@@ -798,11 +806,13 @@ def run(args=None):
                             avg_image = image
                         else:
                             avg_image = avg_image + image
-                        print_progress(image_index=image_run_index,
-                                       n_images=num_selected_images,
-                                       set_index=set_run_index,
-                                       n_sets=num_imagesets,
-                                       x=None, y=None)
+
+                        if params.projection.verbose:
+                            print_progress(image_index=image_run_index,
+                                           n_images=num_selected_images,
+                                           set_index=set_run_index,
+                                           n_sets=num_imagesets,
+                                           x=None, y=None)
 
                     image = avg_image / num_selected_images
                     mask = image_set.get_mask(0)
@@ -816,7 +826,7 @@ def run(args=None):
 
                 compute_beam_position(image, params)
 
-        if params.projection.per_image:
+        if params.projection.per_image and params.projection.verbose:
             print()
 
 
