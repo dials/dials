@@ -34,3 +34,11 @@ Workshops
 * `DIALS-6`_: May 2015 (Berkeley, CA)
 
 .. _`DIALS-6`: http://cci.lbl.gov/dials/may_2015_berkeley.htm
+
+* `Berkeley Lab Serial Crystallography Workshop`_: Feburary 2017 (Berkeley, CA)
+
+.. _`Berkeley Lab Serial Crystallography Workshop`: http://cci.lbl.gov/xfel/index.php/2017_Tutorials
+
+* `Serial Crystallography Methods Workshop`_: July 2023 (Ithaca, NY)
+
+.. _`Serial Crystallography Methods Workshop`: https://indico.classe.cornell.edu/event/2248/

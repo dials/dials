@@ -17,6 +17,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    How-to <howto>
    Knowledge Base <https://dials.github.io/kb>
    workshops/index
+   US National Resource <national_resource>
    publications
    projects
    License <license>
@@ -67,8 +68,29 @@ DIALS development at `Diamond Light Source`_ is performed by employees of
 
 DIALS development at `Lawrence Berkeley National Laboratory`_ is
 supported by `National Institutes of Health`_ / `National Institute of General Medical Sciences`_
-grant R01-GM117126.  Work at LBNL is performed under
-`Department of Energy`_ contract DE-AC02-05CH11231.
+grant R24GM154040.
+
+.. container:: twocol
+
+   .. container:: leftside-nih
+
+        .. image:: https://www.nigms.nih.gov/Style%20Library/NIGMS2/images/nih.svg
+           :alt: NIH NIGMS
+           :target: `NIH`_
+           :height: 70px
+
+   .. container:: leftside-nih
+
+        | National Institute of
+        | General Medical Sciences
+
+.. rst-class:: clear-both
+
+DIALS is an NIH NIGMS US National Resource with the goal of supporting both users and
+facilities in using DIALS to analyse their diffraction data.
+:ref:`Learn more <national_resource>`.
+
+Work at LBNL is performed under `Department of Energy`_ contract DE-AC02-05CH11231.
 
 .. _`issue`: https://github.com/dials/dials/issues
 .. _`Wellcome`: https://wellcome.ac.uk/
@@ -80,6 +102,4 @@ grant R01-GM117126.  Work at LBNL is performed under
 .. _`National Institute of General Medical Sciences`: http://www.nigms.nih.gov/
 .. _`Department of Energy`: http://www.energy.gov/
 .. _dials.github.io: https://dials.github.io/
-.. _`DIALS-East`: http://dials.diamond.ac.uk/
-.. _`DIALS-West`: http://dials.lbl.gov/
-
+.. _`NIH`: https://www.nigms.nih.gov/
