@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 from matplotlib.patches import Circle
+from dials.algorithms.beam_position.helper_functions import (
+    remove_pixels_by_intensity
+)
 from dials.algorithms.beam_position.project_profile import (
     convert_range_into_spans
 )
@@ -40,22 +43,14 @@ class Figure:
         self.axis_x.set_xlim(0, nx)
         self.axis_y.set_ylim(0, ny)
 
-        # mloc = MultipleLocator(0.1)
-        # self.axis_x.yaxis.set_minor_locator(mloc)
-
-        # self.axis_x.set_yticks([0, 0.5, 1.0])
-        # self.axis_y.set_xticks([0, 0.5, 1.0])
-
-        # self.axis_x.set_ylim(-0.20, 1.1)
-        # self.axis_y.set_xlim(-0.20, 1.1)
-
         self.main_axis.set_xlabel(r"Pixel Index X")
         self.main_axis.set_ylabel(r"Pixel Index Y")
 
         if params.projection.color_cutoff:
             vmax = float(params.projection.color_cutoff)
         else:
-            vmax = image.max()
+            temp_image = remove_pixels_by_intensity(image, percent=0.0045)
+            vmax = temp_image.max()
         img = self.main_axis.imshow(image, cmap="jet", aspect="auto",
                                     origin="lower", rasterized=True,
                                     interpolation="none",

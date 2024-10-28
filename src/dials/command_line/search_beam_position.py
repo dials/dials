@@ -172,7 +172,7 @@ projection {
         .type = floats
         .help = "Compute midpoints in this range (start, stop, step)."
 
-        convolution_width = 20
+        convolution_width = 80
         .type = int
         .help = "Width of the convolution kernel used for "
                 "smoothing (pixels)."
@@ -242,8 +242,7 @@ projection {
 
         convolution_width = 1
         .type = int
-        .help = "Width of the convolution kernel used for "
-                " smoothing (in pixels)."
+        .help = "Convolution kernel width used for smoothing (in pixels)"
     }
 
 }
