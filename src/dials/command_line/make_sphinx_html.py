@@ -80,7 +80,8 @@ def run(args=None):
         shutil.rmtree(output_dir)
     print(f"Generating documentation into {output_dir}")
 
-    command = [shutil.which("libtbx.sphinx-build"), "-b", "html", ".", output_dir]
+    sphinx = shutil.which("libtbx.sphinx-build") or shutil.which("sphinx-build")
+    command = [sphinx, "-b", "html", ".", output_dir]
     if options.parallel:
         command.extend(["-j", "auto"])
     if options.strict:
