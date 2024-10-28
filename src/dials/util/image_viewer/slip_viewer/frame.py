@@ -374,9 +374,7 @@ class XrayFrame(XFBaseClass):
             lowest_res = 0
             for p_id, panel in enumerate(detector):
                 w, h = panel.get_image_size()
-                res = panel.get_resolution_at_pixel(
-                    beam.get_unit_s0(), (w // 2, h // 2)
-                )
+                res = panel.get_resolution_at_pixel(beam, (w // 2, h // 2))
                 if res > lowest_res:
                     panel_id = p_id
                     lowest_res = res

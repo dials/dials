@@ -438,7 +438,6 @@ class _Tiles:
         beam = self.raw_image.get_beam()
         if detector is None or beam is None:
             return None
-        beam = beam.get_unit_s0()
 
         if readout is None:
             return None
