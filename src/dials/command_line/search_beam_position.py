@@ -7,6 +7,7 @@ import itertools
 import logging
 import math
 import sys
+import json
 
 import iotbx.phil
 import libtbx
@@ -479,7 +480,7 @@ def _sum_score_detail(reciprocal_space_vectors, solutions,
             angle=Direction(solutions[t]),
             xyzdata=reciprocal_space_vectors,
             granularity=5.0,
-            amax=amax,  # extended API XXX These values have to come from somewhere!
+            amax=amax,  # extended API XXX
             F0_cutoff=11,
         )
         kval = dfft.kval()
@@ -492,21 +493,24 @@ def _sum_score_detail(reciprocal_space_vectors, solutions,
             backmax = math.cos(
                 Tkmax + (2 * math.pi * kmax * kbeam / (2 * ff.size() - 1))
             )
-            ### Here it should be possible to calculate a gradient.
-            ### Then minimize with respect to two coordinates.  Use lbfgs?  Have second derivatives?
-            ### can I do something local to model the cosine wave?
-            ### direction of wave travel.  Period. phase.
+            # Here it should be possible to calculate a gradient.
+            # Then minimize with respect to two coordinates.
+            # Use lbfgs?  Have second derivatives?
+            # can I do something local to model the cosine wave?
+            # direction of wave travel.  Period. phase.
             sum_score += backmax
     return sum_score
 
 
 def run_dps(experiment, spots_mm, max_cell):
-    # max_cell: max possible cell in Angstroms; set to None, determine from data
+    # max_cell: max possible cell in Angstroms; set to None,
+    # determine from data
     # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
     horizon_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
     DPS = DPS_primitive_lattice(
-        max_cell=max_cell, recommended_grid_sampling_rad=None, horizon_phil=horizon_phil
+        max_cell=max_cell, recommended_grid_sampling_rad=None,
+        horizon_phil=horizon_phil
     )
 
     DPS.S0_vector = matrix.col(experiment.beam.get_s0())
@@ -544,10 +548,12 @@ def run_dps(experiment, spots_mm, max_cell):
         DPS.amax,
     )
 
-    # There must be at least 3 solutions to make a set, otherwise return empty result
+    # There must be at least 3 solutions to make a set,
+    # otherwise return empty result
     if len(solutions) < 3:
         return {}
-    return {"solutions": flex.vec3_double(s.dvec for s in solutions), "amax": DPS.amax}
+    return {"solutions": flex.vec3_double(s.dvec for s in solutions),
+            "amax": DPS.amax}
 
 
 def discover_better_experimental_model(
@@ -566,8 +572,9 @@ def discover_better_experimental_model(
     refl_lists = []
     max_cell_list = []
 
-    # The detector/beam of the first experiment is used to define the basis for the
-    # optimisation, so assert that the beam intersects with the detector
+    # The detector/beam of the first experiment is used to define the basis
+    # for the optimisation, so assert that the beam intersects with
+    # the detector
     detector = experiments[0].detector
     beam = experiments[0].beam
     beam_panel = detector.get_panel_intersection(beam.get_s0())
@@ -592,7 +599,8 @@ def discover_better_experimental_model(
             ).max_cell
             max_cell_list.append(max_cell)
 
-        if params.max_reflections is not None and refl.size() > params.max_reflections:
+        refl_condition = refl.size() > params.max_reflections
+        if params.max_reflections is not None and refl_condition:
             logger.info(
                 "Selecting subset of %i reflections for analysis",
                 params.max_reflections,
@@ -632,24 +640,26 @@ def discover_better_experimental_model(
     )
     new_detector = new_experiments[0].detector
     old_panel, old_beam_centre = detector.get_ray_intersection(beam.get_s0())
-    new_panel, new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())
+    (new_panel,
+     new_beam_centre) = new_detector.get_ray_intersection(beam.get_s0())
 
-    old_beam_centre_px = detector[old_panel].millimeter_to_pixel(old_beam_centre)
-    new_beam_centre_px = new_detector[new_panel].millimeter_to_pixel(new_beam_centre)
+    old_bc_px = detector[old_panel].millimeter_to_pixel(old_beam_centre)
+    new_bc_px = new_detector[new_panel].millimeter_to_pixel(new_beam_centre)
 
     logger.info(
         "Old beam centre: %.2f, %.2f mm" % old_beam_centre
-        + " (%.1f, %.1f px)" % old_beam_centre_px
+        + " (%.1f, %.1f px)" % old_bc_px
     )
     logger.info(
         "New beam centre: %.2f, %.2f mm" % new_beam_centre
-        + " (%.1f, %.1f px)" % new_beam_centre_px
+        + " (%.1f, %.1f px)" % new_bc_px
     )
     logger.info(
         "Shift: %.2f, %.2f mm"
         % (matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
         + " (%.1f, %.1f px)"
-        % (matrix.col(old_beam_centre_px) - matrix.col(new_beam_centre_px)).elems
+        % (matrix.col(old_bc_px) -
+           matrix.col(new_bc_px)).elems
     )
     return new_experiments
 
@@ -701,7 +711,8 @@ def run(args=None):
         #    params.labelit.nproc = available_cores()
 
         imagesets = experiments.imagesets()
-        # Split all the refln tables by ID, corresponding to the respective imagesets
+        # Split all the refln tables by ID, corresponding to
+        # the respective imagesets
         reflections = [
             refl_unique_id
             for refl in reflections
@@ -771,6 +782,9 @@ def run(args=None):
             num_selected_images = len(selected_image_indices)
 
             if params.projection.per_image:
+
+                json_output = []
+
                 for image_run_index in range(num_selected_images):
 
                     image_index = selected_image_indices[image_run_index]
@@ -785,11 +799,16 @@ def run(args=None):
 
                     x, y = compute_beam_position(image, params, image_index,
                                                  set_index)
+                    json_output.append((int(set_index), int(image_index),
+                                        float(x), float(y)))
+
                     if params.projection.verbose:
                         print_progress(image_index=image_run_index,
                                        n_images=num_selected_images,
                                        set_index=set_run_index,
                                        n_sets=num_imagesets, x=x, y=y)
+                with open('beam_positions.json', 'w') as json_file:
+                    json.dump(json_output, json_file, indent=4)
             else:
                 save_img = params.projection.save_average_image
                 load_img = params.projection.load_average_image
