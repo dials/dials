@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-SPHINXBUILD   = sphinx.build
+SPHINXBUILD   = libtbx.sphinx-build
 PAPER         =
 BUILDDIR      = build
 
