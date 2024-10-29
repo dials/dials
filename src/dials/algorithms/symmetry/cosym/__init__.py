@@ -35,8 +35,29 @@ from dials.util.reference import intensities_from_reference_file
 
 logger = logging.getLogger(__name__)
 
-phil_scope = iotbx.phil.parse(
-    """\
+# these parameters are only required if running the cosym procedure in symmetry analysis mode.
+symmetry_analysis_phil = """
+lattice_group = None
+  .type = space_group
+  .short_caption = "Lattice group"
+
+space_group = None
+  .type = space_group
+  .short_caption = "Space group"
+
+lattice_symmetry_max_delta = 5.0
+  .type = float(value_min=0)
+  .short_caption = "Lattice symmetry max δ"
+
+best_monoclinic_beta = True
+  .type = bool
+  .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
+          "it gives a less oblique cell (i.e. smaller beta angle)."
+  .short_caption = "Best monoclinic β"
+"""
+
+# these parameters are required for the core cosym procedure for e.g. non-symmetry based isomorphism analysis
+cosym_scope = """
 min_reflections = 10
   .type = int(value_min=0)
   .help = "The minimum number of merged reflections per experiment required to perform cosym analysis."
@@ -57,24 +78,6 @@ min_i_mean_over_sigma_mean = 4
 min_cc_half = 0.6
   .type = float(value_min=0, value_max=1)
   .short_caption = "Minimum CC½"
-
-lattice_group = None
-  .type = space_group
-  .short_caption = "Lattice group"
-
-space_group = None
-  .type = space_group
-  .short_caption = "Space group"
-
-lattice_symmetry_max_delta = 5.0
-  .type = float(value_min=0)
-  .short_caption = "Lattice symmetry max δ"
-
-best_monoclinic_beta = True
-  .type = bool
-  .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
-          "it gives a less oblique cell (i.e. smaller beta angle)."
-  .short_caption = "Best monoclinic β"
 
 dimensions = Auto
   .type = int(value_min=2)
@@ -120,6 +123,15 @@ nproc = Auto
   .type = int(value_min=1)
   .help = "Number of processes"
 """
+
+
+phil_scope = iotbx.phil.parse(
+    """\
+%s
+%s
+"""
+    % (cosym_scope, symmetry_analysis_phil),
+    process_includes=True,
 )
 
 
