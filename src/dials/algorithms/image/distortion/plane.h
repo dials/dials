@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
           double x = offset * fast;  // undistorted X coordinate (mm)
           double y = offset * slow;  // undistorted Y coordinate (mm)
           vec2<double> distort =
-            matrix * vec2<double>(x, y);  // distorted by transformatin matrix
+            matrix * vec2<double>(x, y);  // distorted by transformation matrix
 
           // store correction in units of the pixel size
           dx_(j, i) = (x - distort[0]) / panel.get_pixel_size()[0];
