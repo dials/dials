@@ -11,6 +11,43 @@ from dxtbx import flumpy
 import dials_array_family_flex_ext
 from dials.array_family import flex
 
+dials_to_nx_names = {
+    "id": "id",
+    "partial_id": "reflection_id",
+    "entering": "entering",
+    "flags": "flags",
+    "panel": "det_module",
+    "d": "d",
+    "partiality": "partiality",
+    "bbox": "bounding_box",
+    "background.mean": "background.mean",
+    "intensity.sum.value": "int_sum",
+    "intensity.sum.variance": "int_sum_var",
+    "intensity.prf.value": "int_prf",
+    "intensity.prf.variance": "int_prf_var",
+    "profile.correlation": "prf_cc",
+    "lp": "lp",
+    "num_pixels.background": "num_bg",
+    "num_pixels.foreground": "num_fg",
+    "num_pixels.background_used": "num_bg_used",
+    "num_pixels.valid": "num_valid",
+    "profile.rmsd": "prf_rmsd",
+}
+
+dials_to_nx_names_split = {
+    "miller_index": ["h", "k", "l"],
+    "xyzcal.px": ["predicted_px_x", "predicted_px_y", "predicted_frame"],
+    "xyzcal.mm": ["predicted_x", "predicted_y", "predicted_phi"],
+    "xyzobs.px.value": ["observed_px_x", "observed_px_y", "observed_frame"],
+    "xyzobs.px.variance": [
+        "observed_px_x_var",
+        "observed_px_y_var",
+        "observed_frame_var",
+    ],
+    "xyzobs.mm.value": ["observed_x", "observed_y", "observed_phi"],
+    "xyzobs.mm.variance": ["observed_x_var", "observed_y_var", "observed_phi_var"],
+}
+
 
 def validate_format(handle):
     # this is to validate that a h5 file contains the relevant spec to be successfully read
@@ -65,6 +102,10 @@ class ReflectionListEncoder(object):
             top_group = handle["dials"]
         else:
             top_group = handle.create_group("dials", track_order=True)
+        if "nx_reflections" in handle:
+            nx_reflections = handle["nx_reflections"]
+        else:
+            nx_reflections = handle.create_group("nx_reflections", track_order=True)
         # Use a generic name 'processing' for now, could be optionally specific in
         # future e.g. 'find_spots' or 'index'
         if second_level_name in top_group:
@@ -78,6 +119,7 @@ class ReflectionListEncoder(object):
             # name as group_0, group_1 etc.
             n = len(group)
             this_group = group.create_group(f"group_{n}")
+            this_nx_group = nx_reflections.create_group(f"group_{n}")
 
             # Experiment identifiers and ids are required as part of our spec for this format.
             identifier_map = dict(table.experiment_identifiers())
@@ -85,12 +127,13 @@ class ReflectionListEncoder(object):
             this_group.attrs["experiment_ids"] = flumpy.to_numpy(
                 flex.size_t(table.experiment_identifiers().keys())
             )
-            ReflectionListEncoder.encode_columns(this_group, table)
+            ReflectionListEncoder.encode_columns(this_group, table, this_nx_group)
 
     @staticmethod
     def encode_columns(
         group: h5py.Group,
         table: flex.reflection_table,
+        nx_group: h5py.Group,
         ignore: Optional[List[str]] = None,
     ) -> None:
         """Encode the columns of a reflection table."""
@@ -114,6 +157,13 @@ class ReflectionListEncoder(object):
                 group.create_dataset(
                     key, data=this_data, shape=this_data.shape, dtype=this_data.dtype
                 )
+            ref_dtype = h5py.special_dtype(ref=h5py.RegionReference)
+            if key in dials_to_nx_names:
+                nx_group[dials_to_nx_names[key]] = group[key]  # a reference
+            elif key in dials_to_nx_names_split:
+                for i, name in enumerate(dials_to_nx_names_split[key]):
+                    nx_group.create_dataset(name, (1,), dtype=ref_dtype)
+                    nx_group[name][0] = group[key].regionref[:, i]  # a region reference
 
     @staticmethod
     def encode_shoebox(group: h5py.Group, data: flex.shoebox, key: str):
