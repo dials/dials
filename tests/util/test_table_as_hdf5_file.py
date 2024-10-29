@@ -34,8 +34,8 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
 
     data = h5py.File(tmp_path / "scaled2.refl", "r")
     # try reading the two experiments to check it was written as h5
-    dset0 = data["dials"]["processing"]["0"]
-    dset1 = data["dials"]["processing"]["1"]
+    dset0 = data["dials"]["processing"]["group_0"]
+    dset1 = data["dials"]["processing"]["group_1"]
     assert dset0["intensity.sum.value"].shape == (4417,)
     assert dset1["intensity.sum.value"].shape == (5555,)
 
@@ -46,8 +46,8 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
 
     data = h5py.File(tmp_path / "scaled3.refl", "r")
     # try reading the two experiments to check it was written as h5
-    dset0 = data["dials"]["processing"]["0"]
-    dset1 = data["dials"]["processing"]["1"]
+    dset0 = data["dials"]["processing"]["group_0"]
+    dset1 = data["dials"]["processing"]["group_1"]
     assert dset0["intensity.sum.value"].shape == (4417,)
     assert dset1["intensity.sum.value"].shape == (5555,)
 

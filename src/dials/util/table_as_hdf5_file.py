@@ -72,11 +72,12 @@ class ReflectionListEncoder(object):
         else:
             group = top_group.create_group(second_level_name, track_order=True)
 
-        for i, table in enumerate(reflections):
+        for table in reflections:
             # Allow storing either a single experiment or multi-experiment table.
             # Therefore use a generic 'group' name to avoid any reliance on this name
-            name = f"group_{i}"
-            this_group = group.create_group(name)
+            # name as group_0, group_1 etc.
+            n = len(group)
+            this_group = group.create_group(f"group_{n}")
 
             # Experiment identifiers and ids are required as part of our spec for this format.
             identifier_map = dict(table.experiment_identifiers())
