@@ -7,10 +7,46 @@ import hdf5plugin
 import numpy as np
 
 from dxtbx import flumpy
-from dxtbx.util import ersatz_uuid4
 
 import dials_array_family_flex_ext
 from dials.array_family import flex
+
+
+def validate_format(handle):
+    # this is to validate that a h5 file contains the relevant spec to be successfully read
+    # expected hierarchy /dials/{process name}/{data group id}/{data arrays}
+    # with each {data group id} having identifiers and experiment_ids as attributes plus data arrays
+    if "dials" not in handle:
+        raise ValueError(
+            "Unable to understand h5 file as dials data format (no /dials at the top level)"
+        )
+    group = handle["dials"]
+    if not isinstance(group, h5py.Group):
+        raise ValueError(f"Expecting a HDF5 Group at {group.name}")
+    if not len(group):
+        raise ValueError("No data groups found in the file under /dials")
+    for d in group.values():
+        if not isinstance(d, h5py.Group):
+            raise ValueError(
+                f"Expecting a HDF5 Group at {d.name} (second level of file)"
+            )
+        if not len(d):
+            raise ValueError(f"No data groups found in the file under {d}")
+        for g in d.values():
+            if not isinstance(g, h5py.Group):
+                raise ValueError(
+                    f"Expecting a HDF5 Group at {g.name} (third level of file)"
+                )
+            if not len(g):
+                raise ValueError(f"No data arrays found in the group {g.name}")
+            if "identifiers" not in g.attrs:
+                raise ValueError(
+                    f"No 'identifiers' attribute found in the group {g.name}"
+                )
+            if "experiment_ids" not in g.attrs:
+                raise ValueError(
+                    f"No 'experiment_ids' attribute found in the group {g.name}"
+                )
 
 
 class ReflectionListEncoder(object):
@@ -20,22 +56,30 @@ class ReflectionListEncoder(object):
     def encode(
         reflections: List[flex.reflection_table],
         handle: h5py.File,
+        second_level_name: str = "processing",
     ) -> None:
         """Encode each reflection table to data in a hdf5 group."""
 
         # Create the reflection data group if it hasn't already been created
-        if "dials" in handle and "processing" in handle["dials"]:
-            group = handle["dials"]["processing"]
+        if "dials" in handle:
+            top_group = handle["dials"]
         else:
-            group = handle.create_group("dials/processing", track_order=True)
+            top_group = handle.create_group("dials", track_order=True)
+        # Use a generic name 'processing' for now, could be optionally specific in
+        # future e.g. 'find_spots' or 'index'
+        if second_level_name in top_group:
+            group = top_group[second_level_name]
+        else:
+            group = top_group.create_group(second_level_name, track_order=True)
 
-        for table in reflections:
-            identifier_map = dict(table.experiment_identifiers())
-            if len(identifier_map) == 1:
-                name = list(identifier_map.values())[0]
-            else:
-                name = "group_" + ersatz_uuid4()
+        for i, table in enumerate(reflections):
+            # Allow storing either a single experiment or multi-experiment table.
+            # Therefore use a generic 'group' name to avoid any reliance on this name
+            name = f"group_{i}"
             this_group = group.create_group(name)
+
+            # Experiment identifiers and ids are required as part of our spec for this format.
+            identifier_map = dict(table.experiment_identifiers())
             this_group.attrs["identifiers"] = list(identifier_map.values())
             this_group.attrs["experiment_ids"] = flumpy.to_numpy(
                 flex.size_t(table.experiment_identifiers().keys())
@@ -124,8 +168,12 @@ class ReflectionListDecoder(object):
     def decode(handle: h5py.File) -> List[flex.reflection_table]:
         """Decode the data to a list of reflection tables."""
 
+        validate_format(handle)  # raises ValueError if not conforming to expected spec.
+
         # Get the group containing the reflection data
-        g = handle["dials/processing"]
+        g = handle["dials"]
+        # get the last group at the second level, i.e. the most recent entry
+        g = g[list(g.keys())[-1]]
 
         # Create the list of reflection tables
         tables = []
@@ -224,6 +272,7 @@ class HDF5TableFile:
 
     def __init__(self, filename: str, mode="w") -> None:
         """Open the file with the given mode."""
+        # h5py raises OSError if not a hdf5 file
         self._handle = h5py.File(filename, mode)
 
     def close(self) -> None:
