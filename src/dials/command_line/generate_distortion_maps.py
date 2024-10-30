@@ -98,26 +98,6 @@ def make_dx_dy_translate(imageset, dx, dy):
     return tuple(distortion_map_x), tuple(distortion_map_y)
 
 
-def ellipse_matrix_form(phi, l1, l2):
-    """Return the matrix for the quadratic form describing the oblique ellipse
-    where the first axis makes an angle phi with the X axis and the scale factors
-    for the axes are l1 and l2.
-    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf"""
-    deg2rad = math.pi / 180.0
-    phi *= deg2rad
-    cphi = math.cos(phi)
-    sphi = math.sin(phi)
-
-    a11 = l1 * cphi**2 + l2 * sphi**2
-    a12 = (l2 - l1) * sphi * cphi
-    a21 = a12
-    a22 = l1 * sphi**2 + l2 * cphi**2
-
-    assert a11 * a22 - 2 * a12 > 0.0
-
-    return matrix.sqr((a11, a12, a21, a22))
-
-
 def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     """Return the matrix for the transformation from an ellipse to a circle
     where the first axis makes an angle phi in degrees with the X axis and the
@@ -170,8 +150,8 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     topleft = matrix.col(p0.get_pixel_lab_coord((0, 0)))
     mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow
 
-    # Get matrix describing the elliptical distortion
-    M = ellipse_matrix_form(phi, l1, l2)
+    # Get matrix that describes the elliptical distortion
+    M = circle_to_ellipse_transform(phi, l1, l2)
 
     distortion_map_x = []
     distortion_map_y = []
