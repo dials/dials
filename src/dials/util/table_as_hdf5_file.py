@@ -120,6 +120,7 @@ class ReflectionListEncoder(object):
             n = len(group)
             this_group = group.create_group(f"group_{n}")
             this_nx_group = nx_reflections.create_group(f"group_{n}")
+            this_nx_group.attrs["NX_class"] = "NXreflections"
 
             # Experiment identifiers and ids are required as part of our spec for this format.
             identifier_map = dict(table.experiment_identifiers())
@@ -157,6 +158,7 @@ class ReflectionListEncoder(object):
                 group.create_dataset(
                     key, data=this_data, shape=this_data.shape, dtype=this_data.dtype
                 )
+            # Create references to the data in the NXReflections group
             ref_dtype = h5py.special_dtype(ref=h5py.RegionReference)
             if key in dials_to_nx_names:
                 nx_group[dials_to_nx_names[key]] = group[key]  # a reference
@@ -164,6 +166,9 @@ class ReflectionListEncoder(object):
                 for i, name in enumerate(dials_to_nx_names_split[key]):
                     nx_group.create_dataset(name, (1,), dtype=ref_dtype)
                     nx_group[name][0] = group[key].regionref[:, i]  # a region reference
+                    # note, use region references to get the slice back as follows:
+                    # e.g. h_ref = nx_group["h"][0] # contains a reference to the data array and region
+                    # h = file_handle[h_ref][h_ref] # first index gets the array, second index the slice
 
     @staticmethod
     def encode_shoebox(group: h5py.Group, data: flex.shoebox, key: str):
