@@ -55,7 +55,7 @@ DIALS is built on cctbx, and in turn many packages depend on DIALS.  The Resourc
 - Codebase maintenance: the Resource tracks modern coding standards and upgrades the code to support them, be they Python, C++, or HDF5 standards.  Additionally as external libraries change and evolve, the Resource continually runs regression tests to monitor for changes that affect code function and performance
 - Provide user interfaces: through GUIs and command line programs, DIALS staff build tools that allow data visualization and statistical analysis.
 
-Resource adminsitration
+Resource administration
 =======================
 
 Staff
