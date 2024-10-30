@@ -540,7 +540,7 @@ class Indexer:
                     )
                     break
 
-            n_lattices_previous_cycle = len(experiments)
+            n_lattices_previous_cycle = len(experiments.crystals())
 
             if self.d_min is None:
                 self.d_min = self.params.refinement_protocol.d_min_start
