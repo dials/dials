@@ -111,6 +111,9 @@ class Script:
             predicted = flex.reflection_table.from_predictions(
                 expt, force_static=params.force_static, dmin=params.d_min
             )
+
+            # Assign an experiment identifier to reflections (this is required for saving HDF5 reflection files)
+            predicted.experiment_identifiers()[i_expt] = experiments[i_expt].identifier
             predicted["id"] = flex.int(len(predicted), i_expt)
             predicted_all.extend(predicted)
 
