@@ -1,27 +1,37 @@
 from __future__ import annotations
 
+import math
 import os
 import pickle
+import random
+import shutil
+import subprocess
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from dxtbx.format.Format import Reader
 from dxtbx.imageset import ImageSet, ImageSetData
 from dxtbx.model.beam import Beam
 from dxtbx.model.detector import Detector
-from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx import easy_run
 from scitbx import matrix
 
+from dials.array_family import flex
+from dials.command_line.generate_distortion_maps import (
+    circle_to_ellipse_transform,
+    ellipse_to_circle_transform,
+)
+
 
 def make_detector():
-    """Make a dummy 4 panel detector with not many pixels to ensure test runs
-    quickly"""
+    """Make a dummy 4 panel detector"""
     pixel_size_x = 0.1
     pixel_size_y = 0.1
-    npixels_per_panel_x = 40
-    npixels_per_panel_y = 50
+    npixels_per_panel_x = 120
+    npixels_per_panel_y = 160
     distance = 100
     fast = matrix.col((1, 0, 0))
     slow = matrix.col((0, -1, 0))
@@ -87,7 +97,47 @@ def test_translate(dials_regression: Path, run_in_tmp_path):
     # and expt2.detector
 
 
-def test_elliptical_distortion(run_in_tmp_path):
+def test_ellipse_transforms():
+    """See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf for definitions"""
+
+    # Generate random ellipse parameters
+    phi = random.uniform(0, 360)
+    l1 = random.uniform(0.5, 1.5)
+    l2 = random.uniform(0.5, 1.5)
+
+    # Check the transforms are inverses
+    m1 = ellipse_to_circle_transform(phi, l1, l2)
+    m2 = circle_to_ellipse_transform(phi, l1, l2)
+    assert m2.elems == pytest.approx(m1.inverse().elems)
+
+    # Generate some points around a circle
+    ticks = np.arange(0, 2 * math.pi, math.pi / 10)
+    radius = 5
+    x = radius * np.cos(ticks)
+    y = radius * np.sin(ticks)
+    p1 = flex.vec2_double(zip(x, y))
+
+    # Transform the points to an ellipse
+    p2 = p1.__rmul__(m2)
+
+    # Form the coefficients of the general ellipse equation,
+    # a11 x^2 + 2 a12 xy + a22 y^2 = r^2
+    cphi = math.cos(math.radians(phi))
+    sphi = math.sin(math.radians(phi))
+    a11 = l1 * cphi**2 + l2 * sphi**2
+    a12 = (l2 - l1) * sphi * cphi
+    a21 = a12
+    a22 = l1 * sphi**2 + l2 * cphi**2
+    A = matrix.sqr((a11, a12, a21, a22))
+
+    # Calculate r^2 for the points on the ellipse, using the quadratic form x^T A x = r^2
+    r_sq = p2.dot(p2.__rmul__(A))
+
+    # Check that the points give the expected r^2
+    assert r_sq == pytest.approx(radius**2)
+
+
+def test_elliptical_distortion_simple(run_in_tmp_path):
     """Create distortion maps for elliptical distortion using a dummy experiments
     with a small detector, for speed. Check those maps seem sensible"""
 
@@ -188,3 +238,110 @@ def test_elliptical_distortion(run_in_tmp_path):
     col0 = dy[2].matrix_copy_column(0)
     for i in range(1, d[0].get_image_size()[0]):
         assert (col0 == dy[2].matrix_copy_column(i)).all_eq(True)
+
+
+def test_undistort_an_ellipse(dials_data, tmp_path):
+    """Check that impact points around an ellipse in lab space on a simple
+    detector can be undistorted into a circle in pixel space"""
+
+    # Use a single-panel 3D ED image for this
+    image_path = (
+        dials_data("image_examples", pathlib=True) / "TIMEPIX_SU_516-stdgoni_0001.img"
+    )
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            image_path,
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    experiments = ExperimentList.from_file(tmp_path / "imported.expt")
+    beam = experiments[0].beam
+    panel = experiments[0].detector[0]
+
+    # Put centre of distortion at the beam centre
+    centre_xy = panel.get_beam_centre(beam.get_s0())
+    centre_px = panel.millimeter_to_pixel(centre_xy)
+
+    # Get beam vector and two orthogonal vectors
+    beamvec = matrix.col(beam.get_s0())
+    bor1 = beamvec.ortho()
+    bor2 = beamvec.cross(bor1)
+
+    # Generate rays at a 2θ circle out to halfway to the panel edge
+    d_min = panel.get_max_resolution_ellipse(beam)
+    theta = math.asin(beam.get_wavelength() / (2 * d_min)) / 2
+    n_rays = 100
+    cone_base_centre = beamvec * math.cos(2.0 * theta)
+    cone_base_radius = (beamvec * math.sin(2.0 * theta)).length()
+    rad1 = bor1.normalize() * cone_base_radius
+    rad2 = bor2.normalize() * cone_base_radius
+    ticks = (2.0 * math.pi / n_rays) * flex.double_range(n_rays)
+    offset1 = flex.vec3_double(n_rays, rad1) * flex.cos(ticks)
+    offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
+    rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
+
+    # Get undistorted mm intersections on the detector
+    circle_mm = flex.vec2_double((panel.get_ray_intersection(ray) for ray in rays))
+    # from matplotlib import pyplot as plt
+    # plt.scatter(*zip(*circle_mm))
+
+    # Get the matrix to distort to a rotated ellipse
+    phi = 15
+    l1 = 1.0
+    l2 = 0.95
+    m2 = circle_to_ellipse_transform(phi, l1, l2)
+
+    # Distort the intersection points
+    ellipse_mm = (circle_mm - centre_xy).__rmul__(m2) + centre_xy
+    # plt.scatter(*zip(*ellipse_mm))
+    # plt.gca().set_aspect("equal")
+    # plt.show()
+
+    # Get rays for the distorted intersections
+    lab_coords = panel.get_lab_coord(ellipse_mm)
+    rays = lab_coords.each_normalize() * (1.0 / beam.get_wavelength())
+
+    # Generate and apply distortion maps
+    result = subprocess.run(
+        [
+            shutil.which("dials.generate_distortion_maps"),
+            tmp_path / "imported.expt",
+            "mode=ellipse",
+            f"centre_xy={centre_xy[0]},{centre_xy[1]}",
+            f"phi={phi}",
+            f"l1={l1}",
+            f"l2={l2}",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            image_path,
+            f"lookup.dx={tmp_path / 'dx.pickle'}",
+            f"lookup.dy={tmp_path / 'dy.pickle'}",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    # Load the experiment with correction maps and calculate ray intersections
+    experiments = ExperimentList.from_file(tmp_path / "imported.expt")
+    panel = experiments[0].detector[0]
+    intersections_px = flex.vec2_double(
+        (panel.get_ray_intersection_px(ray) for ray in rays)
+    )
+
+    # Check that the pixel intersections really are circular
+    shifted = intersections_px - centre_px
+    x, y = shifted.parts()
+    r = flex.sqrt(x * x + y * y)
+
+    # Seem to have errors of half a pixel or so...
+    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.5)
