@@ -93,8 +93,14 @@ def test_translate(dials_regression: Path, run_in_tmp_path):
     assert expt2.imageset.external_lookup.dx.filename
     assert expt2.imageset.external_lookup.dy.filename
 
-    # FIXME finish test by comparing px to mm positions for expt1.detector
-    # and expt2.detector
+    # Check mm positions are unaffected, but px positions are corrected
+    mm1 = expt1.detector[0].get_beam_centre(expt1.beam.get_s0())
+    mm2 = expt2.detector[0].get_beam_centre(expt2.beam.get_s0())
+    px1 = expt1.detector[0].get_beam_centre_px(expt1.beam.get_s0())
+    px2 = expt2.detector[0].get_beam_centre_px(expt2.beam.get_s0())
+    assert mm1 == mm2
+    assert px1[0] == px2[0] - 1
+    assert px1[1] == px2[1] - 2
 
 
 def test_ellipse_transforms():
