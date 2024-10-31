@@ -107,13 +107,13 @@ def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     phi = math.radians(phi)
     cphi = math.cos(phi)
     sphi = math.sin(phi)
-    sqrtl1 = math.sqrt(l1)
-    sqrtl2 = math.sqrt(l2)
+    l1_inv = 1.0 / l1
+    l2_inv = 1.0 / l2
 
-    a11 = sqrtl1 * cphi
-    a12 = -sqrtl1 * sphi
-    a21 = sqrtl2 * sphi
-    a22 = sqrtl2 * cphi
+    a11 = l1_inv * cphi
+    a12 = -l1_inv * sphi
+    a21 = l2_inv * sphi
+    a22 = l2_inv * cphi
 
     return matrix.sqr((a11, a12, a21, a22))
 
@@ -127,13 +127,11 @@ def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     phi = math.radians(phi)
     cphi = math.cos(phi)
     sphi = math.sin(phi)
-    m1 = 1.0 / math.sqrt(l1)
-    m2 = 1.0 / math.sqrt(l2)
 
-    a11 = m1 * cphi
-    a12 = m2 * sphi
-    a21 = -m1 * sphi
-    a22 = m2 * cphi
+    a11 = l1 * cphi
+    a12 = l2 * sphi
+    a21 = -l1 * sphi
+    a22 = l2 * cphi
 
     return matrix.sqr((a11, a12, a21, a22))
 
