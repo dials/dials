@@ -112,7 +112,7 @@ class Script:
                 expt, force_static=params.force_static, dmin=params.d_min
             )
 
-            # Assign an experiment identifier to reflections (this is required for saving HDF5 reflection files)
+            # Copy the experiment identifiers verbatim to the new table
             predicted.experiment_identifiers()[i_expt] = experiments[i_expt].identifier
             predicted["id"] = flex.int(len(predicted), i_expt)
             predicted_all.extend(predicted)
