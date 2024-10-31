@@ -20,12 +20,14 @@ help_message = """
 
 Generate dx.pickle, dy.pickle distortion maps for a detector model picked up
 from an image file or experiment.expt. These maps can be used to
-represent distortion within the millimetre to pixel mapping
+represent distortion within the millimetre to pixel mapping. For elliptical
+distortion note that the ellipse parameters should describe the observed
+ellipse, which will then be corrected to a circle.
 
 Examples::
 
   dials.generate_distortion_maps image_001.cbf dx=0.5 dy=1.5
-  dials.generate_distortion_maps models.expt mode=ellipse phi=0 l2=0.95
+  dials.generate_distortion_maps models.expt mode=ellipse phi=10 l2=0.95
 """
 
 scope = phil.parse(
@@ -100,9 +102,10 @@ def make_dx_dy_translate(imageset, dx, dy):
 
 def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     """Return the matrix for the transformation from an ellipse to a circle
-    where the first axis makes an angle phi in degrees with the X axis and the
+    where the first axis makes an angle φ in degrees with the X axis and the
     scale factors for the axes are l1 and l2.
-    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf"""
+    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf for
+    definitions, noting that l1 = 1 / sqrt(λ1) and l2 = 1 / sqrt(λ2)."""
 
     phi = math.radians(phi)
     cphi = math.cos(phi)
@@ -120,9 +123,10 @@ def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
 
 def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     """Return the matrix for the transformation from a circle to an ellipse
-    where the first axis makes an angle phi in degrees with the X axis and the
+    where the first axis makes an angle φ in degrees with the X axis and the
     scale factors for the axes are l1 and l2.
-    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf"""
+    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf for
+    definitions, noting that l1 = 1 / sqrt(λ1) and l2 = 1 / sqrt(λ2)."""
 
     phi = math.radians(phi)
     cphi = math.cos(phi)
