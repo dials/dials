@@ -4,12 +4,12 @@ US DIALS National Resource
 
 .. _national_resource:
 
-DIALS is an NIH NIGMS R24 US National Resource with the goal of supporting both users and
-facilities in using DIALS to analyse their diffraction data.
-
-DIALS development at `Lawrence Berkeley National Laboratory`_ is
-supported by `National Institutes of Health`_ / `National Institute of General Medical Sciences`_
-grant R24GM154040.
+In the US, DIALS is supported through a R24 National Resource grant (R24GM154040)
+from the `National Institutes of Health`_ / `National Institute of General Medical Sciences`_
+at `Lawrence Berkeley National Laboratory`_.  The goal of the resource is to support both
+users and facilities in using DIALS to analyse their diffraction data. This is part of a
+larger international software project that includes support from staff in the US, UK, and
+worldwide.
 
 .. container:: twocol
 
@@ -30,7 +30,9 @@ grant R24GM154040.
 Goals
 =====
 
-The goals of the Resource are two-fold: 1) support users, instrument scientists, and beamline scientists in using DIALS to analyze their data and 2) maintain and upgrade DIALS as a software product.
+The goals of the Resource are two-fold: 1) support users, instrument scientists,
+and beamline scientists in using DIALS to analyze their data and 2) maintain and upgrade DIALS
+as a software product.
 
 Community support activities
 ----------------------------
@@ -69,7 +71,7 @@ Staff
 Board
 -----
 
-Coming soon
+The DIALS advisory board will include crystallographic software developers, beamline facility staff, and representatives of standards bodies to ensure the needs of all aspects of the crystallographic data collection and processing community are being addressed in the DIALS development efforts.  Annual board meetings will include discussions of metrics, improvements, and assessment of progress, and will charge developers to move towards completing specific milestones and deliverables. The board is currently being assembled.
 
 .. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
 .. _`National Institutes of Health`: http://www.nih.gov/
