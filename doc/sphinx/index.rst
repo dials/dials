@@ -41,8 +41,6 @@ For feature requests, bug reports or any other information, please contact
 the DIALS developers at dials-support@lists.sourceforge.net, or post an
 `issue`_.
 
-Mirror sites: `DIALS-East`_, `DIALS-West`_, `dials.github.io`_.
-
 Funding
 =======
 
