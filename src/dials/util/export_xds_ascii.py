@@ -17,11 +17,6 @@ from dials.util.filter_reflections import (
     filter_reflection_table,
 )
 
-try:
-    from typing import Tuple  # noqa: F401
-except ImportError:
-    pass
-
 logger = logging.getLogger(__name__)
 
 

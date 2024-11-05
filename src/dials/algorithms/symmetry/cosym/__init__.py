@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import List, Optional
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
