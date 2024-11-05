@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Sequence
-from typing import Iterator, List, Optional, TypeVar
+from collections.abc import Iterator, Sequence
+from typing import List, Optional, TypeVar
 
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import phil

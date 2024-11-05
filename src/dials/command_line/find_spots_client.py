@@ -163,7 +163,7 @@ def stop(host, port, nproc):
         except urllib.error.URLError as e:
             if e.reason.errno != 111:
                 print("error on stopping server:", e)
-        except pysocket.error:
+        except OSError:
             # Assuming this means the server killed itself before the reply left the send buffer.
             stopped = stopped + 1
         except http.client.BadStatusLine:

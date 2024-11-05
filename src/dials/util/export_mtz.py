@@ -363,9 +363,9 @@ def write_columns(mtz, reflection_table):
 
     nref = len(reflection_table["miller_index"])
     assert nref
-    xdet, ydet, _ = [
+    xdet, ydet, _ = (
         flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
-    ]
+    )
 
     type_table = {
         "H": "H",

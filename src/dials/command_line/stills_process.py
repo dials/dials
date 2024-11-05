@@ -1574,10 +1574,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: {:f}, half mosaicity degrees: {:f}".format(
-                    crystal_model.get_domain_size_ang(),
-                    crystal_model.get_half_mosaicity_deg(),
-                )
+                log_str += f". Final ML model: domain size angstroms: {crystal_model.get_domain_size_ang():f}, half mosaicity degrees: {crystal_model.get_half_mosaicity_deg():f}"
 
         logger.info(log_str)
 

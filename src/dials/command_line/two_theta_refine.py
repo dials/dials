@@ -189,8 +189,8 @@ class Script:
         reflections = reflections.select(mask)
 
         logger.info(
-            "{} out of {} reflections remain after filtering to keep only strong"
-            " and integrated centroids".format(len(reflections), orig_len)
+            f"{len(reflections)} out of {orig_len} reflections remain after filtering to keep only strong"
+            " and integrated centroids"
         )
         return reflections
 

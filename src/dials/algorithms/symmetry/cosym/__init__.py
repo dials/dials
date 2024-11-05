@@ -281,7 +281,7 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.nproc is Auto:
             if self.params.cc_weights == "sigma":
                 params.nproc = dials.util.system.CPU_COUNT
-                logger.info("Setting nproc={}".format(params.nproc))
+                logger.info(f"Setting nproc={params.nproc}")
             else:
                 params.nproc = 1
 

@@ -190,7 +190,7 @@ class IhTable:
             block.update_weights(error_model, dataset_id)
 
     @property
-    def blocked_data_list(self) -> List["IhTableBlock"]:
+    def blocked_data_list(self) -> List[IhTableBlock]:
         """Return the list of IhTableBlock instances."""
         return self.Ih_table_blocks
 
@@ -473,7 +473,7 @@ class IhTable:
         return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
 
-class TargetAsuDictCache(object):
+class TargetAsuDictCache:
     instances = {}
 
     def __new__(cls, target_Ih_table):
@@ -599,7 +599,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         """Return the multiplicities of the symmetry groups."""
         return self.sum_in_groups(np.full(self.size, 1.0), output=output)
 
-    def select(self, sel: np.array) -> "IhTableBlock":
+    def select(self, sel: np.array) -> IhTableBlock:
         """Select a subset of the data, returning a new IhTableBlock object."""
         Ih_table = self.Ih_table[sel]
         Ih_table.reset_index(drop=True, inplace=True)
@@ -634,7 +634,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             newtable.dataset_info[i]["end_index"] = offset
         return newtable
 
-    def select_on_groups(self, sel: np.array) -> "IhTableBlock":
+    def select_on_groups(self, sel: np.array) -> IhTableBlock:
         """Select a subset of the unique groups, returning a new IhTableBlock."""
         reduced_h_idx = self._csc_h_index_matrix[:, sel]
         unity = np.full(reduced_h_idx.shape[1], 1.0)
@@ -724,11 +724,8 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     @inverse_scale_factors.setter
     def inverse_scale_factors(self, new_scales: np.array) -> None:
         if new_scales.size != self.size:
-            assert 0, """attempting to set a new set of scale factors of different
-      length than previous assignment: was {}, attempting {}""".format(
-                self.inverse_scale_factors.size,
-                new_scales.size,
-            )
+            assert 0, f"""attempting to set a new set of scale factors of different
+      length than previous assignment: was {self.inverse_scale_factors.size}, attempting {new_scales.size}"""
         else:
             self.Ih_table.loc[:, "inverse_scale_factor"] = new_scales
 
@@ -765,11 +762,8 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     @weights.setter
     def weights(self, new_weights):
         if new_weights.size != self.size:
-            assert 0, """attempting to set a new set of weights of different
-      length than previous assignment: was {}, attempting {}""".format(
-                self.size,
-                new_weights.size,
-            )
+            assert 0, f"""attempting to set a new set of weights of different
+      length than previous assignment: was {self.size}, attempting {new_weights.size}"""
         self.Ih_table.loc[:, "weights"] = new_weights
 
     @property

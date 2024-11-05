@@ -76,7 +76,7 @@ def compute_dmbar(S: np.array, dS: np.array, dmu: np.array, epsilon: float) -> n
     return A + B + C + D
 
 
-class ConditionalDistribution(object):
+class ConditionalDistribution:
     """
     A class to compute useful stuff about the conditional distribution
 
@@ -174,7 +174,7 @@ def rotate_mat3_double(R, A):
     return np.einsum("ij,jkv,kl->ilv", R, A, R.T)
 
 
-class ReflectionLikelihood(object):
+class ReflectionLikelihood:
     def __init__(self, model, s0, sp, h, ctot, mobs, sobs, panel_id=0):
         # Save stuff
         modelstate = ReflectionModelState(model, s0, h)
@@ -389,7 +389,7 @@ class ReflectionLikelihood(object):
         return I
 
 
-class MaximumLikelihoodTarget(object):
+class MaximumLikelihoodTarget:
     def __init__(
         self, model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list, panel_ids
     ):
@@ -539,7 +539,7 @@ def gradient_descent(f, df, x0, max_iter=1000, tolerance=1e-10):
     return x
 
 
-class FisherScoringMaximumLikelihoodBase(object):
+class FisherScoringMaximumLikelihoodBase:
     """
     A class to solve maximum likelihood equations using fisher scoring
 
@@ -894,7 +894,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         )
 
 
-class Refiner(object):
+class Refiner:
     """
     High level profile refiner class that handles book keeping etc
 
@@ -1011,7 +1011,7 @@ class Refiner(object):
         return self.state.parameter_labels
 
 
-class RefinerData(object):
+class RefinerData:
     """
     A class for holding the data needed for the profile refinement
 

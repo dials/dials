@@ -24,7 +24,8 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import List, Sequence, SupportsFloat
+from collections.abc import Sequence
+from typing import List, SupportsFloat
 
 import numpy as np
 from scipy.spatial.transform import Rotation

@@ -437,10 +437,8 @@ def combine_experiments_no_reflections(params, experiment_lists):
                 # When we failed tolerance checks, give a useful error message
                 (i, index) = find_experiment_in(expt, experiment_lists)
                 sys.exit(  # FIXME - raise RuntimeError?
-                    "Model didn't match reference within required tolerance for experiment {} in input file {}:"
-                    "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
-                        index, i, str(e)
-                    )
+                    f"Model didn't match reference within required tolerance for experiment {index} in input file {i}:"
+                    f"\n{str(e)}\nAdjust tolerances or set compare_models=False to ignore differences."
                 )
     # select a subset if requested
     if params.output.n_subset is not None and len(experiments) > params.output.n_subset:
@@ -531,10 +529,8 @@ def combine_experiments(params, experiment_lists, reflection_tables):
                 # When we failed tolerance checks, give a useful error message
                 (i, index) = find_experiment_in(exp, experiment_lists)
                 sys.exit(  # FIXME - raise RuntimeError?
-                    "Model didn't match reference within required tolerance for experiment {} in input file {}:"
-                    "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
-                        index, i, str(e)
-                    )
+                    f"Model didn't match reference within required tolerance for experiment {index} in input file {i}:"
+                    f"\n{str(e)}\nAdjust tolerances or set compare_models=False to ignore differences."
                 )
 
             # Rewrite imageset_id, if the experiment has an imageset

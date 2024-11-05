@@ -32,7 +32,7 @@ from dials.util import tabulate
 logger = logging.getLogger("dials")
 
 
-class MergeJSONCollector(object):
+class MergeJSONCollector:
     initiated = False
     data = {}
 

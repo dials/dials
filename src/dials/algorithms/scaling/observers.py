@@ -287,15 +287,15 @@ def print_scaling_model_error_summary(experiments):
         )
         if frac_high_uncertainty > 0.5:
             msg = (
-                "Warning: Over half ({:.2f}%) of model parameters have significant\n"
+                f"Warning: Over half ({frac_high_uncertainty * 100:.2f}%) of model parameters have significant\n"
                 "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
                 "poorly-determined scaling problem or overparameterisation.\n"
-            ).format(frac_high_uncertainty * 100)
+            )
         else:
             msg = (
-                "{:.2f}% of model parameters have significant uncertainty\n"
+                f"{frac_high_uncertainty * 100:.2f}% of model parameters have significant uncertainty\n"
                 "(sigma/abs(parameter) > 0.5)\n"
-            ).format(frac_high_uncertainty * 100)
+            )
     return msg
 
 

@@ -552,7 +552,7 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         return ds
 
 
-class ModelState(object):
+class ModelState:
     """
     A class to keep track of the model state
 
@@ -804,7 +804,7 @@ class ModelState(object):
         return labels
 
 
-class ReflectionModelState(object):
+class ReflectionModelState:
     """
     Class to compute basic derivatives of Sigma and r w.r.t parameters
 

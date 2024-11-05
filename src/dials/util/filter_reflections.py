@@ -123,13 +123,11 @@ def filter_reflection_table(
         reducer = SumAndScaleIntensityReducer
     else:
         raise ValueError(
-            (
-                "Unrecognised intensity choice for filter_reflection_table,\n"
-                "value read: {}\n"
-                "must be one of: 'scale', 'profile', 'sum', 'profile sum', \n"
-                "                'sum scale', 'profile sum scale'\n"
-                "(if parsing from command line, multiple choices passed as e.g. profile+sum"
-            ).format(intensity_choice)
+            "Unrecognised intensity choice for filter_reflection_table,\n"
+            f"value read: {intensity_choice}\n"
+            "must be one of: 'scale', 'profile', 'sum', 'profile sum', \n"
+            "                'sum scale', 'profile sum scale'\n"
+            "(if parsing from command line, multiple choices passed as e.g. profile+sum"
         )
     # Validate that the reflection table has the columns we need
     required_columns_lookup = {

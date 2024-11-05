@@ -92,7 +92,7 @@ class ExtractedValues:
     known_size: bool  # does the size of the data match the number of images
 
 
-class MetadataForFile(object):
+class MetadataForFile:
     def __init__(self):
         self.extracted_data = self.extract()
 
@@ -225,7 +225,7 @@ class NameToMetadataDict(dict):
         return ", ".join(f"{key}: {value}" for key, value in self.items())
 
 
-class ParsedGrouping(object):
+class ParsedGrouping:
     def __init__(self, images: Dict[str, ImageFile], name):
         self.name = name
         self._images_to_metadata: Dict[ImageFile, NameToMetadataDict] = {
@@ -309,10 +309,10 @@ Summary of data in ParsedGrouping class
         return relevant_metadata
 
 
-class ParsedYAML(object):
+class ParsedYAML:
     def __init__(self, yml_file: Optional[Path] = None, yml_str: Optional[str] = None):
         if yml_file:
-            with open(yml_file, "r") as f:
+            with open(yml_file) as f:
                 data = list(yaml.load_all(f, Loader=SafeLoader))[0]
         elif yml_str:
             data = list(yaml.load_all(yml_str, Loader=SafeLoader))[0]
@@ -489,7 +489,7 @@ class ParsedYAML(object):
 
 
 # Class to store metadata group parameters
-class _MetaDataGroup(object):
+class _MetaDataGroup:
     def __init__(self, data_dict):
         self._data_dict: dict[str, dict[str, float]] = data_dict
 
@@ -507,7 +507,7 @@ class _MetaDataGroup(object):
 
 
 # Define mapping from image index to group id.
-class _ImgIdxToGroupId(object):
+class _ImgIdxToGroupId:
     def __init__(
         self,
         single_return_val: Optional[int] = None,
@@ -604,7 +604,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
 
 
 @dataclass
-class GroupsForExpt(object):
+class GroupsForExpt:
     single_group: Optional[int] = None
     groups_array: Optional[np.array] = None
     unique_group_numbers: set = field(default_factory=set)
@@ -633,7 +633,7 @@ class FilePair:
 
 
 @dataclass
-class SplittingIterable(object):
+class SplittingIterable:
     working_directory: Path
     fp: FilePair
     fileindex: int
@@ -674,7 +674,7 @@ def save_subset(input_: SplittingIterable) -> Optional[Tuple[str, FilePair]]:
     return None
 
 
-class GroupingImageTemplates(object):
+class GroupingImageTemplates:
     """Class that takes a parsed group and determines the groupings and mappings
     required to split input data into groups.
 
