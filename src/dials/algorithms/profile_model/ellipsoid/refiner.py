@@ -4,7 +4,6 @@ import logging
 import random
 import textwrap
 from math import log, pi, sqrt
-from typing import List
 
 import numpy as np
 from numpy.linalg import det, inv, norm
@@ -131,7 +130,7 @@ class ConditionalDistribution:
         """
         return self._Sbar
 
-    def first_derivatives_of_sigma(self) -> List[np.array]:
+    def first_derivatives_of_sigma(self) -> list[np.array]:
         """
         Return the marginal first derivatives (as a list of 2x2 arrays)
 
@@ -144,7 +143,7 @@ class ConditionalDistribution:
 
         return self.dSbar
 
-    def first_derivatives_of_mean(self) -> List[np.array]:
+    def first_derivatives_of_mean(self) -> list[np.array]:
         """
         Return the marginal first derivatives (a list of 2x1 arrays)
 

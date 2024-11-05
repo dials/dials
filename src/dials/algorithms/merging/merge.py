@@ -6,7 +6,6 @@ import logging
 import time
 from contextlib import contextmanager
 from io import StringIO
-from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -246,7 +245,7 @@ class MergedMTZCreator:
         self.mtz = mtz
 
     def add_data(
-        self, mtz_datasets: List[MTZDataClass], r_free_array: miller.array = None
+        self, mtz_datasets: list[MTZDataClass], r_free_array: miller.array = None
     ) -> None:
         """
         Adds data to the MTZ object based on the provided datasets and optional R-free array.
@@ -410,7 +409,7 @@ class MergedMTZCreator:
 
     def _separate_anomalous(
         self, miller_array: miller.array
-    ) -> Tuple[miller.array, miller.array]:
+    ) -> tuple[miller.array, miller.array]:
         """
         Separates the anomalous pairs from a given Miller array to produce
         two arrays: one for the positive and one for the negative hemisphere
@@ -747,9 +746,9 @@ def merge_scaled_array_to_mtz_with_report_collection(
     params: phil.scope_extract,
     experiments: ExperimentList,
     scaled_array,
-    wavelength: Optional[float] = None,
-    applied_d_min: Optional[int] = None,
-) -> Tuple[mtz.object, dict]:
+    wavelength: float | None = None,
+    applied_d_min: int | None = None,
+) -> tuple[mtz.object, dict]:
     if wavelength is None:
         wavelength = np.mean(
             np.array([expt.beam.get_wavelength() for expt in experiments], dtype=float)
@@ -847,7 +846,7 @@ def process_merged_data(params, mtz_dataset, merged, merged_anomalous, stats_sum
         MergeJSONCollector.data[mtz_dataset.wavelength] = stats_summary
 
 
-def combined_miller_set(mtz_datasets: List[MTZDataClass]) -> miller.array:
+def combined_miller_set(mtz_datasets: list[MTZDataClass]) -> miller.array:
     miller_set = miller.set(
         crystal_symmetry=mtz_datasets[0].merged_array.crystal_symmetry(),
         indices=mtz_datasets[0].merged_array.indices().deep_copy(),
@@ -862,7 +861,7 @@ def combined_miller_set(mtz_datasets: List[MTZDataClass]) -> miller.array:
 
 def r_free_flags_from_reference(
     params: phil.scope_extract,
-    mtz_datasets: List[MTZDataClass],
+    mtz_datasets: list[MTZDataClass],
 ) -> miller.array:
     mtz = iotbx.mtz.object(params.r_free_flags.reference)
     r_free_arrays = []
@@ -911,7 +910,7 @@ def r_free_flags_from_reference(
 
 def generate_r_free_flags(
     params: phil.scope_extract,
-    mtz_datasets: List[MTZDataClass],
+    mtz_datasets: list[MTZDataClass],
 ) -> miller.array:
     miller_set = combined_miller_set(mtz_datasets)
 

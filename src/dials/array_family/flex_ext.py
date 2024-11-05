@@ -13,7 +13,6 @@ import logging
 import operator
 import os
 import pickle
-from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -486,7 +485,7 @@ class _:
 
     def match_by_hkle(
         self, other: dials_array_family_flex_ext.reflection_table
-    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
+    ) -> tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
         """
         Match reflections with another set of reflections by the h, k, l
         and entering values. Uses pandas dataframe merge method to match
@@ -521,7 +520,7 @@ class _:
 
     @staticmethod
     def concat(
-        tables: List[dials_array_family_flex_ext.reflection_table],
+        tables: list[dials_array_family_flex_ext.reflection_table],
     ) -> dials_array_family_flex_ext.reflection_table:
         """
         Concatenate a list of reflection tables, taking care to correctly handle
@@ -664,8 +663,8 @@ class _:
         *,
         max_separation: int = 2,
         key: str = "xyzobs.px.value",
-        scale: Tuple[float, float, float] = (1, 1, 1),
-    ) -> Tuple[
+        scale: tuple[float, float, float] = (1, 1, 1),
+    ) -> tuple[
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.double,

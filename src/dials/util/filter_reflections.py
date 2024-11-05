@@ -45,7 +45,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Any, List, Type
+from typing import Any
 
 from cctbx import crystal, miller
 
@@ -78,7 +78,7 @@ def filter_reflection_table_selection(
 
 def filter_reflection_table(
     reflection_table: flex.reflection_table,
-    intensity_choice: List[str],
+    intensity_choice: list[str],
     *args: Any,
     **kwargs: Any,
 ) -> flex.reflection_table:
@@ -108,7 +108,7 @@ def filter_reflection_table(
         raise ValueError("intensity_choice must be List[str]")
 
     if intensity_choice == ["scale"]:
-        reducer: Type[FilterForExportAlgorithm] = ScaleIntensityReducer
+        reducer: type[FilterForExportAlgorithm] = ScaleIntensityReducer
     elif intensity_choice == ["sum"]:
         reducer = SumIntensityReducer
     elif intensity_choice == ["profile"]:

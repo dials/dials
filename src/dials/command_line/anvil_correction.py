@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 import sys
 from collections.abc import Sequence
-from typing import List, SupportsFloat
+from typing import SupportsFloat
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -265,7 +265,7 @@ def correct_intensities_for_dac_attenuation(
 
 
 @dials.util.show_mail_handle_errors()
-def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     Run dials.anvil_correction as from the command line.
 

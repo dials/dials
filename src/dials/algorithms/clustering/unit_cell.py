@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy.spatial.distance as ssd
@@ -25,7 +25,7 @@ class Cluster:
     def __init__(
         self,
         crystal_symmetries: list[crystal.symmetry],
-        lattice_ids: Optional[list[int]] = None,
+        lattice_ids: list[int] | None = None,
         name="",
     ):
         assert lattice_ids is None or len(crystal_symmetries) == len(lattice_ids)
@@ -60,8 +60,8 @@ class Cluster:
 @dataclass
 class ClusteringResult:
     clusters: list[Cluster]
-    dendrogram: Optional[dict] = None
-    linkage_matrix: Optional[np.ndarray] = None
+    dendrogram: dict | None = None
+    linkage_matrix: np.ndarray | None = None
 
     def __len__(self):
         return len(self.clusters)
@@ -158,11 +158,11 @@ class ClusteringResult:
 
 def cluster_unit_cells(
     crystal_symmetries: list[crystal.symmetry],
-    lattice_ids: Optional[list[int]] = None,
+    lattice_ids: list[int] | None = None,
     threshold: int = 10000,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    ax: matplotlib.axes.Axes | None = None,
     no_plot: bool = True,
-) -> Optional[ClusteringResult]:
+) -> ClusteringResult | None:
     if not lattice_ids:
         lattice_ids = list(range(len(crystal_symmetries)))
     cluster = Cluster(crystal_symmetries, lattice_ids)

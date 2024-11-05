@@ -47,11 +47,6 @@ from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
-try:
-    from typing import List
-except ImportError:
-    pass
-
 logger = logging.getLogger("dials")
 
 phil_scope = phil.parse(
@@ -84,7 +79,7 @@ phil_scope = phil.parse(
 
 def refine_error_models(
     params, experiments, reflection_tables
-) -> List[BasicErrorModel | None]:
+) -> list[BasicErrorModel | None]:
     """Do error model refinement."""
 
     # prepare relevant data for datastructures
@@ -207,7 +202,7 @@ def make_output(models, params):
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.refine_error_model scaled.refl scaled.expt [options]"""
 

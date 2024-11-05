@@ -145,7 +145,7 @@ class CosymAnalysis(symmetry_base, Subject):
     the presence of an indexing ambiguity.
     """
 
-    def __init__(self, intensities, params, seed_dataset: Optional[int] = None):
+    def __init__(self, intensities, params, seed_dataset: int | None = None):
         """Initialise a CosymAnalysis object.
 
         Args:
@@ -459,9 +459,9 @@ class CosymAnalysis(symmetry_base, Subject):
     def _reindexing_ops(
         self,
         coords: np.ndarray,
-        sym_ops: List[sgtbx.rt_mx],
+        sym_ops: list[sgtbx.rt_mx],
         cosets: sgtbx.cosets.left_decomposition,
-    ) -> List[sgtbx.change_of_basis_op]:
+    ) -> list[sgtbx.change_of_basis_op]:
         """Identify the reindexing operator for each dataset.
 
         Args:

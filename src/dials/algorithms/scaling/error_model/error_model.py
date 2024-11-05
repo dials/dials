@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 from math import ceil, exp, log
-from typing import List
 
 import numpy as np
 from scipy.stats import norm
@@ -85,7 +84,7 @@ phil_scope = phil.parse(
 )
 
 
-def extract_error_model_groups(params, n_tables) -> List[List[int]]:
+def extract_error_model_groups(params, n_tables) -> list[list[int]]:
     if params.grouping == "combined":
         minimisation_groups = [list(range(n_tables))]
     elif params.grouping == "individual":

@@ -7,8 +7,6 @@ symmetry equivalent reflections, as required for scaling.
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
-
 import numpy as np
 import pandas as pd
 from orderedset import OrderedSet
@@ -77,13 +75,13 @@ class IhTable:
 
     def __init__(
         self,
-        reflection_tables: List[flex.reflection_table],
+        reflection_tables: list[flex.reflection_table],
         space_group: sgtbx.space_group,
-        indices_lists: Optional[List[flex.size_t]] = None,
+        indices_lists: list[flex.size_t] | None = None,
         nblocks: int = 1,
         free_set_percentage: float = 0,
         free_set_offset: int = 0,
-        additional_cols: Optional[List[str]] = None,
+        additional_cols: list[str] | None = None,
         anomalous: bool = False,
     ):
         """
@@ -157,7 +155,7 @@ class IhTable:
                 data_for_block
             )
 
-    def get_block_selections_for_dataset(self, dataset: int) -> List[flex.size_t]:
+    def get_block_selections_for_dataset(self, dataset: int) -> list[flex.size_t]:
         """Generate the block selection list for a given dataset."""
         assert dataset in range(self.n_datasets)
         if self.free_Ih_table:
@@ -183,14 +181,14 @@ class IhTable:
         ]
 
     def update_weights(
-        self, error_model: Optional[BasicErrorModel] = None, dataset_id: int = None
+        self, error_model: BasicErrorModel | None = None, dataset_id: int = None
     ) -> None:
         """Update the error model in the blocks."""
         for block in self.Ih_table_blocks:
             block.update_weights(error_model, dataset_id)
 
     @property
-    def blocked_data_list(self) -> List[IhTableBlock]:
+    def blocked_data_list(self) -> list[IhTableBlock]:
         """Return the list of IhTableBlock instances."""
         return self.Ih_table_blocks
 
@@ -212,7 +210,7 @@ class IhTable:
 
     def _determine_required_block_structures(
         self,
-        reflection_tables: List[flex.reflection_table],
+        reflection_tables: list[flex.reflection_table],
         free_set_percentage: float = 0,
         free_set_offset: int = 0,
     ) -> None:
@@ -330,8 +328,8 @@ class IhTable:
         self,
         dataset_id: int,
         reflections: flex.reflection_table,
-        indices_array: Optional[flex.size_t] = None,
-        additional_cols: Optional[List[str]] = None,
+        indices_array: flex.size_t | None = None,
+        additional_cols: list[str] | None = None,
     ) -> None:
         sorted_asu_indices, perm = get_sorted_asu_indices(
             reflections["asu_miller_index"], self.space_group, self.anomalous
@@ -651,8 +649,8 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
 
     def update_weights(
         self,
-        error_model: Optional[BasicErrorModel] = None,
-        dataset_id: Optional[int] = None,
+        error_model: BasicErrorModel | None = None,
+        dataset_id: int | None = None,
     ) -> None:
         """Update the scaling weights based on an error model."""
         if error_model:
@@ -810,7 +808,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         )
 
     def sum_in_groups(
-        self, array: Union[csc_matrix, np.array], output: str = "per_group"
+        self, array: csc_matrix | np.array, output: str = "per_group"
     ) -> np.array:
         """
         Sums an array object over the symmetry equivalent groups.

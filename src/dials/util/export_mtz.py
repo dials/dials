@@ -7,7 +7,6 @@ from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
 from math import isclose
-from typing import List, Optional
 
 import gemmi
 import numpy as np
@@ -106,7 +105,7 @@ class MergedMTZWriter(MTZWriterBase):
         multiplicities=None,
         anom_multiplicities=None,
         suffix=None,
-        half_datasets: Optional[MergedHalfDatasets] = None,
+        half_datasets: MergedHalfDatasets | None = None,
         r_free_array=None,
     ):
         """Add merged data to the most recent dataset.
@@ -171,7 +170,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         multiplicities=None,
         anom_multiplicities=None,
         suffix=None,
-        half_datasets: Optional[MergedHalfDatasets] = None,
+        half_datasets: MergedHalfDatasets | None = None,
         r_free_array=None,
     ):
         if not suffix:
@@ -845,7 +844,7 @@ class WavelengthGroup:
         self.wavelengths.append(wl)
 
     def calculate_weighted_mean(
-        self, reflection_tables: List[flex.reflection_table]
+        self, reflection_tables: list[flex.reflection_table]
     ) -> None:
         n, nw = (0, 0)
         for i, w in zip(self.identifiers, self.wavelengths):

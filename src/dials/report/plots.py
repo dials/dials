@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 from io import StringIO
-from typing import Type
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -603,8 +602,8 @@ class ResolutionPlotsAndStats:
 
     def __init__(
         self,
-        dataset_statistics: Type[dataset_statistics],
-        anomalous_dataset_statistics: Type[dataset_statistics],
+        dataset_statistics: type[dataset_statistics],
+        anomalous_dataset_statistics: type[dataset_statistics],
         is_centric=False,
     ):
         self.dataset_statistics = dataset_statistics

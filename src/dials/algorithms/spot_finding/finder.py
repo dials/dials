@@ -8,7 +8,6 @@ import logging
 import math
 import pickle
 from collections.abc import Iterable
-from typing import Tuple
 
 import libtbx
 from dxtbx.format.image import ImageBool
@@ -267,7 +266,7 @@ def pixel_list_to_shoeboxes(
     min_spot_size: int,
     max_spot_size: int,
     write_hot_pixel_mask: bool,
-) -> Tuple[flex.shoebox, Tuple[flex.size_t, ...]]:
+) -> tuple[flex.shoebox, tuple[flex.size_t, ...]]:
     """Convert a pixel list to shoeboxes"""
     # Extract the pixel lists into a list of reflections
     shoeboxes = flex.shoebox()
@@ -339,7 +338,7 @@ def pixel_list_to_reflection_table(
     min_spot_size: int,
     max_spot_size: int,
     write_hot_pixel_mask: bool,
-) -> Tuple[flex.shoebox, Tuple[flex.size_t, ...]]:
+) -> tuple[flex.shoebox, tuple[flex.size_t, ...]]:
     """Convert pixel list to reflection table"""
     shoeboxes, hot_pixels = pixel_list_to_shoeboxes(
         imageset,

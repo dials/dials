@@ -49,11 +49,6 @@ from dials.util.export_mtz import log_summary
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
-try:
-    from typing import List
-except ImportError:
-    pass
-
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
@@ -203,7 +198,7 @@ def run_scaling(params, experiments, reflections):
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.scale integrated.refl integrated.expt
 [integrated.refl(2) integrated.expt(2) ....] [options]"""

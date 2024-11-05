@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from collections.abc import Iterator, Sequence
-from typing import List, Optional, TypeVar
+from typing import TypeVar
 
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import phil
@@ -197,15 +197,15 @@ def _split_equal_parts_of_length(a: Sequence[T], n: int) -> Iterator[Sequence[T]
 def save_combined_experiments(
     experiments,
     clustering: phil.scope_extract,
-    reflections: Optional[flex.reflection_table] = None,
+    reflections: flex.reflection_table | None = None,
     max_batch_size: int = None,
     experiments_filename="combined.expt",
     reflections_filename="combined.refl",
 ):
-    output_experiments_list: List[ExperimentList] = []
-    output_reflections_list: List[flex.reflection_table] = []
-    expt_names_list: List[str] = []
-    refl_names_list: List[str] = []
+    output_experiments_list: list[ExperimentList] = []
+    output_reflections_list: list[flex.reflection_table] = []
+    expt_names_list: list[str] = []
+    refl_names_list: list[str] = []
 
     # cluster the resulting experiments if requested
     if clustering.use and len(experiments) > 1:
@@ -377,10 +377,10 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
             )
 
     # we want a list of experiment lists and list of experiment tables (one per input file)
-    experiment_lists: List[ExperimentList] = [
+    experiment_lists: list[ExperimentList] = [
         ExperimentList(o.data) for o in params.input.experiments
     ]
-    reflection_tables: List[flex.reflection_table] = [
+    reflection_tables: list[flex.reflection_table] = [
         o.data for o in params.input.reflections
     ]
     if reflection_tables:

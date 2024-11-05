@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 import shutil
 import sys
@@ -53,12 +51,9 @@ class installer(install_distribution.installer):
         prefix = os.path.abspath(self.options.prefix)
         if prefix.startswith(installer_path):
             sys.exit(
-                "Invalid installation option: --prefix={givenprefix}\n\n"
+                f"Invalid installation option: --prefix={self.options.prefix}\n\n"
                 "Please install DIALS to a location outside of the installer directory.\n"
-                "Suggested alternative: --prefix={suggestedprefix}".format(
-                    givenprefix=self.options.prefix,
-                    suggestedprefix=os.path.dirname(prefix),
-                )
+                f"Suggested alternative: --prefix={os.path.dirname(prefix)}"
             )
 
     def reconfigure(self, log=None, *args, **kwargs):
@@ -72,7 +67,7 @@ class installer(install_distribution.installer):
                 print("\n" + " -=-" * 20)
                 print("\nAn error occurred during installation\n")
                 print("Excerpt from installation log:")
-                with open(log.name, "r") as fh:
+                with open(log.name) as fh:
                     for line in fh.readlines()[-30:]:
                         print(" :", line, end="")
                 print("\nThis led to ", end="")

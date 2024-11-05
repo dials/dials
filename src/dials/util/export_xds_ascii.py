@@ -51,7 +51,7 @@ def _export_experiment(
     integrated_data: flex.reflection_table,
     experiment: dxtbx.model.Experiment,
     params: libtbx.phil.scope_extract,
-    var_model: Tuple = (1, 0),
+    var_model: tuple = (1, 0),
 ):
     """Export a single experiment to an XDS_ASCII.HKL format file.
 

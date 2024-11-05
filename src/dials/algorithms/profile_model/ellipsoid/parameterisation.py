@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
 
 import numpy as np
 from numpy.linalg import norm
@@ -18,7 +17,7 @@ from dials.array_family import flex
 
 
 class BaseParameterisation(ABC):
-    def __init__(self, params: Optional[np.array] = None) -> None:
+    def __init__(self, params: np.array | None = None) -> None:
         """
         Initialise with the parameters
 
@@ -90,7 +89,7 @@ class Simple1MosaicityParameterisation(BaseParameterisation):
             [[[2.0 * b1, 0, 0], [0, 2.0 * b1, 0], [0, 0, 2.0 * b1]]], dtype=np.float64
         ).reshape(1, 3, 3)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """One value for mosaicity for Simple1"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -135,7 +134,7 @@ class Simple6MosaicityParameterisation(BaseParameterisation):
         )
         return np.matmul(M, M.T)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Three components for mosaicity for Simple6"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -255,7 +254,7 @@ class Simple1Angular1MosaicityParameterisation(BaseParameterisation):
             dtype=np.float64,
         )
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -327,7 +326,7 @@ class Simple1Angular3MosaicityParameterisation(BaseParameterisation):
         bcsq = self.params[2] ** 2 + self.params[3] ** 2
         return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, 0]], dtype=np.float64)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -394,7 +393,7 @@ class Simple6Angular1MosaicityParameterisation(BaseParameterisation):
             dtype=np.float64,
         )
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -488,7 +487,7 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         bcsq = self.params[7] ** 2 + self.params[8] ** 2
         return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, 0]], dtype=np.float64)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -786,7 +785,7 @@ class ModelState:
             self.L_params = temp
 
     @property
-    def parameter_labels(self) -> List[str]:
+    def parameter_labels(self) -> list[str]:
         """
         Get the parameter labels
 
@@ -1021,7 +1020,7 @@ class Angular2MosaicityParameterisation(BaseParameterisation):
             dtype=np.float64,
         )
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -1075,7 +1074,7 @@ class Angular4MosaicityParameterisation(BaseParameterisation):
         dd = self.params[3] ** 2
         return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, dd]], dtype=np.float64)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Three components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()

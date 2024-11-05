@@ -217,8 +217,8 @@ def show_mail_handle_errors():
 
 @dataclasses.dataclass
 class HTCondorJobClassAd:
-    cpus_provisioned: Optional[int] = None
-    memory_provisioned: Optional[float] = None
+    cpus_provisioned: int | None = None
+    memory_provisioned: float | None = None
 
 
 def parse_htcondor_job_classad(filepath: pathlib.Path) -> HTCondorJobClassAd:

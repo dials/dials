@@ -4,7 +4,6 @@ import http.client
 import json
 import os
 import select
-import socket as pysocket
 import sys
 import urllib.error
 import urllib.parse
@@ -158,7 +157,7 @@ def stop(host, port, nproc):
                 stopped = stopped + 1
             else:
                 print("socket returned code", socket.getcode())
-        except (pysocket.timeout, urllib.error.HTTPError) as e:
+        except (TimeoutError, urllib.error.HTTPError) as e:
             print("error on stopping server:", e)
         except urllib.error.URLError as e:
             if e.reason.errno != 111:
