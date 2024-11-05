@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 4 -*-
 
 # Running bootstrap requires a minimum Python version of 2.7.
 
@@ -7,6 +8,7 @@
 # or
 # curl https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py > bootstrap.py
 
+from __future__ import absolute_import, division, print_function
 
 import argparse
 import multiprocessing.pool
@@ -68,12 +70,12 @@ def _run_conda_retry(command_list):
             )
         except Exception:
             print(
-                f"""
+                """
 *******************************************************************************
 There was a failure in constructing the conda environment.
-Attempt {retry} of 5 will start {retry} minute(s) from {time.asctime()}.
+Attempt {retry} of 5 will start {retry} minute(s) from {t}.
 *******************************************************************************
-"""
+""".format(retry=retry, t=time.asctime())
             )
             time.sleep(retry * 60)
         else:
@@ -108,11 +110,11 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
-    url = f"https://micromamba.snakepit.net/api/micromamba/{conda_arch}/latest"
+    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
-    print(f"Downloading {url}:", end=" ")
+    print("Downloading {url}:".format(url=url), end=" ")
     result = download_to_file(url, os.path.join(mamba_prefix, "micromamba.tar.bz2"))
     if result in (0, -1):
         sys.exit("Micromamba download failed")
@@ -131,15 +133,17 @@ def install_micromamba(python, cmake):
     # Identify packages required for environment
     env_dir = os.path.join("modules", "dials", ".conda-envs")
     # First, check to see if we have an architecture-and-python-specific environment file
-    filename = os.path.join(env_dir, f"{conda_arch}_py{python}.txt")
+    filename = os.path.join(env_dir, "{0}_py{1}.txt".format(conda_arch, python))
     if not os.path.isfile(filename):
         # Otherwise, check if we have an architecture-specific environment file
-        filename = os.path.join(env_dir, f"{conda_arch}.txt")
+        filename = os.path.join(env_dir, "{0}.txt".format(conda_arch))
     if not os.path.isfile(filename):
         # Otherwise, use the platform-specific fallback
         filename = os.path.join(env_dir, conda_platform + ".txt")
     if not os.path.isfile(filename):
-        raise RuntimeError(f"The environment file {filename} is not available")
+        raise RuntimeError(
+            "The environment file {filename} is not available".format(filename=filename)
+        )
 
     # install a new environment or update an existing one
     prefix = os.path.realpath("conda_base")
@@ -189,7 +193,11 @@ def install_micromamba(python, cmake):
             command_list.extend(extra_deps)
             extra_deps = []
 
-    print(f"{text_messages[0]} dials environment from {filename} with Python {python}")
+    print(
+        "{text} dials environment from {filename} with Python {python}".format(
+            text=text_messages[0], filename=filename, python=python
+        )
+    )
 
     _run_conda_retry(command_list)
     # If we wanted extra dependencies, and couldn't install them directly, run again
@@ -211,7 +219,7 @@ def install_micromamba(python, cmake):
         ] + extra_deps
         _run_conda_retry(command_list)
 
-    print(f"Completed {text_messages[1]}:\n  {prefix}")
+    print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
     with open(os.path.join(prefix, ".condarc"), "w") as fh:
         fh.write(
             """
@@ -321,7 +329,7 @@ def download_to_file(url, file, quiet=False):
             return -2
         # otherwise pass on the error message
         raise
-    except (TimeoutError, HTTPError) as e:
+    except (pysocket.timeout, HTTPError) as e:
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
@@ -481,7 +489,7 @@ def unzip(archive, directory, trim_directory=0):
 
 
 def set_git_repository_config_to_rebase(config):
-    with open(config) as fh:
+    with open(config, "r") as fh:
         cfg = fh.readlines()
 
     branch, remote, rebase = False, False, False
@@ -521,7 +529,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
         if not git_available:
             return module, "WARNING", "Cannot update module, git command not found"
 
-        with open(os.path.join(destination, ".git", "HEAD")) as fh:
+        with open(os.path.join(destination, ".git", "HEAD"), "r") as fh:
             if fh.read(4) != "ref:":
                 return (
                     module,
