@@ -80,7 +80,7 @@ class absolute_path:
 
 
 def plainlify(thing):
-    if isinstance(thing, (str, int, float, complex)):
+    if isinstance(thing, str | int | float | complex):
         return thing
     if thing in (None, True, False):
         return thing

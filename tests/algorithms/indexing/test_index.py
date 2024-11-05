@@ -288,7 +288,9 @@ def test_index_imosflm_tutorial(
     ]
     if specify_unit_cell:
         extra_args.append(
-            'known_symmetry.unit_cell="%s %s %s %s %s %s"' % unit_cell.parameters()
+            'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+                *unit_cell.parameters()
+            )
         )
 
     expected_unit_cell = unit_cell
@@ -342,8 +344,9 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmp_path, method):
     expected_hall_symbol = " I 2 2 3"
     expected_rmsds = (0.05, 0.06, 0.01)
     extra_args = [
-        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
-        % expected_unit_cell.parameters(),
+        'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+            *expected_unit_cell.parameters()
+        ),
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
         "treat_single_image_as_still=False",
@@ -399,8 +402,9 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method
 
     extra_args = [
         "stills.indexer=stills",
-        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
-        % expected_unit_cell.parameters(),
+        'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+            *expected_unit_cell.parameters()
+        ),
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
     ]

@@ -401,8 +401,7 @@ class _:
         except KeyError as e:
             logger.error(e, exc_info=True)
             raise KeyError(
-                "Unable to find %s, %s in reflection table"
-                % (
+                "Unable to find {}, {} in reflection table".format(
                     "intensity." + intensity + ".value",
                     "intensity." + intensity + ".variance",
                 )
@@ -1176,11 +1175,10 @@ class _:
                 id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
             logger.warning(
-                """Not all requested identifiers
+                f"""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested %s:
-Found %s"""
-                % (list_of_identifiers, id_values)
+Requested {list_of_identifiers}:
+Found {id_values}"""
             )
         # Build up a selection and use this
         sel = cctbx.array_family.flex.bool(self.size(), False)
@@ -1210,11 +1208,10 @@ Found %s"""
                 id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
             logger.warning(
-                """Not all requested identifiers
+                f"""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested %s:
-Found %s"""
-                % (list_of_identifiers, id_values)
+Requested {list_of_identifiers}:
+Found {id_values}"""
             )
         # Now delete the selections, also removing the entry from the map
         for id_val in id_values:

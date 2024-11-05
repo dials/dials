@@ -925,16 +925,14 @@ class ResolutionPlotsAndStats:
                 row.append(f"{r_split_vals[i]:.3f}")
             if cc_half_method == "sigma_tau":
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half_sigma_tau,
                         "*" if bin_stats.cc_one_half_sigma_tau_significance else "",
                     )
                 )
             else:
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half,
                         "*" if bin_stats.cc_one_half_significance else "",
                     )
@@ -942,8 +940,9 @@ class ResolutionPlotsAndStats:
 
             if not self.is_centric:
                 row.append(
-                    "%.3f%s"
-                    % (bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else "")
+                    "{:.3f}{}".format(
+                        bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else ""
+                    )
                 )
             rows.append(row)
 

@@ -654,8 +654,7 @@ def filter_unsuitable_reflections_stills(
 
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     return Ih_table
 
@@ -694,8 +693,7 @@ def filter_unsuitable_reflections(
     n = Ih_table.size
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     n_h = Ih_table.calc_nh()
     # now make sure any left also have n > 1
@@ -727,7 +725,6 @@ def filter_unsuitable_reflections(
     n = Ih_table.size
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     return Ih_table

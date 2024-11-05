@@ -48,8 +48,9 @@ def response_to_xml(d):
             response = "\n".join(
                 [
                     response,
-                    "<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>"
-                    % (crystal.get_unit_cell().parameters()),
+                    "<unit_cell>{:.6g} {:.6g} {:.6g} {:.6g} {:.6g} {:.6g}</unit_cell>".format(
+                        *crystal.get_unit_cell().parameters()
+                    ),
                 ]
             )
         response = "\n".join(

@@ -120,7 +120,7 @@ any systematic grouping of points may suggest a preferential crystal orientation
 """
             % hkl
         )
-        key = "stereo_%s%s%s" % hkl
+        key = "stereo_{}{}{}".format(*hkl)
         orientation_graphs[key] = d
     return orientation_graphs
 

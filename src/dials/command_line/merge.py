@@ -213,8 +213,7 @@ def merge_data_to_mtz(
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavlength: %.5f, experiment numbers: %s "
-                % (
+                "  Wavlength: {:.5f}, experiment numbers: {} ".format(
                     v.weighted_mean,
                     ",".join(
                         map(str, [identifiers_list.index(i) for i in v.identifiers])

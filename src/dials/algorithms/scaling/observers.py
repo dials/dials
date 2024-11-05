@@ -72,8 +72,7 @@ def assert_is_json_serialisable(thing, name, path=None):
             json.dumps(thing)
         except TypeError as e:
             raise TypeError(
-                "JSON serialisation error '%s' for value '%s' type %s in %s%s"
-                % (
+                "JSON serialisation error '{}' for value '{}' type {} in {}{}".format(
                     e,
                     str(thing),
                     type(thing),
@@ -104,12 +103,7 @@ def print_scaling_summary(script):
         if valid:
             if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                 msg.append(
-                    "Excluded images for experiment id: %s, image range: %s, limited range: %s"
-                    % (
-                        refl.experiment_identifiers().keys()[0],
-                        list(img),
-                        list(valid),
-                    )
+                    f"Excluded images for experiment id: {refl.experiment_identifiers().keys()[0]}, image range: {list(img)}, limited range: {list(valid)}"
                 )
     if msg:
         msg = ["Summary of image ranges removed:"] + msg

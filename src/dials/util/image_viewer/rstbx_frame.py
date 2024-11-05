@@ -467,8 +467,7 @@ class LinePlot(wxtbx.plots.plot_container):
         ax.set_ylabel("Intensity")
         if line.lattice_length is not None:
             ax.set_title(
-                "Line distance = %.2fmm; avg. lattice length = %.2f Angstrom"
-                % (line.distance, line.lattice_length)
+                f"Line distance = {line.distance:.2f}mm; avg. lattice length = {line.lattice_length:.2f} Angstrom"
             )
         else:
             ax.set_title(f"Line distance: {line.distance:.2f}mm")

@@ -126,11 +126,10 @@ nproc = Auto
 
 
 phil_scope = iotbx.phil.parse(
-    """\
-%s
-%s
-"""
-    % (cosym_scope, symmetry_analysis_phil),
+    f"""\
+{cosym_scope}
+{symmetry_analysis_phil}
+""",
     process_includes=True,
 )
 

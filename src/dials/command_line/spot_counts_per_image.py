@@ -108,13 +108,11 @@ def run(args=None):
         ("d_min", f"{overall_stats.estimated_d_min:.2f}"),
         (
             "d_min (distl method 1)",
-            "%.2f (%.2f)"
-            % (overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1),
+            f"{overall_stats.d_min_distl_method_1:.2f} ({overall_stats.noisiness_method_1:.2f})",
         ),
         (
             "d_min (distl method 2)",
-            "%.2f (%.2f)"
-            % (overall_stats.d_min_distl_method_2, overall_stats.noisiness_method_2),
+            f"{overall_stats.d_min_distl_method_2:.2f} ({overall_stats.noisiness_method_2:.2f})",
         ),
     ]
     print(tabulate(rows, headers="firstrow"))

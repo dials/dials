@@ -850,7 +850,7 @@ class Indexer:
                 logger.info(R_ab)
                 logger.info(
                     f"Rotation of {angle:.3f} degrees"
-                    + " about axis (%.3f, %.3f, %.3f)" % axis
+                    + " about axis ({:.3f}, {:.3f}, {:.3f})".format(*axis)
                 )
                 have_similar_crystal_models = True
                 for id_ in sorted(models_to_reject, reverse=True):

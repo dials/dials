@@ -685,7 +685,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
 
         """
         # Initialise the super class
-        super(FisherScoringMaximumLikelihood, self).__init__(
+        super().__init__(
             model.active_parameters,
             max_iter=max_iter,
             tolerance=tolerance,
@@ -875,7 +875,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
                     "",
                     "  R.M.S.D (local) = %.5g" % sqrt(mse),
                     "",
-                    "  R.M.S.D (pixel): X = %.3f, Y = %.3f" % tuple(rmsd),
+                    "  R.M.S.D (pixel): X = {:.3f}, Y = {:.3f}".format(*tuple(rmsd)),
                 ]
             )
         )
@@ -1083,9 +1083,7 @@ class RefinerData:
 
         # Print some information
         logger.info("")
-        logger.info(
-            "I_min = %.2f, I_max = %.2f" % (np.min(ctot_list), np.max(ctot_list))
-        )
+        logger.info(f"I_min = {np.min(ctot_list):.2f}, I_max = {np.max(ctot_list):.2f}")
 
         # Sometimes a single reflection might have an enormouse intensity for
         # whatever reason and since we weight by intensity, this can cause the
@@ -1227,7 +1225,7 @@ def print_matrix_np(A, fmt="%.3g", indent=0):
         line = ""
         for i in range(A.shape[1]):
             line += fmt % t[i + j * A.shape[1]]
-        lines.append("%s|%s|" % (prefix, line))
+        lines.append(f"{prefix}|{line}|")
     return "\n".join(lines)
 
 
@@ -1246,5 +1244,5 @@ def print_matrix(A, fmt="%.3g", indent=0):
         line = ""
         for i in range(A.n[1]):
             line += fmt % t[i + j * A.n[1]]
-        lines.append("%s|%s|" % (prefix, line))
+        lines.append(f"{prefix}|{line}|")
     return "\n".join(lines)

@@ -616,8 +616,7 @@ def export_mtz(
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavelength: %.5f, experiment numbers: %s "
-                % (
+                "  Wavelength: {:.5f}, experiment numbers: {} ".format(
                     v.weighted_mean,
                     ",".join(
                         map(str, [identifiers_list.index(i) for i in v.identifiers])
@@ -721,7 +720,7 @@ def export_mtz(
         experiment.data = dict(reflections)
 
         s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
-        logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
+        logger.debug("Beam vector: {:.4f} {:.4f} {:.4f}".format(*s0n))
 
         add_batch_list(
             mtz,

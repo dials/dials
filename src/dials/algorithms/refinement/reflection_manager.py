@@ -34,8 +34,7 @@ DEG2RAD = math.pi / 180.0
 
 # PHIL
 format_data = {"outlier_phil": outlier_phil_str}
-phil_str = (
-    """
+phil_str = """
     reflections_per_degree = Auto
       .help = "The number of centroids per degree of the sequence to use in"
               "refinement. The default (Auto) uses all reflections unless"
@@ -88,7 +87,7 @@ phil_str = (
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
       .expert_level = 1
-    {
+    {{
       override = statistical stills constant external_deltapsi
         .help = "selection of a strategy to override default weighting behaviour"
         .type = choice
@@ -108,12 +107,10 @@ phil_str = (
         .help = "Weight for the wavelength term in the target function for"
                 "Laue refinement"
         .type = float(value_min = 0)
-    }
+    }}
 
-    %(outlier_phil)s
-"""
-    % format_data
-)
+    {outlier_phil}
+""".format(**format_data)
 phil_scope = parse(phil_str)
 
 

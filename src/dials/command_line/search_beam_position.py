@@ -446,18 +446,20 @@ def discover_better_experimental_model(
     new_beam_centre_px = new_detector[new_panel].millimeter_to_pixel(new_beam_centre)
 
     logger.info(
-        "Old beam centre: %.2f, %.2f mm" % old_beam_centre
-        + " (%.1f, %.1f px)" % old_beam_centre_px
+        "Old beam centre: {:.2f}, {:.2f} mm".format(*old_beam_centre)
+        + " ({:.1f}, {:.1f} px)".format(*old_beam_centre_px)
     )
     logger.info(
-        "New beam centre: %.2f, %.2f mm" % new_beam_centre
-        + " (%.1f, %.1f px)" % new_beam_centre_px
+        "New beam centre: {:.2f}, {:.2f} mm".format(*new_beam_centre)
+        + " ({:.1f}, {:.1f} px)".format(*new_beam_centre_px)
     )
     logger.info(
-        "Shift: %.2f, %.2f mm"
-        % (matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
-        + " (%.1f, %.1f px)"
-        % (matrix.col(old_beam_centre_px) - matrix.col(new_beam_centre_px)).elems
+        "Shift: {:.2f}, {:.2f} mm".format(
+            *(matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
+        )
+        + " ({:.1f}, {:.1f} px)".format(
+            *(matrix.col(old_beam_centre_px) - matrix.col(new_beam_centre_px)).elems
+        )
     )
     return new_experiments
 
