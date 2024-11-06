@@ -261,9 +261,7 @@ class SpotFrame(XrayFrame):
                 break
         for experiment_list in self.experiments:
             if not all(
-                exp.scan
-                and exp.scan.has_property("oscillation")
-                and exp.scan.get_oscillation()[1] == 0.0
+                exp.scan and (exp.scan.get_oscillation()[1] == 0.0)
                 for exp in experiment_list
             ):
                 self.viewing_still_scans = False

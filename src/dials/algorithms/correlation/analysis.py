@@ -21,9 +21,10 @@ from dials.algorithms.correlation.cluster import ClusterInfo
 from dials.algorithms.correlation.plots import (
     linkage_matrix_to_dict,
     plot_dims,
+    plot_reachability,
     to_plotly_json,
 )
-from dials.algorithms.symmetry.cosym import CosymAnalysis
+from dials.algorithms.symmetry.cosym import CosymAnalysis, cosym_scope
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.array_family.flex import reflection_table
 from dials.util import tabulate
@@ -39,15 +40,7 @@ partiality_threshold = 0.4
   .type = float(value_min=0, value_max=1)
   .help = "Use reflections with a partiality greater than the threshold."
 
-include scope dials.algorithms.symmetry.cosym.phil_scope
-
-relative_length_tolerance = 0.05
-  .type = float(value_min=0)
-  .help = "Datasets are only accepted if unit cell lengths fall within this relative tolerance of the median cell lengths."
-
-absolute_angle_tolerance = 2
-  .type = float(value_min=0)
-  .help = "Datasets are only accepted if unit cell angles fall within this absolute tolerance of the median cell angles."
+%s
 
 dimensionality_assessment {
   outlier_rejection = True
@@ -59,14 +52,15 @@ dimensionality_assessment {
 }
 
 significant_clusters {
-  output = False
-    .type = bool
-    .help = "Toggle to output expt/refl files for significant clusters as determined by OPTICS clustering on cosine angle coordinates"
   min_points_buffer = 0.5
     .type = float(value_min=0, value_max=1)
     .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
+  xi = 0.05
+    .type = float(value_min=0, value_max=1)
+    .help = "xi parameter to determine min steepness to define cluster boundary"
 }
-""",
+"""
+    % cosym_scope,
     process_includes=True,
 )
 phil_overrides = phil_scope.fetch(
@@ -148,8 +142,10 @@ class CorrelationMatrix:
 
         # Set required params for cosym to skip symmetry determination and reduce dimensions
 
-        self.params.lattice_group = self.datasets[0].space_group_info()
-        self.params.space_group = self.datasets[0].space_group_info()
+        self.params.__inject__("lattice_group", self.datasets[0].space_group_info())
+        self.params.__inject__("space_group", self.datasets[0].space_group_info())
+        self.params.__inject__("lattice_symmetry_max_delta", 0.0)
+        self.params.__inject__("best_monoclinic_beta", True)
 
         # If dimensions are optimised for clustering, need cc_weights=sigma
         # Otherwise results end up being nonsensical even for high-quality data
@@ -271,13 +267,6 @@ class CorrelationMatrix:
         logger.info("\nEvaluating Significant Clusters from Cosine-Angle Coordinates:")
         self.cluster_cosine_coords()
 
-        if self.params.significant_clusters.output:
-            self.output_clusters()
-        else:
-            logger.info(
-                "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
-            )
-
     @staticmethod
     def compute_correlation_coefficient_matrix(
         correlation_matrix: np.ndarray,
@@ -374,11 +363,18 @@ class CorrelationMatrix:
 
         # Fit OPTICS model and determine number of clusters
 
-        optics_model = OPTICS(min_samples=min_points)
+        optics_model = OPTICS(
+            min_samples=min_points, xi=self.params.significant_clusters.xi
+        )
 
         optics_model.fit(self.cosym_analysis.coords)
 
         self.cluster_labels = optics_model.labels_
+
+        # Reachability plot data
+
+        self.optics_reachability = optics_model.reachability_[optics_model.ordering_]
+        self.optics_reachability_labels = optics_model.labels_[optics_model.ordering_]
 
         # Match each dataset to an OPTICS cluster and make them Cluster Objects
 
@@ -503,6 +499,14 @@ class CorrelationMatrix:
                     self._dimension_optimisation_data["functional"],
                 )
             )
+
+        self.rij_graphs.update(
+            plot_reachability(
+                np.arange(len(self.optics_reachability)),
+                self.optics_reachability,
+                self.optics_reachability_labels,
+            )
+        )
 
         dim_list = list(range(0, self.cosym_analysis.target.dim))
 

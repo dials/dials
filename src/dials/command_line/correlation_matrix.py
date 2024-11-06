@@ -36,6 +36,11 @@ output {
     .type = str
     .help = "Filename for the cluster information output in json format"
 }
+significant_clusters {
+  output = False
+    .type = bool
+    .help = "Toggle to output expt/refl files for significant clusters as determined by OPTICS clustering on cosine angle coordinates"
+}
 """,
     process_includes=True,
 )
@@ -113,6 +118,13 @@ def run(args=None):
         sys.exit(e)
 
     matrices.calculate_matrices()
+
+    if params.significant_clusters.output:
+        matrices.output_clusters()
+    else:
+        logger.info(
+            "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
+        )
 
     if params.output.json:
         matrices.output_json()
