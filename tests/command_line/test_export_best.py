@@ -5,48 +5,12 @@ import subprocess
 
 
 def test_export_best(dials_data, tmp_path):
+    # make sure the raw image data is available as it is required for export_best
+    _ = dials_data("insulin")
+    integrated_expt = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
+    integrated_refl = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
     result = subprocess.run(
-        [
-            shutil.which("dials.import"),
-            "template="
-            + str(dials_data("centroid_test_data", pathlib=True) / "centroid_####.cbf"),
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-    result = subprocess.run(
-        [shutil.which("dials.find_spots"), "imported.expt", "nproc=1"],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-    result = subprocess.run(
-        [
-            shutil.which("dials.index"),
-            "imported.expt",
-            "strong.refl",
-            "space_group=P422",
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-    result = subprocess.run(
-        [
-            shutil.which("dials.integrate"),
-            "nproc=1",
-            "indexed.expt",
-            "indexed.refl",
-            "prediction.padding=0",
-            "sigma_m_algorithm=basic",
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-    result = subprocess.run(
-        [shutil.which("dials.export_best"), "integrated.expt", "integrated.refl"],
+        [shutil.which("dials.export_best"), integrated_expt, integrated_refl],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -61,16 +25,16 @@ def test_export_best(dials_data, tmp_path):
     assert (
         lines
         == """\
-  181.8877       0.77       1.60
-   63.1895       1.59       1.81
-   38.2372       1.87       1.71
-   27.4131       1.84       1.55
-   21.3655       1.89       1.51
-   17.5043       1.88       1.49
-   14.8254       1.89       1.45
-   12.8580       1.91       1.45
-   11.3518       1.89       1.42
-   10.1617       1.87       1.41
+  270.0172       8.91      10.06
+   92.2098      15.00       9.17
+   55.5986      17.71       7.67
+   39.7977      28.05      15.20
+   30.9906      71.74      28.53
+   25.3755     146.49      49.59
+   21.4832     200.23      52.15
+   18.6264     216.27      51.17
+   16.4404     226.93      50.73
+   14.7137     234.22      49.41
 """
     )
 
@@ -79,16 +43,16 @@ def test_export_best(dials_data, tmp_path):
     assert (
         lines
         == """\
- -20   27   -8      20.17      20.00
- -20   27   -7      74.13      21.59
- -20   27   -6      22.34      19.57
- -20   27   -5       6.33      19.72
- -20   28  -10      19.77      18.77
- -20   28   -9      50.37      20.28
- -20   28   -7      69.23      21.42
- -20   28   -6      24.42      19.56
- -20   28   -4     -10.35      19.51
- -20   28   -2      47.53      20.49
+ -43  -17   28    1971.02     101.36
+ -43  -16   27    1489.20     141.01
+ -43  -15   26     589.66     173.22
+ -43  -15   28    1161.59     142.63
+ -43  -14   23     -19.91     100.28
+ -43  -14   25     -71.86     140.74
+ -43  -14   27    -345.97     174.45
+ -43  -14   29      -5.58     141.07
+ -43  -13   22    -191.52     141.15
+ -43  -13   24    -172.19     172.15
 """
     )
 
@@ -100,25 +64,25 @@ def test_export_best(dials_data, tmp_path):
 TITLE          From DIALS
 DETECTOR       PILA
 SITE           Not set
-DIAMETER       434.64
-PIXEL          0.172
-ROTAXIS        0.01 0.00 1.00 FAST
+DIAMETER       188.01
+PIXEL          0.0816
+ROTAXIS        0.00 0.00 1.00 FAST
 POLAXIS        0.00 1.00 0.00
 GAIN               1.00
-CMOSAIC            0.54
+CMOSAIC            0.35
 PHISTART           0.00
-PHIWIDTH           0.20
-DISTANCE         191.09
-WAVELENGTH      0.97950
+PHIWIDTH           1.00
+DISTANCE         158.71
+WAVELENGTH      0.97900
 POLARISATION    0.99900
-SYMMETRY       P422
-UB             -0.012248 -0.020067  0.003152
-               -0.005029 -0.000351 -0.024623
-                0.019651 -0.012597 -0.004336
-CELL              42.20    42.20    39.68  90.00  90.00  90.00
+SYMMETRY       I23
+UB              0.001789 -0.007488 -0.010232
+                0.001789  0.010379 -0.007283
+                0.012553 -0.000412  0.002496
+CELL              78.09    78.09    78.09  90.00  90.00  90.00
 RASTER           7 7 5 3 3
-SEPARATION      0.665  0.665
-BEAM            219.875  212.612
+SEPARATION      0.448  0.448
+BEAM             94.415   94.513
 # end of parameter file for BEST
 """
     )
