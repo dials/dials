@@ -1,0 +1,16 @@
+add_library(
+    dx2
+    empty.cxx
+)
+target_link_libraries(
+    dx2
+    PRIVATE
+    nlohmann_json::nlohmann_json
+    hdf5::hdf5
+)
+
+target_include_directories(
+    dx2 PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
