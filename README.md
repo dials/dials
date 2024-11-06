@@ -26,7 +26,15 @@ via your preferred build tool).
 
 ## Using dx2 from other projects
 
-### Option 1: As a subdirectory/submodule
+### Option 1: Already installed into the environment
+
+In which case the normal CMake package finding should work:
+
+```cmake
+find_package(DX2)
+```
+
+### Option 2: As a subdirectory/submodule
 
 If you want to integrate dx2 development into your current project, you can
 check dx2 out into a subfolder (or submodule) of your build, and include it with:
@@ -35,7 +43,7 @@ check dx2 out into a subfolder (or submodule) of your build, and include it with
 add_subdirectory(path/to/dx2)
 ```
 
-### Option 2: Automatically use with FetchContent
+### Option 3: Automatically use with FetchContent
 
 If you don't need to develop dx2 but just want to use it, you can get CMake to
 automatically download and include it in your project with:
