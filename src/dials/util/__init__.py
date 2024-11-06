@@ -165,7 +165,7 @@ def show_mail_on_error():
     try:
         yield
     except Exception as e:
-        text = "Please report this error to dials-support@lists.sourceforge.net:"
+        text = "Please report this error at https://github.com/dials/dials/issues:"
         if issubclass(e.__class__, Sorry):
             raise
 
