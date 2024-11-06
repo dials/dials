@@ -5,6 +5,7 @@
 - Ensure you have an environment with CMake and compilers available
 - Dependencies:
     - HDF5 (Required)
+    - [Eigen](https://eigen.tuxfamily.org/) (Optional, downloaded if missing)
     - [nlohmann/json](https://github.com/nlohmann/json) (Optional, downloaded if missing)
     - [{fmt}](https://github.com/fmtlib/fmt) (Optional, downloaded if missing)
     - [GoogleTest](https://github.com/google/googletest) (Optional, downloaded if missing)

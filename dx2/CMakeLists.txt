@@ -5,6 +5,7 @@ add_library(
 target_link_libraries(
     dx2
     PRIVATE
+    Eigen3::Eigen
     nlohmann_json::nlohmann_json
     hdf5::hdf5
 )

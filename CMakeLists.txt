@@ -44,7 +44,14 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
     FIND_PACKAGE_ARGS
 )
-FetchContent_MakeAvailable(fmt nlohmann_json)
+FetchContent_Declare(
+    Eigen3
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG 3.4.0
+    EXCLUDE_FROM_ALL
+    FIND_PACKAGE_ARGS
+)
+FetchContent_MakeAvailable(Eigen3 fmt nlohmann_json)
 
 # GTest could have been made available under a different name
 if(NOT TARGET GTest::gtest_main)
