@@ -14,13 +14,13 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
 
-  class CreateEllipticalDistortionMaps {
+  class PlaneLinearTransformationMaps {
   public:
-    CreateEllipticalDistortionMaps(const Panel &panel,
-                                   const mat2<double> ellipse_matrix,
-                                   const vec3<double> fast,
-                                   const vec3<double> slow,
-                                   const vec3<double> mid) {
+    PlaneLinearTransformationMaps(const Panel &panel,
+                                  const mat2<double> matrix,
+                                  const vec3<double> fast,
+                                  const vec3<double> slow,
+                                  const vec3<double> mid) {
       std::size_t xsize = panel.get_image_size()[0];
       std::size_t ysize = panel.get_image_size()[1];
       dx_.resize(scitbx::af::c_grid<2>(ysize, xsize));
@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
           double x = offset * fast;  // undistorted X coordinate (mm)
           double y = offset * slow;  // undistorted Y coordinate (mm)
           vec2<double> distort =
-            ellipse_matrix * vec2<double>(x, y);  // distorted by ellipse matrix
+            matrix * vec2<double>(x, y);  // distorted by transformation matrix
 
           // store correction in units of the pixel size
           dx_(j, i) = (x - distort[0]) / panel.get_pixel_size()[0];
