@@ -40,10 +40,11 @@ def project(image, axis="x", method="max", convolution_width=1,
         profile = smooth(profile, width=convolution_width)
 
     max_value = profile.max()
+    min_value = profile.min()
     if normalize:
         profile = norm(profile)
 
-    return profile, max_value
+    return profile, max_value, min_value
 
 
 def convert_range_into_spans(exclude_range):

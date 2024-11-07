@@ -42,13 +42,14 @@ class MidpointMethodSolver:
 
         clean_image = remove_pixels_by_intensity(image, percent=percent)
 
-        profile, max_value = project(clean_image, axis=axis, method='average',
-                                     exclude_range=exclude_range,
-                                     convolution_width=cw)
+        profile, pmax, pmin = project(clean_image, axis=axis, method='average',
+                                      exclude_range=exclude_range,
+                                      convolution_width=cw)
 
         self.params = params
         self.profile = profile
-        self.max_value = max_value
+        self.max_value = pmax
+        self.min_value = pmin
         self.dead_range = dead_range
 
     def find_beam_position(self):
@@ -100,6 +101,13 @@ class MidpointMethodSolver:
             ax.axvline(self.beam_position, c='C3', lw=1)
             ax.plot(indices, self.profile, lw=1, c='gray',
                     label='avg. projection')
+            ax.axhline(0, lw=0.7, c='blue', ls=(1, (2, 2)))
+            ax.axhline(1, lw=0.7, c='blue', ls=(1, (2, 2)))
+
+            ax.text(0.97, 0.85, f"{self.max_value:0.2f}", c='blue', ha='right',
+                    transform=ax.transAxes, fontsize=6)
+            ax.text(0.97, 0.09, f"{self.min_value:0.2f}", c='blue', ha='right',
+                    transform=ax.transAxes, fontsize=6)
 
             plot_dead_pixel_ranges(ax, self.params, axis='x')
 
@@ -107,11 +115,8 @@ class MidpointMethodSolver:
                 x_vals = [m.x for m in midpoint_group]
                 y_vals = [m.y for m in midpoint_group]
                 ax.plot(x_vals, y_vals, marker='o', ms=1, lw=0)
-            ax.text(0.01, 0.95, 'method: midpoint', va='top', ha='left',
-                    transform=ax.transAxes, fontsize=8)
-            label = 'Imax = %.0f' % self.max_value
-            ax.text(0.01, 0.75, label, va='top', ha='left',
-                    transform=ax.transAxes, fontsize=8)
+            ax.text(0.01, 0.93, 'method: midpoint', va='top', ha='left',
+                    transform=ax.transAxes, fontsize=7)
             ax.legend(loc=(0.6, 0.7), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=2.0, handleheight=0.7, frameon=False)
@@ -128,15 +133,22 @@ class MidpointMethodSolver:
                 y_vals = [m.x for m in midpoint_group]
                 x_vals = [m.y for m in midpoint_group]
                 ax.plot(x_vals, y_vals, marker='o', ms=1, lw=0)
-            ax.text(0.95, 0.99, 'method: midpoint', va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=8)
-            label = 'Imax = %.0f' % self.max_value
-            ax.text(0.75, 0.99, label, va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=8)
+            ax.text(0.93, 0.99, 'method: midpoint', va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=7)
 
             ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=1.5, handleheight=0.4, frameon=False)
+
+            ax.axvline(0, lw=0.7, c='blue', ls=(1, (2, 2)))
+            ax.axvline(1, lw=0.7, c='blue', ls=(1, (2, 2)))
+
+            ax.text(0.84, 0.02, f"{self.max_value:0.2f}", c='blue',
+                    va='bottom',
+                    transform=ax.transAxes, fontsize=6, rotation=-90)
+            ax.text(0.08, 0.02, f"{self.min_value:0.2f}", c='blue',
+                    va='bottom', transform=ax.transAxes, fontsize=6,
+                    rotation=-90)
 
         else:
             raise ValueError(f"Unknown axis: {self.axis}")

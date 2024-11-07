@@ -27,14 +27,14 @@ class InversionMethodSolver:
         if background_cutoff:
             clean_image[clean_image < background_cutoff] = 0.0
 
-        profile_max, max_from_max = project(clean_image, axis=axis,
-                                            method='max',
-                                            exclude_range=exclude_range,
-                                            convolution_width=1,
-                                            normalize=False)
+        profile_max, pmax, pmin = project(clean_image, axis=axis, method='max',
+                                          exclude_range=exclude_range,
+                                          convolution_width=1, normalize=False)
+
         self.params = params
         self.profile_max = profile_max
-        self.max_value = max_from_max
+        self.max_value = pmax
+        self.min_value = pmin
 
     def find_beam_position(self):
 
@@ -77,7 +77,6 @@ class InversionMethodSolver:
 
         if self.axis == 'x':
             ax = figure.axis_x
-            ax.axvline(self.beam_position, c='C3', lw=1)
             ax.plot(indices, self.profile_max, lw=1, c='gray',
                     label='max. projection')
 
@@ -85,18 +84,19 @@ class InversionMethodSolver:
                     label='invert and sum')
 
             ax.text(0.01, 0.95, 'method: inversion', va='top', ha='left',
-                    transform=ax.transAxes, fontsize=8)
-            label = 'Imax = %.0f' % self.max_value
-            ax.text(0.01, 0.75, label, va='top', ha='left',
-                    transform=ax.transAxes, fontsize=8)
+                    transform=ax.transAxes, fontsize=7)
+            label = (f"min, max ={self.min_value:>6.0f}, "
+                     f"{self.max_value:>6.0f}")
+            ax.text(0.01, 0.78, label, va='top', ha='left', c='gray',
+                    transform=ax.transAxes, fontsize=5)
             ax.legend(loc=(0.6, 0.7), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=2.0, handleheight=0.7, frameon=False)
+            ax.axvline(self.beam_position, c='C3', lw=1)
 
         elif self.axis == 'y':
 
             ax = figure.axis_y
-            ax.axhline(self.beam_position, c='C3', lw=1)
             ax.plot(self.profile_max, indices, lw=1, c='gray',
                     label='max. projection')
 
@@ -104,14 +104,16 @@ class InversionMethodSolver:
                     label='invert and sum')
 
             ax.text(0.95, 0.99, 'method: inversion', va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=8)
-            label = 'Imax = %.0f' % self.max_value
-            ax.text(0.75, 0.99, label, va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=8)
+                    transform=ax.transAxes, rotation=-90, fontsize=7)
+            label = (f"min, max ={self.min_value:>6.0f}, "
+                     f"{self.max_value:>6.0f}")
+            ax.text(0.78, 0.99, label, va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=5)
             ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4,
                       fontsize=7, handlelength=1.5, handleheight=0.7,
                       frameon=False)
+            ax.axhline(self.beam_position, c='C3', lw=1)
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
 

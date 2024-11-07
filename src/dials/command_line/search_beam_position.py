@@ -768,6 +768,8 @@ def run(args=None):
         selected_sets = [imagesets[i] for i in selected_set_indices]
         num_imagesets = len(selected_sets)
 
+        json_output = []
+
         for set_run_index in range(num_imagesets):
 
             set_index = selected_set_indices[set_run_index]
@@ -783,7 +785,6 @@ def run(args=None):
 
             if params.projection.per_image:
 
-                json_output = []
 
                 for image_run_index in range(num_selected_images):
 
@@ -807,8 +808,6 @@ def run(args=None):
                                        n_images=num_selected_images,
                                        set_index=set_run_index,
                                        n_sets=num_imagesets, x=x, y=y)
-                with open('beam_positions.json', 'w') as json_file:
-                    json.dump(json_output, json_file, indent=4)
             else:
                 save_img = params.projection.save_average_image
                 load_img = params.projection.load_average_image
@@ -845,8 +844,12 @@ def run(args=None):
 
                 compute_beam_position(image, params)
 
-        if params.projection.per_image and params.projection.verbose:
-            print()
+        if params.projection.per_image:
+            with open('beam_positions.json', 'w') as json_file:
+                json.dump(json_output, json_file, indent=4)
+
+            if params.projection.verbose:
+                print()
 
 
 def print_progress(image_index, n_images, set_index, n_sets, x, y,

@@ -35,7 +35,7 @@ def compute_beam_position(image, params,
         image_str = ''
 
     if imageset_index is not None:
-        imageset_str = '_set_%05d' % imageset_index
+        imageset_str = '_imageset_%05d' % imageset_index
     else:
         imageset_str = ''
 

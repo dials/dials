@@ -28,21 +28,23 @@ class MaximumMethodSolver:
         if threshold:
             clean_image[clean_image > threshold] = min_value
 
-        profile_max, max_from_max = project(clean_image, axis=axis,
-                                            method='max',
-                                            exclude_range=exclude_range,
-                                            convolution_width=1)
+        profile_max, pmax, pmin = project(clean_image, axis=axis, method='max',
+                                          exclude_range=exclude_range,
+                                          convolution_width=1)
 
-        profile_mean, max_from_mean = project(clean_image, axis=axis,
-                                              method='average',
-                                              exclude_range=exclude_range,
-                                              convolution_width=cw,
-                                              n_convolutions=nc)
+        profile_mean, pmax1, pmin1 = project(clean_image, axis=axis,
+                                             method='average',
+                                             exclude_range=exclude_range,
+                                             convolution_width=cw,
+                                             n_convolutions=nc)
 
         self.params = params
         self.profile_max = profile_max
         self.profile_mean = profile_mean
-        self.max_value = max_from_max
+        self.max_value = pmax
+        self.min_value = pmin
+        self.max_from_mean = pmax1
+        self.min_from_mean = pmin1
         self.bin_width = params.projection.maximum.bin_width
         self.bin_step = params.projection.maximum.bin_step
         self.n_convolutions = params.projection.maximum.n_convolutions
@@ -89,7 +91,13 @@ class MaximumMethodSolver:
             ax = figure.axis_x
             ax.axvspan(self.bin_start, self.bin_end, color='#BEBEBE',
                        alpha=0.5, lw=0)
-            ax.axvline(self.beam_position, c='C3', lw=1)
+
+            ax.text(0.01, 0.78, f"min, max ={self.min_value: >6.0f}, "
+                    f"{self.max_value: >6.0f}", ha='left',
+                    transform=ax.transAxes, c='gray', fontsize=5)
+            ax.text(0.01, 0.7, f"min, max ={self.min_from_mean: >6.0f}, "
+                    f"{self.max_from_mean: >6.0f}", ha='left',
+                    transform=ax.transAxes, c='C2', fontsize=5)
 
             ax.plot(indices, self.profile_max, lw=1, c='gray',
                     label='max. projection')
@@ -97,32 +105,35 @@ class MaximumMethodSolver:
                     label='avg. projection')
 
             ax.text(0.01, 0.95, 'method: maximum', va='top', ha='left',
-                    transform=ax.transAxes, fontsize=8)
-            label = 'Imax = %.0f' % self.max_value
-            ax.text(0.01, 0.75, label, va='top', ha='left',
-                    transform=ax.transAxes, fontsize=8)
+                    transform=ax.transAxes, fontsize=7)
 
             ax.legend(loc=(0.6, 0.7), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=1.5, handleheight=0.7, frameon=False)
 
+            ax.axvline(self.beam_position, c='C3', lw=1)
+
         elif self.axis == 'y':
             ax = figure.axis_y
             ax.axhspan(self.bin_start, self.bin_end, color='#BEBEBE',
                        alpha=0.5, lw=0)
-            ax.axhline(self.beam_position, c='C3', lw=1)
             ax.plot(self.profile_max, indices, lw=1, c='gray',
                     label='max. projection')
             ax.plot(self.profile_mean, indices, lw=1, c='C2',
                     label='avg. projection')
             ax.text(0.95, 0.99, 'method: maximum', va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=8)
-            label = 'Imax = %.0f' % self.max_value
-            ax.text(0.75, 0.99, label, va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=8)
+                    transform=ax.transAxes, rotation=-90, fontsize=7)
+
+            ax.text(0.0, 1.06, f"min, max ={self.min_value:>6.0f}, "
+                    f"{self.max_value:>6.0f}", va='top',
+                    transform=ax.transAxes, c='gray', fontsize=5)
+            ax.text(0.0, 1.03, f"min, max ={self.min_from_mean:>6.0f}, "
+                    f"{self.max_from_mean:>6.0f}", va='top',
+                    transform=ax.transAxes, c='C2', fontsize=5)
 
             ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=1.5, handleheight=0.7, frameon=False)
+            ax.axhline(self.beam_position, c='C3', lw=1)
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
