@@ -101,13 +101,10 @@ class MidpointMethodSolver:
             ax.axvline(self.beam_position, c='C3', lw=1)
             ax.plot(indices, self.profile, lw=1, c='gray',
                     label='avg. projection')
-            ax.axhline(0, lw=0.7, c='blue', ls=(1, (2, 2)))
-            ax.axhline(1, lw=0.7, c='blue', ls=(1, (2, 2)))
 
-            ax.text(0.97, 0.85, f"{self.max_value:0.2f}", c='blue', ha='right',
-                    transform=ax.transAxes, fontsize=6)
-            ax.text(0.97, 0.09, f"{self.min_value:0.2f}", c='blue', ha='right',
-                    transform=ax.transAxes, fontsize=6)
+            ax.text(0.01, 0.78, f"min, max ={self.min_value: >6.0f}, "
+                    f"{self.max_value: >6.0f}", ha='left',
+                    transform=ax.transAxes, c='gray', fontsize=5)
 
             plot_dead_pixel_ranges(ax, self.params, axis='x')
 
@@ -140,16 +137,10 @@ class MidpointMethodSolver:
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=1.5, handleheight=0.4, frameon=False)
 
-            ax.axvline(0, lw=0.7, c='blue', ls=(1, (2, 2)))
-            ax.axvline(1, lw=0.7, c='blue', ls=(1, (2, 2)))
-
-            ax.text(0.84, 0.02, f"{self.max_value:0.2f}", c='blue',
-                    va='bottom',
-                    transform=ax.transAxes, fontsize=6, rotation=-90)
-            ax.text(0.08, 0.02, f"{self.min_value:0.2f}", c='blue',
-                    va='bottom', transform=ax.transAxes, fontsize=6,
-                    rotation=-90)
-
+            label = (f"min, max ={self.min_value:>6.0f}, "
+                     f"{self.max_value:>6.0f}")
+            ax.text(0.78, 0.99, label, va='top', ha='right',
+                    transform=ax.transAxes, rotation=-90, fontsize=5)
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
 
