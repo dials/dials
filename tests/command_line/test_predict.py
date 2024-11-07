@@ -78,3 +78,21 @@ def test_force_static_prediction(dials_regression: Path, tmp_path):
     table = flex.reflection_table.from_file(tmp_path / "predicted.refl")
     assert len(table) == 1996
     assert plausible(table)
+
+
+def test_experiment_parameters(dials_regression: Path, tmp_path):
+    result = subprocess.run(
+        [
+            shutil.which("dials.predict"),
+            os.path.join(
+                dials_regression,
+                "prediction_test_data",
+                "experiments_scan_varying_crystal.json",
+            ),
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+
+    table = flex.reflection_table.from_file(tmp_path / "predicted.refl")
+    assert table.experiment_identifiers()
