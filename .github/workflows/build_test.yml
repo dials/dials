@@ -29,6 +29,7 @@ jobs:
         run: |
           OS="$(python -c "print('${{ runner.os }}'.lower())")"
           echo "ninja
+          flexparser<0.4
           pytest-md
           dials-data
           pytest-cov
@@ -87,6 +88,7 @@ jobs:
         run: |
           echo "pytest-md
           dials-data
+          flexparser<0.4
           pytest-cov
           pytest-timeout" >> modules/dials/.conda-envs/linux.txt
           python modules/dials/installer/bootstrap.py update base \
