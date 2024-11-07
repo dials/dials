@@ -75,7 +75,7 @@ class render_3d:
             gonio = self.imageset.get_goniometer()
             axis = matrix.col(gonio.get_rotation_axis()).elems
             self.viewer.set_rotation_axis(axis)
-        self.viewer.set_beam_vector(self.imageset.get_beam().get_unit_s0())
+        self.viewer.set_beam_vector(self.imageset.get_beam().get_s0())
 
         self.set_points()
 
@@ -95,7 +95,7 @@ class render_3d:
 
             from scitbx import matrix
 
-            p_id = detector.get_panel_intersection(beam.get_unit_s0())
+            p_id = detector.get_panel_intersection(beam.get_s0())
             if p_id >= 0:
                 if len(detector) > 1:
                     p = detector.hierarchy()
@@ -492,7 +492,7 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
         elif gonio is not None:
             axis = matrix.col(gonio.get_rotation_axis())
             self.draw_axis(axis.elems, "phi")
-        self.draw_axis(beam.get_unit_s0(), "beam")
+        self.draw_axis(beam.get_s0(), "beam")
         crystal = self.parent.crystal
         if self.settings.show_crystal_axes and crystal is not None:
             crystal = copy.deepcopy(crystal)

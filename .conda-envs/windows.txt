@@ -11,6 +11,7 @@ eigen
 future
 gemmi>=0.6.5
 h5py>=3.1.0
+hatchling
 hdf5
 hdf5plugin
 iota
