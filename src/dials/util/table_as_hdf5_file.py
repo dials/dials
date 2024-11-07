@@ -74,13 +74,12 @@ def validate_format(handle):
                 raise ValueError(
                     f"Expecting a HDF5 Group at {g.name} (third level of file)"
                 )
-            if not len(g):
-                raise ValueError(f"No data arrays found in the group {g.name}")
-            if "identifiers" not in g.attrs:
+            # Note we allow empty tables to be stored, so no check on len(g) here
+            if "identifiers" not in g.attrs:  # Note this list is allowed to be empty
                 raise ValueError(
                     f"No 'identifiers' attribute found in the group {g.name}"
                 )
-            if "experiment_ids" not in g.attrs:
+            if "experiment_ids" not in g.attrs:  # Note this list is allowed to be empty
                 raise ValueError(
                     f"No 'experiment_ids' attribute found in the group {g.name}"
                 )

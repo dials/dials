@@ -373,18 +373,6 @@ class _:
     def as_hdf5(self, filename):
         """Write the reflection table as a hdf5 file."""
 
-        if "id" not in self:
-            raise RuntimeError(
-                "The 'id' column and experiment identifiers must be set to save to hdf5"
-            )
-        if (
-            not self.experiment_identifiers()
-            or not self.are_experiment_identifiers_consistent()
-        ):
-            raise RuntimeError(
-                "Experiment identifiers must be set and be consistent to save to hdf5"
-            )
-
         with HDF5TableFile(filename, "w") as handle:
             handle.add_tables([self])
 

@@ -1180,6 +1180,13 @@ def test_to_from_h5(tmp_path):
     assert all(new_table["id"] == 0)
     assert dict(new_table.experiment_identifiers()) == {0: "test"}
 
+    # test empty table
+    t = flex.reflection_table([])
+    t.as_hdf5(tmp_path / "empty.h5")
+    empty_table = flex.reflection_table.from_hdf5(tmp_path / "empty.h5")
+    assert list(empty_table.keys()) == []
+    assert not dict(empty_table.experiment_identifiers())
+
 
 def test_to_from_msgpack(tmp_path):
     table, columns = table_and_columns()
