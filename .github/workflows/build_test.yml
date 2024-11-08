@@ -72,18 +72,6 @@ jobs:
           job-summary: true
           custom-arguments: modules/dials --regression
           click-to-expand: true
-      - name: "Set to Use HDF5"
-        run: |
-          echo "DIALS_USE_H5=1" >> $GITHUB_ENV
-      - name: Run pytest
-        uses: pavelzw/pytest-action@510c5e90c360a185039bea56ce8b3e7e51a16507 # v2.2.0
-        with:
-          verbose: true
-          emoji: false
-          job-summary: true
-          custom-arguments: modules/dials --regression
-          click-to-expand: true
-          report-title: DIALS_USE_H5 Pytest
 
   build_libtbx:
     name: libtbx build
