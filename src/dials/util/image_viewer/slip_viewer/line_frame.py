@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import wx
 
-import wxtbx
-from wxtbx import metallicbutton
 from wxtbx.phil_controls.strctrl import StrCtrl
 
 
@@ -28,8 +26,9 @@ class LineSettingsPanel(wx.Panel):
         self._pyslip = self.GetParent().GetParent().pyslip
         self._pyslip.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
 
-        self._lines = []
-        self._click_points = []
+        self._point1 = []
+        self._point2 = []
+        self._panel = None
         self._line_layer = None
 
         self.draw_settings()
@@ -49,106 +48,124 @@ class LineSettingsPanel(wx.Panel):
 
         sizer.Clear()
 
-        grid = wx.FlexGridSizer(cols=3, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
         sizer.Add(grid)
-        text = wx.StaticText(self, -1, "Panel:")
+
+        # Titles
+        text = wx.StaticText(self, -1, "Panel")
         text.GetFont().SetWeight(wx.BOLD)
         grid.Add(text)
-        text = wx.StaticText(self, -1, "Line (x1, y1, x2, y2):")
+        text = wx.StaticText(self, -1, "Start")
         text.GetFont().SetWeight(wx.BOLD)
         grid.Add(text)
-        # empty cell
-        grid.Add(wx.StaticText(self, -1, ""), 0, wx.EXPAND)
+        text = wx.StaticText(self, -1, "End")
+        text.GetFont().SetWeight(wx.BOLD)
+        grid.Add(text)
+        text = wx.StaticText(self, -1, "Mid")
+        text.GetFont().SetWeight(wx.BOLD)
+        grid.Add(text)
 
-        # Pad lines out to 2 elements for display
-        lines = self._lines.copy()
-        lines += [(0, None) for i in range(2 - len(lines))]
+        if self._point1:
+            coords = self._pyslip.tiles.get_flex_pixel_coordinates(*self._point1)
+            if len(coords) == 3:
+                s1, f1, p = coords
+                self._panel = int(p)
+            elif len(coords) == 2:
+                s1, f1 = coords
+                self._panel = 0
+            # Shift to centre of pixel
+            s1 += 0.5
+            f1 += 0.5
 
-        for line_id, (panel, points) in enumerate(lines):
-            grid.Add(
-                StrCtrl(self, value="%i" % (panel), style=wx.TE_READONLY), 0, wx.ALL, 5
-            )
-            if points:
-                value = f"{points[0][0]:.1f} {points[0][1]:.1f} {points[1][0]:.1f} {points[1][1]:.1f}"
+            # Panel
+            if self._panel is not None:
+                value = f"{self._panel}"
             else:
-                value = ""
-            grid.Add(
-                StrCtrl(
-                    self,
-                    value=value,
-                    style=wx.TE_READONLY,
-                ),
-                0,
-                wx.ALL,
-                5,
-            )
-            btn = metallicbutton.MetallicButton(
-                parent=self,
-                label="delete",
-                bmp=wxtbx.bitmaps.fetch_icon_bitmap("actions", "cancel", 16),
-            )
-            grid.Add(btn)
+                value = " "
+            grid.Add(StrCtrl(self, value=value, style=wx.TE_READONLY), 0, wx.ALL, 5)
 
-            self.Bind(
-                wx.EVT_BUTTON,
-                lambda evt, line_id=line_id: self.OnDeleteLine(evt, line_id=line_id),
-                source=btn,
-            )
+            # Start
+            value = f"{f1:.2f} {s1:.2f}"
+        else:
+            value = " "
+        grid.Add(
+            StrCtrl(
+                self,
+                value=value,
+                style=wx.TE_READONLY,
+            ),
+            0,
+            wx.ALL,
+            5,
+        )
 
-        # self.line_panel_ctrl = IntCtrl(
-        #    self, value=0, name="line_panel"
-        # )
-        # grid.Add(self.line_panel_ctrl, 0, wx.ALL, 5)
-        # self.line_ctrl = StrCtrl(self, value="", name="line")
-        # grid.Add(self.line_ctrl, 0, wx.ALL, 5)
-        # empty cell
-        grid.Add(wx.StaticText(self, -1, ""), 0, wx.EXPAND)
+        # End
+        if self._point2:
+            coords = self._pyslip.tiles.get_flex_pixel_coordinates(*self._point2)
+            s2, f2 = coords[0:2] + 0.5
+            value = f"{f2:.2f} {s2:.2f}"
+        else:
+            value = " "
+        grid.Add(
+            StrCtrl(
+                self,
+                value=value,
+                style=wx.TE_READONLY,
+            ),
+            0,
+            wx.ALL,
+            5,
+        )
+
+        # Mid
+        if self._point1 and self._point2:
+            value = f"{(f1 + f2) / 2:.2f} {(s1 + s2) / 2:.2f}"
+            # Reset points when the line is finished
+            self._point1 = []
+            self._point2 = []
+            self._panel = None
+        else:
+            value = ""
+        grid.Add(
+            StrCtrl(
+                self,
+                value=value,
+                style=wx.TE_READONLY,
+            ),
+            0,
+            wx.ALL,
+            5,
+        )
 
         sizer.Layout()
         self.Layout()
-        # grid.Layout()
-        # sizer.SetSizeHints(self)
-        # sizer.Fit(self)
-
-        def OnDeleteLine(self, event, untrusted_id):
-            pass
 
     def OnLeftDown(self, event):
         if not event.ShiftDown():
             click_posn = event.GetPosition()
-            xgeo, ygeo = self._pyslip.ConvertView2Geo(click_posn)
 
-            self._click_points.append((xgeo, ygeo))
-            if len(self._click_points) > 1:
-                self.DrawLine(self._click_points)
-                self._lines.append((0, self._click_points))
-                self._click_points = []
-                self.draw_settings()
+            if not self._point1:
+                self._point1 = self._pyslip.ConvertView2Geo(click_posn)
+            elif not self._point2:
+                self._point2 = self._pyslip.ConvertView2Geo(click_posn)
+                self.DrawLine()
+
+            self.draw_settings()
 
         event.Skip()
 
-    def DrawLine(self, vertices):
+    def DrawLine(self):
         if self._line_layer:
             self._pyslip.DeleteLayer(self._line_layer)
             self._line_layer = None
 
-        line_data = []
-        d = {}
+        line_data = [((self._point1, self._point2), {})]
 
-        for i in range(len(vertices) - 1):
-            line_data.append(
-                (
-                    (vertices[i], vertices[i + 1]),
-                    d,
-                )
-            )
-
-        if line_data:
-            self._line_layer = self._pyslip.AddPolygonLayer(
-                line_data,
-                map_rel=True,
-                color="#00ffff",
-                radius=5,
-                visible=True,
-                name="<boxsel_pt_layer>",
-            )
+        self._line_layer = self._pyslip.AddPolygonLayer(
+            line_data,
+            map_rel=True,
+            color="#00ffff",
+            radius=5,
+            visible=True,
+            name="<boxsel_pt_layer>",
+        )
