@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import wx
 
-from wxtbx.phil_controls.strctrl import StrCtrl
-
 
 class LineSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
@@ -77,21 +75,28 @@ class LineSettingsPanel(wx.Panel):
             s1 += 0.5
             f1 += 0.5
 
-            # Panel
-            if self._panel is not None:
-                value = f"{self._panel}"
-            else:
-                value = " "
-            grid.Add(StrCtrl(self, value=value, style=wx.TE_READONLY), 0, wx.ALL, 5)
-
-            # Start
-            value = f"{f1:.2f} {s1:.2f}"
+        # Panel
+        if self._panel is not None:
+            value = f"{self._panel}"
         else:
             value = " "
         grid.Add(
-            StrCtrl(
+            wx.TextCtrl(self, value=value, size=wx.Size(50, -1), style=wx.TE_READONLY),
+            0,
+            wx.ALL,
+            5,
+        )
+
+        # Start
+        if self._point1:
+            value = f"{f1:.2f},{s1:.2f}"
+        else:
+            value = " "
+        grid.Add(
+            wx.TextCtrl(
                 self,
                 value=value,
+                size=wx.Size(130, -1),
                 style=wx.TE_READONLY,
             ),
             0,
@@ -103,13 +108,14 @@ class LineSettingsPanel(wx.Panel):
         if self._point2:
             coords = self._pyslip.tiles.get_flex_pixel_coordinates(*self._point2)
             s2, f2 = coords[0:2] + 0.5
-            value = f"{f2:.2f} {s2:.2f}"
+            value = f"{f2:.2f},{s2:.2f}"
         else:
             value = " "
         grid.Add(
-            StrCtrl(
+            wx.TextCtrl(
                 self,
                 value=value,
+                size=wx.Size(130, -1),
                 style=wx.TE_READONLY,
             ),
             0,
@@ -119,7 +125,7 @@ class LineSettingsPanel(wx.Panel):
 
         # Mid
         if self._point1 and self._point2:
-            value = f"{(f1 + f2) / 2:.2f} {(s1 + s2) / 2:.2f}"
+            value = f"{(f1 + f2) / 2:.2f},{(s1 + s2) / 2:.2f}"
             # Reset points when the line is finished
             self._point1 = []
             self._point2 = []
@@ -127,9 +133,10 @@ class LineSettingsPanel(wx.Panel):
         else:
             value = ""
         grid.Add(
-            StrCtrl(
+            wx.TextCtrl(
                 self,
                 value=value,
+                size=wx.Size(130, -1),
                 style=wx.TE_READONLY,
             ),
             0,
