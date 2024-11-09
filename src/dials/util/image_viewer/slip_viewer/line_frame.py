@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import wx
 
+from scitbx import matrix
+
 
 class LineSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
@@ -166,8 +168,17 @@ class LineSettingsPanel(wx.Panel):
             self._pyslip.DeleteLayer(self._line_layer)
             self._line_layer = None
 
-        line_data = [((self._point1, self._point2), {})]
+        # Calculate bisector position
+        pt1 = matrix.col(self._point1)
+        pt2 = matrix.col(self._point2)
+        mid = (pt1 + pt2) / 2
+        v = (pt2 - pt1).normalize()
+        orth = v.rotate_2d(90, deg=True)
+        pt3 = mid + 10 * orth
+        pt4 = mid - 10 * orth
 
+        # Draw line with its bisector
+        line_data = [((self._point1, self._point2), {}), ((pt3, pt4), {})]
         self._line_layer = self._pyslip.AddPolygonLayer(
             line_data,
             map_rel=True,
