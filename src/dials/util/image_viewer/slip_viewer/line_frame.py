@@ -30,11 +30,13 @@ class LineSettingsPanel(wx.Panel):
         self._point2 = []
         self._panel = None
         self._line_layer = None
+        self._point_layer = None
 
         self.draw_settings()
 
     def __del__(self):
         self._pyslip.DeleteLayer(self._line_layer)
+        self._pyslip.DeleteLayer(self._point_layer)
         self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
 
     def draw_settings(self):
@@ -153,20 +155,49 @@ class LineSettingsPanel(wx.Panel):
         if not event.ShiftDown():
             click_posn = event.GetPosition()
 
+            # Update point1 and draw the point
             if not self._point1:
                 self._point1 = self._pyslip.ConvertView2Geo(click_posn)
+                self.DrawPoint()
+
+            # Or if setting point2, draw the line, if on the same panel
             elif not self._point2:
-                self._point2 = self._pyslip.ConvertView2Geo(click_posn)
-                self.DrawLine()
+                pt2 = self._pyslip.ConvertView2Geo(click_posn)
+                coords = self._pyslip.tiles.get_flex_pixel_coordinates(*pt2)
+                if len(coords) == 3:
+                    panel = coords[2]
+                else:
+                    panel = 0
+                if panel == self._panel:
+                    self._point2 = pt2
+                    self.DrawLine()
 
             self.draw_settings()
 
         event.Skip()
 
+    def DrawPoint(self):
+        if self._point_layer:
+            self._pyslip.DeleteLayer(self._point_layer)
+            self._point_layer = None
+
+        self._point_layer = self._pyslip.AddPointLayer(
+            [(self._point1[0], self._point1[1], {})],
+            name="<predictions_layer>",
+            radius=3,
+            renderer=self._pyslip.DrawPointLayer,
+            color="#00ffff",
+            show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+        )
+
     def DrawLine(self):
         if self._line_layer:
             self._pyslip.DeleteLayer(self._line_layer)
             self._line_layer = None
+
+        self._pyslip.DeleteLayer(self._point_layer)
+        self._point_layer = None
+        self._pyslip.Update()
 
         # Calculate bisector position
         pt1 = matrix.col(self._point1)
