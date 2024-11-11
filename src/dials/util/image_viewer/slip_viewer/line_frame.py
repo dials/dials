@@ -35,9 +35,13 @@ class LineSettingsPanel(wx.Panel):
         self.draw_settings()
 
     def __del__(self):
-        self._pyslip.DeleteLayer(self._line_layer)
-        self._pyslip.DeleteLayer(self._point_layer)
-        self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
+        try:
+            self._pyslip.DeleteLayer(self._line_layer)
+            self._pyslip.DeleteLayer(self._point_layer)
+            self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
+        except RuntimeError:
+            # If the application is closing, the PySlip object has already been deleted
+            pass
 
     def draw_settings(self):
         for child in self.GetChildren():
