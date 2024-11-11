@@ -11,6 +11,7 @@ import scitbx.matrix
 from cctbx import crystal, sgtbx, uctbx
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 from dxtbx.serialize import load
+from dxtbx.util import ersatz_uuid4
 
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
@@ -77,6 +78,8 @@ def test_symmetry_basis_changes_for_C2(tmp_path):
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
+    for id in set(joint_table["id"]):
+        joint_table.experiment_identifiers()[id] = ersatz_uuid4()
     joint_table.as_file(tmp_path / "tmp.refl")
 
     result = subprocess.run(
