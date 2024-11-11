@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import matplotlib
 import wx
+
+matplotlib.use("WXAgg")
+
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 from scitbx import matrix
 
@@ -36,6 +42,9 @@ class LineSettingsPanel(wx.Panel):
         self._panel = None
         self._line_layer = None
         self._point_layer = None
+
+        self._lineprof_x = None
+        self._lineprof_y = None
 
         self.draw_settings()
 
@@ -145,6 +154,8 @@ class LineSettingsPanel(wx.Panel):
         # Mid
         if self._point1 and self._point2:
             value = f"{(f1 + f2) / 2:.2f},{(s1 + s2) / 2:.2f}"
+            self.calculate_line_profile()
+
             # Reset points when the line is finished
             self._point1 = []
             self._point2 = []
@@ -163,8 +174,44 @@ class LineSettingsPanel(wx.Panel):
             5,
         )
 
+        # Line profile
+        figure = Figure(figsize=(1.5, 3))
+        figure.subplots_adjust(bottom=0.15)
+
+        axes = figure.add_subplot(111)
+        canvas = FigureCanvas(self, -1, figure)
+        sizer.Add(canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        axes.set_title("Line profile")
+        axes.set_xlabel("Pixels")
+        if self._lineprof_x and self._lineprof_y:
+            axes.plot(self._lineprof_x, self._lineprof_y)
+
         sizer.Layout()
         self.Layout()
+
+    def calculate_line_profile(self):
+        pt1 = matrix.col(self._pyslip.tiles.get_flex_pixel_coordinates(*self._point1))
+        pt2 = matrix.col(self._pyslip.tiles.get_flex_pixel_coordinates(*self._point2))
+
+        image_data = self._pyslip.tiles.raw_image.get_image_data()
+        if not isinstance(image_data, tuple):
+            image_data = (image_data,)
+        image_data = image_data[self._panel]
+
+        # Sample along the line
+        line = pt2 - pt1
+        n_samples = int(max(abs(e) for e in line.elems))
+        stride = line / n_samples
+        step = stride.length()
+        x = [step * i for i in range(n_samples + 1)]
+        coords = [pt1 + i * stride for i in range(n_samples + 1)]
+        vals = []
+        for coord in coords:
+            isf = (int(coord[0]), int(coord[1]))  # int slow fast
+            vals.append(image_data[isf])
+
+        self._lineprof_x = x
+        self._lineprof_y = vals
 
     def OnLeftDown(self, event):
         if not event.ShiftDown():
