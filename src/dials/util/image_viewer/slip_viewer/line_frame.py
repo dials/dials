@@ -176,7 +176,7 @@ class LineSettingsPanel(wx.Panel):
 
         # Line profile
         figure = Figure(figsize=(1.5, 3))
-        figure.subplots_adjust(bottom=0.15)
+        figure.subplots_adjust(bottom=0.15)  # Leave room for the x-axis label
 
         axes = figure.add_subplot(111)
         canvas = FigureCanvas(self, -1, figure)
