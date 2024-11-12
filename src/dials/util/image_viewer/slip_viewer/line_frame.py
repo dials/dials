@@ -84,10 +84,10 @@ class LineSettingsPanel(wx.Panel):
         text = wx.StaticText(self, -1, "Start")
         text.GetFont().SetWeight(wx.BOLD)
         grid.Add(text)
-        text = wx.StaticText(self, -1, "End")
+        text = wx.StaticText(self, -1, "Mid")
         text.GetFont().SetWeight(wx.BOLD)
         grid.Add(text)
-        text = wx.StaticText(self, -1, "Mid")
+        text = wx.StaticText(self, -1, "End")
         text.GetFont().SetWeight(wx.BOLD)
         grid.Add(text)
 
@@ -132,17 +132,25 @@ class LineSettingsPanel(wx.Panel):
             5,
         )
 
-        # End
-        if self._point2:
+        # Mid and end
+        if self._point1 and self._point2:
             coords = self._pyslip.tiles.get_flex_pixel_coordinates(*self._point2)
             s2, f2 = coords[0:2] + 0.5
-            value = f"{f2:.2f},{s2:.2f}"
+            value_mid = f"{(f1 + f2) / 2:.2f},{(s1 + s2) / 2:.2f}"
+            self.calculate_line_profile()
+            value_end = f"{f2:.2f},{s2:.2f}"
+
+            # Reset points when the line is finished
+            self._point1 = []
+            self._point2 = []
+            self._panel = None
         else:
-            value = " "
+            value_mid = " "
+            value_end = " "
         grid.Add(
             wx.TextCtrl(
                 self,
-                value=value,
+                value=value_mid,
                 size=wx.Size(130, -1),
                 style=wx.TE_READONLY,
             ),
@@ -150,22 +158,10 @@ class LineSettingsPanel(wx.Panel):
             wx.ALL,
             5,
         )
-
-        # Mid
-        if self._point1 and self._point2:
-            value = f"{(f1 + f2) / 2:.2f},{(s1 + s2) / 2:.2f}"
-            self.calculate_line_profile()
-
-            # Reset points when the line is finished
-            self._point1 = []
-            self._point2 = []
-            self._panel = None
-        else:
-            value = ""
         grid.Add(
             wx.TextCtrl(
                 self,
-                value=value,
+                value=value_end,
                 size=wx.Size(130, -1),
                 style=wx.TE_READONLY,
             ),
