@@ -10,6 +10,7 @@ import numpy as np
 from dataclasses import dataclass
 from matplotlib import gridspec
 from matplotlib.patches import Circle
+from matplotlib.ticker import MultipleLocator
 
 matplotlib.use('Agg')
 
@@ -69,7 +70,16 @@ def decorate_plot(
 
     beam_x, beam_y = beam_position
     ax_x.set_ylim(-0.07, 1.2)
-    ax_y.set_xlim(-0.15, 1.2)
+    ax_y.set_xlim(-0.20, 1.25)
+
+    ax_x.set_yticks([0, 0.5, 1])
+    ax_y.set_xticks([0, 0.5, 1])
+
+    mloc = MultipleLocator(0.1)
+    ax_x.yaxis.set_minor_locator(mloc)
+
+    mloc = MultipleLocator(0.1)
+    ax_y.xaxis.set_minor_locator(mloc)
 
     ax.set_xlabel(r"\rm Pixel index X")
     ax.set_ylabel(r"\rm Pixel index Y")

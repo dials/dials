@@ -4,6 +4,8 @@ from __future__ import annotations
 from collections import namedtuple
 import numpy as np
 
+from matplotlib.ticker import MultipleLocator
+
 from dials.algorithms.beam_position.helper_functions import (
     remove_pixels_by_intensity
 )
@@ -102,8 +104,8 @@ class MidpointMethodSolver:
             ax.plot(indices, self.profile, lw=1, c='gray',
                     label='avg. projection')
 
-            ax.text(0.01, 0.78, f"min, max ={self.min_value: >6.0f}, "
-                    f"{self.max_value: >6.0f}", ha='left',
+            ax.text(0.01, 0.78, f"I_min, I_max = ({self.min_value:.1f}, "
+                    f"{self.max_value:.1f})", ha='left',
                     transform=ax.transAxes, c='gray', fontsize=5)
 
             plot_dead_pixel_ranges(ax, self.params, axis='x')
@@ -118,6 +120,13 @@ class MidpointMethodSolver:
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=2.0, handleheight=0.7, frameon=False)
 
+            ax.set_ylim(-0.07, 1.2)
+            ax.set_yticks([0, 0.5, 1])
+
+            mloc = MultipleLocator(0.1)
+            ax.yaxis.set_minor_locator(mloc)
+            ax.tick_params(axis='y', colors='gray')
+
         elif self.axis == 'y':
             ax = figure.axis_y
             ax.axhline(self.beam_position, c='C3', lw=1)
@@ -131,16 +140,25 @@ class MidpointMethodSolver:
                 x_vals = [m.y for m in midpoint_group]
                 ax.plot(x_vals, y_vals, marker='o', ms=1, lw=0)
             ax.text(0.93, 0.99, 'method: midpoint', va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=7)
+                    transform=ax.transAxes, rotation=-90, fontsize=7,
+                    color='black')
 
             ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=1.5, handleheight=0.4, frameon=False)
 
-            label = (f"min, max ={self.min_value:>6.0f}, "
-                     f"{self.max_value:>6.0f}")
-            ax.text(0.78, 0.99, label, va='top', ha='right',
+            label = (f"I_min, I_max = ({self.min_value:.1f}, "
+                     f"{self.max_value:>.1f})")
+            ax.text(0.78, 0.99, label, va='top', ha='right', c='gray',
                     transform=ax.transAxes, rotation=-90, fontsize=5)
+
+            ax.set_xlim(-0.07, 1.2)
+            ax.set_xticks([0, 0.5, 1])
+
+            mloc = MultipleLocator(0.1)
+            ax.xaxis.set_minor_locator(mloc)
+            ax.tick_params(axis='x', colors='gray')
+
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
 

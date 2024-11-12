@@ -84,8 +84,8 @@ class Figure:
 
         self.axis_x.tick_params(labelbottom=False)
         self.axis_y.tick_params(labelleft=False)
-        self.axis_y.tick_params(axis='x', colors='blue')
-        self.axis_x.tick_params(axis='y', colors='blue')
+        # self.axis_y.tick_params(axis='x', colors='blue')
+        # self.axis_x.tick_params(axis='y', colors='blue')
 
         label = "beam (x, y):"
         self.axis_x.text(1.02, 1.00, label, va='top', fontsize=8,

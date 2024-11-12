@@ -54,8 +54,15 @@ class InversionMethodSolver:
         else:
             center = int(n / 2)
 
-        indices = np.arange(center - window_width,
-                            center + window_width, 1)
+        min_ind = center - window_width
+        if min_ind < 0:
+            min_ind = 0
+        max_ind = center + window_width
+
+        if max_ind > n:
+            max_ind = n - 1
+
+        indices = np.arange(min_ind, max_ind, 1)
 
         correlations = 0 * self.profile_max
 
@@ -85,14 +92,15 @@ class InversionMethodSolver:
 
             ax.text(0.01, 0.95, 'method: inversion', va='top', ha='left',
                     transform=ax.transAxes, fontsize=7)
-            label = (f"min, max ={self.min_value:>6.0f}, "
-                     f"{self.max_value:>6.0f}")
+            label = (f"I_min, I_max = ({self.min_value:.1f}, "
+                     f"{self.max_value:.1f})")
             ax.text(0.01, 0.78, label, va='top', ha='left', c='gray',
                     transform=ax.transAxes, fontsize=5)
             ax.legend(loc=(0.6, 0.7), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=2.0, handleheight=0.7, frameon=False)
             ax.axvline(self.beam_position, c='C3', lw=1)
+            ax.tick_params(axis='y', colors='gray')
 
         elif self.axis == 'y':
 
@@ -105,8 +113,8 @@ class InversionMethodSolver:
 
             ax.text(0.95, 0.99, 'method: inversion', va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=7)
-            label = (f"min, max ={self.min_value:>6.0f}, "
-                     f"{self.max_value:>6.0f}")
+            label = (f"I_min, I_max = ({self.min_value:.1f}, "
+                     f"{self.max_value:.1f})")
             ax.text(0.78, 0.99, label, va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=5)
             ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
@@ -114,6 +122,7 @@ class InversionMethodSolver:
                       fontsize=7, handlelength=1.5, handleheight=0.7,
                       frameon=False)
             ax.axhline(self.beam_position, c='C3', lw=1)
+            ax.tick_params(axis='x', colors='gray')
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
 

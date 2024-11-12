@@ -54,8 +54,8 @@ Other methods are based on horizontal and vertical projection, and only
 require an imported experiment.
 
 Examples:
-  dials.search_beam_position method_x=midpoint imported.exp
-  dials.search_beam_position method_x=midpoint method_y=maximum imported.exp
+  dials.search_beam_position method=midpoint imported.exp
+  dials.search_beam_position method=maximum imported.exp
 
 """
 
@@ -752,8 +752,6 @@ def run(args=None):
 
     else:  # Other methods (midpoint, maximum, inversion)
 
-        # TODO: Implement image ranges
-
         if len(experiments) == 0:
             parser.print_help()
             sys.exit(0)
@@ -773,18 +771,14 @@ def run(args=None):
         for set_run_index in range(num_imagesets):
 
             set_index = selected_set_indices[set_run_index]
-
             image_set = selected_sets[set_run_index]
-
             num_images = image_set.size()
-
             selected_image_indices = get_indices_from_slices(num_images,
                                                              image_ranges)
-
             num_selected_images = len(selected_image_indices)
 
+            # Compute beam position for each image separetely
             if params.projection.per_image:
-
 
                 for image_run_index in range(num_selected_images):
 
@@ -808,11 +802,14 @@ def run(args=None):
                                        n_images=num_selected_images,
                                        set_index=set_run_index,
                                        n_sets=num_imagesets, x=x, y=y)
+
+            # Compute beam position for the average image
             else:
                 save_img = params.projection.save_average_image
                 load_img = params.projection.load_average_image
 
-                if not load_img:
+                if not load_img:    # Compute the average image
+
                     for image_run_index in range(num_selected_images):
 
                         image_index = selected_image_indices[image_run_index]
@@ -836,9 +833,11 @@ def run(args=None):
                     mask = image_set.get_mask(0)
                     mask = flumpy.to_numpy(mask[0])
                     image[mask == 0] = 0
+
                     if save_img:
                         np.savez('average_image.npz', image=image)
-                else:
+
+                else:   # Do not compute the average images, but load it
                     data = np.load('average_image.npz')
                     image = data['image']
 
@@ -882,7 +881,7 @@ def print_progress(image_index, n_images, set_index, n_sets, x, y,
     if x is None or y is None:
         bar += end_str
     else:
-        bar += f" Beam XY: ({x:.1f}, {y:.1f})          {end_str}"
+        bar += f"{x:.1f}, {y:.1f}          {end_str}"
     print(bar, end="")
 
 

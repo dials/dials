@@ -2,6 +2,7 @@
 from __future__ import annotations
 from collections import namedtuple
 import numpy as np
+from matplotlib.ticker import MultipleLocator
 from dials.algorithms.beam_position.project_profile import project
 
 
@@ -92,11 +93,11 @@ class MaximumMethodSolver:
             ax.axvspan(self.bin_start, self.bin_end, color='#BEBEBE',
                        alpha=0.5, lw=0)
 
-            ax.text(0.01, 0.78, f"min, max ={self.min_value: >6.0f}, "
-                    f"{self.max_value: >6.0f}", ha='left',
+            ax.text(0.01, 0.78, f"I_min, I_max = ({self.min_value:.1f}, "
+                    f"{self.max_value:.1f})", ha='left',
                     transform=ax.transAxes, c='gray', fontsize=5)
-            ax.text(0.01, 0.7, f"min, max ={self.min_from_mean: >6.0f}, "
-                    f"{self.max_from_mean: >6.0f}", ha='left',
+            ax.text(0.01, 0.7, f"I_min, I_max = ({self.min_from_mean:.1f}, "
+                    f"{self.max_from_mean:.1f})", ha='left',
                     transform=ax.transAxes, c='C2', fontsize=5)
 
             ax.plot(indices, self.profile_max, lw=1, c='gray',
@@ -113,6 +114,13 @@ class MaximumMethodSolver:
 
             ax.axvline(self.beam_position, c='C3', lw=1)
 
+            ax.set_ylim(-0.07, 1.2)
+            ax.set_yticks([0, 0.5, 1])
+
+            mloc = MultipleLocator(0.1)
+            ax.yaxis.set_minor_locator(mloc)
+            ax.tick_params(axis='y', colors='black')
+
         elif self.axis == 'y':
             ax = figure.axis_y
             ax.axhspan(self.bin_start, self.bin_end, color='#BEBEBE',
@@ -124,16 +132,24 @@ class MaximumMethodSolver:
             ax.text(0.95, 0.99, 'method: maximum', va='top', ha='right',
                     transform=ax.transAxes, rotation=-90, fontsize=7)
 
-            ax.text(0.0, 1.06, f"min, max ={self.min_value:>6.0f}, "
-                    f"{self.max_value:>6.0f}", va='top',
+            ax.text(0.0, 1.06, f"I_min, I_max = ({self.min_value:.1f}, "
+                    f"{self.max_value:.1f})", va='top',
                     transform=ax.transAxes, c='gray', fontsize=5)
-            ax.text(0.0, 1.03, f"min, max ={self.min_from_mean:>6.0f}, "
-                    f"{self.max_from_mean:>6.0f}", va='top',
+            ax.text(0.0, 1.03, f"I_min, I_max = ({self.min_from_mean:.1f}, "
+                    f"{self.max_from_mean:.1f})", va='top',
                     transform=ax.transAxes, c='C2', fontsize=5)
 
             ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
                       columnspacing=3.5, handletextpad=0.4, fontsize=7,
                       handlelength=1.5, handleheight=0.7, frameon=False)
             ax.axhline(self.beam_position, c='C3', lw=1)
+
+            ax.set_xlim(-0.07, 1.2)
+            ax.set_xticks([0, 0.5, 1])
+
+            mloc = MultipleLocator(0.1)
+            ax.xaxis.set_minor_locator(mloc)
+
+            ax.tick_params(axis='x', colors='black')
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
