@@ -1,2 +1,0 @@
-``dials.index``: when indexing multiple imagesets, ensure a failure to
-index one does not result in failure for all.

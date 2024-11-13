@@ -32,6 +32,7 @@ import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
+from dials.util.table_as_hdf5_file import HDF5TableFile
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -231,6 +232,8 @@ class _:
         """
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
+        elif os.getenv("DIALS_USE_H5"):
+            self.as_hdf5(filename)
         else:
             self.as_msgpack_file(filename)
 
@@ -244,7 +247,12 @@ class _:
                 filename
             )
         except RuntimeError:
-            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
+            try:
+                return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
+            except OSError:
+                return dials_array_family_flex_ext.reflection_table.from_pickle(
+                    filename
+                )
 
     @staticmethod
     def empty_standard(nrows):
@@ -362,19 +370,19 @@ class _:
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def as_h5(self, filename):
-        """
-        Write the reflection table as a HDF5 file.
+    def as_hdf5(self, filename):
+        """Write the reflection table as a hdf5 file."""
 
-        :param filename: The output filename
-        """
-        from dials.util.nexus_old import NexusFile
+        with HDF5TableFile(filename, "w") as handle:
+            handle.add_tables([self])
 
-        handle = NexusFile(filename, "w")
-        # Clean up any removed experiments from the identifiers map
-        self.clean_experiment_identifiers_map()
-        handle.set_reflections(self)
-        handle.close()
+    @classmethod
+    def from_hdf5(cls, filename):
+        with HDF5TableFile(filename, "r") as handle:
+            tables = handle.get_tables()
+        if len(tables) > 1:
+            return cls.concat(tables)
+        return tables[0]
 
     def as_miller_array(self, experiment, intensity="sum"):
         """Return a miller array with the chosen intensities.

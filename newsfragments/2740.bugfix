@@ -1,1 +1,0 @@
-``dials.generate_distortion_maps``: fix bug with ``mode=ellipse`` for detectors with oblong panels.

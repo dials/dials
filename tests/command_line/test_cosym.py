@@ -7,6 +7,7 @@ import pytest
 
 from cctbx import sgtbx, uctbx
 from dxtbx.serialize import load
+from dxtbx.util import ersatz_uuid4
 
 import dials.command_line.cosym as dials_cosym
 from dials.algorithms.symmetry.cosym._generate_test_data import (
@@ -165,6 +166,8 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
     experiments.as_json("tmp.expt")
     expt_file = "tmp.expt"
     joint_table = flex.reflection_table.concat(reflections)
+    for id in set(joint_table["id"]):
+        joint_table.experiment_identifiers()[id] = ersatz_uuid4()
     joint_table.as_file("tmp.refl")
     refl_file = "tmp.refl"
 
@@ -239,6 +242,8 @@ def test_synthetic(
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
+    for id in set(joint_table["id"]):
+        joint_table.experiment_identifiers()[id] = ersatz_uuid4()
     joint_table.as_file("tmp.refl")
     refl_file = "tmp.refl"
 
