@@ -104,54 +104,68 @@ class AssignIndicesLocal(AssignIndicesStrategy):
             )
 
         UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
+        imgset_ids = reflections["imageset_id"].select(sel)
 
-        result = ext.AssignIndicesLocal(
-            rlps,
-            phi,
-            UB_matrices,
-            epsilon=self._epsilon,
-            delta=self._delta,
-            l_min=self._l_min,
-            nearest_neighbours=self._nearest_neighbours,
-        )
-        miller_indices = result.miller_indices()
-        crystal_ids = result.crystal_ids()
-        hkl = miller_indices.as_vec3_double().iround()
+        for i_imgset, imgset in enumerate(experiments.imagesets()):
+            sel_imgset = imgset_ids == i_imgset
 
-        assert miller_indices.select(crystal_ids < 0).all_eq((0, 0, 0))
-
-        for i_cryst in set(crystal_ids):
-            if i_cryst < 0:
-                continue
-
-            A = matrix.sqr(experiments[i_cryst].crystal.get_A())
-            A_inv = A.inverse()
-
-            cryst_sel = crystal_ids == i_cryst
-            rlp_sel = rlps.select(cryst_sel)
-            hkl_sel = hkl.select(cryst_sel).as_vec3_double()
-
-            d_sel = 1 / rlp_sel.norms()
-            d_perm = flex.sort_permutation(d_sel, reverse=True)
-
-            hf_0 = A_inv * rlp_sel[d_perm[0]]
-            h_0 = matrix.col([nint(j) for j in hf_0.elems])
-            offset = h_0 - matrix.col(hkl_sel[d_perm[0]])
-            # print "offset:", offset.elems
-
-            h = hkl_sel + flex.vec3_double(hkl_sel.size(), offset.elems)
-
-            refs["miller_index"].set_selected(
-                cryst_sel, flex.miller_index(list(h.iround()))
+            result = ext.AssignIndicesLocal(
+                rlps.select(sel_imgset),
+                phi.select(sel_imgset),
+                UB_matrices,
+                epsilon=self._epsilon,
+                delta=self._delta,
+                l_min=self._l_min,
+                nearest_neighbours=self._nearest_neighbours,
             )
-            refs["id"].set_selected(cryst_sel, i_cryst)
+            miller_indices = result.miller_indices()
+            crystal_ids = result.crystal_ids()
+            hkl = miller_indices.as_vec3_double().iround()
 
-        crystal_ids.set_selected(crystal_ids < 0, -1)
-        refs["id"] = crystal_ids
-        refs["miller_index"].set_selected(crystal_ids < 0, (0, 0, 0))
+            assert miller_indices.select(crystal_ids < 0).all_eq((0, 0, 0))
 
-        reflections["miller_index"].set_selected(isel, refs["miller_index"])
-        reflections["id"].set_selected(isel, refs["id"])
-        reflections.set_flags(
-            reflections["miller_index"] != (0, 0, 0), reflections.flags.indexed
-        )
+            expt_ids = flex.int(crystal_ids.size(), -1)
+            for i_cryst, cryst in enumerate(experiments.crystals()):
+                sel_cryst = crystal_ids == i_cryst
+                for i_expt in experiments.where(crystal=cryst, imageset=imgset):
+                    expt_ids.set_selected(sel_cryst, i_expt)
+                    if experiments[i_expt].identifier:
+                        reflections.experiment_identifiers()[i_expt] = experiments[
+                            i_expt
+                        ].identifier
+
+            for i_cryst in set(crystal_ids):
+                if i_cryst < 0:
+                    continue
+
+                A = matrix.sqr(experiments[i_cryst].crystal.get_A())
+                A_inv = A.inverse()
+
+                cryst_sel = crystal_ids == i_cryst
+                rlp_sel = rlps.select(cryst_sel)
+                hkl_sel = hkl.select(cryst_sel).as_vec3_double()
+
+                d_sel = 1 / rlp_sel.norms()
+                d_perm = flex.sort_permutation(d_sel, reverse=True)
+
+                hf_0 = A_inv * rlp_sel[d_perm[0]]
+                h_0 = matrix.col([nint(j) for j in hf_0.elems])
+                offset = h_0 - matrix.col(hkl_sel[d_perm[0]])
+                # print "offset:", offset.elems
+
+                h = hkl_sel + flex.vec3_double(hkl_sel.size(), offset.elems)
+
+                refs["miller_index"].set_selected(
+                    cryst_sel, flex.miller_index(list(h.iround()))
+                )
+                refs["id"].set_selected(cryst_sel, i_cryst)
+
+            crystal_ids.set_selected(crystal_ids < 0, -1)
+            refs["id"] = crystal_ids
+            refs["miller_index"].set_selected(crystal_ids < 0, (0, 0, 0))
+
+            reflections["miller_index"].set_selected(isel, refs["miller_index"])
+            reflections["id"].set_selected(isel, refs["id"])
+            reflections.set_flags(
+                reflections["miller_index"] != (0, 0, 0), reflections.flags.indexed
+            )

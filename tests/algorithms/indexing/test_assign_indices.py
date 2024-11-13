@@ -198,6 +198,7 @@ class CompareGlobalLocal:
         # index reflections using xds-style "local" method
         self.reflections_local = copy.deepcopy(reflections)
         self.reflections_local["id"] = flex.int(len(self.reflections_local), -1)
+        self.reflections_local["imageset_id"] = flex.int(len(self.reflections_local), 0)
         index_reflections_local(self.reflections_local, ExperimentList([experiment]))
         non_zero_sel = self.reflections_local["miller_index"] != (0, 0, 0)
         assert self.reflections_local["id"].select(~non_zero_sel).all_eq(-1)

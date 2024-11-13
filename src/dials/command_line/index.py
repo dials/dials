@@ -224,9 +224,8 @@ def index(experiments, reflections, params):
                 try:
                     iset_id = futures[future]
                     idx_expts, idx_refl = future.result()
-                except Exception as e:
-                    print(e)
-                    raise
+                except DialsIndexError as e:
+                    logger.warning(str(e))
                 else:
                     if idx_expts is None:
                         continue

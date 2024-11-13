@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 39386198 Laue-DIALS
 * .. pubmed:: 35647922 xia2.multiplex
 * .. pubmed:: 34747533 DIALS as a toolkit
 * .. pubmed:: 32254063 dials.scale
@@ -28,6 +29,7 @@ DIALS Journal Articles
 DIALS Application to XFEL Crystallography
 -----------------------------------------
 
+* .. pubmed:: 35046599 Chemical Crystallography at XFELs
 * .. pubmed:: 26352473 synuclein
 * .. pubmed:: 26280336 synaptotagmin-SNARE
 * .. pubmed:: 26057680 Ginn 2015b

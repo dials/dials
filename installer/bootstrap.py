@@ -110,7 +110,7 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
-    url = "https://micromamba.snakepit.net/api/micromamba/{0}/1.5.10".format(conda_arch)
+    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -1033,7 +1033,8 @@ def refresh_build_cmake():
     )
 
 
-def configure_build_cmake():
+def configure_build_cmake(extra_args):
+    # type: (list[str] | None) -> None
     cmake_exe = _get_cmake_exe()
     python_exe = _get_base_python()
 
@@ -1096,6 +1097,11 @@ conda activate {dist_root}/conda_base
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(dials)
 
+if (CMAKE_UNITY_BUILD AND MSVC)
+    # Windows can fail in this scenario because too many objects
+    add_compile_options(/bigobj)
+endif()
+
 add_subdirectory(dxtbx)
 add_subdirectory(dials)
 """
@@ -1104,15 +1110,17 @@ add_subdirectory(dials)
     # run_indirect runs inside the build folder with an activated environment
     conda_base_root = os.path.join(os.path.abspath("."), "conda_base")
     assert os.path.isdir(conda_base_root)
-    extra_args = []
+    extra_args = extra_args or []
     if os.name == "nt":
         extra_args.append("-DPython_ROOT_DIR=" + conda_base_root)
+    sys.stdout.flush()
     run_indirect_command(
         cmake_exe,
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
-            "-DHDF5_ROOT=" + conda_base_root,
+            "-DHDF5_DIR=" + conda_base_root,
+            "-DPython_ROOT_DIR=" + conda_base_root,
         ]
         + extra_args,
     )
@@ -1183,7 +1191,7 @@ def make_build_cmake():
         parallel = []
         if "CMAKE_GENERATOR" not in os.environ:
             if hasattr(os, "sched_getaffinity"):
-                cpu = os.sched_getaffinity()
+                cpu = os.sched_getaffinity(0)
             else:
                 cpu = multiprocessing.cpu_count()
             if isinstance(cpu, int):
@@ -1254,9 +1262,9 @@ def run():
     )
     parser.add_argument(
         "--config-flags",
-        help="""Pass flags to the configuration step. Flags should
+        help="""Pass flags to the configuration step (CMake or libtbx). Flags should
 be passed separately with quotes to avoid confusion (e.g
---config_flags="--build=debug" --config_flags="--another_flag")""",
+--config-flags="--build=debug" --config-flags="--another_flag")""",
         action="append",
         default=[],
     )
@@ -1288,8 +1296,17 @@ be passed separately with quotes to avoid confusion (e.g
         action="store_false",
         dest="cmake",
     )
+    parser.add_argument(
+        "--cmake",
+        action="store_true",
+        dest="removed_cmake",
+        help=argparse.SUPPRESS,
+    )
 
     options = parser.parse_args()
+    if options.removed_cmake:
+        # User passed the obsolete parameter
+        sys.exit("Error: --cmake is now the default, please remove --cmake.")
 
     print("Performing actions:", " ".join(options.actions))
 
@@ -1310,7 +1327,7 @@ be passed separately with quotes to avoid confusion (e.g
     if "build" in options.actions:
         if options.cmake:
             refresh_build_cmake()
-            configure_build_cmake()
+            configure_build_cmake(options.config_flags)
             make_build_cmake()
         else:
             configure_build(options.config_flags)
