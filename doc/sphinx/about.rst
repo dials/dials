@@ -2,6 +2,22 @@
 About
 +++++
 
+Atomic structures are vital for scientific research.  From understanding
+the mechanisms of biology to the design of new materials for industrial applications,
+knowing the placement of atoms in a molecule assists in the control of disease progression,
+drug design, the development of therapies such as vaccines, building new compounds
+for better batteries, and finding new methods of carbon sequestration.
+
+Crystallography is one of the prime technologies used to generate high quality structures,
+generated from crystallographic data collected at large facilities like synchrotrons and
+X-ray free electron lasers, on large micro electron diffraction instruments, at neutron
+sources, or at home in a lab.  At these facilities and instruments, crystals are either
+rotated in a beam of photons, neutrons, or electrons, or are exposed one at a time in a
+serial experiment, and diffraction data from detectors are collected and stored in image
+files. The DIALS software package (Diffraction Integration for Advanced Light Sources) is
+used throughout the world for processing crystallographic data in automated pipelines or
+through graphical user interfaces.
+
 The DIALS software is developed in a fully open-source, collaborative
 environment. The main development teams are based at `Diamond Light Source`_
 and `CCP4`_, in the UK, and at `Lawrence Berkeley National Laboratory`_, USA.
