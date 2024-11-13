@@ -483,6 +483,11 @@ def index(
             )
             params.output.nuggets = None
 
+    if any(not s.is_still() for s in experiments.scans()):
+        raise DialsIndexError(
+            "Not all experiments are stills. For rotation data, use the dials.index program."
+        )
+
     reflection_tables, params, method_list = preprocess(experiments, observed, params)
 
     # Do the indexing and generate a summary of results
