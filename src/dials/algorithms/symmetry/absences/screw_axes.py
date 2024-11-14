@@ -113,12 +113,20 @@ class ScrewAxis(Subject):
                 self.sigmas.extend(sigmas)
 
     @Subject.notify_event(event="scored axis")
-    def score_axis(self, reflection_table, significance_level=0.95, method="direct"):
+    def score_axis(
+        self,
+        reflection_table,
+        significance_level=0.95,
+        method="direct",
+        fourier_oversample=50,
+    ):
         """Score the axis given a reflection table of data."""
         if method == "direct":
             return self.score_axis_direct(reflection_table, significance_level)
         else:
-            return self.score_axis_fourier(reflection_table, significance_level)
+            return self.score_axis_fourier(
+                reflection_table, significance_level, oversample=fourier_oversample
+            )
 
     @staticmethod
     def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat, oversample=50):
@@ -149,7 +157,7 @@ class ScrewAxis(Subject):
         direct_space = np.zeros(n)
         direct_space[miller_index] = i_over_sigma
 
-        if oversample is not None:
+        if oversample > 0:
             direct_space = np.concatenate(
                 (
                     direct_space,
@@ -165,20 +173,20 @@ class ScrewAxis(Subject):
 
         # Indices for Fourier frequencies which may correspond to screw periodicities
         # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
-        screw_idx = [0]
 
         d = len(fourier_space)
+        screw_idx = np.zeros_like(fourier_space, dtype=bool)
         if axis_repeat == 2:
-            screw_idx += [d // 2]
+            screw_idx[[0, d // 2, -1]] = True
         elif axis_repeat == 3:
-            screw_idx += [d // 3, -d // 3]
+            screw_idx[[0, d // 3, -d // 3, -1]] = True
         elif axis_repeat == 4:
-            screw_idx += [d // 4, d // 2, -d // 4]
+            screw_idx[[0, d // 4, d // 2, -d // 4, -1]] = True
         else:
-            screw_idx += [d // 6, d // 3, d // 2, -d // 3, -d // 6]
+            screw_idx[[0, d // 6, d // 3, d // 2, -d // 3, -d // 6, -1]] = True
 
-        null_idx = np.ones_like(fourier_space, dtype=bool)
-        null_idx[screw_idx] = False
+        screw_idx = np.convolve(screw_idx, np.ones(oversample, dtype=bool), mode="same")
+        null_idx = ~screw_idx
 
         # To determine the probability of a screw axis, use the frequencies which do not
         # correspond to any screw axis periodicity to form a null model. The ask what
@@ -187,11 +195,15 @@ class ScrewAxis(Subject):
 
         mean = fourier_space[null_idx].mean()
         std = fourier_space[null_idx].std()
-        p_screw = norm.cdf(fourier_space[n // axis_repeat], loc=mean, scale=std)
+        p_screw = norm.cdf(fourier_space[screw_idx], loc=mean, scale=std)
+        p_screw = np.mean(p_screw)
+
         fourier_space_data = {"fourier_space": fourier_space, "n": n}
         return p_screw, fourier_space_data
 
-    def score_axis_fourier(self, reflection_table, significance_level=0.95):
+    def score_axis_fourier(
+        self, reflection_table, significance_level=0.95, oversample=50
+    ):
         """Estimate the probability of a screw axis using Fourier analysis."""
 
         self.get_all_suitable_reflections(reflection_table)
@@ -213,7 +225,7 @@ class ScrewAxis(Subject):
         i_over_sigma = np.array(self.i_over_sigma)
         miller_index = np.array(self.miller_axis_vals.iround())
         p_screw, fourier_space_data = self._score_axis_fourier(
-            miller_index, i_over_sigma, self.axis_repeat
+            miller_index, i_over_sigma, self.axis_repeat, oversample=oversample
         )
         # Record the fourier data for reporting.
         self.fourier_space_data = fourier_space_data
