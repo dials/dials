@@ -143,6 +143,7 @@ class ScrewAxis(Subject):
             The expected periodicity of the screw axis. Must be one of {2, 3, 4, 6}.
         oversample : int
             The amount of oversampling to use in smoothing the fourier power spectrum.
+            This must be greater than zero.
         """
         if axis_repeat not in {2, 3, 4, 6}:
             raise ValueError(
@@ -157,46 +158,64 @@ class ScrewAxis(Subject):
         direct_space = np.zeros(n)
         direct_space[miller_index] = i_over_sigma
 
-        if oversample > 0:
-            direct_space = np.concatenate(
-                (
+        # Zero pad the fft input
+        direct_space = np.concatenate(
+            (
+                direct_space,
+                np.zeros_like(
                     direct_space,
-                    np.zeros_like(
-                        direct_space,
-                        shape=len(direct_space) * oversample,
-                    ),
-                )
+                    shape=len(direct_space) * oversample,
+                ),
             )
+        )
 
         # Fourier transform i over sigma
         fourier_space = np.abs(np.fft.fft(direct_space))
 
         # Indices for Fourier frequencies which may correspond to screw periodicities
         # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
-
         d = len(fourier_space)
-        screw_idx = np.zeros_like(fourier_space, dtype=bool)
         if axis_repeat == 2:
-            screw_idx[[0, d // 2, -1]] = True
+            peak_locations = [0, d // 2, d - 1]
         elif axis_repeat == 3:
-            screw_idx[[0, d // 3, -d // 3, -1]] = True
+            peak_locations = [0, d // 3, 2 * d // 3, d - 1]
         elif axis_repeat == 4:
-            screw_idx[[0, d // 4, d // 2, -d // 4, -1]] = True
+            peak_locations = [0, d // 4, d // 2, 3 * d // 4, d - 1]
         else:
-            screw_idx[[0, d // 6, d // 3, d // 2, -d // 3, -d // 6, -1]] = True
+            peak_locations = [0, d // 6, d // 3, d // 2, 2 * d // 3, 5 * d // 6, d - 1]
 
-        screw_idx = np.convolve(screw_idx, np.ones(oversample, dtype=bool), mode="same")
+        # Creates a boolean mask len(peak_locations) by len(fourier_space)
+        # This mask takes the value True in the vicinity of expected peaks
+        peak_mask = []
+        for loc in peak_locations:
+            peak = np.zeros(d, dtype="bool")
+            peak[loc] = True
+            peak = np.convolve(peak, np.ones(oversample, dtype=bool), mode="same")
+            peak_mask.append(peak)
+        peak_mask = np.stack(peak_mask)
+
+        # Combine all peak regions
+        screw_idx = peak_mask.any(0)
         null_idx = ~screw_idx
 
         # To determine the probability of a screw axis, use the frequencies which do not
-        # correspond to any screw axis periodicity to form a null model. The ask what
+        # correspond to any screw axis periodicity to form a null model. Then ask what
         # the probability of the candidate frequency is under the null model.
-        # In this case, we will parameterize the null frequencies by a normal distribution.
+        # In this case, we will use the nonparametric, wilcoxon ranksums test.
 
-        mean = fourier_space[null_idx].mean()
-        std = fourier_space[null_idx].std()
-        p_screw = norm.cdf(fourier_space[screw_idx], loc=mean, scale=std)
-        p_screw = np.mean(p_screw)
+        from scipy.stats import ranksums
+
+        p_peaks = []
+        for peak in peak_mask:
+            stat = ranksums(
+                fourier_space[peak],
+                fourier_space[null_idx],
+                alternative="greater",  # hypothesis: peak > null
+            )
+            p_peaks.append(1.0 - stat.pvalue)
+
+        # Final p-value is the product of each peak's p-value
+        p_screw = np.prod(p_peaks)
 
         fourier_space_data = {"fourier_space": fourier_space, "n": n}
         return p_screw, fourier_space_data
