@@ -135,30 +135,28 @@ def make_test_data_ptp1b_31c():
     return r
 
 
-@pytest.mark.parametrize("score_method", ["direct", "fourier"])
-def test_screw_axes_example_data(score_method):
+def _test_screw_axes_example_data(**score_axis_kwargs):
     """Test some example data where we know the answer"""
     refls = make_test_data_LCY_21c()
-    score = ScrewAxis21c().score_axis(refls, method=score_method)
+    score = ScrewAxis21c().score_axis(refls, **score_axis_kwargs)
     assert score > 0.95
 
     refls = make_test_data_thermo_61c()
-    score = ScrewAxis61c().score_axis(refls, method=score_method)
+    score = ScrewAxis61c().score_axis(refls, **score_axis_kwargs)
     assert score > 0.95
 
     refls = make_test_data_thaumatin_41c()
-    score_41 = ScrewAxis41c().score_axis(refls, method=score_method)
-    score_42 = ScrewAxis42c().score_axis(refls, method=score_method)
+    score_41 = ScrewAxis41c().score_axis(refls, **score_axis_kwargs)
+    score_42 = ScrewAxis42c().score_axis(refls, **score_axis_kwargs)
     assert score_41 > 0.99
     assert score_42 > 0.99  # both should score highly
 
     refls = make_test_data_ptp1b_31c()
-    score_31 = ScrewAxis31c().score_axis(refls, method=score_method)
+    score_31 = ScrewAxis31c().score_axis(refls, **score_axis_kwargs)
     assert score_31 > 0.95
 
 
-@pytest.mark.parametrize("score_method", ["direct", "fourier"])
-def test_not_screw_axes(score_method):
+def _test_not_screw_axes(**score_axis_kwargs):
     """Test cases where a screw axis is not present."""
     reflection_table = flex.reflection_table()
     reflection_table["miller_index"] = flex.miller_index(
@@ -166,8 +164,8 @@ def test_not_screw_axes(score_method):
     )
     reflection_table["variance"] = flex.double(8, 1.0)
     reflection_table["intensity"] = flex.double(8, 5.0)
-    score_41 = ScrewAxis41c().score_axis(reflection_table, method=score_method)
-    score_42 = ScrewAxis42c().score_axis(reflection_table, method=score_method)
+    score_41 = ScrewAxis41c().score_axis(reflection_table, **score_axis_kwargs)
+    score_42 = ScrewAxis42c().score_axis(reflection_table, **score_axis_kwargs)
 
     assert score_41 < 0.01
     assert score_42 < 0.01
@@ -176,16 +174,16 @@ def test_not_screw_axes(score_method):
     reflection_table["intensity"] = flex.double(
         [3.0, 100.0, 3.0, 100.0, 3.0, 100.0, 3.0, 100.0]
     )
-    score_41 = ScrewAxis41c().score_axis(reflection_table, method=score_method)
-    score_42 = ScrewAxis42c().score_axis(reflection_table, method=score_method)
+    score_41 = ScrewAxis41c().score_axis(reflection_table, **score_axis_kwargs)
+    score_42 = ScrewAxis42c().score_axis(reflection_table, **score_axis_kwargs)
 
     assert score_41 < 0.01
     # assert score_42 < 0.01 - passes for direct, but not fourier
 
     # All data too weak
     reflection_table["intensity"] = flex.double(8, 0.5)
-    score_41 = ScrewAxis41c().score_axis(reflection_table, method=score_method)
-    score_42 = ScrewAxis42c().score_axis(reflection_table, method=score_method)
+    score_41 = ScrewAxis41c().score_axis(reflection_table, **score_axis_kwargs)
+    score_42 = ScrewAxis42c().score_axis(reflection_table, **score_axis_kwargs)
 
     assert score_41 < 0.01
     assert score_42 < 0.01
@@ -194,8 +192,8 @@ def test_not_screw_axes(score_method):
     reflection_table["miller_index"] = flex.miller_index(
         [(0, 0, i) for i in range(1, 17, 2)]
     )
-    score_41 = ScrewAxis41c().score_axis(reflection_table, method=score_method)
-    score_42 = ScrewAxis42c().score_axis(reflection_table, method=score_method)
+    score_41 = ScrewAxis41c().score_axis(reflection_table, **score_axis_kwargs)
+    score_42 = ScrewAxis42c().score_axis(reflection_table, **score_axis_kwargs)
 
     assert score_41 < 0.01
     assert score_42 < 0.01
@@ -204,8 +202,40 @@ def test_not_screw_axes(score_method):
     reflection_table["miller_index"] = flex.miller_index(
         [(0, 0, i) for i in range(2, 18, 2)]
     )
-    score_41 = ScrewAxis41c().score_axis(reflection_table, method=score_method)
-    score_42 = ScrewAxis42c().score_axis(reflection_table, method=score_method)
+    score_41 = ScrewAxis41c().score_axis(reflection_table, **score_axis_kwargs)
+    score_42 = ScrewAxis42c().score_axis(reflection_table, **score_axis_kwargs)
 
     assert score_41 < 0.01
     assert score_42 < 0.01
+
+
+def test_screw_axis_example_data_direct():
+    score_axis_kwargs = {
+        "method": "direct",
+    }
+    _test_screw_axes_example_data(**score_axis_kwargs)
+
+
+def test_not_screw_axis_direct():
+    score_axis_kwargs = {
+        "method": "direct",
+    }
+    _test_not_screw_axes(**score_axis_kwargs)
+
+
+@pytest.mark.parametrize("oversample", [1, 2, 10, 50])
+def test_screw_axis_example_data_fourier(oversample):
+    score_axis_kwargs = {
+        "method": "fourier",
+        "fourier_oversample": oversample,
+    }
+    _test_screw_axes_example_data(**score_axis_kwargs)
+
+
+@pytest.mark.parametrize("oversample", [1, 2, 10, 50])
+def test_not_screw_axis_fourier(oversample):
+    score_axis_kwargs = {
+        "method": "fourier",
+        "fourier_oversample": oversample,
+    }
+    _test_not_screw_axes(**score_axis_kwargs)
