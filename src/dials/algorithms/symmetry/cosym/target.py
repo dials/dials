@@ -338,7 +338,7 @@ class Target:
                 # but approches 1 in the limit, so rather say efective sample size
                 # for standard error calc is n-1
                 sel = np.where(wij_matrix > 1)
-                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 1))
+                se = (1 - np.square(rij_matrix[sel])) / np.sqrt(wij_matrix[sel] - 1)
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
 
@@ -443,8 +443,8 @@ class Target:
                 # corresponding correlation coefficient
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
                 with np.errstate(divide="ignore", invalid="ignore"):
-                    reciprocal_se = np.sqrt(
-                        (wij[right_up] - 2) / (1 - np.square(rij[right_up]))
+                    reciprocal_se = np.sqrt((wij[right_up] - 2)) / (
+                        1 - np.square(rij[right_up])
                     )
 
                 wij[right_up] = np.where(wij[right_up] > 2, reciprocal_se, 0)
