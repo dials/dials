@@ -84,13 +84,9 @@ Crystal:
     )
 
 
-def test_dials_show_i04_weak_data(dials_regression: Path):
-    path = os.path.join(
-        dials_regression,
-        "indexing_test_data",
-        "i04_weak_data",
-        "experiments_import.json",
-    )
+def test_dials_show_i04_weak_data(dials_data):
+    data_dir = dials_data("i04_weak_data", pathlib=True)
+    path = data_dir / "experiments_import.json"
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
@@ -213,10 +209,10 @@ Goniometer:
     )
 
 
-def test_dials_show_multi_panel_i23(dials_regression: Path):
-    path = os.path.join(
-        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
-    )
+def test_dials_show_multi_panel_i23(dials_data):
+    data_dir = dials_data("image_examples", pathlib=True)
+    path = data_dir / "DLS_I23_germ_13KeV_0001.cbf"
+
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
@@ -365,11 +361,10 @@ def test_dials_show_reflection_table(dials_data):
         assert name in out
 
 
-def test_dials_show_image_statistics(dials_regression: Path):
+def test_dials_show_image_statistics(dials_data):
     # Run on one multi-panel image
-    path = os.path.join(
-        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
-    )
+    data_dir = dials_data("image_examples", pathlib=True)
+    path = data_dir / "DLS_I23_germ_13KeV_0001.cbf"
     result = subprocess.run(
         [shutil.which("dials.show"), "image_statistics.show_raw=true", path],
         env={"DIALS_NOBANNER": "1", **os.environ},
@@ -380,7 +375,7 @@ def test_dials_show_image_statistics(dials_regression: Path):
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
         output[-1]
-        == "germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
+        == "DLS_I23_germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
     )
 
 
