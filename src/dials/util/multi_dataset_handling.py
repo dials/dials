@@ -3,7 +3,6 @@ Module of functions for handling operations on lists of reflection tables
 and experiment lists.
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -11,14 +10,12 @@ import logging
 
 from orderedset import OrderedSet
 
+import iotbx.phil
 from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
 
 logger = logging.getLogger("dials")
-
-import iotbx.phil
-
 phil_scope = iotbx.phil.parse(
     """
   dataset_selection {
@@ -119,7 +116,7 @@ def renumber_table_id_columns(reflection_tables):
 
     new_id_ = 0
     for table in reflection_tables:
-        if not table:
+        if not table or "id" not in table:
             continue
         table_id_values = sorted(set(table["id"]).difference({-1}), reverse=True)
         highest_new_id = new_id_ + len(table_id_values) - 1

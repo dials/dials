@@ -5,6 +5,7 @@ This is separate because the non-dynamic stuff can generally be moved
 out of a setup.py, but mainly because at the moment it's how poetry
 offloads the unresolved build phases.
 """
+
 from __future__ import annotations
 
 import ast
@@ -12,10 +13,16 @@ import itertools
 import re
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 
-def get_entry_point(filename: Path, prefix: str, import_path: str) -> list[str]:
+class EntryPoint(NamedTuple):
+    filename: Path
+    is_gui_script: bool
+    spec: str
+
+
+def get_entry_point(filename: Path, prefix: str, import_path: str) -> list[EntryPoint]:
     """Returns the entry point string for a given path.
 
     This looks for LIBTBX_SET_DISPATCHER_NAME, and a root function
@@ -40,14 +47,26 @@ def get_entry_point(filename: Path, prefix: str, import_path: str) -> list[str]:
     )
     if not has_run:
         return []
+    is_gui_script = "PHENIX_GUI_ENVIRONMENT=1" in contents
     # Find if we need an alternate name via LIBTBX_SET_DISPATCHER_NAME
     alternate_names = re.findall(
         r"^#\s*LIBTBX_SET_DISPATCHER_NAME\s+(.*)$", contents, re.M
     )
     if alternate_names:
-        return [f"{name}={import_path}.{filename.stem}:run" for name in alternate_names]
+        return [
+            EntryPoint(
+                filename, is_gui_script, f"{name}={import_path}.{filename.stem}:run"
+            )
+            for name in alternate_names
+        ]
 
-    return [f"{prefix}.{filename.stem}={import_path}.{filename.stem}:run"]
+    return [
+        EntryPoint(
+            filename,
+            is_gui_script,
+            f"{prefix}.{filename.stem}={import_path}.{filename.stem}:run",
+        )
+    ]
 
 
 def build(setup_kwargs: dict[str, Any]) -> None:
@@ -55,6 +74,7 @@ def build(setup_kwargs: dict[str, Any]) -> None:
     package_path = Path(__file__).parent / "src" / "dials"
     entry_points = setup_kwargs.setdefault("entry_points", {})
     console_scripts = entry_points.setdefault("console_scripts", [])
+    gui_scripts = entry_points.setdefault("gui_scripts", [])
     # Work out what dispatchers to add
     all_dispatchers = sorted(
         itertools.chain.from_iterable(
@@ -62,13 +82,29 @@ def build(setup_kwargs: dict[str, Any]) -> None:
             for f in (package_path / "command_line").glob("*.py")
         )
     )
-    console_scripts.extend(x for x in all_dispatchers if x not in console_scripts)
+    gui_scripts.extend(
+        [
+            x.spec
+            for x in all_dispatchers
+            if x.is_gui_script and x not in console_scripts and x not in gui_scripts
+        ]
+    )
+    console_scripts.extend(
+        x.spec
+        for x in all_dispatchers
+        if not x.is_gui_script and x not in console_scripts and x not in gui_scripts
+    )
     libtbx_dispatchers = entry_points.setdefault("libtbx.dispatcher.script", [])
     libtbx_dispatchers.extend(
         "{name}={name}".format(name=x.split("=")[0]) for x in console_scripts
     )
+    libtbx_dispatchers.extend(
+        "{name}={name}".format(name=x.split("=")[0]) for x in gui_scripts
+    )
 
-    print(f"Found {len(entry_points['console_scripts'])} dials dispatchers")
+    print(
+        f"Found {len(entry_points['console_scripts']) + len(entry_points['gui_scripts'])} dials dispatchers"
+    )
 
 
 if __name__ == "__main__":

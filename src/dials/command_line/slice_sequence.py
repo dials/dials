@@ -3,6 +3,7 @@ from __future__ import annotations
 from os.path import basename, splitext
 
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx.phil import parse
 
 import dials.util
 from dials.algorithms.refinement.refinement_helpers import calculate_frame_numbers
@@ -30,8 +31,6 @@ Examples::
   dials.slice_sequence models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 """
-
-from libtbx.phil import parse
 
 phil_scope = parse(
     """
@@ -130,12 +129,10 @@ def concatenate_reflections(sliced_reflections, identifiers):
 
 
 def exclude_images_multiple(experiments, reflections, image_number):
-
     sliced_experiments = []
     sliced_reflections = []
 
     for iexp, experiment in enumerate(experiments):
-
         # Calculate the image range for each slice
         first_image, last_image = experiment.scan.get_image_range()
         first_exclude = ((first_image - 1) // image_number + 1) * image_number
@@ -149,8 +146,9 @@ def exclude_images_multiple(experiments, reflections, image_number):
             image_ranges.append((start, last_image))
 
         # Slice the experiments
+        elist = ExperimentList([experiment])
         sliced_experiments.extend(
-            [slice_experiments(experiments, [sr])[0] for sr in image_ranges]
+            [slice_experiments(elist, [sr])[0] for sr in image_ranges]
         )
 
         # Slice the reflections
@@ -275,6 +273,13 @@ class Script:
         else:
             # slice each dataset into the requested subset
             if slice_exps:
+                if len(experiments) != len(params.image_range):
+                    raise Sorry(
+                        "The input experiment list and image_ranges are not of the same length"
+                        + f" ({len(experiments)} != {len(params.image_range)})."
+                        + "\nTo achieve multiple slices from a single sweep, dials.slice_sequence can be run multiple times with different image_range values."
+                        + "\nAlternatively, multi-experiment file pairs can be split with dials.split_experiments to help manage multiple-experiment workflows."
+                    )
                 sliced_experiments = slice_experiments(experiments, params.image_range)
             if slice_refs:
                 sliced_reflections = slice_reflections(reflections, params.image_range)

@@ -136,4 +136,4 @@ namespace dials { namespace af {
     }
 
   }  // namespace boost_python
-}}   // namespace dials::af
+}}  // namespace dials::af

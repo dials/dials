@@ -8,6 +8,7 @@ import enum
 import logging
 import math
 import typing
+import warnings
 
 import numpy as np
 import scipy.optimize
@@ -94,8 +95,9 @@ def tanh_fit(x, y, degree=None, n_obs=None):
     p0 = np.array([0.2, 0.4])  # starting parameter estimates
     sigma = np.array(standard_errors)
     x = np.array(x)
-
-    result = scipy.optimize.curve_fit(tanh_cchalf, x, y, p0, sigma=sigma)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", scipy.optimize.OptimizeWarning)
+        result = scipy.optimize.curve_fit(tanh_cchalf, x, y, p0, sigma=sigma)
 
     r = result[0][0]
     s0 = result[0][1]
@@ -243,9 +245,11 @@ def _get_cc_half_critical_values(merging_stats, cc_half_method):
         ).reversed()
     elif merging_stats.overall.cc_one_half_critical_value is not None:
         critical = [
-            b.cc_one_half_critical_value
-            if b.cc_one_half_critical_value is not None
-            else 0.0
+            (
+                b.cc_one_half_critical_value
+                if b.cc_one_half_critical_value is not None
+                else 0.0
+            )
             for b in merging_stats.bins
         ]
         return flex.double(critical).reversed()
@@ -564,7 +568,6 @@ class Resolutionizer:
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):
-
         self._params = params
         self._reference = reference
 
@@ -690,9 +693,9 @@ class Resolutionizer:
                 self._merging_statistics,
                 limit,
                 cc_half_method=self._params.cc_half_method,
-                model=tanh_fit
-                if self._params.cc_half_fit == "tanh"
-                else polynomial_fit,
+                model=(
+                    tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit
+                ),
             )
         elif metric == metrics.CC_HALF_SIGNIFICANCE_LEVEL:
             return resolution_cc_half_significance(

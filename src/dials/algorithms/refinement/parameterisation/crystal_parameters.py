@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from scitbx import matrix
 
@@ -12,6 +10,8 @@ from dials.algorithms.refinement.parameterisation.model_parameters import (
     Parameter,
 )
 from dials.algorithms.refinement.refinement_helpers import CrystalOrientationCompose
+
+logger = logging.getLogger(__name__)
 
 
 class CrystalOrientationMixin:
@@ -78,7 +78,6 @@ class CrystalOrientationParameterisation(
         return
 
     def compose(self):
-
         # Extract orientation from the initial state
         U0 = self._initial_state
 
@@ -99,7 +98,6 @@ class CrystalOrientationParameterisation(
         return
 
     def get_state(self):
-
         # only a single crystal is parameterised here, so no multi_state_elt
         # argument is allowed
         return matrix.sqr(self._model.get_U())
@@ -126,7 +124,6 @@ class CrystalUnitCellMixin:
         return p_list
 
     def _compose_core(self, raw_vals):
-
         # obtain metrical matrix parameters on natural scale
         vals = [v * 1.0e-5 for v in raw_vals]
 
@@ -137,7 +134,6 @@ class CrystalUnitCellMixin:
         try:
             newB = matrix.sqr(S.backward_orientation(vals).reciprocal_matrix())
         except RuntimeError as e:
-
             # write original error to debug log
             logger.debug("Unable to compose the crystal model")
             logger.debug("Original error message: %s", str(e))
@@ -201,7 +197,6 @@ class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixi
         return
 
     def compose(self):
-
         # calculate new B and derivatives
         newB, self._dstate_dp = self._compose_core([p.value for p in self._param])
 
@@ -211,13 +206,11 @@ class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixi
         return
 
     def get_state(self):
-
         # only a single crystal is parameterised here, so no multi_state_elt
         # argument is allowed
         return matrix.sqr(self._model.get_B())
 
     def set_state_uncertainties(self, var_cov, multi_state_elt=None):
-
         self._model.set_B_covariance(var_cov)
 
         return

@@ -28,6 +28,7 @@
 #include <dials/algorithms/spot_prediction/scan_varying_ray_predictor.h>
 #include <dials/algorithms/spot_prediction/stills_ray_predictor.h>
 #include <dials/algorithms/spot_prediction/ray_intersection.h>
+#include <cctbx/miller/index_generator.h>
 
 namespace dials { namespace algorithms {
 
@@ -38,6 +39,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::is_angle_in_range;
   using dxtbx::model::Panel;
   using dxtbx::model::plane_ray_intersection;
+  using dxtbx::model::PolychromaticBeam;
   using dxtbx::model::Scan;
   using scitbx::constants::pi;
   using scitbx::constants::pi_180;
@@ -72,6 +74,16 @@ namespace dials { namespace algorithms {
 
     stills_prediction_data(af::reflection_table &table) : prediction_data(table) {
       delpsi = table.get<double>("delpsical.rad");
+    }
+  };
+
+  struct laue_prediction_data : prediction_data {
+    af::shared<double> wavelength_cal;
+    af::shared<vec3<double> > s0_cal;
+
+    laue_prediction_data(af::reflection_table &table) : prediction_data(table) {
+      wavelength_cal = table.get<double>("wavelength_cal");
+      s0_cal = table.get<vec3<double> >("s0_cal");
     }
   };
 
@@ -1307,6 +1319,325 @@ namespace dials { namespace algorithms {
     }
 
     SphericalRelpStillsRayPredictor spherical_relp_predict_ray_;
+  };
+
+  /**
+   * A class to do Laue reflection prediction.
+   * Uses LaueRayPredictor to make predictions, and adds additional
+   * wavelenegth_cal and s0_cal columns to the predicted reflection table.
+   */
+  class LaueReflectionPredictor {
+  public:
+    typedef cctbx::miller::index<> miller_index;
+
+    /**
+     * Initialise the predictor
+     */
+    LaueReflectionPredictor(const PolychromaticBeam &beam,
+                            const Detector &detector,
+                            boost::optional<const Goniometer> goniometer,
+                            mat3<double> ub,
+                            const cctbx::uctbx::unit_cell &unit_cell,
+                            const cctbx::sgtbx::space_group_type &space_group_type,
+                            const double &dmin)
+        : beam_(beam),
+          detector_(detector),
+          goniometer_(goniometer),
+          ub_(ub),
+          unit_cell_(unit_cell),
+          space_group_type_(space_group_type),
+          dmin_(dmin),
+          predict_ray_(
+            beam.get_unit_s0(),
+            goniometer ? goniometer->get_fixed_rotation()
+                       : mat3<double>(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+            goniometer ? goniometer->get_setting_rotation()
+                       : mat3<double>(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)) {}
+    /**
+     * Predict all reflection.
+     * @returns reflection table.
+     */
+    af::reflection_table operator()() const {
+      throw DIALS_ERROR("Not implemented");
+      return af::reflection_table();
+    }
+
+    af::reflection_table all_reflections_for_asu(double phi) {
+      DIALS_ASSERT(goniometer_.has_value());
+      mat3<double> fixed_rotation = goniometer_->get_fixed_rotation();
+      mat3<double> setting_rotation = goniometer_->get_setting_rotation();
+      vec3<double> rotation_axis = goniometer_->get_rotation_axis();
+      mat3<double> rotation =
+        scitbx::math::r3_rotation::axis_and_angle_as_matrix(rotation_axis, phi);
+      vec3<double> unit_s0 = beam_.get_unit_s0();
+      vec2<double> wavelength_range = beam_.get_wavelength_range();
+
+      cctbx::miller::index_generator indices =
+        cctbx::miller::index_generator(unit_cell_, space_group_type_, false, dmin_);
+
+      af::shared<miller_index> indices_arr = indices.to_array();
+
+      af::reflection_table table;
+      af::shared<double> wavelength_column;
+      table["wavelength_cal"] = wavelength_column;
+      af::shared<vec3<double> > s0_column;
+      table["s0_cal"] = s0_column;
+      laue_prediction_data predictions(table);
+
+      for (std::size_t i = 0; i < indices_arr.size(); ++i) {
+        miller_index h = indices_arr[i];
+
+        vec3<double> q = setting_rotation * rotation * fixed_rotation * ub_ * h;
+
+        // Calculate the wavelength required to meet the diffraction condition
+        double wavelength = -2 * ((unit_s0 * q) / (q * q));
+        if (wavelength < wavelength_range[0] || wavelength > wavelength_range[1]) {
+          continue;
+        }
+        vec3<double> s0 = unit_s0 / wavelength;
+        DIALS_ASSERT(s0.length() > 0);
+
+        // Calculate the Ray (default zero angle and 'entering' as false)
+        vec3<double> s1 = s0 + q;
+
+        int panel = detector_.get_panel_intersection(s1);
+        if (panel == -1) {
+          continue;
+        }
+
+        Detector::coord_type coord;
+        coord.first = panel;
+        coord.second = detector_[panel].get_ray_intersection(s1);
+        vec2<double> mm = coord.second;
+        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+
+        // Add the reflections to the table
+        predictions.hkl.push_back(h);
+        predictions.enter.push_back(false);
+        predictions.s1.push_back(s1);
+        predictions.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
+        predictions.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
+        predictions.panel.push_back(panel);
+        predictions.flags.push_back(af::Predicted);
+        predictions.wavelength_cal.push_back(wavelength);
+        predictions.s0_cal.push_back(s0);
+      }
+
+      // Return the reflection table
+      return table;
+    }
+
+    /**
+     * Predict reflections for UB. Also filters based on ewald sphere proximity.
+     * @param ub The UB matrix
+     * @returns A reflection table.
+     */
+    af::reflection_table for_ub(const mat3<double> &ub) {
+      // Create the reflection table and the local container
+      af::reflection_table table;
+      laue_prediction_data predictions(table);
+
+      // Create the index generate and loop through the indices. For each index,
+      // predict the rays and append to the reflection table
+      IndexGenerator indices(unit_cell_, space_group_type_, dmin_);
+      for (;;) {
+        miller_index h = indices.next();
+        if (h.is_zero()) {
+          break;
+        }
+
+        Ray ray;
+        ray = predict_ray_(h, ub);
+        append_for_index(predictions, ub, h);
+      }
+
+      // Return the reflection table
+      return table;
+    }
+
+    /**
+     * Predict the reflections with given Miller indices.
+     * @param h The miller index
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(const af::const_ref<miller_index> &h) {
+      af::reflection_table table;
+      laue_prediction_data predictions(table);
+      for (std::size_t i = 0; i < h.size(); ++i) {
+        append_for_index(predictions, ub_, h[i]);
+      }
+      return table;
+    }
+
+    /**
+     * Predict for given Miller indices on a single panel.
+     * @param h The array of Miller indices
+     * @param panel The panel index
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(const af::const_ref<miller_index> &h,
+                                    std::size_t panel) {
+      af::shared<std::size_t> panels(h.size(), panel);
+      return (*this)(h, panels.const_ref());
+    }
+
+    /**
+     * Predict for given Miller indices for specific panels.
+     * @param h The array of Miller indices
+     * @param panel The array of panel indices
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(const af::const_ref<miller_index> &h,
+                                    const af::const_ref<std::size_t> &panel) {
+      DIALS_ASSERT(h.size() == panel.size());
+      af::reflection_table table;
+      laue_prediction_data predictions(table);
+      for (std::size_t i = 0; i < h.size(); ++i) {
+        append_for_index(predictions, ub_, h[i], (int)panel[i]);
+      }
+      return table;
+    }
+
+    /**
+     * Predict reflections for specific Miller indices, panels and individual
+     * UB matrices
+     * @param h The array of miller indices
+     * @param panel The array of panels
+     * @param ub The array of setting matrices
+     * @returns A reflection table.
+     */
+    af::reflection_table for_hkl_with_individual_ub(
+      const af::const_ref<miller_index> &h,
+      const af::const_ref<std::size_t> &panel,
+      const af::const_ref<mat3<double> > &ub) {
+      DIALS_ASSERT(ub.size() == h.size());
+      DIALS_ASSERT(ub.size() == panel.size());
+      af::reflection_table table;
+      af::shared<double> wavelength_column;
+      table["wavelength_cal"] = wavelength_column;
+      af::shared<vec3<double> > s0_column;
+      table["s0_cal"] = s0_column;
+      laue_prediction_data predictions(table);
+      for (std::size_t i = 0; i < h.size(); ++i) {
+        append_for_index(predictions, ub[i], h[i], panel[i]);
+      }
+      DIALS_ASSERT(table.nrows() == h.size());
+      return table;
+    }
+
+    /**
+     * Predict reflections and add to the entries in the table for a single UB
+     * matrix
+     * @param table The reflection table
+     * @param ub The ub matrix
+     */
+    void for_reflection_table(af::reflection_table table, const mat3<double> &ub) {
+      af::shared<mat3<double> > uba(table.nrows(), ub);
+      for_reflection_table_with_individual_ub(table, uba.const_ref());
+    }
+
+    /**
+     * Predict reflections and add to the entries in the table for an array of
+     * UB matrices
+     * @param table The reflection table
+     */
+    void for_reflection_table_with_individual_ub(
+      af::reflection_table table,
+      const af::const_ref<mat3<double> > &ub) {
+      DIALS_ASSERT(ub.size() == table.nrows());
+      af::reflection_table new_table =
+        for_hkl_with_individual_ub(table["miller_index"], table["panel"], ub);
+      DIALS_ASSERT(new_table.nrows() == table.nrows());
+      table["miller_index"] = new_table["miller_index"];
+      table["panel"] = new_table["panel"];
+      table["s1"] = new_table["s1"];
+      table["xyzcal.px"] = new_table["xyzcal.px"];
+      table["xyzcal.mm"] = new_table["xyzcal.mm"];
+      table["wavelength_cal"] = new_table["wavelength_cal"];
+      table["s0_cal"] = new_table["s0_cal"];
+
+      af::shared<std::size_t> flags = table["flags"];
+      af::shared<std::size_t> new_flags = new_table["flags"];
+      for (std::size_t i = 0; i < flags.size(); ++i) {
+        flags[i] &= ~af::Predicted;
+        flags[i] |= new_flags[i];
+      }
+      DIALS_ASSERT(table.is_consistent());
+    }
+
+  protected:
+    /**
+     * Predict for the given Miller index, UB matrix and panel number
+     * @param p The reflection data
+     * @param ub The UB matrix
+     * @param h The miller index
+     * @param panel The panel index
+     */
+    virtual void append_for_index(laue_prediction_data &p,
+                                  const mat3<double> ub,
+                                  const miller_index &h,
+                                  int panel = -1) {
+      Ray ray;
+      ray = predict_ray_(h, ub);
+      double wavelength = predict_ray_.get_wavelength();
+      vec3<double> s0 = predict_ray_.get_s0();
+      append_for_ray(p, h, ray, panel, wavelength, s0);
+    }
+
+    void append_for_ray(laue_prediction_data &p,
+                        const miller_index &h,
+                        const Ray &ray,
+                        int panel,
+                        double wavelength,
+                        vec3<double> s0) const {
+      try {
+        // Get the impact on the detector
+        Detector::coord_type impact = get_ray_intersection(ray.s1, panel);
+        std::size_t panel = impact.first;
+        vec2<double> mm = impact.second;
+        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+
+        // Add the reflections to the table
+        p.hkl.push_back(h);
+        p.enter.push_back(ray.entering);
+        p.s1.push_back(ray.s1);
+        p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
+        p.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
+        p.panel.push_back(panel);
+        p.flags.push_back(af::Predicted);
+        p.wavelength_cal.push_back(wavelength);
+        p.s0_cal.push_back(s0);
+
+      } catch (dxtbx::error const &) {
+        // do nothing
+      }
+    }
+
+  private:
+    /**
+     * Helper function to do ray intersection with/without panel set.
+     */
+    Detector::coord_type get_ray_intersection(vec3<double> s1, int panel) const {
+      Detector::coord_type coord;
+      if (panel < 0) {
+        coord = detector_.get_ray_intersection(s1);
+      } else {
+        coord.first = panel;
+        coord.second = detector_[panel].get_ray_intersection(s1);
+      }
+      return coord;
+    }
+
+  protected:
+    PolychromaticBeam beam_;
+    Detector detector_;
+    boost::optional<Goniometer> goniometer_;
+    Scan scan_;
+    mat3<double> ub_;
+    cctbx::uctbx::unit_cell unit_cell_;
+    cctbx::sgtbx::space_group_type space_group_type_;
+    const double dmin_;
+    LaueRayPredictor predict_ray_;
   };
 
 }}  // namespace dials::algorithms

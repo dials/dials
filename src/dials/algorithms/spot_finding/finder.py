@@ -13,12 +13,14 @@ import libtbx
 from dxtbx.format.image import ImageBool
 from dxtbx.imageset import ImageSequence, ImageSet
 from dxtbx.model import ExperimentList
+from dxtbx.model.tof_helpers import wavelength_from_tof
 
 from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
 from dials.util import Sorry, log
 from dials.util.log import rehandle_cached_records
-from dials.util.mp import available_cores, batch_multi_node_parallel_map
+from dials.util.mp import batch_multi_node_parallel_map
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger(__name__)
 
@@ -84,9 +86,7 @@ class ExtractPixelsFromImage:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
         logger.debug(
-            "Number of masked pixels for image %i: %i",
-            index,
-            sum(m.count(False) for m in mask),
+            f"Number of masked pixels for image {index}: {sum(m.count(False) for m in mask)}",
         )
 
         # Add the images to the pixel lists
@@ -152,13 +152,10 @@ class ExtractPixelsFromImage:
         # Print some info
         if self.compute_mean_background:
             logger.info(
-                "Found %d strong pixels on image %d with average background %f",
-                num_strong,
-                frame + 1,
-                average_background,
+                f"Found {num_strong} strong pixels on image {frame + 1} with average background {average_background}",
             )
         else:
-            logger.info("Found %d strong pixels on image %d", num_strong, frame + 1)
+            logger.info(f"Found {num_strong} strong pixels on image {frame + 1}")
 
         # Return the result
         return pixel_list
@@ -293,7 +290,7 @@ def pixel_list_to_shoeboxes(
             shoeboxes.extend(creator.result())
             spotsizes.extend(creator.spot_size())
             hp.extend(creator.hot_pixels())
-    logger.info("\nExtracted %d spots", len(shoeboxes))
+    logger.info(f"\nExtracted {len(shoeboxes)} spots")
 
     # Get the unallocated spots and print some info
     selection = shoeboxes.is_allocated()
@@ -301,8 +298,8 @@ def pixel_list_to_shoeboxes(
     ntoosmall = (spotsizes < min_spot_size).count(True)
     ntoolarge = (spotsizes > max_spot_size).count(True)
     assert ntoosmall + ntoolarge == selection.count(False)
-    logger.info("Removed %d spots with size < %d pixels", ntoosmall, min_spot_size)
-    logger.info("Removed %d spots with size > %d pixels", ntoolarge, max_spot_size)
+    logger.info(f"Removed {ntoosmall} spots with size < {min_spot_size} pixels")
+    logger.info(f"Removed {ntoolarge} spots with size > {max_spot_size} pixels")
 
     # Return the shoeboxes
     return shoeboxes, hotpixels
@@ -314,11 +311,11 @@ def shoeboxes_to_reflection_table(
     """Filter shoeboxes and create reflection table"""
     # Calculate the spot centroids
     centroid = shoeboxes.centroid_valid()
-    logger.info("Calculated %d spot centroids", len(shoeboxes))
+    logger.info(f"Calculated {len(shoeboxes)} spot centroids")
 
     # Calculate the spot intensities
     intensity = shoeboxes.summed_intensity()
-    logger.info("Calculated %d spot intensities", len(shoeboxes))
+    logger.info(f"Calculated {len(shoeboxes)} spot intensities")
 
     # Create the observations
     observed = flex.observation(shoeboxes.panels(), centroid, intensity)
@@ -444,7 +441,7 @@ class ExtractSpots:
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
         if mp_nproc is libtbx.Auto:
-            mp_nproc = available_cores()
+            mp_nproc = CPU_COUNT
             logger.info(f"Setting nproc={mp_nproc}")
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
@@ -457,7 +454,7 @@ class ExtractSpots:
             mp_chunksize = self._compute_chunksize(
                 len(imageset), mp_njobs * mp_nproc, self.min_chunksize
             )
-            logger.info("Setting chunksize=%i", mp_chunksize)
+            logger.info(f"Setting chunksize={mp_chunksize}")
 
         len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
@@ -490,13 +487,10 @@ class ExtractSpots:
         logger.info("Extracting strong pixels from images")
         if mp_njobs > 1:
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n",
-                mp_method,
-                mp_njobs,
-                mp_nproc,
+                f" Using {mp_method} with {mp_njobs} parallel job(s) and {mp_nproc} processes per node\n"
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+            logger.info(f" Using multiprocessing with {mp_nproc} parallel job(s)\n")
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
@@ -553,7 +547,7 @@ class ExtractSpots:
             mp_chunksize = self._compute_chunksize(
                 len(imageset), mp_njobs * mp_nproc, self.min_chunksize
             )
-            logger.info("Setting chunksize=%i", mp_chunksize)
+            logger.info(f"Setting chunksize={mp_chunksize}")
 
         len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
@@ -586,13 +580,10 @@ class ExtractSpots:
         logger.info("Extracting strong spots from images")
         if mp_njobs > 1:
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n",
-                mp_method,
-                mp_njobs,
-                mp_nproc,
+                f" Using {mp_method} with {mp_njobs} parallel job(s) and {mp_nproc} processes per node\n"
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+            logger.info(f" Using multiprocessing with {mp_nproc} parallel job(s)\n")
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
@@ -696,10 +687,9 @@ class SpotFinder:
         reflections = flex.reflection_table()
 
         for j, imageset in enumerate(imagesets):
-
             # Find the strong spots in the sequence
             logger.info(
-                "-" * 80 + "\nFinding strong spots in imageset %d\n" + "-" * 80, j
+                "-" * 80 + f"\nFinding strong spots in imageset {j}\n" + "-" * 80
             )
             table, hot_mask = self._find_spots_in_imageset(imageset)
 
@@ -746,10 +736,10 @@ class SpotFinder:
             flex.size_t_range(len(reflections)), reflections.flags.strong
         )
 
-        # Check for overloads
         reflections.is_overloaded(experiments)
 
-        # Return the reflections
+        reflections = self._post_process(reflections)
+
         return reflections
 
     def _find_spots_in_imageset(self, imageset):
@@ -809,7 +799,7 @@ class SpotFinder:
                     )
                 )
 
-            logger.info("\nFinding spots in image %s to %s...", j0, j1)
+            logger.info(f"\nFinding spots in image {j0} to {j1}...")
             j0 -= 1
             if isinstance(imageset, ImageSequence):
                 j0 -= imageset.get_array_range()[0]
@@ -835,7 +825,6 @@ class SpotFinder:
         """
         # Write the hot mask
         if self.write_hot_mask:
-
             # Create the hot pixel mask
             hot_mask = tuple(
                 flex.bool(flex.grid(p.get_image_size()[::-1]), True)
@@ -847,10 +836,128 @@ class SpotFinder:
                     for i in range(len(hp)):
                         hm[hp[i]] = False
                     num_hot += len(hp)
-            logger.info("Found %d possible hot pixel(s)", num_hot)
+            logger.info(f"Found {num_hot} possible hot pixel(s)")
 
         else:
             hot_mask = None
 
         # Return the hot mask
         return hot_mask
+
+    def _post_process(self, reflections):
+        return reflections
+
+
+class TOFSpotFinder(SpotFinder):
+    """
+    Class to do spot finding tailored to time of flight experiments
+    """
+
+    def __init__(
+        self,
+        experiments,
+        threshold_function=None,
+        mask=None,
+        region_of_interest=None,
+        max_strong_pixel_fraction=0.1,
+        compute_mean_background=False,
+        mp_method=None,
+        mp_nproc=1,
+        mp_njobs=1,
+        mp_chunksize=1,
+        mask_generator=None,
+        filter_spots=None,
+        scan_range=None,
+        write_hot_mask=True,
+        hot_mask_prefix="hot_mask",
+        min_spot_size=1,
+        max_spot_size=20,
+        min_chunksize=50,
+    ):
+        super().__init__(
+            threshold_function=threshold_function,
+            mask=mask,
+            region_of_interest=region_of_interest,
+            max_strong_pixel_fraction=max_strong_pixel_fraction,
+            compute_mean_background=compute_mean_background,
+            mp_method=mp_method,
+            mp_nproc=mp_nproc,
+            mp_njobs=mp_njobs,
+            mp_chunksize=mp_chunksize,
+            mask_generator=mask_generator,
+            filter_spots=filter_spots,
+            scan_range=scan_range,
+            write_hot_mask=write_hot_mask,
+            hot_mask_prefix=hot_mask_prefix,
+            min_spot_size=min_spot_size,
+            max_spot_size=max_spot_size,
+            no_shoeboxes_2d=False,
+            min_chunksize=min_chunksize,
+            is_stills=False,
+        )
+
+        self.experiments = experiments
+
+    def _correct_centroid_tof(self, reflections):
+        """
+        Sets the centroid of the spot to the peak position along the
+        time of flight, as this tends to more accurately represent the true
+        centroid for spallation sources.
+        """
+
+        x, y, tof = reflections["xyzobs.px.value"].parts()
+        peak_x, peak_y, peak_tof = reflections["shoebox"].peak_coordinates().parts()
+        reflections["xyzobs.px.value"] = flex.vec3_double(x, y, peak_tof)
+
+        return reflections
+
+    def _post_process(self, reflections):
+        reflections = self._correct_centroid_tof(reflections)
+
+        # Filter any reflections outside of the tof range
+        for i, expt in enumerate(self.experiments):
+            _, _, frame = reflections["xyzobs.px.value"].parts()
+            tof_frame_range = (0, len(expt.scan.get_property("time_of_flight")) - 1)
+            if "imageset_id" in reflections:
+                sel_expt = reflections["imageset_id"] == i
+            else:
+                sel_expt = reflections["id"] == i
+
+            sel = sel_expt & (
+                (frame > tof_frame_range[1]) | (frame < tof_frame_range[0])
+            )
+            reflections = reflections.select(~sel)
+
+        n_rows = reflections.nrows()
+        panel_numbers = flex.size_t(reflections["panel"])
+        reflections["L1"] = flex.double(n_rows)
+        reflections["wavelength"] = flex.double(n_rows)
+        reflections["s0"] = flex.vec3_double(n_rows)
+        reflections.centroid_px_to_mm(self.experiments)
+
+        for i, expt in enumerate(self.experiments):
+            if "imageset_id" in reflections:
+                sel_expt = reflections["imageset_id"] == i
+            else:
+                sel_expt = reflections["id"] == i
+
+            L0 = expt.beam.get_sample_to_source_distance() * 10**-3  # (m)
+            unit_s0 = expt.beam.get_unit_s0()
+
+            for i_panel in range(len(expt.detector)):
+                sel = sel_expt & (panel_numbers == i_panel)
+                x, y, tof = reflections["xyzobs.mm.value"].select(sel).parts()
+                px, py, frame = reflections["xyzobs.px.value"].select(sel).parts()
+                s1 = expt.detector[i_panel].get_lab_coord(flex.vec2_double(x, y))
+                L1 = s1.norms()
+                wavelengths = wavelength_from_tof(L0 + L1 * 10**-3, tof * 10**-6)
+                s0s = flex.vec3_double(
+                    unit_s0[0] / wavelengths,
+                    unit_s0[1] / wavelengths,
+                    unit_s0[2] / wavelengths,
+                )
+
+                reflections["wavelength"].set_selected(sel, wavelengths)
+                reflections["s0"].set_selected(sel, s0s)
+                reflections["L1"].set_selected(sel, L1)
+        return reflections

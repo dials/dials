@@ -212,11 +212,16 @@ def generate_plots(summary_data: dict) -> dict:
             "name": "RMSD dPsi",
         },
     ]
+    if not rmsdz_data[0][
+        "x"
+    ]:  # e.g. if using indexer that doesn't produce an estimate of this quantity
+        rmsdz_data = []
     if n_lattices > 1:
         n_indexed_data[0]["name"] += " (lattice 1)"
         rmsd_data[0]["name"] += " (lattice 1)"
         rmsd_data[1]["name"] += " (lattice 1)"
-        rmsdz_data[0]["name"] += " (lattice 1)"
+        if rmsdz_data:
+            rmsdz_data[0]["name"] += " (lattice 1)"
         for i, arr in enumerate(n_indexed_arrays[1:]):
             sub_images = images[arr > 0]
             sub_data = arr[arr > 0]
@@ -251,18 +256,19 @@ def generate_plots(summary_data: dict) -> dict:
                     "name": f"RMSD Y (lattice {i+2})",
                 },
             )
-        for i, arr in enumerate(rmsd_z_arrays[1:]):
-            sub_images = images[arr > 0]
-            sub_data = arr[arr > 0]
-            rmsdz_data.append(
-                {
-                    "x": sub_images.tolist(),
-                    "y": sub_data.tolist(),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "name": f"RMSD dPsi (lattice {i+2})",
-                },
-            )
+        if rmsdz_data:
+            for i, arr in enumerate(rmsd_z_arrays[1:]):
+                sub_images = images[arr > 0]
+                sub_data = arr[arr > 0]
+                rmsdz_data.append(
+                    {
+                        "x": sub_images.tolist(),
+                        "y": sub_data.tolist(),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": f"RMSD dPsi (lattice {i+2})",
+                    },
+                )
     percent_indexed = np.zeros(shape=(n_total_indexed.size,))
     sel = n_strong_array > 0
     sel_n_tot = n_total_indexed[sel]
@@ -304,7 +310,10 @@ def generate_plots(summary_data: dict) -> dict:
 
     hist_x, bin_centers_x = _generate_hist_data(rmsd_x_arrays)
     hist_y, bin_centers_y = _generate_hist_data(rmsd_y_arrays)
-    hist_z, bin_centers_z = _generate_hist_data(rmsd_z_arrays, 0.001)
+    if rmsdz_data:
+        hist_z, bin_centers_z = _generate_hist_data(rmsd_z_arrays, 0.001)
+    else:
+        hist_z, bin_centers_z = None, None
 
     plots = {
         "n_indexed": {
@@ -354,14 +363,18 @@ def generate_plots(summary_data: dict) -> dict:
                 "yaxis": {"title": "RMSD (px)"},
             },
         },
-        "rmsdz": {
-            "data": rmsdz_data,
-            "layout": {
-                "title": "RMSD (dPsi) per image",
-                "xaxis": {"title": "image number"},
-                "yaxis": {"title": "RMSD dPsi (deg)"},
-            },
-        },
+        "rmsdz": (
+            {
+                "data": rmsdz_data,
+                "layout": {
+                    "title": "RMSD (dPsi) per image",
+                    "xaxis": {"title": "image number"},
+                    "yaxis": {"title": "RMSD dPsi (deg)"},
+                },
+            }
+            if rmsdz_data
+            else {}
+        ),
         "rmsdxy_hist": {
             "data": [
                 {
@@ -387,21 +400,25 @@ def generate_plots(summary_data: dict) -> dict:
                 "barmode": "overlay",
             },
         },
-        "rmsdz_hist": {
-            "data": [
-                {
-                    "x": bin_centers_z.tolist(),
-                    "y": hist_z.tolist(),
-                    "type": "bar",
-                    "name": "RMSD dPsi",
+        "rmsdz_hist": (
+            {
+                "data": [
+                    {
+                        "x": bin_centers_z.tolist(),
+                        "y": hist_z.tolist(),
+                        "type": "bar",
+                        "name": "RMSD dPsi",
+                    },
+                ],
+                "layout": {
+                    "title": "Distribution of RMSDs (dPsi)",
+                    "xaxis": {"title": "RMSD dPsi (deg)"},
+                    "yaxis": {"title": "Number of images"},
+                    "bargap": 0,
                 },
-            ],
-            "layout": {
-                "title": "Distribution of RMSDs (dPsi)",
-                "xaxis": {"title": "RMSD dPsi (deg)"},
-                "yaxis": {"title": "Number of images"},
-                "bargap": 0,
-            },
-        },
+            }
+            if rmsdz_data
+            else {}
+        ),
     }
     return plots

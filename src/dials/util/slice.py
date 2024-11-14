@@ -18,7 +18,7 @@ def slice_experiments(experiments, image_ranges):
 
     if len(experiments) != len(image_ranges):
         raise ValueError(
-            "Input experiment list and image_ranges are not of the same length"
+            f"Input experiment list and image_ranges are not of the same length ({len(experiments)} != {len(image_ranges)})"
         )
 
     for exp, sr in zip(experiments, image_ranges):
@@ -57,7 +57,6 @@ def slice_reflections(reflections, image_ranges):
 
     to_keep = flex.size_t()
     for iexp, sr in enumerate(image_ranges):
-
         if sr is None:
             continue
         isel = (reflections["id"] == iexp).iselection()

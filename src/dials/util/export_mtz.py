@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -48,6 +49,11 @@ class MTZWriterBase:
     def __init__(self, space_group, unit_cell=None):
         """If a unit cell is provided, will be used as default unless specified
         for each crystal."""
+        warnings.warn(
+            "MTZWriterBase classes (MergedMTZWriter and MADMergedMTZWriter) are deprecated. Use MergedMTZCreator instead.\n",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         mtz_file = mtz.object()
         mtz_file.set_title(f"From {env.dispatcher_name}")
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
@@ -216,7 +222,7 @@ def add_batch_list(
 
     i0 = image_range[0]
     for i in range(n_batches):
-        if experiment.scan:
+        if experiment.scan and experiment.scan.get_oscillation()[1] != 0.0:
             phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
 
         # Unit cell and UB matrix for the centre of the image for scan-varying model
@@ -225,7 +231,6 @@ def add_batch_list(
             and experiment.crystal.num_scan_points > 0
             and experiment.goniometer
         ):
-
             # Get the index of the image in the sequence e.g. first => 0, second => 1
             image_index = i + i0 - experiment.scan.get_image_range()[0]
 
@@ -661,7 +666,6 @@ def export_mtz(
         logger.debug("Keeping existing batches")
     image_ranges = get_image_ranges(experiment_list)
     if len(unique_offsets) != len(batch_offsets):
-
         raise ValueError(
             "Duplicate batch offsets detected: %s"
             % ", ".join(
@@ -819,7 +823,7 @@ def log_summary(mtz):
     for col in mtz.columns:
         # col.min_value and col.max_value are not set, so we have to calculate them here
         logger.info(
-            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {col.array.min():12.6g} {col.array.max():10.6g}"
+            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {np.nanmin(col.array):12.6g} {np.nanmax(col.array):10.6g}"
         )
     logger.info(f"History ({len(mtz.history)} lines):")
     for line in mtz.history:
@@ -926,7 +930,6 @@ def convert_to_cambridge(experiments):
 
 
 def rotate_crystal(crystal, Rmat, axis, angle):
-
     Amats = []
     if crystal.num_scan_points > 0:
         scan_pts = list(range(crystal.num_scan_points))

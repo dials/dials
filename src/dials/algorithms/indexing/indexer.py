@@ -8,7 +8,7 @@ import pkg_resources
 import iotbx.phil
 import libtbx
 from cctbx import sgtbx
-from dxtbx.model import ExperimentList, ImageSequence
+from dxtbx.model import ExperimentList, ImageSequence, tof_helpers
 
 import dials.util
 from dials.algorithms.indexing import (
@@ -168,7 +168,9 @@ indexing {
     mode = *refine_shells repredict_only None
       .type = choice
       .expert_level = 1
-      .help = "refine_shells: refine in increasing resolution cutoffs after indexing."
+      .help = "refine_shells: if using sequences indexer, refine in increasing"
+              "resolution cutoffs after indexing, if using stills indexer,"
+              "refine all data up to d_min_start resolution once only."
               "repredict_only: do not refine after indexing, just update spot"
               "predictions."
               "None: do not refine and do not update spot predictions."
@@ -179,16 +181,20 @@ indexing {
               "cycle. Does not apply to stills.indexer=stills."
     d_min_step = Auto
       .type = float(value_min=0.0)
-      .help = "Reduction per step in d_min for reflections to include in refinement."
+      .help = "Reduction per step in d_min for reflections to include"
+              "in refinement. Does not apply to stills.indexer=stills."
     d_min_start = None
       .type = float(value_min=0.0)
+      .help = "For sequences/stills indexer, the lower limit of d-spacing"
+              "of reflections used in the first/the only round of refinement."
     d_min_final = None
       .type = float(value_min=0.0)
       .help = "Do not ever include reflections below this value in refinement."
+              "Does not apply to stills.indexer=stills."
     disable_unit_cell_volume_sanity_check = False
       .type = bool
       .help = "Disable sanity check on unrealistic increases in unit cell volume"
-              "during refinement."
+              "during refinement. Does not apply to stills.indexer=stills."
       .expert_level = 1
   }
   multiple_lattice_search
@@ -363,7 +369,6 @@ class Indexer:
     def from_parameters(
         reflections, experiments, known_crystal_models=None, params=None
     ):
-
         if known_crystal_models is not None:
             from dials.algorithms.indexing.known_orientation import (
                 IndexerKnownOrientation,
@@ -521,9 +526,7 @@ class Indexer:
             if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
-                cutoff_fraction = (
-                    self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-                )
+                cutoff_fraction = self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
                 d_spacings = 1 / self.reflections["rlp"].norms()
                 d_min_indexed = flex.min(d_spacings.select(self.indexed_reflections))
                 min_reflections_for_indexing = cutoff_fraction * len(
@@ -537,7 +540,7 @@ class Indexer:
                     )
                     break
 
-            n_lattices_previous_cycle = len(experiments)
+            n_lattices_previous_cycle = len(experiments.crystals())
 
             if self.d_min is None:
                 self.d_min = self.params.refinement_protocol.d_min_start
@@ -571,7 +574,7 @@ class Indexer:
 
             if len(experiments) == 0:
                 raise DialsIndexError("No suitable lattice could be found.")
-            elif len(experiments) == n_lattices_previous_cycle:
+            elif len(experiments.crystals()) == n_lattices_previous_cycle:
                 logger.warning("No more suitable lattices could be found")
                 # no more lattices found
                 break
@@ -605,7 +608,7 @@ class Indexer:
                 logger.info("\nIndexed crystal models:")
                 self.show_experiments(experiments, self.reflections, d_min=self.d_min)
 
-                if self._check_have_similar_crystal_models(experiments):
+                if self._remove_similar_crystal_models(experiments):
                     have_similar_crystal_models = True
                     break
 
@@ -676,34 +679,9 @@ class Indexer:
                             # below
                             # note here we are acting on the table from the last macrocycle
                             # This is guaranteed to exist due to the check if len(experiments) == 1: above
-                            sel = self.refined_reflections["id"] == model_id
-                            if sel.count(
-                                True
-                            ):  # not the case if failure on first cycle of refinement of new xtal
-                                logger.info(
-                                    "Removing %d reflections with id %d",
-                                    sel.count(True),
-                                    model_id,
-                                )
-                                self.refined_reflections["id"].set_selected(sel, -1)
-                                # N.B. Need to unset the flags here as the break below means we
-                                # don't enter the code after
-                                del self.refined_reflections.experiment_identifiers()[
-                                    model_id
-                                ]
-                                self.refined_reflections.unset_flags(
-                                    sel, self.refined_reflections.flags.indexed
-                                )
-                                self.refined_reflections["miller_index"].set_selected(
-                                    sel, (0, 0, 0)
-                                )
-                                self.unindexed_reflections.extend(
-                                    self.refined_reflections.select(sel)
-                                )
-                                self.refined_reflections = (
-                                    self.refined_reflections.select(~sel)
-                                )
-                                self.refined_reflections.clean_experiment_identifiers_map()
+                            # N.B. Need to unset the flags here as the break below means we
+                            # don't enter the code after
+                            self._remove_id_from_reflections(model_id)
                         break
 
                 self._unit_cell_volume_sanity_check(experiments, refined_experiments)
@@ -777,7 +755,28 @@ class Indexer:
                 rotation_matrix_differences(self.refined_experiments.crystals())
             )
 
-        self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
+        if "xyzcal.mm" in self.refined_reflections:
+            self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
+
+    def _remove_id_from_reflections(self, model_id):
+        sel = self.refined_reflections["id"] == model_id
+        if sel.count(
+            True
+        ):  # not the case if failure on first cycle of refinement of new xtal
+            logger.info(
+                "Removing %d reflections with id %d",
+                sel.count(True),
+                model_id,
+            )
+            self.refined_reflections["id"].set_selected(sel, -1)
+            del self.refined_reflections.experiment_identifiers()[model_id]
+            self.refined_reflections.unset_flags(
+                sel, self.refined_reflections.flags.indexed
+            )
+            self.refined_reflections["miller_index"].set_selected(sel, (0, 0, 0))
+            self.unindexed_reflections.extend(self.refined_reflections.select(sel))
+            self.refined_reflections = self.refined_reflections.select(~sel)
+            self.refined_reflections.clean_experiment_identifiers_map()
 
     def _unit_cell_volume_sanity_check(self, original_experiments, refined_experiments):
         # sanity check for unrealistic unit cell volume increase during refinement
@@ -825,9 +824,9 @@ class Indexer:
                         reflections["id"] == i_expt, miller_indices
                     )
 
-    def _check_have_similar_crystal_models(self, experiments):
+    def _remove_similar_crystal_models(self, experiments):
         """
-        Checks for similar crystal models.
+        Checks for too-similar crystal models and removes them.
 
         Checks whether the most recently added crystal model is similar to previously
         found crystal models, and if so, deletes the last crystal model from the
@@ -856,6 +855,8 @@ class Indexer:
                 have_similar_crystal_models = True
                 for id_ in sorted(models_to_reject, reverse=True):
                     del experiments[id_]
+                    # Unset ids in the reflection table
+                    self._remove_id_from_reflections(id_)
                 break
         return have_similar_crystal_models
 
@@ -867,7 +868,7 @@ class Indexer:
             refined_reflections = reflections.select(imgset_sel)
             panel_numbers = flex.size_t(refined_reflections["panel"])
             xyzcal_mm = refined_reflections["xyzcal.mm"]
-            x_mm, y_mm, z_rad = xyzcal_mm.parts()
+            x_mm, y_mm, z = xyzcal_mm.parts()
             xy_cal_mm = flex.vec2_double(x_mm, y_mm)
             xy_cal_px = flex.vec2_double(len(xy_cal_mm))
             for i_panel in range(len(expt.detector)):
@@ -878,10 +879,18 @@ class Indexer:
                 )
             x_px, y_px = xy_cal_px.parts()
             if expt.scan is not None:
-                z_px = expt.scan.get_array_index_from_angle(z_rad, deg=False)
+                if expt.scan.has_property("time_of_flight"):
+                    tof = expt.scan.get_property("time_of_flight")
+                    frames = list(range(len(tof)))
+                    tof_to_frame = tof_helpers.tof_to_frame_interpolator(tof, frames)
+                    z.set_selected(z < min(tof), min(tof))
+                    z.set_selected(z > max(tof), max(tof))
+                    z_px = flex.double(tof_to_frame(z))
+                else:
+                    z_px = expt.scan.get_array_index_from_angle(z, deg=False)
             else:
                 # must be a still image, z centroid not meaningful
-                z_px = z_rad
+                z_px = z
             xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
             reflections["xyzcal.px"].set_selected(imgset_sel, xyzcal_px)
 
@@ -920,7 +929,7 @@ class Indexer:
                     str(i),
                     str(indexed_count),
                     str(unindexed_count),
-                    f"{indexed_count / (indexed_count + unindexed_count):.1%}",
+                    f"{indexed_count / (indexed_count + unindexed_count)*100:.1f}",
                 ]
             )
         logger.info(dials.util.tabulate(rows, headers="firstrow"))
@@ -929,12 +938,28 @@ class Indexer:
         params = self.params.max_cell_estimation
         if self.params.max_cell is libtbx.Auto:
             if self.params.known_symmetry.unit_cell is not None:
-                uc_params = (
-                    self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
-                )
+                uc_params = self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
                 self.params.max_cell = params.multiplier * max(uc_params[:3])
                 logger.info("Using max_cell: %.1f Angstrom", self.params.max_cell)
             else:
+                convert_reflections_z_to_deg = True
+                all_tof_experiments = False
+                for expt in self.experiments:
+                    if expt.scan is not None and expt.scan.has_property(
+                        "time_of_flight"
+                    ):
+                        all_tof_experiments = True
+                    elif all_tof_experiments:
+                        raise ValueError(
+                            "Cannot find max cell for ToF and non-ToF experiments at the same time"
+                        )
+
+                if all_tof_experiments:
+                    if params.step_size < 100:
+                        logger.info("Setting default ToF step size to 500 usec")
+                        params.step_size = 500
+                        convert_reflections_z_to_deg = False
+
                 self.params.max_cell = find_max_cell(
                     self.reflections,
                     max_cell_multiplier=params.multiplier,
@@ -946,6 +971,7 @@ class Indexer:
                     filter_ice=params.filter_ice,
                     filter_overlaps=params.filter_overlaps,
                     overlaps_border=params.overlaps_border,
+                    convert_reflections_z_to_deg=convert_reflections_z_to_deg,
                 ).max_cell
                 logger.info("Found max_cell: %.1f Angstrom", self.params.max_cell)
 
@@ -960,12 +986,24 @@ class Indexer:
     def refine(self, experiments, reflections):
         from dials.algorithms.indexing.refinement import refine
 
+        properties_to_save = [
+            "xyzcal.mm",
+            "entering",
+            "wavelength_cal",
+            "s0_cal",
+            "tof_cal",
+        ]
+
         refiner, refined, outliers = refine(self.all_params, reflections, experiments)
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
+
         predicted = refiner.predict_for_indexed()
-        reflections["xyzcal.mm"] = predicted["xyzcal.mm"]
-        reflections["entering"] = predicted["entering"]
+
+        for i in properties_to_save:
+            if i in predicted:
+                reflections[i] = predicted[i]
+
         reflections.unset_flags(
             flex.bool(len(reflections), True), reflections.flags.centroid_outlier
         )

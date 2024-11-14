@@ -161,9 +161,7 @@ def export_sadabs(integrated_data, experiment_list, params):
         static = False
 
     with open(params.sadabs.hklout, "w") as fout:
-
         for j in range(nref):
-
             h, k, l = miller_index[j]
 
             if params.sadabs.predict:

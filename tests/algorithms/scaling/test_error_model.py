@@ -183,19 +183,24 @@ def test_error_model_on_simulated_data(
     )
 
 
-def test_errormodel(large_reflection_table, test_sg):
+@pytest.mark.parametrize("use_stills_filtering", [True, False])
+def test_errormodel(large_reflection_table, test_sg, use_stills_filtering):
     """Test the initialisation and methods of the error model."""
 
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
     params = generated_param()
+    params.weighting.error_model.basic.stills.min_multiplicity = 2
+    params.weighting.error_model.basic.stills.min_Isigma = 0.0
     params.weighting.error_model.basic.n_bins = 2
     params.weighting.error_model.basic.min_Ih = 1.0
     em = BasicErrorModel
     em.min_reflections_required = 1
     error_model = em(basic_params=params.weighting.error_model.basic)
     error_model.min_reflections_required = 1
-    error_model.configure_for_refinement(block)
+    error_model.configure_for_refinement(
+        block, use_stills_filtering=use_stills_filtering
+    )
     assert error_model.binner.summation_matrix[0, 1] == 1
     assert error_model.binner.summation_matrix[1, 1] == 1
     assert error_model.binner.summation_matrix[2, 0] == 1
