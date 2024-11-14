@@ -184,7 +184,7 @@ jobs:
         run: |
           source dials_env.sh
           set -x
-          conda install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
+          conda install -yp ./conda_base bash distro git-lfs mpi4py impi_rt pandas
           GIT_LFS_SKIP_SMUDGE=1 git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
           libtbx.configure xfel_regression
           # Patch for this ubuntu so that we can run without arbitrary failure
