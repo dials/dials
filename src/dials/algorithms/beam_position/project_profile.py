@@ -1,9 +1,11 @@
-from dials.algorithms.beam_position.helper_functions import (
-    normalize as norm,
-    smooth
-)
-import numpy as np
+from __future__ import annotations
+
 from collections import namedtuple
+
+import numpy as np
+
+from dials.algorithms.beam_position.helper_functions import normalize as norm
+from dials.algorithms.beam_position.helper_functions import smooth
 
 Span = namedtuple('Span', ['min', 'max'])
 

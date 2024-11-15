@@ -1,8 +1,10 @@
 """Define a class that searches for beam position using midpoint method"""
 from __future__ import annotations
+
 import numpy as np
-from dials.algorithms.beam_position.project_profile import project
+
 from dials.algorithms.beam_position.helper_functions import normalize
+from dials.algorithms.beam_position.project_profile import project
 
 
 class InversionMethodSolver:

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from dials.algorithms.beam_position import (
-        MidpointMethodSolver,
-        MaximumMethodSolver,
-        InversionMethodSolver
+    InversionMethodSolver,
+    MaximumMethodSolver,
+    MidpointMethodSolver,
 )
 from dials.algorithms.beam_position.plot import Figure
 
@@ -86,12 +88,12 @@ def resolve_projection_methods(params):
         if params.method == 'default':
             resolved_method_x = p.method_y[0]
 
-    if not (resolved_method_x in options):
+    if resolved_method_x not in options:
         msg = f"Wrong projection method along the x: {resolved_method_x} \n"
         msg += "Correct options: 'midpoint', 'maximum', or 'inversion'"
         raise ValueError(msg)
 
-    if not (resolved_method_y in options):
+    if resolved_method_y not in options:
         msg = f"Wrong projection method along the y: {resolved_method_y} \n"
         msg += "Correct options: 'midpoint', 'maximum', or 'inversion'"
         raise ValueError(msg)

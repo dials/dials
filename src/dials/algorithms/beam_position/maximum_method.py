@@ -1,8 +1,11 @@
 """Define a class that searches for beam position using midpoint method"""
 from __future__ import annotations
+
 from collections import namedtuple
+
 import numpy as np
 from matplotlib.ticker import MultipleLocator
+
 from dials.algorithms.beam_position.project_profile import project
 
 

@@ -2,15 +2,12 @@
 from __future__ import annotations
 
 from collections import namedtuple
-import numpy as np
 
+import numpy as np
 from matplotlib.ticker import MultipleLocator
 
-from dials.algorithms.beam_position.helper_functions import (
-    remove_pixels_by_intensity
-)
+from dials.algorithms.beam_position.helper_functions import remove_pixels_by_intensity
 from dials.algorithms.beam_position.project_profile import project
-
 
 Midpoint = namedtuple('Midpoint', ['x', 'y', 'width'])
 

@@ -1,13 +1,12 @@
+from __future__ import annotations
+
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
 import numpy as np
+from matplotlib import gridspec
 from matplotlib.patches import Circle
-from dials.algorithms.beam_position.helper_functions import (
-    remove_pixels_by_intensity
-)
-from dials.algorithms.beam_position.project_profile import (
-    convert_range_into_spans
-)
+
+from dials.algorithms.beam_position.helper_functions import remove_pixels_by_intensity
+from dials.algorithms.beam_position.project_profile import convert_range_into_spans
 
 
 class Figure:
