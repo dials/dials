@@ -4,10 +4,12 @@ import cmath
 import concurrent.futures
 import copy
 import itertools
+import json
 import logging
 import math
 import sys
-import json
+
+import numpy as np
 
 import iotbx.phil
 import libtbx
@@ -21,19 +23,13 @@ from rstbx.phil.phil_preferences import indexing_api_defs
 from scitbx import matrix
 from scitbx.array_family import flex
 from scitbx.simplex import simplex_opt
-import numpy as np
 
 import dials.util
-from dials.algorithms.beam_position.compute_beam_position import (
-        compute_beam_position
-)
-from dials.algorithms.beam_position.helper_functions import (
-    get_indices_from_slices
-)
+from dials.algorithms.beam_position.compute_beam_position import compute_beam_position
+from dials.algorithms.beam_position.helper_functions import get_indices_from_slices
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
-from dials.util.options import (ArgumentParser,
-                                reflections_and_experiments_from_files)
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 from dials.util.system import CPU_COUNT
 
@@ -302,8 +298,7 @@ def optimize_origin_offset_local_scope(
         widegrid = 2 * grid + 1
 
         def get_experiment_score_for_coord(x, y):
-            new_origin_offset = (x * plot_px_sz * beamr1 +
-                                 y * plot_px_sz * beamr2)
+            new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
             return sum(
                 _get_origin_offset_score(
                     new_origin_offset,
@@ -333,8 +328,7 @@ def optimize_origin_offset_local_scope(
             raise Sorry("No valid scores")
         sel = scores > (0.9 * flex.max(scores))
         for i in sel.iselection():
-            offset = ((idxs[i % widegrid]) * beamr1 +
-                      (idxs[i // widegrid]) * beamr2)
+            offset = (idxs[i % widegrid]) * beamr1 + (idxs[i // widegrid]) * beamr2
             potential_offsets.append(offset.elems)
             # print offset.length(), scores[i]
         wide_search_offset = matrix.col(
@@ -361,8 +355,7 @@ def optimize_origin_offset_local_scope(
                 self.offset += self.wide_search_offset
 
         def target(self, vector):
-            trial_origin_offset = (vector[0] * 0.2 * beamr1 +
-                                   vector[1] * 0.2 * beamr2)
+            trial_origin_offset = vector[0] * 0.2 * beamr1 + vector[1] * 0.2 * beamr2
             if self.wide_search_offset is not None:
                 trial_origin_offset += self.wide_search_offset
             target = 0
@@ -384,8 +377,7 @@ def optimize_origin_offset_local_scope(
         scores = flex.double()
         for y in range(-grid, grid + 1):
             for x in range(-grid, grid + 1):
-                new_origin_offset = (x * plot_px_sz * beamr1 +
-                                     y * plot_px_sz * beamr2)
+                new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                 score = 0
                 for i, experiment in enumerate(experiments):
                     score += _get_origin_offset_score(
@@ -417,8 +409,7 @@ def optimize_origin_offset_local_scope(
             plt.clabel(CS, inline=1, fontsize=10, fmt="%6.3f")
             plt.title("Wide scope search for detector origin offset")
             plt.scatter([0.0], [0.0], color="g", marker="o")
-            plt.scatter([new_offset[0]], [new_offset[1]], color="r",
-                        marker="*")
+            plt.scatter([new_offset[0]], [new_offset[1]], color="r", marker="*")
             plt.scatter(
                 [idxs[idx_max % widegrid]],
                 [idxs[idx_max // widegrid]],
@@ -441,8 +432,7 @@ def optimize_origin_offset_local_scope(
 
     new_experiments = copy.deepcopy(experiments)
     for expt in new_experiments:
-        expt.detector = dps_extended.get_new_detector(expt.detector,
-                                                      new_offset)
+        expt.detector = dps_extended.get_new_detector(expt.detector, new_offset)
     return new_experiments
 
 
@@ -464,9 +454,7 @@ def _get_origin_offset_score(
     return _sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
 
 
-def _sum_score_detail(reciprocal_space_vectors, solutions,
-                      granularity=None, amax=None):
-
+def _sum_score_detail(reciprocal_space_vectors, solutions, granularity=None, amax=None):
     """Evaluates the probability that the trial value of
     (S0_vector | origin_offset) is correct, given the current estimate and the
     observations. The trial value comes through the reciprocal space vectors,
@@ -510,8 +498,7 @@ def run_dps(experiment, spots_mm, max_cell):
 
     horizon_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
     DPS = DPS_primitive_lattice(
-        max_cell=max_cell, recommended_grid_sampling_rad=None,
-        horizon_phil=horizon_phil
+        max_cell=max_cell, recommended_grid_sampling_rad=None, horizon_phil=horizon_phil
     )
 
     DPS.S0_vector = matrix.col(experiment.beam.get_s0())
@@ -553,8 +540,7 @@ def run_dps(experiment, spots_mm, max_cell):
     # otherwise return empty result
     if len(solutions) < 3:
         return {}
-    return {"solutions": flex.vec3_double(s.dvec for s in solutions),
-            "amax": DPS.amax}
+    return {"solutions": flex.vec3_double(s.dvec for s in solutions), "amax": DPS.amax}
 
 
 def discover_better_experimental_model(
@@ -641,8 +627,7 @@ def discover_better_experimental_model(
     )
     new_detector = new_experiments[0].detector
     old_panel, old_beam_centre = detector.get_ray_intersection(beam.get_s0())
-    (new_panel,
-     new_beam_centre) = new_detector.get_ray_intersection(beam.get_s0())
+    (new_panel, new_beam_centre) = new_detector.get_ray_intersection(beam.get_s0())
 
     old_bc_px = detector[old_panel].millimeter_to_pixel(old_beam_centre)
     new_bc_px = new_detector[new_panel].millimeter_to_pixel(new_beam_centre)
@@ -658,16 +643,13 @@ def discover_better_experimental_model(
     logger.info(
         "Shift: %.2f, %.2f mm"
         % (matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
-        + " (%.1f, %.1f px)"
-        % (matrix.col(old_bc_px) -
-           matrix.col(new_bc_px)).elems
+        + " (%.1f, %.1f px)" % (matrix.col(old_bc_px) - matrix.col(new_bc_px)).elems
     )
     return new_experiments
 
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-
     usage = """
     dials.search_beam_position imported.expt strong.refl
     dials.search_beam_position method=midpoint imported.exp
@@ -688,10 +670,9 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
-    if (params.method[0] == "default" and not
-            (len(params.projection.method_x) == 1 or
-             len(params.projection.method_y) == 1)):
-
+    if params.method[0] == "default" and not (
+        len(params.projection.method_x) == 1 or len(params.projection.method_y) == 1
+    ):
         if len(experiments) == 0 or len(reflections) == 0:
             parser.print_help()
             exit(0)
@@ -747,12 +728,10 @@ def run(args=None):
             )
             logger.info("")
 
-        logger.info("Saving optimised experiments to %s",
-                    params.output.experiments)
+        logger.info("Saving optimised experiments to %s", params.output.experiments)
         experiments.as_file(params.output.experiments)
 
     else:  # Other methods (midpoint, maximum, inversion)
-
         if len(experiments) == 0:
             parser.print_help()
             sys.exit(0)
@@ -762,27 +741,22 @@ def run(args=None):
         imageset_ranges = params.projection.imageset_ranges
         image_ranges = params.projection.image_ranges
 
-        selected_set_indices = get_indices_from_slices(len(imagesets),
-                                                       imageset_ranges)
+        selected_set_indices = get_indices_from_slices(len(imagesets), imageset_ranges)
         selected_sets = [imagesets[i] for i in selected_set_indices]
         num_imagesets = len(selected_sets)
 
         json_output = []
 
         for set_run_index in range(num_imagesets):
-
             set_index = selected_set_indices[set_run_index]
             image_set = selected_sets[set_run_index]
             num_images = image_set.size()
-            selected_image_indices = get_indices_from_slices(num_images,
-                                                             image_ranges)
+            selected_image_indices = get_indices_from_slices(num_images, image_ranges)
             num_selected_images = len(selected_image_indices)
 
             # Compute beam position for each image separetely
             if params.projection.per_image:
-
                 for image_run_index in range(num_selected_images):
-
                     image_index = selected_image_indices[image_run_index]
 
                     image = image_set.get_corrected_data(image_index)
@@ -793,26 +767,28 @@ def run(args=None):
 
                     image[mask == 0] = 0
 
-                    x, y = compute_beam_position(image, params, image_index,
-                                                 set_index)
-                    json_output.append((int(set_index), int(image_index),
-                                        float(x), float(y)))
+                    x, y = compute_beam_position(image, params, image_index, set_index)
+                    json_output.append(
+                        (int(set_index), int(image_index), float(x), float(y))
+                    )
 
                     if params.projection.verbose:
-                        print_progress(image_index=image_run_index,
-                                       n_images=num_selected_images,
-                                       set_index=set_run_index,
-                                       n_sets=num_imagesets, x=x, y=y)
+                        print_progress(
+                            image_index=image_run_index,
+                            n_images=num_selected_images,
+                            set_index=set_run_index,
+                            n_sets=num_imagesets,
+                            x=x,
+                            y=y,
+                        )
 
             # Compute beam position for the average image
             else:
                 save_img = params.projection.save_average_image
                 load_img = params.projection.load_average_image
 
-                if not load_img:    # Compute the average image
-
+                if not load_img:  # Compute the average image
                     for image_run_index in range(num_selected_images):
-
                         image_index = selected_image_indices[image_run_index]
 
                         image = image_set.get_corrected_data(image_index)
@@ -824,11 +800,14 @@ def run(args=None):
                             avg_image = avg_image + image
 
                         if params.projection.verbose:
-                            print_progress(image_index=image_run_index,
-                                           n_images=num_selected_images,
-                                           set_index=set_run_index,
-                                           n_sets=num_imagesets,
-                                           x=None, y=None)
+                            print_progress(
+                                image_index=image_run_index,
+                                n_images=num_selected_images,
+                                set_index=set_run_index,
+                                n_sets=num_imagesets,
+                                x=None,
+                                y=None,
+                            )
 
                     image = avg_image / num_selected_images
                     mask = image_set.get_mask(0)
@@ -836,25 +815,23 @@ def run(args=None):
                     image[mask == 0] = 0
 
                     if save_img:
-                        np.savez('average_image.npz', image=image)
+                        np.savez("average_image.npz", image=image)
 
-                else:   # Do not compute the average images, but load it
-                    data = np.load('average_image.npz')
-                    image = data['image']
+                else:  # Do not compute the average images, but load it
+                    data = np.load("average_image.npz")
+                    image = data["image"]
 
                 compute_beam_position(image, params)
 
         if params.projection.per_image:
-            with open(params.output.json, 'w') as json_file:
+            with open(params.output.json, "w") as json_file:
                 json.dump(json_output, json_file, indent=4)
 
             if params.projection.verbose:
                 print()
 
 
-def print_progress(image_index, n_images, set_index, n_sets, x, y,
-                   bar_length=40):
-
+def print_progress(image_index, n_images, set_index, n_sets, x, y, bar_length=40):
     image_index += 1
     set_index += 1
 
@@ -864,7 +841,7 @@ def print_progress(image_index, n_images, set_index, n_sets, x, y,
     move_up = "\033[F"
 
     img_bar_full = int(percent_images * bar_length)
-    image_bar = "="*img_bar_full + " "*(bar_length - img_bar_full)
+    image_bar = "=" * img_bar_full + " " * (bar_length - img_bar_full)
 
     set_bar_full = int(percent_sets * bar_length)
     set_bar = "=" * set_bar_full + " " * (bar_length - set_bar_full)
@@ -874,7 +851,7 @@ def print_progress(image_index, n_images, set_index, n_sets, x, y,
     bar += f" Image: [{image_bar}] {100*percent_images:0.2f} % "
     bar += f"{image_index:4d}/{n_images}\n"
 
-    if abs(percent_sets - 1.0) < 1.e-15 and abs(percent_images - 1.0) < 1.e-15:
+    if abs(percent_sets - 1.0) < 1.0e-15 and abs(percent_images - 1.0) < 1.0e-15:
         end_str = ""
     else:
         end_str = f"{move_up}{move_up}\r"

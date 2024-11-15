@@ -1,4 +1,5 @@
 """Define a class that searches for beam position using midpoint method"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -8,16 +9,14 @@ from dials.algorithms.beam_position.project_profile import project
 
 
 class InversionMethodSolver:
-
-    def __init__(self, image, params, axis='x'):
-
+    def __init__(self, image, params, axis="x"):
         background_cutoff = params.projection.inversion.background_cutoff
         threshold = params.projection.inversion.bad_pixel_threshold
         self.axis = axis
 
-        if axis == 'x':
+        if axis == "x":
             exclude_range = params.projection.exclude_pixel_range_y
-        elif axis == 'y':
+        elif axis == "y":
             exclude_range = params.projection.exclude_pixel_range_x
         else:
             raise ValueError(f"Unknown axis: {axis}")
@@ -29,9 +28,14 @@ class InversionMethodSolver:
         if background_cutoff:
             clean_image[clean_image < background_cutoff] = 0.0
 
-        profile_max, pmax, pmin = project(clean_image, axis=axis, method='max',
-                                          exclude_range=exclude_range,
-                                          convolution_width=1, normalize=False)
+        profile_max, pmax, pmin = project(
+            clean_image,
+            axis=axis,
+            method="max",
+            exclude_range=exclude_range,
+            convolution_width=1,
+            normalize=False,
+        )
 
         self.params = params
         self.profile_max = profile_max
@@ -39,7 +43,6 @@ class InversionMethodSolver:
         self.min_value = pmin
 
     def find_beam_position(self):
-
         n = len(self.profile_max)
         guess_position = self.params.projection.inversion.guess_position
         window_width = self.params.projection.inversion.inversion_window_width
@@ -71,7 +74,7 @@ class InversionMethodSolver:
         for i in indices:
             correlations[i] = invert_and_correlate(self.profile_max, i)
 
-        scale = 0.8 * self.profile_max.max()      # Scale for plotting
+        scale = 0.8 * self.profile_max.max()  # Scale for plotting
         correlations = scale * normalize(correlations)
 
         self.beam_position = correlations.argmax()
@@ -80,51 +83,89 @@ class InversionMethodSolver:
         return float(self.beam_position)
 
     def plot(self, figure):
-
         n = len(self.profile_max)
         indices = np.arange(n)
 
-        if self.axis == 'x':
+        if self.axis == "x":
             ax = figure.axis_x
-            ax.plot(indices, self.profile_max, lw=1, c='gray',
-                    label='max. projection')
+            ax.plot(indices, self.profile_max, lw=1, c="gray", label="max. projection")
 
-            ax.plot(indices, self.correlations, lw=1, c='C2',
-                    label='invert and sum')
+            ax.plot(indices, self.correlations, lw=1, c="C2", label="invert and sum")
 
-            ax.text(0.01, 0.95, 'method: inversion', va='top', ha='left',
-                    transform=ax.transAxes, fontsize=7)
-            label = (f"I_min, I_max = ({self.min_value:.1f}, "
-                     f"{self.max_value:.1f})")
-            ax.text(0.01, 0.78, label, va='top', ha='left', c='gray',
-                    transform=ax.transAxes, fontsize=5)
-            ax.legend(loc=(0.6, 0.7), labelspacing=0.5, borderpad=0,
-                      columnspacing=3.5, handletextpad=0.4, fontsize=7,
-                      handlelength=2.0, handleheight=0.7, frameon=False)
-            ax.axvline(self.beam_position, c='C3', lw=1)
-            ax.tick_params(axis='y', colors='gray')
+            ax.text(
+                0.01,
+                0.95,
+                "method: inversion",
+                va="top",
+                ha="left",
+                transform=ax.transAxes,
+                fontsize=7,
+            )
+            label = f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})"
+            ax.text(
+                0.01,
+                0.78,
+                label,
+                va="top",
+                ha="left",
+                c="gray",
+                transform=ax.transAxes,
+                fontsize=5,
+            )
+            ax.legend(
+                loc=(0.6, 0.7),
+                labelspacing=0.5,
+                borderpad=0,
+                columnspacing=3.5,
+                handletextpad=0.4,
+                fontsize=7,
+                handlelength=2.0,
+                handleheight=0.7,
+                frameon=False,
+            )
+            ax.axvline(self.beam_position, c="C3", lw=1)
+            ax.tick_params(axis="y", colors="gray")
 
-        elif self.axis == 'y':
-
+        elif self.axis == "y":
             ax = figure.axis_y
-            ax.plot(self.profile_max, indices, lw=1, c='gray',
-                    label='max. projection')
+            ax.plot(self.profile_max, indices, lw=1, c="gray", label="max. projection")
 
-            ax.plot(self.correlations, indices, lw=1, c='C2',
-                    label='invert and sum')
+            ax.plot(self.correlations, indices, lw=1, c="C2", label="invert and sum")
 
-            ax.text(0.95, 0.99, 'method: inversion', va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=7)
-            label = (f"I_min, I_max = ({self.min_value:.1f}, "
-                     f"{self.max_value:.1f})")
-            ax.text(0.78, 0.99, label, va='top', ha='right',
-                    transform=ax.transAxes, rotation=-90, fontsize=5)
-            ax.legend(loc=(0.02, 0.1), labelspacing=0.5, borderpad=0,
-                      columnspacing=3.5, handletextpad=0.4,
-                      fontsize=7, handlelength=1.5, handleheight=0.7,
-                      frameon=False)
-            ax.axhline(self.beam_position, c='C3', lw=1)
-            ax.tick_params(axis='x', colors='gray')
+            ax.text(
+                0.95,
+                0.99,
+                "method: inversion",
+                va="top",
+                ha="right",
+                transform=ax.transAxes,
+                rotation=-90,
+                fontsize=7,
+            )
+            label = f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})"
+            ax.text(
+                0.78,
+                0.99,
+                label,
+                va="top",
+                ha="right",
+                transform=ax.transAxes,
+                rotation=-90,
+                fontsize=5,
+            )
+            ax.legend(
+                loc=(0.02, 0.1),
+                labelspacing=0.5,
+                borderpad=0,
+                columnspacing=3.5,
+                handletextpad=0.4,
+                fontsize=7,
+                handlelength=1.5,
+                handleheight=0.7,
+                frameon=False,
+            )
+            ax.axhline(self.beam_position, c="C3", lw=1)
+            ax.tick_params(axis="x", colors="gray")
         else:
             raise ValueError(f"Unknown axis: {self.axis}")
 
@@ -145,14 +186,14 @@ def invert_and_correlate(x, index):
     # Compute the inverted 1D array
     if index <= half:
         left = x[0:index]
-        right = x[index:2*index]
+        right = x[index : 2 * index]
         inv_x[0:index] = right[::-1]
-        inv_x[index:2*index] = left[::-1]
+        inv_x[index : 2 * index] = left[::-1]
     else:
         right = x[index:]
         width = len(right)
-        left = x[index - width:index]
-        inv_x[index - width:index] = right[::-1]
+        left = x[index - width : index]
+        inv_x[index - width : index] = right[::-1]
         inv_x[index:] = left[::-1]
 
-    return np.mean(x * inv_x)        # Could try with mean instead of sum
+    return np.mean(x * inv_x)  # Could try with mean instead of sum

@@ -7,11 +7,18 @@ import numpy as np
 from dials.algorithms.beam_position.helper_functions import normalize as norm
 from dials.algorithms.beam_position.helper_functions import smooth
 
-Span = namedtuple('Span', ['min', 'max'])
+Span = namedtuple("Span", ["min", "max"])
 
 
-def project(image, axis="x", method="max", convolution_width=1,
-            exclude_range=None, n_convolutions=1, normalize=True):
+def project(
+    image,
+    axis="x",
+    method="max",
+    convolution_width=1,
+    exclude_range=None,
+    n_convolutions=1,
+    normalize=True,
+):
     """
     Compute image projection on an axis
 
@@ -50,7 +57,6 @@ def project(image, axis="x", method="max", convolution_width=1,
 
 
 def convert_range_into_spans(exclude_range):
-
     spans = []
 
     if len(list(exclude_range)) == 0:
@@ -60,11 +66,10 @@ def convert_range_into_spans(exclude_range):
 
     n_ranges = int(len(exclude_range) / 2)
 
-    mins = exclude_range[0:2*n_ranges]
-    maxs = exclude_range[1:2*n_ranges]
+    mins = exclude_range[0 : 2 * n_ranges]
+    maxs = exclude_range[1 : 2 * n_ranges]
 
     for imin, imax in zip(mins, maxs):
-
         if imin >= imax:
             raise ValueError(
                 "Error in exclude range! Range minimum larger than range "
@@ -76,7 +81,6 @@ def convert_range_into_spans(exclude_range):
 
 
 def exclude_range_from_image(image, exclude_range, axis="x"):
-
     ny, nx = image.shape
     clean_image = np.array(image)
     spans = convert_range_into_spans(exclude_range)
@@ -96,8 +100,8 @@ def exclude_range_from_image(image, exclude_range, axis="x"):
             )
 
         if axis == "x":
-            clean_image[:, span.min:span.max] = 0
-        elif axis == 'y':
-            clean_image[span.min:span.max, :] = 0
+            clean_image[:, span.min : span.max] = 0
+        elif axis == "y":
+            clean_image[span.min : span.max, :] = 0
 
     return clean_image

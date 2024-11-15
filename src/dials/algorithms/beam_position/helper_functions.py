@@ -5,13 +5,12 @@ from __future__ import annotations
 import matplotlib
 import numpy as np
 
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 
 
 def remove_pixels_by_intensity(image, percent=0.0):
-
     if percent < 0 or percent >= 100:
-        raise ValueError('Exclude intensity percent outside of 0 to 100 range')
+        raise ValueError("Exclude intensity percent outside of 0 to 100 range")
 
     keep_percent = 1.0 - percent * 0.01
 
@@ -34,7 +33,7 @@ def normalize(array):
     min_value = array.min()
 
     if min_value < 0:
-        positive_array = array + abs(min_value)   # Add pedestal
+        positive_array = array + abs(min_value)  # Add pedestal
     else:
         positive_array = np.array(array)
 
@@ -58,13 +57,12 @@ def smooth(curve, width=2):
         return np.array(curve)
 
     for i in range(n):
-
         if i < half_width:
-            smooth_curve[i] = curve[0:i + half_width].mean()
+            smooth_curve[i] = curve[0 : i + half_width].mean()
         elif i > n - half_width:
-            smooth_curve[i] = curve[i - half_width:].mean()
+            smooth_curve[i] = curve[i - half_width :].mean()
         else:
-            smooth_curve[i] = curve[i - half_width:i + half_width].mean()
+            smooth_curve[i] = curve[i - half_width : i + half_width].mean()
 
     return smooth_curve
 
@@ -77,11 +75,11 @@ def get_indices_from_slices(nmax, slices):
     in the final array.
     """
 
-    indices = np.array([], dtype=np.dtype('uint'))
-    full_range = np.arange(0, nmax, dtype=np.dtype('uint'))
+    indices = np.array([], dtype=np.dtype("uint"))
+    full_range = np.arange(0, nmax, dtype=np.dtype("uint"))
 
-    for slice_str in slices.split(','):
-        slice_str = slice_str.replace(' ', '')
+    for slice_str in slices.split(","):
+        slice_str = slice_str.replace(" ", "")
         parsed_slice = parse_numpy_slice(slice_str)
         selected = full_range[parsed_slice]
         indices = np.append(indices, selected)
@@ -90,7 +88,6 @@ def get_indices_from_slices(nmax, slices):
 
 
 def parse_numpy_slice(slice_str):
-
     if slice_str is None:
         return None
     try:
