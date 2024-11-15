@@ -1,6 +1,4 @@
 import matplotlib.pyplot as plt
-# from collections import namedtuple
-# from matplotlib.ticker import MultipleLocator
 from matplotlib import gridspec
 import numpy as np
 from matplotlib.patches import Circle
@@ -84,8 +82,6 @@ class Figure:
 
         self.axis_x.tick_params(labelbottom=False)
         self.axis_y.tick_params(labelleft=False)
-        # self.axis_y.tick_params(axis='x', colors='blue')
-        # self.axis_x.tick_params(axis='y', colors='blue')
 
         label = "beam (x, y):"
         self.axis_x.text(1.02, 1.00, label, va='top', fontsize=8,
@@ -132,33 +128,3 @@ class Figure:
 
         plt.savefig(self.filename, dpi=600)
         plt.close(self.fig)
-
-
-#    if params.span_xy is not None:
-#        if len(params.span_xy) != 4:
-#            raise ValueError("span_xy should be a tuple of four numbers")
-#        i1, i2, j1, j2 = params.span_xy
-#        ax_x.axvspan(i1, i2, color="#BEBEBE", alpha=0.5)
-#        ax_y.axhspan(j1, j2, color="#BEBEBE", alpha=0.5)
-
-    # Plot the diffraction image
-#
-#    bx, by = params.beam_position
-#    ax_x.text(0.0, 1.05, f"({bx:.0f}, {by:.0f})",
-#              transform=ax_x.transAxes)
-#    ax_x.text(0.4, 1.05, f"max: {params.image.max():.2f}",
-#              transform=ax_x.transAxes)
-#    ax_x.text(0.9, 1.05, f"avg: {params.image.mean():.2f}",
-#              transform=ax_x.transAxes)
-#
-#    # Plot projected profiles
-#    for px in params.profiles_x:
-#        ax_x.plot(px.x, px.y, c=px.c, lw=px.lw, ms=px.ms, marker=px.marker)
-#    for py in params.profiles_y:
-#        ax_y.plot(py.x, py.y, c=py.c, lw=py.lw, ms=py.ms, marker=py.marker)
-#
-#    decorate_plot(params.image, ax, ax_x, ax_y, params.beam_position)
-#
-#    print(f"Filename '{params.filename}'")
-#    plt.savefig(params.filename, dpi=400)
-#    plt.close(fig)

@@ -87,7 +87,7 @@ class MidpointMethodSolver:
 
             self.groups_of_midpoints = sorted_groups
         else:
-            beam_position = 0
+            beam_position = np.nan
             self.groups_of_midpoints = []
 
         self.beam_position = beam_position
@@ -311,15 +311,13 @@ def check_intersection_param(midpoint_range):
             raise ValueError(msg)
 
     if (start < 0) or (start > 1):
-        msg = "Midpoint method error!\n"
-        msg += "The start of the intersection range outside of "
-        msg += " the (0, 1) interval."
+        msg = ("Midpoint method error!\nThe start of the intersection range "
+               "outside of the (0, 1) interval.")
         raise ValueError(msg)
 
     if (stop < 0) or (stop > 1):
-        msg = "Midpoint method error!\n"
-        msg += "The end of the intersection range outside of "
-        msg += " the (0, 1) interval."
+        msg = ("Midpoint method error!\nThe end of the intersection range "
+               "outside of the (0, 1) interval.")
         raise ValueError(msg)
 
     return start, stop, step

@@ -48,6 +48,10 @@ class MaximumMethodSolver:
         self.min_from_mean = pmin1
         self.bin_width = params.projection.maximum.bin_width
         self.bin_step = params.projection.maximum.bin_step
+        if self.bin_width < self.bin_step:
+            msg = (f"maximum.bin_width = {self.bin_width} is smaller then the "
+                   f"maximum.bin_step = {self.bin_step}.")
+            raise ValueError(msg)
         self.n_convolutions = params.projection.maximum.n_convolutions
 
     def find_beam_position(self):

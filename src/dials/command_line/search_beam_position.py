@@ -263,6 +263,8 @@ output {
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
+  json = "beam_positions.json"
+    .type = str
 }
 """
 )
@@ -844,7 +846,7 @@ def run(args=None):
                 compute_beam_position(image, params)
 
         if params.projection.per_image:
-            with open('beam_positions.json', 'w') as json_file:
+            with open(params.output.json, 'w') as json_file:
                 json.dump(json_output, json_file, indent=4)
 
             if params.projection.verbose:
