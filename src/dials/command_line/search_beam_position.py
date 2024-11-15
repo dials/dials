@@ -43,7 +43,6 @@ help_message = """
 
 A function to find beam center from diffraction images
 
-
 The default method (based on the work of Sauter et al., J. Appl. Cryst.
 37, 399-409 (2004)) is using the results from spot finding.
 
@@ -161,7 +160,7 @@ projection {
 
     load_average_image = False
     .type = bool
-    .help = "Load the average diffraction image from an npz file. "
+    .help = "Loads the average diffraction image from an npz file. "
             "Works only when `per_image=False`. If an average image was saved "
             "before, DIALS will use that image instead of computing it again."
 
