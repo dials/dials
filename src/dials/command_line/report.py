@@ -2189,7 +2189,7 @@ class Analyser:
                             scaling_tables,
                         ) = merging_stats_data(rlist, experiments)
                     except DialsMergingStatisticsError as e:
-                        print(e)
+                        print(f"Error merging stats data: {e}")
                     else:
                         json_data["resolution_graphs"] = resolution_plots
                         json_data["xtriage_output"] = xtriage_output

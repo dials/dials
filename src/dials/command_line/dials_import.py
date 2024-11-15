@@ -527,7 +527,7 @@ class MetaDataUpdater:
             ].count(None) == 1:
                 raise Sorry(
                     """
-          Only 1 offset map is set. Need to set both dx and d
+          Only 1 offset map is set. Need to set both dx and dy
         """
                 )
 

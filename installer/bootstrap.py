@@ -24,6 +24,7 @@ import tarfile
 import threading
 import time
 import zipfile
+import multiprocessing
 
 try:  # Python 3
     from urllib.error import HTTPError, URLError
@@ -109,7 +110,7 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
-    url = "https://micro.mamba.pm/api/micromamba/{0}/latest".format(conda_arch)
+    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -1016,12 +1017,24 @@ def _get_cmake_exe():
 
 def refresh_build_cmake():
     conda_python = _get_base_python()
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dxtbx"])
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/dials"])
-    run_indirect_command(conda_python, ["-mpip", "install", "-e", "../modules/xia2"])
+    run_indirect_command(
+        conda_python,
+        [
+            "-mpip",
+            "install",
+            "--no-deps",
+            "-e",
+            "../modules/dxtbx",
+            "-e",
+            "../modules/dials",
+            "-e",
+            "../modules/xia2",
+        ],
+    )
 
 
-def configure_build_cmake():
+def configure_build_cmake(extra_args):
+    # type: (list[str] | None) -> None
     cmake_exe = _get_cmake_exe()
     python_exe = _get_base_python()
 
@@ -1084,6 +1097,11 @@ conda activate {dist_root}/conda_base
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(dials)
 
+if (CMAKE_UNITY_BUILD AND MSVC)
+    # Windows can fail in this scenario because too many objects
+    add_compile_options(/bigobj)
+endif()
+
 add_subdirectory(dxtbx)
 add_subdirectory(dials)
 """
@@ -1092,15 +1110,17 @@ add_subdirectory(dials)
     # run_indirect runs inside the build folder with an activated environment
     conda_base_root = os.path.join(os.path.abspath("."), "conda_base")
     assert os.path.isdir(conda_base_root)
-    extra_args = []
+    extra_args = extra_args or []
     if os.name == "nt":
         extra_args.append("-DPython_ROOT_DIR=" + conda_base_root)
+    sys.stdout.flush()
     run_indirect_command(
         cmake_exe,
         [
             "../modules",
             "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
-            "-DHDF5_ROOT=" + conda_base_root,
+            "-DHDF5_DIR=" + conda_base_root,
+            "-DPython_ROOT_DIR=" + conda_base_root,
         ]
         + extra_args,
     )
@@ -1168,7 +1188,15 @@ def make_build_cmake():
     if os.name == "nt":
         run_indirect_command(cmake_exe, ["--build", ".", "--config", "RelWithDebInfo"])
     else:
-        run_indirect_command(cmake_exe, ["--build", "."])
+        parallel = []
+        if "CMAKE_GENERATOR" not in os.environ:
+            if hasattr(os, "sched_getaffinity"):
+                cpu = os.sched_getaffinity(0)
+            else:
+                cpu = multiprocessing.cpu_count()
+            if isinstance(cpu, int):
+                parallel = ["--parallel", str(cpu)]
+        run_indirect_command(cmake_exe, ["--build", "."] + parallel)
 
 
 def repository_at_tag(string):
@@ -1234,9 +1262,9 @@ def run():
     )
     parser.add_argument(
         "--config-flags",
-        help="""Pass flags to the configuration step. Flags should
+        help="""Pass flags to the configuration step (CMake or libtbx). Flags should
 be passed separately with quotes to avoid confusion (e.g
---config_flags="--build=debug" --config_flags="--another_flag")""",
+--config-flags="--build=debug" --config-flags="--another_flag")""",
         action="append",
         default=[],
     )
@@ -1263,12 +1291,22 @@ be passed separately with quotes to avoid confusion (e.g
         action="store_true",
     )
     parser.add_argument(
+        "--libtbx",
+        help="Use the libtbx build system, compiling cctbx from scratch.",
+        action="store_false",
+        dest="cmake",
+    )
+    parser.add_argument(
         "--cmake",
-        help="Use the CMake build system. Implies use of a prebuilt cctbx.",
         action="store_true",
+        dest="removed_cmake",
+        help=argparse.SUPPRESS,
     )
 
     options = parser.parse_args()
+    if options.removed_cmake:
+        # User passed the obsolete parameter
+        sys.exit("Error: --cmake is now the default, please remove --cmake.")
 
     print("Performing actions:", " ".join(options.actions))
 
@@ -1289,7 +1327,7 @@ be passed separately with quotes to avoid confusion (e.g
     if "build" in options.actions:
         if options.cmake:
             refresh_build_cmake()
-            configure_build_cmake()
+            configure_build_cmake(options.config_flags)
             make_build_cmake()
         else:
             configure_build(options.config_flags)

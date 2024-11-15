@@ -76,18 +76,14 @@ class TargetFactory:
                 + " not recognised"
             )
 
-        all_tof_experiments = False
-        for expt in experiments:
-            if expt.scan is not None and expt.scan.has_property("time_of_flight"):
-                all_tof_experiments = True
-            elif all_tof_experiments:
-                raise ValueError(
-                    "Cannot refine ToF and non-ToF experiments at the same time"
-                )
-
-        if all_tof_experiments:
+        if experiments.all_tof():
             from dials.algorithms.refinement.target import (
                 TOFLeastSquaresResidualWithRmsdCutoff as targ,
+            )
+
+        elif experiments.all_laue():
+            from dials.algorithms.refinement.target import (
+                LaueLeastSquaresResidualWithRmsdCutoff as targ,
             )
 
         # Determine whether the target is in X, Y, Phi space or just X, Y to choose
