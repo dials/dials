@@ -686,11 +686,11 @@ def run(args=None):
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
-        if params.nproc is libtbx.Auto:
-            params.nproc = CPU_COUNT
+        if params.default.nproc is libtbx.Auto:
+            params.default.nproc = CPU_COUNT
 
-        # if params.labelit.nproc is libtbx.Auto:
-        #    params.labelit.nproc = available_cores()
+        # if params.default.nproc is libtbx.Auto:
+        #    params.default.nproc = available_cores()
 
         imagesets = experiments.imagesets()
         # Split all the refln tables by ID, corresponding to
@@ -705,26 +705,26 @@ def run(args=None):
         assert len(reflections) == len(imagesets)
 
         if (
-            params.labelit.image_range is not None
-            and len(params.labelit.image_range) > 0
+            params.default.image_range is not None
+            and len(params.default.image_range) > 0
         ):
             reflections = [
-                slice_reflections(refl, params.labelit.image_range)
+                slice_reflections(refl, params.default.image_range)
                 for refl in reflections
             ]
 
-        for i in range(params.labelit.n_macro_cycles):
-            if params.labelit.n_macro_cycles > 1:
+        for i in range(params.default.n_macro_cycles):
+            if params.default.n_macro_cycles > 1:
                 logger.info("Starting macro cycle %i", i + 1)
             experiments = discover_better_experimental_model(
                 experiments,
                 reflections,
-                params.labelit,
-                nproc=params.labelit.nproc,
-                d_min=params.labelit.d_min,
-                mm_search_scope=params.labelit.mm_search_scope,
-                wide_search_binning=params.labelit.wide_search_binning,
-                plot_search_scope=params.labelit.plot_search_scope,
+                params.default,
+                nproc=params.default.nproc,
+                d_min=params.default.d_min,
+                mm_search_scope=params.default.mm_search_scope,
+                wide_search_binning=params.default.wide_search_binning,
+                plot_search_scope=params.default.plot_search_scope,
             )
             logger.info("")
 
