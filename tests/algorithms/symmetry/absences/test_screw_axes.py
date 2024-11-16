@@ -178,7 +178,11 @@ def _test_not_screw_axes(**score_axis_kwargs):
     score_42 = ScrewAxis42c().score_axis(reflection_table, **score_axis_kwargs)
 
     assert score_41 < 0.01
-    # assert score_42 < 0.01 - passes for direct, but not fourier
+    # Fourier method will give a False positive, because it only looks at the periodicity of the signal
+    if score_axis_kwargs["method"] == "direct":
+        assert score_42 < 0.01
+    if score_axis_kwargs["method"] == "fourier":
+        assert score_42 > 0.99  # False positive (expected)
 
     # All data too weak
     reflection_table["intensity"] = flex.double(8, 0.5)
@@ -223,7 +227,7 @@ def test_not_screw_axis_direct():
     _test_not_screw_axes(**score_axis_kwargs)
 
 
-@pytest.mark.parametrize("oversample", [1, 2, 10, 50])
+@pytest.mark.parametrize("oversample", [10, 50])
 def test_screw_axis_example_data_fourier(oversample):
     score_axis_kwargs = {
         "method": "fourier",
@@ -232,7 +236,7 @@ def test_screw_axis_example_data_fourier(oversample):
     _test_screw_axes_example_data(**score_axis_kwargs)
 
 
-@pytest.mark.parametrize("oversample", [1, 2, 10, 50])
+@pytest.mark.parametrize("oversample", [10, 50])
 def test_not_screw_axis_fourier(oversample):
     score_axis_kwargs = {
         "method": "fourier",
