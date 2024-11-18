@@ -179,8 +179,9 @@ class Target:
             is to use no weights. If "count" is set, then weights are equal to the
             number of pairs of reflections used in calculating each value of the
             rij matrix. If "standard_error" is used, then weights are defined as
-            :math:`w_{ij} = 1/s`, where :math:`s = \sqrt{(1-r_{ij}^2)/(n-2)}`.
-            See also http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf.
+            :math:`w_{ij} = 1/s`, where :math:`s = (1-r_{ij}^2)/sqrt(N)`.
+            Where N=(n-2) or N=(neff-1) depending on the cc_weights option.
+            See also  https://doi.org/10.1525/collabra.87615.
           min_pairs (int): Only calculate the correlation coefficient between two
             datasets if they have more than `min_pairs` of common reflections.
           lattice_group (cctbx.sgtbx.space_group): Optionally set the lattice
