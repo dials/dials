@@ -96,6 +96,12 @@ class cosym(Subject):
         if params is None:
             params = phil_scope.extract()
         self.params = params
+        apply_sigma_correction = True
+        if any(s for s in experiments.scaling_models()):
+            if all(
+                s.configdict["error_model_type"] for s in experiments.scaling_models()
+            ):
+                apply_sigma_correction = False
 
         reference_intensities = None
         if self.params.reference:
@@ -191,10 +197,15 @@ class cosym(Subject):
             # The purpose of the reference is to help the clustering, not guarantee the indexing solution.
             datasets.append(reference_intensities)
             self.cosym_analysis = CosymAnalysis(
-                datasets, self.params, seed_dataset=len(datasets) - 1
+                datasets,
+                self.params,
+                seed_dataset=len(datasets) - 1,
+                apply_sigma_correction=apply_sigma_correction,
             )
         else:
-            self.cosym_analysis = CosymAnalysis(datasets, self.params)
+            self.cosym_analysis = CosymAnalysis(
+                datasets, self.params, apply_sigma_correction=apply_sigma_correction
+            )
 
     @property
     def experiments(self):

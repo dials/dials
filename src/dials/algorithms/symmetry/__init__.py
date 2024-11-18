@@ -43,6 +43,7 @@ class symmetry_base:
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
+        apply_sigma_correction=True,
     ):
         """Initialise a symmetry_base object.
 
@@ -127,7 +128,8 @@ class symmetry_base:
         self.dataset_ids = self.dataset_ids.select(sel)
 
         # Correct SDs by "typical" SD factors
-        self._correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
+        if apply_sigma_correction:
+            self._correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
         self._normalise(normalisation)
         self._resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
 

@@ -97,6 +97,12 @@ class CorrelationMatrix:
         if params is None:
             params = phil_scope.extract()
         self.params = params
+        apply_sigma_correction = True
+        if any(s for s in experiments.scaling_models()):
+            if all(
+                s.configdict["error_model_type"] for s in experiments.scaling_models()
+            ):
+                apply_sigma_correction = False
         self._reflections = []
         self.ids_to_identifiers_map = ids_to_identifiers_map
 
@@ -147,7 +153,9 @@ class CorrelationMatrix:
         self.params.__inject__("lattice_symmetry_max_delta", 0.0)
         self.params.__inject__("best_monoclinic_beta", True)
 
-        self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
+        self.cosym_analysis = CosymAnalysis(
+            self.datasets, self.params, apply_sigma_correction=apply_sigma_correction
+        )
 
     def _merge_intensities(self, datasets: list) -> list:
         """
