@@ -331,7 +331,7 @@ class Target:
                         wij_matrix += wij
 
         rij_matrix = rij_matrix.toarray().astype(np.float64)
-        if wij_matrix is not None:
+        if self._weights:
             wij_matrix = wij_matrix.toarray().astype(np.float64)
             if self._weights == "standard_error":
                 # N.B. using effective n due to sigma weighting, which can be below 2
@@ -341,6 +341,11 @@ class Target:
                 se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 1))
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
+        else:
+            ## make wij matrix with ones on off-diagonal elements.
+            wij_matrix = wij_matrix.toarray().astype(np.float64)
+            sel = np.where(wij_matrix > 0)
+            wij_matrix[sel] = 1
 
         return rij_matrix, wij_matrix
 
@@ -462,7 +467,25 @@ class Target:
                         + "\nIncreasing min_reflections may overcome this problem."
                     )
         else:
-            wij = None
+            wij = np.zeros_like(rij)
+            right_up = np.triu_indices_from(wij, k=1)
+
+            # For each correlation coefficient, set the weight equal to the size of
+            # the sample used to calculate that coefficient
+            pairwise_combos = itertools.combinations(np.isfinite(all_intensities), 2)
+
+            def sample_size(x, y):
+                pairs = np.count_nonzero(x & y)
+                if pairs < self._min_pairs:
+                    return 0
+                else:
+                    return pairs
+
+            wij[right_up] = list(itertools.starmap(sample_size, pairwise_combos))
+            sel = np.where(wij > 0)
+            wij[sel] = 1
+            # Symmetrise the wij matrix
+            wij += wij.T
 
         return rij, wij
 
