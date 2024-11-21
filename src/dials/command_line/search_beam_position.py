@@ -8,6 +8,7 @@ import json
 import logging
 import math
 import sys
+import random
 
 import numpy as np
 
@@ -656,16 +657,30 @@ def run(args=None):
     dials.search_beam_position method_x=midpoint method_y=maximum imported.exp
     """
 
-    parser = ArgumentParser(
-        usage=usage,
-        phil=phil_scope,
-        read_experiments=True,
-        read_reflections=True,
-        check_format=True,
-        epilog=help_message,
-    )
+    try:
+        parser = ArgumentParser(
+            usage=usage,
+            phil=phil_scope,
+            read_experiments=True,
+            read_reflections=True,
+            check_format=True,
+            epilog=help_message,
+        )
 
-    params, options = parser.parse_args(args, show_diff_phil=False)
+        params, options = parser.parse_args(args, show_diff_phil=False)
+    except Sorry:
+
+        parser = ArgumentParser(
+            usage=usage,
+            phil=phil_scope,
+            read_experiments=True,
+            read_reflections=True,
+            check_format=False,
+            epilog=help_message,
+        )
+
+        params, options = parser.parse_args(args, show_diff_phil=False)
+
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -673,6 +688,7 @@ def run(args=None):
     if params.method[0] == "default" and not (
         len(params.projection.method_x) == 1 or len(params.projection.method_y) == 1
     ):
+        print("IN DEFAULT")
         if len(experiments) == 0 or len(reflections) == 0:
             parser.print_help()
             exit(0)
@@ -686,11 +702,12 @@ def run(args=None):
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
+        if params.default.seed is not None:
+            flex.set_random_seed(params.default.seed)
+            random.seed(params.default.seed)
+
         if params.default.nproc is libtbx.Auto:
             params.default.nproc = CPU_COUNT
-
-        # if params.default.nproc is libtbx.Auto:
-        #    params.default.nproc = available_cores()
 
         imagesets = experiments.imagesets()
         # Split all the refln tables by ID, corresponding to
@@ -730,8 +747,11 @@ def run(args=None):
 
         logger.info("Saving optimised experiments to %s", params.output.experiments)
         experiments.as_file(params.output.experiments)
+        print("EXIT DEFAULT")
 
     else:  # Other methods (midpoint, maximum, inversion)
+        print("IN OTHER")
+
         if len(experiments) == 0:
             parser.print_help()
             sys.exit(0)

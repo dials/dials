@@ -367,11 +367,19 @@ def check_output(
 ):
     out_lines = result.stdout.split("\n")
 
-    assert result.stderr == "", f"{result.stderr}"
-    msg = f"Expected four lines in the output (got {len(out_lines)})"
-    assert len(out_lines) == 4, msg
+    assert result.stderr == "", f"Error in subprocess: {result.stderr}"
 
-    x, y = [float(i) for i in out_lines[2].strip().split(",")]
+    # We assume the line in the output where we print the beam position is
+    # underneath the image progress bar (that looks like 'Image: [=====...]'
+    position_line = None
+    for index, line in enumerate(out_lines):
+        if 'Image:' in line and index < len(out_lines)-1:
+            position_line = out_lines[index + 1]
+
+    msg = f'Function for {method} method prints the output in a wrong format'
+    assert position_line is not None, msg
+
+    x, y = [float(i) for i in position_line.strip().split(",")]
     print(f"Checking for the {method} method")
     print("x, y =", x, y)
     x0_OK = abs(x - x0) < 1
