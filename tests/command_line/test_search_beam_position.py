@@ -373,10 +373,10 @@ def check_output(
     # underneath the image progress bar (that looks like 'Image: [=====...]'
     position_line = None
     for index, line in enumerate(out_lines):
-        if 'Image:' in line and index < len(out_lines)-1:
+        if "Image:" in line and index < len(out_lines) - 1:
             position_line = out_lines[index + 1]
 
-    msg = f'Function for {method} method prints the output in a wrong format'
+    msg = f"Function for {method} method prints the output in a wrong format"
     assert position_line is not None, msg
 
     x, y = [float(i) for i in position_line.strip().split(",")]
