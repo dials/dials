@@ -40,6 +40,7 @@ class LaueGroupAnalysis(symmetry_base):
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
+        apply_sigma_correction=True,
     ):
         """Initialise a LaueGroupAnalysis object.
 
@@ -77,6 +78,7 @@ class LaueGroupAnalysis(symmetry_base):
             relative_length_tolerance=relative_length_tolerance,
             absolute_angle_tolerance=absolute_angle_tolerance,
             best_monoclinic_beta=best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
 
         self._estimate_cc_sig_fac()
