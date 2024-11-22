@@ -116,7 +116,7 @@ phil_scope = libtbx.phil.parse(
       .multiple = True
 
     split = None
-      .type = ints(size=3)
+      .type = ints
       .help = "Scan split instructions"
 
     reference_geometry = None
@@ -892,11 +892,26 @@ def do_import(
     # If the user has requested splitting, split - these are in human numbers
     # so need to subtract 1 from start
     if params.input.split:
-        split_start, split_end, step = params.input.split
-        split_start -= 1
+        if len(params.input.split) == 3:
+            split_start, split_end, step = params.input.split
+            split_start -= 1
+        elif len(params.input.split) == 1:
+            split_start = 0
+            split_end = 0
+            step = params.input.split[0]
+        else:
+            sys.exit("split=blocks or split=start,end,blocks")
+
         new_experiments = ExperimentList()
         for experiment in experiments:
-            for chunk_start in range(split_start, split_end, step):
+            if split_start == 0 and split_end == 0:
+                _split_start, _split_end = experiment.scan.get_image_range()
+                _split_start -= 1
+            else:
+                _split_start = split_start
+                _split_end = split_end
+
+            for chunk_start in range(_split_start, _split_end, step):
                 tmp = ExperimentListFactory.from_imageset_and_crystal(
                     experiment.imageset, crystal=None
                 )[0]

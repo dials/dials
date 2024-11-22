@@ -526,6 +526,28 @@ def test_from_image_files_in_chunks(dials_data, tmp_path):
     assert len(exp) == 3
 
 
+def test_from_image_files_implicit_chunks(dials_data, tmp_path):
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+
+    # Import from the image files
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=imported.expt",
+            "split=3",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert (tmp_path / "imported.expt").is_file()
+    exp = load.experiment_list(tmp_path / "imported.expt")
+    assert len(exp) == 3
+
+
 def test_from_template(dials_data, tmp_path):
     # Find the image files
     templates = [
@@ -845,7 +867,9 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     # also add in something that is sequences, for completess
     centroid_image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )[:3]  # just three images
+    )[
+        :3
+    ]  # just three images
     result = subprocess.run(
         [
             shutil.which("dials.import"),
