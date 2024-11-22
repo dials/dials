@@ -8,7 +8,6 @@ import copy
 import json
 import logging
 from io import StringIO
-from typing import List, Union
 
 import libtbx
 from libtbx import easy_mp
@@ -205,7 +204,7 @@ class Refinery:
         # undefined initial functional and gradients values
         self._f = None
         self._g = None
-        self._jacobian: Union[flex.double, sparse.matrix, None] = None
+        self._jacobian: flex.double | sparse.matrix | None = None
 
         # filename for an optional log file
         self._log = log
@@ -297,7 +296,7 @@ class Refinery:
                 "out_of_sample_rmsd", self._target.rmsds_for_reflection_table(preds)
             )
 
-    def split_jacobian_into_blocks(self) -> List[flex.double]:
+    def split_jacobian_into_blocks(self) -> list[flex.double]:
         """Split the Jacobian into blocks each corresponding to a separate
         residual, converting sparse to flex.double if appropriate"""
 
@@ -317,7 +316,7 @@ class Refinery:
         return blocks
 
     @staticmethod
-    def _packed_corr_mat(m: flex.double) -> List[float]:
+    def _packed_corr_mat(m: flex.double) -> list[float]:
         """Return a list containing the upper diagonal values of the
         correlation matrix calculated between columns of 2D matrix flex.double
         matrix m"""

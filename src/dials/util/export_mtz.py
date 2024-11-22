@@ -7,7 +7,6 @@ from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
 from math import isclose
-from typing import List, Optional
 
 import gemmi
 import numpy as np
@@ -106,7 +105,7 @@ class MergedMTZWriter(MTZWriterBase):
         multiplicities=None,
         anom_multiplicities=None,
         suffix=None,
-        half_datasets: Optional[MergedHalfDatasets] = None,
+        half_datasets: MergedHalfDatasets | None = None,
         r_free_array=None,
     ):
         """Add merged data to the most recent dataset.
@@ -171,7 +170,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         multiplicities=None,
         anom_multiplicities=None,
         suffix=None,
-        half_datasets: Optional[MergedHalfDatasets] = None,
+        half_datasets: MergedHalfDatasets | None = None,
         r_free_array=None,
     ):
         if not suffix:
@@ -363,9 +362,9 @@ def write_columns(mtz, reflection_table):
 
     nref = len(reflection_table["miller_index"])
     assert nref
-    xdet, ydet, _ = [
+    xdet, ydet, _ = (
         flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
-    ]
+    )
 
     type_table = {
         "H": "H",
@@ -617,8 +616,7 @@ def export_mtz(
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavelength: %.5f, experiment numbers: %s "
-                % (
+                "  Wavelength: {:.5f}, experiment numbers: {} ".format(
                     v.weighted_mean,
                     ",".join(
                         map(str, [identifiers_list.index(i) for i in v.identifiers])
@@ -722,7 +720,7 @@ def export_mtz(
         experiment.data = dict(reflections)
 
         s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
-        logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
+        logger.debug("Beam vector: {:.4f} {:.4f} {:.4f}".format(*s0n))
 
         add_batch_list(
             mtz,
@@ -845,7 +843,7 @@ class WavelengthGroup:
         self.wavelengths.append(wl)
 
     def calculate_weighted_mean(
-        self, reflection_tables: List[flex.reflection_table]
+        self, reflection_tables: list[flex.reflection_table]
     ) -> None:
         n, nw = (0, 0)
         for i, w in zip(self.identifiers, self.wavelengths):

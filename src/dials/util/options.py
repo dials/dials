@@ -938,9 +938,7 @@ class ArgumentParser(ArgumentParserBase):
                     )
                 elif isinstance(err[0].exception, Sorry):
                     msg.append(
-                        '  "{}" failed during {} processing:\n    {}\n'.format(
-                            arg, err[0].type, err[0].message
-                        )
+                        f'  "{arg}" failed during {err[0].type} processing:\n    {err[0].message}\n'
                     )
                 else:
                     msg.append(

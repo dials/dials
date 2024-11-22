@@ -283,9 +283,7 @@ def test_SparseFlex_matrix_and_vector_arithmetic():
     sf_vec = SparseFlex(size, elements, indices)
 
     # Make a dense mat3 array with the same 50% explicit zeroes
-    mat = flex.mat3_double(
-        (flex.random_double_r3_rotation_matrix() for i in range(size))
-    )
+    mat = flex.mat3_double(flex.random_double_r3_rotation_matrix() for i in range(size))
     elements = mat.select(indices)
     mat *= 0.0
     mat.set_selected(indices, elements)
@@ -325,7 +323,7 @@ def test_SparseFlex_matrix_and_vector_arithmetic():
     # Test matrix multiplication: SparseFlex[mat3] * flex.mat3_double. Use a
     # new matrix which does not have explicit zero elements
     mat2 = flex.mat3_double(
-        (flex.random_double_r3_rotation_matrix() for i in range(size))
+        flex.random_double_r3_rotation_matrix() for i in range(size)
     )
     sf_mat2 = sf_mat * mat2
     for a, b in zip(sf_mat2.as_dense_vector(), mat * mat2):

@@ -387,7 +387,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
     def compute_home_translation(self):
         s = self.minimum_covering_sphere
-        x, y, z = [-v for v in gltbx.util.object_as_eye_coordinates(s.center())]
+        x, y, z = (-v for v in gltbx.util.object_as_eye_coordinates(s.center()))
         h = s.radius()
         if self.w < self.h:
             h *= self.h / max(1, self.w)
@@ -479,7 +479,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         self.rotation_center = self.minimum_covering_sphere.center()
 
     def move_to_center_of_viewport(self, obj_coor):
-        dx, dy = [-x for x in gltbx.util.object_as_eye_coordinates(obj_coor)[:2]]
+        dx, dy = (-x for x in gltbx.util.object_as_eye_coordinates(obj_coor)[:2])
         move_factor = self.translation_move_factor((dx, dy, 0))
         mvm = gltbx.util.get_gl_modelview_matrix()
         for f in animation_stepper(

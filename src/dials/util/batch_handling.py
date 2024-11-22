@@ -94,7 +94,7 @@ class batch_manager:
 def assign_batches_to_reflections(reflections, batch_offsets):
     """Assign a 'batch' column to the reflection table"""
     for batch_offset, refl in zip(batch_offsets, reflections):
-        xdet, ydet, zdet = [flex.double(x) for x in refl["xyzobs.px.value"].parts()]
+        xdet, ydet, zdet = (flex.double(x) for x in refl["xyzobs.px.value"].parts())
         # compute BATCH values - floor() to get (fortran) image captured within
         #                        +1     because FORTRAN counting; zdet+1=image_index
         #                        +off   because            image_index+o=batch

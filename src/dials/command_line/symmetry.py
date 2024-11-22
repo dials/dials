@@ -625,8 +625,7 @@ def run(args=None):
 
     if len(experiments) != len(reflections):
         sys.exit(
-            "Mismatched number of experiments and reflection tables found: %s & %s."
-            % (len(experiments), len(reflections))
+            f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
         )
     try:
         experiments, reflections = assign_unique_identifiers(experiments, reflections)

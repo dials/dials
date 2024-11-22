@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 import libtbx.phil
 from dxtbx.model import ExperimentList
 
@@ -46,7 +44,7 @@ def update(
 
 
 @dials.util.show_mail_handle_errors()
-def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     usage = "dials.modify_geometry [options] models.expt"
 
     parser = ArgumentParser(

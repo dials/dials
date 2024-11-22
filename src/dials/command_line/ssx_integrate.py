@@ -62,11 +62,6 @@ from dials.util.options import ArgumentParser, flatten_experiments, flatten_refl
 from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
-try:
-    from typing import List, Type
-except ImportError:
-    pass
-
 logger = logging.getLogger("dials.ssx_integrate")
 
 # Create the phil scope
@@ -235,7 +230,7 @@ def setup(reflections, params):
 
 @dataclass
 class InputToIntegrate:
-    integrator_class: Type[SimpleIntegrator]
+    integrator_class: type[SimpleIntegrator]
     experiment: Experiment
     table: flex.reflection_table
     params: Any
@@ -298,7 +293,7 @@ def wrap_integrate_one(input_to_integrate: InputToIntegrate):
 
 def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     # create iterable
-    input_iterable: List[InputToIntegrate] = []
+    input_iterable: list[InputToIntegrate] = []
     from dxtbx.imageset import ImageSequence, ImageSet
 
     original_isets = list(sub_expts.imagesets())
@@ -338,11 +333,11 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     ):
         if configuration["params"].nproc > 1:
             with Pool(configuration["params"].nproc) as pool:
-                results: List[IntegrationResult] = pool.map(
+                results: list[IntegrationResult] = pool.map(
                     wrap_integrate_one, input_iterable
                 )
         else:
-            results: List[IntegrationResult] = [
+            results: list[IntegrationResult] = [
                 wrap_integrate_one(i) for i in input_iterable
             ]
 
@@ -424,7 +419,7 @@ def run_integration(reflections, experiments, params):
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil=working_phil) -> None:
+def run(args: list[str] = None, phil=working_phil) -> None:
     """
     Run dials.ssx_integrate from the command-line.
 

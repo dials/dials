@@ -181,8 +181,7 @@ if __name__ == "__main__":
         with open(options.annotations, "w") as fh:
             for error in itertools.chain(*pytypelog.files.values()):
                 fh.write(
-                    "%s:%s:1:%s %s\n"
-                    % (
+                    "{}:{}:1:{} {}\n".format(
                         str(error["filename_local"]),
                         error["line"],
                         error["error"],
@@ -256,8 +255,7 @@ if __name__ == "__main__":
                             f"   line {error['line']} {error['error']}: {error['description']}"
                         )
                         annotations.append(
-                            "%s:%s:1:%s %s"
-                            % (
+                            "{}:{}:1:{} {}".format(
                                 str(error["filename_local"]),
                                 error["line"],
                                 error["error"],

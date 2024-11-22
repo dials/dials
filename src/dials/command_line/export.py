@@ -636,8 +636,7 @@ def run(args=None):
 
     try:
         template_list = {
-            str(e.imageset.get_template())
-            + ":{0}:{1}".format(*e.scan.get_image_range())
+            str(e.imageset.get_template()) + ":{}:{}".format(*e.scan.get_image_range())
             for e in experiments
         }
     except AttributeError:

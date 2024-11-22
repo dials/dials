@@ -15,7 +15,6 @@ import logging
 import math
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import List, Tuple
 from unittest.mock import Mock
 
 import numpy as np
@@ -485,7 +484,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     @classmethod
     def weighted_cchalf(
         cls, this, other, assume_index_matching=False, use_binning=False
-    ) -> List[Tuple]:
+    ) -> list[tuple]:
         if not use_binning:
             assert other.indices().size() == this.indices().size()
             if this.data().size() == 0:

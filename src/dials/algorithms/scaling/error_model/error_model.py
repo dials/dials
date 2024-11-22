@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 from math import ceil, exp, log
-from typing import List
 
 import numpy as np
 from scipy.stats import norm
@@ -85,7 +84,7 @@ phil_scope = phil.parse(
 )
 
 
-def extract_error_model_groups(params, n_tables) -> List[List[int]]:
+def extract_error_model_groups(params, n_tables) -> list[list[int]]:
     if params.grouping == "combined":
         minimisation_groups = [list(range(n_tables))]
     elif params.grouping == "individual":
@@ -655,8 +654,7 @@ def filter_unsuitable_reflections_stills(
 
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     return Ih_table
 
@@ -695,8 +693,7 @@ def filter_unsuitable_reflections(
     n = Ih_table.size
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     n_h = Ih_table.calc_nh()
     # now make sure any left also have n > 1
@@ -728,7 +725,6 @@ def filter_unsuitable_reflections(
     n = Ih_table.size
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     return Ih_table

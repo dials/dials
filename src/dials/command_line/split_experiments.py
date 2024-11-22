@@ -143,8 +143,7 @@ class Script:
         if params.output.chunk_sizes:
             if not sum(params.output.chunk_sizes) == len(experiments):
                 raise Sorry(
-                    "Sum of chunk sizes list (%s) not equal to number of experiments (%s)"
-                    % (sum(params.output.chunk_sizes), len(experiments))
+                    f"Sum of chunk sizes list ({sum(params.output.chunk_sizes)}) not equal to number of experiments ({len(experiments)})"
                 )
 
         if params.by_wavelength:
@@ -189,8 +188,7 @@ class Script:
                         refls["imageset_id"].set_selected(sel, iset_id)
                     reflections_filename = reflections_template(index=i)
                     print(
-                        "Saving reflections with wavelength %s to %s"
-                        % (wl, reflections_filename)
+                        f"Saving reflections with wavelength {wl} to {reflections_filename}"
                     )
                     refls.as_file(reflections_filename)
 
