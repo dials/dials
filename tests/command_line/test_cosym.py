@@ -20,7 +20,7 @@ from dials.util import Sorry
 @pytest.mark.parametrize(
     "space_group,engine,weights,cc_weights",
     [
-        (None, "scitbx", "count", "sigma"),
+        (None, "scitbx", "count", None),
         ("P 1", "scipy", None, None),
         ("P 4", "scipy", "standard_error", "sigma"),
     ],

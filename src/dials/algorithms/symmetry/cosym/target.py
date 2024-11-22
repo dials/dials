@@ -344,6 +344,9 @@ class Target:
                 se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 1))
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
+            # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
+            scale = np.count_nonzero(wij_matrix) / np.sum(wij_matrix)
+            wij_matrix *= scale
         else:
             ## No weights - i.e. equal weights in places where we can calculate an rij value,
             ## but also making sure our diagonal elements are zero as we exclude the
@@ -479,6 +482,9 @@ class Target:
                         f"Unable to calculate any correlations for dataset index {i} ({n_refl} reflections)."
                         + "\nIncreasing min_reflections may overcome this problem."
                     )
+            # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
+            scale = np.count_nonzero(wij) / np.sum(wij)
+            wij *= scale
         else:
             ## we are not going to use weights, so set them to constant weights
             ## as we still needs zeros to avoid inclusion of uncalculate values in
