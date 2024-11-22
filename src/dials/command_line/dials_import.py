@@ -900,7 +900,7 @@ def do_import(
             split_end = 0
             step = params.input.split[0]
         else:
-            sys.exit("split=blocks or split=start,end,blocks")
+            sys.exit("split=frames_per_block or split=start,end,frames_per_block")
 
         new_experiments = ExperimentList()
         for experiment in experiments:
