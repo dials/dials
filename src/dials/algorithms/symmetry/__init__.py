@@ -70,6 +70,7 @@ class symmetry_base:
           best_monoclinic_beta (bool): If True, then for monoclinic centered cells, I2
             will be preferred over C2 if it gives a less oblique cell (i.e. smaller
             beta angle).
+          apply_sigma_correction (bool): If True, correct SDs by "typical" SD factors.
         """
         self.input_intensities = intensities
 
