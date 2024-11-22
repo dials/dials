@@ -115,6 +115,10 @@ phil_scope = libtbx.phil.parse(
       .help = "A directory with images"
       .multiple = True
 
+    split = None
+      .type = ints(size=3)
+      .help = "Scan split instructions"
+
     reference_geometry = None
       .type = path
       .help = "Experimental geometry from this models.expt "
@@ -884,6 +888,22 @@ def do_import(
 
     metadata_updater = MetaDataUpdater(params)
     experiments = metadata_updater(imagesets)
+
+    # If the user has requested splitting, split - these are in human numbers
+    # so need to subtract 1 from start
+    if params.input.split:
+        split_start, split_end, step = params.input.split
+        split_start -= 1
+        new_experiments = ExperimentList()
+        for experiment in experiments:
+            for chunk_start in range(split_start, split_end, step):
+                tmp = ExperimentListFactory.from_imageset_and_crystal(
+                    experiment.imageset, crystal=None
+                )[0]
+                tmp.scan = experiment.scan[chunk_start : chunk_start + step]
+                tmp.imageset = experiment.imageset[chunk_start : chunk_start + step]
+                new_experiments.append(tmp)
+        experiments = new_experiments
 
     # Compute some numbers
     num_sweeps = 0
