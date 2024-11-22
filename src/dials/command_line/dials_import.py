@@ -117,7 +117,7 @@ phil_scope = libtbx.phil.parse(
 
     split = None
       .type = ints
-      .help = "Scan split instructions"
+      .help = "Scan split: either frames_per_block or 1-indexed start,end,frames_per_block"
 
     reference_geometry = None
       .type = path
