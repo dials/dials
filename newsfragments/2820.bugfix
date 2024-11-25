@@ -1,1 +1,1 @@
-``dials.show``: add DIALS_NOBANNER to test
+``dials.show``: add DIALS_NOBANNER to test_show to disable tqdm on import
