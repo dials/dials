@@ -386,7 +386,9 @@ def test_dials_show_on_scaled_data(dials_data):
     expt = location / "scaled_30.expt"
 
     result = subprocess.run(
-        [shutil.which("dials.show"), refl, expt], capture_output=True
+        [shutil.which("dials.show"), refl, expt],
+        env={"DIALS_NOBANNER": "1", **os.environ},
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
