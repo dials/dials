@@ -912,11 +912,15 @@ def do_import(
                 _split_end = split_end
 
             for chunk_start in range(_split_start, _split_end, step):
+                end = chunk_start + step
+                if end > _split_end:
+                    end = _split_end
+
                 tmp = ExperimentListFactory.from_imageset_and_crystal(
                     experiment.imageset, crystal=None
                 )[0]
-                tmp.scan = experiment.scan[chunk_start : chunk_start + step]
-                tmp.imageset = experiment.imageset[chunk_start : chunk_start + step]
+                tmp.scan = experiment.scan[chunk_start:end]
+                tmp.imageset = experiment.imageset[chunk_start:end]
                 new_experiments.append(tmp)
         experiments = new_experiments
 
