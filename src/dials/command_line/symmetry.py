@@ -404,15 +404,10 @@ def symmetry(experiments, reflection_tables, params=None):
                 """Some datasets have no reflection after prefiltering, please check
     input data and filtering settings e.g partiality_threshold"""
             )
-        apply_sigma_correction = True
-        ## If we have error models for all data, the assumption is that we have applied
-        ## these to the scaled data, so we don't want to apply another correction in cosym.
-        if all(s for s in experiments.scaling_models()):
-            if all(
-                "error_model_type" in s.configdict and s.configdict["error_model_type"]
-                for s in experiments.scaling_models()
-            ):
-                apply_sigma_correction = False
+
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in experiments.scaling_models())
 
         datasets = [
             ma.as_anomalous_array().merge_equivalents().array() for ma in datasets

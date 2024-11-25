@@ -97,16 +97,10 @@ class CorrelationMatrix:
         if params is None:
             params = phil_scope.extract()
         self.params = params
-        apply_sigma_correction = True
 
-        ## If we have error models for all data, the assumption is that we have applied
-        ## these to the scaled data, so we don't want to apply another correction in cosym.
-        if all(s for s in experiments.scaling_models()):
-            if all(
-                "error_model_type" in s.configdict and s.configdict["error_model_type"]
-                for s in experiments.scaling_models()
-            ):
-                apply_sigma_correction = False
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in experiments.scaling_models())
 
         self._reflections = []
         self.ids_to_identifiers_map = ids_to_identifiers_map
