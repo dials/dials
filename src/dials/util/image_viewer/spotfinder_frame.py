@@ -2281,17 +2281,6 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
         s.Add(grid)
 
-        # Minimum spot area control
-        # box = wx.BoxSizer(wx.HORIZONTAL)
-        # self.minspotarea_ctrl = PhilIntCtrl(self, -1, pos=(300,180), size=(80,-1),
-        # value=self.GetParent().GetParent().horizons_phil.distl.minimum_spot_area,
-        # name="Minimum spot area (pxls)")
-        # self.minspotarea_ctrl.SetOptional(False)
-        # box.Add(self.minspotarea_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-        # txtd = wx.StaticText(self, -1,  "Minimum spot area (pxls)",)
-        # box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-        # s.Add(box)
-
         # Stack type choice
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Stack type:")
