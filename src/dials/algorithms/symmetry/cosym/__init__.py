@@ -87,7 +87,7 @@ use_curvatures = True
   .type = bool
   .short_caption = "Use curvatures"
 
-weights = count standard_error
+weights = *count standard_error
   .type = choice
   .short_caption = "Weights"
   .help = "If not None, a weights matrix is used in the cosym procedure."
@@ -145,7 +145,13 @@ class CosymAnalysis(symmetry_base, Subject):
     the presence of an indexing ambiguity.
     """
 
-    def __init__(self, intensities, params, seed_dataset: Optional[int] = None):
+    def __init__(
+        self,
+        intensities,
+        params,
+        seed_dataset: Optional[int] = None,
+        apply_sigma_correction=True,
+    ):
         """Initialise a CosymAnalysis object.
 
         Args:
@@ -175,6 +181,7 @@ class CosymAnalysis(symmetry_base, Subject):
             relative_length_tolerance=None,
             absolute_angle_tolerance=None,
             best_monoclinic_beta=params.best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
         Subject.__init__(
             self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
