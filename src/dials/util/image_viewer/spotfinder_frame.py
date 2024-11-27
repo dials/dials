@@ -2582,7 +2582,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_integrated = self.integrated.GetValue()
             self.settings.show_predictions = self.predictions.GetValue()
             self.settings.show_miller_indices = self.miller_indices.GetValue()
-            self.settings.fontsize = self.fontsize_ctrl.GetValue()
+            self.settings.fontsize = get_bounded_ctrl_value(self.fontsize_ctrl)
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
             self.settings.threshold_algorithm = self.threshold_algorithm_types[
