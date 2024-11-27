@@ -2353,10 +2353,14 @@ class SpotSettingsPanel(wx.Panel):
 
         txt4 = wx.StaticText(self, -1, "Min. local")
         self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
-        self.min_local_ctrl = PhilIntCtrl(
-            self, value=self.settings.min_local, name="min_local"
+        self.min_local_ctrl = IntCtrl(
+            self,
+            value=self.settings.min_local,
+            name="min_local",
+            style=wx.TE_PROCESS_ENTER,
         )
         self.min_local_ctrl.SetMin(0)
+        self.min_local_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateThresholdParameters)
         self.dispersion_params_grid.Add(self.min_local_ctrl, 0, wx.ALL, 3)
 
         txt4 = wx.StaticText(self, -1, "Gain")
@@ -2391,7 +2395,7 @@ class SpotSettingsPanel(wx.Panel):
             self.kernel_size_ctrl,
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.min_local_ctrl
+            wx.EVT_TEXT_ENTER, self.OnUpdateThresholdParameters, self.min_local_ctrl
         )
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.gain_ctrl)
 
@@ -2577,7 +2581,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
             self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
-            self.settings.min_local = self.min_local_ctrl.GetPhilValue()
+            self.settings.min_local = self.min_local_ctrl.GetValue()
             self.settings.gain = self.gain_ctrl.GetPhilValue()
             self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
             self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
