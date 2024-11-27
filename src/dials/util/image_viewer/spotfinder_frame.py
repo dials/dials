@@ -435,11 +435,14 @@ class SpotFrame(XrayFrame):
         txt = wx.StaticText(self.toolbar, -1, "Stack:")
         self.toolbar.AddControl(txt)
 
-        self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65, -1))
+        self.stack = IntCtrl(
+            self.toolbar, -1, name="stack", size=(65, -1), style=wx.TE_PROCESS_ENTER
+        )
         self.stack.SetMin(1)
         self.stack.SetValue(self.params.stack_images)
         self.toolbar.AddControl(self.stack)
-        self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnStack, self.stack)
+        self.stack.Bind(wx.EVT_KILL_FOCUS, self.OnStack)
 
     def setup_menus(self):
         super().setup_menus()
@@ -503,7 +506,7 @@ class SpotFrame(XrayFrame):
             self.load_image(self.images[phil_value - 1])
 
     def OnStack(self, event):
-        value = self.stack.GetPhilValue()
+        value = self.stack.GetValue()
 
         if value == 1:
             for button in self.settings_frame.panel.dispersion_buttons:
