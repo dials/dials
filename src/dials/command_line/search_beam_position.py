@@ -688,7 +688,6 @@ def run(args=None):
     if params.method[0] == "default" and not (
         len(params.projection.method_x) == 1 or len(params.projection.method_y) == 1
     ):
-        print("IN DEFAULT")
         if len(experiments) == 0 or len(reflections) == 0:
             parser.print_help()
             exit(0)
@@ -747,10 +746,8 @@ def run(args=None):
 
         logger.info("Saving optimised experiments to %s", params.output.experiments)
         experiments.as_file(params.output.experiments)
-        print("EXIT DEFAULT")
 
     else:  # Other methods (midpoint, maximum, inversion)
-        print("IN OTHER")
 
         if len(experiments) == 0:
             parser.print_help()
@@ -778,6 +775,7 @@ def run(args=None):
             if params.projection.per_image:
                 for image_run_index in range(num_selected_images):
                     image_index = selected_image_indices[image_run_index]
+                    image_index = np.uint64(image_index)
 
                     image = image_set.get_corrected_data(image_index)
                     image = flumpy.to_numpy(image[0])

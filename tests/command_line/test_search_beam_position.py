@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 from collections import namedtuple
 
@@ -234,11 +235,19 @@ def test_multi_sweep_fixed_rotation(dials_data, run_in_tmp_path):
         assert shift.elems == pytest.approx((0.096, -1.111, 0), abs=1e-2)
 
 
-def test_midpoint_method(mrc_file):
-    assert os.path.exists("imported.expt"), "Error! No imported.expt file."
+def test_midpoint_method(tmp_path):
+
+    make_mrc_file(tmp_path)
+    imported_file = os.path.join(tmp_path, "imported.expt")
+
+    assert os.path.exists(imported_file), "Error! No imported.expt file."
+
+    dials_cmd = "dials.search_beam_position"
+    if os.name == "nt":
+        dials_cmd += ".EXE"            # Used for tests for Windows
 
     cmd = [
-        "dials.search_beam_position",
+        dials_cmd,
         "method=midpoint",
         "per_image=True",
         "exclude_intensity_percent=0.01",
@@ -248,10 +257,11 @@ def test_midpoint_method(mrc_file):
         "intersection_min_width=10",
         "image_ranges=0",
         "color_cutoff=20",
-        "imported.expt",
+        "json=beam_position.json",
+        imported_file,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
         x0=373.8,
@@ -259,15 +269,27 @@ def test_midpoint_method(mrc_file):
         image_index=0,
         imageset_index=0,
         out_fig="beam_position_imageset_00000_img_00000.png",
-        method="maximum",
+        method="midpoint",
+        cwd=tmp_path,
+        json_file='beam_position.json'
     )
 
+    shutil.rmtree(tmp_path)
 
-def test_maximum_method(mrc_file):
-    assert os.path.exists("imported.expt"), "Error! No imported.expt file."
+
+@pytest.mark.xdist_group("shared_resource")   # Run within the same process
+def test_maximum_method(tmp_path):
+
+    make_mrc_file(tmp_path)
+    imported_file = os.path.join(tmp_path, "imported.expt")
+    assert os.path.exists(imported_file), "Error! No imported.expt file."
+
+    dials_cmd = "dials.search_beam_position"
+    if os.name == "nt":
+        dials_cmd += ".EXE"          # Used for tests on Windows
 
     cmd = [
-        "dials.search_beam_position",
+        dials_cmd,
         "method=maximum",
         "image_ranges=1",
         "per_image=True",
@@ -276,10 +298,11 @@ def test_maximum_method(mrc_file):
         "bin_width=20",
         "bin_step=10",
         "color_cutoff=20",
-        "imported.expt",
+        "json=beam_position.json",
+        imported_file,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
         x0=402.0,
@@ -288,23 +311,36 @@ def test_maximum_method(mrc_file):
         imageset_index=0,
         out_fig="beam_position_imageset_00000_img_00001.png",
         method="maximum",
+        json_file='beam_position.json',
+        cwd=tmp_path,
     )
 
+    shutil.rmtree(tmp_path)
 
-def test_inversion_method(mrc_file):
-    assert os.path.exists("imported.expt"), "Error! No imported.expt file."
+
+def test_inversion_method(tmp_path):
+
+    make_mrc_file(tmp_path)
+
+    imported_file = os.path.join(tmp_path, "imported.expt")
+    assert os.path.exists(imported_file), "Error! No imported.expt file."
+
+    dials_cmd = "dials.search_beam_position"
+    if os.name == "nt":
+        dials_cmd += ".EXE"       # Used for tests on Windows
 
     cmd = [
-        "dials.search_beam_position",
+        dials_cmd,
         "method=inversion",
         "image_ranges=2",
         "per_image=True",
         "inversion.bad_pixel_threshold=20",
         "color_cutoff=20",
-        "imported.expt",
+        "json=beam_position.json",
+        imported_file
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
         x0=378.0,
@@ -313,11 +349,14 @@ def test_inversion_method(mrc_file):
         imageset_index=0,
         out_fig="beam_position_imageset_00000_img_00002.png",
         method="inversion",
+        json_file='beam_position.json',
+        cwd=tmp_path,
     )
 
+    shutil.rmtree(tmp_path)
 
-@pytest.fixture(scope="module")
-def mrc_file():
+
+def make_mrc_file(path):
     """
     Generates three MRC images to test search_beam_position projection
     methods. The first image is for testing the midpoint method, the second is
@@ -350,20 +389,26 @@ def mrc_file():
     images[2] += gauss(nx, ny, friedel_01)
     images[2] += gauss(nx, ny, friedel_02)
 
-    filename = "images.mrc"
+    filename = os.path.join(path, "images.mrc")
+
     save_to_mrc(images, filename)
 
-    subprocess.run(["dials.import", filename], text=True)
+    cmd = "dials.import"
+    if os.name == "nt":
+        cmd += ".EXE"          # Used for tests on Windows
 
-    yield filename
+    subprocess.run([cmd, filename], cwd=path, shell=False, text=True)
 
-    subprocess.run(["rm", filename], text=True)
-    subprocess.run(["rm", "imported.expt"], text=True)
-    subprocess.run(["rm", "dials.import.log"], text=True)
+    return filename
+
+    # os.remove(filename)
+    # os.remove(os.join(test_path, "imported.expt"))
+    # os.remove(os.join(test_path, "dials.import.log"))
 
 
 def check_output(
-    result, x0, y0, image_index, imageset_index, out_fig=None, method="maximum"
+    result, x0, y0, image_index, imageset_index, out_fig=None,
+    method="maximum", json_file='beam_position.json', cwd=None,
 ):
     out_lines = result.stdout.split("\n")
 
@@ -390,14 +435,16 @@ def check_output(
 
     assert x0_OK and y0_OK, msg
 
-    assert os.path.exists(out_fig), "No output figure generated"
+    out_fig = os.path.join(cwd, out_fig)
+    json_file = os.path.join(cwd, json_file)
 
-    json_file = "beam_positions.json"
-    assert os.path.exists(json_file), "No output JSON generated"
+    assert os.path.exists(out_fig), f"No output figure generated {out_fig}"
+
+    assert os.path.exists(json_file), f"No output JSON {json_file} generated"
 
     json_OK = True
     try:
-        with open("beam_positions.json", "r") as file:
+        with open(json_file, "r") as file:
             data = json.load(file)
             imageset_index_json, image_index_json, x_json, y_json = data[0]
             print("x_json, y_json =", x_json, y_json)
@@ -410,13 +457,14 @@ def check_output(
     except json.JSONDecodeError:
         json_OK = False
 
-    assert json_OK, "Invalid JSON file beam_positions.json"
+    assert json_OK, f"Invalid JSON file {json_file}"
 
     os.remove(json_file)
     os.remove(out_fig)
 
 
-def generate_image(nx, ny, x0=500, y0=400, seed=1, num_peaks=100, num_bad_pixels=5):
+def generate_image(nx, ny, x0=500, y0=400, seed=1, num_peaks=100,
+                   num_bad_pixels=5):
     xs, ys, widths, heights = get_random_gaussian_data()
 
     x_pos = xs[seed]
@@ -452,6 +500,10 @@ def gauss(nx, ny, params):
 
 
 def save_to_mrc(images, filename="images.mrc"):
+
+    work_dir = os.path.dirname(filename)
+    os.makedirs(work_dir, exist_ok=True)
+
     with mrcfile.new(filename, overwrite=True) as mrc:
         mrc.set_data(images)
 
