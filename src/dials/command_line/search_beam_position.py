@@ -7,8 +7,8 @@ import itertools
 import json
 import logging
 import math
-import sys
 import random
+import sys
 
 import numpy as np
 
@@ -669,7 +669,6 @@ def run(args=None):
 
         params, options = parser.parse_args(args, show_diff_phil=False)
     except Sorry:
-
         parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
