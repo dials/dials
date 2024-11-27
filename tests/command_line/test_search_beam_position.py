@@ -236,7 +236,6 @@ def test_multi_sweep_fixed_rotation(dials_data, run_in_tmp_path):
 
 
 def test_midpoint_method(tmp_path):
-
     make_mrc_file(tmp_path)
     imported_file = os.path.join(tmp_path, "imported.expt")
 
@@ -244,7 +243,7 @@ def test_midpoint_method(tmp_path):
 
     dials_cmd = "dials.search_beam_position"
     if os.name == "nt":
-        dials_cmd += ".EXE"            # Used for tests for Windows
+        dials_cmd += ".EXE"  # Used for tests for Windows
 
     cmd = [
         dials_cmd,
@@ -271,22 +270,21 @@ def test_midpoint_method(tmp_path):
         out_fig="beam_position_imageset_00000_img_00000.png",
         method="midpoint",
         cwd=tmp_path,
-        json_file='beam_position.json'
+        json_file="beam_position.json",
     )
 
     shutil.rmtree(tmp_path)
 
 
-@pytest.mark.xdist_group("shared_resource")   # Run within the same process
+@pytest.mark.xdist_group("shared_resource")  # Run within the same process
 def test_maximum_method(tmp_path):
-
     make_mrc_file(tmp_path)
     imported_file = os.path.join(tmp_path, "imported.expt")
     assert os.path.exists(imported_file), "Error! No imported.expt file."
 
     dials_cmd = "dials.search_beam_position"
     if os.name == "nt":
-        dials_cmd += ".EXE"          # Used for tests on Windows
+        dials_cmd += ".EXE"  # Used for tests on Windows
 
     cmd = [
         dials_cmd,
@@ -311,7 +309,7 @@ def test_maximum_method(tmp_path):
         imageset_index=0,
         out_fig="beam_position_imageset_00000_img_00001.png",
         method="maximum",
-        json_file='beam_position.json',
+        json_file="beam_position.json",
         cwd=tmp_path,
     )
 
@@ -319,7 +317,6 @@ def test_maximum_method(tmp_path):
 
 
 def test_inversion_method(tmp_path):
-
     make_mrc_file(tmp_path)
 
     imported_file = os.path.join(tmp_path, "imported.expt")
@@ -327,7 +324,7 @@ def test_inversion_method(tmp_path):
 
     dials_cmd = "dials.search_beam_position"
     if os.name == "nt":
-        dials_cmd += ".EXE"       # Used for tests on Windows
+        dials_cmd += ".EXE"  # Used for tests on Windows
 
     cmd = [
         dials_cmd,
@@ -337,7 +334,7 @@ def test_inversion_method(tmp_path):
         "inversion.bad_pixel_threshold=20",
         "color_cutoff=20",
         "json=beam_position.json",
-        imported_file
+        imported_file,
     ]
 
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
@@ -349,7 +346,7 @@ def test_inversion_method(tmp_path):
         imageset_index=0,
         out_fig="beam_position_imageset_00000_img_00002.png",
         method="inversion",
-        json_file='beam_position.json',
+        json_file="beam_position.json",
         cwd=tmp_path,
     )
 
@@ -395,7 +392,7 @@ def make_mrc_file(path):
 
     cmd = "dials.import"
     if os.name == "nt":
-        cmd += ".EXE"          # Used for tests on Windows
+        cmd += ".EXE"  # Used for tests on Windows
 
     subprocess.run([cmd, filename], cwd=path, shell=False, text=True)
 
@@ -407,8 +404,15 @@ def make_mrc_file(path):
 
 
 def check_output(
-    result, x0, y0, image_index, imageset_index, out_fig=None,
-    method="maximum", json_file='beam_position.json', cwd=None,
+    result,
+    x0,
+    y0,
+    image_index,
+    imageset_index,
+    out_fig=None,
+    method="maximum",
+    json_file="beam_position.json",
+    cwd=None,
 ):
     out_lines = result.stdout.split("\n")
 
@@ -463,8 +467,7 @@ def check_output(
     os.remove(out_fig)
 
 
-def generate_image(nx, ny, x0=500, y0=400, seed=1, num_peaks=100,
-                   num_bad_pixels=5):
+def generate_image(nx, ny, x0=500, y0=400, seed=1, num_peaks=100, num_bad_pixels=5):
     xs, ys, widths, heights = get_random_gaussian_data()
 
     x_pos = xs[seed]
@@ -500,7 +503,6 @@ def gauss(nx, ny, params):
 
 
 def save_to_mrc(images, filename="images.mrc"):
-
     work_dir = os.path.dirname(filename)
     os.makedirs(work_dir, exist_ok=True)
 

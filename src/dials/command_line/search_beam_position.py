@@ -747,7 +747,6 @@ def run(args=None):
         experiments.as_file(params.output.experiments)
 
     else:  # Other methods (midpoint, maximum, inversion)
-
         if len(experiments) == 0:
             parser.print_help()
             sys.exit(0)
