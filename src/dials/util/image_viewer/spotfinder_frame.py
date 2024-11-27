@@ -426,11 +426,14 @@ class SpotFrame(XrayFrame):
         txt = wx.StaticText(self.toolbar, -1, "Jump:")
         self.toolbar.AddControl(txt)
 
-        self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(65, -1))
+        self.jump_to_image = IntCtrl(
+            self.toolbar, -1, name="image", size=(65, -1), style=wx.TE_PROCESS_ENTER
+        )
         self.jump_to_image.SetMin(1)
         self.jump_to_image.SetValue(1)
         self.toolbar.AddControl(self.jump_to_image)
-        self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnJumpToImage, self.jump_to_image)
+        self.jump_to_image.Bind(wx.EVT_KILL_FOCUS, self.OnJumpToImage)
 
         txt = wx.StaticText(self.toolbar, -1, "Stack:")
         self.toolbar.AddControl(txt)
@@ -501,9 +504,9 @@ class SpotFrame(XrayFrame):
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
     def OnJumpToImage(self, event):
-        phil_value = self.jump_to_image.GetPhilValue()
-        if self.images.selected_index != (phil_value - 1):
-            self.load_image(self.images[phil_value - 1])
+        value = self.jump_to_image.GetValue()
+        if self.images.selected_index != (value - 1):
+            self.load_image(self.images[value - 1])
 
     def OnStack(self, event):
         value = self.stack.GetValue()
