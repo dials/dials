@@ -18,7 +18,6 @@ from scitbx import matrix
 from wxtbx import bitmaps, icons
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 from wxtbx.phil_controls.floatctrl import FloatCtrl
-from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
 from wxtbx.phil_controls.ints import IntsCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
 
@@ -2434,14 +2433,17 @@ class SpotSettingsPanel(wx.Panel):
         self.radial_profile_params_grid.Add(
             txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
         )
-        self.n_bins_ctrl = PhilIntCtrl(self, value=self.settings.n_bins, name="n_bins")
+        self.n_bins_ctrl = IntCtrl(
+            self, value=self.settings.n_bins, name="n_bins", style=wx.TE_PROCESS_ENTER
+        )
         self.n_bins_ctrl.SetMin(10)
+        self.n_bins_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateThresholdParameters)
         self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 3)
 
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_iqr_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateThresholdParameters, self.blur_ctrl)
         self.Bind(
-            EVT_PHIL_CONTROL,
+            wx.EVT_TEXT_ENTER,
             self.OnUpdateThresholdParameters,
             self.n_bins_ctrl,
         )
@@ -2585,7 +2587,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.gain = self.gain_ctrl.GetPhilValue()
             self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
             self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
-            self.settings.n_bins = self.n_bins_ctrl.GetPhilValue()
+            self.settings.n_bins = self.n_bins_ctrl.GetValue()
 
             self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 
