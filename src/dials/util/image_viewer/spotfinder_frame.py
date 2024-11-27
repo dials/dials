@@ -66,6 +66,17 @@ myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
 
 
+def get_bounded_ctrl_value(ctrl):
+    val = ctrl.GetValue()
+    if ctrl.GetMin() and val < ctrl.GetMin():
+        val = ctrl.GetMin()
+        ctrl.SetValue(val)
+    if ctrl.GetMax() and val > ctrl.GetMax():
+        val = ctrl.GetMax()
+        ctrl.SetValue(val)
+    return val
+
+
 class LoadImageEvent(wx.PyCommandEvent):
     """Event to signal that an image should be loaded"""
 
@@ -503,12 +514,12 @@ class SpotFrame(XrayFrame):
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
     def OnJumpToImage(self, event):
-        value = self.jump_to_image.GetValue()
+        value = get_bounded_ctrl_value(self.jump_to_image)
         if self.images.selected_index != (value - 1):
             self.load_image(self.images[value - 1])
 
     def OnStack(self, event):
-        value = self.stack.GetValue()
+        value = get_bounded_ctrl_value(self.stack)
 
         if value == 1:
             for button in self.settings_frame.panel.dispersion_buttons:
@@ -2583,11 +2594,11 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
             self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
-            self.settings.min_local = self.min_local_ctrl.GetValue()
+            self.settings.min_local = get_bounded_ctrl_value(self.min_local_ctrl)
             self.settings.gain = self.gain_ctrl.GetPhilValue()
             self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
             self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
-            self.settings.n_bins = self.n_bins_ctrl.GetValue()
+            self.settings.n_bins = get_bounded_ctrl_value(self.n_bins_ctrl)
 
             self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 
