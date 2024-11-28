@@ -214,14 +214,16 @@ def run(args=None):
     cb_op_to_primitive = map_to_primitive(experiments, reflections)
 
     # Since we will only use the used_in_refinement reflections for the
-    # calculation, select them here
-    n0 = len(reflections)
-    reflections = reflections.select(
-        reflections.get_flags(reflections.flags.used_in_refinement)
-    )
-    n1 = len(reflections)
-    if n1 != n0:
-        logger.info(f"Selected {n1} / {n0} reflections for calculation")
+    # calculation, select them here: old test data may not have the
+    # used in refinement flag
+
+    sel = reflections.get_flags(reflections.flags.used_in_refinement)
+    if sel.count(True):
+        n0 = len(reflections)
+        reflections = reflections.select(sel)
+        n1 = len(reflections)
+        if n1 != n0:
+            logger.info(f"Selected {n1} / {n0} reflections for calculation")
 
     refined_settings = refined_settings_from_refined_triclinic(
         experiments,
