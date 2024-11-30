@@ -917,6 +917,10 @@ class Indexer:
 
         indexed_flags = reflections.get_flags(reflections.flags.indexed)
         ice_rings = ice_rings_selection(reflections)
+        if unindexed_reflections:
+            unindexed_rings = ice_rings_selection(unindexed_reflections)
+        else:
+            unindexed_rings = None
         imageset_id = reflections["imageset_id"]
         rows = [
             [
@@ -938,6 +942,7 @@ class Indexer:
             if unindexed_reflections:
                 sel = unindexed_reflections["imageset_id"] == i
                 unindexed_count += sel.count(True)
+                unindexed_noice += unindexed_rings.select(sel).count(False)
             rows.append(
                 [
                     str(i),
