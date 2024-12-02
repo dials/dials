@@ -138,6 +138,35 @@ namespace dials { namespace algorithms {
         }
         i_same_hkl.push_back(it->second);
       }
+
+      // Now check the final group!
+      if (i_same_hkl.size() > 1) {
+        for (int i = 0; i < i_same_hkl.size(); i++) {
+          const std::size_t i_ref = i_same_hkl[i];
+          for (int j = i + 1; j < i_same_hkl.size(); j++) {
+            const std::size_t j_ref = i_same_hkl[j];
+            int crystal_i = crystal_ids_[i_ref];
+            int crystal_j = crystal_ids_[j_ref];
+            if (crystal_i != crystal_j) {
+              continue;
+            } else if (crystal_i == -1) {
+              continue;
+            }
+            double phi_i = phi[i_ref];
+            double phi_j = phi[j_ref];
+            if (std::abs(phi_i - phi_j) > pi_4) {
+              continue;
+            }
+            if (lengths_sq[crystal_j][j_ref] < lengths_sq[crystal_i][i_ref]) {
+              miller_indices_[i_ref] = cctbx::miller::index<>(0, 0, 0);
+              crystal_ids_[i_ref] = -1;
+            } else {
+              miller_indices_[j_ref] = cctbx::miller::index<>(0, 0, 0);
+              crystal_ids_[j_ref] = -1;
+            }
+          }
+        }
+      }
     }
 
     af::shared<cctbx::miller::index<> > miller_indices() {
