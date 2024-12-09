@@ -8,6 +8,7 @@ conda-forge::cxx-compiler
 conda-forge::dials-data>=2.4.72
 conda-forge::docutils
 conda-forge::eigen
+conda-forge::ffbidx
 conda-forge::future
 conda-forge::gemmi>=0.6.5
 conda-forge::h5py>=3.1.0
