@@ -40,6 +40,7 @@ class LaueGroupAnalysis(symmetry_base):
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
+        apply_sigma_correction=True,
     ):
         """Initialise a LaueGroupAnalysis object.
 
@@ -77,6 +78,7 @@ class LaueGroupAnalysis(symmetry_base):
             relative_length_tolerance=relative_length_tolerance,
             absolute_angle_tolerance=absolute_angle_tolerance,
             best_monoclinic_beta=best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
 
         self._estimate_cc_sig_fac()
@@ -167,7 +169,6 @@ class LaueGroupAnalysis(symmetry_base):
             self.cc_sig_fac = 0
 
     def _estimate_cc_true(self):
-
         # A1.2. Estimation of E(CC; S).
 
         # (i)
@@ -529,10 +530,8 @@ class ScoreSymmetryElement:
                     outliers.set_selected(col > q3_x + cut_x, True)
                     outliers.set_selected(col < q1_x - cut_x, True)
             if outliers.count(True):
-                logger.debug(
-                    "Rejecting %s outlier value%s",
-                    libtbx.utils.plural_s(outliers.count(True)),
-                )
+                n, s = libtbx.utils.plural_s(outliers.count(True))
+                logger.debug(f"Rejecting {n} outlier value{s}")
                 x = x.select(~outliers)
                 y = y.select(~outliers)
 

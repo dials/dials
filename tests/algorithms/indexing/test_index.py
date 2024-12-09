@@ -112,11 +112,11 @@ def run_indexing(
     return _indexing_result(indexed_reflections, experiments_list, rmsds)
 
 
-def test_index_i04_weak_data_fft3d(dials_regression: pathlib.Path, tmp_path):
+def test_index_i04_weak_data_fft3d(dials_data, tmp_path):
     # thaumatin
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_import.json")
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    sequence_path = data_dir / "experiments_import.json"
     extra_args = [
         "bin_size_fraction=0.25",
         "image_range=1,20",
@@ -138,11 +138,10 @@ def test_index_i04_weak_data_fft3d(dials_regression: pathlib.Path, tmp_path):
     )
 
 
-def test_index_trypsin_four_lattice_P212121(dials_regression: pathlib.Path, tmp_path):
-    # synthetic trypsin multi-lattice dataset (4 lattices)
-    data_dir = dials_regression / "indexing_test_data" / "trypsin"
-    pickle_path = data_dir / "P1_X6_1_2_3_4.pickle"
-    sequence_path = data_dir / "experiments_P1_X6_1_2_3_4.json"
+def test_index_trypsin_two_lattice_P212121(dials_data, tmp_path):
+    data_dir = dials_data("semisynthetic_multilattice", pathlib=True)
+    strong_path = data_dir / "ag_strong_1_50.refl"
+    sequence_path = data_dir / "ag_imported_1_50.expt"
     extra_args = [
         "indexing.method=real_space_grid_search",
         "reflections_per_degree=10",
@@ -155,12 +154,12 @@ def test_index_trypsin_four_lattice_P212121(dials_regression: pathlib.Path, tmp_
         "max_cell=70",
     ]
     expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.28, 0.30, 0.006)
+    expected_rmsds = (0.31, 0.49, 0.002)
     expected_hall_symbol = " P 2ac 2ab"
     n_expected_lattices = 1
 
     run_indexing(
-        pickle_path,
+        strong_path,
         sequence_path,
         tmp_path,
         extra_args,
@@ -173,9 +172,9 @@ def test_index_trypsin_four_lattice_P212121(dials_regression: pathlib.Path, tmp_
     )
 
 
-def test_index_i04_weak_data_fft1d(dials_regression: pathlib.Path, tmp_path):
+def test_index_i04_weak_data_fft1d(dials_data, tmp_path):
     # thaumatin
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
+    data_dir = dials_data("i04_weak_data")
     pickle_path = data_dir / "full.pickle"
     sequence_path = data_dir / "experiments_import.json"
     extra_args = [
@@ -201,11 +200,10 @@ def test_index_i04_weak_data_fft1d(dials_regression: pathlib.Path, tmp_path):
     )
 
 
-def test_index_trypsin_index_assignment_local(dials_regression: pathlib.Path, tmp_path):
-    # synthetic trypsin multi-lattice dataset (3 lattices)
-    data_dir = dials_regression / "indexing_test_data" / "trypsin"
-    pickle_path = data_dir / "P1_X6_1_2_3.pickle"
-    sequence_path = data_dir / "experiments_P1_X6_1_2_3.json"
+def test_index_trypsin_index_assignment_local(dials_data, tmp_path):
+    data_dir = dials_data("semisynthetic_multilattice", pathlib=True)
+    reflections_path = data_dir / "ag_strong_1_50.refl"
+    sequence_path = data_dir / "ag_imported_1_50.expt"
     extra_args = [
         "indexing.method=real_space_grid_search",
         "d_min_start=3",
@@ -215,18 +213,17 @@ def test_index_trypsin_index_assignment_local(dials_regression: pathlib.Path, tm
         "image_range=0,10",
         "beam.fix=all",
         "detector.fix=all",
-        "max_lattices=3",
+        "max_lattices=2",
         "index_assignment.method=local",
         "nearest_neighbours=50",
     ]
-
     expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.33, 0.40, 0.0024)
+    expected_rmsds = (0.32, 0.41, 0.004)
     expected_hall_symbol = " P 2ac 2ab"
-    n_expected_lattices = 3
+    n_expected_lattices = 2
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         sequence_path,
         tmp_path,
         extra_args,
@@ -239,9 +236,9 @@ def test_index_trypsin_index_assignment_local(dials_regression: pathlib.Path, tm
     )
 
 
-def test_index_peak_search_clean(dials_regression: pathlib.Path, tmp_path):
+def test_index_peak_search_clean(dials_data, tmp_path):
     # test indexing from single image of i04_weak_data
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
+    data_dir = dials_data("i04_weak_data")
     pickle_path = data_dir / "first_image.pickle"
     sequence_path = data_dir / "experiments_import.json"
     extra_args = [
@@ -270,14 +267,12 @@ def test_index_peak_search_clean(dials_regression: pathlib.Path, tmp_path):
 
 
 @pytest.mark.parametrize("specify_unit_cell", [False, True])
-def test_index_imosflm_tutorial(
-    dials_regression: pathlib.Path, tmp_path, specify_unit_cell
-):
+def test_index_imosflm_tutorial(dials_data, tmp_path, specify_unit_cell):
     # test on spots derived from imosflm tutorial data:
     # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
-    data_dir = dials_regression / "indexing_test_data" / "imosflm_hg_mar"
-    pickle_path = data_dir / "strong.pickle"
-    sequence_path = data_dir / "experiments.json"
+    data_dir = dials_data("indexing_test_data")
+    reflections_path = data_dir / "imosflm_hg_mar-strong.pickle"
+    sequence_path = data_dir / "imosflm_hg_mar-experiments.json"
 
     unit_cell = uctbx.unit_cell((58.373, 58.373, 155.939, 90, 90, 120))
     hall_symbol = '-R 3 2"'
@@ -296,7 +291,7 @@ def test_index_imosflm_tutorial(
     expected_rmsds = (0.08, 0.11, 0.004)
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         sequence_path,
         tmp_path,
         extra_args,
@@ -416,13 +411,13 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method
     )
 
 
-def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
+def test_multiple_experiments(dials_data: pathlib.Path, tmp_path):
     # Test indexing 4 lysozyme still shots in a single dials.index job
     #   - the first image doesn't index
     #   - the last three images do index
-    data_dir = dials_regression / "indexing_test_data" / "i24_lysozyme_stills"
-    pickle_path = data_dir / "strong.pickle"
-    experiments_json = data_dir / "imported_experiments.json"
+    data_dir = dials_data("indexing_test_data")
+    reflections_path = data_dir / "i24_lyso_still-strong.pickle"
+    experiments_json = data_dir / "i24_lyso_still-imported.json"
 
     expected_unit_cell = uctbx.unit_cell((38.06, 78.78, 78.91, 90, 90, 90))
     expected_hall_symbol = " P 1"
@@ -435,7 +430,7 @@ def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
     ]
 
     run_indexing(
-        pickle_path,
+        reflections_path,
         experiments_json,
         tmp_path,
         extra_args,
@@ -448,6 +443,7 @@ def test_multiple_experiments(dials_regression: pathlib.Path, tmp_path):
 
 
 def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
+    # 1440 images of 1° rotation each
     data_dir = dials_regression / "indexing_test_data" / "4rotation"
     pickle_path = data_dir / "strong.pickle"
     sequence_path = data_dir / "experiments.json"
@@ -473,18 +469,15 @@ def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
     assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_4(
-    dials_regression: pathlib.Path, tmp_path
-):
+def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
     # test for small molecule multi-sequence indexing, 4 sequences with different values
     # of goniometer.fixed_rotation()
-    data_dir = dials_regression / "indexing_test_data" / "multi_sweep"
-    pickle_paths = [
-        sorted((data_dir / f"SWEEP{i + 1}" / "index").glob("*_strong.pickle"))[0]
-        for i in range(4)
+    data_dir = dials_data("indexing_test_data")
+    reflections_paths = [
+        (data_dir / f"multi_sweep-SWEEP{i + 1}-strong.pickle") for i in range(4)
     ]
     sequence_paths = [
-        data_dir / f"SWEEP{i + 1}" / "index" / "experiments.json" for i in range(4)
+        data_dir / f"multi_sweep-SWEEP{i + 1}-experiments.json" for i in range(4)
     ]
     extra_args = ["known_symmetry.space_group=I4", "filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell((7.310, 7.310, 6.820, 90.000, 90.000, 90.000))
@@ -492,7 +485,7 @@ def test_index_small_molecule_multi_sequence_4(
     expected_hall_symbol = " I 4"
 
     result = run_indexing(
-        pickle_paths,
+        reflections_paths,
         sequence_paths,
         tmp_path,
         extra_args,
@@ -981,8 +974,8 @@ def test_unconventional_P1_cell(dials_data, tmp_path, cell_params):
     )
 
 
-def test_real_space_grid_search_no_unit_cell(dials_regression: pathlib.Path, tmp_path):
-    data_dir = dials_regression / "indexing_test_data" / "i04_weak_data"
+def test_real_space_grid_search_no_unit_cell(dials_data, tmp_path):
+    data_dir = dials_data("i04_weak_data")
     experiments_json = data_dir / "experiments_import.json"
     pickle_path = data_dir / "full.pickle"
     commands = [

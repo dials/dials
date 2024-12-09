@@ -369,7 +369,6 @@ class Indexer:
     def from_parameters(
         reflections, experiments, known_crystal_models=None, params=None
     ):
-
         if known_crystal_models is not None:
             from dials.algorithms.indexing.known_orientation import (
                 IndexerKnownOrientation,
@@ -527,9 +526,7 @@ class Indexer:
             if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
-                cutoff_fraction = (
-                    self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-                )
+                cutoff_fraction = self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
                 d_spacings = 1 / self.reflections["rlp"].norms()
                 d_min_indexed = flex.min(d_spacings.select(self.indexed_reflections))
                 min_reflections_for_indexing = cutoff_fraction * len(
@@ -543,7 +540,7 @@ class Indexer:
                     )
                     break
 
-            n_lattices_previous_cycle = len(experiments)
+            n_lattices_previous_cycle = len(experiments.crystals())
 
             if self.d_min is None:
                 self.d_min = self.params.refinement_protocol.d_min_start
@@ -577,7 +574,7 @@ class Indexer:
 
             if len(experiments) == 0:
                 raise DialsIndexError("No suitable lattice could be found.")
-            elif len(experiments) == n_lattices_previous_cycle:
+            elif len(experiments.crystals()) == n_lattices_previous_cycle:
                 logger.warning("No more suitable lattices could be found")
                 # no more lattices found
                 break
@@ -611,7 +608,7 @@ class Indexer:
                 logger.info("\nIndexed crystal models:")
                 self.show_experiments(experiments, self.reflections, d_min=self.d_min)
 
-                if self._check_have_similar_crystal_models(experiments):
+                if self._remove_similar_crystal_models(experiments):
                     have_similar_crystal_models = True
                     break
 
@@ -682,34 +679,9 @@ class Indexer:
                             # below
                             # note here we are acting on the table from the last macrocycle
                             # This is guaranteed to exist due to the check if len(experiments) == 1: above
-                            sel = self.refined_reflections["id"] == model_id
-                            if sel.count(
-                                True
-                            ):  # not the case if failure on first cycle of refinement of new xtal
-                                logger.info(
-                                    "Removing %d reflections with id %d",
-                                    sel.count(True),
-                                    model_id,
-                                )
-                                self.refined_reflections["id"].set_selected(sel, -1)
-                                # N.B. Need to unset the flags here as the break below means we
-                                # don't enter the code after
-                                del self.refined_reflections.experiment_identifiers()[
-                                    model_id
-                                ]
-                                self.refined_reflections.unset_flags(
-                                    sel, self.refined_reflections.flags.indexed
-                                )
-                                self.refined_reflections["miller_index"].set_selected(
-                                    sel, (0, 0, 0)
-                                )
-                                self.unindexed_reflections.extend(
-                                    self.refined_reflections.select(sel)
-                                )
-                                self.refined_reflections = (
-                                    self.refined_reflections.select(~sel)
-                                )
-                                self.refined_reflections.clean_experiment_identifiers_map()
+                            # N.B. Need to unset the flags here as the break below means we
+                            # don't enter the code after
+                            self._remove_id_from_reflections(model_id)
                         break
 
                 self._unit_cell_volume_sanity_check(experiments, refined_experiments)
@@ -786,6 +758,26 @@ class Indexer:
         if "xyzcal.mm" in self.refined_reflections:
             self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
 
+    def _remove_id_from_reflections(self, model_id):
+        sel = self.refined_reflections["id"] == model_id
+        if sel.count(
+            True
+        ):  # not the case if failure on first cycle of refinement of new xtal
+            logger.info(
+                "Removing %d reflections with id %d",
+                sel.count(True),
+                model_id,
+            )
+            self.refined_reflections["id"].set_selected(sel, -1)
+            del self.refined_reflections.experiment_identifiers()[model_id]
+            self.refined_reflections.unset_flags(
+                sel, self.refined_reflections.flags.indexed
+            )
+            self.refined_reflections["miller_index"].set_selected(sel, (0, 0, 0))
+            self.unindexed_reflections.extend(self.refined_reflections.select(sel))
+            self.refined_reflections = self.refined_reflections.select(~sel)
+            self.refined_reflections.clean_experiment_identifiers_map()
+
     def _unit_cell_volume_sanity_check(self, original_experiments, refined_experiments):
         # sanity check for unrealistic unit cell volume increase during refinement
         # usually this indicates too many parameters are being refined given the
@@ -832,9 +824,9 @@ class Indexer:
                         reflections["id"] == i_expt, miller_indices
                     )
 
-    def _check_have_similar_crystal_models(self, experiments):
+    def _remove_similar_crystal_models(self, experiments):
         """
-        Checks for similar crystal models.
+        Checks for too-similar crystal models and removes them.
 
         Checks whether the most recently added crystal model is similar to previously
         found crystal models, and if so, deletes the last crystal model from the
@@ -863,6 +855,8 @@ class Indexer:
                 have_similar_crystal_models = True
                 for id_ in sorted(models_to_reject, reverse=True):
                     del experiments[id_]
+                    # Unset ids in the reflection table
+                    self._remove_id_from_reflections(id_)
                 break
         return have_similar_crystal_models
 
@@ -944,13 +938,10 @@ class Indexer:
         params = self.params.max_cell_estimation
         if self.params.max_cell is libtbx.Auto:
             if self.params.known_symmetry.unit_cell is not None:
-                uc_params = (
-                    self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
-                )
+                uc_params = self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
                 self.params.max_cell = params.multiplier * max(uc_params[:3])
                 logger.info("Using max_cell: %.1f Angstrom", self.params.max_cell)
             else:
-
                 convert_reflections_z_to_deg = True
                 all_tof_experiments = False
                 for expt in self.experiments:
@@ -995,12 +986,24 @@ class Indexer:
     def refine(self, experiments, reflections):
         from dials.algorithms.indexing.refinement import refine
 
+        properties_to_save = [
+            "xyzcal.mm",
+            "entering",
+            "wavelength_cal",
+            "s0_cal",
+            "tof_cal",
+        ]
+
         refiner, refined, outliers = refine(self.all_params, reflections, experiments)
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
+
         predicted = refiner.predict_for_indexed()
-        reflections["xyzcal.mm"] = predicted["xyzcal.mm"]
-        reflections["entering"] = predicted["entering"]
+
+        for i in properties_to_save:
+            if i in predicted:
+                reflections[i] = predicted[i]
+
         reflections.unset_flags(
             flex.bool(len(reflections), True), reflections.flags.centroid_outlier
         )

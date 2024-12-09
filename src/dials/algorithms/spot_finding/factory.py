@@ -242,7 +242,7 @@ class PeakCentroidDistanceFilter:
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered %d of %d spots by peak-centroid distance", num_after, num_before
+            f"Filtered {num_after} of {num_before} spots by peak-centroid distance"
         )
         return flags
 
@@ -332,7 +332,7 @@ class BackgroundGradientFilter:
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered %d of %d spots by background gradient", num_after, num_before
+            f"Filtered {num_after} of {num_before} spots by background gradient"
         )
         return flags
 
@@ -380,7 +380,7 @@ class SpotDensityFilter:
                 cutoff = hist.slot_centers()[i - 1] - 0.5 * hist.slot_width()
 
         sel = np.column_stack(np.where(H > cutoff))
-        for (ix, iy) in sel:
+        for ix, iy in sel:
             flags.set_selected(
                 (
                     (obs_x > xedges[ix])
@@ -398,7 +398,7 @@ class SpotDensityFilter:
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
-        logger.info("Filtered %d of %d spots by spot density", num_after, num_before)
+        logger.info(f"Filtered {num_after} of {num_before} spots by spot density")
         return flags
 
 
@@ -460,7 +460,6 @@ class SpotFinderFactory:
                 raise RuntimeError("All experiment scans must contain time_of_flight")
 
         if contains_tof_experiments:
-
             # ToF spots from spallation sources typically have elongated tails
             if params.spotfinder.filter.max_separation < 6:
                 # Based on ISISSXD data

@@ -19,7 +19,6 @@ from dials.array_family import flex
     ],
 )
 def test_centroid_outlier(dials_data, method, colnames, expected_nout):
-
     flex.set_random_seed(42)
     data_dir = dials_data("refinement_test_data", pathlib=True)
     residuals = flex.reflection_table.from_file(

@@ -105,8 +105,8 @@ systematic_absences {
     .help = "Use fourier analysis or direct analysis of I/sigma to determine"
             "likelihood of systematic absences"
 
-  significance_level = *0.95 0.975 0.99
-    .type = choice
+  significance_level = 0.95
+    .type = float(value_min=0, value_max=1)
     .help = "Significance to use when testing whether axial reflections are "
             "different to zero (absences and reflections in reflecting condition)."
 
@@ -405,6 +405,10 @@ def symmetry(experiments, reflection_tables, params=None):
     input data and filtering settings e.g partiality_threshold"""
             )
 
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in experiments.scaling_models())
+
         datasets = [
             ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
@@ -417,6 +421,7 @@ def symmetry(experiments, reflection_tables, params=None):
             relative_length_tolerance=params.relative_length_tolerance,
             absolute_angle_tolerance=params.absolute_angle_tolerance,
             best_monoclinic_beta=params.best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
         logger.info("")
         logger.info(result)

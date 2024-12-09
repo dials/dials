@@ -86,7 +86,6 @@ def test_labels_3d():
         for j in range(size[0]):
             for i in range(size[1]):
                 if mask_list[k][j, i]:
-
                     l1 = labels[vi]
                     if k > 0 and mask_list[k - 1][j, i]:
                         l2 = label_map[k - 1, j, i]
@@ -135,7 +134,6 @@ def test_labels_2d():
         for j in range(size[0]):
             for i in range(size[1]):
                 if mask_list[k][j, i]:
-
                     l1 = labels[vi]
                     if k > 0 and mask_list[k - 1][j, i]:
                         l2 = label_map[k - 1, j, i]

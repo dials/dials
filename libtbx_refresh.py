@@ -60,7 +60,7 @@ Error:
 """
         )
 
-import dials.precommitbx.nagger
+import dials.precommitbx.nagger  # noqa: E402
 
 try:
     from dials.util.version import dials_version
@@ -218,9 +218,7 @@ export PATH
 }
 
 unset LIBTBX_BUILD
-""" % abs(
-            libtbx.env.build_path
-        )
+""" % abs(libtbx.env.build_path)
     with open(filename, "w") as fh:
         fh.write(script.lstrip())
 
@@ -311,9 +309,7 @@ for cmd in [
     Requires(ac, Dir(libtbx.env.under_build("lib")))
     Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "src", "dials", "util", "options.py"))
     Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "autocomplete.sh"))
-""".format(
-                "\n".join([f'    "{cmd}",' for cmd in command_list])
-            )
+""".format("\n".join([f'    "{cmd}",' for cmd in command_list]))
         )
 
     # Generate a bash script activating command line completion for each relevant command

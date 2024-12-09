@@ -4,9 +4,10 @@ from unittest.mock import patch
 
 import pytest
 
-pytest.importorskip("pyFAI")
-
 from dxtbx.serialize import load
+
+# ruff: noqa: E402
+pytest.importorskip("pyFAI")
 
 from dials.command_line import powder_calibrate
 from dials.command_line.powder_calibrate import Geometry, Point, PowderCalibrator
@@ -16,7 +17,6 @@ from dials.command_line.powder_calibrate import Geometry, Point, PowderCalibrato
     "eyeball, starting_geometry", [(True, "imported.expt"), (False, "eyeballed.expt")]
 )
 def test_calibrate_coarse(dials_data, tmp_path, eyeball, starting_geometry):
-
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
 
     starting_geom_exptlist = load.experiment_list(aluminium_powder / starting_geometry)
@@ -55,7 +55,6 @@ def test_calibrate_coarse(dials_data, tmp_path, eyeball, starting_geometry):
 
 
 def test_save_geom_to_expt(dials_data, tmp_path):
-
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
 
     imported_exptlist = load.experiment_list(aluminium_powder / "imported.expt")

@@ -6,9 +6,6 @@ This module provides a base class for symmetry determination algorithms.
 from __future__ import annotations
 
 import logging
-
-logger = logging.getLogger(__name__)
-
 from io import StringIO
 
 import libtbx
@@ -20,6 +17,8 @@ from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
 from dials.util.normalisation import quasi_normalisation
+
+logger = logging.getLogger(__name__)
 
 
 def median_unit_cell(experiments):
@@ -44,6 +43,7 @@ class symmetry_base:
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
+        apply_sigma_correction=True,
     ):
         """Initialise a symmetry_base object.
 
@@ -70,6 +70,7 @@ class symmetry_base:
           best_monoclinic_beta (bool): If True, then for monoclinic centered cells, I2
             will be preferred over C2 if it gives a less oblique cell (i.e. smaller
             beta angle).
+          apply_sigma_correction (bool): If True, correct SDs by "typical" SD factors.
         """
         self.input_intensities = intensities
 
@@ -128,7 +129,8 @@ class symmetry_base:
         self.dataset_ids = self.dataset_ids.select(sel)
 
         # Correct SDs by "typical" SD factors
-        self._correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
+        if apply_sigma_correction:
+            self._correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
         self._normalise(normalisation)
         self._resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
 

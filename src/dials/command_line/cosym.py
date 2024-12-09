@@ -71,13 +71,6 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
-min_reflections = 10
-  .type = int(value_min=1)
-  .help = "The minimum number of reflections per experiment."
-
-seed = 230
-  .type = int(value_min=0)
-
 output {
   suffix = "_reindexed"
     .type = str
@@ -103,6 +96,10 @@ class cosym(Subject):
         if params is None:
             params = phil_scope.extract()
         self.params = params
+
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in experiments.scaling_models())
 
         reference_intensities = None
         if self.params.reference:
@@ -189,19 +186,24 @@ class cosym(Subject):
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
+
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.
             # The purpose of the reference is to help the clustering, not guarantee the indexing solution.
             datasets.append(reference_intensities)
             self.cosym_analysis = CosymAnalysis(
-                datasets, self.params, seed_dataset=len(datasets) - 1
+                datasets,
+                self.params,
+                seed_dataset=len(datasets) - 1,
+                apply_sigma_correction=apply_sigma_correction,
             )
         else:
-            self.cosym_analysis = CosymAnalysis(datasets, self.params)
+            self.cosym_analysis = CosymAnalysis(
+                datasets, self.params, apply_sigma_correction=apply_sigma_correction
+            )
 
     @property
     def experiments(self):
@@ -300,7 +302,7 @@ class cosym(Subject):
                 self.params.absolute_angle_tolerance,
                 subgroup,
             )
-            for (expt, refl) in zip(self._experiments, self._reflections):
+            for expt, refl in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
         elif (
@@ -308,7 +310,7 @@ class cosym(Subject):
             != sgtbx.change_of_basis_op("a,b,c").as_xyz()
         ):
             cb_op = subgroup["cb_op_inp_best"]
-            for (expt, refl) in zip(self._experiments, self._reflections):
+            for expt, refl in zip(self._experiments, self._reflections):
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
         # if either of the above are not true, then we are already in the best cell.
@@ -468,8 +470,13 @@ def run(args=None):
 
     if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
-    cosym_instance.run()
-    cosym_instance.export()
+    try:
+        cosym_instance.run()
+    except RuntimeError as e:
+        logger.info(e)
+        sys.exit(0)
+    else:
+        cosym_instance.export()
 
 
 if __name__ == "__main__":

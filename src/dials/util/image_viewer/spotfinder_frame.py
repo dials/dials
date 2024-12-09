@@ -18,7 +18,6 @@ from scitbx import matrix
 from wxtbx import bitmaps, icons
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 from wxtbx.phil_controls.floatctrl import FloatCtrl
-from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
 from wxtbx.phil_controls.ints import IntsCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
 
@@ -67,6 +66,17 @@ myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
 
 
+def get_bounded_ctrl_value(ctrl):
+    val = ctrl.GetValue()
+    if ctrl.GetMin() and val < ctrl.GetMin():
+        val = ctrl.GetMin()
+        ctrl.SetValue(val)
+    if ctrl.GetMax() and val > ctrl.GetMax():
+        val = ctrl.GetMax()
+        ctrl.SetValue(val)
+    return val
+
+
 class LoadImageEvent(wx.PyCommandEvent):
     """Event to signal that an image should be loaded"""
 
@@ -90,7 +100,6 @@ class RadialProfileThresholdDebug:
     # DispersionThresholdDebug object for those, while overriding the final_mask
     # method. This wrapper class handles that.
     def __init__(self, imageset, n_iqr, blur, n_bins):
-
         self.imageset = imageset
         params = find_spots_phil_scope.extract()
         params.spotfinder.threshold.radial_profile.blur = blur
@@ -120,7 +129,6 @@ def calculate_isoresolution_lines(
     n_rays=720,
     binning=1,
 ):
-
     # Calculate 2θ angles
     wavelength = beam.get_wavelength()
     twotheta = uctbx.d_star_sq_as_two_theta(uctbx.d_as_d_star_sq(spacings), wavelength)
@@ -133,7 +141,6 @@ def calculate_isoresolution_lines(
     ring_data = []
     resolution_text_data = []
     for tt, d in zip(twotheta, spacings):
-
         # Generate rays at 2θ
         cone_base_centre = beamvec * math.cos(tt)
         cone_base_radius = (beamvec * math.sin(tt)).length()
@@ -264,7 +271,9 @@ class SpotFrame(XrayFrame):
                 break
         for experiment_list in self.experiments:
             if not all(
-                exp.scan and (exp.scan.get_oscillation()[1] == 0.0)
+                exp.scan
+                and exp.scan.has_property("oscillation")
+                and exp.scan.get_oscillation()[1] == 0.0
                 for exp in experiment_list
             ):
                 self.viewing_still_scans = False
@@ -395,7 +404,7 @@ class SpotFrame(XrayFrame):
 
         # Create a sub-control with our image selection slider and label
         # Manually tune the height for now - don't understand toolbar sizing
-        panel = ImageChooserControl(self.toolbar, size=(300, 40))
+        panel = ImageChooserControl(self.toolbar, size=(300, 60))
         # The Toolbar doesn't call layout for its children?!
         panel.Layout()
         # Platform support for slider events seems a little inconsistent
@@ -427,20 +436,26 @@ class SpotFrame(XrayFrame):
         txt = wx.StaticText(self.toolbar, -1, "Jump:")
         self.toolbar.AddControl(txt)
 
-        self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(65, -1))
+        self.jump_to_image = IntCtrl(
+            self.toolbar, -1, name="image", size=(65, -1), style=wx.TE_PROCESS_ENTER
+        )
         self.jump_to_image.SetMin(1)
         self.jump_to_image.SetValue(1)
         self.toolbar.AddControl(self.jump_to_image)
-        self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnJumpToImage, self.jump_to_image)
+        self.jump_to_image.Bind(wx.EVT_KILL_FOCUS, self.OnJumpToImage)
 
         txt = wx.StaticText(self.toolbar, -1, "Stack:")
         self.toolbar.AddControl(txt)
 
-        self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65, -1))
+        self.stack = IntCtrl(
+            self.toolbar, -1, name="stack", size=(65, -1), style=wx.TE_PROCESS_ENTER
+        )
         self.stack.SetMin(1)
         self.stack.SetValue(self.params.stack_images)
         self.toolbar.AddControl(self.stack)
-        self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnStack, self.stack)
+        self.stack.Bind(wx.EVT_KILL_FOCUS, self.OnStack)
 
     def setup_menus(self):
         super().setup_menus()
@@ -499,12 +514,12 @@ class SpotFrame(XrayFrame):
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
     def OnJumpToImage(self, event):
-        phil_value = self.jump_to_image.GetPhilValue()
-        if self.images.selected_index != (phil_value - 1):
-            self.load_image(self.images[phil_value - 1])
+        value = get_bounded_ctrl_value(self.jump_to_image)
+        if self.images.selected_index != (value - 1):
+            self.load_image(self.images[value - 1])
 
     def OnStack(self, event):
-        value = self.stack.GetPhilValue()
+        value = get_bounded_ctrl_value(self.stack)
 
         if value == 1:
             for button in self.settings_frame.panel.dispersion_buttons:
@@ -586,7 +601,6 @@ class SpotFrame(XrayFrame):
         return True
 
     def drawUntrustedPolygons(self):
-
         # remove any previous selection
         if self.sel_image_polygon_layer:
             self.pyslip.DeleteLayer(self.sel_image_polygon_layer)
@@ -613,7 +627,6 @@ class SpotFrame(XrayFrame):
                 circle = region.circle
 
             if polygon is not None:
-
                 assert len(polygon) % 2 == 0, "Polygon must contain 2D coords"
                 vertices = []
                 for i in range(int(len(polygon) / 2)):
@@ -823,7 +836,7 @@ class SpotFrame(XrayFrame):
             "placement": "cc",
             "colour": "red",
         }
-        for (txt_x, txt_y, txt_str) in res_labels:
+        for txt_x, txt_y, txt_str in res_labels:
             x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(txt_x, txt_y)
             resolution_text_data.append((x, y, txt_str, metadata))
 
@@ -1087,27 +1100,37 @@ class SpotFrame(XrayFrame):
             if not isinstance(image_data, tuple):
                 image_data = (image_data,)
 
-            i_frame = self.image_chooser.GetClientData(
-                self.image_chooser.GetSelection()
-            ).index
-            imageset = self.images.selected.image_set
+            if self.params.show_mask:
+                masks = tuple(i == MASK_VAL for i in image_data)
 
+            i_frame = self.image_chooser.GetSelection()
             for i in range(1, self.params.stack_images):
-                if (i_frame + i) >= len(imageset):
+                if (i_frame + i) >= len(self.images):
                     break
-                image_data_i = imageset[i_frame + i]
+
+                image_data_i = self.images[i_frame + i].get_image_data()
                 for j, rd in enumerate(image_data):
                     data = image_data_i[j]
+
                     if mode == "max":
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
                     else:
                         rd += data
 
+                if self.params.show_mask:
+                    image_masks = self.images[i_frame + i].get_mask()
+                    for merged_mask, image_mask in zip(masks, image_masks):
+                        merged_mask.set_selected(~image_mask, True)
+
             # /= stack_images to put on consistent scale with single image
             # so that -1 etc. handled correctly (mean mode)
             if mode == "mean":
                 image_data = tuple(i / self.params.stack_images for i in image_data)
+
+            if self.params.show_mask:
+                for rd, mask in zip(image_data, masks):
+                    rd = rd.as_1d().set_selected(mask.as_1d(), MASK_VAL)
 
             # Don't show summed images with overloads
             self.pyslip.tiles.set_image_data(image_data, show_saturated=False)
@@ -1201,7 +1224,6 @@ class SpotFrame(XrayFrame):
         return image_data
 
     def _calculate_dispersion_debug(self, image):
-
         # hash current settings
         dispersion_debug_list_hash = hash(
             (
@@ -1674,7 +1696,6 @@ class SpotFrame(XrayFrame):
         return result
 
     def _reflection_overlay_data(self, i_frame):
-
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
@@ -1749,7 +1770,7 @@ class SpotFrame(XrayFrame):
                     ):
                         shoebox = reflection["shoebox"]
                         iz = i_frame - z0 if not self.viewing_stills else 0
-                        if not reflection["id"] in all_pix_data:
+                        if reflection["id"] not in all_pix_data:
                             all_pix_data[reflection["id"]] = []
 
                             all_foreground_circles[reflection["id"]] = []
@@ -1962,7 +1983,6 @@ class SpotFrame(XrayFrame):
         }
 
     def get_spotfinder_data(self):
-
         self.prediction_colours = [
             "#e41a1c",
             "#377eb8",
@@ -2118,21 +2138,21 @@ class SpotSettingsPanel(wx.Panel):
         grid = wx.FlexGridSizer(cols=2, rows=3, vgap=0, hgap=0)
         s.Add(grid)
         txt1 = wx.StaticText(self, -1, "Zoom level:")
-        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.levels = self.GetParent().GetParent().pyslip.tiles.levels
         # from scitbx.math import continued_fraction as cf
         # choices = ["%s" %(cf.from_real(2**l).as_rational()) for l in self.levels]
         choices = [f"{100 * 2 ** l:g}%" for l in self.levels]
         self.zoom_ctrl = wx.Choice(self, -1, choices=choices)
         self.zoom_ctrl.SetSelection(self.settings.zoom_level)
-        grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         txt11 = wx.StaticText(self, -1, "Color scheme:")
-        grid.Add(txt11, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt11, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         color_schemes = ["grayscale", "rainbow", "heatmap", "invert"]
         self.color_ctrl = wx.Choice(self, -1, choices=color_schemes)
         self.color_ctrl.SetSelection(color_schemes.index(self.params.color_scheme))
-        grid.Add(self.color_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.color_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self._sizer.Fit(self)
 
         txt12 = wx.StaticText(self, -1, "Projection:")
@@ -2146,8 +2166,8 @@ class SpotSettingsPanel(wx.Panel):
             self.projection_ctrl.SetSelection(
                 projection_choices.index(self.params.projection)
             )
-        grid.Add(txt12, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        grid.Add(self.projection_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt12, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        grid.Add(self.projection_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self._sizer.Fit(self)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -2155,7 +2175,7 @@ class SpotSettingsPanel(wx.Panel):
         grid = wx.FlexGridSizer(cols=1, rows=2, vgap=0, hgap=0)
         box.Add(grid)
         txt2 = wx.StaticText(self, -1, "Brightness:")
-        grid.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         # Add a textual brightness control
         self.brightness_txt_ctrl = IntCtrl(
             self,
@@ -2165,22 +2185,22 @@ class SpotSettingsPanel(wx.Panel):
             name="brightness",
             style=wx.TE_PROCESS_ENTER,
         )
-        grid.Add(self.brightness_txt_ctrl, 0, wx.ALL, 5)
+        grid.Add(self.brightness_txt_ctrl, 0, wx.ALL, 3)
         # Add a slider brightness control
         self.brightness_ctrl = wx.Slider(
-            self, -1, size=(150, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
+            self, -1, size=(200, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
         )
         self.brightness_ctrl.SetMin(1)
         self.brightness_ctrl.SetMax(1000)
         self.brightness_ctrl.SetValue(self.settings.brightness)
         self.brightness_ctrl.SetTickFreq(25)
-        box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         s.Add(grid)
         # Font size control
         txt = wx.StaticText(self, -1, "Font size:")
-        grid.Add(txt, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         # Add a textual brightness control
         self.fontsize_ctrl = IntCtrl(
             self,
@@ -2190,7 +2210,7 @@ class SpotSettingsPanel(wx.Panel):
             name="Font size",
             style=wx.TE_PROCESS_ENTER,
         )
-        grid.Add(self.fontsize_ctrl, 0, wx.ALL, 5)
+        grid.Add(self.fontsize_ctrl, 0, wx.ALL, 3)
 
         grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
         s.Add(grid)
@@ -2198,118 +2218,107 @@ class SpotSettingsPanel(wx.Panel):
         # Resolution rings control
         self.resolution_rings_ctrl = wx.CheckBox(self, -1, "Show resolution rings")
         self.resolution_rings_ctrl.SetValue(self.settings.show_resolution_rings)
-        grid.Add(self.resolution_rings_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.resolution_rings_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Ice rings control
         self.ice_rings_ctrl = wx.CheckBox(self, -1, "Show ice rings")
         self.ice_rings_ctrl.SetValue(self.settings.show_ice_rings)
-        grid.Add(self.ice_rings_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.ice_rings_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Center control
         self.center_ctrl = wx.CheckBox(self, -1, "Mark beam center")
         self.center_ctrl.SetValue(self.settings.show_beam_center)
-        grid.Add(self.center_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.center_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Center of mass control
         self.ctr_mass = wx.CheckBox(self, -1, "Mark centers of mass")
         self.ctr_mass.SetValue(self.settings.show_ctr_mass)
-        grid.Add(self.ctr_mass, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.ctr_mass, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Max pixel control
         self.max_pix = wx.CheckBox(self, -1, "Spot max pixels")
         self.max_pix.SetValue(self.settings.show_max_pix)
-        grid.Add(self.max_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.max_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Spot pixels control
         self.all_pix = wx.CheckBox(self, -1, "Spot all pixels")
         self.all_pix.SetValue(self.settings.show_all_pix)
-        grid.Add(self.all_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.all_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Threshold control
         self.thresh_pix = wx.CheckBox(self, -1, "Threshold pixels")
         self.thresh_pix.SetValue(self.settings.show_threshold_pix)
-        grid.Add(self.thresh_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.thresh_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Spot shoebox control
         self.shoebox = wx.CheckBox(self, -1, "Draw reflection shoebox")
         self.shoebox.SetValue(self.settings.show_shoebox)
-        grid.Add(self.shoebox, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.shoebox, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Spot predictions control
         self.predictions = wx.CheckBox(self, -1, "Show predictions")
         self.predictions.SetValue(self.settings.show_predictions)
-        grid.Add(self.predictions, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.predictions, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Spot predictions control
         self.miller_indices = wx.CheckBox(self, -1, "Show hkl")
         self.miller_indices.SetValue(self.settings.show_miller_indices)
-        grid.Add(self.miller_indices, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.miller_indices, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Spot predictions control
         self.show_mask = wx.CheckBox(self, -1, "Show mask")
         self.show_mask.SetValue(self.settings.show_mask)
-        grid.Add(self.show_mask, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.show_mask, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Integration shoeboxes only
         self.indexed = wx.CheckBox(self, -1, "Indexed only")
         self.indexed.SetValue(self.settings.show_indexed)
-        grid.Add(self.indexed, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.indexed, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Integration shoeboxes only
         self.integrated = wx.CheckBox(self, -1, "Integrated only")
         self.integrated.SetValue(self.settings.show_integrated)
-        grid.Add(self.integrated, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.integrated, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         # Toggle rotation axis display
         self.show_rotation_axis = wx.CheckBox(self, -1, "Rotation axis")
         self.show_rotation_axis.SetValue(self.settings.show_rotation_axis)
-        grid.Add(self.show_rotation_axis, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.show_rotation_axis, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         self.clear_all_button = wx.Button(self, -1, "Clear all")
-        grid.Add(self.clear_all_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.clear_all_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
         s.Add(grid)
-
-        # Minimum spot area control
-        # box = wx.BoxSizer(wx.HORIZONTAL)
-        # self.minspotarea_ctrl = PhilIntCtrl(self, -1, pos=(300,180), size=(80,-1),
-        # value=self.GetParent().GetParent().horizons_phil.distl.minimum_spot_area,
-        # name="Minimum spot area (pxls)")
-        # self.minspotarea_ctrl.SetOptional(False)
-        # box.Add(self.minspotarea_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-        # txtd = wx.StaticText(self, -1,  "Minimum spot area (pxls)",)
-        # box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-        # s.Add(box)
 
         # Stack type choice
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Stack type:")
-        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.stack_modes = ["max", "mean", "sum"]
         self.stack_mode_ctrl = wx.Choice(self, -1, choices=self.stack_modes)
         self.stack_mode_ctrl.SetSelection(
             self.stack_modes.index(self.params.stack_mode)
         )
-        grid.Add(self.stack_mode_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.stack_mode_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         s.Add(grid)
 
         # Image type choice
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Image type:")
-        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.image_types = ["corrected", "raw"]
         self.image_type_ctrl = wx.Choice(self, -1, choices=self.image_types)
         self.image_type_ctrl.SetSelection(
             self.image_types.index(self.settings.image_type)
         )
-        grid.Add(self.image_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.image_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         s.Add(grid)
 
         # Choice of thresholding algorithm
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Threshold algorithm:")
-        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.threshold_algorithm_types = [
             "dispersion",
             "dispersion_extended",
@@ -2321,7 +2330,7 @@ class SpotSettingsPanel(wx.Panel):
         self.threshold_algorithm_ctrl.SetSelection(
             self.threshold_algorithm_types.index(self.settings.threshold_algorithm)
         )
-        grid.Add(self.threshold_algorithm_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.threshold_algorithm_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         s.Add(grid)
 
         # Spotfinding parameters relevant to dispersion algorithms
@@ -2329,51 +2338,55 @@ class SpotSettingsPanel(wx.Panel):
         s.Add(self.dispersion_params_grid)
 
         txt1 = wx.StaticText(self, -1, "Sigma background")
-        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.nsigma_b_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_b, name="sigma_background"
         )
         self.nsigma_b_ctrl.SetMin(0)
-        self.dispersion_params_grid.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_b_ctrl, 0, wx.ALL, 3)
 
         txt2 = wx.StaticText(self, -1, "Sigma strong")
-        self.dispersion_params_grid.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.nsigma_s_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_s, name="sigma_strong"
         )
         self.nsigma_s_ctrl.SetMin(0)
-        self.dispersion_params_grid.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_s_ctrl, 0, wx.ALL, 3)
 
         txt1 = wx.StaticText(self, -1, "Global Threshold")
-        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.global_threshold_ctrl = FloatCtrl(
             self, value=self.settings.global_threshold, name="global_threshold"
         )
         self.global_threshold_ctrl.SetMin(0)
-        self.dispersion_params_grid.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.global_threshold_ctrl, 0, wx.ALL, 3)
 
         txt4 = wx.StaticText(self, -1, "Min. local")
-        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.min_local_ctrl = PhilIntCtrl(
-            self, value=self.settings.min_local, name="min_local"
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        self.min_local_ctrl = IntCtrl(
+            self,
+            value=self.settings.min_local,
+            name="min_local",
+            style=wx.TE_PROCESS_ENTER,
         )
         self.min_local_ctrl.SetMin(0)
-        self.dispersion_params_grid.Add(self.min_local_ctrl, 0, wx.ALL, 5)
+        self.min_local_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateThresholdParameters)
+        self.dispersion_params_grid.Add(self.min_local_ctrl, 0, wx.ALL, 3)
 
         txt4 = wx.StaticText(self, -1, "Gain")
-        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.gain_ctrl = FloatCtrl(self, value=self.settings.gain, name="gain")
         self.gain_ctrl.SetMin(1e-6)
-        self.dispersion_params_grid.Add(self.gain_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.gain_ctrl, 0, wx.ALL, 3)
 
         txt3 = wx.StaticText(self, -1, "Kernel size")
-        self.dispersion_params_grid.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.kernel_size_ctrl = IntsCtrl(
             self, value=self.settings.kernel_size, name="kernel_size"
         )
         self.kernel_size_ctrl.SetSize(2)
         self.kernel_size_ctrl.SetMin(1)
-        self.dispersion_params_grid.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.kernel_size_ctrl, 0, wx.ALL, 3)
 
         self.Bind(
             EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.nsigma_b_ctrl
@@ -2392,7 +2405,7 @@ class SpotSettingsPanel(wx.Panel):
             self.kernel_size_ctrl,
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.min_local_ctrl
+            wx.EVT_TEXT_ENTER, self.OnUpdateThresholdParameters, self.min_local_ctrl
         )
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.gain_ctrl)
 
@@ -2410,7 +2423,7 @@ class SpotSettingsPanel(wx.Panel):
             self, value=self.settings.n_iqr, name="iqr_multiplier"
         )
         self.n_iqr_ctrl.SetMin(0)
-        self.radial_profile_params_grid.Add(self.n_iqr_ctrl, 0, wx.ALL, 5)
+        self.radial_profile_params_grid.Add(self.n_iqr_ctrl, 0, wx.ALL, 3)
 
         txt1 = wx.StaticText(self, -1, "Blur")
         self.radial_profile_params_grid.Add(
@@ -2431,14 +2444,17 @@ class SpotSettingsPanel(wx.Panel):
         self.radial_profile_params_grid.Add(
             txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
         )
-        self.n_bins_ctrl = PhilIntCtrl(self, value=self.settings.n_bins, name="n_bins")
+        self.n_bins_ctrl = IntCtrl(
+            self, value=self.settings.n_bins, name="n_bins", style=wx.TE_PROCESS_ENTER
+        )
         self.n_bins_ctrl.SetMin(10)
-        self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 5)
+        self.n_bins_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateThresholdParameters)
+        self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 3)
 
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_iqr_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateThresholdParameters, self.blur_ctrl)
         self.Bind(
-            EVT_PHIL_CONTROL,
+            wx.EVT_TEXT_ENTER,
             self.OnUpdateThresholdParameters,
             self.n_bins_ctrl,
         )
@@ -2451,11 +2467,11 @@ class SpotSettingsPanel(wx.Panel):
             self, value=self.settings.find_spots_phil, name="find_spots_phil"
         )
 
-        grid1.Add(self.save_params_txt_ctrl, 0, wx.ALL, 5)
+        grid1.Add(self.save_params_txt_ctrl, 0, wx.ALL, 3)
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.save_params_txt_ctrl)
 
         self.save_params_button = wx.Button(self, -1, "Save")
-        grid1.Add(self.save_params_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid1.Add(self.save_params_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
         self.Bind(wx.EVT_BUTTON, self.OnSaveFindSpotsParams, self.save_params_button)
 
         grid2 = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
@@ -2475,7 +2491,7 @@ class SpotSettingsPanel(wx.Panel):
         for label in self.dispersion_labels:
             btn = wx.ToggleButton(self, -1, label)
             self.dispersion_buttons.append(btn)
-            grid2.Add(btn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+            grid2.Add(btn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
             self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
         for label, button in zip(self.dispersion_labels, self.dispersion_buttons):
@@ -2566,7 +2582,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_integrated = self.integrated.GetValue()
             self.settings.show_predictions = self.predictions.GetValue()
             self.settings.show_miller_indices = self.miller_indices.GetValue()
-            self.settings.fontsize = self.fontsize_ctrl.GetValue()
+            self.settings.fontsize = get_bounded_ctrl_value(self.fontsize_ctrl)
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
             self.settings.threshold_algorithm = self.threshold_algorithm_types[
@@ -2578,11 +2594,11 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
             self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
-            self.settings.min_local = self.min_local_ctrl.GetPhilValue()
+            self.settings.min_local = get_bounded_ctrl_value(self.min_local_ctrl)
             self.settings.gain = self.gain_ctrl.GetPhilValue()
             self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
             self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
-            self.settings.n_bins = self.n_bins_ctrl.GetPhilValue()
+            self.settings.n_bins = get_bounded_ctrl_value(self.n_bins_ctrl)
 
             self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 
@@ -2703,7 +2719,6 @@ class SpotSettingsPanel(wx.Panel):
         self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
-
         button = event.GetEventObject()
         selected = button.GetLabelText()
 

@@ -76,7 +76,6 @@ debug_loggers_to_disable = [
 
 
 class manage_loggers(object):
-
     """
     A contextmanager for reducing logging levels for the underlying code of
     parallel ssx programs.
@@ -127,7 +126,6 @@ def index_one(
     image_no: int,
     known_crystal_models: List[Crystal] = None,
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
-
     elist = ExperimentList([experiment])
     params.indexing.nproc = 1  # make sure none of the processes try to spawn multiprocessing within existing multiprocessing.
     for method in method_list:
@@ -229,7 +227,6 @@ def index_all_concurrent(
     params: phil.scope_extract,
     method_list: List[str],
 ) -> Tuple[ExperimentList, flex.reflection_table, dict]:
-
     input_iterable = []
     results_summary = {
         i: [] for i in range(len(experiments))
@@ -453,11 +450,11 @@ def preprocess(
         if n_cells > 20:
             centile_95_pos = int(math.floor(0.95 * n_cells))
             limit = sorted_cells[centile_95_pos]
-            logger.info(f"Setting max cell to {limit:.1f} " + "\u212B")
+            logger.info(f"Setting max cell to {limit:.1f} " + "\u212b")
             params.indexing.max_cell = limit
         else:
             params.indexing.max_cell = sorted_cells[-1]
-            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212B")
+            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212b")
 
     # Determine which methods to try
     method_list = params.method
@@ -477,7 +474,6 @@ def index(
     observed: flex.reflection_table,
     params: phil.scope_extract,
 ) -> Tuple[ExperimentList, flex.reflection_table, dict]:
-
     if params.output.nuggets:
         params.output.nuggets = pathlib.Path(
             params.output.nuggets
@@ -487,6 +483,11 @@ def index(
                 "output.nuggets not recognised as a valid directory path, no nuggets will be output"
             )
             params.output.nuggets = None
+
+    if any(not s.is_still() for s in experiments.scans()):
+        raise DialsIndexError(
+            "Not all experiments are stills. For rotation data, use the dials.index program."
+        )
 
     reflection_tables, params, method_list = preprocess(experiments, observed, params)
 

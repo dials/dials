@@ -84,7 +84,6 @@ def test_forward(dials_data):
     s1_map = transform.beam_vector_map(detector[0], beam, True)
 
     for i in range(100):
-
         # Get random x, y, z
         x = random.uniform(300, 1800)
         y = random.uniform(300, 1800)
@@ -160,7 +159,6 @@ def test_forward(dials_data):
     s1_map = transform.beam_vector_map(detector[0], beam, True)
 
     for i in range(100):
-
         # Get random x, y, z
         x = random.uniform(300, 1800)
         y = random.uniform(300, 1800)
@@ -281,7 +279,6 @@ def test_forward_no_model(dials_data):
     s1_map = transform.beam_vector_map(detector[0], beam, True)
 
     for i in range(100):
-
         # Get random x, y, z
         x = random.uniform(300, 1800)
         y = random.uniform(300, 1800)

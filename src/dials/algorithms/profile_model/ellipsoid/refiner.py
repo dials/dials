@@ -176,7 +176,6 @@ def rotate_mat3_double(R, A):
 
 class ReflectionLikelihood(object):
     def __init__(self, model, s0, sp, h, ctot, mobs, sobs, panel_id=0):
-
         # Save stuff
         modelstate = ReflectionModelState(model, s0, h)
         self.modelstate = modelstate
@@ -210,7 +209,6 @@ class ReflectionLikelihood(object):
         )
 
     def update(self):
-
         # The s2 vector
         s2 = self.s0 + self.modelstate.get_r()
         # Rotate the mean vector
@@ -395,7 +393,6 @@ class MaximumLikelihoodTarget(object):
     def __init__(
         self, model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list, panel_ids
     ):
-
         # Check input
         assert len(h_list) == sp_list.shape[-1]
         assert len(h_list) == ctot_list.shape[-1]

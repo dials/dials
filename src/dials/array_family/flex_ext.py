@@ -23,6 +23,7 @@ import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx.model import ExperimentType
 from scitbx import matrix
 
 import dials.extensions.glm_background_ext
@@ -31,6 +32,7 @@ import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
+from dials.util.table_as_hdf5_file import HDF5TableFile
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -230,6 +232,8 @@ class _:
         """
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
+        elif os.getenv("DIALS_USE_H5"):
+            self.as_hdf5(filename)
         else:
             self.as_msgpack_file(filename)
 
@@ -243,7 +247,12 @@ class _:
                 filename
             )
         except RuntimeError:
-            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
+            try:
+                return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
+            except OSError:
+                return dials_array_family_flex_ext.reflection_table.from_pickle(
+                    filename
+                )
 
     @staticmethod
     def empty_standard(nrows):
@@ -361,19 +370,19 @@ class _:
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def as_h5(self, filename):
-        """
-        Write the reflection table as a HDF5 file.
+    def as_hdf5(self, filename):
+        """Write the reflection table as a hdf5 file."""
 
-        :param filename: The output filename
-        """
-        from dials.util.nexus_old import NexusFile
+        with HDF5TableFile(filename, "w") as handle:
+            handle.add_tables([self])
 
-        handle = NexusFile(filename, "w")
-        # Clean up any removed experiments from the identifiers map
-        self.clean_experiment_identifiers_map()
-        handle.set_reflections(self)
-        handle.close()
+    @classmethod
+    def from_hdf5(cls, filename):
+        with HDF5TableFile(filename, "r") as handle:
+            tables = handle.get_tables()
+        if len(tables) > 1:
+            return cls.concat(tables)
+        return tables[0]
 
     def as_miller_array(self, experiment, intensity="sum"):
         """Return a miller array with the chosen intensities.
@@ -1144,7 +1153,6 @@ class _:
         """
         self["miller_index_asu"] = cctbx.array_family.flex.miller_index(len(self))
         for idx, experiment in enumerate(experiments):
-
             # Create the crystal symmetry object
             uc = experiment.crystal.get_unit_cell()
             sg = experiment.crystal.get_space_group()
@@ -1321,7 +1329,6 @@ Found %s"""
                 sel_expt = self["id"] == i
 
             for i_panel in range(len(expt.detector)):
-
                 sel = sel_expt & (panel_numbers == i_panel)
                 if calculated:
                     x, y, z = self["xyzcal.mm"].select(sel).parts()
@@ -1331,12 +1338,16 @@ Found %s"""
                     cctbx.array_family.flex.vec2_double(x, y)
                 )
 
-                if calculated and "wavelength_cal" in self and "s0_cal" in self:
-                    wavelength = self["wavelength_cal"].select(sel)
-                    s0 = self["s0_cal"].select(sel)
-                elif "wavelength" in self and "s0" in self:
-                    wavelength = self["wavelength"].select(sel)
-                    s0 = self["s0"].select(sel)
+                if (
+                    expt.get_type() == ExperimentType.LAUE
+                    or expt.get_type() == ExperimentType.TOF
+                ):
+                    if calculated and "wavelength_cal" in self and "s0_cal" in self:
+                        wavelength = self["wavelength_cal"].select(sel)
+                        s0 = self["s0_cal"].select(sel)
+                    elif "wavelength" in self and "s0" in self:
+                        wavelength = self["wavelength"].select(sel)
+                        s0 = self["s0"].select(sel)
                 else:
                     wavelength = expt.beam.get_wavelength()
                     s0 = expt.beam.get_s0()

@@ -76,7 +76,6 @@ class Test2d:
             for j in range(self.size[0]):
                 for i in range(self.size[1]):
                     if self.mask_list[k][j, i]:
-
                         l1 = self.labels[vi]
                         if k > 0 and self.mask_list[k - 1][j, i]:
                             l2 = label_map[k - 1, j, i]
@@ -162,7 +161,6 @@ class Test3d:
             for j in range(self.size[0]):
                 for i in range(self.size[1]):
                     if self.mask_list[k][j, i]:
-
                         l1 = self.labels[vi]
                         if k > 0 and self.mask_list[k - 1][j, i]:
                             l2 = label_map[k - 1, j, i]

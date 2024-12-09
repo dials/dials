@@ -1,6 +1,5 @@
 """Definitions of plots for systematic absences."""
 
-
 from __future__ import annotations
 
 
@@ -23,8 +22,7 @@ def plot_screw_axes(screw_axes_data):
     for name, data in screw_axes_data.items():
         d.update(
             {
-                "plot_"
-                + name: {
+                "plot_" + name: {
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),
@@ -57,9 +55,10 @@ def plot_screw_axes(screw_axes_data):
         if data["fourier_space_data"]:
             # make frequency plots
             # need to add vertical lines to indicate axis repeats
-            y_min = min(data["fourier_space_data"]["fourier_space"])
-            y_max = max(data["fourier_space_data"]["fourier_space"])
-            n = data["fourier_space_data"]["n"]
+            y = data["fourier_space_data"]["fourier_space"]
+            y_min = min(y)
+            y_max = max(y)
+            n = len(y)
             xtickvals = [float(n // 2)]
             xticktext = ["1/2", "1/3", "2/3", "1/4", "3/4", "1/6", "5/6"]
             for i in [3, 4, 6]:
@@ -68,14 +67,11 @@ def plot_screw_axes(screw_axes_data):
                 xtickvals.extend([xloc, xloc2])
 
             plot = {
-                "frequencies_plot_"
-                + name: {
+                "frequencies_plot_" + name: {
                     "data": [
                         {
-                            "x": list(
-                                range(len(data["fourier_space_data"]["fourier_space"]))
-                            ),
-                            "y": list(data["fourier_space_data"]["fourier_space"]),
+                            "x": list(range(len(y))),
+                            "y": list(y),
                             "type": "scatter",
                             "name": "Fourier amplitudes",
                             "xaxis": "x",
@@ -138,8 +134,7 @@ are indicated by vertical lines.""",
 
         d.update(
             {
-                "intensities_plot_"
-                + name: {
+                "intensities_plot_" + name: {
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),

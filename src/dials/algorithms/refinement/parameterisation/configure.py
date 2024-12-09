@@ -320,7 +320,6 @@ def _filter_parameter_names(parameterisation):
 
 # Helper function to perform centroid analysis
 def _centroid_analysis(options, experiments, reflection_manager):
-
     analysis = None
     if not options.scan_varying:
         return analysis
