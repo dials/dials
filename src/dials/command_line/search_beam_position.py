@@ -49,9 +49,11 @@ Example:
 Other methods are based on horizontal and vertical projection, and only
 require an imported experiment.
 
-Examples:
+Example:
   dials.search_beam_position method=midpoint imported.exp
-  dials.search_beam_position method=maximum imported.exp
+
+More information about the projection methods can be found at
+https://autoed.readthedocs.io/en/latest/pages/beam_position_methods.html
 
 """
 
@@ -168,9 +170,10 @@ projection {
             "diffraction image."
 
     midpoint {
-        exclude_intensity_percent = 0
+        exclude_intensity_percent = 0.01
         .type = float
-        .help = "Set all pixels above this value to zero."
+        .help = "Order all pixels by intensity and discard this percentage"
+                "from the top (by setting them to zero)."
 
         intersection_range = (0.3, 0.9, 0.01)
         .type = floats
