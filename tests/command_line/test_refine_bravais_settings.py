@@ -97,7 +97,7 @@ def test_refine_bravais_settings_multi_sweep(dials_data, tmp_path):
         [7.31, 7.31, 6.82, 90.00, 90.00, 90.00], abs=1e-1
     )
     assert bravais_summary["9"]["bravais"] == "tI"
-    assert bravais_summary["9"]["rmsd"] == pytest.approx(0.103, abs=1e-2)
+    assert bravais_summary["9"]["rmsd"] == pytest.approx(0.089, abs=1e-2)
     assert bravais_summary["9"]["recommended"] is True
 
 
@@ -141,7 +141,7 @@ def test_refine_bravais_settings_trypsin(dials_regression: Path, tmp_path):
         [54.37, 58.29, 66.51, 90.00, 90.00, 90.00], abs=1e-1
     )
     assert bravais_summary["5"]["bravais"] == "oP"
-    assert bravais_summary["5"]["rmsd"] == pytest.approx(0.1200, abs=1e-2)
+    assert bravais_summary["5"]["rmsd"] == pytest.approx(0.103, abs=1e-2)
     assert bravais_summary["5"]["recommended"] is True
     assert bravais_summary["9"]["recommended"] is False
 

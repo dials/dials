@@ -170,6 +170,7 @@ projection {
             "diffraction image."
 
     midpoint {
+
         exclude_intensity_percent = 0.01
         .type = float
         .help = "Order all pixels by intensity and discard this percentage"
