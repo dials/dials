@@ -846,6 +846,10 @@ def test_ffbidx(
         import ffbidx  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("ffbidx not installed")
+    try:
+        ffbidx.Indexer()
+    except RuntimeError:
+        pytest.skip("ffbidx installed but not functional on this system")
 
     data_dir = dials_data("cunir_serial_processed", pathlib=True)
     expt_file = data_dir / "imported_with_ref_5.expt"
