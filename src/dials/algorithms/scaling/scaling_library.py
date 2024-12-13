@@ -398,6 +398,8 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             return
         i_obs_copy = i_obs.customized_copy()
         i_obs_copy.setup_binner(n_bins=n_bins)
+        i_obs_copy2 = i_obs.customized_copy()
+        i_obs_copy2.setup_binner(n_bins=n_bins)
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
 
@@ -438,6 +440,37 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         self.r_split_binned = self.calc_rsplit(
             m1, m2, assume_index_matching=True, use_binning=True
         )
+        # now do weighted rsplit
+        self.weighted_r_split = self.calc_rsplit(
+            m1, m2, assume_index_matching=True, use_binning=False, weighted=True
+        )
+        self.weighted_r_split_binned = self.calc_rsplit(
+            m1, m2, assume_index_matching=True, use_binning=True, weighted=True
+        )
+
+        self.weighted_cc_half, self.neff_overall = (
+            ExtendedDatasetStatistics.weighted_cchalf(
+                m1, m2, assume_index_matching=True, use_binning=False
+            )[0]
+        )
+        results = ExtendedDatasetStatistics.weighted_cchalf(
+            m1, m2, assume_index_matching=True, use_binning=True
+        )
+        weighted_cc_half_binned = [i[0] for i in results]
+        neff_binned = [i[1] for i in results]
+        if weighted_cc_half_binned is not None:
+            self.weighted_cc_half_binned = weighted_cc_half_binned[1:-1]
+            self.neff_binned = neff_binned[1:-1]
+        # now do weighted cc anom
+        self.weighted_cc_anom, self.neff_overall_anom = weighted_anom_correlation(
+            i_obs_copy2
+        )
+        weighted_cc_half_binned, neff_binned = weighted_anom_correlation(
+            i_obs_copy2, use_binning=True, n_bins=n_bins
+        )
+        if weighted_cc_half_binned is not None:
+            self.weighted_cc_anom_binned = weighted_cc_half_binned
+            self.neff_binned_anom = neff_binned
 
     def as_dict(self):
         d = super().as_dict()
@@ -448,7 +481,9 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         return d
 
     @classmethod
-    def calc_rsplit(cls, this, other, assume_index_matching=False, use_binning=False):
+    def calc_rsplit(
+        cls, this, other, assume_index_matching=False, use_binning=False, weighted=False
+    ):
         # based on White, T. A. et al. J. Appl. Cryst. 45, 335-341 (2012).
         # adapted from cctbx_project/xfel/cxi_cc.py
         # Note that compared to the original published definition, we have used random
@@ -463,24 +498,39 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 (o, c) = (this, other)
             else:
                 (o, c) = this.common_sets(other=other, assert_no_singles=True)
-
-            den = 0.5 * flex.sum(o.data() + c.data())
-            if den == 0:  # avoid zero division error
-                return -1
-            return (1.0 / math.sqrt(2)) * flex.sum(flex.abs(o.data() - c.data())) / den
+            if weighted:
+                assert len(o.sigmas())
+                assert len(c.sigmas())
+                joint_var = (o.sigmas() ** 2) + (c.sigmas() ** 2)
+                assert joint_var > 0
+                den = flex.sum((o.data() + c.data()) / joint_var)
+                if den == 0:
+                    return -1
+                return (
+                    math.sqrt(2.0)
+                    * flex.sum(flex.abs(o.data() - c.data()) / joint_var)
+                    / den
+                )
+            else:
+                den = 0.5 * flex.sum(o.data() + c.data())
+                if den == 0:  # avoid zero division error
+                    return -1
+                return (
+                    (1.0 / math.sqrt(2)) * flex.sum(flex.abs(o.data() - c.data())) / den
+                )
 
         assert this.binner is not None
         results = []
         for i_bin in this.binner().range_used():
             sel = this.binner().selection(i_bin)
-            results.append(
-                cls.calc_rsplit(
-                    this.select(sel),
-                    other.select(sel),
-                    assume_index_matching=assume_index_matching,
-                    use_binning=False,
-                )
+            r = cls.calc_rsplit(
+                this.select(sel),
+                other.select(sel),
+                assume_index_matching=assume_index_matching,
+                use_binning=False,
+                weighted=weighted,
             )
+            results.append(r)
         return results
 
     @classmethod
@@ -538,6 +588,53 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 )[0]
             )
         return results
+
+
+def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
+    tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
+    tmp_array = tmp_array.sort("packed_indices")
+    if not use_binning:
+        seed = 0
+        split = split_unmerged(
+            unmerged_indices=tmp_array.indices(),
+            unmerged_data=tmp_array.data(),
+            unmerged_sigmas=tmp_array.sigmas(),
+            seed=seed,
+        )
+        indices = split.indices()
+        m1 = miller.array(
+            miller_set=miller.set(tmp_array.crystal_symmetry(), indices),
+            data=split.data1(),
+            sigmas=split.sigma1(),
+        ).customized_copy(anomalous_flag=True)
+        m2 = miller.array(
+            miller_set=miller.set(tmp_array.crystal_symmetry(), indices),
+            data=split.data2(),
+            sigmas=split.sigma2(),
+        ).customized_copy(anomalous_flag=True)
+        # m1 = m1.merge_equivalents().array()
+        # m2 = m2.merge_equivalents().array()
+        dano1 = m1.anomalous_differences()
+        dano2 = m2.anomalous_differences()
+        assert dano1.indices().all_eq(dano2.indices())
+        cc, neff = ExtendedDatasetStatistics.weighted_cchalf(
+            dano1, dano2, assume_index_matching=True
+        )[0]
+        return cc, neff
+    tmp_array.setup_binner(n_bins=n_bins)
+    ccs = []
+    neffs = []
+    for i_bin in tmp_array.binner().range_used():
+        sel = tmp_array.binner().selection(i_bin)
+        bin_array = tmp_array.select(sel)
+        if bin_array.size() == 0:
+            ccs.append(None)
+            neffs.append(None)
+        else:
+            cc, neff = weighted_anom_correlation(bin_array)
+            ccs.append(cc)
+            neffs.append(neff)
+    return ccs, neffs
 
 
 def merging_stats_from_scaled_array(

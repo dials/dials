@@ -590,6 +590,39 @@ class IntensityStatisticsPlots:
         }
 
 
+import math
+
+
+def compute_cc_significance(r, n, p):
+    # https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#Testing_using_Student.27s_t-distribution
+    if r == -1 or n <= 2:
+        significance = False
+        critical_value = 0
+    else:
+        from scitbx.math import distributions
+
+        dist = distributions.students_t_distribution(n - 2)
+        t = dist.quantile(1 - p)
+        critical_value = t / math.sqrt(n - 2 + t**2)
+        significance = r > critical_value
+    return significance, critical_value
+
+
+def compute_cc_significance_levels(cchalfs, neffs, cc_one_half_significance_level=0.01):
+    significances = []
+    critical_vals = []
+    for cc, n in zip(cchalfs, neffs):
+        if cc is not None and n is not None:
+            s, c = compute_cc_significance(
+                cc, int(math.ceil(n)), cc_one_half_significance_level
+            )
+        else:
+            s, c = None, None
+        significances.append(s)
+        critical_vals.append(c)
+    return significances, critical_vals
+
+
 class ResolutionPlotsAndStats:
     """
     Use iotbx dataset statistics objects to make plots and tables for reports.
@@ -625,6 +658,89 @@ class ResolutionPlotsAndStats:
         d.update(self.multiplicity_vs_resolution_plot())
         d.update(self.r_pim_plot())
         d.update(self.additional_stats_plot())
+        d.update(self.weighted_stats_plot())
+        return d
+
+    def weighted_stats_plot(self):
+        d = {}
+        if self.dataset_statistics.weighted_cc_half_binned:
+            d_star_sq_bins = []
+
+            _, critical_vals = compute_cc_significance_levels(
+                self.dataset_statistics.weighted_cc_half_binned,
+                self.dataset_statistics.neff_binned,
+            )
+            _, critical_anom_vals = compute_cc_significance_levels(
+                self.dataset_statistics.weighted_cc_anom_binned,
+                self.dataset_statistics.neff_binned_anom,
+            )
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d.update(
+                {
+                    "cc_one_half_weighted": cc_half_plot(
+                        d_star_sq=d_star_sq_bins,
+                        cc_half=self.dataset_statistics.weighted_cc_half_binned,
+                        cc_half_fit=None,
+                        d_min=None,
+                        cc_half_critical_values=critical_vals,
+                        cc_anom=self.dataset_statistics.weighted_cc_anom_binned,
+                        cc_anom_critical_values=critical_anom_vals,
+                    )
+                }
+            )
+            d["cc_one_half_weighted"]["layout"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-weighted) vs resolution"
+            )
+        if self.dataset_statistics.weighted_r_split_binned:
+            d_star_sq_bins = []
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(
+                d_star_sq_bins, nticks=5
+            )
+
+            d.update(
+                {
+                    "r_split_weighted": {
+                        "data": [
+                            {
+                                "x": d_star_sq_bins,  # d_star_sq
+                                "y": self.dataset_statistics.weighted_r_split_binned,
+                                "type": "scatter",
+                                "name": "R<sub>split</sub>(\u03c3-weighted) vs resolution",
+                            }
+                        ],
+                        "layout": {
+                            "title": "R<sub>split</sub>(\u03c3-weighted) vs resolution",
+                            "xaxis": {
+                                "title": "Resolution (Å)",
+                                "tickvals": d_star_sq_tickvals,
+                                "ticktext": d_star_sq_ticktext,
+                            },
+                            "yaxis": {
+                                "title": "R<sub>split</sub>(\u03c3-weighted)",
+                                "rangemode": "tozero",
+                            },
+                        },
+                    }
+                }
+            )
         return d
 
     def additional_stats_plot(self):

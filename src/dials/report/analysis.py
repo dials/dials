@@ -195,12 +195,15 @@ formats = {
     "Rpim(I)": "%7.3f",
     "Rpim(I+/-)": "%7.3f",
     "Rsplit(I)": "%7.3f",
+    "wRsplit(I)": "%7.3f",
     "CC half": "%7.3f",
+    "wCC half": "%7.3f",
     "Wilson B factor": "%7.3f",
     "Partial bias": "%7.3f",
     "Anomalous completeness": "%7.1f",
     "Anomalous multiplicity": "%7.1f",
     "Anomalous correlation": "%7.3f",
+    "wCC anom": "%7.3f",
     "Anomalous slope": "%7.3f",
     "dF/F": "%7.3f",
     "dI/s(dI)": "%7.3f",
@@ -291,9 +294,21 @@ def table_1_stats(
         extra_key_to_var.update(
             {
                 "Rsplit(I)": {
+                    "overall": "weighted_r_split",
+                    "binned": "weighted_r_split_binned",
+                },
+                "wRsplit(I)": {
                     "overall": "r_split",
                     "binned": "r_split_binned",
-                }
+                },
+                "wCC half": {
+                    "overall": "weighted_cc_half",
+                    "binned": "weighted_cc_half_binned",
+                },
+                "wCC anom": {
+                    "overall": "weighted_cc_anom",
+                    "binned": "weighted_cc_anom_binned",
+                },
             }
         )
 
