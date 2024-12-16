@@ -365,7 +365,7 @@ class PinkIndexer(Strategy):
 
         if target_symmetry_primitive is None:
             raise DialsIndexError(
-                "Target unit cell and space group must be provided for small_cell"
+                "Target unit cell and space group must be provided for pink_indexer"
             )
 
         target_cell = target_symmetry_primitive.unit_cell()
