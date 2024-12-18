@@ -1096,6 +1096,11 @@ class SpotFrame(XrayFrame):
         if self.params.stack_images > 1:
             self.settings.display = "image"
             image = self.pyslip.tiles.raw_image
+
+            # This clears the cached image data in chooser_wrapper and forces image reload
+            # See https://github.com/dials/dials/issues/2174
+            image.set_image_data(None)
+
             image_data = image.get_image_data()
             if not isinstance(image_data, tuple):
                 image_data = (image_data,)
