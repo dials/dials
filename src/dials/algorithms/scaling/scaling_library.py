@@ -381,6 +381,9 @@ class MergedHalfDatasets:
     multiplicity2: miller.array
 
 
+import matplotlib.pyplot as plt
+
+
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
@@ -466,11 +469,13 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             i_obs_copy2
         )
         weighted_cc_half_binned, neff_binned = weighted_anom_correlation(
-            i_obs_copy2, use_binning=True, n_bins=n_bins
+            i_obs_copy2, use_binning=True, n_bins=n_bins, plot_label="weighted_anom"
         )
         if weighted_cc_half_binned is not None:
             self.weighted_cc_anom_binned = weighted_cc_half_binned
             self.neff_binned_anom = neff_binned
+            print(list(self.weighted_cc_anom_binned))
+            print(list(self.neff_binned_anom))
 
     def as_dict(self):
         d = super().as_dict()
@@ -535,8 +540,13 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
     @classmethod
     def weighted_cchalf(
-        cls, this, other, assume_index_matching=False, use_binning=False
-    ) -> list[tuple]:
+        cls,
+        this,
+        other,
+        assume_index_matching=False,
+        use_binning=False,
+        plot_label=None,
+    ) -> List[Tuple]:
         if not use_binning:
             assert other.data().size() == this.data().size()
             if this.data().size() == 0:
@@ -563,6 +573,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             ybar = flex.sum(c.data() * norm_jw)
             dx = o.data() - xbar
             dy = c.data() - ybar
+
             sxy = flex.sum(dx * dy * norm_jw)
 
             sx = flex.sum(flex.pow2(dx) * norm_jw)
@@ -573,24 +584,99 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
             neff = 1 / flex.sum(flex.pow2(norm_jw))
+            if plot_label:
+                if n == 546:
+                    print("norm_jw:")
+                    print(sorted(norm_jw, reverse=True))
+                    sel = norm_jw > 0.001
+                    plt.errorbar(
+                        x=list(o.data().select(sel)),
+                        y=list(c.data().select(sel)),
+                        yerr=list(c.sigmas().select(sel)),
+                        xerr=list(o.sigmas().select(sel)),
+                        fmt="o",
+                        markersize=0.5,
+                    )
+                    plt.plot(
+                        [
+                            min(min(o.data().select(sel)), min(c.data().select(sel))),
+                            max(max(o.data().select(sel)), max(c.data().select(sel))),
+                        ],
+                        [
+                            min(min(o.data().select(sel)), min(c.data().select(sel))),
+                            max(max(o.data().select(sel)), max(c.data().select(sel))),
+                        ],
+                        color="k",
+                    )
+                    plt.gca().set_aspect("equal")
+                    plt.grid()
+                    plt.xlabel(r"ΔI$_1$", fontsize=16)
+                    plt.ylabel(r"ΔI$_2$", fontsize=16)
+                    plt.savefig(f"{plot_label}_{n}_selected.png")
+                    plt.cla()
+                plt.errorbar(
+                    x=list(o.data()),
+                    y=list(c.data()),
+                    yerr=list(c.sigmas()),
+                    xerr=list(o.sigmas()),
+                    fmt="o",
+                    markersize=0.5,
+                )
+                plt.plot(
+                    [
+                        min(min(o.data()), min(c.data())),
+                        max(max(o.data()), max(c.data())),
+                    ],
+                    [
+                        min(min(o.data()), min(c.data())),
+                        max(max(o.data()), max(c.data())),
+                    ],
+                    color="k",
+                )
+                plt.grid()
+                plt.xlabel(r"ΔI$_1$", fontsize=16)
+                plt.ylabel(r"ΔI$_2$", fontsize=16)
+                plt.savefig(f"{plot_label}_{n}_{neff:.5f}.png")
+                plt.cla()
+                plt.scatter(x=list(o.data()), y=list(c.data()), s=2)
+                plt.plot(
+                    [
+                        min(min(o.data()), min(c.data())),
+                        max(max(o.data()), max(c.data())),
+                    ],
+                    [
+                        min(min(o.data()), min(c.data())),
+                        max(max(o.data()), max(c.data())),
+                    ],
+                    color="k",
+                )
+                plt.grid()
+                plt.xlabel(r"ΔI$_1$", fontsize=16)
+                plt.ylabel(r"ΔI$_2$", fontsize=16)
+                plt.savefig(f"{plot_label}_{n}_noerrorbar.png")
+                plt.cla()
             return [(sxy / ((sx * sy) ** 0.5), neff)]
 
         assert this.binner is not None
         results = []
-        for i_bin in this.binner().range_all():
+        for i, i_bin in enumerate(this.binner().range_all()):
             sel = this.binner().selection(i_bin)
+            label = None
+            if plot_label:
+                label = f"{plot_label}_{i}"
             results.append(
                 cls.weighted_cchalf(
                     this.select(sel),
                     other.select(sel),
                     assume_index_matching=assume_index_matching,
                     use_binning=False,
+                    plot_label=label,
                 )[0]
             )
         return results
 
 
-def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
+def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=None):
     tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
     tmp_array = tmp_array.sort("packed_indices")
     if not use_binning:
@@ -618,20 +704,24 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
         dano2 = m2.anomalous_differences()
         assert dano1.indices().all_eq(dano2.indices())
         cc, neff = ExtendedDatasetStatistics.weighted_cchalf(
-            dano1, dano2, assume_index_matching=True
+            dano1, dano2, assume_index_matching=True, plot_label=plot_label
         )[0]
+        print(dano1.size(), cc, neff)
         return cc, neff
     tmp_array.setup_binner(n_bins=n_bins)
     ccs = []
     neffs = []
-    for i_bin in tmp_array.binner().range_used():
+    for i, i_bin in enumerate(tmp_array.binner().range_used()):
         sel = tmp_array.binner().selection(i_bin)
         bin_array = tmp_array.select(sel)
+        label = None
+        if plot_label:
+            label = f"{plot_label}_{i}"
         if bin_array.size() == 0:
             ccs.append(None)
             neffs.append(None)
         else:
-            cc, neff = weighted_anom_correlation(bin_array)
+            cc, neff = weighted_anom_correlation(bin_array, plot_label=label)
             ccs.append(cc)
             neffs.append(neff)
     return ccs, neffs
