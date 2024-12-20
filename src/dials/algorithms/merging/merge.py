@@ -319,7 +319,7 @@ class MergedMTZCreator:
                 self._add_column(
                     dataset.merged_half_datasets.multiplicity2, "NHALF2" + suffix, "R"
                 )
-        self.mtz.set_data(self.mtz_data)
+        self.mtz.set_data(self.mtz_data.to_numpy())
 
     def _initialise_data_array(self, mtz_datasets):
         """
