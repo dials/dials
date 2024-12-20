@@ -185,7 +185,7 @@ class Indexer:
         self.wav_peak = wavelength
         self.wav_min = wavelength - bandwidth * wavelength / 200.0
         self.wav_max = wavelength + bandwidth * wavelength / 200.0
-        self.B = np.asarray(cell.fractionalization_matrix, dtype=self.float_dtype).T
+        self.B = np.asarray(cell.frac.mat, dtype=self.float_dtype).T
 
     def index_pink(
         self,
