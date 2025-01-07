@@ -108,7 +108,9 @@ refinement {
 
 }
 
-prediction {
+prediction
+    .expert_level = 1
+{
     d_min = None
         .type = float
 

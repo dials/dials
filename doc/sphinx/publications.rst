@@ -10,6 +10,7 @@ DIALS Journal Articles
 * .. pubmed:: 35647922 xia2.multiplex
 * .. pubmed:: 34747533 DIALS as a toolkit
 * .. pubmed:: 32254063 dials.scale
+* .. pubmed:: 31692470 XFEL error modeling
 * .. pubmed:: 30950396 How best to use photons
 * .. pubmed:: 30198898 Serial crystallography
 * .. pubmed:: 29872002 Electron diffraction
@@ -29,7 +30,14 @@ DIALS Journal Articles
 DIALS Application to XFEL Crystallography
 -----------------------------------------
 
+* .. pubmed:: 37797025 ribonucleotide reductase R2 protein radical
+* .. pubmed:: 37138085 PSII O2 formation
 * .. pubmed:: 35046599 Chemical Crystallography at XFELs
+* .. pubmed:: 30405241 PSII Kok cycle
+* .. pubmed:: 28835537 M2 proton channel
+* .. pubmed:: 27871088 PSII RT
+* .. pubmed:: 27680699 De novo phasing
+* .. pubmed:: 26422513 Multitemperature dynamics
 * .. pubmed:: 26352473 synuclein
 * .. pubmed:: 26280336 synaptotagmin-SNARE
 * .. pubmed:: 26057680 Ginn 2015b

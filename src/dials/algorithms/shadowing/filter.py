@@ -6,10 +6,15 @@ def filter_shadowed_reflections(experiments, reflections, experiment_goniometer=
     from scitbx.array_family import flex
 
     shadowed = flex.bool(reflections.size(), False)
+
     for expt_id in range(len(experiments)):
         expt = experiments[expt_id]
         imageset = expt.imageset
         masker = imageset.masker()
+
+        if masker is None:
+            continue
+
         detector = expt.detector
         sel = reflections["id"] == expt_id
         isel = sel.iselection()

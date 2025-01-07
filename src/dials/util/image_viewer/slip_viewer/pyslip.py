@@ -161,7 +161,11 @@ class _BufferedCanvas(wx.Panel):
     def Update(self):
         """Causes the canvas to be updated."""
 
-        dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
+        try:
+            dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
+        except RuntimeError:
+            # If the application is closing, the PySlip object has been deleted and this fails
+            return None
         dc.Clear()
         self.Draw(dc)
 

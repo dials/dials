@@ -81,9 +81,13 @@ class MaskSettingsPanel(wx.Panel):
         if self._mode_circle_layer:
             self._pyslip.DeleteLayer(self._mode_circle_layer)
 
-        self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
-        self._pyslip.Unbind(wx.EVT_LEFT_UP, handler=self.OnLeftUp)
-        self._pyslip.Unbind(wx.EVT_MOTION, handler=self.OnMove)
+        try:
+            self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
+            self._pyslip.Unbind(wx.EVT_LEFT_UP, handler=self.OnLeftUp)
+            self._pyslip.Unbind(wx.EVT_MOTION, handler=self.OnMove)
+        except RuntimeError:
+            # If the application is closing, the PySlip object has already been deleted
+            pass
 
     def draw_settings(self):
         for child in self.GetChildren():

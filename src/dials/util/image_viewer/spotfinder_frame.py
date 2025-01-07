@@ -18,7 +18,6 @@ from scitbx import matrix
 from wxtbx import bitmaps, icons
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 from wxtbx.phil_controls.floatctrl import FloatCtrl
-from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
 from wxtbx.phil_controls.ints import IntsCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
 
@@ -60,6 +59,17 @@ SpotfinderData = collections.namedtuple(
 
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
+
+
+def get_bounded_ctrl_value(ctrl):
+    val = ctrl.GetValue()
+    if ctrl.GetMin() and val < ctrl.GetMin():
+        val = ctrl.GetMin()
+        ctrl.SetValue(val)
+    if ctrl.GetMax() and val > ctrl.GetMax():
+        val = ctrl.GetMax()
+        ctrl.SetValue(val)
+    return val
 
 
 class LoadImageEvent(wx.PyCommandEvent):
@@ -256,7 +266,9 @@ class SpotFrame(XrayFrame):
                 break
         for experiment_list in self.experiments:
             if not all(
-                exp.scan and (exp.scan.get_oscillation()[1] == 0.0)
+                exp.scan
+                and exp.scan.has_property("oscillation")
+                and exp.scan.get_oscillation()[1] == 0.0
                 for exp in experiment_list
             ):
                 self.viewing_still_scans = False
@@ -387,7 +399,7 @@ class SpotFrame(XrayFrame):
 
         # Create a sub-control with our image selection slider and label
         # Manually tune the height for now - don't understand toolbar sizing
-        panel = ImageChooserControl(self.toolbar, size=(300, 40))
+        panel = ImageChooserControl(self.toolbar, size=(300, 60))
         # The Toolbar doesn't call layout for its children?!
         panel.Layout()
         # Platform support for slider events seems a little inconsistent
@@ -419,20 +431,26 @@ class SpotFrame(XrayFrame):
         txt = wx.StaticText(self.toolbar, -1, "Jump:")
         self.toolbar.AddControl(txt)
 
-        self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(65, -1))
+        self.jump_to_image = IntCtrl(
+            self.toolbar, -1, name="image", size=(65, -1), style=wx.TE_PROCESS_ENTER
+        )
         self.jump_to_image.SetMin(1)
         self.jump_to_image.SetValue(1)
         self.toolbar.AddControl(self.jump_to_image)
-        self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnJumpToImage, self.jump_to_image)
+        self.jump_to_image.Bind(wx.EVT_KILL_FOCUS, self.OnJumpToImage)
 
         txt = wx.StaticText(self.toolbar, -1, "Stack:")
         self.toolbar.AddControl(txt)
 
-        self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65, -1))
+        self.stack = IntCtrl(
+            self.toolbar, -1, name="stack", size=(65, -1), style=wx.TE_PROCESS_ENTER
+        )
         self.stack.SetMin(1)
         self.stack.SetValue(self.params.stack_images)
         self.toolbar.AddControl(self.stack)
-        self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnStack, self.stack)
+        self.stack.Bind(wx.EVT_KILL_FOCUS, self.OnStack)
 
     def setup_menus(self):
         super().setup_menus()
@@ -491,12 +509,12 @@ class SpotFrame(XrayFrame):
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
     def OnJumpToImage(self, event):
-        phil_value = self.jump_to_image.GetPhilValue()
-        if self.images.selected_index != (phil_value - 1):
-            self.load_image(self.images[phil_value - 1])
+        value = get_bounded_ctrl_value(self.jump_to_image)
+        if self.images.selected_index != (value - 1):
+            self.load_image(self.images[value - 1])
 
     def OnStack(self, event):
-        value = self.stack.GetPhilValue()
+        value = get_bounded_ctrl_value(self.stack)
 
         if value == 1:
             for button in self.settings_frame.panel.dispersion_buttons:
@@ -1073,6 +1091,11 @@ class SpotFrame(XrayFrame):
         if self.params.stack_images > 1:
             self.settings.display = "image"
             image = self.pyslip.tiles.raw_image
+
+            # This clears the cached image data in chooser_wrapper and forces image reload
+            # See https://github.com/dials/dials/issues/2174
+            image.set_image_data(None)
+
             image_data = image.get_image_data()
             if not isinstance(image_data, tuple):
                 image_data = (image_data,)
@@ -2268,17 +2291,6 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
         s.Add(grid)
 
-        # Minimum spot area control
-        # box = wx.BoxSizer(wx.HORIZONTAL)
-        # self.minspotarea_ctrl = PhilIntCtrl(self, -1, pos=(300,180), size=(80,-1),
-        # value=self.GetParent().GetParent().horizons_phil.distl.minimum_spot_area,
-        # name="Minimum spot area (pxls)")
-        # self.minspotarea_ctrl.SetOptional(False)
-        # box.Add(self.minspotarea_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-        # txtd = wx.StaticText(self, -1,  "Minimum spot area (pxls)",)
-        # box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-        # s.Add(box)
-
         # Stack type choice
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Stack type:")
@@ -2351,10 +2363,14 @@ class SpotSettingsPanel(wx.Panel):
 
         txt4 = wx.StaticText(self, -1, "Min. local")
         self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
-        self.min_local_ctrl = PhilIntCtrl(
-            self, value=self.settings.min_local, name="min_local"
+        self.min_local_ctrl = IntCtrl(
+            self,
+            value=self.settings.min_local,
+            name="min_local",
+            style=wx.TE_PROCESS_ENTER,
         )
         self.min_local_ctrl.SetMin(0)
+        self.min_local_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateThresholdParameters)
         self.dispersion_params_grid.Add(self.min_local_ctrl, 0, wx.ALL, 3)
 
         txt4 = wx.StaticText(self, -1, "Gain")
@@ -2389,7 +2405,7 @@ class SpotSettingsPanel(wx.Panel):
             self.kernel_size_ctrl,
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.min_local_ctrl
+            wx.EVT_TEXT_ENTER, self.OnUpdateThresholdParameters, self.min_local_ctrl
         )
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.gain_ctrl)
 
@@ -2428,14 +2444,17 @@ class SpotSettingsPanel(wx.Panel):
         self.radial_profile_params_grid.Add(
             txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
         )
-        self.n_bins_ctrl = PhilIntCtrl(self, value=self.settings.n_bins, name="n_bins")
+        self.n_bins_ctrl = IntCtrl(
+            self, value=self.settings.n_bins, name="n_bins", style=wx.TE_PROCESS_ENTER
+        )
         self.n_bins_ctrl.SetMin(10)
+        self.n_bins_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateThresholdParameters)
         self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 3)
 
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_iqr_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateThresholdParameters, self.blur_ctrl)
         self.Bind(
-            EVT_PHIL_CONTROL,
+            wx.EVT_TEXT_ENTER,
             self.OnUpdateThresholdParameters,
             self.n_bins_ctrl,
         )
@@ -2563,7 +2582,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_integrated = self.integrated.GetValue()
             self.settings.show_predictions = self.predictions.GetValue()
             self.settings.show_miller_indices = self.miller_indices.GetValue()
-            self.settings.fontsize = self.fontsize_ctrl.GetValue()
+            self.settings.fontsize = get_bounded_ctrl_value(self.fontsize_ctrl)
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
             self.settings.threshold_algorithm = self.threshold_algorithm_types[
@@ -2575,11 +2594,11 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
             self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
-            self.settings.min_local = self.min_local_ctrl.GetPhilValue()
+            self.settings.min_local = get_bounded_ctrl_value(self.min_local_ctrl)
             self.settings.gain = self.gain_ctrl.GetPhilValue()
             self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
             self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
-            self.settings.n_bins = self.n_bins_ctrl.GetPhilValue()
+            self.settings.n_bins = get_bounded_ctrl_value(self.n_bins_ctrl)
 
             self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 

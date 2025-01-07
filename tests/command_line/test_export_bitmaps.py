@@ -137,10 +137,9 @@ def test_export_still_image(dials_regression: Path, tmp_path):
         True,
     ],
 )
-def test_export_multi_panel(dials_regression: Path, tmp_path, show_resolution_rings):
-    image = os.path.join(
-        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
-    )
+def test_export_multi_panel(dials_data, tmp_path, show_resolution_rings):
+    data_dir = dials_data("image_examples", pathlib=True)
+    image = str(data_dir / "DLS_I23_germ_13KeV_0001.cbf")
 
     for binning in (1, 4):
         export_bitmaps.run(

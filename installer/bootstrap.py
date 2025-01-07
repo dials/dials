@@ -118,9 +118,10 @@ def install_micromamba(python, cmake):
     result = download_to_file(url, os.path.join(mamba_prefix, "micromamba.tar.bz2"))
     if result in (0, -1):
         sys.exit("Micromamba download failed")
-    with tarfile.open(
-        os.path.join(mamba_prefix, "micromamba.tar.bz2"), "r:bz2"
-    ) as tar, open(mamba, "wb") as fh:
+    with (
+        tarfile.open(os.path.join(mamba_prefix, "micromamba.tar.bz2"), "r:bz2") as tar,
+        open(mamba, "wb") as fh,
+    ):
         fh.write(tar.extractfile(member).read())
     make_executable(mamba)
 

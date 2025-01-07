@@ -66,6 +66,7 @@ loggers_to_disable = [
     "dials.algorithms.indexing.indexer",
     "dials.algorithms.indexing.lattice_search",
     "dials.algorithms.indexing.lattice_search.low_res_spot_match",
+    "dials.algorithms.indexing.lattice_search.ffb_indexer",
 ]
 debug_loggers_to_disable = [
     "dials.algorithms.indexing.symmetry",
@@ -482,6 +483,11 @@ def index(
                 "output.nuggets not recognised as a valid directory path, no nuggets will be output"
             )
             params.output.nuggets = None
+
+    if any(not s.is_still() for s in experiments.scans()):
+        raise DialsIndexError(
+            "Not all experiments are stills. For rotation data, use the dials.index program."
+        )
 
     reflection_tables, params, method_list = preprocess(experiments, observed, params)
 
