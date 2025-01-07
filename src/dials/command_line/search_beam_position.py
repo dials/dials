@@ -650,7 +650,7 @@ def discover_better_experimental_model(
             *(matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
         )
         + " ({:.1f}, {:.1f} px)".format(
-            *(matrix.col(old_bc_px) - matrix.col(old_bc_px)).elems
+            *(matrix.col(old_bc_px) - matrix.col(new_bc_px)).elems
         )
     )
     return new_experiments
