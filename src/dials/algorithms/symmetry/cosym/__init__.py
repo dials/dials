@@ -92,7 +92,7 @@ weights = *count standard_error
   .help = "If not None, a weights matrix is used in the cosym procedure."
           "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
           "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
-          "the sqrt of (1-CC*2)/(n-2), where (n-2) are the degrees of freedom in a pairwise CC calculation."
+          "(1-CC*2)/sqrt(N), where N=(n-2) or N=(neff-1) depending on the cc_weights option."
 cc_weights = None sigma
   .type = choice
   .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
