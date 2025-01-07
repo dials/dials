@@ -112,16 +112,14 @@ def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
                 y_px,
             )
             x_raw_px, y_raw_px = beam_centre_raw_image_px(detector, beam.get_s0())
-            beam_centre_raw_px_str = "    px, raw image: ({:.2f},{:.2f})".format(
-                x_raw_px,
-                y_raw_px,
+            beam_centre_raw_px_str = (
+                f"    px, raw image: ({x_raw_px:.2f},{y_raw_px:.2f})"
             )
             x_raw_mm, y_raw_mm = detector[panel_id].pixel_to_millimeter(
                 (x_raw_px, y_raw_px)
             )
-            beam_centre_raw_mm_str = "    mm, raw image: ({:.2f},{:.2f})".format(
-                x_raw_mm,
-                y_raw_mm,
+            beam_centre_raw_mm_str = (
+                f"    mm, raw image: ({x_raw_mm:.2f},{y_raw_mm:.2f})"
             )
         else:
             beam_centre_mm_str = f"    mm: ({x:.2f},{y:.2f})"
@@ -154,18 +152,8 @@ def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
         xy = [detector[pnl].millimeter_to_pixel(e) for e in xy]
         x_px, y_px = zip(*xy)
 
-        s += "Beam centre range (mm): ([{:.2f},{:.2f}],[{:.2f},{:.2f}])\n".format(
-            min(x_mm),
-            max(x_mm),
-            min(y_mm),
-            max(y_mm),
-        )
-        s += "Beam centre range (px): ([{:.2f},{:.2f}],[{:.2f},{:.2f}])\n".format(
-            min(x_px),
-            max(x_px),
-            min(y_px),
-            max(y_px),
-        )
+        s += f"Beam centre range (mm): ([{min(x_mm):.2f},{max(x_mm):.2f}],[{min(y_mm):.2f},{max(y_mm):.2f}])\n"
+        s += f"Beam centre range (px): ([{min(x_px):.2f},{max(x_px):.2f}],[{min(y_px):.2f},{max(y_px):.2f}])\n"
 
     return s
 

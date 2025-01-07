@@ -1113,9 +1113,9 @@ class PySlip(_BufferedCanvas):
         ) in data:
             # Gather ellipse center, major and minor axes in view
             # coordinates.
-            (ellipse_center, semimajor_axis, semiminor_axis) = [
+            (ellipse_center, semimajor_axis, semiminor_axis) = (
                 self.ConvertGeo2View(lonlat) for lonlat in p
-            ]
+            )
 
             major = col(semimajor_axis) - col(ellipse_center)
             minor = col(semiminor_axis) - col(ellipse_center)
