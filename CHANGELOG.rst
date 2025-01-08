@@ -1,3 +1,51 @@
+DIALS 3.23.0 (2025-01-08)
+=========================
+
+Features
+--------
+
+- ``dials.estimate_resolution``: Add resolution estimate based on limit of cc1/2 significance. (`#2580 <https://github.com/dials/dials/issues/2580>`_)
+- Added initial support for a H5-based reflection table. This is turned off by default, but can be activated by setting the ``DIALS_USE_H5`` environment variable. (`#2677 <https://github.com/dials/dials/issues/2677>`_)
+- ``dials.refine_error_model``: Allow grouped and individual error model refinements. (`#2685 <https://github.com/dials/dials/issues/2685>`_)
+- ``dials.symmetry``: Enable oversampling in ``systematic_absences.method=fourier``, for screw-axis detection. (`#2701 <https://github.com/dials/dials/issues/2701>`_)
+- ``dials.index`` and ``dials.ssx_index``: Add the CUDA-accelerated fast-feedback-indexer to DIALS as a lattice search algorithm. See https://github.com/paulscherrerinstitute/fast-feedback-indexer for more details. (`#2717 <https://github.com/dials/dials/issues/2717>`_)
+- More DIALS tests are changed to use publicly-available data via ``dials-data`` (`#2758 <https://github.com/dials/dials/issues/2758>`_)
+- ``dials.correlation_matrix``: Include reachability plot for visualisation of coordinate-clustering. (`#2778 <https://github.com/dials/dials/issues/2778>`_)
+- Python 3.10 is now the minimum python supported. (`#2792 <https://github.com/dials/dials/issues/2792>`_)
+- ``dials.image_viewer``: Add a line tool that gives start, end, and midpoints, plus a line profile graph. (`#2798 <https://github.com/dials/dials/issues/2798>`_)
+- ``dials.search_beam_position``: Include three new projection methods. (`#2809 <https://github.com/dials/dials/issues/2809>`_)
+- ``dials.import``: Add syntax for splitting a long scan into chunks e.g. for sequential data collections on small crystals. New syntax is either ``split=frames_per_block`` or ``split=start,end,frames_per_block``, if you wish to specify the range, where start and end are 1-indexed. (`#2816 <https://github.com/dials/dials/issues/2816>`_)
+
+
+Bugfixes
+--------
+
+- Ensure logger info is always printed correctly in spot-finding. (`#2678 <https://github.com/dials/dials/issues/2678>`_)
+- Fix ``beam.get_s0()`` errors when trying to use image viewer with polychromatic data. (`#2765 <https://github.com/dials/dials/issues/2765>`_)
+- Fix symmetry not being applied consistently post indexing, when multiple crystals and multiple orientations are present. (`#2786 <https://github.com/dials/dials/issues/2786>`_)
+- ``dials.generate_distortion_maps``: Correct definitions for creating elliptical distortion correction maps. (`#2787 <https://github.com/dials/dials/issues/2787>`_)
+- ``dials.predict``: Now adds experiment identifiers to output reflections. (`#2788 <https://github.com/dials/dials/issues/2788>`_)
+- ``dials.image_viewer``: Recover missing image scrollbar by increasing the panel height. (`#2795 <https://github.com/dials/dials/issues/2795>`_)
+- ``dials.index``: fix inconsistent experiment IDs after indexing with ``index_assignment.method=local`` (`#2799 <https://github.com/dials/dials/issues/2799>`_)
+- ``dials.index``: Fix minor bug in global index assignment. (`#2800 <https://github.com/dials/dials/issues/2800>`_)
+- ``dials.predict``: Do not try to filter shadowed reflections, if no masker is provided. (`#2805 <https://github.com/dials/dials/issues/2805>`_)
+- ``dials.cosym``: Use unbiased formula for standard error. (`#2810 <https://github.com/dials/dials/issues/2810>`_)
+- ``dials.cosym``: Fix weighting of cosym objective function, use count weights by default. (`#2813 <https://github.com/dials/dials/issues/2813>`_)
+- ``dials.image_viewer``: Do not allow integer controls to take values outside of their bounds. (`#2822 <https://github.com/dials/dials/issues/2822>`_)
+- ``dials.refine_bravais_settings``: Select only the reflections used in refinement in the indexing step for the calculation, to reduce memory footprint with very high resolution data. (`#2824 <https://github.com/dials/dials/issues/2824>`_)
+- ``dials.image_viewer``: Fix display bug with the trusted range mask, when viewing stacked images. (`#2830 <https://github.com/dials/dials/issues/2830>`_)
+- ``dials.export``: Fixes to work with gemmi v0.7. (`#2834 <https://github.com/dials/dials/issues/2834>`_)
+- ``dials.image_viewer``: Avoid error messages when quitting while one of the tools (ring, unit cell, etc.) is open. (`#2836 <https://github.com/dials/dials/issues/2836>`_)
+- ``dials.integrate``: Allow command line option ``d_min=`` without requiring full qualification as ``prediction.d_min=``. (`#2837 <https://github.com/dials/dials/issues/2837>`_)
+- More fixes for gemmi 0.7. (`#2839 <https://github.com/dials/dials/issues/2839>`_)
+
+
+Misc
+----
+
+- `#2528 <https://github.com/dials/dials/issues/2528>`_, `#2579 <https://github.com/dials/dials/issues/2579>`_, `#2769 <https://github.com/dials/dials/issues/2769>`_, `#2776 <https://github.com/dials/dials/issues/2776>`_, `#2779 <https://github.com/dials/dials/issues/2779>`_, `#2780 <https://github.com/dials/dials/issues/2780>`_, `#2791 <https://github.com/dials/dials/issues/2791>`_, `#2794 <https://github.com/dials/dials/issues/2794>`_, `#2796 <https://github.com/dials/dials/issues/2796>`_, `#2801 <https://github.com/dials/dials/issues/2801>`_, `#2802 <https://github.com/dials/dials/issues/2802>`_, `#2808 <https://github.com/dials/dials/issues/2808>`_, `#2818 <https://github.com/dials/dials/issues/2818>`_, `#2821 <https://github.com/dials/dials/issues/2821>`_, `#2832 <https://github.com/dials/dials/issues/2832>`_, `#2833 <https://github.com/dials/dials/issues/2833>`_, `#2838 <https://github.com/dials/dials/issues/2838>`_
+
+
 DIALS 3.22.0 (2024-10-15)
 =========================
 
