@@ -161,7 +161,11 @@ class _BufferedCanvas(wx.Panel):
     def Update(self):
         """Causes the canvas to be updated."""
 
-        dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
+        try:
+            dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
+        except RuntimeError:
+            # If the application is closing, the PySlip object has been deleted and this fails
+            return None
         dc.Clear()
         self.Draw(dc)
 
@@ -1109,9 +1113,9 @@ class PySlip(_BufferedCanvas):
         ) in data:
             # Gather ellipse center, major and minor axes in view
             # coordinates.
-            (ellipse_center, semimajor_axis, semiminor_axis) = [
+            (ellipse_center, semimajor_axis, semiminor_axis) = (
                 self.ConvertGeo2View(lonlat) for lonlat in p
-            ]
+            )
 
             major = col(semimajor_axis) - col(ellipse_center)
             minor = col(semiminor_axis) - col(ellipse_center)

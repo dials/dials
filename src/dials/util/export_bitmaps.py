@@ -4,7 +4,7 @@ import enum
 import logging
 import math
 import sys
-from typing import Iterator, Sequence
+from collections.abc import Iterator, Sequence
 
 from PIL import Image, ImageDraw, ImageFont
 

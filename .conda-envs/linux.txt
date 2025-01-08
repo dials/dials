@@ -8,8 +8,10 @@ cxx-compiler
 dials-data>=2.4.72
 docutils
 eigen
+ffbidx
+flexparser<0.4
 future
-gemmi>=0.6.5
+gemmi>=0.7
 h5py>=3.1.0
 hatchling
 hdf5

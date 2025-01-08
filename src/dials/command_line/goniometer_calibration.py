@@ -140,7 +140,7 @@ def run(args=None):
         print(
             f"{name}: ",
             f"rotation of {angle:.3f} degrees",
-            "about axis (%.5f,%.5f,%.5f)" % axis,
+            "about axis ({:.5f},{:.5f},{:.5f})".format(*axis),
         )
 
     print()
@@ -149,7 +149,9 @@ def run(args=None):
         print(
             f"{name}: ",
             f"rotation of {angle:.3f} degrees",
-            "about axis (%.5f,%.5f,%.5f)" % (R_to_mosflm * matrix.col(axis)).elems,
+            "about axis ({:.5f},{:.5f},{:.5f})".format(
+                *(R_to_mosflm * matrix.col(axis)).elems
+            ),
         )
 
     print()

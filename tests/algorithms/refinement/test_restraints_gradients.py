@@ -122,7 +122,7 @@ def test(dials_data):
     bb *= DEG2RAD
     cc *= DEG2RAD
     Ut = matrix.sqr(crystal.get_U()).transpose()
-    avec, bvec, cvec = [Ut * vec for vec in crystal.get_real_space_vectors()]
+    avec, bvec, cvec = (Ut * vec for vec in crystal.get_real_space_vectors())
 
     # calculate d[B^T]/dp
     dB_dp = xluc_param.get_ds_dp()

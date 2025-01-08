@@ -62,9 +62,11 @@ def test_basic_integrate(dials_data, tmp_path):
         except OSError:
             shutil.copyfile(source, destination)
 
-    with dials_data("centroid_test_data", pathlib=True).joinpath(
-        "experiments.json"
-    ).open("r") as fh:
+    with (
+        dials_data("centroid_test_data", pathlib=True)
+        .joinpath("experiments.json")
+        .open("r") as fh
+    ):
         j = json.load(fh)
     assert j["scan"][0]["image_range"] == [1, 9]
     j["scan"][0]["image_range"] = [11, 19]

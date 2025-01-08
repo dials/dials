@@ -116,7 +116,7 @@ def plot_reachability(nums: np.ndarray, reach: np.ndarray, labels: np.ndarray) -
                 "mode": "markers",
                 "type": "bar",
                 "marker": {
-                    "color": "rgb(%f,%f,%f)" % tuple(col[:3]),
+                    "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
                 },
                 "name": "Cluster %i" % k if k >= 0 else "Noise",
             }

@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import List, Optional
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -87,13 +86,13 @@ use_curvatures = True
   .type = bool
   .short_caption = "Use curvatures"
 
-weights = count standard_error
+weights = *count standard_error
   .type = choice
   .short_caption = "Weights"
   .help = "If not None, a weights matrix is used in the cosym procedure."
           "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
           "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
-          "the sqrt of (1-CC*2)/(n-2), where (n-2) are the degrees of freedom in a pairwise CC calculation."
+          "(1-CC*2)/sqrt(N), where N=(n-2) or N=(neff-1) depending on the cc_weights option."
 cc_weights = None sigma
   .type = choice
   .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
@@ -126,11 +125,10 @@ nproc = Auto
 
 
 phil_scope = iotbx.phil.parse(
-    """\
-%s
-%s
-"""
-    % (cosym_scope, symmetry_analysis_phil),
+    f"""\
+{cosym_scope}
+{symmetry_analysis_phil}
+""",
     process_includes=True,
 )
 
@@ -145,7 +143,13 @@ class CosymAnalysis(symmetry_base, Subject):
     the presence of an indexing ambiguity.
     """
 
-    def __init__(self, intensities, params, seed_dataset: Optional[int] = None):
+    def __init__(
+        self,
+        intensities,
+        params,
+        seed_dataset: int | None = None,
+        apply_sigma_correction=True,
+    ):
         """Initialise a CosymAnalysis object.
 
         Args:
@@ -175,6 +179,7 @@ class CosymAnalysis(symmetry_base, Subject):
             relative_length_tolerance=None,
             absolute_angle_tolerance=None,
             best_monoclinic_beta=params.best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
         Subject.__init__(
             self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
@@ -281,7 +286,7 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.nproc is Auto:
             if self.params.cc_weights == "sigma":
                 params.nproc = dials.util.system.CPU_COUNT
-                logger.info("Setting nproc={}".format(params.nproc))
+                logger.info(f"Setting nproc={params.nproc}")
             else:
                 params.nproc = 1
 
@@ -459,9 +464,9 @@ class CosymAnalysis(symmetry_base, Subject):
     def _reindexing_ops(
         self,
         coords: np.ndarray,
-        sym_ops: List[sgtbx.rt_mx],
+        sym_ops: list[sgtbx.rt_mx],
         cosets: sgtbx.cosets.left_decomposition,
-    ) -> List[sgtbx.change_of_basis_op]:
+    ) -> list[sgtbx.change_of_basis_op]:
         """Identify the reindexing operator for each dataset.
 
         Args:
