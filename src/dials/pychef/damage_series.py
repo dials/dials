@@ -72,7 +72,7 @@ def _generate_blank_plots_template(label):
     return d
 
 
-class DamageSeriesPlots(object):
+class DamageSeriesPlots:
     def __init__(self, d_max=None, d_min=None):
         self._d_star_sq_tickvals = None
         self._d_star_sq_ticktext = None

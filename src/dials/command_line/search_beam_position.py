@@ -49,9 +49,11 @@ Example:
 Other methods are based on horizontal and vertical projection, and only
 require an imported experiment.
 
-Examples:
+Example:
   dials.search_beam_position method=midpoint imported.exp
-  dials.search_beam_position method=maximum imported.exp
+
+More information about the projection methods can be found at
+https://autoed.readthedocs.io/en/latest/pages/beam_position_methods.html
 
 """
 
@@ -168,9 +170,11 @@ projection {
             "diffraction image."
 
     midpoint {
-        exclude_intensity_percent = 0
+
+        exclude_intensity_percent = 0.01
         .type = float
-        .help = "Set all pixels above this value to zero."
+        .help = "Order all pixels by intensity and discard this percentage"
+                "from the top (by setting them to zero)."
 
         intersection_range = (0.3, 0.9, 0.01)
         .type = floats
@@ -634,17 +638,20 @@ def discover_better_experimental_model(
     new_bc_px = new_detector[new_panel].millimeter_to_pixel(new_beam_centre)
 
     logger.info(
-        "Old beam centre: %.2f, %.2f mm" % old_beam_centre
-        + " (%.1f, %.1f px)" % old_bc_px
+        "Old beam centre: {:.2f}, {:.2f} mm".format(*old_beam_centre)
+        + " ({:.1f}, {:.1f} px)".format(*old_bc_px)
     )
     logger.info(
-        "New beam centre: %.2f, %.2f mm" % new_beam_centre
-        + " (%.1f, %.1f px)" % new_bc_px
+        "New beam centre: {:.2f}, {:.2f} mm".format(*new_beam_centre)
+        + " ({:.1f}, {:.1f} px)".format(*new_bc_px)
     )
     logger.info(
-        "Shift: %.2f, %.2f mm"
-        % (matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
-        + " (%.1f, %.1f px)" % (matrix.col(old_bc_px) - matrix.col(new_bc_px)).elems
+        "Shift: {:.2f}, {:.2f} mm".format(
+            *(matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
+        )
+        + " ({:.1f}, {:.1f} px)".format(
+            *(matrix.col(old_bc_px) - matrix.col(new_bc_px)).elems
+        )
     )
     return new_experiments
 

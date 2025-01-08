@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import math
 import pickle
-from typing import Iterable, Tuple
+from collections.abc import Iterable
 
 import libtbx
 from dxtbx.format.image import ImageBool
@@ -266,7 +266,7 @@ def pixel_list_to_shoeboxes(
     min_spot_size: int,
     max_spot_size: int,
     write_hot_pixel_mask: bool,
-) -> Tuple[flex.shoebox, Tuple[flex.size_t, ...]]:
+) -> tuple[flex.shoebox, tuple[flex.size_t, ...]]:
     """Convert a pixel list to shoeboxes"""
     # Extract the pixel lists into a list of reflections
     shoeboxes = flex.shoebox()
@@ -338,7 +338,7 @@ def pixel_list_to_reflection_table(
     min_spot_size: int,
     max_spot_size: int,
     write_hot_pixel_mask: bool,
-) -> Tuple[flex.shoebox, Tuple[flex.size_t, ...]]:
+) -> tuple[flex.shoebox, tuple[flex.size_t, ...]]:
     """Convert pixel list to reflection table"""
     shoeboxes, hot_pixels = pixel_list_to_shoeboxes(
         imageset,
@@ -709,9 +709,9 @@ class SpotFinder:
                     if experiment.identifier:
                         table.experiment_identifiers()[j] = experiment.identifier
             missed = table["id"] == -1
-            assert missed.count(True) == 0, "Failed to remap {} experiment IDs".format(
-                missed.count(True)
-            )
+            assert (
+                missed.count(True) == 0
+            ), f"Failed to remap {missed.count(True)} experiment IDs"
 
             reflections.extend(table)
             # Write a hot pixel mask
@@ -794,9 +794,7 @@ class SpotFinder:
                 raise Sorry("Scan range must be in ascending order")
             elif j0 < max_scan_range[0] or j1 > max_scan_range[1]:
                 raise Sorry(
-                    "Scan range must be within image range {}..{}".format(
-                        max_scan_range[0] + 1, max_scan_range[1]
-                    )
+                    f"Scan range must be within image range {max_scan_range[0] + 1}..{max_scan_range[1]}"
                 )
 
             logger.info(f"\nFinding spots in image {j0} to {j1}...")
