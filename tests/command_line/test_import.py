@@ -504,6 +504,74 @@ def test_from_image_files(dials_data, tmp_path):
     assert exp[0].identifier != ""
 
 
+def test_from_image_files_in_chunks(dials_data, tmp_path):
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+
+    # Import from the image files
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=imported.expt",
+            "split=1,9,3",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert (tmp_path / "imported.expt").is_file()
+    exp = load.experiment_list(tmp_path / "imported.expt")
+    assert len(exp) == 3
+
+
+def test_from_image_files_uneven_chunks(dials_data, tmp_path):
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+
+    # Import from the image files
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=imported.expt",
+            "split=1,8,3",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert (tmp_path / "imported.expt").is_file()
+    exp = load.experiment_list(tmp_path / "imported.expt")
+    assert len(exp) == 3
+    lens = tuple(len(e.imageset) for e in exp)
+    assert lens == (3, 3, 2)
+
+
+def test_from_image_files_implicit_chunks(dials_data, tmp_path):
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+
+    # Import from the image files
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=imported.expt",
+            "split=3",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert (tmp_path / "imported.expt").is_file()
+    exp = load.experiment_list(tmp_path / "imported.expt")
+    assert len(exp) == 3
+
+
 def test_from_template(dials_data, tmp_path):
     # Find the image files
     templates = [

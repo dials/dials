@@ -344,17 +344,13 @@ def split_for_scan_range(experiments, reference, scan_range):
             # Validate the requested scan range
             if scan_end == scan_start:
                 raise ValueError(
-                    "Scan range end must be higher than start; pass {},{} for single image".format(
-                        scan_start, scan_start + 1
-                    )
+                    f"Scan range end must be higher than start; pass {scan_start},{scan_start + 1} for single image"
                 )
             if scan_end < scan_start:
                 raise ValueError("Scan range must be in ascending order")
             elif scan_start < frames_start or scan_end > frames_end:
                 raise ValueError(
-                    "Scan range must be within image range {}..{}".format(
-                        frames_start, frames_end
-                    )
+                    f"Scan range must be within image range {frames_start}..{frames_end}"
                 )
 
             assert scan_end > scan_start

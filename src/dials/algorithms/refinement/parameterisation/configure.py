@@ -66,15 +66,14 @@ format_data = {
 
 logger = logging.getLogger(__name__)
 
-phil_str = (
-    """
+phil_str = """
     auto_reduction
       .help = "determine behaviour when there are too few reflections to"
               "reasonably produce a full parameterisation of the experiment list"
       .expert_level = 1
-    {
-      %(autoreduce_phil)s
-    }
+    {{
+      {autoreduce_phil}
+    }}
 
     scan_varying = False
       .help = "Allow models that are not forced to be static to vary during"
@@ -132,7 +131,7 @@ phil_str = (
 
     beam
       .help = "beam parameters"
-    {
+    {{
       fix = all *in_spindle_plane out_spindle_plane *wavelength
         .help = "Whether to fix beam parameters. By default,"
                 "in_spindle_plane is selected, and one of the two"
@@ -150,7 +149,7 @@ phil_str = (
                 "partial names to match"
         .expert_level = 1
 
-      %(constr_phil)s
+      {constr_phil}
 
       force_static = True
         .type = bool
@@ -158,12 +157,12 @@ phil_str = (
                 "scan-varying refinement"
         .expert_level = 1
 
-      %(sv_phil)s
-    }
+      {sv_phil}
+    }}
 
     crystal
       .help = "crystal parameters"
-    {
+    {{
       fix = all cell orientation
         .help = "Fix crystal parameters"
         .type = choice
@@ -171,16 +170,16 @@ phil_str = (
 
       unit_cell
         .expert_level = 1
-      {
+      {{
         fix_list = None
           .type = strings
           .help = "Fix specified parameters by a list of 0-based indices or"
                   "partial names to match"
           .expert_level = 1
 
-        %(uc_restraints_phil)s
+        {uc_restraints_phil}
 
-        %(constr_phil)s
+        {constr_phil}
 
         force_static = False
           .type = bool
@@ -188,19 +187,19 @@ phil_str = (
                   "when doing scan-varying refinement"
           .expert_level = 1
 
-        %(sv_phil)s
-      }
+        {sv_phil}
+      }}
 
       orientation
         .expert_level = 1
-      {
+      {{
         fix_list = None
           .type = strings
           .help = "Fix specified parameters by a list of 0-based indices or"
                   "partial names to match"
           .expert_level = 1
 
-        %(constr_phil)s
+        {constr_phil}
 
         force_static = False
           .type = bool
@@ -208,13 +207,13 @@ phil_str = (
                   "when doing scan-varying refinement"
           .expert_level = 1
 
-        %(sv_phil)s
-      }
-    }
+        {sv_phil}
+      }}
+    }}
 
     detector
       .help = "detector parameters"
-    {
+    {{
       panels = *automatic single multiple hierarchical
         .help = "Select appropriate detector parameterisation. Both the"
                 "single and multiple panel detector options treat the whole"
@@ -241,7 +240,7 @@ phil_str = (
                 "partial names to match"
         .expert_level = 1
 
-      %(constr_phil)s
+      {constr_phil}
 
       force_static = True
         .type = bool
@@ -249,12 +248,12 @@ phil_str = (
                 "when doing scan-varying refinement"
         .expert_level = 1
 
-      %(sv_phil)s
-    }
+      {sv_phil}
+    }}
 
     goniometer
       .help = "goniometer setting matrix parameters"
-    {
+    {{
       fix = *all in_beam_plane out_beam_plane
         .help = "Whether to fix goniometer parameters. By default,"
                 "fix all. Alternatively the setting matrix can be constrained"
@@ -270,7 +269,7 @@ phil_str = (
                 "partial names to match"
         .expert_level = 1
 
-      %(constr_phil)s
+      {constr_phil}
 
       force_static = True
         .type = bool
@@ -278,8 +277,8 @@ phil_str = (
                 "scan-varying refinement"
         .expert_level = 1
 
-      %(sv_phil)s
-    }
+      {sv_phil}
+    }}
 
     sparse = Auto
       .help = "Calculate gradients using sparse data structures."
@@ -297,9 +296,7 @@ phil_str = (
               "for prediction and gradients."
       .type = bool
       .expert_level = 1
-"""
-    % format_data
-)
+""".format(**format_data)
 phil_scope = parse(phil_str)
 
 

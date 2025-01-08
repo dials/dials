@@ -15,11 +15,12 @@ from scitbx.array_family import flex
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 
+from .ffb_indexer import FfbIndexer
 from .low_res_spot_match import LowResSpotMatch
 from .pinkindexer import PinkIndexer
 from .strategy import Strategy
 
-__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer"]
+__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer", "FfbIndexer"]
 
 
 logger = logging.getLogger(__name__)
@@ -85,13 +86,12 @@ for entry_point in itertools.chain(
     pkg_resources.iter_entry_points("dials.index.lattice_search"),
 ):
     ext_master_scope = libtbx.phil.parse(
-        """
-%s
+        f"""
+{entry_point.name}
 .expert_level=1
-.help=%s
-{}
+.help={entry_point.load().phil_help}
+{{}}
         """
-        % (entry_point.name, entry_point.load().phil_help)
     )
     ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
     assert len(ext_phil_scope) == 1

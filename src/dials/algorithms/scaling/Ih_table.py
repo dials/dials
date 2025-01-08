@@ -7,8 +7,6 @@ symmetry equivalent reflections, as required for scaling.
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
-
 import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
@@ -77,13 +75,13 @@ class IhTable:
 
     def __init__(
         self,
-        reflection_tables: List[flex.reflection_table],
+        reflection_tables: list[flex.reflection_table],
         space_group: sgtbx.space_group,
-        indices_lists: Optional[List[flex.size_t]] = None,
+        indices_lists: list[flex.size_t] | None = None,
         nblocks: int = 1,
         free_set_percentage: float = 0,
         free_set_offset: int = 0,
-        additional_cols: Optional[List[str]] = None,
+        additional_cols: list[str] | None = None,
         anomalous: bool = False,
     ):
         """
@@ -157,7 +155,7 @@ class IhTable:
                 data_for_block
             )
 
-    def get_block_selections_for_dataset(self, dataset: int) -> List[flex.size_t]:
+    def get_block_selections_for_dataset(self, dataset: int) -> list[flex.size_t]:
         """Generate the block selection list for a given dataset."""
         assert dataset in range(self.n_datasets)
         if self.free_Ih_table:
@@ -183,14 +181,14 @@ class IhTable:
         ]
 
     def update_weights(
-        self, error_model: Optional[BasicErrorModel] = None, dataset_id: int = None
+        self, error_model: BasicErrorModel | None = None, dataset_id: int = None
     ) -> None:
         """Update the error model in the blocks."""
         for block in self.Ih_table_blocks:
             block.update_weights(error_model, dataset_id)
 
     @property
-    def blocked_data_list(self) -> List["IhTableBlock"]:
+    def blocked_data_list(self) -> list[IhTableBlock]:
         """Return the list of IhTableBlock instances."""
         return self.Ih_table_blocks
 
@@ -212,7 +210,7 @@ class IhTable:
 
     def _determine_required_block_structures(
         self,
-        reflection_tables: List[flex.reflection_table],
+        reflection_tables: list[flex.reflection_table],
         free_set_percentage: float = 0,
         free_set_offset: int = 0,
     ) -> None:
@@ -330,8 +328,8 @@ class IhTable:
         self,
         dataset_id: int,
         reflections: flex.reflection_table,
-        indices_array: Optional[flex.size_t] = None,
-        additional_cols: Optional[List[str]] = None,
+        indices_array: flex.size_t | None = None,
+        additional_cols: list[str] | None = None,
     ) -> None:
         sorted_asu_indices, perm = get_sorted_asu_indices(
             reflections["asu_miller_index"], self.space_group, self.anomalous
@@ -473,7 +471,7 @@ class IhTable:
         return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
 
-class TargetAsuDictCache(object):
+class TargetAsuDictCache:
     instances = {}
 
     def __new__(cls, target_Ih_table):
@@ -599,7 +597,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         """Return the multiplicities of the symmetry groups."""
         return self.sum_in_groups(np.full(self.size, 1.0), output=output)
 
-    def select(self, sel: np.array) -> "IhTableBlock":
+    def select(self, sel: np.array) -> IhTableBlock:
         """Select a subset of the data, returning a new IhTableBlock object."""
         Ih_table = self.Ih_table[sel]
         Ih_table.reset_index(drop=True, inplace=True)
@@ -634,7 +632,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             newtable.dataset_info[i]["end_index"] = offset
         return newtable
 
-    def select_on_groups(self, sel: np.array) -> "IhTableBlock":
+    def select_on_groups(self, sel: np.array) -> IhTableBlock:
         """Select a subset of the unique groups, returning a new IhTableBlock."""
         reduced_h_idx = self._csc_h_index_matrix[:, sel]
         unity = np.full(reduced_h_idx.shape[1], 1.0)
@@ -651,8 +649,8 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
 
     def update_weights(
         self,
-        error_model: Optional[BasicErrorModel] = None,
-        dataset_id: Optional[int] = None,
+        error_model: BasicErrorModel | None = None,
+        dataset_id: int | None = None,
     ) -> None:
         """Update the scaling weights based on an error model."""
         if error_model:
@@ -724,11 +722,8 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     @inverse_scale_factors.setter
     def inverse_scale_factors(self, new_scales: np.array) -> None:
         if new_scales.size != self.size:
-            assert 0, """attempting to set a new set of scale factors of different
-      length than previous assignment: was {}, attempting {}""".format(
-                self.inverse_scale_factors.size,
-                new_scales.size,
-            )
+            assert 0, f"""attempting to set a new set of scale factors of different
+      length than previous assignment: was {self.inverse_scale_factors.size}, attempting {new_scales.size}"""
         else:
             self.Ih_table.loc[:, "inverse_scale_factor"] = new_scales
 
@@ -765,11 +760,8 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     @weights.setter
     def weights(self, new_weights):
         if new_weights.size != self.size:
-            assert 0, """attempting to set a new set of weights of different
-      length than previous assignment: was {}, attempting {}""".format(
-                self.size,
-                new_weights.size,
-            )
+            assert 0, f"""attempting to set a new set of weights of different
+      length than previous assignment: was {self.size}, attempting {new_weights.size}"""
         self.Ih_table.loc[:, "weights"] = new_weights
 
     @property
@@ -816,7 +808,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         )
 
     def sum_in_groups(
-        self, array: Union[csc_matrix, np.array], output: str = "per_group"
+        self, array: csc_matrix | np.array, output: str = "per_group"
     ) -> np.array:
         """
         Sums an array object over the symmetry equivalent groups.
