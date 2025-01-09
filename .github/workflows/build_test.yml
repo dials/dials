@@ -80,14 +80,10 @@ jobs:
           python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
       - name: Install Base Environment
         run: |
-          echo "pytest-md
-          dials-data
-          flexparser<0.4
-          pytest-cov
-          pytest-timeout" >> modules/dials/.conda-envs/linux.txt
           python modules/dials/installer/bootstrap.py update base \
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
-            --libtbx
+            --libtbx \
+            --extra-dependencies modules/dials/.github/ci-dependencies.yaml
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
       - name: Build
         run: python modules/dials/installer/bootstrap.py build --libtbx
