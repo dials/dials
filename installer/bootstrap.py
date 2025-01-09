@@ -147,7 +147,9 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake, extra
             "modules/dials/util/parse_dependency_selectors.py",
             "-p",
             platform_selectors[conda_platform],
-        ] + prebuilt + expected_dependency_lists
+        ]
+        + prebuilt
+        + expected_dependency_lists
     )
     filename = "modules/dials/.conda-envs/requirements.txt"
     with open(filename, "wb") as f:
