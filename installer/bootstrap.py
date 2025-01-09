@@ -92,8 +92,8 @@ working network connection for downloading conda packages.
         )
 
 
-def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
-    # type: (str, Literal["linux", "macos", "windows"], str, bool) -> str
+def get_requirements(conda_platform, conda_arch, python_version, is_cmake, extra_deps):
+    # type: (str, Literal["linux", "macos", "windows"], str, bool, list[str] | None) -> str
 
     """
     Find or create a file of platform-specific dependencies
@@ -127,6 +127,7 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
         expected_dependency_lists.append(
             "modules/dials/.conda-envs/cctbx-dependencies.yaml"
         )
+    expected_dependency_lists.extend(extra_deps or [])
 
     for reqfile in expected_dependency_lists:
         if not os.path.isfile(reqfile):
@@ -148,15 +149,14 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
             platform_selectors[conda_platform],
         ] + prebuilt + expected_dependency_lists
     )
-
     filename = "modules/dials/.conda-envs/requirements.txt"
     with open(filename, "wb") as f:
         f.write(results)
     return filename
 
 
-def install_micromamba(python, cmake):
-    # type: (str, bool) -> None
+def install_micromamba(python, cmake, extra_deps):
+    # type: (str, bool, list[str] | None) -> None
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
@@ -203,6 +203,7 @@ def install_micromamba(python, cmake):
         conda_arch=conda_arch,
         python_version=python,
         is_cmake=cmake,
+        extra_deps=extra_deps,
     )
     # install a new environment or update an existing one
     prefix = os.path.realpath("conda_base")
@@ -1363,6 +1364,11 @@ be passed separately with quotes to avoid confusion (e.g
         dest="removed_cmake",
         help=argparse.SUPPRESS,
     )
+    parser.add_argument(
+        "--extra-dependencies",
+        action="append",
+        help=argparse.SUPPRESS,
+    )
 
     options = parser.parse_args()
     if options.removed_cmake:
@@ -1380,6 +1386,7 @@ be passed separately with quotes to avoid confusion (e.g
         install_micromamba(
             options.python,
             cmake=options.cmake,
+            extra_deps=options.extra_dependencies,
         )
         if options.clean:
             shutil.rmtree(os.path.realpath("micromamba"))

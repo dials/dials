@@ -27,13 +27,6 @@ jobs:
           python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
       - name: Prepare for Base Environment
         run: |
-          OS="$(python -c "print('${{ runner.os }}'.lower())")"
-          echo "ninja
-          flexparser<0.4
-          pytest-md
-          dials-data
-          pytest-cov
-          pytest-timeout" >> modules/dials/.conda-envs/${OS}.txt
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
           # These needed by windows
           echo "$(pwd)/conda_base/Scripts" >> $GITHUB_PATH
@@ -42,7 +35,8 @@ jobs:
       - name: Install Base Environment
         run: |
           python modules/dials/installer/bootstrap.py update base \
-            --python "${{ env.PYTHON_TESTING_VERSION }}"
+            --python "${{ env.PYTHON_TESTING_VERSION }}" \
+            --extra-dependencies modules/dials/.github/ci-dependencies.yaml
       - if: runner.os != 'Windows'
         run: echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
       - name: Build
