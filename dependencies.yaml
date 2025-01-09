@@ -60,7 +60,7 @@ build:
   - pre-commit #[bootstrap]
 
 host:
-  - cctbx-base =2024 #[prebuilt_cctbx]
+  - cctbx-base >=2024 #[prebuilt_cctbx]
   - dxtbx ={{ version_xy }} #[not bootstrap]
   - hatchling
   - libboost-devel

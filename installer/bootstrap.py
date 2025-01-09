@@ -138,6 +138,7 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
             )
 
     # Run the dependency merger
+    prebuilt = ["--prebuilt-cctbx"] if is_cmake else []
     platform_selectors = {"linux": "linux", "macos": "osx", "windows": "win"}
     results = subprocess.check_output(
         [
@@ -145,8 +146,7 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake):
             "modules/dials/util/parse_dependency_selectors.py",
             "-p",
             platform_selectors[conda_platform],
-        ]
-        + expected_dependency_lists
+        ] + prebuilt + expected_dependency_lists
     )
 
     filename = "modules/dials/.conda-envs/requirements.txt"
@@ -204,7 +204,6 @@ def install_micromamba(python, cmake):
         python_version=python,
         is_cmake=cmake,
     )
-
     # install a new environment or update an existing one
     prefix = os.path.realpath("conda_base")
     if os.path.exists(prefix):

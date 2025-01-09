@@ -290,7 +290,9 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
-        "--prebuilt-cctbx", help="Mark as using prebuilt cctbx. Implied by conda-build."
+        "--prebuilt-cctbx",
+        help="Mark as using prebuilt cctbx. Implied by conda-build.",
+        action="store_true",
     )
     parser.add_argument(
         "--build",
