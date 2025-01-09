@@ -62,6 +62,7 @@ build:
 host:
   - cctbx-base =2024 #[prebuilt_cctbx]
   - dxtbx ={{ version_xy }} #[not bootstrap]
+  - hatchling
   - libboost-devel
   - libboost-python-devel
   - msgpack-cxx
@@ -75,7 +76,8 @@ host:
 run:
   - {{ pin_compatible('cctbx-base') }} #[not bootstrap]
   - {{ pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) }} #[not bootstrap]
-  - gemmi >=0.6.5
+  - ffbidx #[linux]
+  - gemmi >=0.7
   - h5py >=3.1.0
   - jinja2
   - matplotlib-base >=3.0.2
@@ -94,8 +96,7 @@ run:
   - scipy
   - tabulate
   - tqdm
-  - wxpython >=4.2.0 #[not osx]
-  - wxpython >=4.2.0=*_5 #[osx]
+  - wxpython >=4.2.2
   - python.app # [bootstrap and osx]
   - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
 
