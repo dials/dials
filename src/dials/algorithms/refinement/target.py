@@ -4,7 +4,7 @@ principally Target and ReflectionManager."""
 from __future__ import annotations
 
 import math
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 from libtbx.phil import parse
 from scitbx import sparse
@@ -76,18 +76,14 @@ class TargetFactory:
                 + " not recognised"
             )
 
-        all_tof_experiments = False
-        for expt in experiments:
-            if expt.scan is not None and expt.scan.has_property("time_of_flight"):
-                all_tof_experiments = True
-            elif all_tof_experiments:
-                raise ValueError(
-                    "Cannot refine ToF and non-ToF experiments at the same time"
-                )
-
-        if all_tof_experiments:
+        if experiments.all_tof():
             from dials.algorithms.refinement.target import (
                 TOFLeastSquaresResidualWithRmsdCutoff as targ,
+            )
+
+        elif experiments.all_laue():
+            from dials.algorithms.refinement.target import (
+                LaueLeastSquaresResidualWithRmsdCutoff as targ,
             )
 
         # Determine whether the target is in X, Y, Phi space or just X, Y to choose
@@ -431,7 +427,7 @@ class Target:
 
     def compute_residuals_and_gradients(
         self, block=None
-    ) -> Tuple[Any, Union[flex.double, sparse.matrix], Any]:
+    ) -> tuple[Any, flex.double | sparse.matrix, Any]:
         """return the vector of residuals plus their gradients and weights for
         non-linear least squares methods"""
 
@@ -478,7 +474,7 @@ class Target:
     @staticmethod
     def _build_jacobian(
         grads_each_dim, nelem=None, nparam=None
-    ) -> Union[sparse.matrix, flex.double]:
+    ) -> sparse.matrix | flex.double:
         """construct Jacobian from lists of gradient vectors. The elements of
         grads_each_dim refer to the gradients of each dimension of the problem
         (e.g. dX, dY, dZ). The elements for a single dimension give the arrays
@@ -616,7 +612,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             self._binsize_cutoffs = absolute_cutoffs
 
     @staticmethod
-    def _extract_residuals_and_weights(matches) -> Tuple[flex.double, Any]:
+    def _extract_residuals_and_weights(matches) -> tuple[flex.double, Any]:
         # return residuals and weights as 1d flex.double vectors
         residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
         residuals.extend(matches["phi_resid"])
@@ -731,7 +727,7 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
         prediction_parameterisation,
         restraints_parameterisation,
         frac_binsize_cutoff: float = 0.33333,
-        absolute_cutoffs: Optional[list] = None,
+        absolute_cutoffs: list | None = None,
         gradient_calculation_blocksize=None,
     ):
         Target.__init__(

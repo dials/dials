@@ -1,9 +1,11 @@
 ci:
   skip: [no-images]
+  autoupdate_schedule: quarterly
+
 repos:
 # Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.6.0
+  rev: v5.0.0
   hooks:
   - id: check-merge-conflict
   - id: check-ast
@@ -18,7 +20,7 @@ repos:
     name: "Don't commit to 'main' directly"
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.6.2
+  rev: v0.8.6
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix, --show-fixes]
@@ -27,7 +29,7 @@ repos:
       types: [file]
 
 - repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v18.1.8
+  rev: v19.1.6
   hooks:
   - id: clang-format
     files: \.c(c|pp|xx)?$|\.h(pp)?$

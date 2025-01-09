@@ -23,10 +23,7 @@ logger = logging.getLogger("dials.algorithms.correlation.analysis")
 
 phil_scope = iotbx.phil.parse(
     """\
-include scope dials.algorithms.correlation.analysis.phil_scope
-
-seed = 42
-  .type = int(value_min=0)
+include scope dials.algorithms.correlation.analysis.working_phil
 
 output {
   log = dials.correlation_matrix.log
@@ -38,6 +35,11 @@ output {
   json = None
     .type = str
     .help = "Filename for the cluster information output in json format"
+}
+significant_clusters {
+  output = False
+    .type = bool
+    .help = "Toggle to output expt/refl files for significant clusters as determined by OPTICS clustering on cosine angle coordinates"
 }
 """,
     process_includes=True,
@@ -100,8 +102,7 @@ def run(args=None):
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         sys.exit(
-            "Mismatched number of experiments and reflection tables found: %s & %s."
-            % (len(experiments), len(reflections))
+            f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
         )
     if len(experiments) < 2:
         sys.exit(
@@ -116,6 +117,13 @@ def run(args=None):
         sys.exit(e)
 
     matrices.calculate_matrices()
+
+    if params.significant_clusters.output:
+        matrices.output_clusters()
+    else:
+        logger.info(
+            "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
+        )
 
     if params.output.json:
         matrices.output_json()

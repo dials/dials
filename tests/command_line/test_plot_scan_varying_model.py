@@ -1,22 +1,13 @@
 from __future__ import annotations
 
-import os
-
 from dials.command_line import plot_scan_varying_model
 
 
-def test(dials_regression, tmp_path, capsys):
+def test(dials_data, tmp_path, capsys):
+    data_dir = dials_data("refinement_test_data", pathlib=True)
     plot_scan_varying_model.run(
         [
-            os.path.join(
-                dials_regression,
-                "refinement_test_data",
-                "multi_sweep_one_sample",
-                "glucose_isomerase",
-                "SWEEP1",
-                "index",
-                "sv_refined_experiments.json",
-            ),
+            str(data_dir / "glucose_isomerase_sv_refined.json"),
             f"output.directory={tmp_path}",
         ]
     )
