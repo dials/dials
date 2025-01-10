@@ -1,6 +1,46 @@
 #!/usr/bin/env python
 # ruff: noqa: I002
 
+"""
+Parse a dependencies specification, applying preprocessing selectors like conda-build.
+
+Multiple dependency files can be merged together.
+General example of dependencies.yaml:
+
+    build:
+    - {{ compiler('cxx') }}   #[not bootstrap]
+    - cxx-compiler            #[bootstrap]
+    - cmake                   #[prebuilt_cctbx]
+    - setuptools
+    host:
+    - cctbx-base >=2024       #[prebuilt_cctbx]
+    - pip
+    - python
+    - libcxx                  #[bootstrap and osx]
+    run:
+    - ffbidx                  #[linux]
+    - numpy >=1.21.5,<2       #[bootstrap]
+    - numpy                   #[not bootstrap]
+    - tabulate
+    - tqdm
+    test:
+    - dials-data >=2.4.72
+    - pytest
+
+Only the last "#[expression]" is stripped and evaluated, which allows
+passing further selection expressions through for onward processing.
+
+Expression values supported:
+- Platform e.g. "osx", "win" or "linux"
+- "bootstrap": Whether we are targeting bootstrap.py. This allows us
+  to have advanced conda-build syntax (e.g. jinja templates) while
+  ignoring these when generating the bootstrap dependency list.
+- "prebuilt_cctbx": Whether we are building cctbx. This is true for
+  bootstrap with CMake and for conda-build builds.
+- Compound expressions with "and" e.g. "osx and bootstrap". This will
+  work with "not"-expressions, but nothing more complex.
+"""
+
 import logging
 import os
 import re
@@ -93,12 +133,6 @@ def _merge_dependency_lists(source, merge_into):
         else:
             merge_into.append(Dependency(pkg, ver, line))
             indices[pkg] = len(merge_into) - 1
-
-
-# def _merge_dependency_dictionaries(sources):
-#     # type: (list[dict[str, Dependency]]) -> dict[str, Dependency]
-#     """Merge multiple parsed dependency dictionaries into one."""
-#     Evidently WIP?
 
 
 class DependencySelectorParser(object):
@@ -270,12 +304,6 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
-    # parser.add_argument(
-    #     "kind",
-    #     choices=["bootstrap", "conda-build"],
-    #     help="Choose the target for handling dependency lists",
-    #     metavar="KIND",
-    # )
     parser.add_argument(
         "--conda-build",
         help="Generate structured conda-build-style output",
