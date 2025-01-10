@@ -213,10 +213,10 @@ class IntensityDist:
             if not keep_singles:
                 singles_del = flex.bool(rtable.size(), True)
                 singles_del.set_selected(singles, False)
-                multiplicity, weights, sum_weights, i_means = (
+                multiplicity, weights, sum_weights, i_means = [
                     a.select(singles_del)
                     for a in (multiplicity, weights, sum_weights, i_means)
-                )
+                ]
                 rtable.del_selected(singles)
                 if calculate_variances:
                     sum_square_weights = sum_square_weights.select(singles_del)

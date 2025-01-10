@@ -102,7 +102,7 @@ def random_vector():
 
 def _test_random_axes_and_angles():
     # random axes
-    e1, e2, e3 = (random_vector() for i in range(3))
+    e1, e2, e3 = [random_vector() for i in range(3)]
 
     # random angles
     phi1 = random.uniform(-math.pi, math.pi)

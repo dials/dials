@@ -151,7 +151,7 @@ class Script:
         self.nproc = params.rs_mapper.nproc
         if self.nproc is libtbx.Auto:
             self.nproc = CPU_COUNT
-            logger.info(f"Setting nproc={self.nproc}")
+            logger.info("Setting nproc={}".format(self.nproc))
 
         for i_expt, experiment in enumerate(self.experiments):
             logger.info(f"Calculation for experiment {i_expt}")

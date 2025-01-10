@@ -213,7 +213,7 @@ class EllipsoidProfileModel(ProfileModelExt):
         return d
 
 
-class ProfileModelBase:
+class ProfileModelBase(object):
     """
     Class to store profile model
 
@@ -726,7 +726,7 @@ class Simple6Angular3ProfileModel(AngularProfileModelBase):
         )
 
 
-class ProfileModelFactory:
+class ProfileModelFactory(object):
     """
     Class to create profile models
 

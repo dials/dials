@@ -4,6 +4,7 @@ import logging
 import random
 import textwrap
 from math import log, pi, sqrt
+from typing import List
 
 import numpy as np
 from numpy.linalg import det, inv, norm
@@ -75,7 +76,7 @@ def compute_dmbar(S: np.array, dS: np.array, dmu: np.array, epsilon: float) -> n
     return A + B + C + D
 
 
-class ConditionalDistribution:
+class ConditionalDistribution(object):
     """
     A class to compute useful stuff about the conditional distribution
 
@@ -130,7 +131,7 @@ class ConditionalDistribution:
         """
         return self._Sbar
 
-    def first_derivatives_of_sigma(self) -> list[np.array]:
+    def first_derivatives_of_sigma(self) -> List[np.array]:
         """
         Return the marginal first derivatives (as a list of 2x2 arrays)
 
@@ -143,7 +144,7 @@ class ConditionalDistribution:
 
         return self.dSbar
 
-    def first_derivatives_of_mean(self) -> list[np.array]:
+    def first_derivatives_of_mean(self) -> List[np.array]:
         """
         Return the marginal first derivatives (a list of 2x1 arrays)
 
@@ -173,7 +174,7 @@ def rotate_mat3_double(R, A):
     return np.einsum("ij,jkv,kl->ilv", R, A, R.T)
 
 
-class ReflectionLikelihood:
+class ReflectionLikelihood(object):
     def __init__(self, model, s0, sp, h, ctot, mobs, sobs, panel_id=0):
         # Save stuff
         modelstate = ReflectionModelState(model, s0, h)
@@ -388,7 +389,7 @@ class ReflectionLikelihood:
         return I
 
 
-class MaximumLikelihoodTarget:
+class MaximumLikelihoodTarget(object):
     def __init__(
         self, model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list, panel_ids
     ):
@@ -538,7 +539,7 @@ def gradient_descent(f, df, x0, max_iter=1000, tolerance=1e-10):
     return x
 
 
-class FisherScoringMaximumLikelihoodBase:
+class FisherScoringMaximumLikelihoodBase(object):
     """
     A class to solve maximum likelihood equations using fisher scoring
 
@@ -685,7 +686,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
 
         """
         # Initialise the super class
-        super().__init__(
+        super(FisherScoringMaximumLikelihood, self).__init__(
             model.active_parameters,
             max_iter=max_iter,
             tolerance=tolerance,
@@ -875,7 +876,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
                     "",
                     "  R.M.S.D (local) = %.5g" % sqrt(mse),
                     "",
-                    "  R.M.S.D (pixel): X = {:.3f}, Y = {:.3f}".format(*tuple(rmsd)),
+                    "  R.M.S.D (pixel): X = %.3f, Y = %.3f" % tuple(rmsd),
                 ]
             )
         )
@@ -893,7 +894,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         )
 
 
-class Refiner:
+class Refiner(object):
     """
     High level profile refiner class that handles book keeping etc
 
@@ -1010,7 +1011,7 @@ class Refiner:
         return self.state.parameter_labels
 
 
-class RefinerData:
+class RefinerData(object):
     """
     A class for holding the data needed for the profile refinement
 
@@ -1083,7 +1084,9 @@ class RefinerData:
 
         # Print some information
         logger.info("")
-        logger.info(f"I_min = {np.min(ctot_list):.2f}, I_max = {np.max(ctot_list):.2f}")
+        logger.info(
+            "I_min = %.2f, I_max = %.2f" % (np.min(ctot_list), np.max(ctot_list))
+        )
 
         # Sometimes a single reflection might have an enormouse intensity for
         # whatever reason and since we weight by intensity, this can cause the
@@ -1225,7 +1228,7 @@ def print_matrix_np(A, fmt="%.3g", indent=0):
         line = ""
         for i in range(A.shape[1]):
             line += fmt % t[i + j * A.shape[1]]
-        lines.append(f"{prefix}|{line}|")
+        lines.append("%s|%s|" % (prefix, line))
     return "\n".join(lines)
 
 
@@ -1244,5 +1247,5 @@ def print_matrix(A, fmt="%.3g", indent=0):
         line = ""
         for i in range(A.n[1]):
             line += fmt % t[i + j * A.n[1]]
-        lines.append(f"{prefix}|{line}|")
+        lines.append("%s|%s|" % (prefix, line))
     return "\n".join(lines)

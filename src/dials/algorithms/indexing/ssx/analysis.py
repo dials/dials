@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+from typing import List
 
 import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
@@ -79,7 +80,7 @@ def make_summary_table(results_summary: dict) -> tabulate:
     return summary_table
 
 
-def combine_results_dicts(results_summaries: list[dict]) -> dict:
+def combine_results_dicts(results_summaries: List[dict]) -> dict:
     """For a list of dictionaries, each with keys 0..n-1,
     combine into a single dictionary with keys 0..ntot-1"""
     combined_summary = {}
@@ -92,7 +93,7 @@ def combine_results_dicts(results_summaries: list[dict]) -> dict:
     return combined_summary
 
 
-def make_cluster_plots(large_clusters: list[Cluster]) -> dict:
+def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
     cluster_plots = {}
     for n, cluster in enumerate(large_clusters):
         uc_params = [flex.double() for i in range(6)]

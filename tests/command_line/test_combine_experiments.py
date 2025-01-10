@@ -256,10 +256,12 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflect
 
     else:
         phil_input = "\n".join(
-            f"  input.experiments={data_dir}/experiments_{i}.json\n"
-            + f"  input.reflections={data_dir}/reflections_{i}.pickle"
-            if with_reflections
-            else ""
+            (
+                f"  input.experiments={data_dir}/experiments_{i}.json\n"
+                + f"  input.reflections={data_dir}/reflections_{i}.pickle"
+                if with_reflections
+                else ""
+            )
         )
 
     tmp_path.joinpath("input.phil").write_text(phil_input)

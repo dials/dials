@@ -4,6 +4,7 @@ import logging.config
 import os
 import sys
 import time
+from typing import List
 
 try:
     from colorlog import ColoredFormatter
@@ -142,7 +143,7 @@ def config_simple_cached():
     )
 
 
-def rehandle_cached_records(records: list[logging.LogRecord]) -> None:
+def rehandle_cached_records(records: List[logging.LogRecord]) -> None:
     """
     Submit cached log records to the relevant loggers for handling.
 

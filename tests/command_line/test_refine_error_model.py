@@ -35,7 +35,7 @@ def test_standalone_error_model_refinement_on_scaled_data(
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("error_model.html").is_file()
     assert tmp_path.joinpath("error_model.json").is_file()
-    with open(tmp_path.joinpath("error_model.json")) as f:
+    with open(tmp_path.joinpath("error_model.json"), "r") as f:
         d = json.load(f)
     n_models = sum(
         "normal_distribution_plot" in k for k in d["error_model_plots"].keys()

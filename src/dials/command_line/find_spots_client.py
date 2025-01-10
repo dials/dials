@@ -4,6 +4,7 @@ import http.client
 import json
 import os
 import select
+import socket as pysocket
 import sys
 import urllib.error
 import urllib.parse
@@ -48,9 +49,8 @@ def response_to_xml(d):
             response = "\n".join(
                 [
                     response,
-                    "<unit_cell>{:.6g} {:.6g} {:.6g} {:.6g} {:.6g} {:.6g}</unit_cell>".format(
-                        *crystal.get_unit_cell().parameters()
-                    ),
+                    "<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>"
+                    % (crystal.get_unit_cell().parameters()),
                 ]
             )
         response = "\n".join(
@@ -158,12 +158,12 @@ def stop(host, port, nproc):
                 stopped = stopped + 1
             else:
                 print("socket returned code", socket.getcode())
-        except (TimeoutError, urllib.error.HTTPError) as e:
+        except (pysocket.timeout, urllib.error.HTTPError) as e:
             print("error on stopping server:", e)
         except urllib.error.URLError as e:
             if e.reason.errno != 111:
                 print("error on stopping server:", e)
-        except OSError:
+        except pysocket.error:
             # Assuming this means the server killed itself before the reply left the send buffer.
             stopped = stopped + 1
         except http.client.BadStatusLine:

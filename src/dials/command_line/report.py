@@ -2276,7 +2276,7 @@ class Analyser:
                     (
                         "<strong>Panel %i</strong>:" % (panel_id + 1),
                         "Pixel size (mm):",
-                        "{:.4f}, {:.4f}".format(*panel.get_pixel_size()),
+                        "%.4f, %.4f" % panel.get_pixel_size(),
                         "Image size (pixels):",
                         "%i, %i" % panel.get_image_size(),
                     )
@@ -2285,7 +2285,7 @@ class Analyser:
                     (
                         "",
                         "Trusted range:",
-                        "{:g}, {:g}".format(*panel.get_trusted_range()),
+                        "%g, %g" % panel.get_trusted_range(),
                         "Thickness (mm):",
                         f"{panel.get_thickness():g}",
                     )
@@ -2345,9 +2345,7 @@ class Analyser:
                         "Image range:",
                         "%i, %i" % expt.scan.get_image_range(),
                         "Oscillation:",
-                        "{:.2f}&deg;, {:+.2f}&deg;/frame".format(
-                            *expt.scan.get_oscillation()
-                        ),
+                        "%.2f&deg;, %+.2f&deg;/frame" % expt.scan.get_oscillation(),
                     )
                 )
 

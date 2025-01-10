@@ -246,7 +246,7 @@ class Script:
             self.parser.print_help()
             return
 
-        if any(e.profile is None for e in experiments):
+        if any((e.profile is None for e in experiments)):
             sys.exit(
                 "Experiments must contain a profile model (for example, after integration)"
             )

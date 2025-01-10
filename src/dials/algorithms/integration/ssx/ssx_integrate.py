@@ -75,7 +75,7 @@ class SimpleIntegrator(ABC):
         pass
 
 
-class NullCollector:
+class NullCollector(object):
     """
     Defines a null data collector for cases where you don't want
     to record data during the process.
@@ -100,7 +100,7 @@ class NullCollector:
         pass
 
 
-class OutputCollector:
+class OutputCollector(object):
     """
     Defines a data collector to log common quantities for all algorithm choices
     for an individual image.

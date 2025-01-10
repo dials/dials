@@ -72,7 +72,8 @@ def assert_is_json_serialisable(thing, name, path=None):
             json.dumps(thing)
         except TypeError as e:
             raise TypeError(
-                "JSON serialisation error '{}' for value '{}' type {} in {}{}".format(
+                "JSON serialisation error '%s' for value '%s' type %s in %s%s"
+                % (
                     e,
                     str(thing),
                     type(thing),
@@ -103,7 +104,12 @@ def print_scaling_summary(script):
         if valid:
             if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                 msg.append(
-                    f"Excluded images for experiment id: {refl.experiment_identifiers().keys()[0]}, image range: {list(img)}, limited range: {list(valid)}"
+                    "Excluded images for experiment id: %s, image range: %s, limited range: %s"
+                    % (
+                        refl.experiment_identifiers().keys()[0],
+                        list(img),
+                        list(valid),
+                    )
                 )
     if msg:
         msg = ["Summary of image ranges removed:"] + msg
@@ -281,15 +287,15 @@ def print_scaling_model_error_summary(experiments):
         )
         if frac_high_uncertainty > 0.5:
             msg = (
-                f"Warning: Over half ({frac_high_uncertainty * 100:.2f}%) of model parameters have significant\n"
+                "Warning: Over half ({:.2f}%) of model parameters have significant\n"
                 "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
                 "poorly-determined scaling problem or overparameterisation.\n"
-            )
+            ).format(frac_high_uncertainty * 100)
         else:
             msg = (
-                f"{frac_high_uncertainty * 100:.2f}% of model parameters have significant uncertainty\n"
+                "{:.2f}% of model parameters have significant uncertainty\n"
                 "(sigma/abs(parameter) > 0.5)\n"
-            )
+            ).format(frac_high_uncertainty * 100)
     return msg
 
 

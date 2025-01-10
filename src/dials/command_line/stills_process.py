@@ -1136,8 +1136,9 @@ class Processor:
                     for panel in detector:
                         if panel.get_gain() != 1.0 and panel.get_gain() != gain:
                             raise RuntimeError(
-                                f"""
-The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
+                                """
+The detector is reporting a gain of %f but you have also supplied a gain of %f. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
+                                % (panel.get_gain(), gain)
                             )
 
     def find_spots(self, experiments):
@@ -1573,7 +1574,10 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += f". Final ML model: domain size angstroms: {crystal_model.get_domain_size_ang():f}, half mosaicity degrees: {crystal_model.get_half_mosaicity_deg():f}"
+                log_str += ". Final ML model: domain size angstroms: {:f}, half mosaicity degrees: {:f}".format(
+                    crystal_model.get_domain_size_ang(),
+                    crystal_model.get_half_mosaicity_deg(),
+                )
 
         logger.info(log_str)
 

@@ -20,7 +20,6 @@ setup_kwargs = {
         "homepage": "https://dials.github.io",
         "repository": "https://github.com/dials/dials",
     },
-    "python_requires": ">=3.10",
     "packages": setuptools.find_packages(where="src"),
     "package_dir": {"": "src"},
     "package_data": {

@@ -45,6 +45,11 @@ from dials.util.options import ArgumentParser, reflections_and_experiments_from_
 from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
+try:
+    from typing import List
+except ImportError:
+    pass
+
 logger = logging.getLogger("dials")
 
 program_defaults_phil_str = """
@@ -108,7 +113,7 @@ phil_scope.adopt_scope(
 
 
 @show_mail_handle_errors()
-def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
     Run dials.ssx_index as from the command line.
 

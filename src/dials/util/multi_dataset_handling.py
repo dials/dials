@@ -213,13 +213,15 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
     """
     if len(experiments) != len(reflections):
         raise ValueError(
-            f"The experiments and reflections lists are unequal in length: {len(experiments)} & {len(reflections)}"
+            "The experiments and reflections lists are unequal in length: %s & %s"
+            % (len(experiments), len(reflections))
         )
     # if identifiers given, use these to set the identifiers
     if identifiers:
         if len(identifiers) != len(reflections):
             raise ValueError(
-                f"The identifiers and reflections lists are unequal in length: {len(identifiers)} & {len(reflections)}"
+                "The identifiers and reflections lists are unequal in length: %s & %s"
+                % (len(identifiers), len(reflections))
             )
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
             exp.identifier = identifiers[i]
@@ -233,7 +235,8 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
         if exp.identifier != "":
             if list(refl.experiment_identifiers().values()) != [exp.identifier]:
                 raise ValueError(
-                    f"Corrupted identifiers, please check input: in reflections: {list(refl.experiment_identifiers().values())}, in experiment: {exp.identifier}"
+                    "Corrupted identifiers, please check input: in reflections: %s, in experiment: %s"
+                    % (list(refl.experiment_identifiers().values()), exp.identifier)
                 )
             used_str_ids.append(exp.identifier)
 

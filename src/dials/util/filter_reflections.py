@@ -45,7 +45,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Any
+from typing import Any, List, Type
 
 from cctbx import crystal, miller
 
@@ -78,7 +78,7 @@ def filter_reflection_table_selection(
 
 def filter_reflection_table(
     reflection_table: flex.reflection_table,
-    intensity_choice: list[str],
+    intensity_choice: List[str],
     *args: Any,
     **kwargs: Any,
 ) -> flex.reflection_table:
@@ -108,7 +108,7 @@ def filter_reflection_table(
         raise ValueError("intensity_choice must be List[str]")
 
     if intensity_choice == ["scale"]:
-        reducer: type[FilterForExportAlgorithm] = ScaleIntensityReducer
+        reducer: Type[FilterForExportAlgorithm] = ScaleIntensityReducer
     elif intensity_choice == ["sum"]:
         reducer = SumIntensityReducer
     elif intensity_choice == ["profile"]:
@@ -123,11 +123,13 @@ def filter_reflection_table(
         reducer = SumAndScaleIntensityReducer
     else:
         raise ValueError(
-            "Unrecognised intensity choice for filter_reflection_table,\n"
-            f"value read: {intensity_choice}\n"
-            "must be one of: 'scale', 'profile', 'sum', 'profile sum', \n"
-            "                'sum scale', 'profile sum scale'\n"
-            "(if parsing from command line, multiple choices passed as e.g. profile+sum"
+            (
+                "Unrecognised intensity choice for filter_reflection_table,\n"
+                "value read: {}\n"
+                "must be one of: 'scale', 'profile', 'sum', 'profile sum', \n"
+                "                'sum scale', 'profile sum scale'\n"
+                "(if parsing from command line, multiple choices passed as e.g. profile+sum"
+            ).format(intensity_choice)
         )
     # Validate that the reflection table has the columns we need
     required_columns_lookup = {

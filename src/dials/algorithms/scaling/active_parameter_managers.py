@@ -331,9 +331,8 @@ class ParameterManagerGenerator:
     def __init__(self, data_managers, apm_type, target, mode="concurrent", shared=None):
         if mode not in ["concurrent", "consecutive"]:
             raise ValueError(
-                "Bad value for refinement order mode: {}, expected {}".format(
-                    mode, " or ".join(["concurrent", "consecutive"])
-                )
+                "Bad value for refinement order mode: %s, expected %s"
+                % (mode, " or ".join(["concurrent", "consecutive"]))
             )
         self.target = target
         self.data_managers = data_managers

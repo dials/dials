@@ -99,8 +99,10 @@ class ReflectionTableSelectorConverters:
         if python_object is None:
             value = "None"
         else:
-            value = (
-                f"{python_object.column}{python_object.op_string}{python_object.value}"
+            value = "{}{}{}".format(
+                python_object.column,
+                python_object.op_string,
+                python_object.value,
             )
         return [libtbx.phil.tokenizer.word(value=value)]
 

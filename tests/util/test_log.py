@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, List
 
 import pytest
 
@@ -40,7 +40,7 @@ def test_LoggingContext():
     assert dials_logger.getEffectiveLevel() == logging.DEBUG
 
 
-def log_something(_: Any) -> list[logging.LogRecord]:
+def log_something(_: Any) -> List[logging.LogRecord]:
     """
     Create a dummy info log record.
 

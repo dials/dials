@@ -453,4 +453,4 @@ class UCSettingsPanel(wx.Panel):
         y = -panel.pixel_to_millimeter(self._center)[1]
         z = -(panel.get_distance() - distance)
         origin = (fast * x + slow * y + norm * z) + col(panel.get_origin())
-        self.origin.SetLabel("Panel 0 origin: {:f}, {:f}, {:f}".format(*origin.elems))
+        self.origin.SetLabel("Panel 0 origin: %f, %f, %f" % origin.elems)

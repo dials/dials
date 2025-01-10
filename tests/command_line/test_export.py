@@ -115,9 +115,7 @@ def test_mtz_best_unit_cell(dials_data, tmp_path):
             scaled_expt,
             scaled_refl,
             f"d_min={d_min:f}",
-            "best_unit_cell={:g},{:g},{:g},{:g},{:g},{:g}".format(
-                *best_unit_cell.parameters()
-            ),
+            "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
         ],
         cwd=tmp_path,
         capture_output=True,

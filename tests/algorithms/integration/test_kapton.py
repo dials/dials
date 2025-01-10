@@ -25,9 +25,9 @@ def test_kapton(tmp_path, dials_data):
     #  b. with kapton
 
     stills_process_input = parse(
-        f"""spotfinder.lookup.mask={mask_file}\n
-                          integration.lookup.mask={mask_file}\n
-                          input.reference_geometry={geom_file}\n
+        """spotfinder.lookup.mask=%s\n
+                          integration.lookup.mask=%s\n
+                          input.reference_geometry=%s\n
                           spotfinder.filter.min_spot_size=2\n
                           spotfinder.filter.d_min=2\n
                           spotfinder.filter.d_max=18\n
@@ -40,6 +40,7 @@ def test_kapton(tmp_path, dials_data):
                           integration.debug.separate_files=False\n
                           integration.debug.delete_shoeboxes=True\n
                           profile.gaussian_rs.centroid_definition=com\n """
+        % (mask_file, mask_file, geom_file)
     )
 
     kapton_input = parse(

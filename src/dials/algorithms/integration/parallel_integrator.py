@@ -684,11 +684,12 @@ class IntegrationManager:
                 raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
-                    f"""
-          The requested block size ({block_size}) is larger than the maximum allowable block
-          size ({max_block_size}). Either decrease the requested block size or increase the
+                    """
+          The requested block size (%s) is larger than the maximum allowable block
+          size (%s). Either decrease the requested block size or increase the
           amount of available memory.
         """
+                    % (block_size, max_block_size)
                 )
         block.size = block_size
         block.units = "frames"
@@ -1153,11 +1154,12 @@ class ReferenceCalculatorManager:
                 raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
-                    f"""
-          The requested block size ({block_size}) is larger than the maximum allowable block
-          size ({max_block_size}). Either decrease the requested block size or increase the
+                    """
+          The requested block size (%s) is larger than the maximum allowable block
+          size (%s). Either decrease the requested block size or increase the
           amount of available memory.
         """
+                    % (block_size, max_block_size)
                 )
         block.size = block_size
         block.units = "frames"

@@ -275,9 +275,9 @@ class CentroidOutlier:
                 p100 = nout / nref * 100.0
                 if p100 > 30.0:
                     msg = (
-                        f"{p100:3.1f}% of reflections were flagged as outliers from job"
-                        f" {i + 1}"
-                    )
+                        "{:3.1f}% of reflections were flagged as outliers from job"
+                        " {}"
+                    ).format(p100, i + 1)
                     logger.debug(msg)
             row.extend([str(nref), str(nout), f"{p100:3.1f}"])
             rows.append(row)
@@ -308,7 +308,9 @@ class CentroidOutlier:
 
         elif nref > 0:
             # too few reflections in the job
-            msg = f"For job {i + 1}, fewer than {self._min_num_obs} reflections are present."
+            msg = "For job {}, fewer than {} reflections are present.".format(
+                i + 1, self._min_num_obs
+            )
             msg += " All reflections flagged as possible outliers."
             ioutliers = indices
 
@@ -517,7 +519,7 @@ class CentroidOutlierFactory:
 
         if params.outlier.nproc is libtbx.Auto:
             params.outlier.nproc = CPU_COUNT
-            logger.info(f"Setting outlier.nproc={params.outlier.nproc}")
+            logger.info("Setting outlier.nproc={}".format(params.outlier.nproc))
 
         od = outlier_detector(
             cols=colnames,

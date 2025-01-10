@@ -97,7 +97,7 @@ def check_precommitbx_hook(path):
     return False
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def _conda_info():
     conda_info, error, return_code = conda.cli.python_api.run_command(
         conda.cli.python_api.Commands.INFO,

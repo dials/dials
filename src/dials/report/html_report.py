@@ -82,7 +82,7 @@ class html_report:
                 % open(os.path.join(katex_dir, "katex.min.css")).read()
             )
 
-        html_header = f"""
+        html_header = """
 <!DOCTYPE html>
 <head>
 
@@ -130,11 +130,20 @@ class html_report:
 {katex_css}
 {bootstrap_css}
 <style type="text/css">
-{self.css()}
+{css}
 </style>
 
 </head>
-"""
+""".format(
+            plotly_js=plotly_js,
+            bootstrap_js=bootstrap_js,
+            bootstrap_css=bootstrap_css,
+            jquery_js=jquery_js,
+            katex_js=katex_js,
+            katex_auto_render_js=katex_auto_render_js,
+            katex_css=katex_css,
+            css=self.css(),
+        )
 
         return html_header
 
@@ -266,12 +275,15 @@ class plotly_graph:
         import json
 
         json_str = json.dumps(self._json_data)
-        javascript = f"""
+        javascript = """
   <script>
-    var graphs_{self._div_id} = {json_str};
-    Plotly.newPlot({self._div_id}, graphs_{self._div_id}.data, graphs_{self._div_id}.layout);
+    var graphs_{div_id} = {json};
+    Plotly.newPlot({div_id}, graphs_{div_id}.data, graphs_{div_id}.layout);
   </script>
-  """
+  """.format(
+            div_id=self._div_id,
+            json=json_str,
+        )
         return javascript
 
     def html(self):

@@ -407,10 +407,10 @@ class MMCIFOutputFile:
         # Write the crystal information
         # if v5, that's all so return
         if self.params.mmcif.pdb_version == "v5":
-            h, k, l = (
+            h, k, l = [
                 hkl.iround()
                 for hkl in reflections["miller_index"].as_vec3_double().parts()
-            )
+            ]
             # Note, use observed position, so that we are within the
             # allowed bounds (lower bound 0) for image_id
             det_x, det_y, det_z = reflections["xyzobs.px.value"].parts()
@@ -491,9 +491,9 @@ class MMCIFOutputFile:
             cif_block.add_loop(cif_loop)
 
         _, _, _, _, z0, z1 = reflections["bbox"].parts()
-        h, k, l = (
+        h, k, l = [
             hkl.iround() for hkl in reflections["miller_index"].as_vec3_double().parts()
-        )
+        ]
         # make scan id consistent with header as defined above
         scan_id = flex.int(reflections.size(), 0)
         for id_ in reflections.experiment_identifiers().keys():

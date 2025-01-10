@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections import OrderedDict
 from dataclasses import dataclass
+from typing import List, Optional, Type
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
@@ -31,7 +32,7 @@ from dials.util import tabulate
 logger = logging.getLogger("dials")
 
 
-class MergeJSONCollector:
+class MergeJSONCollector(object):
     initiated = False
     data = {}
 
@@ -52,15 +53,15 @@ class MergeJSONCollector:
 class MergingStatisticsData:
     experiments: ExperimentList
     scaled_miller_array: miller.array
-    reflections: list[flex.reflection_table] | None = (
+    reflections: Optional[List[flex.reflection_table]] = (
         None  # only needed if using this class like a script when making batch plots
     )
-    merging_statistics_result: type[dataset_statistics] | None = None
-    anom_merging_statistics_result: type[dataset_statistics] | None = None
-    cut_merging_statistics_result: type[dataset_statistics] | None = None
-    cut_anom_merging_statistics_result: type[dataset_statistics] | None = None
-    anomalous_amplitudes: miller.array | None = None
-    Wilson_B_iso: float | None = None
+    merging_statistics_result: Optional[Type[dataset_statistics]] = None
+    anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
+    cut_merging_statistics_result: Optional[Type[dataset_statistics]] = None
+    cut_anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
+    anomalous_amplitudes: Optional[miller.array] = None
+    Wilson_B_iso: Optional[float] = None
 
     def __str__(self):
         if not self.merging_statistics_result:
@@ -120,7 +121,7 @@ any systematic grouping of points may suggest a preferential crystal orientation
 """
             % hkl
         )
-        key = "stereo_{}{}{}".format(*hkl)
+        key = "stereo_%s%s%s" % hkl
         orientation_graphs[key] = d
     return orientation_graphs
 

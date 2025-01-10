@@ -13,6 +13,7 @@ import logging
 import operator
 import os
 import pickle
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -409,7 +410,8 @@ class _:
         except KeyError as e:
             logger.error(e, exc_info=True)
             raise KeyError(
-                "Unable to find {}, {} in reflection table".format(
+                "Unable to find %s, %s in reflection table"
+                % (
                     "intensity." + intensity + ".value",
                     "intensity." + intensity + ".variance",
                 )
@@ -492,7 +494,7 @@ class _:
 
     def match_by_hkle(
         self, other: dials_array_family_flex_ext.reflection_table
-    ) -> tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
+    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
         """
         Match reflections with another set of reflections by the h, k, l
         and entering values. Uses pandas dataframe merge method to match
@@ -527,7 +529,7 @@ class _:
 
     @staticmethod
     def concat(
-        tables: list[dials_array_family_flex_ext.reflection_table],
+        tables: List[dials_array_family_flex_ext.reflection_table],
     ) -> dials_array_family_flex_ext.reflection_table:
         """
         Concatenate a list of reflection tables, taking care to correctly handle
@@ -670,8 +672,8 @@ class _:
         *,
         max_separation: int = 2,
         key: str = "xyzobs.px.value",
-        scale: tuple[float, float, float] = (1, 1, 1),
-    ) -> tuple[
+        scale: Tuple[float, float, float] = (1, 1, 1),
+    ) -> Tuple[
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.double,
@@ -1183,10 +1185,11 @@ class _:
                 id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
             logger.warning(
-                f"""Not all requested identifiers
+                """Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested {list_of_identifiers}:
-Found {id_values}"""
+Requested %s:
+Found %s"""
+                % (list_of_identifiers, id_values)
             )
         # Build up a selection and use this
         sel = cctbx.array_family.flex.bool(self.size(), False)
@@ -1216,10 +1219,11 @@ Found {id_values}"""
                 id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
             logger.warning(
-                f"""Not all requested identifiers
+                """Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested {list_of_identifiers}:
-Found {id_values}"""
+Requested %s:
+Found %s"""
+                % (list_of_identifiers, id_values)
             )
         # Now delete the selections, also removing the entry from the map
         for id_val in id_values:

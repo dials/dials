@@ -28,6 +28,7 @@ from __future__ import annotations
 import logging
 import os.path
 import pickle
+from typing import List, Optional, Tuple, Union
 
 import libtbx.phil as phil
 from dxtbx.format.image import ImageBool
@@ -39,7 +40,7 @@ import dials.util.log
 import dials.util.masking
 from dials.util.options import ArgumentParser, flatten_experiments
 
-Masks = list[tuple[flex.bool, ...]]
+Masks = List[Tuple[flex.bool, ...]]
 
 log = logging.getLogger("dials.generate_mask")
 
@@ -68,8 +69,8 @@ phil_scope = phil.parse(
 def generate_mask(
     experiments: ExperimentList,
     params: phil.scope_extract,
-    existing_masks: None | Masks = None,
-) -> tuple[Masks, ExperimentList | None]:
+    existing_masks: Union[None, Masks] = None,
+) -> Tuple[Masks, Optional[ExperimentList]]:
     """
     Generate a pixel mask for each imageset in an experiment list.
 
@@ -159,7 +160,7 @@ def generate_mask(
 
 
 @dials.util.show_mail_handle_errors()
-def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
     Parse command-line arguments, run the script.
 

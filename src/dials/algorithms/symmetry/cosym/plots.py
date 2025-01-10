@@ -39,7 +39,7 @@ def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
                 "marker": {
                     "size": 2,
                     "alpha": 0.5,
-                    "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
+                    "color": "rgb(%f,%f,%f)" % tuple(col[:3]),
                 },
                 "name": "Cluster %i" % k if k >= 0 else "Noise",
             }

@@ -56,6 +56,11 @@ from dials.util.filter_reflections import filter_reflection_table
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
+try:
+    from typing import List
+except ImportError:
+    pass
+
 logger = logging.getLogger("dials.command_line.damage_analysis")
 
 phil_scope = phil.parse(
@@ -320,7 +325,7 @@ class PychefRunner:
 
 
 @show_mail_handle_errors()
-def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the command-line script."""
 
     usage = "dials.damage_analysis [options] scaled.expt scaled.refl | scaled.mtz"

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+from typing import List, Optional
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -125,10 +126,11 @@ nproc = Auto
 
 
 phil_scope = iotbx.phil.parse(
-    f"""\
-{cosym_scope}
-{symmetry_analysis_phil}
-""",
+    """\
+%s
+%s
+"""
+    % (cosym_scope, symmetry_analysis_phil),
     process_includes=True,
 )
 
@@ -147,7 +149,7 @@ class CosymAnalysis(symmetry_base, Subject):
         self,
         intensities,
         params,
-        seed_dataset: int | None = None,
+        seed_dataset: Optional[int] = None,
         apply_sigma_correction=True,
     ):
         """Initialise a CosymAnalysis object.
@@ -286,7 +288,7 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.nproc is Auto:
             if self.params.cc_weights == "sigma":
                 params.nproc = dials.util.system.CPU_COUNT
-                logger.info(f"Setting nproc={params.nproc}")
+                logger.info("Setting nproc={}".format(params.nproc))
             else:
                 params.nproc = 1
 
@@ -464,9 +466,9 @@ class CosymAnalysis(symmetry_base, Subject):
     def _reindexing_ops(
         self,
         coords: np.ndarray,
-        sym_ops: list[sgtbx.rt_mx],
+        sym_ops: List[sgtbx.rt_mx],
         cosets: sgtbx.cosets.left_decomposition,
-    ) -> list[sgtbx.change_of_basis_op]:
+    ) -> List[sgtbx.change_of_basis_op]:
         """Identify the reindexing operator for each dataset.
 
         Args:

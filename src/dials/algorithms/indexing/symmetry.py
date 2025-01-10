@@ -24,7 +24,7 @@ def metric_supergroup(group):
 
 
 def groups_cache(fn):
-    class MultiClassCache:
+    class MultiClassCache(object):
         "A set of caches for different bravais types"
 
         instances = {}

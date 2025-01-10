@@ -203,7 +203,7 @@ class Statistics:
             column_labels = (
                 ["Dose"]
                 + [
-                    "{:.2f}-{:.2f}(A)".format(*self.binner.bin_d_range(i + 1))
+                    "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
                     for i in range(self.n_bins)
                 ]
                 + ["I+", "I-", "I", "dI"]
@@ -222,7 +222,7 @@ class Statistics:
             column_labels = (
                 ["Dose"]
                 + [
-                    "{:.2f}-{:.2f}(A)".format(*self.binner.bin_d_range(i + 1))
+                    "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
                     for i in range(self.n_bins)
                 ]
                 + ["I"]
@@ -265,7 +265,7 @@ class Statistics:
         column_labels = (
             ["Dose"]
             + [
-                "{:.2f}-{:.2f}(A)".format(*self.binner.bin_d_range(i + 1))
+                "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
                 for i in range(self.n_bins)
             ]
             + [thing]
@@ -387,9 +387,7 @@ class Statistics:
 
         if self.binner.n_bins_used() > 1:
             for j in range(self.binner.n_bins_used()):
-                bin_range_suffix = " ({:.2f}-{:.2f} A)".format(
-                    *self.binner.bin_d_range(j + 1)
-                )
+                bin_range_suffix = " (%.2f-%.2f A)" % self.binner.bin_d_range(j + 1)
                 scp_data.append(
                     {
                         "x": x,

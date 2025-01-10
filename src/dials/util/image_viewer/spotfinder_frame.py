@@ -42,6 +42,11 @@ from .viewer_tools import (
     LegacyChooserAdapter,
 )
 
+try:
+    from typing import Optional
+except ImportError:
+    pass
+
 SpotfinderData = collections.namedtuple(
     "SpotfinderData",
     [
@@ -1575,7 +1580,7 @@ class SpotFrame(XrayFrame):
 
     def __get_imageset_filter(
         self, reflections: flex.reflection_table, imageset: ImageSet
-    ) -> flex.bool | None:
+    ) -> Optional[flex.bool]:
         """Get a filter to ensure only reflections from an imageset.
 
         This is not a well-defined problem because of unindexed reflections

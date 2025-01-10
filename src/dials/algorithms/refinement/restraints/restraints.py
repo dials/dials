@@ -332,7 +332,7 @@ class MeanUnitCellTie:
         cells = [
             xlucp.get_model().get_unit_cell().parameters() for xlucp in self._xlucp
         ]
-        a, b, c, aa, bb, cc = (flex.double(e) for e in zip(*cells))
+        a, b, c, aa, bb, cc = [flex.double(e) for e in zip(*cells)]
         resid_a = a - self.average_fn(a) if self._sel[0] else None
         resid_b = b - self.average_fn(b) if self._sel[1] else None
         resid_c = c - self.average_fn(c) if self._sel[2] else None

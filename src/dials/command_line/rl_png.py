@@ -133,7 +133,7 @@ class PngScene:
             s=self.settings.marker_size,
             c=list(self.colors),
         )
-        pyplot.title("Plane normal: ({:.2g}, {:.2g}, {:.2g})".format(*n.elems))
+        pyplot.title("Plane normal: (%.2g, %.2g, %.2g)" % (n.elems))
         fig.savefig(filename)
         pyplot.close()
 

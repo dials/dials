@@ -66,7 +66,9 @@ def run(_=None):
         plugins = read_entry_point(ep)
         for p in sorted(plugins):
             print(
-                f" {GREEN}{p} {NC}({plugins[p].module_name} via {BOLD}{plugins[p].dist.project_name}{NC} {plugins[p].dist.version})"
+                " {GREEN}{p} {NC}({pp.module_name} via {BOLD}{pp.dist.project_name}{NC} {pp.dist.version})".format(
+                    BOLD=BOLD, p=p, GREEN=GREEN, NC=NC, pp=plugins[p]
+                )
             )
         required_plugins = set(ep_dict.get("required", []))
         missing_plugins = required_plugins - set(plugins)

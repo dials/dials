@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import scipy.spatial.distance as ssd
@@ -25,7 +25,7 @@ class Cluster:
     def __init__(
         self,
         crystal_symmetries: list[crystal.symmetry],
-        lattice_ids: list[int] | None = None,
+        lattice_ids: Optional[list[int]] = None,
         name="",
     ):
         assert lattice_ids is None or len(crystal_symmetries) == len(lattice_ids)
@@ -60,8 +60,8 @@ class Cluster:
 @dataclass
 class ClusteringResult:
     clusters: list[Cluster]
-    dendrogram: dict | None = None
-    linkage_matrix: np.ndarray | None = None
+    dendrogram: Optional[dict] = None
+    linkage_matrix: Optional[np.ndarray] = None
 
     def __len__(self):
         return len(self.clusters)
@@ -95,13 +95,30 @@ class ClusteringResult:
                 sorted_pg_comp = sorted(
                     cluster.pg_composition.items(), key=lambda x: -1 * x[1]
                 )
-                pg_strings = [f"{pg[1]} in {pg[0]}" for pg in sorted_pg_comp]
+                pg_strings = ["{} in {}".format(pg[1], pg[0]) for pg in sorted_pg_comp]
                 point_group_string = ", ".join(pg_strings) + "."
                 text.append(point_group_string)
                 text.append(
-                    f"{cluster.name:<16} {len(cluster):<8} {cluster.median_cell[0]:<6.2f}({cluster.cell_std[0]:<5.2f}) {cluster.median_cell[1]:<6.2f}({cluster.cell_std[1]:<5.2f})"
-                    f" {cluster.median_cell[2]:<6.2f}({cluster.cell_std[2]:<5.2f}) {cluster.median_cell[3]:<6.2f}({cluster.cell_std[3]:<4.2f}) {cluster.median_cell[4]:<6.2f}"
-                    f"({cluster.cell_std[4]:<4.2f}) {cluster.median_cell[5]:<6.2f}({cluster.cell_std[5]:<4.2f})"
+                    (
+                        "{:<16} {:<8} {:<6.2f}({:<5.2f}) {:<6.2f}({:<5.2f})"
+                        " {:<6.2f}({:<5.2f}) {:<6.2f}({:<4.2f}) {:<6.2f}"
+                        "({:<4.2f}) {:<6.2f}({:<4.2f})"
+                    ).format(
+                        cluster.name,
+                        len(cluster),
+                        cluster.median_cell[0],
+                        cluster.cell_std[0],
+                        cluster.median_cell[1],
+                        cluster.cell_std[1],
+                        cluster.median_cell[2],
+                        cluster.cell_std[2],
+                        cluster.median_cell[3],
+                        cluster.cell_std[3],
+                        cluster.median_cell[4],
+                        cluster.cell_std[4],
+                        cluster.median_cell[5],
+                        cluster.cell_std[5],
+                    )
                 )
                 text.append(
                     (
@@ -130,8 +147,16 @@ class ClusteringResult:
                     "".join(
                         [
                             (
-                                f"{list(cluster.pg_composition.keys())[0]:<14} {cluster.median_cell[0]:<11.2f} {cluster.median_cell[1]:<11.2f} {cluster.median_cell[2]:<11.2f}"
-                                f"{cluster.median_cell[3]:<12.1f} {cluster.median_cell[4]:<12.1f} {cluster.median_cell[5]:<12.1f}"
+                                "{:<14} {:<11.2f} {:<11.2f} {:<11.2f}"
+                                "{:<12.1f} {:<12.1f} {:<12.1f}"
+                            ).format(
+                                list(cluster.pg_composition.keys())[0],
+                                cluster.median_cell[0],
+                                cluster.median_cell[1],
+                                cluster.median_cell[2],
+                                cluster.median_cell[3],
+                                cluster.median_cell[4],
+                                cluster.median_cell[5],
                             ),
                         ]
                     )
@@ -158,11 +183,11 @@ class ClusteringResult:
 
 def cluster_unit_cells(
     crystal_symmetries: list[crystal.symmetry],
-    lattice_ids: list[int] | None = None,
+    lattice_ids: Optional[list[int]] = None,
     threshold: int = 10000,
-    ax: matplotlib.axes.Axes | None = None,
+    ax: Optional["matplotlib.axes.Axes"] = None,
     no_plot: bool = True,
-) -> ClusteringResult | None:
+) -> Optional[ClusteringResult]:
     if not lattice_ids:
         lattice_ids = list(range(len(crystal_symmetries)))
     cluster = Cluster(crystal_symmetries, lattice_ids)

@@ -109,8 +109,8 @@ plot_filename = None
             else:
                 scale = 1.0
             print(
-                f"Beam direction scaled by {self.params.scale} = {scale:.3f} to "
-                "calculate zone axis\n"
+                "Beam direction scaled by {} = {:.3f} to "
+                "calculate zone axis\n".format(self.params.scale, scale)
             )
 
             dat = extract_experiment_data(exp, scale)

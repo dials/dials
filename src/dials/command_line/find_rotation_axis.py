@@ -441,7 +441,7 @@ def run(args=None, phil=phil_scope):
 
     if params.nproc is libtbx.Auto:
         params.nproc = CPU_COUNT
-        logger.info(f"Setting nproc={params.nproc}")
+        logger.info("Setting nproc={}".format(params.nproc))
 
     hist_bins = 1000, 500
 

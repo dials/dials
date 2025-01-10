@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from typing import List, Tuple
 
 from dxtbx.model import ExperimentList
 from iotbx import mtz, phil
@@ -155,8 +156,8 @@ phil_scope = phil_scope.fetch(sources=[phil_overrides])
 def merge_data_to_mtz_with_report_collection(
     params: phil.scope_extract,
     experiments: ExperimentList,
-    reflections: list[flex.reflection_table],
-) -> tuple[mtz.object, dict]:
+    reflections: List[flex.reflection_table],
+) -> Tuple[mtz.object, dict]:
     """Run the merge_data_to_mtz function, also collecting data for json/html output"""
     with collect_html_data_from_merge() as collector:
         mtz = merge_data_to_mtz(params, experiments, reflections)
@@ -167,7 +168,7 @@ def merge_data_to_mtz_with_report_collection(
 def merge_data_to_mtz(
     params: phil.scope_extract,
     experiments: ExperimentList,
-    reflections: list[flex.reflection_table],
+    reflections: List[flex.reflection_table],
 ) -> mtz.object:
     """Merge data (at each wavelength) and write to an mtz file object.
 
@@ -213,7 +214,8 @@ def merge_data_to_mtz(
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavlength: {:.5f}, experiment numbers: {} ".format(
+                "  Wavlength: %.5f, experiment numbers: %s "
+                % (
                     v.weighted_mean,
                     ",".join(
                         map(str, [identifiers_list.index(i) for i in v.identifiers])
@@ -232,8 +234,8 @@ def merge_data_to_mtz(
                 "Unequal number of crystal names and wavelengths, using default naming."
             )
             crystal_names = [None] * len(wavelengths)
-        experiments_subsets: list[ExperimentList] = []
-        reflections_subsets: list[flex.reflection_table] = []
+        experiments_subsets: List[ExperimentList] = []
+        reflections_subsets: List[flex.reflection_table] = []
         for dataset, dname, cname in zip(mtz_datasets, dataset_names, crystal_names):
             dataset.dataset_name = dname
             dataset.crystal_name = cname
@@ -252,7 +254,7 @@ def merge_data_to_mtz(
     else:
         mtz_datasets[0].dataset_name = dataset_names[0]
         mtz_datasets[0].crystal_name = crystal_names[0]
-        experiments_subsets: list[ExperimentList] = [experiments]
+        experiments_subsets: List[ExperimentList] = [experiments]
         if len(reflections) > 1:
             reflections_subsets = [flex.reflection_table.concat(reflections)]
         else:

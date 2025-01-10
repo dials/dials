@@ -76,8 +76,8 @@ class Script:
             raise Sorry(
                 "The number of masks provided must match the number of imagesets "
                 "(sequences).\n"
-                f"You have provided an experiment list containing {n_expts} imageset(s).\n"
-                f"You have provided {n_masks} mask file(s)."
+                "You have provided an experiment list containing {} imageset(s).\n"
+                "You have provided {} mask file(s).".format(n_expts, n_masks)
             )
 
         # Get the imageset

@@ -34,7 +34,8 @@ DEG2RAD = math.pi / 180.0
 
 # PHIL
 format_data = {"outlier_phil": outlier_phil_str}
-phil_str = """
+phil_str = (
+    """
     reflections_per_degree = Auto
       .help = "The number of centroids per degree of the sequence to use in"
               "refinement. The default (Auto) uses all reflections unless"
@@ -87,7 +88,7 @@ phil_str = """
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
       .expert_level = 1
-    {{
+    {
       override = statistical stills constant external_deltapsi
         .help = "selection of a strategy to override default weighting behaviour"
         .type = choice
@@ -107,10 +108,12 @@ phil_str = """
         .help = "Weight for the wavelength term in the target function for"
                 "Laue refinement"
         .type = float(value_min = 0)
-    }}
+    }
 
-    {outlier_phil}
-""".format(**format_data)
+    %(outlier_phil)s
+"""
+    % format_data
+)
 phil_scope = parse(phil_str)
 
 
@@ -325,9 +328,8 @@ class ReflectionManagerFactory:
         # check incompatible weighting strategy
         if params.weighting_strategy.override in ["stills", "external_deltapsi"]:
             msg = (
-                f'The "{params.weighting_strategy.override}" weighting strategy is not compatible with '
-                "scan refinement"
-            )
+                'The "{}" weighting strategy is not compatible with ' "scan refinement"
+            ).format(params.weighting_strategy.override)
             raise DialsRefineConfigError(msg)
 
         if params.outlier.algorithm in ("null", None):
@@ -721,7 +723,7 @@ class ReflectionManager:
             # third test: reject reflections close to the centres of the first and
             # last images in the scan
             if self._scan_margin > 0.0:
-                edge1, edge2 = (e + 0.5 for e in exp.scan.get_image_range())
+                edge1, edge2 = [e + 0.5 for e in exp.scan.get_image_range()]
                 edge1 = exp.scan.get_angle_from_image_index(edge1, deg=False)
                 edge1 += self._scan_margin
                 edge2 = exp.scan.get_angle_from_image_index(edge2, deg=False)

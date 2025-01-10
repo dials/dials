@@ -113,7 +113,7 @@ def write_mosflm_input(
     if symmetry is not None:
         lines.append(f"SYMMETRY {symmetry}")
     if beam_centre is not None:
-        lines.append("BEAM {:.3f} {:.3f}".format(*beam_centre))
+        lines.append("BEAM %.3f %.3f" % beam_centre)
     if distance is not None:
         lines.append(f"DISTANCE {distance:.4f}")
     if mat_file is not None:

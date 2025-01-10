@@ -82,9 +82,7 @@ class ScanVaryingParameterSet(Parameter):
         except TypeError:
             msg += "    Type: " + str(self.param_type) + "\n"
         try:
-            msg += (
-                "    Axis: ({:5.3f}, {:5.3f}, {:5.3f})".format(*tuple(self.axis)) + "\n"
-            )
+            msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
         except TypeError:
             msg += "    Axis: " + str(self.axis) + "\n"
         vals = ", ".join(["%5.3f"] * len(self)) % tuple(self.value)
