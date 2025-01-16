@@ -25,9 +25,10 @@ import zipfile
 from optparse import OptionParser
 
 import libtbx.auto_build.rpath
+import libtbx
 
 # XXX HACK
-libtbx_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+libtbx_path = os.path.dirname(libtbx.__file__)
 if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
 
