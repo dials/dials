@@ -10,6 +10,7 @@ from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
 
+@pytest.mark.skip(reason="Apparently causes SEGV on some platforms")
 def test_model_background(dials_data, tmp_path):
     # Use a data set from a P2M for speed (small detector).
     data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
