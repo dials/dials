@@ -18,6 +18,7 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 # #######################################################################
 # External Dependencies
 find_package(HDF5 REQUIRED)
+find_package(gemmi CONFIG REQUIRED)
 
 # #######################################################################
 # Automatic Dependencies

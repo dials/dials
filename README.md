@@ -2,9 +2,10 @@
 
 ## Quick Start
 
-- Ensure you have an environment with CMake and compilers available
+- Ensure you have an environment with CMake and compilers available (see requirements.txt)
 - Dependencies:
     - HDF5 (Required)
+    - gemmi (Required)
     - [Eigen](https://eigen.tuxfamily.org/) (Optional, downloaded if missing)
     - [nlohmann/json](https://github.com/nlohmann/json) (Optional, downloaded if missing)
     - [{fmt}](https://github.com/fmtlib/fmt) (Optional, downloaded if missing)
@@ -15,11 +16,11 @@ mkdir build
 cd build
 cmake ..
 ```
-You can then build with `make`, and run the tests with `make test`.
+You can then build with `make`, and run the test with `./tests/test_make_models`.
 
 ## Writing And Running Tests
 
-See https://google.github.io/googletest/primer.html. The `tests/` subdirectory
+See https://google.github.io/googletest/primer.html. The `tests` subdirectory
 has an example test.
 
 You can run test executables directly, run `ctest`, or run `make test` (or

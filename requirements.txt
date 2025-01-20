@@ -1,0 +1,4 @@
+gemmi
+cmake
+hdf5=1.12.2
+hdf5-external-filter-plugins
