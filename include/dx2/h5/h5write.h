@@ -8,78 +8,64 @@
 #include <string>
 #include <vector>
 
-// Function to create a group if it does not exist
-hid_t create_or_open_group(hid_t parent, const std::string &group_name) {
-  hid_t group = H5Gopen(parent, group_name.c_str(), H5P_DEFAULT);
-  if (group < 0) {
-    group = H5Gcreate(parent, group_name.c_str(), H5P_DEFAULT, H5P_DEFAULT,
-                      H5P_DEFAULT);
-    if (group < 0) {
-      std::cerr << "Error: Unable to create group " << group_name << std::endl;
-      std::exit(1);
+/**
+ * @brief Recursively traverses or creates groups in an HDF5 file based
+ * on the given path.
+ *
+ * This function takes a parent group identifier and a path string, and
+ * recursively traverses or creates the groups specified in the path. If
+ * a group in the path does not exist, it is created.
+ *
+ * @param parent The identifier of the parent group in the HDF5 file.
+ * @param path The path of groups to traverse or create, specified as a
+ * string with '/' as the delimiter.
+ * @return The identifier of the final group in the path.
+ * @throws std::runtime_error If a group cannot be created or opened.
+ */
+hid_t traverse_or_create_groups(hid_t parent, const std::string &path) {
+  // Strip leading '/' characters, if any, to prevent empty group names
+  size_t start_pos = path.find_first_not_of('/');
+  if (start_pos == std::string::npos) {
+    return parent; // Return parent if the path is entirely '/'
+  }
+  std::string cleaned_path = path.substr(start_pos);
+
+  /*
+   * This is the base case for recursion. When the path is empty, we
+   * have reached the final group in the path and we return the parent
+   * group.
+   */
+  if (cleaned_path.empty()) {
+    return parent;
+  }
+
+  // Split the path into the current group name and the remaining path
+  size_t pos = cleaned_path.find('/');
+  std::string group_name =
+      (pos == std::string::npos) ? cleaned_path : cleaned_path.substr(0, pos);
+  std::string remaining_path =
+      (pos == std::string::npos) ? "" : cleaned_path.substr(pos + 1);
+
+  // Attempt to open the group. If it does not exist, create it.
+  hid_t next_group = H5Gopen(parent, group_name.c_str(), H5P_DEFAULT);
+  if (next_group < 0) {
+    next_group = H5Gcreate(parent, group_name.c_str(), H5P_DEFAULT, H5P_DEFAULT,
+                           H5P_DEFAULT);
+    if (next_group < 0) {
+      std::runtime_error("Error: Unable to create or open group: " +
+                         group_name);
     }
   }
-  return group;
-}
 
-// Function to write a 3D vector dataset to an HDF5 file
-void write_xyzobs_to_h5_file(
-    const std::string &filename, const std::string &group_path,
-    const std::string &dataset_name,
-    const std::vector<std::array<double, 3>> &xyz_data) {
-  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
-  if (file < 0) {
-    file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-    if (file < 0) {
-      std::cerr << "Error: Unable to create or open file " << filename
-                << std::endl;
-      std::exit(1);
-    }
+  // Recurse to the next group in the hierarchy
+  hid_t final_group = traverse_or_create_groups(next_group, remaining_path);
+
+  // Close the current group to avoid resource leaks, except for the final group
+  if (next_group != final_group) {
+    H5Gclose(next_group);
   }
 
-  // Create or open the hierarchy: /dials/processing/group_0
-  hid_t dials_group = create_or_open_group(file, "dials");
-  hid_t processing_group = create_or_open_group(dials_group, group_path);
-  hid_t group = create_or_open_group(processing_group, "group_0");
-
-  // Create dataspace for 3D vector data
-  hsize_t dims[2] = {xyz_data.size(), 3}; // Number of elements x 3D coordinates
-  hid_t dataspace = H5Screate_simple(2, dims, NULL);
-
-  // Create dataset
-  hid_t dataset = H5Dcreate(group, dataset_name.c_str(), H5T_NATIVE_DOUBLE,
-                            dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  if (dataset < 0) {
-    std::cerr << "Error: Unable to create dataset " << dataset_name
-              << std::endl;
-    std::exit(1);
-  }
-
-  // Flatten 3D vector data for HDF5 storage
-  std::vector<double> flat_data;
-  for (const auto &xyz : xyz_data) {
-    flat_data.insert(flat_data.end(), xyz.begin(), xyz.end());
-  }
-
-  // Write data to dataset
-  herr_t status = H5Dwrite(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-                           H5P_DEFAULT, flat_data.data());
-  if (status < 0) {
-    std::cerr << "Error: Unable to write data to dataset " << dataset_name
-              << std::endl;
-    std::exit(1);
-  }
-
-  // Cleanup
-  H5Dclose(dataset);
-  H5Sclose(dataspace);
-  H5Gclose(group);
-  H5Gclose(processing_group);
-  H5Gclose(dials_group);
-  H5Fclose(file);
-
-  std::cout << "Successfully wrote 3D vector dataset " << dataset_name << " to "
-            << filename << std::endl;
+  return final_group;
 }
 
 #endif // H5WRITE_H

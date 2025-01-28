@@ -1,43 +1,54 @@
-#include <dx2/h5/h5read_processed.h>
 #include <dx2/h5/h5write.h>
 #include <filesystem>
 #include <gtest/gtest.h>
-#include <vector>
+#include <hdf5.h>
+#include <string>
 
-// Test writing a 3D vector dataset to an HDF5 file and verifying the written
-// content
-TEST(ExampleTests, WriteArrayTest) {
-  // Define the test file path
-  std::filesystem::path cwd = std::filesystem::current_path();
-  std::string test_file_path = cwd.generic_string();
-  test_file_path.append("/data/test_write.h5");
+// Test the traverse_or_create_groups function
+TEST(HDF5Tests, TraverseOrCreateGroupsTest) {
+    // Define the test file path
+    std::filesystem::path cwd = std::filesystem::current_path();
+    std::string test_file_path = cwd.generic_string();
+    test_file_path.append("/data/test_traverse_or_create_groups.h5");
 
-  // Prepare test data (3D vectors)
-  std::vector<std::array<double, 3>> xyzobs_test_data = {
-      {100.1, 200.2, 300.3}, {400.4, 500.5, 600.6}, {700.7, 800.8, 900.9}};
+    // Create or open an HDF5 file
+    hid_t file = H5Fcreate(test_file_path.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    ASSERT_GE(file, 0) << "Failed to create HDF5 file.";
 
-  // Call the function to write the test data to the HDF5 file
-  std::string dataset_name = "xyzobs.px.value";
-  std::string group_path = "processing";
+    try {
+        // Define a hierarchical path
+        std::string group_path = "/dials/processing/group_0";
 
-  write_xyzobs_to_h5_file(test_file_path, group_path, dataset_name,
-                          xyzobs_test_data);
+        // Call the function to traverse or create groups
+        hid_t final_group = traverse_or_create_groups(file, group_path);
+        ASSERT_GE(final_group, 0) << "Failed to create or open the final group.";
 
-  // Read the written data back from the HDF5 file
-  std::string full_dataset_path = "/dials/processing/group_0/xyzobs.px.value";
-  std::vector<double> read_xyzobs =
-      read_array_from_h5_file<double>(test_file_path, full_dataset_path);
+        // Verify that each group in the hierarchy exists
+        hid_t dials_group = H5Gopen(file, "dials", H5P_DEFAULT);
+        ASSERT_GE(dials_group, 0) << "Failed to open the 'dials' group.";
 
-  // Validate the size of the read data
-  ASSERT_EQ(read_xyzobs.size(), xyzobs_test_data.size() * 3);
+        hid_t processing_group = H5Gopen(dials_group, "processing", H5P_DEFAULT);
+        ASSERT_GE(processing_group, 0) << "Failed to open the 'processing' group.";
 
-  // Validate the content of the read data
-  for (std::size_t i = 0; i < xyzobs_test_data.size(); ++i) {
-    EXPECT_DOUBLE_EQ(read_xyzobs[i * 3 + 0], xyzobs_test_data[i][0]);
-    EXPECT_DOUBLE_EQ(read_xyzobs[i * 3 + 1], xyzobs_test_data[i][1]);
-    EXPECT_DOUBLE_EQ(read_xyzobs[i * 3 + 2], xyzobs_test_data[i][2]);
-  }
+        hid_t group_0 = H5Gopen(processing_group, "group_0", H5P_DEFAULT);
+        ASSERT_GE(group_0, 0) << "Failed to open the 'group_0' group.";
 
-  // Clean up test file after successful run (comment out to keep the test file)
-  std::filesystem::remove(test_file_path);
+        // Close all opened groups
+        H5Gclose(group_0);
+        H5Gclose(processing_group);
+        H5Gclose(dials_group);
+        H5Gclose(final_group);
+    } catch (const std::runtime_error &e) {
+        FAIL() << "Runtime error occurred: " << e.what();
+    }
+
+    // Close the file
+    H5Fclose(file);
+
+    // Validate that the HDF5 file was created
+    ASSERT_TRUE(std::filesystem::exists(test_file_path))
+        << "HDF5 file was not created.";
+
+    // Clean up test file after successful run (comment out to keep the test file)
+    std::filesystem::remove(test_file_path);
 }
