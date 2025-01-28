@@ -153,4 +153,91 @@ template <typename Container> auto flatten(const Container &container) {
   }
 }
 
+/**
+ * @brief Writes multidimensional data to an HDF5 file.
+ *
+ * This function writes a dataset to an HDF5 file. The dataset's shape
+ * is determined dynamically based on the input container.
+ *
+ * @tparam Container The type of the container holding the data.
+ * @param filename The path to the HDF5 file.
+ * @param dataset_path The full path to the dataset, including group
+ * hierarchies.
+ * @param data The data to write to the dataset.
+ * @throws std::runtime_error If the dataset cannot be created or data
+ * cannot be written.
+ */
+template <typename Container>
+void write_data_to_h5_file(const std::string &filename,
+                           const std::string &dataset_path,
+                           const Container &data) {
+  // Open or create the HDF5 file
+  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  if (file < 0) {
+    file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    if (file < 0) {
+      throw std::runtime_error("Error: Unable to create or open file: " +
+                               filename);
+    }
+  }
+
+  try {
+    // Separate the dataset path into group path and dataset name
+    size_t last_slash_pos = dataset_path.find_last_of('/');
+    if (last_slash_pos == std::string::npos) {
+      throw std::runtime_error("Error: Invalid dataset path, no '/' found: " +
+                               dataset_path);
+    }
+
+    std::string group_path = dataset_path.substr(0, last_slash_pos);
+    std::string dataset_name = dataset_path.substr(last_slash_pos + 1);
+
+    // Traverse or create the groups leading to the dataset
+    hid_t group = traverse_or_create_groups(file, group_path);
+
+    // Deduce the shape of the data
+    std::vector<hsize_t> shape = deduce_shape(data);
+
+    // Flatten the data into a 1D vector
+    auto flat_data = flatten(data);
+
+    // Create dataspace for the dataset
+    hid_t dataspace = H5Screate_simple(shape.size(), shape.data(), NULL);
+    if (dataspace < 0) {
+      throw std::runtime_error(
+          "Error: Unable to create dataspace for dataset: " + dataset_name);
+    }
+
+    // Create the dataset
+    hid_t dataset = H5Dcreate(group, dataset_name.c_str(), H5T_NATIVE_DOUBLE,
+                              dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    if (dataset < 0) {
+      H5Sclose(dataspace);
+      throw std::runtime_error("Error: Unable to create dataset: " +
+                               dataset_name);
+    }
+
+    // Write the data to the dataset
+    herr_t status = H5Dwrite(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+                             H5P_DEFAULT, flat_data.data());
+    if (status < 0) {
+      H5Dclose(dataset);
+      H5Sclose(dataspace);
+      throw std::runtime_error("Error: Unable to write data to dataset: " +
+                               dataset_name);
+    }
+
+    // Cleanup resources
+    H5Dclose(dataset);
+    H5Sclose(dataspace);
+    H5Gclose(group);
+  } catch (...) {
+    H5Fclose(file);
+    throw; // Re-throw the exception to propagate it upwards
+  }
+
+  // Close the file
+  H5Fclose(file);
+}
+
 #endif // H5WRITE_H
