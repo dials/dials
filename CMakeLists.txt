@@ -68,44 +68,44 @@ add_subdirectory(tests)
 
 # #######################################################################
 # Installation
-install(
-    TARGETS dx2
-    EXPORT DX2Targets
-    LIBRARY DESTINATION lib
+# install(
+#     TARGETS dx2
+#     EXPORT DX2Targets
+#     LIBRARY DESTINATION lib
 
-    # FILE_SET HEADERS DESTINATION include/dx2
-)
-install(
-    FILES
-    include/dx2/dx2.h
-    DESTINATION include/dx2
-)
+#     # FILE_SET HEADERS DESTINATION include/dx2
+# )
+# install(
+#     FILES
+#     include/dx2/dx2.h
+#     DESTINATION include/dx2
+# )
 
-install(
-    EXPORT DX2Targets
-    FILE DX2Targets.cmake
-    DESTINATION lib/cmake/DX2
-)
+# install(
+#     EXPORT DX2Targets
+#     FILE DX2Targets.cmake
+#     DESTINATION lib/cmake/DX2
+# )
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/DX2Config.cmake"
-    INSTALL_DESTINATION "lib/cmake/DX2"
-    NO_SET_AND_CHECK_MACRO
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/DX2ConfigVersion.cmake"
-    VERSION "${DX2_VERSION_MAJOR}.${DX2_VERSION_MINOR}"
-    COMPATIBILITY AnyNewerVersion
-)
-install(
-    FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/DX2Config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/DX2ConfigVersion.cmake
-    DESTINATION lib/cmake/DX2
-)
-export(EXPORT DX2Targets
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/DX2Targets.cmake"
-)
+# include(CMakePackageConfigHelpers)
+# configure_package_config_file(
+#     ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+#     "${CMAKE_CURRENT_BINARY_DIR}/DX2Config.cmake"
+#     INSTALL_DESTINATION "lib/cmake/DX2"
+#     NO_SET_AND_CHECK_MACRO
+#     NO_CHECK_REQUIRED_COMPONENTS_MACRO
+# )
+# write_basic_package_version_file(
+#     "${CMAKE_CURRENT_BINARY_DIR}/DX2ConfigVersion.cmake"
+#     VERSION "${DX2_VERSION_MAJOR}.${DX2_VERSION_MINOR}"
+#     COMPATIBILITY AnyNewerVersion
+# )
+# install(
+#     FILES
+#     ${CMAKE_CURRENT_BINARY_DIR}/DX2Config.cmake
+#     ${CMAKE_CURRENT_BINARY_DIR}/DX2ConfigVersion.cmake
+#     DESTINATION lib/cmake/DX2
+# )
+# export(EXPORT DX2Targets
+#     FILE "${CMAKE_CURRENT_BINARY_DIR}/DX2Targets.cmake"
+# )
