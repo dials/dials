@@ -201,20 +201,41 @@ void write_data_to_h5_file(const std::string &filename,
     // Flatten the data into a 1D vector
     auto flat_data = flatten(data);
 
-    // Create dataspace for the dataset
-    hid_t dataspace = H5Screate_simple(shape.size(), shape.data(), NULL);
-    if (dataspace < 0) {
-      throw std::runtime_error(
-          "Error: Unable to create dataspace for dataset: " + dataset_name);
-    }
-
-    // Create the dataset
-    hid_t dataset = H5Dcreate(group, dataset_name.c_str(), H5T_NATIVE_DOUBLE,
-                              dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    // Check if dataset exists
+    hid_t dataset = H5Dopen(group, dataset_name.c_str(), H5P_DEFAULT);
     if (dataset < 0) {
+      // Dataset does not exist, create it
+      hid_t dataspace = H5Screate_simple(shape.size(), shape.data(), NULL);
+      if (dataspace < 0) {
+        throw std::runtime_error(
+            "Error: Unable to create dataspace for dataset: " + dataset_name);
+      }
+
+      dataset = H5Dcreate(group, dataset_name.c_str(), H5T_NATIVE_DOUBLE,
+                          dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      if (dataset < 0) {
+        H5Sclose(dataspace);
+        throw std::runtime_error("Error: Unable to create dataset: " +
+                                 dataset_name);
+      }
+
       H5Sclose(dataspace);
-      throw std::runtime_error("Error: Unable to create dataset: " +
-                               dataset_name);
+    } else {
+      // Dataset exists, check if the shape matches
+      hid_t existing_space = H5Dget_space(dataset);
+      int ndims = H5Sget_simple_extent_ndims(existing_space);
+      std::vector<hsize_t> existing_dims(ndims);
+      H5Sget_simple_extent_dims(existing_space, existing_dims.data(), NULL);
+      H5Sclose(existing_space);
+
+      if (existing_dims != shape) {
+        H5Dclose(dataset);
+        throw std::runtime_error(
+            "Error: Dataset shape mismatch. Cannot overwrite dataset: " +
+            dataset_name);
+      }
+
+      // Dataset exists and has the correct shape, proceed to overwrite
     }
 
     // Write the data to the dataset
@@ -222,14 +243,12 @@ void write_data_to_h5_file(const std::string &filename,
                              H5P_DEFAULT, flat_data.data());
     if (status < 0) {
       H5Dclose(dataset);
-      H5Sclose(dataspace);
       throw std::runtime_error("Error: Unable to write data to dataset: " +
                                dataset_name);
     }
 
     // Cleanup resources
     H5Dclose(dataset);
-    H5Sclose(dataspace);
     H5Gclose(group);
   } catch (...) {
     H5Fclose(file);

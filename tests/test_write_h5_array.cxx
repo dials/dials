@@ -253,4 +253,97 @@ TEST(WriteDataTests, WriteEmptyDataset) {
   // Clean up test file
   std::filesystem::remove(filename);
 }
+
+// Test writing to a file that already exists
+TEST(WriteDataTests, WriteToExistingFile) {
+  std::string filename = "test_existing_file.h5";
+  std::string dataset_path = "/existing_group/existing_dataset";
+
+  // Create the file first
+  hid_t file =
+      H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  ASSERT_GE(file, 0) << "Failed to create HDF5 file.";
+  H5Fclose(file);
+
+  // Now attempt to write data into it
+  std::vector<double> data = {1.0, 2.0, 3.0, 4.0};
+  write_data_to_h5_file(filename, dataset_path, data);
+
+  // Read back the data to verify it was written correctly
+  auto read_data = read_array_from_h5_file<double>(filename, dataset_path);
+  EXPECT_EQ(data, read_data);
+
+  // Clean up test file
+  std::filesystem::remove(filename);
+}
+
+// Test writing to a group that already exists
+TEST(WriteDataTests, WriteToExistingGroup) {
+  std::string filename = "test_existing_group.h5";
+  std::string dataset_path = "/group_1/dataset_1";
+
+  // Create file and group manually
+  hid_t file =
+      H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  ASSERT_GE(file, 0) << "Failed to create HDF5 file.";
+
+  hid_t group =
+      H5Gcreate(file, "/group_1", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  ASSERT_GE(group, 0) << "Failed to create group.";
+
+  H5Gclose(group);
+  H5Fclose(file);
+
+  // Now attempt to write data into the existing group
+  std::vector<double> data = {10.0, 20.0, 30.0, 40.0};
+  write_data_to_h5_file(filename, dataset_path, data);
+
+  // Read back the data to verify it was written correctly
+  auto read_data = read_array_from_h5_file<double>(filename, dataset_path);
+  EXPECT_EQ(data, read_data);
+
+  // Clean up test file
+  std::filesystem::remove(filename);
+}
+
+// Test writing to a dataset that already exists
+TEST(WriteDataTests, WriteToExistingDataset) {
+  std::string filename = "test_existing_dataset.h5";
+  std::string dataset_path = "/group_2/dataset_existing";
+
+  // Create file and dataset manually
+  hid_t file =
+      H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  ASSERT_GE(file, 0) << "Failed to create HDF5 file.";
+
+  hid_t group =
+      H5Gcreate(file, "/group_2", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  ASSERT_GE(group, 0) << "Failed to create group.";
+
+  hsize_t dims[1] = {4}; // 1D dataset with 4 elements
+  hid_t dataspace = H5Screate_simple(1, dims, NULL);
+  hid_t dataset = H5Dcreate(group, "dataset_existing", H5T_NATIVE_DOUBLE,
+                            dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  ASSERT_GE(dataset, 0) << "Failed to create dataset.";
+
+  std::vector<double> initial_data = {1.1, 2.2, 3.3, 4.4};
+  H5Dwrite(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+           initial_data.data());
+
+  H5Dclose(dataset);
+  H5Sclose(dataspace);
+  H5Gclose(group);
+  H5Fclose(file);
+
+  // Now attempt to overwrite the dataset
+  std::vector<double> new_data = {5.5, 6.6, 7.7, 8.8};
+  write_data_to_h5_file(filename, dataset_path, new_data);
+
+  // Read back the data to verify it was overwritten correctly
+  auto read_data = read_array_from_h5_file<double>(filename, dataset_path);
+  EXPECT_EQ(new_data, read_data);
+
+  // Clean up test file
+  std::filesystem::remove(filename);
+}
 #pragma endregion write_h5 tests
