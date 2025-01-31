@@ -47,6 +47,8 @@ hid_t traverse_or_create_groups(hid_t parent, const std::string &path) {
       (pos == std::string::npos) ? "" : cleaned_path.substr(pos + 1);
 
   // Attempt to open the group. If it does not exist, create it.
+  H5Eset_auto2(H5E_DEFAULT, NULL, NULL); // Suppress errors to stdout when
+  // trying to open a file/group that may not exist.
   hid_t next_group = H5Gopen(parent, group_name.c_str(), H5P_DEFAULT);
   if (next_group < 0) {
     next_group = H5Gcreate(parent, group_name.c_str(), H5P_DEFAULT, H5P_DEFAULT,
@@ -172,6 +174,8 @@ void write_data_to_h5_file(const std::string &filename,
                            const std::string &dataset_path,
                            const Container &data) {
   // Open or create the HDF5 file
+  H5Eset_auto2(H5E_DEFAULT, NULL, NULL); // Suppress errors to stdout when
+  // trying to open a file/group that may not exist.
   hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
   if (file < 0) {
     file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
