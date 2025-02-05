@@ -1,6 +1,6 @@
 #include <array>
-#include <dx2/h5/h5read_processed.h>
-#include <dx2/h5/h5write.h>
+#include <dx2/h5/h5read_processed.hpp>
+#include <dx2/h5/h5write.hpp>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <hdf5.h>
