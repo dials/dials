@@ -35,7 +35,6 @@ def test_export_mosflm(dials_data, tmp_path):
     assert (
         lines
         == """
-DIRECTORY
 TEMPLATE th_8_2_####.cbf
 SYMMETRY 1
 BEAM 205.383 211.023
