@@ -35,11 +35,11 @@ def test_export_mosflm(dials_data, tmp_path):
     assert (
         lines
         == """
-DIRECTORY {0}
+DIRECTORY
 TEMPLATE th_8_2_####.cbf
 SYMMETRY 1
 BEAM 205.383 211.023
 DISTANCE 265.1161
 MATRIX index.mat
-""".strip("\n").format(data_dir)
+""".strip("\n")
     )
