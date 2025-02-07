@@ -20,6 +20,6 @@ Reference
 Funding
 -------
 
-DIALS development at Diamond Light Source is supported by the BioStruct-X EU grant, Diamond Light Source, and CCP4.
+DIALS development at Diamond Light Source is performed by employees of Diamond Light Source, and STFC via CCP4, supported by funding from Wellcome for grant 218270/Z/19/Z: DIALS: making serial crystallography data analysis accessible for biomedical researchers.
 
-DIALS development at Lawrence Berkeley National Laboratory is supported by National Institutes of Health / National Institute of General Medical Sciences grant R01-GM117126. Work at LBNL is performed under Department of Energy contract DE-AC02-05CH11231.
+DIALS development at Lawrence Berkeley National Laboratory is supported by National Institutes of Health / National Institute of General Medical Sciences grant R24GM154040 as an NIH NIGMS US National Resource. Work at LBNL is performed under Department of Energy contract DE-AC02-05CH11231.
