@@ -151,7 +151,7 @@ class ClusteringResult:
             "{:<14} {:<11} {:<11} {:<11}{:<12} {:<12} {:<12}".format(
                 "Point group", "a", "b", "c", "alpha", "beta", "gamma"
             ),
-            "".join(singletons),
+            "\n".join(singletons),
         ]
         return "\n".join(text)
 
