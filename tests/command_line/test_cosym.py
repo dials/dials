@@ -198,7 +198,7 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
     assert pathlib.Path("symmetrized.expt").is_file()
     assert pathlib.Path("cosym.html").is_file()
     assert pathlib.Path("cosym.json").is_file()
-    assert not pathlib.Path("excluded2.expt").is_file() # Nothing excluded this time
+    assert not pathlib.Path("excluded2.expt").is_file()  # Nothing excluded this time
     expts = load.experiment_list("symmetrized.expt", check_format=False)
     assert len(expts) == 7
 
