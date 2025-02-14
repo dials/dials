@@ -4,7 +4,7 @@ add_library(
 )
 target_link_libraries(
     dx2
-    PRIVATE
+    PUBLIC
     Eigen3::Eigen
     nlohmann_json::nlohmann_json
     hdf5::hdf5
@@ -16,4 +16,3 @@ target_include_directories(
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(dx2 PUBLIC $<TARGET_NAME_IF_EXISTS:hdf5::hdf5>)
