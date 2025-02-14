@@ -1,5 +1,4 @@
-#ifndef H5WRITE_H
-#define H5WRITE_H
+#pragma once
 
 #include <array>
 #include <cstdlib>
@@ -262,5 +261,3 @@ void write_data_to_h5_file(const std::string &filename,
   // Close the file
   H5Fclose(file);
 }
-
-#endif // H5WRITE_H

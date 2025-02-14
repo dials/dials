@@ -1,5 +1,4 @@
-#ifndef DX2_H5_H5READ_PROCESSED_HPP
-#define DX2_H5_H5READ_PROCESSED_HPP
+#pragma once
 
 #include <cassert>
 #include <chrono>
@@ -86,5 +85,3 @@ std::vector<T> read_array_from_h5_file(const std::string &filename,
     throw;
   }
 }
-
-#endif // DX2_H5_H5READ_PROCESSED_HPP
