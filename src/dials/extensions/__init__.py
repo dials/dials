@@ -15,7 +15,9 @@ class _Extension:
         """Return a list of all registered extension classes."""
         return [
             entry_point.load()
-            for entry_point in importlib.metadata.entry_points().get(cls.entry_point, [])
+            for entry_point in importlib.metadata.entry_points().get(
+                cls.entry_point, []
+            )
         ]
 
     @classmethod
