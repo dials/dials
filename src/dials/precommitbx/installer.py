@@ -9,7 +9,7 @@ import stat
 import sys
 from distutils.version import LooseVersion as parse_version
 
-import pkg_resources
+import importlib.metadata
 
 import libtbx.load_env
 
@@ -150,7 +150,7 @@ def list_all_repository_candidates():
         else:
             for path in module_paths:
                 repositories[f"{module}:{path}"] = path
-    for ep in pkg_resources.iter_entry_points("libtbx.precommit"):
+    for ep in importlib.metadata.entry_points(group="libtbx.precommit"):
         path = pathlib.Path(ep.load().__path__[0])
         if path.joinpath(".git").is_dir():
             repositories[ep.name] = path

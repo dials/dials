@@ -15,10 +15,7 @@ class _Extension:
         """Return a list of all registered extension classes."""
         return [
             entry_point.load()
-            for entry_point in importlib.metadata.entry_points().get(
-                cls.entry_point, []
-            )
-        ]
+            for entry_point in importlib.metadata.entry_points(group=cls.entry_point)
 
     @classmethod
     def load(cls, name):
@@ -27,7 +24,7 @@ class _Extension:
         :param name: The name of the extension
         :returns: The extension class
         """
-        for entry_point in importlib.metadata.entry_points().get(cls.entry_point, []):
+        for entry_point in importlib.metadata.entry_points(group=cls.entry_point):
             if entry_point.name == name:
                 return entry_point.load()
 

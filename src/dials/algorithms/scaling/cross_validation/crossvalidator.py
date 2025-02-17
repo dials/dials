@@ -8,7 +8,7 @@ from __future__ import annotations
 import itertools
 from copy import deepcopy
 
-import pkg_resources
+import importlib.metadata
 
 from libtbx import phil
 from libtbx.table_utils import simple_table
@@ -172,8 +172,8 @@ is provided. For example, physical.decay_correction rather than decay_correction
             return params
         available_models = [
             entry_point.name
-            for entry_point in pkg_resources.iter_entry_points(
-                "dxtbx.scaling_model_ext"
+            for entry_point in importlib.metadata.entry_points(
+                group="dxtbx.scaling_model_ext"
             )
         ]
         phil_branches = [

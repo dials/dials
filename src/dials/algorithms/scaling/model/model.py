@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import math
 
-import pkg_resources
+import importlib.metadata
 
 from libtbx import Auto, phil
 
@@ -1511,7 +1511,7 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
 
 model_phil_scope = phil.parse("")
 _dxtbx_scaling_models = {
-    ep.name: ep for ep in pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
+    ep.name: ep for ep in importlib.metadata.entry_points(group="dxtbx.scaling_model_ext")
 }
 assert (
     _dxtbx_scaling_models

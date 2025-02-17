@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 
-import pkg_resources
+import importlib.metadata
 
 import iotbx.phil
 import libtbx
@@ -438,9 +438,7 @@ class Indexer:
                     experiment.goniometer = None
 
             IndexerType = None
-            for entry_point in pkg_resources.iter_entry_points(
-                "dials.index.basis_vector_search"
-            ):
+            for entry_point in importlib.metadata.entry_points( group="dials.index.basis_vector_search"):
                 if params.indexing.method == entry_point.name:
                     if use_stills_indexer:
                         # do something
@@ -453,8 +451,8 @@ class Indexer:
                         )
 
             if IndexerType is None:
-                for entry_point in pkg_resources.iter_entry_points(
-                    "dials.index.lattice_search"
+                for entry_point in importlib.metadata.entry_points(
+                    group="dials.index.lattice_search"
                 ):
                     if params.indexing.method == entry_point.name:
                         if use_stills_indexer:
