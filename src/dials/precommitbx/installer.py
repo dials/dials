@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import importlib.metadata
 import json
 import operator
 import os
@@ -8,8 +9,6 @@ import pathlib
 import stat
 import sys
 from distutils.version import LooseVersion as parse_version
-
-import importlib.metadata
 
 import libtbx.load_env
 

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import math
-
-import importlib.metadata
 
 import iotbx.phil
 import libtbx
@@ -438,7 +437,9 @@ class Indexer:
                     experiment.goniometer = None
 
             IndexerType = None
-            for entry_point in importlib.metadata.entry_points( group="dials.index.basis_vector_search"):
+            for entry_point in importlib.metadata.entry_points(
+                group="dials.index.basis_vector_search"
+            ):
                 if params.indexing.method == entry_point.name:
                     if use_stills_indexer:
                         # do something

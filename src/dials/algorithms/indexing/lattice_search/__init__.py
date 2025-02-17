@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+import importlib.metadata
 import itertools
 import logging
 import math
 from io import StringIO
-
-import importlib.metadata
 
 import libtbx.phil
 import scitbx.matrix

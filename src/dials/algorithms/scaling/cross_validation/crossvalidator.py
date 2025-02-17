@@ -5,10 +5,9 @@ cross validator for dials.scale
 
 from __future__ import annotations
 
+import importlib.metadata
 import itertools
 from copy import deepcopy
-
-import importlib.metadata
 
 from libtbx import phil
 from libtbx.table_utils import simple_table
