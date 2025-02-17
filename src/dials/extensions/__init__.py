@@ -16,6 +16,7 @@ class _Extension:
         return [
             entry_point.load()
             for entry_point in importlib.metadata.entry_points(group=cls.entry_point)
+        ]
 
     @classmethod
     def load(cls, name):
