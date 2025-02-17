@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import logging
 from collections import namedtuple
 
 from scitbx import matrix, sparse
 
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.array_family import flex
-import logging
 
 """The PredictionParameterisation class ties together parameterisations for
 individual experimental models: beam, crystal orientation, crystal unit cell
@@ -252,8 +252,10 @@ class PredictionParameterisation:
                 current_fixes = model.get_fixed()
                 free_indices = [i for i, e in enumerate(current_fixes) if not e]
                 if len(free_indices) != model.num_free():
-                    logger.warning("Unable to fix parameters for parameterisation with prefix %s",
-                        model.model_identifier)
+                    logger.warning(
+                        "Unable to fix parameters for parameterisation with prefix %s",
+                        model.model_identifier,
+                    )
                     continue
                 for i, fix in zip(free_indices, tmp):
                     if fix:
