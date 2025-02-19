@@ -94,6 +94,8 @@ def install_micromamba(python, cmake):
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
         conda_arch = "linux-64"
+        if platform.machine() != "x86_64":
+            conda_arch = "linux-" + platform.machine()
         member = "bin/micromamba"
     elif sys.platform == "darwin":
         conda_platform = "macos"
