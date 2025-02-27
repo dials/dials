@@ -16,7 +16,7 @@ mkdir build
 cd build
 cmake ..
 ```
-You can then build with `make`, and run the test with `./tests/test_make_models`.
+You can then build with `make`, and run a test with `./tests/test_crystal`.
 
 ## Writing And Running Tests
 

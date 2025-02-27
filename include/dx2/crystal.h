@@ -58,10 +58,10 @@ void Crystal::init_from_abc(Vector3d a, Vector3d b, Vector3d c) {
   double gamma = angle_between_vectors_degrees(a, b);
   unit_cell_ = {real_space_a, real_space_b, real_space_c, alpha, beta, gamma};
   gemmi::Mat33 B = unit_cell_.frac.mat;
-  Matrix3d B_{{B.a[0][0], B.a[0][1], B.a[0][2]},
-              {B.a[1][0], B.a[1][1], B.a[1][2]},
-              {B.a[2][0], B.a[2][1], B.a[2][2]}};
-  U_ = A_ * B_;
+  B_ << B.a[0][0], B.a[1][0], B.a[2][0], B.a[0][1], B.a[1][1], B.a[2][1],
+      B.a[0][2], B.a[1][2],
+      B.a[2][2]; // Transpose due to different definition of B form
+  U_ = A_ * B_.inverse();
 }
 
 Crystal::Crystal(Vector3d a, Vector3d b, Vector3d c,
@@ -112,6 +112,11 @@ void Crystal::niggli_reduce() {
 
   Matrix3d cb_op = Matrix3d_from_gemmi_cb(cb);
   A_ = A_ * cb_op.inverse();
+  gemmi::Mat33 B = unit_cell_.frac.mat;
+  B_ << B.a[0][0], B.a[1][0], B.a[2][0], B.a[0][1], B.a[1][1], B.a[2][1],
+      B.a[0][2], B.a[1][2],
+      B.a[2][2]; // Transpose due to different definition of B form
+  U_ = A_ * B_.inverse();
 }
 
 gemmi::UnitCell Crystal::get_unit_cell() const { return unit_cell_; }
