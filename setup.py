@@ -15,7 +15,7 @@ setup_kwargs = {
     "description": "Diffraction Integration for Advanced Light Sources",
     "author": "Diamond Light Source",
     "license": "BSD-3-Clause",
-    "author_email": "dials-support@lists.sourceforge.net",
+    "author_email": "dials-user-group@jiscmail.net",
     "project_urls": {
         "homepage": "https://dials.github.io",
         "repository": "https://github.com/dials/dials",

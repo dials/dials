@@ -39,7 +39,7 @@ Contact
 =======
 
 For feature requests, bug reports or any other information, please contact
-the DIALS developers at dials-support@lists.sourceforge.net, or post an
+the DIALS developers at dials-user-group@jiscmail.net, or post an
 `issue`_.
 
 Citing DIALS
