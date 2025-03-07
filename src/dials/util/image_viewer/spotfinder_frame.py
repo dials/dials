@@ -146,10 +146,13 @@ def calculate_isoresolution_lines(
         offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
         rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
 
+        # Duplicate the first ray to close the loop
+        rays.append(rays[0])
+
         # Get the ray intersections. Need to set a dummy phi value
-        rt = flex.reflection_table.empty_standard(n_rays)
+        rt = flex.reflection_table.empty_standard(n_rays + 1)
         rt["s1"] = rays
-        rt["phi"] = flex.double(n_rays, 0)
+        rt["phi"] = flex.double(n_rays + 1, 0)
         from dials.algorithms.spot_prediction import ray_intersection
 
         intersect = ray_intersection(detector, rt)
