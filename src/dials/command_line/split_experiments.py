@@ -42,6 +42,9 @@ class OrderedSet:
     def index(self, item):
         return self._dict[item]
 
+    def __iter__(self):
+        return iter(self._dict)
+
 
 class Script:
     def __init__(self):
