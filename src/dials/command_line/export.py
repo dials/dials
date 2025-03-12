@@ -70,7 +70,7 @@ Examples::
   dials.export integrated.expt integrated.refl format=mmcif
   dials.export integrated.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
 
-  # Export to mosflm - how is this different to MTZ?
+  # Export to mosflm matrix and instructions files
   dials.export integrated.expt integrated.refl format=mosflm
 
   # Export to xds
