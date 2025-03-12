@@ -21,8 +21,8 @@ MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is an integrated.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
-scaled.expt file and a scaled.refl file, in which case the intensity=scale flag will be
-set implicitly.
+scaled.expt file and a scaled.refl file, in which case the intensity=scale
+flag will be set implicitly.
 
 NXS format exports the files as an NXmx file. The required input is an
 integrated.expt file and an integrated.refl file.
@@ -69,9 +69,6 @@ Examples::
   # Export to mmcif
   dials.export integrated.expt integrated.refl format=mmcif
   dials.export integrated.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
-
-  # Export to mosflm matrix and instructions files
-  dials.export integrated.expt integrated.refl format=mosflm
 
   # Export to xds
   dials.export strong.refl format=xds
