@@ -21,7 +21,7 @@ MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is an integrated.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
-scald.expt file and a scaled.refl file: the intensity=scale flag will be
+scaled.expt file and a scaled.refl file, in which case the intensity=scale flag will be
 derived implicitly.
 
 NXS format exports the files as an NXmx file. The required input is a
