@@ -9,6 +9,7 @@ import dials.util
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.export_mtz import match_wavelengths
+from dials.util.multi_dataset_handling import OrderedSet
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
@@ -24,26 +25,6 @@ Example::
 
   dials.split_experiments combined.expt combined.refl
 """
-
-
-class OrderedSet:
-    """A minimal OrderedSet implementation defined here because the one from
-    ordered_set does not work with imageset objects."""
-
-    def __init__(self):
-        self._dict = {}
-        self._counter = 0
-
-    def add(self, item):
-        if item not in self._dict:
-            self._dict[item] = self._counter
-            self._counter += 1
-
-    def index(self, item):
-        return self._dict[item]
-
-    def __iter__(self):
-        return iter(self._dict)
 
 
 class Script:
