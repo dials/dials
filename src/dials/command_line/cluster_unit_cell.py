@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import functools
 import logging
 import os
 
@@ -150,26 +149,12 @@ def run(args=None):
             reflections = _assign_and_return_joint(experiments, reflections)
         # else: no reflections given, continue and just split experiments
 
-        template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
-        experiments_template = functools.partial(
-            template.format,
-            prefix="cluster",
-            maxindexlength=len(str(len(clusters) - 1)),
-            extension="expt",
-        )
-        reflections_template = functools.partial(
-            template.format,
-            prefix="cluster",
-            maxindexlength=len(str(len(clusters) - 1)),
-            extension="refl",
-        )
-
         clusters.sort(key=len, reverse=True)
-        for j, cluster in enumerate(clusters):
+        for cluster in clusters:
             sub_expt = ExperimentList([experiments[i] for i in cluster.lattice_ids])
-            expt_filename = experiments_template(index=j)
+            expt_filename = cluster.name + ".expt"
             logger.info(
-                f"Saving {len(sub_expt)} lattices from cluster {j+1} to {expt_filename}"
+                f"Saving {len(sub_expt)} lattices from {cluster.name} to {expt_filename}"
             )
             sub_expt.as_file(expt_filename)
             if reflections:
@@ -177,8 +162,10 @@ def run(args=None):
                 sub_refl = reflections.select_on_experiment_identifiers(identifiers)
                 # renumber the ids to go from 0->n-1
                 sub_refl.reset_ids()
-                refl_filename = reflections_template(index=j)
-                logger.info(f"Saving reflections from cluster {j+1} to {refl_filename}")
+                refl_filename = cluster.name + ".refl"
+                logger.info(
+                    f"Saving reflections from {cluster.name} to {refl_filename}"
+                )
                 sub_refl.as_file(refl_filename)
 
 
