@@ -151,7 +151,7 @@ class ClusteringResult:
             "{:<14} {:<11} {:<11} {:<11}{:<12} {:<12} {:<12}".format(
                 "Point group", "a", "b", "c", "alpha", "beta", "gamma"
             ),
-            "".join(singletons),
+            "\n".join(singletons),
         ]
         return "\n".join(text)
 
@@ -205,10 +205,11 @@ def cluster_unit_cells(
         )
         sub_clusters.append(cluster)
 
-    # Order clusters by size
-    sub_clusters = sorted(sub_clusters, key=len)
+    # Order clusters by size, largest first, with zero-padded id number
+    sub_clusters = sorted(sub_clusters, key=len, reverse=True)
+    pad = f"0{len(str(len(sub_clusters)))}"
     for i, cluster in enumerate(sub_clusters):
-        cluster.name = f"cluster_{i + 1}"
+        cluster.name = f"cluster_{i + 1:{pad}}"
 
     dendrogram = hierarchy.dendrogram(
         linkage_matrix,

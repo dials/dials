@@ -8,8 +8,6 @@ from __future__ import annotations
 import copy
 import logging
 
-from orderedset import OrderedSet
-
 import iotbx.phil
 from dxtbx.util import ersatz_uuid4
 
@@ -36,6 +34,26 @@ phil_scope = iotbx.phil.parse(
   }
 """
 )
+
+
+class OrderedSet:
+    """A minimal OrderedSet implementation defined here because the one from
+    ordered_set does not work with imageset objects."""
+
+    def __init__(self):
+        self._dict = {}
+        self._counter = 0
+
+    def add(self, item):
+        if item not in self._dict:
+            self._dict[item] = self._counter
+            self._counter += 1
+
+    def index(self, item):
+        return self._dict[item]
+
+    def __iter__(self):
+        return iter(self._dict)
 
 
 def generate_experiment_identifiers(experiments, identifier_type="uuid"):

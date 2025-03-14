@@ -84,7 +84,7 @@ run:
   - msgpack-python
   - numpy >=1.21.5,<2 #[bootstrap]
   - numpy #[not bootstrap]
-  - orderedset
+  - ordered-set
   - pandas
   - pillow >=5.4.1
   - psutil
