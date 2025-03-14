@@ -71,13 +71,11 @@ testpaths = ["tests"]
 filterwarnings = [
     "ignore:the matrix subclass is not the recommended way:PendingDeprecationWarning",
     "ignore:numpy.dtype size changed:RuntimeWarning",
-    "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning",
     "ignore:warn_name_set_on_empty_Forward:UserWarning",
     "ignore:warn_ungrouped_named_tokens_in_collection:UserWarning",
     "ignore:numpy.dtype size changed:RuntimeWarning",
     "ignore:numpy.ufunc size changed:RuntimeWarning",
     "ignore:`product` is deprecated as of NumPy:DeprecationWarning:h5py|numpy",
-    "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
     "ignore:Use setlocale(), getencoding() and getlocale() instead:DeprecationWarning:pytest_nunit",
 ]
 junit_family = "legacy"
