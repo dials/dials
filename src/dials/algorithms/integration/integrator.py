@@ -1374,6 +1374,151 @@ Splitting reflection table into %s subsets for processing
             raise RuntimeError("Experiments must be all sequences or all stills")
         return tabulate(rows, headers="firstrow")
 
+class InFlightIntegrator:
+    """Process images in-flight"""
+
+    def __init__(self, experiments, reflections, params):
+        # require Pixel array detector with no gain or pedestal for background algorithm
+        detector = experiments[0].imageset.get_detector()
+        assert detector[0].get_type() == "SENSOR_PAD"
+        assert all(p.get_gain() == 1.0 for p in detector.iter_panels())
+        assert all(p.get_pedestal() == 0.0 for p in detector.iter_panels())
+        from dials.extensions.auto_background_ext import AutoBackgroundExt
+        from dials.extensions.glm_background_ext import GLMBackgroundExt
+        assert params.integration.background.glm.model.algorithm == "constant3d"
+        assert (
+            reflections.background_algorithm.func == AutoBackgroundExt
+            or reflections.background_algorithm.func == GLMBackgroundExt
+        )
+
+        self.experiments = experiments
+        self.reflections = reflections
+        self.params = Parameters.from_phil(params.integration)
+        self.profile_model_report = None
+        self.integration_report = None
+
+        def integrate(self):
+        # Ensure we get the same random sample each time
+        random.seed(0)
+
+        # Init the report
+        self.profile_model_report = None
+        self.integration_report = None
+
+        # Heading
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info(heading("Processing reflections"))
+        logger.info("")
+
+        # Print the summary
+        logger.info(
+            " Processing the following experiments:\n"
+            "\n"
+            " Experiments: %d\n"
+            " Beams:       %d\n"
+            " Detectors:   %d\n"
+            " Goniometers: %d\n"
+            " Scans:       %d\n"
+            " Crystals:    %d\n"
+            " Imagesets:   %d\n",
+            len(self.experiments),
+            len(self.experiments.beams()),
+            len(self.experiments.detectors()),
+            len(self.experiments.goniometers()),
+            len(self.experiments.scans()),
+            len(self.experiments.crystals()),
+            len(self.experiments.imagesets()),
+        )
+
+        ## initialise rotation - as in standard - makes bboxes
+        _initialize_rotation(self.experiments, self.params, self.reflections)
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info(heading("Integrating reflections"))
+        logger.info("")
+        print(self.reflections.size())
+        mask = (
+            flex.abs(self.reflections["zeta"]) < 0.05
+        )
+        self.reflections = self.reflections.select(~mask)
+        print(mask.count(True))
+        print(self.reflections.size())
+
+        ## would call Processor3D, which calls the manager...
+        self.reflections.compute_partiality(self.experiments)
+        time_info = TimingInfo()
+        ## first lets assume no splitting for simplicity.
+        self.reflections["shoebox"] = flex.shoebox(
+            self.reflections["panel"],
+            self.reflections["bbox"],
+            allocate=False,
+            flatten=False,
+        )
+        experiment = self.experiments[0]
+        imageset = experiment.imageset
+        frame0, frame1 = imageset.get_array_range()
+        sigma_b = experiment.profile.sigma_b(deg=False)
+        sigma_m = experiment.profile.sigma_m(deg=False)
+        n_sigma = 3  # self.params.profile.gaussian_rs.parameters.n_sigma
+        from dials.model.data import make_image
+        from dials_algorithms_integration_integrator_ext import ShoeboxProcessorV2
+        self.reflections["summation_success"] = flex.bool(self.reflections.size(), True)
+        shoebox_processor = ShoeboxProcessorV2(
+            self.reflections,
+            len(self.experiments[0].detector),
+            frame0,
+            frame1,
+            False,
+            experiment.scan,
+            experiment.beam,
+            experiment.goniometer,
+            experiment.detector,
+            sigma_b * n_sigma,
+            sigma_m * n_sigma,
+        )
+
+        for i in range(len(imageset)):  # len(experiment.imageset)):
+            image = experiment.imageset.get_corrected_data(i)
+            if imageset.is_marked_for_rejection(i):
+                mask = tuple(flex.bool(im.accessor(), False) for im in image)
+            else:
+                mask = imageset.get_mask(i)
+            shoebox_processor.next_data_only(make_image(image, mask))
+            print(i)
+        self.reflections["num_pixels.foreground"] = flex.int(self.reflections.size(), 0)
+        self.reflections["num_pixels.background"] = flex.int(self.reflections.size(), 0)
+        self.reflections["num_pixels.background_used"] = flex.int(self.reflections.size(), 0)
+        self.reflections["num_pixels.valid"] = flex.int(self.reflections.size(), 0)
+        intensity = shoebox_processor.finalise(self.reflections)
+        self.reflections["intensity.sum.value"] = intensity.as_double()
+        self.reflections["intensity.sum.variance"] = intensity.as_double()
+        n_failed = (self.reflections["summation_success"] == False).count(True)
+        logger.info(f"{n_failed} reflections failed in summation integration")
+        self.reflections.set_flags(
+            self.reflections["summation_success"],
+            self.reflections.flags.integrated_sum,
+        )
+        self.reflections.set_flags(
+            ~self.reflections["summation_success"],
+            self.reflections.flags.foreground_includes_bad_pixels,
+        )
+        # ignore overlaps filter
+        self.reflections.compute_corrections(self.experiments)
+
+        # Create the integration report
+        self.integration_report = IntegrationReport(self.experiments, self.reflections)
+        logger.info("")
+        logger.info(self.integration_report.as_str(prefix=" "))
+
+        # Print the time info
+        logger.info("Timing information for integration")
+        logger.info(str(time_info))
+        logger.info("")
+
+        # Return the reflections
+
+        return self.reflections
 
 class Integrator3D(Integrator):
     """
@@ -1660,6 +1805,7 @@ def create_integrator(params, experiments, reflections):
         "single2d": IntegratorSingle2D,
         "stills": IntegratorStills,
         "3d_threaded": Integrator3DThreaded,
+        "inflight": InFlightIntegrator,
     }.get(params.integration.integrator)
     if not IntegratorClass:
         raise ValueError(f"Unknown integration type {params.integration.integrator}")

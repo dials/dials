@@ -395,6 +395,74 @@ namespace dials { namespace algorithms {
     std::vector<std::size_t> offset_;
   };
 
+  class ShoeboxProcessorV2 {
+  public:
+    ShoeboxProcessorV2(af::reflection_table data,
+                       std::size_t npanels,
+                       int frame0,
+                       int frame1,
+                       bool save,
+                       const dxtbx::model::Scan& scan,
+                       const dxtbx::model::BeamBase& beam,
+                       const dxtbx::model::Goniometer& gonio,
+                       const dxtbx::model::Detector& detector,
+                       const double delta_b,
+                       const double delta_m)
+    : data_(data),
+      extract_time_(0.0),
+      process_time_(0.0),
+      save_(save),
+      npanels_(npanels),
+      frame0_(frame0),
+      frame1_(frame1),
+      frame_(frame0),
+      nframes_(frame1 - frame0),
+      phi0_(scan.get_oscillation()[0]),
+      dphi_(scan.get_oscillation()[1]),
+      s0_(beam.get_s0()),
+      m2_(gonio.get_rotation_axis()),
+      detector_(detector),
+      index0_(scan.get_array_range()[0]),
+      index1_(scan.get_array_range()[1]) {
+    delta_b_r2 = 1.0 / (std::pow(delta_b, 2));
+    delta_m_r2 = 1.0 / (std::pow(delta_m, 2));
+    DIALS_ASSERT(frame0_ < frame1_);
+    DIALS_ASSERT(npanels_ > 0);
+    std::size_t size = nframes_ * npanels_;
+      std::vector<std::size_t> num(size, 0);
+      std::vector<std::size_t> count(size, 0);
+      flatten_ = shoebox[0].flat;
+      for (std::size_t i = 0; i < shoebox.size(); ++i) {
+        DIALS_ASSERT(shoebox[i].flat == flatten_);
+        // DIALS_ASSERT(shoebox[i].is_allocated() == false);
+        DIALS_ASSERT(shoebox[i].bbox[1] > shoebox[i].bbox[0]);
+        DIALS_ASSERT(shoebox[i].bbox[3] > shoebox[i].bbox[2]);
+        DIALS_ASSERT(shoebox[i].bbox[5] > shoebox[i].bbox[4]);
+        for (int z = shoebox[i].bbox[4]; z < shoebox[i].bbox[5]; ++z) {
+          std::size_t j = shoebox[i].panel + (z - frame0_) * npanels_;
+          /*if (j >= num.size()) {
+            std::cout << j << " " << num.size() << std::endl;
+          }*/
+          DIALS_ASSERT(j < num.size());
+          num[j]++;
+        }
+      }
+      offset_.push_back(0);
+      std::partial_sum(num.begin(), num.end(), std::back_inserter(offset_));
+      indices_.resize(offset_.back());
+      for (std::size_t i = 0; i < shoebox.size(); ++i) {
+        for (int z = shoebox[i].bbox[4]; z < shoebox[i].bbox[5]; ++z) {
+          std::size_t j = shoebox[i].panel + (z - frame0_) * npanels_;
+          std::size_t k = offset_[j] + count[j];
+          DIALS_ASSERT(j < count.size());
+          DIALS_ASSERT(k < indices_.size());
+          indices_[k] = i;
+          count[j]++;
+        }
+      }
+      DIALS_ASSERT(count == num);
+    }
+
 }}  // namespace dials::algorithms
 
 #endif  // DIALS_ALGORITHMS_INTEGRATION_PROCESSOR_H
