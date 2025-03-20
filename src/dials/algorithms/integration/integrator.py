@@ -1374,6 +1374,7 @@ Splitting reflection table into %s subsets for processing
             raise RuntimeError("Experiments must be all sequences or all stills")
         return tabulate(rows, headers="firstrow")
 
+
 class InFlightIntegrator:
     """Process images in-flight"""
 
@@ -1385,6 +1386,7 @@ class InFlightIntegrator:
         assert all(p.get_pedestal() == 0.0 for p in detector.iter_panels())
         from dials.extensions.auto_background_ext import AutoBackgroundExt
         from dials.extensions.glm_background_ext import GLMBackgroundExt
+
         assert params.integration.background.glm.model.algorithm == "constant3d"
         assert (
             reflections.background_algorithm.func == AutoBackgroundExt
@@ -1437,22 +1439,22 @@ class InFlightIntegrator:
         logger.info("")
         logger.info(heading("Integrating reflections"))
         logger.info("")
-        '''print(self.reflections.size())
+        """print(self.reflections.size())
         mask = (
             flex.abs(self.reflections["zeta"]) < 0.05
         )
         self.reflections = self.reflections.select(~mask)
         print(mask.count(True))
-        print(self.reflections.size())'''
+        print(self.reflections.size())"""
 
         ## would call Processor3D, which calls the manager...
         self.reflections.compute_partiality(self.experiments)
         time_info = TimingInfo()
-        ## first lets assume no splitting for simplicity. 
+        ## first lets assume no splitting for simplicity.
         self.reflections["shoebox"] = flex.shoebox(
             self.reflections["panel"],
             self.reflections["bbox"],
-            allocate=False, #change to False when implement new method
+            allocate=False,  # change to False when implement new method
             flatten=False,
         )
         experiment = self.experiments[0]
@@ -1462,17 +1464,15 @@ class InFlightIntegrator:
         sigma_m = experiment.profile.sigma_m(deg=False)
         n_sigma = 3  # self.params.profile.gaussian_rs.parameters.n_sigma
 
-        selection_to_integrate = ~self.reflections.get_flags(self.reflections.flags.dont_integrate)
-        print(self.reflections.size())
+        selection_to_integrate = ~self.reflections.get_flags(
+            self.reflections.flags.dont_integrate
+        )
         sel_refls = self.reflections.select(selection_to_integrate)
-        print(sel_refls.size())
-        assert 0
-        
-
 
         from dials.model.data import make_image
         from dials_algorithms_integration_integrator_ext import ShoeboxProcessorV2
-        #self.reflections["summation_success"] = flex.bool(self.reflections.size(), True)
+
+        # self.reflections["summation_success"] = flex.bool(self.reflections.size(), True)
         shoebox_processor = ShoeboxProcessorV2(
             sel_refls,
             len(self.experiments[0].detector),
@@ -1496,33 +1496,33 @@ class InFlightIntegrator:
             shoebox_processor.next_data_only(make_image(image, mask))
             print(i)
         from dials.extensions.simple_centroid_ext import SimpleCentroidExt
+
         sel_refls.is_overloaded(self.experiments)
         sel_refls.compute_mask(self.experiments)
         sel_refls.contains_invalid_pixels()
-        centroid_algorithm = SimpleCentroidExt(params=None, experiments=self.experiments)
+        centroid_algorithm = SimpleCentroidExt(
+            params=None, experiments=self.experiments
+        )
         centroid_algorithm.compute_centroid(sel_refls)
 
-        
         valid_foreground_threshold = 0.75  # DIALS default
         sbox = sel_refls["shoebox"]
         nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
         nforeg = sbox.count_mask_values(MaskCode.Foreground)
         fraction_valid = nvalfg.as_double() / nforeg.as_double()
         selection = fraction_valid < valid_foreground_threshold
-        sel_refls.set_flags(
-            selection, sel_refls.flags.dont_integrate
-        )
+        sel_refls.set_flags(selection, sel_refls.flags.dont_integrate)
 
-        '''self.reflections["num_pixels.valid"] = sboxs.count_mask_values(MaskCode.Valid)
+        """self.reflections["num_pixels.valid"] = sboxs.count_mask_values(MaskCode.Valid)
         self.reflections["num_pixels.background"] = sboxs.count_mask_values(
             MaskCode.Valid | MaskCode.Background
         )
         self.reflections["num_pixels.background_used"] = sboxs.count_mask_values(
             MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
         )
-        self.reflections["num_pixels.foreground"] = nvalfg'''
-        #selection_to_integrate = ~self.reflections.get_flags(self.reflections.flags.dont_integrate)
-        #sel_refls = self.reflections.select(selection_to_integrate)
+        self.reflections["num_pixels.foreground"] = nvalfg"""
+        # selection_to_integrate = ~self.reflections.get_flags(self.reflections.flags.dont_integrate)
+        # sel_refls = self.reflections.select(selection_to_integrate)
         sel_refls.compute_background(self.experiments)
         sel_refls.compute_centroid(self.experiments)
         sel_refls.compute_summed_intensity()
@@ -1535,49 +1535,8 @@ class InFlightIntegrator:
             MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
         )
         sel_refls["num_pixels.foreground"] = nvalfg
-        sel_refls.as_file("processed.refl")
+        self.reflections = sel_refls
 
-        # usually, we have some c++ method like set_selected_rows which copies everything, have to do manually in python?
-        self.reflections["intensity.sum.value"] = flex.double(self.reflections.size(), 0)
-        self.reflections["intensity.sum.variance"] = flex.double(self.reflections.size(), 0)
-        self.reflections["background.sum.value"] = flex.double(self.reflections.size(), 0)
-        self.reflections["background.sum.variance"] = flex.double(self.reflections.size(), 0)
-        self.reflections["num_pixels.valid"] = flex.int(self.reflections.size(), 0)
-        self.reflections["num_pixels.background"] = flex.int(self.reflections.size(), 0)
-        self.reflections["num_pixels.background_used"] = flex.int(self.reflections.size(), 0)
-        self.reflections["num_pixels.foreground"] = flex.int(self.reflections.size(), 0)
-
-        self.reflections["intensity.sum.value"].set_selected(selection_to_integrate, sel_refls["intensity.sum.value"])
-        self.reflections["intensity.sum.variance"].set_selected(selection_to_integrate, sel_refls["intensity.sum.variance"])
-        self.reflections["background.sum.value"].set_selected(selection_to_integrate, sel_refls["background.sum.value"])
-        self.reflections["background.sum.variance"].set_selected(selection_to_integrate, sel_refls["background.sum.variance"])
-        self.reflections["num_pixels.valid"].set_selected(selection_to_integrate, sel_refls["num_pixels.valid"])
-        self.reflections["num_pixels.background"].set_selected(selection_to_integrate, sel_refls["num_pixels.background"])
-        self.reflections["num_pixels.background_used"].set_selected(selection_to_integrate, sel_refls["num_pixels.background_used"])
-        self.reflections["num_pixels.foreground"].set_selected(selection_to_integrate, sel_refls["num_pixels.foreground"])
-        integrated_sum = self.reflections.get_flags(self.reflections.flags.integrated_sum)
-        integrated_sum.set_selected(sel_refls.get_flags(sel_refls.flags.integrated_sum))
-        self.reflections.set_flags(self.reflections.flags.integrated_sum, integrated_sum)
-
-        '''
-
-        self.reflections["num_pixels.foreground"] = flex.int(self.reflections.size(), 0)
-        self.reflections["num_pixels.background"] = flex.int(self.reflections.size(), 0)
-        self.reflections["num_pixels.background_used"] = flex.int(self.reflections.size(), 0)
-        self.reflections["num_pixels.valid"] = flex.int(self.reflections.size(), 0)
-        intensity = shoebox_processor.finalise(self.reflections)
-        self.reflections["intensity.sum.value"] = intensity.as_double()
-        self.reflections["intensity.sum.variance"] = intensity.as_double()
-        n_failed = (self.reflections["summation_success"] == False).count(True)
-        logger.info(f"{n_failed} reflections failed in summation integration")
-        self.reflections.set_flags(
-            self.reflections["summation_success"],
-            self.reflections.flags.integrated_sum,
-        )
-        self.reflections.set_flags(
-            ~self.reflections["summation_success"],
-            self.reflections.flags.foreground_includes_bad_pixels,
-        )'''
         # ignore overlaps filter
         self.reflections.compute_corrections(self.experiments)
 
@@ -1594,6 +1553,7 @@ class InFlightIntegrator:
         # Return the reflections
 
         return self.reflections
+
 
 class Integrator3D(Integrator):
     """
