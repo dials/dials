@@ -558,13 +558,13 @@ class _:
         # Both sets of reflections
         i1 = self["id"]
         h1 = self["miller_index"]
-        #e1 = self["entering"].as_int()
+        e1 = self["entering"].as_int()
         x1, y1, z1 = self["xyzcal.px"].parts()
         p1 = self["panel"]
 
         i2 = other["id"]
         h2 = other["miller_index"]
-        #e2 = other["entering"].as_int()
+        e2 = other["entering"].as_int()
         x2, y2, z2 = other["xyzcal.px"].parts()
         p2 = other["panel"]
 
@@ -576,12 +576,12 @@ class _:
         # Create the match lookup
         lookup = collections.defaultdict(Match)
         for i in range(len(self)):
-            item = h1[i] + (i1[i], p1[i])
+            item = h1[i] + (e1[i], i1[i], p1[i])
             lookup[item].a.append(i)
 
         # Add matches from input reflections
         for i in range(len(other)):
-            item = h2[i] + (i2[i], p2[i])
+            item = h2[i] + (e2[i], i2[i], p2[i])
             if item in lookup:
                 lookup[item].b.append(i)
 
@@ -627,10 +627,10 @@ class _:
         o2 = other.select(oind)
         h1 = s2["miller_index"]
         h2 = o2["miller_index"]
-        #e1 = s2["entering"]
-        #e2 = o2["entering"]
+        e1 = s2["entering"]
+        e2 = o2["entering"]
         assert (h1 == h2).all_eq(True)
-        #assert (e1 == e2).all_eq(True)
+        assert (e1 == e2).all_eq(True)
         x1, y1, z1 = s2["xyzcal.px"].parts()
         x2, y2, z2 = o2["xyzcal.px"].parts()
         distance = cctbx.array_family.flex.sqrt(

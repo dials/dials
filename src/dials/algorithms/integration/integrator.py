@@ -1439,13 +1439,6 @@ class InFlightIntegrator:
         logger.info("")
         logger.info(heading("Integrating reflections"))
         logger.info("")
-        """print(self.reflections.size())
-        mask = (
-            flex.abs(self.reflections["zeta"]) < 0.05
-        )
-        self.reflections = self.reflections.select(~mask)
-        print(mask.count(True))
-        print(self.reflections.size())"""
 
         ## would call Processor3D, which calls the manager...
         self.reflections.compute_partiality(self.experiments)
@@ -1454,7 +1447,7 @@ class InFlightIntegrator:
         self.reflections["shoebox"] = flex.shoebox(
             self.reflections["panel"],
             self.reflections["bbox"],
-            allocate=False,  # change to False when implement new method
+            allocate=False,
             flatten=False,
         )
         experiment = self.experiments[0]
@@ -1473,7 +1466,6 @@ class InFlightIntegrator:
         from dials.model.data import make_image
         from dials_algorithms_integration_integrator_ext import ShoeboxProcessorV2
 
-        # self.reflections["summation_success"] = flex.bool(self.reflections.size(), True)
         shoebox_processor = ShoeboxProcessorV2(
             sel_refls,
             len(self.experiments[0].detector),
@@ -1488,7 +1480,7 @@ class InFlightIntegrator:
             sigma_m * n_sigma,
         )
 
-        for i in range(len(imageset)):  # len(experiment.imageset)):
+        for i in range(len(imageset)):
             image = experiment.imageset.get_corrected_data(i)
             if imageset.is_marked_for_rejection(i):
                 mask = tuple(flex.bool(im.accessor(), False) for im in image)
@@ -1513,36 +1505,14 @@ class InFlightIntegrator:
         selection = fraction_valid < valid_foreground_threshold
         sel_refls.set_flags(selection, sel_refls.flags.dont_integrate)
 
-        """self.reflections["num_pixels.valid"] = sboxs.count_mask_values(MaskCode.Valid)
-        self.reflections["num_pixels.background"] = sboxs.count_mask_values(
-            MaskCode.Valid | MaskCode.Background
-        )
-        self.reflections["num_pixels.background_used"] = sboxs.count_mask_values(
-            MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
-        )
-        self.reflections["num_pixels.foreground"] = nvalfg"""
-        # selection_to_integrate = ~self.reflections.get_flags(self.reflections.flags.dont_integrate)
-        # sel_refls = self.reflections.select(selection_to_integrate)
-
-        """sel_refls.compute_background(self.experiments)
-        sel_refls.compute_centroid(self.experiments)
-        sel_refls.compute_summed_intensity()
-
-        sel_refls["num_pixels.valid"] = sbox.count_mask_values(MaskCode.Valid)
-        sel_refls["num_pixels.background"] = sbox.count_mask_values(
-            MaskCode.Valid | MaskCode.Background
-        )
-        sel_refls["num_pixels.background_used"] = sbox.count_mask_values(
-            MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
-        )
-        sel_refls["num_pixels.foreground"] = nvalfg"""
-
         ##NEW METHODS
         sel_refls["num_pixels.foreground"] = flex.int(sel_refls.size(), 0)
         sel_refls["num_pixels.background"] = flex.int(sel_refls.size(), 0)
         sel_refls["num_pixels.background_used"] = flex.int(sel_refls.size(), 0)
         sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
-        intensity = shoebox_processor.finalise(sel_refls)
+        intensity = shoebox_processor.finalise(
+            sel_refls
+        )  # similar to 'processer/executor' of standard integrator
         sel_refls["intensity.sum.value"] = intensity.as_double()
         sel_refls["intensity.sum.variance"] = intensity.as_double()
         n_failed = (sel_refls["summation_success"] == False).count(True)
