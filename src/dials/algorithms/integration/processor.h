@@ -84,7 +84,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.contains("shoebox"));
       DIALS_ASSERT(data.size() > 0);
-      af::const_ref<Shoebox<> > shoebox = data["shoebox"];
+      af::const_ref<Shoebox<>> shoebox = data["shoebox"];
       std::size_t size = nframes_ * npanels_;
       std::vector<std::size_t> num(size, 0);
       std::vector<std::size_t> count(size, 0);
@@ -127,8 +127,8 @@ namespace dials { namespace algorithms {
       using dials::af::boost_python::reflection_table_suite::select_rows_index;
       using dxtbx::af::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
-      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      typedef af::ref<float_type, af::c_grid<3>> sbox_data_type;
+      typedef af::ref<int, af::c_grid<3>> sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == npanels_);
 
@@ -137,12 +137,12 @@ namespace dials { namespace algorithms {
 
       // For each image, extract shoeboxes of reflections recorded.
       // Allocate data where necessary
-      af::ref<Shoebox<> > shoebox = data_["shoebox"];
+      af::ref<Shoebox<>> shoebox = data_["shoebox"];
       af::shared<std::size_t> process_indices;
       for (std::size_t p = 0; p < image.npanels(); ++p) {
         af::const_ref<std::size_t> ind = indices(frame_, p);
-        af::const_ref<T, af::c_grid<2> > data = image.data(p);
-        af::const_ref<bool, af::c_grid<2> > mask = image.mask(p);
+        af::const_ref<T, af::c_grid<2>> data = image.data(p);
+        af::const_ref<bool, af::c_grid<2>> mask = image.mask(p);
         DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
         for (std::size_t i = 0; i < ind.size(); ++i) {
           DIALS_ASSERT(ind[i] < shoebox.size());
@@ -237,8 +237,8 @@ namespace dials { namespace algorithms {
       using dials::af::boost_python::reflection_table_suite::select_rows_index;
       using dxtbx::af::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
-      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      typedef af::ref<float_type, af::c_grid<3>> sbox_data_type;
+      typedef af::ref<int, af::c_grid<3>> sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == npanels_);
 
@@ -247,12 +247,12 @@ namespace dials { namespace algorithms {
 
       // For each image, extract shoeboxes of reflections recorded.
       // Allocate data where necessary
-      af::ref<Shoebox<> > shoebox = data_["shoebox"];
+      af::ref<Shoebox<>> shoebox = data_["shoebox"];
       af::shared<std::size_t> process_indices;
       for (std::size_t p = 0; p < image.npanels(); ++p) {
         af::const_ref<std::size_t> ind = indices(frame_, p);
-        af::const_ref<T, af::c_grid<2> > data = image.data(p);
-        af::const_ref<bool, af::c_grid<2> > mask = image.mask(p);
+        af::const_ref<T, af::c_grid<2>> data = image.data(p);
+        af::const_ref<bool, af::c_grid<2>> mask = image.mask(p);
         DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
         for (std::size_t i = 0; i < ind.size(); ++i) {
           DIALS_ASSERT(ind[i] < shoebox.size());
@@ -414,30 +414,30 @@ namespace dials { namespace algorithms {
                        const dxtbx::model::Detector& detector,
                        const double delta_b,
                        const double delta_m)
-    : data_(data),
-      extract_time_(0.0),
-      process_time_(0.0),
-      save_(save),
-      npanels_(npanels),
-      frame0_(frame0),
-      frame1_(frame1),
-      frame_(frame0),
-      nframes_(frame1 - frame0),
-      phi0_(scan.get_oscillation()[0]),
-      dphi_(scan.get_oscillation()[1]),
-      s0_(beam.get_s0()),
-      m2_(gonio.get_rotation_axis()),
-      detector_(detector),
-      index0_(scan.get_array_range()[0]),
-      index1_(scan.get_array_range()[1]) {
-    delta_b_r2 = 1.0 / (std::pow(delta_b, 2));
-    delta_m_r2 = 1.0 / (std::pow(delta_m, 2));
-    DIALS_ASSERT(frame0_ < frame1_);
-    DIALS_ASSERT(npanels_ > 0);
-    DIALS_ASSERT(data.contains("shoebox"));
-    DIALS_ASSERT(data.size() > 0);
-    af::const_ref<Shoebox<>> shoebox = data["shoebox"];
-    std::size_t size = nframes_ * npanels_;
+        : data_(data),
+          extract_time_(0.0),
+          process_time_(0.0),
+          save_(save),
+          npanels_(npanels),
+          frame0_(frame0),
+          frame1_(frame1),
+          frame_(frame0),
+          nframes_(frame1 - frame0),
+          phi0_(scan.get_oscillation()[0]),
+          dphi_(scan.get_oscillation()[1]),
+          s0_(beam.get_s0()),
+          m2_(gonio.get_rotation_axis()),
+          detector_(detector),
+          index0_(scan.get_array_range()[0]),
+          index1_(scan.get_array_range()[1]) {
+      delta_b_r2 = 1.0 / (std::pow(delta_b, 2));
+      delta_m_r2 = 1.0 / (std::pow(delta_m, 2));
+      DIALS_ASSERT(frame0_ < frame1_);
+      DIALS_ASSERT(npanels_ > 0);
+      DIALS_ASSERT(data.contains("shoebox"));
+      DIALS_ASSERT(data.size() > 0);
+      af::const_ref<Shoebox<>> shoebox = data["shoebox"];
+      std::size_t size = nframes_ * npanels_;
       std::vector<std::size_t> num(size, 0);
       std::vector<std::size_t> count(size, 0);
       flatten_ = shoebox[0].flat;
@@ -477,8 +477,8 @@ namespace dials { namespace algorithms {
       using dials::af::boost_python::reflection_table_suite::select_rows_index;
       using dxtbx::af::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
-      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      typedef af::ref<float_type, af::c_grid<3>> sbox_data_type;
+      typedef af::ref<int, af::c_grid<3>> sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == npanels_);
 
@@ -487,23 +487,27 @@ namespace dials { namespace algorithms {
 
       // For each image, extract shoeboxes of reflections recorded.
       // Allocate data where necessary
-      af::ref<Shoebox<> > shoebox = data_["shoebox"];
+      af::ref<Shoebox<>> shoebox = data_["shoebox"];
+      af::ref<vec3<double>> s1_vec = data_["s1"];
+      af::ref<vec3<double>> xyzcal_px = data_["xyzcal.px"];
+      double s0_length = s0_.length();
+
       af::shared<std::size_t> process_indices;
       for (std::size_t p = 0; p < image.npanels(); ++p) {
         af::const_ref<std::size_t> ind = indices(frame_, p);
-        af::const_ref<T, af::c_grid<2> > data = image.data(p);
-        af::const_ref<bool, af::c_grid<2> > mask = image.mask(p);
+        af::const_ref<T, af::c_grid<2>> data = image.data(p);
+        af::const_ref<bool, af::c_grid<2>> mask = image.mask(p);
         DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
         for (std::size_t i = 0; i < ind.size(); ++i) {
           DIALS_ASSERT(ind[i] < shoebox.size());
           Shoebox<>& sbox = shoebox[ind[i]];
-          if (frame_ == sbox.bbox[4]) {
+          /*if (frame_ == sbox.bbox[4]) {
             DIALS_ASSERT(sbox.is_allocated() == false);
             sbox.allocate();
-          }
+          }*/
           int6 b = sbox.bbox;
-          sbox_data_type sdata = sbox.data.ref();
-          sbox_mask_type smask = sbox.mask.ref();
+          // sbox_data_type sdata = sbox.data.ref();
+          // sbox_mask_type smask = sbox.mask.ref();
           DIALS_ASSERT(b[1] > b[0]);
           DIALS_ASSERT(b[3] > b[2]);
           DIALS_ASSERT(b[5] > b[4]);
@@ -518,6 +522,7 @@ namespace dials { namespace algorithms {
           int z = frame_ - z0;
           int yi = (int)data.accessor()[0];
           int xi = (int)data.accessor()[1];
+          // These bits make sure we only read within the image
           int xb = x0 >= 0 ? 0 : std::abs(x0);
           int yb = y0 >= 0 ? 0 : std::abs(y0);
           int xe = x1 <= xi ? xs : xs - (x1 - xi);
@@ -529,8 +534,8 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(xb >= 0 && xe <= xs);
           DIALS_ASSERT(yb + y0 >= 0 && ye + y0 <= yi);
           DIALS_ASSERT(xb + x0 >= 0 && xe + x0 <= xi);
-          DIALS_ASSERT(sbox.is_consistent());
-          if (flatten_) {
+          // DIALS_ASSERT(sbox.is_consistent());
+          /*if (flatten_) {
             for (std::size_t y = yb; y < ye; ++y) {
               for (std::size_t x = xb; x < xe; ++x) {
                 sdata(0, y, x) += data(y + y0, x + x0);
@@ -539,16 +544,181 @@ namespace dials { namespace algorithms {
                 smask(0, y, x) = (mv && (z == 0 ? true : sv) ? Valid : 0);
               }
             }
-          } else {
-            for (std::size_t y = yb; y < ye; ++y) {
-              for (std::size_t x = xb; x < xe; ++x) {
-                sdata(z, y, x) = data(y + y0, x + x0);
-                smask(z, y, x) = mask(y + y0, x + x0) ? Valid : 0;
+          } else {*/
+          const dxtbx::model::Panel& panel = detector_[p];
+          vec3<double> s1 = s1_vec[ind[i]];
+          vec3<double> xyzcal = xyzcal_px[ind[i]];
+          double phi = phi0_ + (xyzcal[2] - index0_) * dphi_;
+          profile_model::gaussian_rs::CoordinateSystem cs(m2_, s0_, s1, phi);
+          vec2<double> shoebox_centroid_px = panel.get_ray_intersection_px(s1);
+          double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
+
+          af::versa<double, af::c_grid<2>> dxy_array(af::c_grid<2>(ys + 1, xs + 1));
+          for (int j2 = 0; j2 <= ys; ++j2) {
+            for (int i2 = 0; i2 <= xs; ++i2) {
+              vec2<double> gxy = cs.from_beam_vector(
+                panel
+                  .get_pixel_lab_coord(vec2<double>(x0 + i2, y0 + j2),
+                                       attenuation_length)
+                  .normalize()
+                * s0_length);
+              dxy_array(j2, i2) = (gxy[0] * gxy[0] + gxy[1] * gxy[1]) * delta_b_r2;
+            }
+          }
+
+          /*int j1=0;
+          for (std::size_t y = yb; y < ye; ++y, ++j1) {
+            int i1=0;
+            for (std::size_t x = xb; x < xe; ++x, ++i1) {*/
+          bool all_in_image_bounds = true;
+          af::versa<bool, af::c_grid<2>> in_image_array(af::c_grid<2>(ys, xs), true);
+          if ((x0 < 0) || (y0 < 0) || ((x1 >= xi) || (y1 >= yi))) {
+            all_in_image_bounds = false;
+            for (int j3 = 0; j3 < ys; ++j3) {
+              for (int i3 = 0; i3 < xs; ++i3) {
+                if ((j3 + y0 < 0) || (i3 + x0 < 0) || (x0 + i3 >= xi)
+                    || (y0 + j3 >= yi)) {
+                  in_image_array(j3, i3) = false;
+                }
               }
             }
           }
-          if (frame_ == sbox.bbox[5] - 1) {
-            process_indices.push_back(ind[i]);
+
+          for (int j3 = 0; j3 < ys; ++j3) {
+            for (int i3 = 0; i3 < xs; ++i3) {
+              double dxy1 = dxy_array(j3, i3);
+              double dxy2 = dxy_array(j3 + 1, i3);
+              double dxy3 = dxy_array(j3, i3 + 1);
+              double dxy4 = dxy_array(j3 + 1, i3 + 1);
+              double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
+              // if (z>= index0_ && z < index1_){
+              /*double gz1 =
+                cs.from_rotation_angle_fast(phi0_ + (z - index0_) * dphi_);
+              double gz2 =
+                cs.from_rotation_angle_fast(phi0_ + (z + 1 - index0_) * dphi_);
+              double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2;
+              double gzc2 = gz * gz * delta_m_r2;*/
+              if (dxy <= 1.0) {
+                bool this_in_image_bounds = all_in_image_bounds;
+                if (!this_in_image_bounds) {  // if not all in bounds, check the
+                                              // specific pixel
+                  this_in_image_bounds = in_image_array(j3, i3);
+                }
+                if (this_in_image_bounds) {
+                  if (mask(j3 + y0, i3 + x0)) {
+                    sbox.total_intensity += data(j3 + y0, i3 + x0);
+                    sbox.n_valid_fg += 1;
+                  } else {
+                    sbox.masked_image_pixel = true;
+                    sbox.n_invalid_fg += 1;
+                  }
+                } else {
+                  sbox.masked_image_pixel = true;
+                  sbox.n_invalid_fg += 1;
+                }
+              } else {
+                bool this_in_image_bounds = all_in_image_bounds;
+                if (!this_in_image_bounds) {  // if not all in bounds, check the
+                                              // specific pixel
+                  this_in_image_bounds = in_image_array(j3, i3);
+                }
+                if (this_in_image_bounds) {
+                  if (mask(j3 + y0, i3 + x0)) {
+                    sbox.n_valid_bg += 1;
+                    int this_pixel = data(j3 + y0, i3 + x0);
+                    if (auto search = sbox.background_hist.find(this_pixel);
+                        search != sbox.background_hist.end()) {
+                      sbox.background_hist[this_pixel] += 1;
+                    } else {
+                      sbox.background_hist[this_pixel] = 1;
+                    }
+                  } else {
+                    sbox.n_invalid_bg += 1;
+                  }
+                } else {
+                  sbox.n_invalid_bg += 1;
+                }
+              }
+
+              /*if (dxy <= 1.0){
+                // is foreground
+                if ((x0 < 0) || (y0 < 0)){ // check if we might not be within the image
+              range if ((x0 + i3 < 0) || (y0 + j3 < 0) || (x0 + i3 >=xi) || (y0 + j3
+              >=yi)){ sbox.masked_image_pixel = true; sbox.n_invalid_fg += 1;
+                  }
+                  else {
+                    if ((j3 + y0 <0) || (i3 + x0 < 0) || (x0 + i3 >=xi) ||(y0 + j3
+              >=yi)){ std::cout << "Bad values1: " << x0 << " " << y0 << " " << i3 << "
+              " << j3 << " " << xi << " " << yi << std::endl; DIALS_ASSERT(0);
+                    }
+                    if (mask(j3 + y0, i3 + x0)) {
+                      sbox.total_intensity += data(j3 + y0, i3 + x0);
+                      sbox.n_valid_fg += 1;
+                    }
+                    else {
+                      sbox.masked_image_pixel = true;
+                      sbox.n_invalid_fg += 1;
+                    }
+                  }
+                }
+                else if ((x1 >= xi) || (y1 >= yi)){  // check if we might not be within
+              the image range if ((x0 + i3 >=xi) || (y0 + j3 >=yi) || (x0 + i3 < 0) ||
+              (y0 + j3 < 0)){ sbox.masked_image_pixel = true; sbox.n_invalid_fg += 1;
+                  }
+                  else {
+                    if ((j3 + y0 <0) || (i3 + x0 < 0) || (x0 + i3 >=xi) ||(y0 + j3
+              >=yi)){ std::cout << "Bad values2: " << x0 << " " << y0 << " " << i3 << "
+              " << j3 << " " << xi << " " << yi << std::endl; DIALS_ASSERT(0);
+                    }
+                    if (mask(j3 + y0, i3 + x0)) {
+                      sbox.total_intensity += data(j3 + y0, i3 + x0);
+                      sbox.n_valid_fg += 1;
+                    }
+                    else {
+                      sbox.masked_image_pixel = true;
+                      sbox.n_invalid_fg += 1;
+                    }
+                  }
+                }
+                else {
+                  if ((j3 + y0 <0) || (i3 + x0 < 0) || (x0 + i3 >=xi) ||(y0 + j3 >=yi)){
+                      std::cout << "Bad values3: " << x0 << " " << y0 << " " << i3 << "
+              " << j3 << " " << xi << " " << yi << std::endl; DIALS_ASSERT(0);
+                    }
+                  if (mask(j3 + y0, i3 + x0)) {
+                    sbox.total_intensity += data(j3 + y0, i3 + x0);
+                    sbox.n_valid_fg += 1;
+                  }
+                  else {
+                    sbox.masked_image_pixel = true;
+                    sbox.n_invalid_fg += 1;
+                  }
+                }
+              }*/
+              /*else {
+                if (mask(y + y0, x + x0)) {
+                  sbox.n_valid_bg += 1;
+                  int this_pixel = data(y + y0, x + x0);
+                  if (auto search = sbox.background_hist.find(this_pixel);
+                      search != sbox.background_hist.end()) {
+                    sbox.background_hist[this_pixel] += 1;
+                  }
+                  else {
+                    sbox.background_hist[this_pixel] = 1;
+                  }
+                }
+                else {
+                  sbox.n_invalid_bg += 1;
+                }
+              }*/
+              // sdata(z, y, x) = data(y + y0, x + x0);
+              // smask(z, y, x) = mask(y + y0, x + x0) ? Valid : 0;
+              // }
+            }
+            //}
+            if (frame_ == sbox.bbox[5] - 1) {
+              process_indices.push_back(ind[i]);
+            }
           }
         }
       }
@@ -561,7 +731,41 @@ namespace dials { namespace algorithms {
       frame_++;
     }
 
-        /** @returns The first frame.  */
+    template <typename T>
+    af::shared<int> finalise(af::reflection_table data) {
+      af::shared<int> total_intensity(data.size());
+      af::const_ref<Shoebox<>> shoebox = data["shoebox"];
+      af::shared<bool> success = data["summation_success"];
+      af::shared<int> nbg = data["num_pixels.background"];
+      af::shared<int> bg_used = data["num_pixels.background_used"];
+      af::shared<int> foreground = data["num_pixels.foreground"];
+      af::shared<int> valid = data["num_pixels.valid"];
+      for (int i = 0; i < data.size(); i++) {
+        total_intensity[i] = shoebox[i].total_intensity;
+        if (shoebox[i].n_invalid_fg > 0) {
+          success[i] = false;
+        }
+        nbg[i] = shoebox[i].n_valid_bg;
+        // bg_used[i] = shoebox[i].n_valid_bg;
+        foreground[i] = shoebox[i].n_valid_fg;
+        valid[i] = shoebox[i].n_valid_bg + shoebox[i].n_valid_fg;
+
+        /*int bg_size = shoebox[i].background_hist.size();
+        std::cout << "Number of elements in bg hist: " << bg_size << std::endl;
+        std::cout << "Number of elements in shoebox: " << ((shoebox[i].bbox[1] -
+        shoebox[i].bbox[0]) *(shoebox[i].bbox[3] - shoebox[i].bbox[2]) *
+        (shoebox[i].bbox[5] - shoebox[i].bbox[4]))<< std::endl; int total_bg_count = 0;
+        for (auto& it: shoebox[i].background_hist){
+          std::cout << "bg " << it.first << " " << it.second << std::endl;
+          total_bg_count += it.second;
+        }
+        std::cout << "Total background: " << total_bg_count<< std::endl;*/
+      }
+      return total_intensity;
+      // data["intensity_sum_value"] = total_intensity;
+    }
+
+    /** @returns The first frame.  */
     int frame0() const {
       return frame0_;
     }

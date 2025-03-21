@@ -1466,7 +1466,8 @@ class InFlightIntegrator:
 
         selection_to_integrate = ~self.reflections.get_flags(
             self.reflections.flags.dont_integrate
-        )
+        )  # Remove low zeta refls, as we don't have access to 'DontIntegrate' filter in
+        # integrator.h via the processor's indices function.
         sel_refls = self.reflections.select(selection_to_integrate)
 
         from dials.model.data import make_image
@@ -1495,15 +1496,14 @@ class InFlightIntegrator:
                 mask = imageset.get_mask(i)
             shoebox_processor.next_data_only(make_image(image, mask))
             print(i)
-        from dials.extensions.simple_centroid_ext import SimpleCentroidExt
-
-        sel_refls.is_overloaded(self.experiments)
+        sel_refls["summation_success"] = flex.bool(sel_refls.size(), True)
+        """sel_refls.is_overloaded(self.experiments)
         sel_refls.compute_mask(self.experiments)
         sel_refls.contains_invalid_pixels()
         centroid_algorithm = SimpleCentroidExt(
             params=None, experiments=self.experiments
         )
-        centroid_algorithm.compute_centroid(sel_refls)
+        centroid_algorithm.compute_centroid(sel_refls)"""
 
         valid_foreground_threshold = 0.75  # DIALS default
         sbox = sel_refls["shoebox"]
@@ -1523,7 +1523,8 @@ class InFlightIntegrator:
         self.reflections["num_pixels.foreground"] = nvalfg"""
         # selection_to_integrate = ~self.reflections.get_flags(self.reflections.flags.dont_integrate)
         # sel_refls = self.reflections.select(selection_to_integrate)
-        sel_refls.compute_background(self.experiments)
+
+        """sel_refls.compute_background(self.experiments)
         sel_refls.compute_centroid(self.experiments)
         sel_refls.compute_summed_intensity()
 
@@ -1534,7 +1535,27 @@ class InFlightIntegrator:
         sel_refls["num_pixels.background_used"] = sbox.count_mask_values(
             MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
         )
-        sel_refls["num_pixels.foreground"] = nvalfg
+        sel_refls["num_pixels.foreground"] = nvalfg"""
+
+        ##NEW METHODS
+        sel_refls["num_pixels.foreground"] = flex.int(sel_refls.size(), 0)
+        sel_refls["num_pixels.background"] = flex.int(sel_refls.size(), 0)
+        sel_refls["num_pixels.background_used"] = flex.int(sel_refls.size(), 0)
+        sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
+        intensity = shoebox_processor.finalise(sel_refls)
+        sel_refls["intensity.sum.value"] = intensity.as_double()
+        sel_refls["intensity.sum.variance"] = intensity.as_double()
+        n_failed = (sel_refls["summation_success"] == False).count(True)
+        logger.info(f"{n_failed} reflections failed in summation integration")
+        sel_refls.set_flags(
+            sel_refls["summation_success"],
+            sel_refls.flags.integrated_sum,
+        )
+        sel_refls.set_flags(
+            ~sel_refls["summation_success"],
+            sel_refls.flags.foreground_includes_bad_pixels,
+        )
+
         self.reflections = sel_refls
 
         # ignore overlaps filter
