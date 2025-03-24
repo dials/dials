@@ -59,6 +59,12 @@ significant_clusters {
     .type = float(value_min=0, value_max=1)
     .help = "xi parameter to determine min steepness to define cluster boundary"
 }
+
+hierarchical_clustering {
+  linkage_method = *ward average
+    .type = choice
+    .help = "Linkage method for constructing dendorgrams for both correlation and cosine angle clustering methods"
+}
 """
     % cosym_scope,
     process_includes=True,
@@ -243,7 +249,8 @@ class CorrelationMatrix:
             self.correlation_matrix,
             self.cc_linkage_matrix,
         ) = self.compute_correlation_coefficient_matrix(
-            self.cosym_analysis.target.rij_matrix
+            self.cosym_analysis.target.rij_matrix,
+            self.params.hierarchical_clustering.linkage_method,
         )
 
         self.correlation_clusters = self.cluster_info(
@@ -254,7 +261,8 @@ class CorrelationMatrix:
         self.cc_table = ClusterInfo.as_table(self.correlation_clusters)
         logger.info(tabulate(self.cc_table, headers="firstrow", tablefmt="rst"))
         self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix(
-            self.cosym_analysis.coords
+            self.cosym_analysis.coords,
+            self.params.hierarchical_clustering.linkage_method,
         )
 
         self.cos_angle_clusters = self.cluster_info(
@@ -271,12 +279,14 @@ class CorrelationMatrix:
     @staticmethod
     def compute_correlation_coefficient_matrix(
         correlation_matrix: np.ndarray,
+        linkage_method: str,
     ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the correlation matrix and clustering linkage matrix from the rij cosym matrix.
 
         Args:
             correlation_matrix(numpy.ndarray): pair-wise matrix of correlation coefficients
+            linkage_method(str): linkage method for hierarchical clustering
 
         Returns:
             correlation_matrix(numpy.ndarray): correlation matrix with corrections to diagonals and accounting for floating point errors
@@ -285,6 +295,9 @@ class CorrelationMatrix:
         """
 
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)")
+        logger.info(
+            f"Hierarchical clustering performed using the {linkage_method} linkage method"
+        )
 
         # Make diagonals equal to 1 (each dataset correlated with itself)
         np.fill_diagonal(correlation_matrix, 1)
@@ -305,18 +318,20 @@ class CorrelationMatrix:
         cc_dist_mat = ssd.squareform(diffraction_dissimilarity, checks=False)
 
         # Clustering method
-        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="average")
+        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method=linkage_method)
 
         return correlation_matrix, cc_linkage_matrix
 
     @staticmethod
     def compute_cos_angle_matrix(
         coords: np.ndarray,
+        linkage_method: str,
     ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the cos_angle matrix and clustering linkage matrix from the optimized cosym coordinates.
         Args:
             coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
+            linkage_method(str): linkage method for hierarchical clustering
 
         Returns:
             cos_angle(numpy.ndarray): pair-wise cos angle matrix
@@ -326,13 +341,16 @@ class CorrelationMatrix:
         logger.info(
             "\nCalculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)"
         )
+        logger.info(
+            f"Hierarchical clustering performed using the {linkage_method} linkage method"
+        )
 
         # Convert coordinates to cosine distances and then reversed so closer cosine distances have higher values to match CC matrix
         cos_dist_mat = ssd.pdist(coords, metric="cosine")
         cos_angle = 1 - ssd.squareform(cos_dist_mat)
 
         # Clustering method
-        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
+        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method=linkage_method)
 
         return cos_angle, cos_linkage_matrix
 
