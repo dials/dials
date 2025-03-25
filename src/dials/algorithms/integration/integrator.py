@@ -1461,72 +1461,125 @@ class InFlightIntegrator:
             self.reflections.flags.dont_integrate
         )  # Remove low zeta refls, as we don't have access to 'DontIntegrate' filter in
         # integrator.h via the processor's indices function.
-        sel_refls = self.reflections.select(selection_to_integrate)
+        this_refls = self.reflections.select(selection_to_integrate)
+
+        processor = build_processor(
+            Processor3D,
+            self.experiments,
+            this_refls,
+            self.params.integration,
+        )
+        processor.executor = "1" # We are not going to use this, but it must be not None to get the tasks.
+        print(dir(processor))
+        processor.manager.initialize()
 
         from dials.model.data import make_image
+        import copy
         from dials_algorithms_integration_integrator_ext import ShoeboxProcessorV2
+        final_refls = flex.reflection_table([])
+        for t in processor.manager.tasks():
+            #f0,f1 = t.job
+            imageset = copy.deepcopy(experiment.imageset)
+            frame0, frame1 = t.job
 
-        shoebox_processor = ShoeboxProcessorV2(
-            sel_refls,
-            len(self.experiments[0].detector),
-            frame0,
-            frame1,
-            False,
-            experiment.scan,
-            experiment.beam,
-            experiment.goniometer,
-            experiment.detector,
-            sigma_b * n_sigma,
-            sigma_m * n_sigma,
-        )
+            try:
+                allowed_range = imageset.get_array_range()
+            except Exception:
+                allowed_range = 0, len(imageset)
 
-        for i in range(len(imageset)):
-            image = experiment.imageset.get_corrected_data(i)
-            if imageset.is_marked_for_rejection(i):
-                mask = tuple(flex.bool(im.accessor(), False) for im in image)
-            else:
-                mask = imageset.get_mask(i)
-            shoebox_processor.next_data_only(make_image(image, mask))
-            print(i)
-        sel_refls["summation_success"] = flex.bool(sel_refls.size(), True)
-        """sel_refls.is_overloaded(self.experiments)
-        sel_refls.compute_mask(self.experiments)
-        sel_refls.contains_invalid_pixels()
-        centroid_algorithm = SimpleCentroidExt(
-            params=None, experiments=self.experiments
-        )
-        centroid_algorithm.compute_centroid(sel_refls)"""
+            try:
+                # range increasing
+                assert frame0 < frame1
 
-        valid_foreground_threshold = 0.75  # DIALS default
-        sbox = sel_refls["shoebox"]
-        nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
-        nforeg = sbox.count_mask_values(MaskCode.Foreground)
-        fraction_valid = nvalfg.as_double() / nforeg.as_double()
-        selection = fraction_valid < valid_foreground_threshold
-        sel_refls.set_flags(selection, sel_refls.flags.dont_integrate)
+                # within an increasing range
+                assert allowed_range[1] > allowed_range[0]
 
-        ##NEW METHODS
-        sel_refls["num_pixels.foreground"] = flex.int(sel_refls.size(), 0)
-        sel_refls["num_pixels.background"] = flex.int(sel_refls.size(), 0)
-        sel_refls["num_pixels.background_used"] = flex.int(sel_refls.size(), 0)
-        sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
-        intensity = shoebox_processor.finalise(
-            sel_refls
-        )  # similar to 'processer/executor' of standard integrator
-        sel_refls["intensity.sum.value"] = intensity.as_double()
-        sel_refls["intensity.sum.variance"] = intensity.as_double()
-        n_failed = (sel_refls["summation_success"] == False).count(True)
-        logger.info(f"{n_failed} reflections failed in summation integration")
-        sel_refls.set_flags(
-            sel_refls["summation_success"],
-            sel_refls.flags.integrated_sum,
-        )
-        sel_refls.set_flags(
-            ~sel_refls["summation_success"],
-            sel_refls.flags.foreground_includes_bad_pixels,
-        )
+                # we are processing data which is within range
+                assert frame0 >= allowed_range[0]
+                assert frame1 <= allowed_range[1]
 
-        self.reflections = sel_refls
+                # I am 99% sure this is implied by all the code above
+                assert (frame1 - frame0) <= len(imageset)
+                if len(imageset) > 1:
+                    # Slice imageset as a 0-based array
+                    index0 = frame0 - allowed_range[0]
+                    index1 = frame1 - allowed_range[0]
+                    imageset = imageset[index0:index1]
+            except Exception as e:
+                raise RuntimeError(f"Programmer Error: bad array range: {e}")
+
+            try:
+                frame0, frame1 = imageset.get_array_range()
+            except Exception:
+                frame0, frame1 = (0, len(imageset))
+            sel_refls = t.reflections
+            #print(f0,f1)
+            #print(len(t.reflections))
+            #assert 0
+
+
+            shoebox_processor = ShoeboxProcessorV2(
+                sel_refls,
+                len(self.experiments[0].detector),
+                frame0,
+                frame1,
+                False,
+                experiment.scan,
+                experiment.beam,
+                experiment.goniometer,
+                experiment.detector,
+                sigma_b * n_sigma,
+                sigma_m * n_sigma,
+            )
+
+            for i in range(len(imageset)):
+                image = experiment.imageset.get_corrected_data(i)
+                if imageset.is_marked_for_rejection(i):
+                    mask = tuple(flex.bool(im.accessor(), False) for im in image)
+                else:
+                    mask = imageset.get_mask(i)
+                shoebox_processor.next_data_only(make_image(image, mask))
+                print(i)
+            sel_refls["summation_success"] = flex.bool(sel_refls.size(), True)
+            """sel_refls.is_overloaded(self.experiments)
+            sel_refls.compute_mask(self.experiments)
+            sel_refls.contains_invalid_pixels()
+            centroid_algorithm = SimpleCentroidExt(
+                params=None, experiments=self.experiments
+            )
+            centroid_algorithm.compute_centroid(sel_refls)"""
+
+            valid_foreground_threshold = 0.75  # DIALS default
+            sbox = sel_refls["shoebox"]
+            nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
+            nforeg = sbox.count_mask_values(MaskCode.Foreground)
+            fraction_valid = nvalfg.as_double() / nforeg.as_double()
+            selection = fraction_valid < valid_foreground_threshold
+            sel_refls.set_flags(selection, sel_refls.flags.dont_integrate)
+
+            ##NEW METHODS
+            sel_refls["num_pixels.foreground"] = flex.int(sel_refls.size(), 0)
+            sel_refls["num_pixels.background"] = flex.int(sel_refls.size(), 0)
+            sel_refls["num_pixels.background_used"] = flex.int(sel_refls.size(), 0)
+            sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
+            intensity = shoebox_processor.finalise(
+                sel_refls
+            )  # similar to 'processer/executor' of standard integrator
+            sel_refls["intensity.sum.value"] = intensity.as_double()
+            sel_refls["intensity.sum.variance"] = intensity.as_double()
+            n_failed = (sel_refls["summation_success"] == False).count(True)
+            logger.info(f"{n_failed} reflections failed in summation integration")
+            sel_refls.set_flags(
+                sel_refls["summation_success"],
+                sel_refls.flags.integrated_sum,
+            )
+            sel_refls.set_flags(
+                ~sel_refls["summation_success"],
+                sel_refls.flags.foreground_includes_bad_pixels,
+            )
+            final_refls.extend(this_refls)
+
+        self.reflections = final_refls
 
         # ignore overlaps filter
         self.reflections.compute_corrections(self.experiments)

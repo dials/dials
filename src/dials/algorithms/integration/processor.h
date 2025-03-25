@@ -650,7 +650,7 @@ namespace dials { namespace algorithms {
     }
 
     template <typename T>
-    af::shared<int> finalise(af::reflection_table data) {
+    af::shared<int> finalise(af::reflection_table& data) {
       af::shared<int> total_intensity(data.size());
       af::const_ref<Shoebox<>> shoebox = data["shoebox"];
       af::shared<bool> success = data["summation_success"];
