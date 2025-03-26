@@ -1421,6 +1421,25 @@ def run_parallel_job(task, delta_b, delta_m):
         allocate=False,
         flatten=False,
     )
+    full_value = FULL_PARTIALITY - EPS
+    fully_recorded = sel_refls["partiality"] > full_value
+    npart = fully_recorded.count(False)
+    nfull = fully_recorded.count(True)
+    nice = sel_refls.get_flags(sel_refls.flags.in_powder_ring).count(True)
+    nint = sel_refls.get_flags(sel_refls.flags.dont_integrate).count(False)
+    ntot = len(sel_refls)
+
+    # Write some output
+    logger.info("")
+    logger.info(f" Frames: {frame0 + 1} -> {frame1}")
+    logger.info("")
+    logger.info(" Number of reflections")
+    logger.info(f"  Partial:     {npart}")
+    logger.info(f"  Full:        {nfull}")
+    logger.info(f"  In ice ring: {nice}")
+    logger.info(f"  Integrate:   {nint}")
+    logger.info(f"  Total:       {ntot}")
+    logger.info("")
 
     shoebox_processor = ShoeboxProcessorV2(
         sel_refls,
@@ -1574,7 +1593,7 @@ class InFlightIntegrator:
         )
         processor.executor = "1"  # We are not going to use this, but it must be not None to get the tasks.
         processor.manager.initialize()
-
+        logger.info(processor.manager.summary())
         final_refls = flex.reflection_table([])
         futures = {}
         delta_b = sigma_b * n_sigma
@@ -1582,6 +1601,9 @@ class InFlightIntegrator:
         nproc = processor.manager.params.mp.nproc
 
         results = [None] * nproc
+        logger.info(
+            f" Using multiprocessing with {min(len(processor.manager), nproc)} parallel job(s)\n"
+        )
         with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
             for i, task in enumerate(processor.manager.tasks()):
                 futures[pool.submit(run_parallel_job, task, delta_b, delta_m)] = i
