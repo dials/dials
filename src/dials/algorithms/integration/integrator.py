@@ -1468,13 +1468,13 @@ def run_parallel_job(task, delta_b, delta_m):
     sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
     sel_refls["background.sum.value"] = flex.double(sel_refls.size(), 0)
     sel_refls["background.sum.variance"] = flex.double(sel_refls.size(), 0)
+    sel_refls["intensity.sum.variance"] = flex.double(sel_refls.size(), 0)
     intensity = shoebox_processor.finalise(
         sel_refls
     )  # similar to 'processer/executor' of standard integrator
     sel_refls["intensity.sum.value"] = intensity  # .as_double()
-    sel_refls["intensity.sum.variance"] = intensity  # .as_double()
     n_failed = sel_refls["summation_success"].count(False)
-    logger.info(f"{n_failed} reflections failed in summation integration")
+    logger.debug(f"{n_failed} reflections failed in summation integration")
     sel_refls.set_flags(
         sel_refls["summation_success"],
         sel_refls.flags.integrated_sum,
@@ -1609,7 +1609,7 @@ class InFlightIntegrator:
         logger.info("")
 
         # Return the reflections
-
+        del self.reflections["shoebox"]
         return self.reflections
 
 

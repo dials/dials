@@ -658,16 +658,26 @@ namespace dials { namespace algorithms {
       af::shared<int> bg_used = data["num_pixels.background_used"];
       af::shared<int> foreground = data["num_pixels.foreground"];
       af::shared<int> valid = data["num_pixels.valid"];
+      af::shared<double> variance = data["intensity.sum.variance"];
       af::shared<double> background = data["background.mean"];
-      // af::shared<double> background_variance = data["background.sum.variance"];
+      af::shared<double> background_total =
+        data["background.sum.value"];  // this is the sum of the background under the
+                                       // foreground region
+      af::shared<double> background_variance = data["background.sum.variance"];
       for (int i = 0; i < data.size(); i++) {
         background[i] = shoebox[i].mean_background;
         // background_variance[i] = shoebox[i].mean_background;
-        total_intensity[i] = shoebox[i].total_intensity
-                             - (shoebox[i].mean_background * shoebox[i].n_valid_fg);
+        double bg_total = shoebox[i].mean_background * shoebox[i].n_valid_fg;
+        total_intensity[i] = shoebox[i].total_intensity - bg_total;
         if (shoebox[i].n_invalid_fg > 0) {
           success[i] = false;
         }
+        background_total[i] = bg_total;
+        double m_n = shoebox[i].n_valid_bg > 0
+                       ? (double)shoebox[i].n_valid_fg / (double)shoebox[i].n_valid_bg
+                       : 0.0;
+        variance[i] = std::abs(total_intensity[i]) + std::abs(bg_total) * (1.0 + m_n);
+        background_variance[i] = std::abs(bg_total) * (1.0 + m_n);
         nbg[i] = shoebox[i].n_valid_bg;
         bg_used[i] = shoebox[i].n_valid_bg;
         foreground[i] = shoebox[i].n_valid_fg;

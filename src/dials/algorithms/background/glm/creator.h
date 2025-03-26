@@ -20,7 +20,6 @@
 #include <dials/model/data/image_volume.h>
 #include <dials/error.h>
 #include <unordered_map>
-#include <iostream>
 
 namespace dials { namespace algorithms {
 
@@ -276,7 +275,6 @@ namespace dials { namespace algorithms {
       // Compute the background
       double mean_background = result.mean();
       sbox.mean_background = mean_background;
-      std::cout << "Mean bg : " << mean_background << std::endl;
     }
 
     /**
