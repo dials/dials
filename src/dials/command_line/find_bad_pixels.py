@@ -101,12 +101,13 @@ def find_constant_signal_pixels(imageset, images):
 
         data = data.as_double()
 
-        spot_params = (
-            spot_phil.fetch(source=iotbx.phil.parse("min_spot_size=1"))
-            .fetch(source=iotbx.phil.parse("algorithm=dispersion"))
-            .extract()
-        )
-        threshold_function = SpotFinderFactory.configure_threshold(spot_params)
+        # there is a better way to do this...
+        interp = spot_phil.command_line_argument_interpreter(home_scope="spotfinder")
+        spot_params = interp.process(args=["min_spot_size=1", "algorithm=dispersion"])
+        work = spot_phil.fetch()
+        for p in spot_params:
+            work = work.fetch(p)
+        threshold_function = SpotFinderFactory.configure_threshold(work.extract())
         peak_pixels = threshold_function.compute_threshold(data, ~bad)
 
         if total is None:
