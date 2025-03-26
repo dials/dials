@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections
+import concurrent.futures
 import functools
 import logging
 import math
@@ -35,6 +36,7 @@ from dials.array_family import flex
 
 # constants
 from dials.constants import EPS, FULL_PARTIALITY
+from dials.model.data import make_image
 from dials.util import Sorry, phil, pprint, tabulate
 from dials.util.command_line import heading
 from dials.util.report import Report
@@ -43,6 +45,7 @@ from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
     ReflectionManager,
+    ShoeboxProcessorV2,
     max_memory_needed,
 )
 
@@ -1375,12 +1378,7 @@ Splitting reflection table into %s subsets for processing
         return tabulate(rows, headers="firstrow")
 
 
-from dials.model.data import make_image
-from dials_algorithms_integration_integrator_ext import ShoeboxProcessorV2
-
-
 def run_parallel_job(task, delta_b, delta_m):
-    # f0,f1 = t.job
     experiment = task.experiments[0]
     imageset = experiment.imageset
     frame0, frame1 = task.job
@@ -1415,11 +1413,8 @@ def run_parallel_job(task, delta_b, delta_m):
         frame0, frame1 = imageset.get_array_range()
     except Exception:
         frame0, frame1 = (0, len(imageset))
-    print(frame0, frame1)
+
     sel_refls = task.reflections
-    # print(f0,f1)
-    # print(len(t.reflections))
-    # assert 0
     sel_refls["shoebox"] = flex.shoebox(
         sel_refls["panel"],
         sel_refls["bbox"],
@@ -1448,8 +1443,7 @@ def run_parallel_job(task, delta_b, delta_m):
         else:
             mask = imageset.get_mask(i)
         shoebox_processor.next_data_only(make_image(image, mask))
-        print(i)
-    print(sel_refls.size())
+
     sel_refls["summation_success"] = flex.bool(sel_refls.size(), True)
     """sel_refls.is_overloaded(self.experiments)
     sel_refls.compute_mask(self.experiments)
@@ -1477,7 +1471,7 @@ def run_parallel_job(task, delta_b, delta_m):
     )  # similar to 'processer/executor' of standard integrator
     sel_refls["intensity.sum.value"] = intensity.as_double()
     sel_refls["intensity.sum.variance"] = intensity.as_double()
-    n_failed = (sel_refls["summation_success"] == False).count(True)
+    n_failed = sel_refls["summation_success"].count(False)
     logger.info(f"{n_failed} reflections failed in summation integration")
     sel_refls.set_flags(
         sel_refls["summation_success"],
@@ -1558,16 +1552,8 @@ class InFlightIntegrator:
         ## would call Processor3D, which calls the manager...
         self.reflections.compute_partiality(self.experiments)
         time_info = TimingInfo()
-        ## first lets assume no splitting for simplicity.
-        """self.reflections["shoebox"] = flex.shoebox(
-            self.reflections["panel"],
-            self.reflections["bbox"],
-            allocate=False,
-            flatten=False,
-        )"""
+
         experiment = self.experiments[0]
-        imageset = experiment.imageset
-        frame0, frame1 = imageset.get_array_range()
         sigma_b = experiment.profile.sigma_b(deg=False)
         sigma_m = experiment.profile.sigma_m(deg=False)
         n_sigma = 3  # self.params.profile.gaussian_rs.parameters.n_sigma
@@ -1577,7 +1563,6 @@ class InFlightIntegrator:
         )  # Remove low zeta refls, as we don't have access to 'DontIntegrate' filter in
         # integrator.h via the processor's indices function.
         this_refls = self.reflections.select(selection_to_integrate)
-        import concurrent.futures
 
         processor = build_processor(
             Processor3D,
@@ -1592,11 +1577,10 @@ class InFlightIntegrator:
         futures = {}
         delta_b = sigma_b * n_sigma
         delta_m = sigma_m * n_sigma
-        logger.info(f"Nproc={self.params.integration.mp.nproc}")
-        results = [None] * self.params.integration.mp.nproc
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=self.params.integration.mp.nproc
-        ) as pool:
+        nproc = processor.manager.params.mp.nproc
+
+        results = [None] * nproc
+        with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
             for i, task in enumerate(processor.manager.tasks()):
                 futures[pool.submit(run_parallel_job, task, delta_b, delta_m)] = i
             for future in concurrent.futures.as_completed(futures):
@@ -1606,115 +1590,6 @@ class InFlightIntegrator:
         if all(results):
             for r in results:
                 final_refls.extend(r)
-        '''for i, t in enumerate(processor.manager.tasks()):
-            #f0,f1 = t.job
-            imageset = copy.deepcopy(experiment.imageset)
-            frame0, frame1 = t.job
-
-            try:
-                allowed_range = imageset.get_array_range()
-            except Exception:
-                allowed_range = 0, len(imageset)
-
-            try:
-                # range increasing
-                assert frame0 < frame1
-
-                # within an increasing range
-                assert allowed_range[1] > allowed_range[0]
-
-                # we are processing data which is within range
-                assert frame0 >= allowed_range[0]
-                assert frame1 <= allowed_range[1]
-
-                # I am 99% sure this is implied by all the code above
-                assert (frame1 - frame0) <= len(imageset)
-                if len(imageset) > 1:
-                    # Slice imageset as a 0-based array
-                    index0 = frame0 - allowed_range[0]
-                    index1 = frame1 - allowed_range[0]
-                    imageset = imageset[index0:index1]
-            except Exception as e:
-                raise RuntimeError(f"Programmer Error: bad array range: {e}")
-
-            try:
-                frame0, frame1 = imageset.get_array_range()
-            except Exception:
-                frame0, frame1 = (0, len(imageset))
-            print(frame0, frame1)
-            sel_refls = t.reflections
-            #print(f0,f1)
-            #print(len(t.reflections))
-            #assert 0
-            sel_refls["shoebox"] = flex.shoebox(
-                sel_refls["panel"],
-                sel_refls["bbox"],
-                allocate=False,
-                flatten=False,
-            )
-
-            shoebox_processor = ShoeboxProcessorV2(
-                sel_refls,
-                len(self.experiments[0].detector),
-                frame0,
-                frame1,
-                False,
-                experiment.scan,
-                experiment.beam,
-                experiment.goniometer,
-                experiment.detector,
-                sigma_b * n_sigma,
-                sigma_m * n_sigma,
-            )
-
-            for i in range(len(imageset)):
-                image = imageset.get_corrected_data(i)
-                if imageset.is_marked_for_rejection(i):
-                    mask = tuple(flex.bool(im.accessor(), False) for im in image)
-                else:
-                    mask = imageset.get_mask(i)
-                shoebox_processor.next_data_only(make_image(image, mask))
-                print(i)
-            print(sel_refls.size())
-            sel_refls["summation_success"] = flex.bool(sel_refls.size(), True)
-            """sel_refls.is_overloaded(self.experiments)
-            sel_refls.compute_mask(self.experiments)
-            sel_refls.contains_invalid_pixels()
-            centroid_algorithm = SimpleCentroidExt(
-                params=None, experiments=self.experiments
-            )
-            centroid_algorithm.compute_centroid(sel_refls)"""
-
-            valid_foreground_threshold = 0.75  # DIALS default
-            sbox = sel_refls["shoebox"]
-            nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
-            nforeg = sbox.count_mask_values(MaskCode.Foreground)
-            fraction_valid = nvalfg.as_double() / nforeg.as_double()
-            selection = fraction_valid < valid_foreground_threshold
-            sel_refls.set_flags(selection, sel_refls.flags.dont_integrate)
-
-            ##NEW METHODS
-            sel_refls["num_pixels.foreground"] = flex.int(sel_refls.size(), 0)
-            sel_refls["num_pixels.background"] = flex.int(sel_refls.size(), 0)
-            sel_refls["num_pixels.background_used"] = flex.int(sel_refls.size(), 0)
-            sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
-            intensity = shoebox_processor.finalise(
-                sel_refls
-            )  # similar to 'processer/executor' of standard integrator
-            sel_refls["intensity.sum.value"] = intensity.as_double()
-            sel_refls["intensity.sum.variance"] = intensity.as_double()
-            n_failed = (sel_refls["summation_success"] == False).count(True)
-            logger.info(f"{n_failed} reflections failed in summation integration")
-            sel_refls.set_flags(
-                sel_refls["summation_success"],
-                sel_refls.flags.integrated_sum,
-            )
-            sel_refls.set_flags(
-                ~sel_refls["summation_success"],
-                sel_refls.flags.foreground_includes_bad_pixels,
-            )
-            final_refls.extend(sel_refls)
-            print(final_refls.size())'''
 
         self.reflections = final_refls
 
