@@ -1443,7 +1443,7 @@ def run_parallel_job(task, delta_b, delta_m):
         else:
             mask = imageset.get_mask(i)
         shoebox_processor.next_data_only(make_image(image, mask))
-
+    sel_refls.compute_background(task.experiments)
     sel_refls["summation_success"] = flex.bool(sel_refls.size(), True)
     """sel_refls.is_overloaded(self.experiments)
     sel_refls.compute_mask(self.experiments)
@@ -1466,11 +1466,13 @@ def run_parallel_job(task, delta_b, delta_m):
     sel_refls["num_pixels.background"] = flex.int(sel_refls.size(), 0)
     sel_refls["num_pixels.background_used"] = flex.int(sel_refls.size(), 0)
     sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
+    sel_refls["background.sum.value"] = flex.double(sel_refls.size(), 0)
+    sel_refls["background.sum.variance"] = flex.double(sel_refls.size(), 0)
     intensity = shoebox_processor.finalise(
         sel_refls
     )  # similar to 'processer/executor' of standard integrator
-    sel_refls["intensity.sum.value"] = intensity.as_double()
-    sel_refls["intensity.sum.variance"] = intensity.as_double()
+    sel_refls["intensity.sum.value"] = intensity  # .as_double()
+    sel_refls["intensity.sum.variance"] = intensity  # .as_double()
     n_failed = sel_refls["summation_success"].count(False)
     logger.info(f"{n_failed} reflections failed in summation integration")
     sel_refls.set_flags(

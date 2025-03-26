@@ -77,6 +77,7 @@ namespace dials { namespace model {
     int n_invalid_fg{0};
     int n_valid_bg{0};
     int n_invalid_bg{0};
+    double mean_background{0};
     bool masked_image_pixel{false};
     std::unordered_map<int, int> background_hist;
     /**

@@ -650,21 +650,26 @@ namespace dials { namespace algorithms {
     }
 
     template <typename T>
-    af::shared<int> finalise(af::reflection_table& data) {
-      af::shared<int> total_intensity(data.size());
+    af::shared<double> finalise(af::reflection_table& data) {
+      af::shared<double> total_intensity(data.size());
       af::const_ref<Shoebox<>> shoebox = data["shoebox"];
       af::shared<bool> success = data["summation_success"];
       af::shared<int> nbg = data["num_pixels.background"];
       af::shared<int> bg_used = data["num_pixels.background_used"];
       af::shared<int> foreground = data["num_pixels.foreground"];
       af::shared<int> valid = data["num_pixels.valid"];
+      af::shared<double> background = data["background.mean"];
+      // af::shared<double> background_variance = data["background.sum.variance"];
       for (int i = 0; i < data.size(); i++) {
-        total_intensity[i] = shoebox[i].total_intensity;
+        background[i] = shoebox[i].mean_background;
+        // background_variance[i] = shoebox[i].mean_background;
+        total_intensity[i] = shoebox[i].total_intensity
+                             - (shoebox[i].mean_background * shoebox[i].n_valid_fg);
         if (shoebox[i].n_invalid_fg > 0) {
           success[i] = false;
         }
         nbg[i] = shoebox[i].n_valid_bg;
-        // bg_used[i] = shoebox[i].n_valid_bg;
+        bg_used[i] = shoebox[i].n_valid_bg;
         foreground[i] = shoebox[i].n_valid_fg;
         valid[i] = shoebox[i].n_valid_bg + shoebox[i].n_valid_fg;
       }
