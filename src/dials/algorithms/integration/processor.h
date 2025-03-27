@@ -608,8 +608,12 @@ namespace dials { namespace algorithms {
               if (dxy <= 1.0) {  // Is Foreground
                 if (this_in_image_bounds) {
                   if (mask(j3 + y0, i3 + x0)) {  // Is Valid
-                    sbox.total_intensity += data(j3 + y0, i3 + x0);
+                    int intensity = data(j3 + y0, i3 + x0);
+                    sbox.total_intensity += intensity;
                     sbox.n_valid_fg += 1;
+                    sbox.sum_pixel_coords_intensity[0] += intensity * (i3 + x0 + 0.5);
+                    sbox.sum_pixel_coords_intensity[1] += intensity * (j3 + y0 + 0.5);
+                    sbox.sum_pixel_coords_intensity[2] += intensity * (frame_ + 0.5);
                   } else {
                     sbox.masked_image_pixel = true;
                     sbox.n_invalid_fg += 1;
@@ -664,6 +668,7 @@ namespace dials { namespace algorithms {
         data["background.sum.value"];  // this is the sum of the background under the
                                        // foreground region
       af::shared<double> background_variance = data["background.sum.variance"];
+      af::shared<vec3<double>> xyzobs = data["xyzobs.px.value"];
       for (int i = 0; i < data.size(); i++) {
         background[i] = shoebox[i].mean_background;
         // background_variance[i] = shoebox[i].mean_background;
@@ -682,6 +687,11 @@ namespace dials { namespace algorithms {
         bg_used[i] = shoebox[i].n_valid_bg;
         foreground[i] = shoebox[i].n_valid_fg;
         valid[i] = shoebox[i].n_valid_bg + shoebox[i].n_valid_fg;
+        xyzobs[i] = shoebox[i].sum_pixel_coords_intensity / shoebox[i].total_intensity;
+        // ^ Note we don't background subtract here, as you get funny results as mean
+        // true intensity goes to zero. In dials this is handled by only calculating the
+        // weighted sum when data - bg > 0, but we cannot do that here. So let's just
+        // use this approximation for now.
       }
       return total_intensity;
     }
