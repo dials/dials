@@ -604,7 +604,7 @@ def merging_stats_from_scaled_array(
 
 
 def create_datastructures_for_reference_file(
-    experiments, reference_file, anomalous=True, d_min=2.0, k_sol=0.35, b_sol=46
+    experiments, reference_file, anomalous=True, d_min=1.0, k_sol=0.35, b_sol=46
 ):
     # If the file is a model file, then d_min is used to determine the highest
     # resolution calculated intensities.
