@@ -1489,6 +1489,7 @@ def run_parallel_job(task, delta_b, delta_m):
     sel_refls["background.sum.variance"] = flex.double(sel_refls.size(), 0)
     sel_refls["intensity.sum.variance"] = flex.double(sel_refls.size(), 0)
     sel_refls["xyzobs.px.value"] = flex.vec3_double(sel_refls.size())
+    sel_refls["xyzobs.mm.value"] = flex.vec3_double(sel_refls.size())
     intensity = shoebox_processor.finalise(
         sel_refls
     )  # similar to 'processer/executor' of standard integrator

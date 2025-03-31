@@ -429,6 +429,7 @@ namespace dials { namespace algorithms {
           s0_(beam.get_s0()),
           m2_(gonio.get_rotation_axis()),
           detector_(detector),
+          scan_(scan),
           index0_(scan.get_array_range()[0]),
           index1_(scan.get_array_range()[1]) {
       delta_b_r2 = 1.0 / (std::pow(delta_b, 2));
@@ -657,6 +658,7 @@ namespace dials { namespace algorithms {
     af::shared<double> finalise(af::reflection_table& data) {
       af::shared<double> total_intensity(data.size());
       af::const_ref<Shoebox<>> shoebox = data["shoebox"];
+      af::shared<int6> bbox = data["bbox"];
       af::shared<bool> success = data["summation_success"];
       af::shared<int> nbg = data["num_pixels.background"];
       af::shared<int> bg_used = data["num_pixels.background_used"];
@@ -669,6 +671,7 @@ namespace dials { namespace algorithms {
                                        // foreground region
       af::shared<double> background_variance = data["background.sum.variance"];
       af::shared<vec3<double>> xyzobs = data["xyzobs.px.value"];
+      af::shared<vec3<double>> xyzobs_mm = data["xyzobs.mm.value"];
       for (int i = 0; i < data.size(); i++) {
         background[i] = shoebox[i].mean_background;
         // background_variance[i] = shoebox[i].mean_background;
@@ -687,11 +690,24 @@ namespace dials { namespace algorithms {
         bg_used[i] = shoebox[i].n_valid_bg;
         foreground[i] = shoebox[i].n_valid_fg;
         valid[i] = shoebox[i].n_valid_bg + shoebox[i].n_valid_fg;
-        xyzobs[i] = shoebox[i].sum_pixel_coords_intensity / shoebox[i].total_intensity;
+        if (shoebox[i].total_intensity) {
+          xyzobs[i] =
+            shoebox[i].sum_pixel_coords_intensity / shoebox[i].total_intensity;
+        } else {
+          double xmid = (bbox[i][1] + bbox[i][0]) / 2.0;
+          double ymid = (bbox[i][3] + bbox[i][2]) / 2.0;
+          double zmid = (bbox[i][5] + bbox[i][4]) / 2.0;
+          xyzobs[i] = vec3<double>(xmid, ymid, zmid);
+        }
         // ^ Note we don't background subtract here, as you get funny results as mean
         // true intensity goes to zero. In dials this is handled by only calculating the
         // weighted sum when data - bg > 0, but we cannot do that here. So let's just
         // use this approximation for now.
+        const dxtbx::model::Panel& p = detector_[shoebox[i].panel];
+        vec2<double> mm =
+          p.pixel_to_millimeter(vec2<double>(xyzobs[i][0], xyzobs[i][1]));
+        double phi_i = scan_.get_angle_from_array_index(xyzobs[i][2]);
+        xyzobs_mm[i] = {mm[0], mm[1], phi_i};
       }
       return total_intensity;
     }
@@ -782,6 +798,7 @@ namespace dials { namespace algorithms {
     dxtbx::model::Detector detector_;
     double delta_b_r2;
     double delta_m_r2;
+    dxtbx::model::Scan scan_;
     double index0_;
     double index1_;
     std::map<std::size_t, std::vector<profile_model::gaussian_rs::CoordinateSystem>>
