@@ -35,6 +35,7 @@
 
 namespace dials { namespace algorithms {
 
+  using af::BackgroundIncludesBadPixels;
   using model::Image;
   using model::Shoebox;
   using model::Valid;
@@ -661,6 +662,7 @@ namespace dials { namespace algorithms {
       af::shared<int6> bbox = data["bbox"];
       af::shared<bool> success = data["summation_success"];
       af::shared<int> nbg = data["num_pixels.background"];
+      af::ref<std::size_t> flags = data["flags"];
       af::shared<int> bg_used = data["num_pixels.background_used"];
       af::shared<int> foreground = data["num_pixels.foreground"];
       af::shared<int> valid = data["num_pixels.valid"];
@@ -690,6 +692,9 @@ namespace dials { namespace algorithms {
         bg_used[i] = shoebox[i].n_valid_bg;
         foreground[i] = shoebox[i].n_valid_fg;
         valid[i] = shoebox[i].n_valid_bg + shoebox[i].n_valid_fg;
+        if (shoebox[i].n_invalid_bg) {
+          flags[i] |= BackgroundIncludesBadPixels;
+        }
         if (shoebox[i].total_intensity) {
           xyzobs[i] =
             shoebox[i].sum_pixel_coords_intensity / shoebox[i].total_intensity;
