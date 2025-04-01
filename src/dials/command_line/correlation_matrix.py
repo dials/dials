@@ -125,6 +125,9 @@ def run(args=None):
             "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
         )
 
+    if params.output.json:
+        matrices.output_json()
+
     if params.output.html:
         matrices.convert_to_html_json()
 
@@ -149,9 +152,6 @@ def run(args=None):
             f"Saving graphical output of correlation matrices to {params.output.html}."
         )
         html.dump(params.output.html, errors="xmlcharrefreplace")
-
-    if params.output.json:
-        matrices.output_json()
 
 
 if __name__ == "__main__":

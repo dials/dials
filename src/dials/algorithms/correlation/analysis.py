@@ -635,9 +635,6 @@ summarises the affect of the first two principal components.
             "cos_angle_matrix": self.cos_angle.tolist(),
         }
 
-        for i in self.rij_graphs:
-            combined_json_dict[i] = self.rij_graphs[i]
-
         with open(self.params.output.json, "w") as f:
             json.dump(combined_json_dict, f)
 
