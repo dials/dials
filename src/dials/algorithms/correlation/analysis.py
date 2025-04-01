@@ -21,6 +21,7 @@ from dials.algorithms.correlation.cluster import ClusterInfo
 from dials.algorithms.correlation.plots import (
     linkage_matrix_to_dict,
     plot_dims,
+    plot_pca_coords,
     plot_reachability,
     to_plotly_json,
 )
@@ -243,6 +244,8 @@ class CorrelationMatrix:
             max_iterations=self.cosym_analysis.params.minimization.max_iterations,
             max_calls=self.cosym_analysis.params.minimization.max_calls,
         )
+
+        self.cosym_analysis._principal_component_analysis(cluster=True)
 
         # Convert cosym output into cc/cos matrices in correct form and compute linkage matrices as clustering method
         (
@@ -527,22 +530,71 @@ class CorrelationMatrix:
             )
         )
 
-        dim_list = list(range(0, self.cosym_analysis.target.dim))
+        cluster_labels = self.cluster_labels
+        axes_labels = {
+            str(i): f"PC {i+1} ({var:.1f}%)"
+            for i, var in enumerate(self.cosym_analysis.explained_variance_ratio * 100)
+        }
 
-        projections = [
-            (a, b) for idx, a in enumerate(dim_list) for b in dim_list[idx + 1 :]
-        ]
+        # Cosym coordinates are aligned with the principal components
+        # Note that the reduced coordinates are NOT used because want to retain information
+        # about length/angles from the original cosym procedure
+        # Instead, simply rotate the data to align with the eigenvectors
 
-        for i in projections:
-            self.rij_graphs.update(
-                plot_coords(
-                    self.cosym_analysis.coords,
-                    self.cluster_labels,
-                    key="cosym_coordinates_" + str(i[0]) + "_" + str(i[1]),
-                    dim1=i[0],
-                    dim2=i[1],
-                )
+        cob_mat = np.linalg.inv(np.transpose(self.cosym_analysis.pca_components))
+
+        coords = np.array([])
+        for data in self.cosym_analysis.coords:
+            rot_coord = np.matmul(cob_mat, data)
+            if coords.size == 0:
+                coords = rot_coord
+            else:
+                coords = np.vstack([coords, rot_coord])
+
+        if coords.shape[1] > 6:
+            coords = coords[:, 0:6]
+            dim_list = list(range(0, 6))
+        else:
+            dim_list = list(range(0, self.cosym_analysis.target.dim))
+
+        self.pca_plot = plot_pca_coords(
+            coords,
+            axes_labels,
+            cluster_labels,
+            dim_list,
+        )
+
+        # Separately also plot the two most significant principal components for ease of visualisation
+
+        self.rij_graphs.update(
+            plot_coords(
+                coords[:, 0:2],
+                self.cluster_labels,
+                key="cosym_coordinates_principal_components",
             )
+        )
+
+        updated_help = """\
+The outcome of the dials.cosym multi-dimensional scaling procedure rotated by the
+components identified using Principal Component Analysis and projected in 2D. Each point corresponds to an
+individual data set. The lengths of the vectors are inversely related to the amount of random
+error in each dataset; however, because the plot is a projection in 2D, the coordinates in this graph
+are not directly representative of the length of the vector in multi-dimensional space (unless the analysis
+is 2-dimensional). The angular separation between any pair, or groups, of vectors is a measure of the
+systematic differences between the data sets (could be the presence of non-isomorphism). This projection
+summarises the affect of the first two principal components.
+        """
+
+        self.rij_graphs["cosym_coordinates_principal_components"]["help"] = updated_help
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["title"] = (
+            "Cosym Coordinates Rotated by Principal Components"
+        )
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["xaxis"][
+            "title"
+        ] = axes_labels["0"]
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["yaxis"][
+            "title"
+        ] = axes_labels["1"]
 
         # Generate the table for the html that lists all datasets and image paths present in the analysis
 
@@ -582,6 +634,9 @@ class CorrelationMatrix:
             "cos_matrix_clustering": linkage_mat_as_dict_cos,
             "cos_angle_matrix": self.cos_angle.tolist(),
         }
+
+        for i in self.rij_graphs:
+            combined_json_dict[i] = self.rij_graphs[i]
 
         with open(self.params.output.json, "w") as f:
             json.dump(combined_json_dict, f)

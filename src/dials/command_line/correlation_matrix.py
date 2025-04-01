@@ -125,9 +125,6 @@ def run(args=None):
             "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
         )
 
-    if params.output.json:
-        matrices.output_json()
-
     if params.output.html:
         matrices.convert_to_html_json()
 
@@ -145,12 +142,16 @@ def run(args=None):
             cos_angle_cluster_table=matrices.cos_table,
             image_range_tables=[matrices.table_list],
             cosym_graphs=matrices.rij_graphs,
+            pca_plot=matrices.pca_plot,
         )
 
         logger.info(
             f"Saving graphical output of correlation matrices to {params.output.html}."
         )
         html.dump(params.output.html, errors="xmlcharrefreplace")
+
+    if params.output.json:
+        matrices.output_json()
 
 
 if __name__ == "__main__":
