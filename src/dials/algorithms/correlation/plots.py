@@ -373,17 +373,17 @@ def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
         "data": clusters,
         "layout": layout,
         "help": """\
-Full principal components analysis of the outcome of the dials.cosym multi-dimensional scaling procedure.
-The number of principal components visualised is equal to the number of dimensions identified by dials.cosym.
-The percentages reported on each axis label is equal to the variance in the data explained by each
-principal component. Each point corresponds to an individual data set. The lengths of the vectors are
-inversely related to the amount of random error in each dataset; however, because each plot is a projection
-in 2D, the corresponding coordinates are not always directly representative of the length of the vector in
-multi-dimensional space (unless the analysis is 2-dimensional). The angular separation between any pair,
-or groups, of vectors is a measure of the systematic differences between the data sets (could be the
-presence of non-isomorphism). Note: the zoom tool may be used to quickly zoom all axes with the same
-principal component, and the lasso select and the box select tools may be used to select subsets of data sets
-to visualise them through the different plots.
+Full principal components analysis of the outcome of the cosym multi-dimensional analysis.
+The number of principal components visualised is equal to the number of dimensions identified by the cosym analysis
+(or the 6 most significant for simpler visualisation if higher dimensions were used).The percentages reported
+on each axis label is equal to the variance in the data explained by each principal component. Each point
+corresponds to an individual data set. The lengths of the vectors are inversely related to the amount of random
+error in each dataset; however, because each plot is a projection in 2D, the corresponding coordinates are not
+always directly representative of the length of the vector in multi-dimensional space (unless the analysis is
+2-dimensional). The angular separation between any pair, or groups, of vectors is a measure of the systematic
+differences between the data sets (could be the presence of non-isomorphism). Note: the zoom tool may be used to
+quickly zoom all axes with the same principal component, and the lasso select and the box select tools may be used
+to select subsets of data sets to visualise them through the different plots.
         """,
     }
     return d

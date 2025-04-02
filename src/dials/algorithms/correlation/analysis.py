@@ -575,14 +575,14 @@ class CorrelationMatrix:
         )
 
         updated_help = """\
-The outcome of the dials.cosym multi-dimensional scaling procedure rotated by the
-components identified using Principal Component Analysis and projected in 2D. Each point corresponds to an
-individual data set. The lengths of the vectors are inversely related to the amount of random
-error in each dataset; however, because the plot is a projection in 2D, the coordinates in this graph
-are not directly representative of the length of the vector in multi-dimensional space (unless the analysis
+The outcome of the cosym multi-dimensional analysis rotated by the components identified using
+Principal Component Analysis and projected in 2D. Each point corresponds to an individual data set.
+The lengths of the vectors are inversely related to the amount of random error in each dataset;
+however, because the plot is a projection in 2D, the coordinates in this graph are not directly
+representative of the length of the vector in multi-dimensional space (unless the analysis
 is 2-dimensional). The angular separation between any pair, or groups, of vectors is a measure of the
 systematic differences between the data sets (could be the presence of non-isomorphism). This projection
-summarises the affect of the first two principal components.
+summarises the effect of the first two principal components.
         """
 
         self.rij_graphs["cosym_coordinates_principal_components"]["help"] = updated_help
