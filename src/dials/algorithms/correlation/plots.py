@@ -305,3 +305,85 @@ def to_plotly_json(
     d["clusters"] = linkage_matrix_to_dict(linkage_matrix)
 
     return d
+
+
+def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
+    clusters = []
+    unique_labels = sorted(dict.fromkeys(cluster_labels))
+    n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
+
+    max_range = max(np.max(pca_coords), 1)
+    min_range = min(np.min(pca_coords), -1)
+
+    # Add a buffer for nicer display
+
+    if max_range > 0.98:
+        max_range += 0.1
+
+    if min_range < -0.98:
+        min_range += -0.1
+
+    data_range = [min_range, max_range]
+
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from matplotlib import pyplot as plt
+
+    colours = plt.cm.nipy_spectral(np.linspace(0.1, 0.9, n_clusters)).tolist()
+
+    if -1 in unique_labels:
+        colours.insert(0, (0, 0, 0, 1))
+
+    for i, col in zip(unique_labels, colours):
+        dim_data = []
+
+        for j in dimensions:
+            coord_data = []
+            for lab, dat in zip(cluster_labels, pca_coords):
+                if lab == i:
+                    coord_data.append(dat[j])
+            dim_dict = {
+                "label": axes_labels[str(j)],
+                "values": coord_data,
+                "axis": {"matches": True},
+            }
+            dim_data.append(dim_dict)
+        ddict = {
+            "name": "Cluster %i" % i if i >= 0 else "Noise",
+            "type": "splom",
+            "dimensions": dim_data,
+            "diagonal": {"visible": False},
+            "marker": {
+                "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
+                "size": 3,
+            },
+        }
+        clusters.append(ddict)
+
+    layout = {}
+    for i in dimensions:
+        xtitle = "xaxis" + str(i + 1)
+        ytitle = "yaxis" + str(i + 1)
+
+        layout[xtitle] = {"range": data_range}
+        layout[ytitle] = {"range": data_range}
+
+    d = {
+        "data": clusters,
+        "layout": layout,
+        "help": """\
+Full principal components analysis of the outcome of the cosym multi-dimensional analysis.
+The number of principal components visualised is equal to the number of dimensions identified by the cosym analysis
+(or the 6 most significant for simpler visualisation if higher dimensions were used).The percentages reported
+on each axis label is equal to the variance in the data explained by each principal component. Each point
+corresponds to an individual data set. The lengths of the vectors are inversely related to the amount of random
+error in each dataset; however, because each plot is a projection in 2D, the corresponding coordinates are not
+always directly representative of the length of the vector in multi-dimensional space (unless the analysis is
+2-dimensional). The angular separation between any pair, or groups, of vectors is a measure of the systematic
+differences between the data sets (could be the presence of non-isomorphism). Note: the zoom tool may be used to
+quickly zoom all axes with the same principal component, and the lasso select and the box select tools may be used
+to select subsets of data sets to visualise them through the different plots.
+        """,
+    }
+    return d
