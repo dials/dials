@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import math
 import os
-
-# Fix for Python 3.12 and pyopengl <=3.1.7. See https://github.com/silx-kit/silx/pull/3982
 import sys
 import time
 
@@ -24,6 +22,7 @@ import scitbx.math
 from scitbx import matrix
 from scitbx.array_family import flex
 
+# Fix for Python 3.12 and pyopengl <=3.1.7. See https://github.com/silx-kit/silx/pull/3982
 if sys.version_info >= (3, 12) and Version(OpenGL.__version__) <= Version("3.1.7"):
     # Python3.12 patch: see https://github.com/mcfletch/pyopengl/pull/100
     OpenGL.FormatHandler.by_name("ctypesparameter").check.append("_ctypes.CArgObject")
