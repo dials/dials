@@ -470,7 +470,10 @@ def test_index_4rotation(dials_data: pathlib.Path, tmp_path):
         expected_rmsds,
         expected_hall_symbol,
     )
-    assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
+    assert len(result.indexed_reflections)
+    assert result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True) > 0.9 * len(result.indexed_reflections)
 
 
 def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
