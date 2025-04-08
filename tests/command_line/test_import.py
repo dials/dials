@@ -4,7 +4,6 @@ import os
 import pathlib
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -910,14 +909,11 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     assert len(experiments3.scans()) == 5  # four for sacla stills, 1 for centroid data
 
 
-def test_convert_stills_to_sequences_nonh5(dials_regression: pathlib.Path, tmp_path):
-    image_path = Path(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858801.cbf",
+def test_convert_stills_to_sequences_nonh5(dials_data: pathlib.Path, tmp_path):
+    image_path = str(
+        dials_data("image_examples", pathlib=True)
+        / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     )
-    assert image_path.is_file()
     result = subprocess.run(
         [
             shutil.which("dials.import"),
