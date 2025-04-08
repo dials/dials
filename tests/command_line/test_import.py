@@ -376,13 +376,11 @@ def test_import_beam_centre(dials_data, tmp_path):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
+def test_fast_slow_beam_centre(dials_data: pathlib.Path, tmp_path):
     # test fast_slow_beam_centre with a multi-panel CS-PAD image
-    impath = os.path.join(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858401.cbf",
+    impath = (
+        dials_data("image_examples", pathlib=True)
+        / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     )
     result = subprocess.run(
         [
