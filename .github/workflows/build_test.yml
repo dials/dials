@@ -95,6 +95,11 @@ jobs:
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
             --libtbx
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
+      - name: checkout cbflib branch
+        run: |
+          pushd modules/cbflib
+          git checkout 098_into_main
+          popd
       - name: Build
         run: python modules/dials/installer/bootstrap.py build --libtbx
       - name: Create Installer
