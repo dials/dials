@@ -117,4 +117,16 @@ TEST_F(HDF5ReadTest, ReadWithIncorrectType) {
                std::runtime_error);
 }
 
+TEST_F(HDF5ReadTest, ReadWithShapeReturnsCorrectShape) {
+  std::string dataset = "/dials/processing/group_0/xyzobs.px.value";
+
+  auto result =
+      read_array_with_shape_from_h5_file<double>(test_file_path, dataset);
+
+  ASSERT_FALSE(result.shape.empty());
+  EXPECT_EQ(result.shape.size(), 2); // 2D dataset
+  EXPECT_GT(result.shape[0], 0);     // Non-empty
+  EXPECT_EQ(result.shape[1], 3);     // 3 columns
+}
+
 #pragma endregion read_array_from_h5_file tests
