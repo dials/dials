@@ -52,7 +52,14 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
     FIND_PACKAGE_ARGS
 )
-FetchContent_MakeAvailable(Eigen3 fmt nlohmann_json)
+FetchContent_Declare(
+    mdspan
+    GIT_REPOSITORY https://github.com/kokkos/mdspan
+    GIT_TAG mdspan-0.6.0
+    EXCLUDE_FROM_ALL
+    FIND_PACKAGE_ARGS
+)
+FetchContent_MakeAvailable(Eigen3 fmt nlohmann_json mdspan)
 
 # GTest could have been made available under a different name
 if(NOT TARGET GTest::gtest_main)

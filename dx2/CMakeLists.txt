@@ -15,4 +15,5 @@ target_include_directories(
     dx2 PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${mdspan_SOURCE_DIR}/include>
 )
