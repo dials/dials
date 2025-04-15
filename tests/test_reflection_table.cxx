@@ -1,0 +1,234 @@
+#include <dx2/reflection.hpp>
+#include <filesystem>
+#include <gtest/gtest.h>
+#include <iostream>
+#include <optional>
+#include <string>
+#include <vector>
+
+/*
+ * Test fixture for ReflectionTable tests. This fixture sets up the test
+ * environment for the ReflectionTable class and provides a common path
+ * to the test file.
+ */
+class ReflectionTableTest : public ::testing::Test {
+protected:
+  std::filesystem::path test_file_path;
+
+  void SetUp() override {
+    test_file_path = std::filesystem::current_path() / "data/cut_strong.refl";
+  }
+};
+
+TEST_F(ReflectionTableTest, LoadsAllColumns) {
+  ReflectionTable table(test_file_path.string());
+
+  auto names = table.get_column_names();
+  std::cout << "Loaded column names:\n";
+  for (const auto &name : names) {
+    std::cout << "  - " << name << "\n";
+  }
+
+  EXPECT_FALSE(names.empty());
+  EXPECT_NE(std::find(names.begin(), names.end(), "xyzobs.px.value"),
+            names.end());
+}
+
+TEST_F(ReflectionTableTest, TryGetColumnSucceedsOnCorrectType) {
+  ReflectionTable table(test_file_path.string());
+
+  auto px = table.get_column<double>("xyzobs.px.value");
+  ASSERT_TRUE(px.has_value());
+
+  const auto &span = px.value();
+  std::cout << "xyzobs.px.value shape: " << span.extent(0) << "x"
+            << span.extent(1) << "\n";
+  EXPECT_EQ(span.extent(1), 3);
+  EXPECT_GT(span.extent(0), 0);
+}
+
+TEST_F(ReflectionTableTest, TryGetColumnFailsOnWrongType) {
+  ReflectionTable table(test_file_path.string());
+
+  auto col = table.get_column<int>("xyzobs.px.value");
+  std::cout << "Column retrieval (int): "
+            << (col.has_value() ? "found" : "not found") << "\n";
+  EXPECT_FALSE(col.has_value());
+}
+
+TEST_F(ReflectionTableTest, SelectSubsetUsingFindRows) {
+  ReflectionTable table(test_file_path.string());
+
+  auto px = table.get_column<double>("xyzobs.px.value");
+  ASSERT_TRUE(px);
+
+  const auto &span = px.value();
+
+  auto selected = table.find_rows([&](size_t i) {
+    return span(i, 2) > 1.0; // z > 1.0
+  });
+
+  std::cout << "Selected " << selected.size() << " rows where z > 1.0\n";
+  EXPECT_FALSE(selected.empty());
+
+  auto filtered = table.select(selected);
+  auto filtered_px = filtered.get_column<double>("xyzobs.px.value");
+  ASSERT_TRUE(filtered_px);
+  const auto &filtered_span = filtered_px.value();
+
+  for (size_t i = 0; i < std::min<size_t>(filtered_span.extent(0), 5); ++i) {
+    std::cout << "z[" << i << "] = " << filtered_span(i, 2) << "\n";
+  }
+
+  for (size_t i = 0; i < filtered_span.extent(0); ++i) {
+    EXPECT_GT(filtered_span(i, 2), 1.0);
+  }
+}
+
+TEST_F(ReflectionTableTest, SelectWithMaskReturnsSameResultAsExplicitIndices) {
+  ReflectionTable table(test_file_path.string());
+
+  auto px = table.get_column<double>("xyzobs.px.value");
+  ASSERT_TRUE(px);
+  const auto &span = px.value();
+
+  std::vector<bool> mask(span.extent(0), false);
+  std::vector<size_t> indices;
+
+  for (size_t i = 0; i < span.extent(0); ++i) {
+    if (span(i, 2) > 1.0) {
+      mask[i] = true;
+      indices.push_back(i);
+    }
+  }
+
+  std::cout << "Mask selected " << indices.size() << " rows\n";
+
+  auto table_from_mask = table.select(mask);
+  auto table_from_indices = table.select(indices);
+
+  auto mask_span =
+      table_from_mask.get_column<double>("xyzobs.px.value").value();
+  auto idx_span =
+      table_from_indices.get_column<double>("xyzobs.px.value").value();
+
+  ASSERT_EQ(mask_span.extent(0), idx_span.extent(0));
+  ASSERT_EQ(mask_span.extent(1), idx_span.extent(1));
+
+  for (size_t i = 0; i < std::min<size_t>(mask_span.extent(0), 3); ++i) {
+    std::cout << "Row " << i << ": "
+              << "mask_z = " << mask_span(i, 2)
+              << ", idx_z = " << idx_span(i, 2) << "\n";
+  }
+
+  for (size_t i = 0; i < mask_span.extent(0); ++i) {
+    for (size_t j = 0; j < mask_span.extent(1); ++j) {
+      EXPECT_EQ(mask_span(i, j), idx_span(i, j));
+    }
+  }
+}
+
+TEST_F(ReflectionTableTest, SelectEmptyReturnsEmptyTable) {
+  ReflectionTable table(test_file_path.string());
+  ReflectionTable empty = table.select(std::vector<size_t>{});
+
+  std::cout << "Selecting with empty row set...\n";
+  for (const auto &name : table.get_column_names()) {
+    auto span = empty.get_column<double>(name);
+    if (span) {
+      std::cout << "  " << name << " has " << span->extent(0) << " rows\n";
+      EXPECT_EQ(span.value().extent(0), 0);
+    }
+  }
+}
+
+TEST_F(ReflectionTableTest, AllDatasetsLoadSuccessfully) {
+  ReflectionTable table(test_file_path.string());
+
+  std::vector<std::string> expected = get_datasets_in_group(
+      test_file_path.string(), "/dials/processing/group_0");
+
+  std::vector<std::string> loaded = table.get_column_names();
+
+  for (const std::string &full_dataset_path : expected) {
+    std::string name = get_dataset_name(full_dataset_path);
+
+    // Make sure it's present
+    auto it = std::find(loaded.begin(), loaded.end(), name);
+    EXPECT_NE(it, loaded.end()) << "Dataset not loaded: " << name;
+
+    if (it != loaded.end()) {
+      std::cout << "✅ Dataset loaded: " << name << "\n";
+    } else {
+      std::cerr << "❌ Dataset missing: " << name << "\n";
+    }
+  }
+}
+
+TEST_F(ReflectionTableTest, WriteAndReloadProducesSameData) {
+  // Load original table
+  ReflectionTable table(test_file_path.string());
+
+  // Take a small sample for writing
+  std::vector<size_t> selected_rows = {0, 1, 2};
+  ReflectionTable subset = table.select(selected_rows);
+
+  // Temporary write path
+  std::filesystem::path temp_file =
+      std::filesystem::temp_directory_path() / "reflection_test_write.h5";
+  std::string temp_file_str = temp_file.string();
+
+  // Write to file
+  subset.write(temp_file_str);
+
+  // Reload written file
+  ReflectionTable reloaded(temp_file_str);
+
+  auto column_names = subset.get_column_names();
+  ASSERT_EQ(column_names, reloaded.get_column_names());
+
+  for (const auto &name : column_names) {
+    // Support double and int for now
+    auto original_d = subset.get_column<double>(name);
+    auto reloaded_d = reloaded.get_column<double>(name);
+
+    if (original_d && reloaded_d) {
+      const auto &a = original_d.value();
+      const auto &b = reloaded_d.value();
+
+      ASSERT_EQ(a.extent(0), b.extent(0));
+      ASSERT_EQ(a.extent(1), b.extent(1));
+
+      for (size_t i = 0; i < a.extent(0); ++i) {
+        for (size_t j = 0; j < a.extent(1); ++j) {
+          EXPECT_DOUBLE_EQ(a(i, j), b(i, j));
+        }
+      }
+      continue;
+    }
+
+    auto original_i = subset.get_column<int>(name);
+    auto reloaded_i = reloaded.get_column<int>(name);
+
+    if (original_i && reloaded_i) {
+      const auto &a = original_i.value();
+      const auto &b = reloaded_i.value();
+
+      ASSERT_EQ(a.extent(0), b.extent(0));
+      ASSERT_EQ(a.extent(1), b.extent(1));
+
+      for (size_t i = 0; i < a.extent(0); ++i) {
+        for (size_t j = 0; j < a.extent(1); ++j) {
+          EXPECT_EQ(a(i, j), b(i, j));
+        }
+      }
+      continue;
+    }
+
+    std::cerr << "Skipping unsupported type or column not found: " << name
+              << "\n";
+  }
+
+  // Clean up
+  std::filesystem::remove(temp_file);
+}
