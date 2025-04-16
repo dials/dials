@@ -57,6 +57,7 @@ class ExtractPixelsFromImage:
         if self.mask is not None:
             detector = self.imageset.get_detector()
             assert len(self.mask) == len(detector)
+        self._mask = None
 
     def __call__(self, index):
         """
@@ -78,21 +79,21 @@ class ExtractPixelsFromImage:
 
         # Get the image and mask
         image = self.imageset.get_corrected_data(index)
-        mask = self.imageset.get_mask(index)
+        if self._mask is None:
+            mask = self.imageset.get_mask(index)
+            # Set the mask
+            if self.mask is not None:
+                assert len(self.mask) == len(mask)
+                self._mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
-        # Set the mask
-        if self.mask is not None:
-            assert len(self.mask) == len(mask)
-            mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
-
-        logger.debug(
-            f"Number of masked pixels for image {index}: {sum(m.count(False) for m in mask)}",
-        )
+            logger.debug(
+                f"Number of masked pixels for image {index}: {sum(m.count(False) for m in self._mask)}",
+            )
 
         # Add the images to the pixel lists
         num_strong = 0
         average_background = 0
-        for i_panel, (im, mk) in enumerate(zip(image, mask)):
+        for i_panel, (im, mk) in enumerate(zip(image, self._mask)):
             if self.imageset.is_marked_for_rejection(index):
                 threshold_mask = flex.bool(im.accessor(), False)
             elif self.region_of_interest is not None:
