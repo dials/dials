@@ -101,7 +101,7 @@ run:
   - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
 
 test:
-  - dials-data >=2.4.72
+  - dials-data >=2.4.102
   - pip
   - pytest
   - pytest-forked
