@@ -52,6 +52,7 @@ class IntegratorStills:
 
     def __init__(self, params, exlist, reference=None, predicted=None, shoeboxes=None):
         """Initialise the script."""
+
         assert reference is not None
 
         # Load the extractor based on the input

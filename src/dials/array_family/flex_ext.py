@@ -152,13 +152,13 @@ class _:
         :return: The reflection table of observations
         """
         from dials.algorithms.spot_finding.factory import SpotFinderFactory
-        
+
         if params is None:
             from dials.command_line.find_spots import phil_scope
             from dials.util.phil import parse
 
             params = phil_scope.fetch(source=parse("")).extract()
-        
+
         if params.spotfinder.filter.min_spot_size is libtbx.Auto:
             detector = experiments[0].imageset.get_detector()
             if detector[0].get_type() == "SENSOR_PAD":
