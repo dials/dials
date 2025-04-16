@@ -306,32 +306,32 @@ def _dials_phil_str():
 def _program_defaults_phil_str():
     return """
 indexing {
-method = fft1d
+  method = fft1d
 }
 refinement {
-parameterisation {
-  auto_reduction {
-    min_nref_per_parameter = 1
-    action = fix
+  parameterisation {
+    auto_reduction {
+      min_nref_per_parameter = 1
+      action = fix
+    }
+    beam.fix = all
+    detector.fix = all
   }
-  beam.fix = all
-  detector.fix = all
-}
-reflections {
-  weighting_strategy.override = stills
-  outlier.algorithm = null
-}
+  reflections {
+    weighting_strategy.override = stills
+    outlier.algorithm = null
+  }
 }
 integration {
-integrator = stills
-profile.fitting = False
-background {
-  algorithm = simple
-  simple {
-    outlier.algorithm = plane
-    model.algorithm = linear2d
+  integrator = stills
+  profile.fitting = False
+  background {
+    algorithm = simple
+    simple {
+      outlier.algorithm = plane
+      model.algorithm = linear2d
+    }
   }
-}
 }
 profile.gaussian_rs.min_spots.overall = 0
 """
