@@ -305,35 +305,35 @@ def _dials_phil_str():
 
 def _program_defaults_phil_str():
     return """
-  indexing {
-    method = fft1d
+indexing {
+method = fft1d
+}
+refinement {
+parameterisation {
+  auto_reduction {
+    min_nref_per_parameter = 1
+    action = fix
   }
-  refinement {
-    parameterisation {
-      auto_reduction {
-        min_nref_per_parameter = 1
-        action = fix
-      }
-      beam.fix = all
-      detector.fix = all
-    }
-    reflections {
-      weighting_strategy.override = stills
-      outlier.algorithm = null
-    }
+  beam.fix = all
+  detector.fix = all
+}
+reflections {
+  weighting_strategy.override = stills
+  outlier.algorithm = null
+}
+}
+integration {
+integrator = stills
+profile.fitting = False
+background {
+  algorithm = simple
+  simple {
+    outlier.algorithm = plane
+    model.algorithm = linear2d
   }
-  integration {
-    integrator = stills
-    profile.fitting = False
-    background {
-      algorithm = simple
-      simple {
-        outlier.algorithm = plane
-        model.algorithm = linear2d
-      }
-    }
-  }
-  profile.gaussian_rs.min_spots.overall = 0
+}
+}
+profile.gaussian_rs.min_spots.overall = 0
 """
 
 
@@ -1176,9 +1176,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("*" * 80)
 
         # Find the strong spots
-        #observed = flex.reflection_table.from_observations(
-        #    experiments, self.params, is_stills=True
-        #)
         if self.spot_finder_factory is None:
             self.spot_finder_factory = self.get_spot_finder_factory(experiments)
         observed = self.spot_finder_factory.find_spots(experiments)

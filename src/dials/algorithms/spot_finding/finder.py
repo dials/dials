@@ -64,7 +64,6 @@ class ExtractPixelsFromImage:
 
         :param index: The index of the image
         """
-        
         # Get the frame number
         if isinstance(self.imageset, ImageSequence):
             frame = self.imageset.get_array_range()[0] + index
@@ -734,7 +733,6 @@ class SpotFinder:
                 # Write the hot mask
                 with open(imageset.external_lookup.mask.filename, "wb") as outfile:
                     pickle.dump(hot_mask, outfile, protocol=pickle.HIGHEST_PROTOCOL)
-             
         # Set the strong spot flag
         reflections.set_flags(
             flex.size_t_range(len(reflections)), reflections.flags.strong

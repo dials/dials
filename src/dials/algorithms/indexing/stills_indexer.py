@@ -120,6 +120,7 @@ class StillsIndexer(Indexer):
         # specific modifications (don't re-index after choose best orientation matrix, but use the indexing from
         # choose best orientation matrix, also don't use macrocycles) of refinement after indexing.
         # 2017 update: do accept multiple lattices per shot
+
         experiments = ExperimentList()
 
         while True:
@@ -203,7 +204,6 @@ class StillsIndexer(Indexer):
             )
 
             if len(self.params.stills.isoforms) > 0:
-                print('Isoforms')
                 logger.info("")
                 logger.info("#" * 80)
                 logger.info("Starting refinement")
@@ -505,12 +505,12 @@ class StillsIndexer(Indexer):
         logger.info("*" * 80)
         logger.info("Selecting the best orientation matrix")
         logger.info("*" * 80)
+
         class CandidateInfo(libtbx.group_args):
             pass
 
         candidates = []
 
-        #params = copy.deepcopy(self.all_params)
         params = self.all_params
 
         for icm, cm in enumerate(candidate_orientation_matrices):
