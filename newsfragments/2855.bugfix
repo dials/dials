@@ -1,1 +1,1 @@
-Use ``importlib.metadata`` instead of ``pkg_resources``, which is removed in Python 3.12
+Remove deprecated use of ``pkg_resources``, which is removed in Python 3.12.
