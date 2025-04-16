@@ -769,7 +769,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
             print("where r =", self._r[imin])
             print("e =", self._axis[imin])
             print("s0 =", self._s0[imin])
-            print("this reflection forms angle with the equatorial plane " "normal:")
+            print("this reflection forms angle with the equatorial plane normal:")
             vecn = (
                 matrix.col(self._s0[imin])
                 .cross(matrix.col(self._axis[imin]))

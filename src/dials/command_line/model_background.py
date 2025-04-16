@@ -225,7 +225,7 @@ class Script:
         if params.integration.mp.nproc != 1 or params.integration.mp.njobs != 1:
             # https://github.com/dials/dials/issues/1083
             logger.warning(
-                "Multiprocessing is currently disabled. " "Setting nproc = njobs = 1"
+                "Multiprocessing is currently disabled. Setting nproc = njobs = 1"
             )
             params.integration.mp.nproc = 1
             params.integration.mp.njobs = 1

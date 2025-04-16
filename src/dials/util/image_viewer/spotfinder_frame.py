@@ -581,9 +581,9 @@ class SpotFrame(XrayFrame):
                 )
                 assert p_id >= 0, "Point must be within a panel"
                 if panel_id is not None:
-                    assert (
-                        panel_id == p_id
-                    ), "All points must be contained within a single panel"
+                    assert panel_id == p_id, (
+                        "All points must be contained within a single panel"
+                    )
                 panel_id = p_id
                 point_.append((p0, p1))
             point = point_
@@ -1959,7 +1959,7 @@ class SpotSettingsPanel(wx.Panel):
         self.levels = self.GetParent().GetParent().pyslip.tiles.levels
         # from scitbx.math import continued_fraction as cf
         # choices = ["%s" %(cf.from_real(2**l).as_rational()) for l in self.levels]
-        choices = [f"{100 * 2 ** l:g}%" for l in self.levels]
+        choices = [f"{100 * 2**l:g}%" for l in self.levels]
         self.zoom_ctrl = wx.Choice(self, -1, choices=choices)
         self.zoom_ctrl.SetSelection(self.settings.zoom_level)
         grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)

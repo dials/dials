@@ -291,7 +291,7 @@ class ParsedGrouping:
         header = f"""
 Summary of data in ParsedGrouping class
   Grouping name: {self.name}
-  Metadata names: {', '.join(n for n in self.metadata_names)}
+  Metadata names: {", ".join(n for n in self.metadata_names)}
   Tolerances:
 {tolerances}
 """
@@ -543,7 +543,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
     tolerances = parsed_group.tolerances
 
     unique_values_for_metadata: dict[str, np.array] = {}
-    n_images_per_file: dict[ImageFile, int] = {file: 1 for file in metadata.keys()}
+    n_images_per_file: dict[ImageFile, int] = dict.fromkeys(metadata.keys(), 1)
 
     # Determine the sets of unique metadata values for each metadata name
     for name in parsed_group.metadata_names:

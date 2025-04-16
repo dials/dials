@@ -929,7 +929,7 @@ class Indexer:
                     str(i),
                     str(indexed_count),
                     str(unindexed_count),
-                    f"{indexed_count / (indexed_count + unindexed_count)*100:.1f}",
+                    f"{indexed_count / (indexed_count + unindexed_count) * 100:.1f}",
                 ]
             )
         logger.info(dials.util.tabulate(rows, headers="firstrow"))

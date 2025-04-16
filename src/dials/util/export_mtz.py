@@ -763,9 +763,9 @@ def export_mtz(
             combined_data[k].extend(v)
     # ALL columns must be the same length
     assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
-    assert len(combined_data["id"]) == len(
-        reflection_table["id"]
-    ), "Lost rows in split/combine"
+    assert len(combined_data["id"]) == len(reflection_table["id"]), (
+        "Lost rows in split/combine"
+    )
 
     # Write all the data and columns to the mtz file
     write_columns(mtz, combined_data)

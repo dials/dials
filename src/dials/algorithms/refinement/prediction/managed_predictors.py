@@ -213,7 +213,9 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
 class ExperimentsPredictorFactory:
     @staticmethod
     def from_experiments(experiments, force_stills=False, spherical_relp=False):
-        assert experiments.all_same_type(), "Cannot create ExperimentsPredictor for a mixture of experiments with different types"
+        assert experiments.all_same_type(), (
+            "Cannot create ExperimentsPredictor for a mixture of experiments with different types"
+        )
 
         if experiments.all_tof():
             return TOFExperimentsPredictor(experiments)

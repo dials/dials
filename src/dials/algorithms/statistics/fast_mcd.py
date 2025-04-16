@@ -157,15 +157,15 @@ class FastMCD:
 
         # number of observations
         lens = [len(e) for e in self._data]
-        assert all(
-            e == lens[0] for e in lens
-        ), "FastMCD init: Unequal length data arrays"
+        assert all(e == lens[0] for e in lens), (
+            "FastMCD init: Unequal length data arrays"
+        )
         self._n = lens[0]
 
         # some input checks
-        assert (
-            self._n > self._p
-        ), f"FastMCD init: assert self._n > self._p ({self._n} > {self._p})"
+        assert self._n > self._p, (
+            f"FastMCD init: assert self._n > self._p ({self._n} > {self._p})"
+        )
 
         # default initial subset size
         self._alpha = alpha
@@ -174,9 +174,9 @@ class FastMCD:
         # In the original FAST-MCD, if h == n it reports a single
         # location and scatter estimate for the whole dataset and stops. Currently
         # limit this implementation to h < n
-        assert (
-            self._h < self._n
-        ), f"FastMCD init: assert self._h < self._n ({self._h} < {self._n})"
+        assert self._h < self._n, (
+            f"FastMCD init: assert self._h < self._n ({self._h} < {self._n})"
+        )
 
         # set sizes of groups and how many trials to perform in each
         self._max_n_groups = max_n_groups

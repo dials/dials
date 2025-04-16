@@ -70,9 +70,9 @@ def change_of_basis_op_against_reference(
     # reference with data that has not yet been through integration
     for table in reflections:
         if table.get_flags(table.flags.integrated_sum).count(True) == 0:
-            assert (
-                "intensity.sum.value" in table
-            ), "No 'intensity.sum.value' in reflections"
+            assert "intensity.sum.value" in table, (
+                "No 'intensity.sum.value' in reflections"
+            )
             table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
     # Make miller array of the datasets
     best_cell = determine_best_unit_cell(experiments)

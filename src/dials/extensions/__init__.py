@@ -64,7 +64,7 @@ class _Extension:
         if exts:
             algorithm = parse(
                 f"""
-        algorithm = {' '.join(ext_names(exts))}
+        algorithm = {" ".join(ext_names(exts))}
           .help = "The choice of algorithm"
           .type = choice
       """
