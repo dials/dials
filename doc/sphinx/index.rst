@@ -85,7 +85,7 @@ grant R24GM154040.
 
    .. container:: leftside-nih
 
-        .. image:: https://www.nigms.nih.gov/Style%20Library/NIGMS2/images/nih.svg
+        .. image:: https://upload.wikimedia.org/wikipedia/commons/f/fb/NIH_2012_logo_arrow.svg
            :alt: NIH NIGMS
            :target: `NIH`_
            :height: 70px

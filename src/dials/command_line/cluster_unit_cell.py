@@ -32,6 +32,9 @@ phil_scope = iotbx.phil.parse(
 threshold = 5000
   .type = float(value_min=0)
   .help = 'Threshold value for the clustering'
+linkage = *single ward
+  .type = choice
+  .help = "The type of linkage to use for hierarchical clustering"
 plot {
   show = False
     .type = bool
@@ -193,6 +196,7 @@ def do_cluster_analysis(crystal_symmetries, params):
         threshold=params.threshold,
         ax=ax,
         no_plot=no_plot,
+        linkage=params.linkage,
     )
     logger.info(clustering)
 

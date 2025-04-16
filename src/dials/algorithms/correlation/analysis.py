@@ -21,6 +21,7 @@ from dials.algorithms.correlation.cluster import ClusterInfo
 from dials.algorithms.correlation.plots import (
     linkage_matrix_to_dict,
     plot_dims,
+    plot_pca_coords,
     plot_reachability,
     to_plotly_json,
 )
@@ -58,6 +59,12 @@ significant_clusters {
   xi = 0.05
     .type = float(value_min=0, value_max=1)
     .help = "xi parameter to determine min steepness to define cluster boundary"
+}
+
+hierarchical_clustering {
+  linkage_method = *ward average
+    .type = choice
+    .help = "Linkage method for constructing dendorgrams for both correlation and cosine angle clustering methods"
 }
 """
     % cosym_scope,
@@ -238,12 +245,15 @@ class CorrelationMatrix:
             max_calls=self.cosym_analysis.params.minimization.max_calls,
         )
 
+        self.cosym_analysis._principal_component_analysis(cluster=True)
+
         # Convert cosym output into cc/cos matrices in correct form and compute linkage matrices as clustering method
         (
             self.correlation_matrix,
             self.cc_linkage_matrix,
         ) = self.compute_correlation_coefficient_matrix(
-            self.cosym_analysis.target.rij_matrix
+            self.cosym_analysis.target.rij_matrix,
+            self.params.hierarchical_clustering.linkage_method,
         )
 
         self.correlation_clusters = self.cluster_info(
@@ -254,7 +264,8 @@ class CorrelationMatrix:
         self.cc_table = ClusterInfo.as_table(self.correlation_clusters)
         logger.info(tabulate(self.cc_table, headers="firstrow", tablefmt="rst"))
         self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix(
-            self.cosym_analysis.coords
+            self.cosym_analysis.coords,
+            self.params.hierarchical_clustering.linkage_method,
         )
 
         self.cos_angle_clusters = self.cluster_info(
@@ -271,12 +282,14 @@ class CorrelationMatrix:
     @staticmethod
     def compute_correlation_coefficient_matrix(
         correlation_matrix: np.ndarray,
+        linkage_method: str,
     ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the correlation matrix and clustering linkage matrix from the rij cosym matrix.
 
         Args:
             correlation_matrix(numpy.ndarray): pair-wise matrix of correlation coefficients
+            linkage_method(str): linkage method for hierarchical clustering
 
         Returns:
             correlation_matrix(numpy.ndarray): correlation matrix with corrections to diagonals and accounting for floating point errors
@@ -285,6 +298,9 @@ class CorrelationMatrix:
         """
 
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)")
+        logger.info(
+            f"Hierarchical clustering performed using the {linkage_method} linkage method"
+        )
 
         # Make diagonals equal to 1 (each dataset correlated with itself)
         np.fill_diagonal(correlation_matrix, 1)
@@ -305,18 +321,20 @@ class CorrelationMatrix:
         cc_dist_mat = ssd.squareform(diffraction_dissimilarity, checks=False)
 
         # Clustering method
-        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="average")
+        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method=linkage_method)
 
         return correlation_matrix, cc_linkage_matrix
 
     @staticmethod
     def compute_cos_angle_matrix(
         coords: np.ndarray,
+        linkage_method: str,
     ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the cos_angle matrix and clustering linkage matrix from the optimized cosym coordinates.
         Args:
             coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
+            linkage_method(str): linkage method for hierarchical clustering
 
         Returns:
             cos_angle(numpy.ndarray): pair-wise cos angle matrix
@@ -326,13 +344,16 @@ class CorrelationMatrix:
         logger.info(
             "\nCalculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)"
         )
+        logger.info(
+            f"Hierarchical clustering performed using the {linkage_method} linkage method"
+        )
 
         # Convert coordinates to cosine distances and then reversed so closer cosine distances have higher values to match CC matrix
         cos_dist_mat = ssd.pdist(coords, metric="cosine")
         cos_angle = 1 - ssd.squareform(cos_dist_mat)
 
         # Clustering method
-        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
+        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method=linkage_method)
 
         return cos_angle, cos_linkage_matrix
 
@@ -509,22 +530,71 @@ class CorrelationMatrix:
             )
         )
 
-        dim_list = list(range(0, self.cosym_analysis.target.dim))
+        cluster_labels = self.cluster_labels
+        axes_labels = {
+            str(i): f"PC {i+1} ({var:.1f}%)"
+            for i, var in enumerate(self.cosym_analysis.explained_variance_ratio * 100)
+        }
 
-        projections = [
-            (a, b) for idx, a in enumerate(dim_list) for b in dim_list[idx + 1 :]
-        ]
+        # Cosym coordinates are aligned with the principal components
+        # Note that the reduced coordinates are NOT used because want to retain information
+        # about length/angles from the original cosym procedure
+        # Instead, simply rotate the data to align with the eigenvectors
 
-        for i in projections:
-            self.rij_graphs.update(
-                plot_coords(
-                    self.cosym_analysis.coords,
-                    self.cluster_labels,
-                    key="cosym_coordinates_" + str(i[0]) + "_" + str(i[1]),
-                    dim1=i[0],
-                    dim2=i[1],
-                )
+        cob_mat = np.linalg.inv(np.transpose(self.cosym_analysis.pca_components))
+
+        coords = np.array([])
+        for data in self.cosym_analysis.coords:
+            rot_coord = np.matmul(cob_mat, data)
+            if coords.size == 0:
+                coords = rot_coord
+            else:
+                coords = np.vstack([coords, rot_coord])
+
+        if coords.shape[1] > 6:
+            coords = coords[:, 0:6]
+            dim_list = list(range(0, 6))
+        else:
+            dim_list = list(range(0, self.cosym_analysis.target.dim))
+
+        self.pca_plot = plot_pca_coords(
+            coords,
+            axes_labels,
+            cluster_labels,
+            dim_list,
+        )
+
+        # Separately also plot the two most significant principal components for ease of visualisation
+
+        self.rij_graphs.update(
+            plot_coords(
+                coords[:, 0:2],
+                self.cluster_labels,
+                key="cosym_coordinates_principal_components",
             )
+        )
+
+        updated_help = """\
+The outcome of the cosym multi-dimensional analysis rotated by the components identified using
+Principal Component Analysis and projected in 2D. Each point corresponds to an individual data set.
+The lengths of the vectors are inversely related to the amount of random error in each dataset;
+however, because the plot is a projection in 2D, the coordinates in this graph are not directly
+representative of the length of the vector in multi-dimensional space (unless the analysis
+is 2-dimensional). The angular separation between any pair, or groups, of vectors is a measure of the
+systematic differences between the data sets (could be the presence of non-isomorphism). This projection
+summarises the effect of the first two principal components.
+        """
+
+        self.rij_graphs["cosym_coordinates_principal_components"]["help"] = updated_help
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["title"] = (
+            "Cosym Coordinates Rotated by Principal Components"
+        )
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["xaxis"][
+            "title"
+        ] = axes_labels["0"]
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["yaxis"][
+            "title"
+        ] = axes_labels["1"]
 
         # Generate the table for the html that lists all datasets and image paths present in the analysis
 
