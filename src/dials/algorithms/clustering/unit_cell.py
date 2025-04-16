@@ -162,6 +162,7 @@ def cluster_unit_cells(
     threshold: int = 10000,
     ax: matplotlib.axes.Axes | None = None,
     no_plot: bool = True,
+    linkage: str = "single",
 ) -> ClusteringResult | None:
     if not lattice_ids:
         lattice_ids = list(range(len(crystal_symmetries)))
@@ -185,7 +186,7 @@ def cluster_unit_cells(
     if len(pair_distances) > 0:
         logger.info("Distances have been calculated")
         linkage_matrix = hierarchy.linkage(
-            pair_distances, method="single", metric=metric
+            pair_distances, method=linkage, metric=metric
         )
         cluster_ids = hierarchy.fcluster(
             linkage_matrix, threshold, criterion="distance"
@@ -205,10 +206,11 @@ def cluster_unit_cells(
         )
         sub_clusters.append(cluster)
 
-    # Order clusters by size
-    sub_clusters = sorted(sub_clusters, key=len)
+    # Order clusters by size, largest first, with zero-padded id number
+    sub_clusters = sorted(sub_clusters, key=len, reverse=True)
+    pad = f"0{len(str(len(sub_clusters)))}"
     for i, cluster in enumerate(sub_clusters):
-        cluster.name = f"cluster_{i + 1}"
+        cluster.name = f"cluster_{i + 1:{pad}}"
 
     dendrogram = hierarchy.dendrogram(
         linkage_matrix,

@@ -145,6 +145,7 @@ def run(args=None):
             cos_angle_cluster_table=matrices.cos_table,
             image_range_tables=[matrices.table_list],
             cosym_graphs=matrices.rij_graphs,
+            pca_plot=matrices.pca_plot,
         )
 
         logger.info(
