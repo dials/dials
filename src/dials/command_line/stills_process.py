@@ -339,7 +339,6 @@ profile.gaussian_rs.min_spots.overall = 0
 """
 
 
-
 control_phil_str = _control_phil_str()
 dials_phil_str = _dials_phil_str()
 program_defaults_phil_str = _program_defaults_phil_str()
