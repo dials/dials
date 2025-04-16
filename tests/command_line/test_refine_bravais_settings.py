@@ -101,10 +101,10 @@ def test_refine_bravais_settings_multi_sweep(dials_data, tmp_path):
     assert bravais_summary["9"]["recommended"] is True
 
 
-def test_refine_bravais_settings_trypsin(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_trypsin(dials_data: Path, tmp_path):
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = os.path.join(data_dir, "trypsin-indexed.pickle")
+    experiments_path = os.path.join(data_dir, "trypsin-experiments.json")
     result = subprocess.run(
         [
             shutil.which("dials.refine_bravais_settings"),
