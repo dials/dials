@@ -64,6 +64,7 @@ class ExtractPixelsFromImage:
 
         :param index: The index of the image
         """
+        
         # Get the frame number
         if isinstance(self.imageset, ImageSequence):
             frame = self.imageset.get_array_range()[0] + index
@@ -402,6 +403,7 @@ class ExtractSpots:
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
         self.write_hot_pixel_mask = write_hot_pixel_mask
+        self.function = None
 
     def __call__(self, imageset):
         """
@@ -467,14 +469,15 @@ class ExtractSpots:
         assert mp_chunksize > 0, "Invalid chunk size"
 
         # The extract pixels function
-        function = ExtractPixelsFromImage(
-            imageset=imageset,
-            threshold_function=self.threshold_function,
-            mask=self.mask,
-            max_strong_pixel_fraction=self.max_strong_pixel_fraction,
-            compute_mean_background=self.compute_mean_background,
-            region_of_interest=self.region_of_interest,
-        )
+        if self.function is None:
+            self.function = ExtractPixelsFromImage(
+                imageset=imageset,
+                threshold_function=self.threshold_function,
+                mask=self.mask,
+                max_strong_pixel_fraction=self.max_strong_pixel_fraction,
+                compute_mean_background=self.compute_mean_background,
+                region_of_interest=self.region_of_interest,
+            )
 
         # The indices to iterate over
         indices = list(range(len(imageset)))
@@ -500,7 +503,7 @@ class ExtractSpots:
                     plabeller.add(plist)
 
             batch_multi_node_parallel_map(
-                func=ExtractSpotsParallelTask(function),
+                func=ExtractSpotsParallelTask(self.function),
                 iterable=indices,
                 nproc=mp_nproc,
                 njobs=mp_njobs,
@@ -510,7 +513,7 @@ class ExtractSpots:
             )
         else:
             for task in indices:
-                result = function(task)
+                result = self.function(task)
                 assert len(pixel_labeller) == len(result), "Inconsistent size"
                 for plabeller, plist in zip(pixel_labeller, result):
                     plabeller.add(plist)
@@ -666,6 +669,7 @@ class SpotFinder:
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
+        self.extract_spots = None
 
     def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
         """
@@ -730,7 +734,7 @@ class SpotFinder:
                 # Write the hot mask
                 with open(imageset.external_lookup.mask.filename, "wb") as outfile:
                     pickle.dump(hot_mask, outfile, protocol=pickle.HIGHEST_PROTOCOL)
-
+             
         # Set the strong spot flag
         reflections.set_flags(
             flex.size_t_range(len(reflections)), reflections.flags.strong
@@ -755,23 +759,24 @@ class SpotFinder:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
         # Set the spot finding algorithm
-        extract_spots = ExtractSpots(
-            threshold_function=self.threshold_function,
-            mask=mask,
-            region_of_interest=self.region_of_interest,
-            max_strong_pixel_fraction=self.max_strong_pixel_fraction,
-            compute_mean_background=self.compute_mean_background,
-            mp_method=self.mp_method,
-            mp_nproc=self.mp_nproc,
-            mp_njobs=self.mp_njobs,
-            mp_chunksize=self.mp_chunksize,
-            min_spot_size=self.min_spot_size,
-            max_spot_size=self.max_spot_size,
-            filter_spots=self.filter_spots,
-            no_shoeboxes_2d=self.no_shoeboxes_2d,
-            min_chunksize=self.min_chunksize,
-            write_hot_pixel_mask=self.write_hot_mask,
-        )
+        if self.extract_spots is None:
+            self.extract_spots = ExtractSpots(
+                threshold_function=self.threshold_function,
+                mask=mask,
+                region_of_interest=self.region_of_interest,
+                max_strong_pixel_fraction=self.max_strong_pixel_fraction,
+                compute_mean_background=self.compute_mean_background,
+                mp_method=self.mp_method,
+                mp_nproc=self.mp_nproc,
+                mp_njobs=self.mp_njobs,
+                mp_chunksize=self.mp_chunksize,
+                min_spot_size=self.min_spot_size,
+                max_spot_size=self.max_spot_size,
+                filter_spots=self.filter_spots,
+                no_shoeboxes_2d=self.no_shoeboxes_2d,
+                min_chunksize=self.min_chunksize,
+                write_hot_pixel_mask=self.write_hot_mask,
+            )
 
         # Get the max scan range
         if isinstance(imageset, ImageSequence):
@@ -803,9 +808,9 @@ class SpotFinder:
                 j0 -= imageset.get_array_range()[0]
                 j1 -= imageset.get_array_range()[0]
             if len(imageset) == 1:
-                r, h = extract_spots(imageset)
+                r, h = self.extract_spots(imageset)
             else:
-                r, h = extract_spots(imageset[j0:j1])
+                r, h = self.extract_spots(imageset[j0:j1])
             reflections.extend(r)
             if h is not None:
                 for h1, h2 in zip(hot_pixels, h):
