@@ -277,7 +277,6 @@ class LatticeSearch(indexer.Indexer):
             if soln is None:
                 continue
             solutions.append(soln)
-
         if len(solutions):
             logger.info("Candidate solutions:")
             logger.info(str(solutions))
