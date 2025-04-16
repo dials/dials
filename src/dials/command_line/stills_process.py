@@ -339,6 +339,7 @@ profile.gaussian_rs.min_spots.overall = 0
 """
 
 
+
 control_phil_str = _control_phil_str()
 dials_phil_str = _dials_phil_str()
 program_defaults_phil_str = _program_defaults_phil_str()
@@ -1178,9 +1179,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("*" * 80)
 
         # Find the strong spots
-        #observed = flex.reflection_table.from_observations(
-        #    experiments, self.params, is_stills=True
-        #)
         if self.spot_finder_factory is None:
             self.spot_finder_factory = self.get_spot_finder_factory(experiments)
         observed = self.spot_finder_factory.find_spots(experiments)

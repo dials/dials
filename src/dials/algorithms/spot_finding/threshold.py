@@ -56,12 +56,11 @@ class DispersionThresholdStrategy(ThresholdStrategy):
         """
         from dials.algorithms.image import threshold
         from dials.array_family import flex
-        
+
         # Initialise the algorithm
         try:
             algorithm = self.algorithm[image.all()]
-        except Exception as e:
-            # Always ends in this exception because self.algorithm is an empty dictionary
+        except Exception:
             algorithm = threshold.DispersionThreshold(
                 image.all(),
                 self._kernel_size,

@@ -973,6 +973,7 @@ class Integrator:
         :param reflections: The reflections to process
         :param params: The parameters to use
         """
+
         # Save some stuff
         self.experiments = experiments
         self.reflections = reflections
