@@ -19,16 +19,16 @@ The output formats currently supported are:
 
 MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
-but unscaled data, the required input is a models.expt file and an
+but unscaled data, the required input is an integrated.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
-models.expt file and a scaled.refl file, also passing the option
-intensity=scale.
+scaled.expt file and a scaled.refl file, in which case the intensity=scale
+flag will be set implicitly.
 
-NXS format exports the files as an NXmx file. The required input is a
-models.expt file and an integrated.refl file.
+NXS format exports the files as an NXmx file. The required input is an
+integrated.expt file and an integrated.refl file.
 
-MMCIF format exports the files as an mmcif file. The required input is a
-models.expt file and an integrated.refl file.
+MMCIF format exports the files as an mmcif file. The required input is an
+integrated.expt file and an integrated.refl file.
 
 XDS_ASCII format exports intensity data and the experiment metadata in the
 same format as used by the output of XDS in the CORRECT step - output can
@@ -42,7 +42,7 @@ MOSFLM format exports the files as an index.mat mosflm-format matrix file and a
 mosflm.in file containing basic instructions for input to mosflm. The required
 input is an models.expt file.
 
-XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
+XDS format exports experiment files as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
 SHELX format exports intensity data in HKLF 4 format for use in the SHELX suite
@@ -57,26 +57,23 @@ dynamic diffraction refinement using Jana2020, which requires this format.
 Examples::
 
   # Export to mtz
-  dials.export models.expt integrated.refl
-  dials.export models.expt integrated.refl mtz.hklout=integrated.mtz
-  dials.export models.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
+  dials.export integrated.expt integrated.refl
+  dials.export integrated.expt integrated.refl mtz.hklout=integrated.mtz
+  dials.export scaled.expt scaled.refl
+  dials.export scaled.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
-  dials.export models.expt integrated.refl format=nxs
-  dials.export models.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
+  dials.export integrated.expt integrated.refl format=nxs
+  dials.export integrated.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
 
   # Export to mmcif
-  dials.export models.expt integrated.refl format=mmcif
-  dials.export models.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
-
-  # Export to mosflm
-  dials.export models.expt integrated.refl format=mosflm
+  dials.export integrated.expt integrated.refl format=mmcif
+  dials.export integrated.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
 
   # Export to xds
   dials.export strong.refl format=xds
   dials.export indexed.refl format=xds
-  dials.export models.expt format=xds
-  dials.export models.expt indexed.refl format=xds
+  dials.export indexed.expt indexed.refl format=xds
 
   # Export to shelx
   dials.export scaled.expt scaled.refl format=shelx
