@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from cctbx.array_family.flex import (  # noqa: F401; lgtm
+from cctbx.array_family.flex import (  # noqa: F401
     abs,
     acos,
     arg,
@@ -125,7 +125,7 @@ from cctbx.array_family.flex import (  # noqa: F401; lgtm
 )
 
 # small integer types from scitbx
-from scitbx.array_family.flex import (  # noqa: F401; lgtm
+from scitbx.array_family.flex import (  # noqa: F401
     int8,
     int16,
     int32,
@@ -136,11 +136,11 @@ from scitbx.array_family.flex import (  # noqa: F401; lgtm
     uint64,
 )
 
-from dials.array_family.flex_ext import (  # noqa: F401; lgtm
+from dials.array_family.flex_ext import (  # noqa: F401
     real,
     reflection_table_selector,
 )
-from dials_array_family_flex_ext import (  # noqa: F401; lgtm
+from dials_array_family_flex_ext import (  # noqa: F401
     Binner,
     PixelListShoeboxCreator,
     int6,

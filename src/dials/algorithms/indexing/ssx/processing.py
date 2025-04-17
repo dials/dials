@@ -140,13 +140,13 @@ def index_one(
             idxr.index()
         except (DialsIndexError, AssertionError) as e:
             logger.info(
-                f"Image {image_no+1}: Failed to index with {method} method, error: {e}"
+                f"Image {image_no + 1}: Failed to index with {method} method, error: {e}"
             )
             if method == method_list[-1]:
                 return None, None
         else:
             logger.info(
-                f"Image {image_no+1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
+                f"Image {image_no + 1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
             )
             return idxr.refined_experiments, idxr.refined_reflections
 

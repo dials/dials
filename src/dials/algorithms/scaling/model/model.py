@@ -1513,9 +1513,9 @@ _dxtbx_scaling_models = {
     ep.name: ep
     for ep in importlib.metadata.entry_points(group="dxtbx.scaling_model_ext")
 }
-assert (
-    _dxtbx_scaling_models
-), "No models registered with dxtbx.scaling_model_ext entry point"
+assert _dxtbx_scaling_models, (
+    "No models registered with dxtbx.scaling_model_ext entry point"
+)
 model_phil_scope.adopt_scope(
     phil.parse(
         "model ="

@@ -18,11 +18,8 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace transform {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace transform {
 
     using dxtbx::model::BeamBase;
     using dxtbx::model::Detector;

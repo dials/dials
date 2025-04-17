@@ -159,6 +159,6 @@ def test_export_restricted_multiimage(dials_data, tmp_path):
             f"output.directory={tmp_path}",
         ],
     )
-    assert [f.name for f in tmp_path.glob("*.png")] == [
-        "image0002.png"
-    ], "Only one image expected"
+    assert [f.name for f in tmp_path.glob("*.png")] == ["image0002.png"], (
+        "Only one image expected"
+    )

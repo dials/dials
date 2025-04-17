@@ -294,7 +294,7 @@ def test_refine_bravais_settings_non_primitive_input(dials_data, tmp_path):
     input_cs = input_expts[0].crystal.get_crystal_symmetry()
     for i in range(22):
         uc_input_to_ref = input_cs.unit_cell().change_basis(
-            sgtbx.change_of_basis_op(bravais_summary[f"{i+1}"]["cb_op"])
+            sgtbx.change_of_basis_op(bravais_summary[f"{i + 1}"]["cb_op"])
         )
-        uc_ref = uctbx.unit_cell(bravais_summary[f"{i+1}"]["unit_cell"])
+        uc_ref = uctbx.unit_cell(bravais_summary[f"{i + 1}"]["unit_cell"])
         assert uc_input_to_ref.is_similar_to(uc_ref)

@@ -89,7 +89,7 @@ def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=10.0):
     n_e2_outliers = sel.count(True)
     if n_e2_outliers:
         logger.info(
-            f"{n_e2_outliers} outliers identified from normalised intensity analysis (E\xb2 > {(emax ** 2)})"
+            f"{n_e2_outliers} outliers identified from normalised intensity analysis (E\xb2 > {(emax**2)})"
         )
     outlier_indices = (
         Ih_table.Ih_table_blocks[0]

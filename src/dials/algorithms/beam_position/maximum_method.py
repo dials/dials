@@ -108,7 +108,7 @@ class MaximumMethodSolver:
             ax.text(
                 0.01,
                 0.78,
-                f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})",
+                f"I_min, I_max = ({self.min_value:.1f}, {self.max_value:.1f})",
                 ha="left",
                 transform=ax.transAxes,
                 c="gray",
@@ -117,8 +117,7 @@ class MaximumMethodSolver:
             ax.text(
                 0.01,
                 0.7,
-                f"I_min, I_max = ({self.min_from_mean:.1f}, "
-                f"{self.max_from_mean:.1f})",
+                f"I_min, I_max = ({self.min_from_mean:.1f}, {self.max_from_mean:.1f})",
                 ha="left",
                 transform=ax.transAxes,
                 c="C2",
@@ -178,7 +177,7 @@ class MaximumMethodSolver:
             ax.text(
                 0.0,
                 1.06,
-                f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})",
+                f"I_min, I_max = ({self.min_value:.1f}, {self.max_value:.1f})",
                 va="top",
                 transform=ax.transAxes,
                 c="gray",
@@ -187,8 +186,7 @@ class MaximumMethodSolver:
             ax.text(
                 0.0,
                 1.03,
-                f"I_min, I_max = ({self.min_from_mean:.1f}, "
-                f"{self.max_from_mean:.1f})",
+                f"I_min, I_max = ({self.min_from_mean:.1f}, {self.max_from_mean:.1f})",
                 va="top",
                 transform=ax.transAxes,
                 c="C2",

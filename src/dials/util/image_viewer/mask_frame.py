@@ -968,9 +968,9 @@ class MaskSettingsPanel(wx.Panel):
             p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
             assert p_id >= 0, "Point must be within a panel"
             if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
+                assert panel_id == p_id, (
+                    "All points must be contained within a single panel"
+                )
             panel_id = int(p_id)
             point_.append((p0, p1))
         points = point_
@@ -1016,9 +1016,9 @@ class MaskSettingsPanel(wx.Panel):
             p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
             assert p_id >= 0, "Point must be within a panel"
             if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
+                assert panel_id == p_id, (
+                    "All points must be contained within a single panel"
+                )
             panel_id = p_id
             points_.append((p0, p1))
         points = points_
