@@ -1,1 +1,0 @@
-``dials.image_viewer``: Avoid error messages when quitting while one of the tools (ring, unit cell, etc.) is open.

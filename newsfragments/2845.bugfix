@@ -1,1 +1,0 @@
-``dials.export format=mosflm``: Do not write a DIRECTORY line if the image files do not exist

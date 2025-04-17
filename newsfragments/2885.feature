@@ -1,1 +1,0 @@
-``dials.correlation_matrix``: Perform principal component analysis on optimised cosym coordinates. Coordinate plots now rotated by principal components. New matrix-style plot for displaying all projections.

@@ -1,1 +1,0 @@
-Use locally defined ``OrderedSet`` for cases where the implementation in ``ordered_set`` does not work.

@@ -1,1 +1,0 @@
-``dials.index`` and ``dials.ssx_index``: Add the CUDA-accelerated fast-feedback-indexer to DIALS as a lattice search algorithm. See https://github.com/paulscherrerinstitute/fast-feedback-indexer for more details.
