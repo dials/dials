@@ -209,7 +209,7 @@ class Script:
         scan = imageset.get_scan()
         rows = [
             [
-                f"{i+1}",
+                f"{i + 1}",
                 f"{scan.get_angle_from_array_index(block[0]):.2f} - {scan.get_angle_from_array_index(block[-1] + 1):.2f}",
             ]
             for i, block in enumerate(blocks)

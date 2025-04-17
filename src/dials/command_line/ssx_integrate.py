@@ -404,7 +404,7 @@ def run_integration(reflections, experiments, params):
     # now process each batch, and do parallel processing within a batch
     for i, b in enumerate(batches[:-1]):
         end_ = batches[i + 1]
-        logger.info(f"Processing images {b+1} to {end_}")
+        logger.info(f"Processing images {b + 1} to {end_}")
         sub_tables = reflections[b:end_]
         sub_expts = experiments[b:end_]
 
@@ -490,8 +490,8 @@ def run(args: list[str] = None, phil=working_phil) -> None:
             for expt in int_expt:
                 elist.append(combine(expt))
             int_expt = elist
-        reflections_filename = f"integrated_{i+1}.refl"
-        experiments_filename = f"integrated_{i+1}.expt"
+        reflections_filename = f"integrated_{i + 1}.refl"
+        experiments_filename = f"integrated_{i + 1}.expt"
         logger.info(f"Saving {int_refl.size()} reflections to {reflections_filename}")
         int_refl.as_file(reflections_filename)
         logger.info(f"Saving the experiments to {experiments_filename}")

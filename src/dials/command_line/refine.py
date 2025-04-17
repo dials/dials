@@ -129,7 +129,7 @@ def write_centroids_table(refiner, filename):
 
     matches = refiner.get_matches()
 
-    header = "H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t" "Y_calc\tPhi_calc"
+    header = "H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\tY_calc\tPhi_calc"
     msg_temp = "%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t%9.6f"
     has_del_psi = "delpsical.rad" in matches
     if has_del_psi:
@@ -556,9 +556,7 @@ def run(args=None, phil=working_phil):
     """
 
     # The script usage
-    usage = (
-        "usage: dials.refine [options] [param.phil] " "models.expt observations.refl"
-    )
+    usage = "usage: dials.refine [options] [param.phil] models.expt observations.refl"
 
     # Create the parser
     parser = ArgumentParser(

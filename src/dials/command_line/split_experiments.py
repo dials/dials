@@ -192,9 +192,9 @@ class Script:
                     refls.as_file(reflections_filename)
 
         elif params.by_detector:
-            assert (
-                not params.output.chunk_size
-            ), "chunk_size + by_detector is not implemented"
+            assert not params.output.chunk_size, (
+                "chunk_size + by_detector is not implemented"
+            )
             if reflections is None:
                 split_data = {
                     detector: {"experiments": ExperimentList()}

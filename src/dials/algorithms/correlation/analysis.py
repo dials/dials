@@ -532,7 +532,7 @@ class CorrelationMatrix:
 
         cluster_labels = self.cluster_labels
         axes_labels = {
-            str(i): f"PC {i+1} ({var:.1f}%)"
+            str(i): f"PC {i + 1} ({var:.1f}%)"
             for i, var in enumerate(self.cosym_analysis.explained_variance_ratio * 100)
         }
 

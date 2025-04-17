@@ -1131,9 +1131,9 @@ class _:
                 )
                 assert len(identifiers) == len(set(experiments.identifiers()))
                 for experiment in experiments:
-                    assert (
-                        experiment.identifier in identifiers.values()
-                    ), experiment.identifier
+                    assert experiment.identifier in identifiers.values(), (
+                        experiment.identifier
+                    )
 
     def are_experiment_identifiers_consistent(self, experiments=None):
         """

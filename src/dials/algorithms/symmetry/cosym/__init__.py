@@ -164,9 +164,9 @@ class CosymAnalysis(symmetry_base, Subject):
         self.seed_dataset = seed_dataset
         if self.seed_dataset:
             self.seed_dataset = int(self.seed_dataset)
-            assert (
-                0 <= seed_dataset < len(intensities)
-            ), "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+            assert 0 <= seed_dataset < len(intensities), (
+                "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+            )
 
         max_id = len(intensities) - 1
         super().__init__(
