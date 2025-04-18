@@ -679,7 +679,10 @@ class Script:
                     imageset.clear_cache()
                 if finalize:
                     processor.finalize()
-                return processor
+                if self.params.mp.method == 'multiprocessing':
+                    return None
+                else:
+                    return processor
 
             iterable = list(zip(tags, range(len(split_experiments))))
 
@@ -750,7 +753,10 @@ class Script:
                     processor.process_experiments(tag, experiments)
                 if finalize:
                     processor.finalize()
-                return processor
+                if self.params.mp.method == 'multiprocessing':
+                    return None
+                else:
+                    return processor
 
             iterable = list(zip(tags, all_paths))
 
