@@ -676,7 +676,7 @@ class Script:
                     imageset.clear_cache()
                 if finalize:
                     processor.finalize()
-                if self.params.mp.method == 'multiprocessing':
+                if self.params.mp.method == "multiprocessing":
                     return None
                 else:
                     return processor
@@ -750,7 +750,7 @@ class Script:
                     processor.process_experiments(tag, experiments)
                 if finalize:
                     processor.finalize()
-                if self.params.mp.method == 'multiprocessing':
+                if self.params.mp.method == "multiprocessing":
                     return None
                 else:
                     return processor
@@ -1182,7 +1182,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("Configuring spot finder from input parameters")
         return SpotFinderFactory.from_parameters(
             experiments=experiments, params=self.params, is_stills=True
-            )
+        )
 
     def find_spots(self, experiments):
         st = time.time()
@@ -1225,6 +1225,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
     def index(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
+
         def update_indexer(indexer, experiments, reflections):
             # This function mimics the initialization in the StillsIndexer and Indexer objects.
             # It removes the need to repeatively instantiate and Indexing object that adds a
@@ -1237,13 +1238,16 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             indexer.experiments = experiments
             indexer.reflections = reflections
             if "flags" in reflections:
-                strong_sel = indexer.reflections.get_flags(indexer.reflections.flags.strong)
+                strong_sel = indexer.reflections.get_flags(
+                    indexer.reflections.flags.strong
+                )
                 if strong_sel.count(True) > 0:
                     indexer.reflections = indexer.reflections.select(strong_sel)
             if "flags" not in indexer.reflections or strong_sel.count(True) == 0:
                 # backwards compatibility for testing
                 indexer.reflections.set_flags(
-                    flex.size_t_range(len(indexer.reflections)), indexer.reflections.flags.strong
+                    flex.size_t_range(len(indexer.reflections)),
+                    indexer.reflections.flags.strong,
                 )
             indexer.setup_indexing()
             return indexer
@@ -1339,7 +1343,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                                 params=self.params,
                             )
                         else:
-                            self.idxr = update_indexer(self.idxr, experiments, reflections)
+                            self.idxr = update_indexer(
+                                self.idxr, experiments, reflections
+                            )
                         self.idxr.index()
                     else:
                         ml_indexing_error = None
