@@ -49,15 +49,22 @@ class ExtractPixelsFromImage:
         :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
         """
         self.threshold_function = threshold_function
-        self.imageset = imageset
-        self.mask = mask
         self.region_of_interest = region_of_interest
         self.max_strong_pixel_fraction = max_strong_pixel_fraction
         self.compute_mean_background = compute_mean_background
-        if self.mask is not None:
-            detector = self.imageset.get_detector()
-            assert len(self.mask) == len(detector)
-        self._mask = None
+        self.update_cache(imageset)
+        # Set the mask
+        mask_imageset = self.imageset.get_mask(0)
+        assert len(mask) == len(mask_imageset)
+        assert len(mask) == len(imageset.get_detector())
+        self.mask = tuple(m1 & m2 for m1, m2 in zip(mask_imageset, mask))
+
+        logger.debug(
+            f"Number of masked pixels: {sum(m.count(False) for m in self.mask)}",
+        )
+
+    def update_cache(self, imageset):
+        self.imageset = imageset
 
     def __call__(self, index):
         """
@@ -77,23 +84,13 @@ class ExtractPixelsFromImage:
         # Create the list of pixel lists
         pixel_list = []
 
-        # Get the image and mask
+        # Get the image
         image = self.imageset.get_corrected_data(index)
-        if self._mask is None:
-            mask = self.imageset.get_mask(index)
-            # Set the mask
-            if self.mask is not None:
-                assert len(self.mask) == len(mask)
-                self._mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
-
-            logger.debug(
-                f"Number of masked pixels for image {index}: {sum(m.count(False) for m in self._mask)}",
-            )
 
         # Add the images to the pixel lists
         num_strong = 0
         average_background = 0
-        for i_panel, (im, mk) in enumerate(zip(image, self._mask)):
+        for i_panel, (im, mk) in enumerate(zip(image, self.mask)):
             if self.imageset.is_marked_for_rejection(index):
                 threshold_mask = flex.bool(im.accessor(), False)
             elif self.region_of_interest is not None:
@@ -478,6 +475,8 @@ class ExtractSpots:
                 compute_mean_background=self.compute_mean_background,
                 region_of_interest=self.region_of_interest,
             )
+        else:
+            self.function.update_cache(imageset)
 
         # The indices to iterate over
         indices = list(range(len(imageset)))

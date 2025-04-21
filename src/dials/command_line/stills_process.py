@@ -925,7 +925,7 @@ class Processor:
             self.all_coset_reflections = flex.reflection_table()
 
             self.setup_filenames(composite_tag)
-        
+
         # We only want to create these objects once to prevent redundant operations.
         self.spot_finder_factory = None
         self.idxr_known_crystal_models = None
@@ -1002,27 +1002,6 @@ class Processor:
                 % ("idx-" + tag, self.params.integration.coset.transformation),
             )
 
-    def get_spot_finder_factory(self, experiments):
-        from dials.algorithms.spot_finding.factory import SpotFinderFactory
-
-        if self.params.spotfinder.filter.min_spot_size is libtbx.Auto:
-            detector = experiments[0].imageset.get_detector()
-            if detector[0].get_type() == "SENSOR_PAD":
-                # smaller default value for pixel array detectors
-                self.params.spotfinder.filter.min_spot_size = 3
-            else:
-                self.params.spotfinder.filter.min_spot_size = 6
-            logger.info(
-                "Setting spotfinder.filter.min_spot_size=%i",
-                self.params.spotfinder.filter.min_spot_size,
-            )
-
-        # Get the spot-finder from the input parameters
-        logger.info("Configuring spot finder from input parameters")
-        return SpotFinderFactory.from_parameters(
-            experiments=experiments, params=self.params, is_stills=True
-            )
-    
     def debug_start(self, tag):
         if not self.params.mp.debug.output_debug_logs:
             return
@@ -1174,6 +1153,27 @@ class Processor:
 The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
                             )
 
+    def get_spot_finder_factory(self, experiments):
+        from dials.algorithms.spot_finding.factory import SpotFinderFactory
+
+        if self.params.spotfinder.filter.min_spot_size is libtbx.Auto:
+            detector = experiments[0].imageset.get_detector()
+            if detector[0].get_type() == "SENSOR_PAD":
+                # smaller default value for pixel array detectors
+                self.params.spotfinder.filter.min_spot_size = 3
+            else:
+                self.params.spotfinder.filter.min_spot_size = 6
+            logger.info(
+                "Setting spotfinder.filter.min_spot_size=%i",
+                self.params.spotfinder.filter.min_spot_size,
+            )
+
+        # Get the spot-finder from the input parameters
+        logger.info("Configuring spot finder from input parameters")
+        return SpotFinderFactory.from_parameters(
+            experiments=experiments, params=self.params, is_stills=True
+            )
+
     def find_spots(self, experiments):
         st = time.time()
 
@@ -1219,6 +1219,11 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             # This function mimics the initialization in the StillsIndexer and Indexer objects.
             # It removes the need to repeatively instantiate and Indexing object that adds a
             # non-trivial amount of overhead.
+            for experiment in experiments:
+                experiment.imageset.set_scan(None)
+                experiment.imageset.set_goniometer(None)
+                experiment.scan = None
+                experiment.goniometer = None
             indexer.experiments = experiments
             indexer.reflections = reflections
             if "flags" in reflections:
@@ -1232,7 +1237,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 )
             indexer.setup_indexing()
             return indexer
-            
+
         st = time.time()
 
         logger.info("*" * 80)
@@ -1242,7 +1247,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         # don't do scan-varying refinement during indexing
         scan_varying = self.params.refinement.parameterisation.scan_varying
         self.params.refinement.parameterisation.scan_varying = False
-
+        # max_refine is hard-coded to 5 for stills within the Indexer.from_parameters method.
+        max_refine = self.params.indexing.basis_vector_combinations.max_refine
+        self.params.indexing.basis_vector_combinations.max_refine = 5
         if hasattr(self, "known_crystal_models"):
             known_crystal_models = self.known_crystal_models
         elif self.params.indexing.stills.known_orientations:
@@ -1326,15 +1333,12 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         for method in self.params.indexing.stills.method_list:
                             self.params.indexing.method = method
                             try:
-                                if self.idxr is None:
-                                    self.idxr = Indexer.from_parameters(
-                                        reflections,
-                                        experiments,
-                                        params=self.params,
-                                    )
-                                else:
-                                    self.idxr = update_indexer(self.idxr, experiments, reflections)
-                                self.idxr.index()
+                                idxr = Indexer.from_parameters(
+                                    reflections,
+                                    experiments,
+                                    params=self.params,
+                                )
+                                idxr.index()
                             except Exception as e_ml:
                                 logger.info("Couldn't index using method %s", method)
                                 ml_indexing_error = e_ml
@@ -1351,13 +1355,16 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     break
             if subset_indexing_error:
                 raise subset_indexing_error
-        
-        if indexing_succeeded:
+
+        if known_crystal_models and indexing_succeeded:
             indexed = self.idxr_known_crystal_models.refined_reflections
             experiments = self.idxr_known_crystal_models.refined_experiments
-        else:
+        elif self.params.indexing.stills.method_list is None:
             indexed = self.idxr.refined_reflections
             experiments = self.idxr.refined_experiments
+        else:
+            indexed = idxr.refined_reflections
+            experiments = idxr.refined_experiments
 
         if known_crystal_models is not None:
             filtered_sel = flex.bool(len(indexed), True)
@@ -1382,9 +1389,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
-        
         # scan_varying is set to False for indexing. Reset it to the set value.
         self.params.refinement.parameterisation.scan_varying = scan_varying
+        self.params.indexing.basis_vector_combinations.max_refine = max_refine
         return experiments, indexed
 
     def refine(self, experiments, centroids):

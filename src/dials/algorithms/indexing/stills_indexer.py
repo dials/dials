@@ -511,7 +511,7 @@ class StillsIndexer(Indexer):
 
         candidates = []
 
-        params = self.all_params
+        params = copy.deepcopy(self.all_params)
 
         for icm, cm in enumerate(candidate_orientation_matrices):
             if icm >= self.params.basis_vector_combinations.max_refine:
@@ -546,56 +546,60 @@ class StillsIndexer(Indexer):
                         "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification",
                         icm,
                     )
-                    refiner = e_refine(
-                        params=params,
-                        experiments=experiments,
-                        reflections=indexed,
-                        graph_verbose=False,
-                    )
-                    ref_experiments = refiner.get_experiments()
-                    predicted = refiner.predict_for_reflection_table(indexed)
                     acceptance_flags = self.identify_outliers(
-                        params, experiments, indexed, predicted
+                        params, experiments, indexed
                     )
+                    # create a new "indexed" list with outliers thrown out:
+                    indexed = indexed.select(acceptance_flags)
 
                     logger.info(
                         "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection",
                         icm,
                     )
-  
+                    R = e_refine(
+                        params=params,
+                        experiments=experiments,
+                        reflections=indexed,
+                        graph_verbose=False,
+                    )
+                    ref_experiments = R.get_experiments()
+
+                    # try to improve the outcome with a second round of outlier rejection post-initial refinement:
+                    acceptance_flags = self.identify_outliers(
+                        params, ref_experiments, indexed
+                    )
+
                     # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-                    nv = NaveParameters(
+                    nv0 = NaveParameters(
                         params=params,
                         experiments=ref_experiments,
                         reflections=indexed,
-                        refinery=refiner,
+                        refinery=R,
                         graph_verbose=False,
                     )
-                    nv()
-                    acceptance_flags_nv = nv.nv_acceptance_flags
-                    indexed = indexed.select(acceptance_flags & acceptance_flags_nv)
+                    nv0()
+                    acceptance_flags_nv0 = nv0.nv_acceptance_flags
+                    indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
                     logger.info(
                         "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection",
                         icm,
                     )
-
-                    refiner = e_refine(
+                    R = e_refine(
                         params=params,
                         experiments=ref_experiments,
                         reflections=indexed,
                         graph_verbose=False,
                     )
-                    ref_experiments = refiner.get_experiments()
+                    ref_experiments = R.get_experiments()
 
                     nv = NaveParameters(
                         params=params,
                         experiments=ref_experiments,
                         reflections=indexed,
-                        refinery=refiner,
+                        refinery=R,
                         graph_verbose=False,
                     )
-
                     crystal_model = nv()
                     assert len(crystal_model) == 1, (
                         "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
@@ -619,7 +623,7 @@ class StillsIndexer(Indexer):
                             continue
 
                     rmsd, _ = calc_2D_rmsd_and_displacements(
-                        refiner.predict_for_reflection_table(indexed)
+                        R.predict_for_reflection_table(indexed)
                     )
                 except Exception as e:
                     logger.info(
@@ -699,11 +703,14 @@ class StillsIndexer(Indexer):
 
         return best.crystal, best.n_indexed
 
-    def identify_outliers(self, params, experiments, indexed, predicted):
+    def identify_outliers(self, params, experiments, indexed):
         if not params.indexing.stills.candidate_outlier_rejection:
             return flex.bool(len(indexed), True)
 
         logger.info("$$$ stills_indexer::identify_outliers")
+        refiner = e_refine(params, experiments, indexed, graph_verbose=False)
+
+        RR = refiner.predict_for_reflection_table(indexed)
 
         px_sz = experiments[0].detector[0].get_pixel_size()
 
@@ -711,7 +718,7 @@ class StillsIndexer(Indexer):
             pass
 
         matches = []
-        for item in predicted.rows():
+        for item in RR.rows():
             m = Match()
             m.x_obs = item["xyzobs.px.value"][0] * px_sz[0]
             m.y_obs = item["xyzobs.px.value"][1] * px_sz[1]
@@ -720,68 +727,90 @@ class StillsIndexer(Indexer):
             m.miller_index = item["miller_index"]
             matches.append(m)
 
+        import iotbx.phil
+        from rstbx.phil.phil_preferences import indexing_api_defs
+
+        hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
+
+        from rstbx.indexing_api.outlier_procedure import OutlierPlotPDF
+
+        # comment this in if PDF graph is desired:
+        # hardcoded_phil.indexing.outlier_detection.pdf = "outlier.pdf"
+        # new code for outlier rejection inline here
+        if hardcoded_phil.indexing.outlier_detection.pdf is not None:
+            hardcoded_phil.__inject__(
+                "writer", OutlierPlotPDF(hardcoded_phil.indexing.outlier_detection.pdf)
+            )
+
         # execute Sauter and Poon (2010) algorithm
         from rstbx.indexing_api import outlier_detection
 
         od = outlier_detection.find_outliers_from_matches(
             matches,
             verbose=self.all_params.refinement.reflections.outlier.sauter_poon.verbose,
-            horizon_phil=self.hardcoded_phil,
+            horizon_phil=hardcoded_phil,
         )
 
-        if self.hardcoded_phil.indexing.outlier_detection.pdf is not None:
-            od.make_graphs(canvas=self.hardcoded_phil.writer.R.c, left_margin=0.5)
-            self.hardcoded_phil.writer.R.c.showPage()
-            self.hardcoded_phil.writer.R.c.save()
+        if hardcoded_phil.indexing.outlier_detection.pdf is not None:
+            od.make_graphs(canvas=hardcoded_phil.writer.R.c, left_margin=0.5)
+            hardcoded_phil.writer.R.c.showPage()
+            hardcoded_phil.writer.R.c.save()
 
         return od.get_cache_status()
 
     def refine(self, experiments, reflections):
-        refiner = e_refine(
+        acceptance_flags = self.identify_outliers(
+            self.all_params, experiments, reflections
+        )
+        # create a new "reflections" list with outliers thrown out:
+        reflections = reflections.select(acceptance_flags)
+
+        R = e_refine(
             params=self.all_params,
             experiments=experiments,
             reflections=reflections,
             graph_verbose=False,
         )
-        ref_experiments = refiner.get_experiments()
-        predicted = refiner.predict_for_reflection_table(reflections)
+        ref_experiments = R.get_experiments()
+
+        # try to improve the outcome with a second round of outlier rejection post-initial refinement:
         acceptance_flags = self.identify_outliers(
-            self.all_params, experiments, reflections, predicted
+            self.all_params, ref_experiments, reflections
         )
-        reflections = reflections.select(acceptance_flags)
 
         # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
         nv0 = NaveParameters(
             params=self.all_params,
             experiments=ref_experiments,
             reflections=reflections,
-            refinery=refiner,
+            refinery=R,
             graph_verbose=False,
         )
         nv0()
         acceptance_flags_nv0 = nv0.nv_acceptance_flags
         reflections = reflections.select(acceptance_flags & acceptance_flags_nv0)
 
-        refiner = e_refine(
+        R = e_refine(
             params=self.all_params,
             experiments=ref_experiments,
             reflections=reflections,
             graph_verbose=False,
         )
-        ref_experiments = refiner.get_experiments()
+        ref_experiments = R.get_experiments()
+
         nv = NaveParameters(
             params=self.all_params,
             experiments=ref_experiments,
             reflections=reflections,
-            refinery=refiner,
+            refinery=R,
             graph_verbose=False,
         )
         nv()
         rmsd, _ = calc_2D_rmsd_and_displacements(
-            refiner.predict_for_reflection_table(reflections)
+            R.predict_for_reflection_table(reflections)
         )
 
-        matches = refiner.get_matches()
+        matches = R.get_matches()
         xyzcal_mm = flex.vec3_double(len(reflections))
         xyzcal_mm.set_selected(matches["iobs"], matches["xyzcal.mm"])
         reflections["xyzcal.mm"] = xyzcal_mm
