@@ -85,6 +85,7 @@ class DispersionSpotFinderThresholdExt:
         """
 
         import libtbx
+
         if self._algorithm is None:
             params = self.params
             if params.spotfinder.threshold.dispersion.global_threshold is libtbx.Auto:
@@ -96,7 +97,9 @@ class DispersionSpotFinderThresholdExt:
                     params.spotfinder.threshold.dispersion.global_threshold,
                 )
 
-            from dials.algorithms.spot_finding.threshold import DispersionThresholdStrategy
+            from dials.algorithms.spot_finding.threshold import (
+                DispersionThresholdStrategy,
+            )
 
             self._algorithm = DispersionThresholdStrategy(
                 kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
