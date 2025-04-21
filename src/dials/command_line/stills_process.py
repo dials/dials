@@ -1216,7 +1216,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def index(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
 
-        def update_indexer(indexer, experiments, reflections):
+        def update_indexer(indexer, experiments, reflections, known_crystal_models=None):
             # This function mimics the initialization in the StillsIndexer and Indexer objects.
             # It removes the need to repeatively instantiate and Indexing object that adds a
             # non-trivial amount of overhead.
@@ -1225,6 +1225,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 experiment.imageset.set_goniometer(None)
                 experiment.scan = None
                 experiment.goniometer = None
+            indexer.known_orientations = known_crystal_models
             indexer.experiments = experiments
             indexer.reflections = reflections
             if "flags" in reflections:
@@ -1295,7 +1296,10 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     )
                 else:
                     self.idxr_known_crystal_models = update_indexer(
-                        self.idxr_known_crystal_models, experiments, reflections
+                        self.idxr_known_crystal_models,
+                        experiments,
+                        reflections,
+                        known_crystal_models=known_crystal_models,
                     )
                 self.idxr_known_crystal_models.index()
                 logger.info("indexed from known orientation")
