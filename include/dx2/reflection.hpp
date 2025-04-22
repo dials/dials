@@ -293,6 +293,32 @@ public:
     return std::nullopt;
   }
 
+  /**
+   * @brief Finds rows matching a predicate.
+   *
+   * Applies the given predicate to each row (represented by its index).
+   * The predicate can fetch any columns it needs via the table interface.
+   *
+   * @param predicate A function taking a row index and returning a bool.
+   * @return A vector of row indices for which the predicate returned true.
+   */
+  std::vector<size_t> find_rows(std::function<bool(size_t)> predicate) const {
+    std::vector<size_t> matching_rows;
+    size_t row_count = get_row_count();
+    for (size_t i = 0; i < row_count; ++i) {
+      if (predicate(i)) {
+        matching_rows.push_back(i);
+      }
+    }
+    return matching_rows;
+  }
+
+  /**
+   * @brief Returns a new ReflectionTable with only the specified rows.
+   *
+   * @param selected_rows The list of row indices to retain.
+   * @return A new ReflectionTable containing only the selected rows.
+   */
   ReflectionTable select(const std::vector<size_t> &selected_rows) const {
     ReflectionTable filtered;
     filtered.h5_filepath = this->h5_filepath;
@@ -304,32 +330,14 @@ public:
     return filtered;
   }
 
-  template <typename T>
-  ReflectionTable
-  select(const std::string &column_name,
-         std::function<bool(const std::span<const T>)> predicate) const {
-    auto *col = get_column<T>(column_name);
-    if (!col)
-      throw std::runtime_error("Column not found or wrong type: " +
-                               column_name);
-
-    const auto &span = col->span();
-    const auto &shape = col->get_shape();
-    size_t rows = shape[0];
-    size_t cols = shape.size() > 1 ? shape[1] : 1;
-
-    std::vector<size_t> selected_rows;
-
-    for (size_t i = 0; i < rows; ++i) {
-      std::span<const T> row(&span(i, 0), cols);
-      if (predicate(row)) {
-        selected_rows.push_back(i);
-      }
-    }
-
-    return select(selected_rows); // Reuse index-based select logic
-  }
-
+  /**
+   * @brief Returns a new ReflectionTable from a boolean mask.
+   *
+   * Converts a boolean mask into row indices and calls index-based select.
+   *
+   * @param mask A boolean mask, where `true` indicates a row to keep.
+   * @return A new ReflectionTable containing only the selected rows.
+   */
   ReflectionTable select(const std::vector<bool> &mask) const {
     std::vector<size_t> selected_rows;
     for (size_t i = 0; i < mask.size(); ++i) {
