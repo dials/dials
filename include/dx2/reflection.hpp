@@ -5,6 +5,7 @@
 #include <experimental/mdspan>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -186,6 +187,12 @@ private:
     return data.front()->get_shape()[0];
   }
 
+  /// Check if a column with the given name and type exists
+  template <typename T>
+  bool matches_column(const ColumnBase &col, const std::string &name) const {
+    return col.get_name() == name && col.get_type() == typeid(T);
+  }
+
 public:
   ReflectionTable() = default;
 
@@ -252,21 +259,38 @@ public:
   }
 
   /**
-   * @brief Get a typed column by name. Returns nullptr if name or type
-   * mismatch.
+   * @brief Retrieves a read-only view (mdspan) of a typed column by
+   * name.
    *
-   * @tparam T The expected type of the column.
-   * @param name The dataset/column name.
-   * @return A pointer to TypedColumn<T> if matched, or nullptr.
+   * This function attempts to locate a column in the table that matches
+   * both the given name and expected type `T`. If a matching column is
+   * found, it returns a non-owning reference wrapper around the
+   * `mdspan` view of that column’s data. If no matching column is
+   * found, it returns std::nullopt.
+   *
+   * @tparam T The expected type of the column (e.g., int, double).
+   * @param name The name of the column to retrieve.
+   * @return An optional containing a reference to the mdspan view, or
+   * std::nullopt if not found.
+   *
+   * @note The returned mdspan reference is only valid as long as the
+   * owning ReflectionTable instance and its internal data remain alive.
    */
   template <typename T>
-  TypedColumn<T> *get_column(const std::string &name) const {
+  std::optional<mdspan_type<T>> get_column(const std::string &name) const {
+    // Iterate though all columns in the table
     for (const auto &col : data) {
-      if (col->get_name() == name && col->get_type() == typeid(T)) {
-        return dynamic_cast<TypedColumn<T> *>(col.get());
+      // Check if the column matches the requested type and name
+      if (matches_column<T>(*col, name)) {
+        // Attempt to cast to the specific type
+        auto *typed = dynamic_cast<TypedColumn<T> *>(col.get());
+        if (typed) { // If cast is successful, return the span
+          return typed->span();
+        }
       }
     }
-    return nullptr;
+    // If no matching column is found, return an empty optional
+    return std::nullopt;
   }
 
   ReflectionTable select(const std::vector<size_t> &selected_rows) const {
