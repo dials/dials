@@ -514,7 +514,7 @@ class StillsIndexer(Indexer):
 
         candidates = []
 
-        params = copy.deepcopy(self.all_params)
+        params = self.all_params
 
         for icm, cm in enumerate(candidate_orientation_matrices):
             if icm >= self.params.basis_vector_combinations.max_refine:
