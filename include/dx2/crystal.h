@@ -6,7 +6,6 @@
 #include <gemmi/math.hpp>
 #include <gemmi/symmetry.hpp>
 #include <gemmi/unitcell.hpp>
-#include <iostream>
 #include <math.h>
 #include <nlohmann/json.hpp>
 
@@ -99,16 +98,7 @@ void Crystal::niggli_reduce() {
   char centering{'P'};
   gemmi::GruberVector gv(unit_cell_, centering, true);
   gv.niggli_reduce();
-  gemmi::UnitCell niggli_cell = gv.get_cell();
-  std::cout << "Input cell:" << std::endl;
-  std::cout << unit_cell_.a << " " << unit_cell_.b << " " << unit_cell_.c << " "
-            << unit_cell_.alpha << " " << unit_cell_.beta << " "
-            << unit_cell_.gamma << std::endl;
-  std::cout << "Reduced cell:" << std::endl;
-  std::cout << niggli_cell.a << " " << niggli_cell.b << " " << niggli_cell.c
-            << " " << niggli_cell.alpha << " " << niggli_cell.beta << " "
-            << niggli_cell.gamma << std::endl;
-  unit_cell_ = niggli_cell;
+  unit_cell_ = gv.get_cell(); // The Niggli cell
   gemmi::Op cb = *gv.change_of_basis;
 
   Matrix3d cb_op = Matrix3d_from_gemmi_cb(cb);
