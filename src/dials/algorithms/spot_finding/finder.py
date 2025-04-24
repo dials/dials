@@ -691,6 +691,7 @@ class SpotFinder:
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
         self.extract_spots = None
+        self.imageset_mask = None
 
     def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
         """
@@ -774,9 +775,10 @@ class SpotFinder:
         :return: The observed spots
         """
         # The input mask
-        mask = self.mask_generator(imageset)
-        if self.mask is not None:
-            mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
+        if self.imageset_mask is None or self.is_stills == False:
+            self.imageset_mask = self.mask_generator(imageset)
+            if self.mask is not None:
+                self.imageset_mask = tuple(m1 & m2 for m1, m2 in zip(self.imageset_mask, self.mask))
 
         # Set the spot finding algorithm
         # In the case of processing stills, cache the object.
@@ -784,7 +786,7 @@ class SpotFinder:
         if self.extract_spots is None or self.is_stills == False:
             self.extract_spots = ExtractSpots(
                 threshold_function=self.threshold_function,
-                mask=mask,
+                mask=self.imageset_mask,
                 region_of_interest=self.region_of_interest,
                 max_strong_pixel_fraction=self.max_strong_pixel_fraction,
                 compute_mean_background=self.compute_mean_background,
