@@ -78,6 +78,9 @@ void dispatch_h5_dataset_type(hid_t dataset_id, Callback &&cb) {
   H5Tclose(type_id);
 }
 
+// Forward declaration of TypedColumn
+template <typename T> struct TypedColumn;
+
 /**
  * @brief Typeless container for HDF5 data.
  *
@@ -93,6 +96,13 @@ struct ColumnBase {
   virtual std::type_index get_type() const = 0;
   virtual std::unique_ptr<ColumnBase>
   clone_filtered(const std::vector<size_t> &selected_rows) const = 0;
+
+  /// Returns a pointer to the column as a specific type.
+  template <typename T> const TypedColumn<T> *as() const {
+    if (get_type() != std::type_index(typeid(T)))
+      return nullptr;
+    return dynamic_cast<const TypedColumn<T> *>(this);
+  }
 };
 
 /**
@@ -167,6 +177,37 @@ private:
     return s;
   }
 };
+
+/**
+ * @brief Dispatches based on the type of a column.
+ *
+ * This function inspects the type of the column and then calls the
+ * provided callback as a templated function with the appropriate C++
+ * type.
+ *
+ * @tparam Callback A callable with a templated `operator()<T>()`.
+ * @param col A reference to the column to inspect.
+ * @param cb The callback to invoke with the deduced template type.
+ *
+ */
+template <typename Callback>
+void dispatch_column_type(const ColumnBase &col, Callback &&cb) {
+  using namespace reflection_table_type_utils;
+
+  const std::type_index &t = col.get_type();
+
+  if (t == typeid(double)) {
+    cb(type_tag<double>);
+  } else if (t == typeid(int)) {
+    cb(type_tag<int>);
+  } else if (t == typeid(int64_t)) {
+    cb(type_tag<int64_t>);
+  } else if (t == typeid(uint64_t)) {
+    cb(type_tag<uint64_t>);
+  } else {
+    throw std::runtime_error("Unsupported column type: " + col.get_name());
+  }
+}
 #pragma endregion
 
 #pragma region ReflectionTable
@@ -368,23 +409,43 @@ public:
     data.push_back(std::move(col));
   }
 
-  // void write(const std::string &filename,
-  //            const std::string &group = "/dials/processing/group_0") const {
-  //   for (const auto &col : data) {
-  //     if (col->get_type() == typeid(double)) {
-  //       auto *typed = dynamic_cast<const TypedColumn<double> *>(col.get());
-  //       write_data_to_h5_file(filename, group + "/" + col->get_name(),
-  //                             typed->data);
-  //     } else if (col->get_type() == typeid(int)) {
-  //       auto *typed = dynamic_cast<const TypedColumn<int> *>(col.get());
-  //       write_data_to_h5_file(filename, group + "/" + col->get_name(),
-  //                             typed->data);
-  //     } else {
-  //       std::cerr << "Skipping write for unsupported type: " <<
-  //       col->get_name()
-  //                 << "\n";
-  //     }
-  //   }
-  // }
+  void write(const std::string &filename,
+             const std::string &group = "/dials/processing/group_0") const {
+    // 🗂️ Ensure the file exists or create it before writing
+    hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+    if (file < 0) {
+      file =
+          H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+      if (file < 0) {
+        throw std::runtime_error("Failed to create or open file: " + filename);
+      }
+    }
+    // Close the file handle after opening/creating it
+    H5Fclose(file);
+
+    // 🔁 Iterate over all columns
+    for (const auto &col : data) {
+      std::string path = group + "/" + col->get_name();
+
+      auto write_col = [&](auto tag) {
+        using T = typename decltype(tag)::type;
+
+        const auto *typed = col->as<T>();
+        if (!typed)
+          return; // Skip mismatched type
+
+        write_raw_data_to_h5_file<T>(
+            filename, path, typed->data.data(),
+            {typed->shape.begin(), typed->shape.end()});
+      };
+
+      try {
+        dispatch_column_type(*col, write_col);
+      } catch (const std::exception &e) {
+        std::cerr << "Skipping column " << col->get_name() << ": " << e.what()
+                  << "\n";
+      }
+    }
+  }
 };
 #pragma endregion
