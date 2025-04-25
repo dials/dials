@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#pragma region Raw writer
 /**
  * @brief Recursively traverses or creates groups in an HDF5 file based
  * on the given path.
@@ -68,6 +69,97 @@ hid_t traverse_or_create_groups(hid_t parent, const std::string &path) {
 
   return final_group;
 }
+
+/**
+ * @brief Writes raw data to an HDF5 file.
+ *
+ * This function writes a dataset to an HDF5 file. The dataset's shape
+ * is specified by the user.
+ *
+ * @param filename The path to the HDF5 file.
+ * @param dataset_path The full path to the dataset, including group
+ * hierarchies.
+ * @param data_ptr Pointer to the raw data to write to the dataset.
+ * @param shape The shape of the dataset as a vector of dimensions.
+ * @throws std::runtime_error If the dataset cannot be created or data
+ * cannot be written.
+ */
+template <typename T>
+void write_raw_data_to_h5_file(const std::string &filename,
+                               const std::string &dataset_path,
+                               const T *data_ptr,
+                               const std::vector<hsize_t> &shape) {
+  // Open or create the file
+  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  if (file < 0) {
+    file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    if (file < 0) {
+      throw std::runtime_error("Failed to create or open file: " + filename);
+    }
+  }
+
+  try {
+    // Split group and dataset name
+    size_t slash_pos = dataset_path.find_last_of('/');
+    if (slash_pos == std::string::npos) {
+      throw std::runtime_error("Invalid dataset path: " + dataset_path);
+    }
+    std::string group_path = dataset_path.substr(0, slash_pos);
+    std::string dataset_name = dataset_path.substr(slash_pos + 1);
+
+    hid_t group = traverse_or_create_groups(file, group_path);
+
+    // Create dataspace
+    hid_t dataspace = H5Screate_simple(shape.size(), shape.data(), nullptr);
+
+    // Determine native HDF5 type
+    hid_t h5_type;
+    if constexpr (std::is_same_v<T, double>)
+      h5_type = H5T_NATIVE_DOUBLE;
+    else if constexpr (std::is_same_v<T, int>)
+      h5_type = H5T_NATIVE_INT;
+    else if constexpr (std::is_same_v<T, int64_t>)
+      h5_type = H5T_NATIVE_LLONG;
+    else if constexpr (std::is_same_v<T, uint64_t>)
+      h5_type = H5T_NATIVE_ULLONG;
+    else
+      throw std::runtime_error("Unsupported type for HDF5 writing");
+
+    // Create or overwrite dataset
+    hid_t dset = H5Dcreate2(group, dataset_name.c_str(), h5_type, dataspace,
+                            H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    if (dset < 0) {
+      dset = H5Dopen2(group, dataset_name.c_str(), H5P_DEFAULT);
+      if (dset < 0) {
+        H5Sclose(dataspace);
+        throw std::runtime_error("Failed to create or open dataset: " +
+                                 dataset_name);
+      }
+    }
+
+    herr_t status =
+        H5Dwrite(dset, h5_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_ptr);
+    if (status < 0) {
+      throw std::runtime_error("Failed to write dataset: " + dataset_path);
+    }
+
+    H5Dclose(dset);
+    H5Sclose(dataspace);
+    H5Gclose(group);
+  } catch (...) {
+    H5Fclose(file);
+    throw;
+  }
+
+  H5Fclose(file);
+}
+#pragma endregion
+#pragma region High-level writer
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * The high-level writer is useful for writing nested containers. While
+ * not utilised within the DX2 backend itself, it is a useful utility
+ * for writing data to HDF5 files, thus it is included here.
+ */
 
 /**
  * @brief Deduce the shape of a nested container.
@@ -261,3 +353,4 @@ void write_data_to_h5_file(const std::string &filename,
   // Close the file
   H5Fclose(file);
 }
+#pragma endregion
