@@ -926,8 +926,8 @@ class Indexer:
             [
                 "Imageset",
                 "# indexed",
-                "# unindexed",
-                "# non-ice",
+                "# unindexed\ntotal",
+                "# unindexed\nnon-ice",
                 "% indexed",
             ]
         ]
@@ -949,7 +949,7 @@ class Indexer:
                     str(indexed_count),
                     str(unindexed_count),
                     str(unindexed_noice),
-                    f"{indexed_count / (indexed_count + unindexed_count)*100:.1f}",
+                    f"{indexed_count / (indexed_count + unindexed_count) * 100:.1f}",
                 ]
             )
         logger.info(dials.util.tabulate(rows, headers="firstrow"))
