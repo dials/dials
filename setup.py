@@ -15,11 +15,12 @@ setup_kwargs = {
     "description": "Diffraction Integration for Advanced Light Sources",
     "author": "Diamond Light Source",
     "license": "BSD-3-Clause",
-    "author_email": "dials-support@lists.sourceforge.net",
+    "author_email": "dials-user-group@jiscmail.net",
     "project_urls": {
         "homepage": "https://dials.github.io",
         "repository": "https://github.com/dials/dials",
     },
+    "python_requires": ">=3.10",
     "packages": setuptools.find_packages(where="src"),
     "package_dir": {"": "src"},
     "package_data": {
@@ -69,6 +70,7 @@ setup_kwargs = {
         "dials.index.lattice_search": [
             "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch",
             "pink_indexer = dials.algorithms.indexing.lattice_search:PinkIndexer",
+            "ffbidx = dials.algorithms.indexing.lattice_search:FfbIndexer",
         ],
         "dials.integration.background": [
             "Auto = dials.extensions.auto_background_ext:AutoBackgroundExt",

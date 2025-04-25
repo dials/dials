@@ -554,9 +554,9 @@ class image_kapton_correction:
             sig_w = self.params.kapton_half_width_mm.sigma
             sig_a = self.params.rotation_angle_deg.sigma
             self.kapton_params_sigmas = (sig_h, sig_t, sig_w, sig_a)
-            assert all(
-                sig >= 0 for sig in self.kapton_params_sigmas
-            ), "Kapton param sigmas must be non-negative"
+            assert all(sig >= 0 for sig in self.kapton_params_sigmas), (
+                "Kapton param sigmas must be non-negative"
+            )
             self.kapton_params_maxes = [
                 [
                     (
@@ -628,9 +628,9 @@ class image_kapton_correction:
                             kapton_correction_vector
                         ).unweighted_sample_standard_deviation()
                     except Exception:
-                        assert (
-                            len(kapton_correction_vector) == 1
-                        ), "stddev could not be calculated"
+                        assert len(kapton_correction_vector) == 1, (
+                            "stddev could not be calculated"
+                        )
                         spot_px_stddev = 0
                     absorption_sigmas.append(spot_px_stddev)
                 return absorption_corrections, absorption_sigmas

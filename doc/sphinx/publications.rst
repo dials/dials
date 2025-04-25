@@ -13,8 +13,6 @@ DIALS Journal Articles
 * .. pubmed:: 31692470 XFEL error modeling
 * .. pubmed:: 30950396 How best to use photons
 * .. pubmed:: 30198898 Serial crystallography
-* .. pubmed:: 29872002 Electron diffraction
-  Data and processing instructions associated with this paper can be found :doc:`here <documentation/tutorials/3DED/lysozyme_nanocrystals>`.
 * .. pubmed:: 29717711 Cosym
 * .. pubmed:: 29533234 DIALS
 * .. pubmed:: 28989718 Background
@@ -63,6 +61,18 @@ DIALS Synchrotron Applications
 * .. pubmed:: 25453071 Diffuse MD
 * .. pubmed:: 25484844 JBluIce
      :reprint-url: http://cci.lbl.gov/publications/download/GMCA_dataprocessing_JAC.pdf
+
+DIALS for 3DED/MicroED
+----------------------
+
+* .. pubmed:: 39641675 Chemical crystallography on PADs
+* .. pubmed:: 39220700 Hemozoin
+* .. pubmed:: 37536337 Standard data format
+* .. pubmed:: 36952226 Milling lamellae
+* .. pubmed:: 33030237 Leginon
+* .. pubmed:: 34327213 Pharmaceuticals
+* .. pubmed:: 32850967 Lamella workflow
+* .. pubmed:: 29872002 Electron diffraction
 
 DIALS Newsletter Articles
 -------------------------

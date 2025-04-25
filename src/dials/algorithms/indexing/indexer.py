@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import math
-
-import pkg_resources
 
 import iotbx.phil
 import libtbx
@@ -439,8 +438,8 @@ class Indexer:
                     experiment.goniometer = None
 
             IndexerType = None
-            for entry_point in pkg_resources.iter_entry_points(
-                "dials.index.basis_vector_search"
+            for entry_point in importlib.metadata.entry_points(
+                group="dials.index.basis_vector_search"
             ):
                 if params.indexing.method == entry_point.name:
                     if use_stills_indexer:
@@ -454,8 +453,8 @@ class Indexer:
                         )
 
             if IndexerType is None:
-                for entry_point in pkg_resources.iter_entry_points(
-                    "dials.index.lattice_search"
+                for entry_point in importlib.metadata.entry_points(
+                    group="dials.index.lattice_search"
                 ):
                     if params.indexing.method == entry_point.name:
                         if use_stills_indexer:
@@ -851,7 +850,7 @@ class Indexer:
                 logger.info(R_ab)
                 logger.info(
                     f"Rotation of {angle:.3f} degrees"
-                    + " about axis (%.3f, %.3f, %.3f)" % axis
+                    + " about axis ({:.3f}, {:.3f}, {:.3f})".format(*axis)
                 )
                 have_similar_crystal_models = True
                 for id_ in sorted(models_to_reject, reverse=True):

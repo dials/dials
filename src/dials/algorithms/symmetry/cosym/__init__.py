@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import List, Optional
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -93,7 +92,7 @@ weights = *count standard_error
   .help = "If not None, a weights matrix is used in the cosym procedure."
           "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
           "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
-          "the sqrt of (1-CC*2)/(n-2), where (n-2) are the degrees of freedom in a pairwise CC calculation."
+          "(1-CC*2)/sqrt(N), where N=(n-2) or N=(neff-1) depending on the cc_weights option."
 cc_weights = None sigma
   .type = choice
   .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
@@ -126,11 +125,10 @@ nproc = Auto
 
 
 phil_scope = iotbx.phil.parse(
-    """\
-%s
-%s
-"""
-    % (cosym_scope, symmetry_analysis_phil),
+    f"""\
+{cosym_scope}
+{symmetry_analysis_phil}
+""",
     process_includes=True,
 )
 
@@ -149,7 +147,7 @@ class CosymAnalysis(symmetry_base, Subject):
         self,
         intensities,
         params,
-        seed_dataset: Optional[int] = None,
+        seed_dataset: int | None = None,
         apply_sigma_correction=True,
     ):
         """Initialise a CosymAnalysis object.
@@ -166,9 +164,9 @@ class CosymAnalysis(symmetry_base, Subject):
         self.seed_dataset = seed_dataset
         if self.seed_dataset:
             self.seed_dataset = int(self.seed_dataset)
-            assert (
-                0 <= seed_dataset < len(intensities)
-            ), "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+            assert 0 <= seed_dataset < len(intensities), (
+                "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+            )
 
         max_id = len(intensities) - 1
         super().__init__(
@@ -288,7 +286,7 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.nproc is Auto:
             if self.params.cc_weights == "sigma":
                 params.nproc = dials.util.system.CPU_COUNT
-                logger.info("Setting nproc={}".format(params.nproc))
+                logger.info(f"Setting nproc={params.nproc}")
             else:
                 params.nproc = 1
 
@@ -422,11 +420,15 @@ class CosymAnalysis(symmetry_base, Subject):
             self.target.dim, NN * n_sym_ops
         ).transpose()
 
-    def _principal_component_analysis(self):
+    def _principal_component_analysis(self, cluster=False):
         # Perform PCA
         from sklearn.decomposition import PCA
 
-        pca = PCA().fit(self.coords)
+        if cluster:
+            logger.info(f"Dimensions used for clustering PCA: {self.target.dim}")
+            pca = PCA(n_components=self.target.dim).fit(self.coords)
+        else:
+            pca = PCA().fit(self.coords)
         logger.info("Principal component analysis:")
         logger.info(
             "Explained variance: "
@@ -438,9 +440,10 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.explained_variance = pca.explained_variance_
         self.explained_variance_ratio = pca.explained_variance_ratio_
-        if self.target.dim > 3:
+        if self.target.dim > 3 and not cluster:
             pca.n_components = 3
         self.coords_reduced = pca.fit_transform(self.coords)
+        self.pca_components = pca.components_
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
@@ -466,9 +469,9 @@ class CosymAnalysis(symmetry_base, Subject):
     def _reindexing_ops(
         self,
         coords: np.ndarray,
-        sym_ops: List[sgtbx.rt_mx],
+        sym_ops: list[sgtbx.rt_mx],
         cosets: sgtbx.cosets.left_decomposition,
-    ) -> List[sgtbx.change_of_basis_op]:
+    ) -> list[sgtbx.change_of_basis_op]:
         """Identify the reindexing operator for each dataset.
 
         Args:

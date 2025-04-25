@@ -283,7 +283,9 @@ def test_index_imosflm_tutorial(dials_data, tmp_path, specify_unit_cell):
     ]
     if specify_unit_cell:
         extra_args.append(
-            'known_symmetry.unit_cell="%s %s %s %s %s %s"' % unit_cell.parameters()
+            'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+                *unit_cell.parameters()
+            )
         )
 
     expected_unit_cell = unit_cell
@@ -337,8 +339,9 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmp_path, method):
     expected_hall_symbol = " I 2 2 3"
     expected_rmsds = (0.05, 0.06, 0.01)
     extra_args = [
-        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
-        % expected_unit_cell.parameters(),
+        'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+            *expected_unit_cell.parameters()
+        ),
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
         "treat_single_image_as_still=False",
@@ -394,8 +397,9 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method
 
     extra_args = [
         "stills.indexer=stills",
-        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
-        % expected_unit_cell.parameters(),
+        'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+            *expected_unit_cell.parameters()
+        ),
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
     ]
@@ -442,11 +446,11 @@ def test_multiple_experiments(dials_data: pathlib.Path, tmp_path):
     )
 
 
-def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
+def test_index_4rotation(dials_data: pathlib.Path, tmp_path):
     # 1440 images of 1° rotation each
-    data_dir = dials_regression / "indexing_test_data" / "4rotation"
-    pickle_path = data_dir / "strong.pickle"
-    sequence_path = data_dir / "experiments.json"
+    data_dir = data_dir = dials_data("indexing_test_data")
+    pickle_path = data_dir / "4rotation-strong.refl"
+    sequence_path = data_dir / "4rotation-experiments.json"
     extra_args = [
         "max_refine=10",
         "reflections_per_degree=50",
@@ -466,7 +470,10 @@ def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
         expected_rmsds,
         expected_hall_symbol,
     )
-    assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
+    assert len(result.indexed_reflections)
+    assert result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True) > 0.9 * len(result.indexed_reflections)
 
 
 def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
@@ -550,12 +557,12 @@ def test_index_small_molecule_multi_sequence_3(
     )
 
 
-def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_path):
+def test_index_small_molecule_ice_max_cell(dials_data: pathlib.Path, tmp_path):
     # test for small molecule indexing: presence of ice rings makes max-cell
     # estimation tricky
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
-    pickle_path = os.path.join(data_dir, "1_SWEEP1_strong.pickle")
-    experiments = os.path.join(data_dir, "1_SWEEP1_experiments.json")
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = os.path.join(data_dir, "MXSW-904-1_SWEEP1_strong.pickle")
+    experiments = os.path.join(data_dir, "MXSW-904-1_SWEEP1_experiments.json")
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell((11.72, 11.72, 11.74, 109.08, 109.24, 108.99))
     expected_rmsds = (0.06, 0.05, 0.04)
@@ -819,7 +826,58 @@ def test_pink_indexer(
         "min_lattices=5",
         "percent_bandwidth=2",
         'known_symmetry.space_group="P 21 3"',
-        "known_symmetry.unit_cell=96.410, 96.410,96.410,90.0,90.0,90.0",
+        "known_symmetry.unit_cell=96.410,96.410,96.410,90.0,90.0,90.0",
+    ]
+
+    expected_unit_cell = uctbx.unit_cell((96.41, 96.41, 96.41, 90, 90, 90))
+    expected_rmsds = (0.200, 0.200, 0.000)
+    expected_hall_symbol = " P 2ac 2ab 3"
+
+    run_indexing(
+        "combined.expt",
+        "combined.refl",
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=5,
+    )
+
+
+def test_ffbidx(
+    dials_data,
+    tmp_path,
+):
+    try:
+        import ffbidx  # noqa: F401
+    except ModuleNotFoundError:
+        pytest.skip("ffbidx not installed")
+    try:
+        ffbidx.Indexer()
+    except RuntimeError:
+        pytest.skip("ffbidx installed but not functional on this system")
+
+    data_dir = dials_data("cunir_serial_processed", pathlib=True)
+    expt_file = data_dir / "imported_with_ref_5.expt"
+    refl_file = data_dir / "strong_5.refl"
+
+    command = [shutil.which("dials.split_experiments"), expt_file, refl_file]
+    result = subprocess.run(command, cwd=tmp_path)
+    assert not result.returncode and not result.stderr
+
+    command = [shutil.which("dials.combine_experiments")]
+    for i in range(5):
+        command.append(f"split_{i}.expt")
+        command.append(f"split_{i}.refl")
+    result = subprocess.run(command, cwd=tmp_path)
+    assert not result.returncode and not result.stderr
+
+    extra_args = [
+        "joint_indexing=False",
+        "indexing.method=ffbidx",
+        'known_symmetry.space_group="P 21 3"',
+        "known_symmetry.unit_cell=96.410,96.410,96.410,90.0,90.0,90.0",
     ]
 
     expected_unit_cell = uctbx.unit_cell((96.41, 96.41, 96.41, 90, 90, 90))

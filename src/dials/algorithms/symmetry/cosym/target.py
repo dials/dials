@@ -9,7 +9,7 @@ import logging
 
 import numpy as np
 import pandas as pd
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 from scipy import sparse
 
 import cctbx.sgtbx.cosets
@@ -179,8 +179,9 @@ class Target:
             is to use no weights. If "count" is set, then weights are equal to the
             number of pairs of reflections used in calculating each value of the
             rij matrix. If "standard_error" is used, then weights are defined as
-            :math:`w_{ij} = 1/s`, where :math:`s = \sqrt{(1-r_{ij}^2)/(n-2)}`.
-            See also http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf.
+            :math:`w_{ij} = 1/s`, where :math:`s = (1-r_{ij}^2)/sqrt(N)`.
+            Where N=(n-2) or N=(neff-1) depending on the cc_weights option.
+            See also  https://doi.org/10.1525/collabra.87615.
           min_pairs (int): Only calculate the correlation coefficient between two
             datasets if they have more than `min_pairs` of common reflections.
           lattice_group (cctbx.sgtbx.space_group): Optionally set the lattice
@@ -341,7 +342,7 @@ class Target:
                 # but approches 1 in the limit, so rather say efective sample size
                 # for standard error calc is n-1
                 sel = np.where(wij_matrix > 1)
-                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 1))
+                se = (1 - np.square(rij_matrix[sel])) / np.sqrt(wij_matrix[sel] - 1)
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
             # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
@@ -464,8 +465,8 @@ class Target:
                 # corresponding correlation coefficient
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
                 with np.errstate(divide="ignore", invalid="ignore"):
-                    reciprocal_se = np.sqrt(
-                        (wij[right_up] - 2) / (1 - np.square(rij[right_up]))
+                    reciprocal_se = np.sqrt((wij[right_up] - 2)) / (
+                        1 - np.square(rij[right_up])
                     )
 
                 wij[right_up] = np.where(wij[right_up] > 2, reciprocal_se, 0)

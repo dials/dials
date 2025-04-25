@@ -1,0 +1,1 @@
+No longer use files from ``dials_regression/indexing_test_data/`` in tests. The relevant files are now in ``dials-data``.
