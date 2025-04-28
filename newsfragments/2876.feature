@@ -1,1 +1,1 @@
-``dials.correlation_matrix``: ward linkages now default for hierarchical clustering (tailorable through phil parameter)
+``dials.correlation_matrix``: Hierarchical clustering now defaults to Ward linkages.

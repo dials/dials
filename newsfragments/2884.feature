@@ -1,1 +1,1 @@
-``dials.cluster_unit_cell``: Add option to use ward linkage rather than single linkage
+``dials.cluster_unit_cell``: Add option to use Ward linkage, rather than single linkage.

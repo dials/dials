@@ -1,1 +1,1 @@
-``dials.find_bad_pixels``: use dispersion not dispersion extended for filtering
+``dials.find_bad_pixels``: Use dispersion algorithm for filtering, instead of extended dispersion. This is more sensitive for lone pixels.

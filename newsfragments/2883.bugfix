@@ -1,1 +1,1 @@
-``dials.scale``: Fix potential bad scaling against a reference if resolution limit greater than 2 Angstroms
+``dials.scale``: Fix potential bad scaling against a reference if resolution limit is greater than 2 Angstroms.
