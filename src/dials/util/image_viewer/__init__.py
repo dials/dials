@@ -4,6 +4,7 @@ import math
 
 from cctbx import uctbx
 from dxtbx.model import Beam, Detector
+from iotbx.detectors import FlexImage, FlexImage_d
 from scitbx import matrix
 
 from dials.array_family import flex
@@ -15,7 +16,7 @@ def calculate_isoresolution_lines(
     spacings: flex.double,
     beam: Beam,
     detector: Detector,
-    flex_image,
+    flex_image: FlexImage | FlexImage_d,
     add_text: bool = True,
     n_rays: int = 720,
     binning: int = 1,
@@ -64,7 +65,7 @@ def calculate_isoresolution_lines(
 
         # Split the intersections into sets of vertices in separate paths
         paths = []
-        vertices = []
+        vertices: list[tuple[float, float]] = []
         for ref in rt.rows():
             if ref["panel"] != curr_panel_id:
                 # close off the current path and reset the vertices
