@@ -146,12 +146,12 @@ def test_refine_bravais_settings_trypsin(dials_data: Path, tmp_path):
     assert bravais_summary["9"]["recommended"] is False
 
 
-def test_refine_bravais_settings_554(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "dials-554")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_554(dials_data, tmp_path):
+    data_dir = dials_data("misc_regression", pathlib=True)
+    reflections_path = str(data_dir / "dials-554_indexed.refl")
+    experiments_path = str(data_dir / "dials-554_indexed.expt")
     result = subprocess.run(
-        ["dials.refine_bravais_settings", pickle_path, experiments_path],
+        ["dials.refine_bravais_settings", reflections_path, experiments_path],
         cwd=tmp_path,
         capture_output=True,
     )
