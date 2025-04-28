@@ -71,9 +71,9 @@ class NeighborAnalysis:
                     direct.extend(1 / flex.sqrt(IS_adapt.distances))
                     d_spacings.extend(1 / rs_vectors.norms())
 
-        assert (
-            len(direct) > NEAR
-        ), f"Too few spots ({len(direct)}) for nearest neighbour analysis."
+        assert len(direct) > NEAR, (
+            f"Too few spots ({len(direct)}) for nearest neighbour analysis."
+        )
 
         perm = flex.sort_permutation(direct)
         direct = direct.select(perm)

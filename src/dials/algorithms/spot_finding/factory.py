@@ -180,7 +180,7 @@ class FilterRunner:
         predictions=None,
         observations=None,
         shoeboxes=None,
-        **kwargs,  # noqa: U100
+        **kwargs,  # noqa: ARG001
     ):
         """
         Check the flags are set, if they're not then create a list
@@ -225,7 +225,7 @@ class PeakCentroidDistanceFilter:
         """
         self.maxd = maxd
 
-    def run(self, flags, observations=None, shoeboxes=None, **kwargs):  # noqa: U100
+    def run(self, flags, observations=None, shoeboxes=None, **kwargs):  # noqa: ARG001
         """
         Run the filtering.
         """
@@ -252,7 +252,7 @@ class BackgroundGradientFilter:
         self.background_size = background_size
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):  # noqa: U100
+    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):  # noqa: ARG001
         modeller = Linear2dModeller()
         detector = sequence.get_detector()
 
@@ -342,7 +342,7 @@ class SpotDensityFilter:
         self.nbins = nbins
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, observations=None, **kwargs):  # noqa: U100
+    def run(self, flags, sequence=None, observations=None, **kwargs):  # noqa: ARG001
         obs_x, obs_y = observations.centroids().px_position_xy().parts()
 
         H, xedges, yedges = np.histogram2d(

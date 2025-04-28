@@ -5,7 +5,7 @@ import sys
 
 import wx
 
-from .flex_image import (  # noqa: F401; moved but other places import from here
+from .flex_image import (  # noqa: F401 # Moved, but other places import from here
     get_flex_image,
     get_flex_image_multipanel,
 )

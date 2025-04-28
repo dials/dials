@@ -91,7 +91,7 @@ def imageset_as_flex_image(
     for i_image in images:
         if (i_image < start) or (i_image >= start + n_images):
             raise ValueError(
-                f"Image {i_image} outside of scan range {start},{start+n_images-1}"
+                f"Image {i_image} outside of scan range {start},{start + n_images - 1}"
             )
         image = imageset.get_raw_data(i_image - start)
 

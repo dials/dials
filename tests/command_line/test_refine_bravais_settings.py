@@ -101,10 +101,10 @@ def test_refine_bravais_settings_multi_sweep(dials_data, tmp_path):
     assert bravais_summary["9"]["recommended"] is True
 
 
-def test_refine_bravais_settings_trypsin(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_trypsin(dials_data: Path, tmp_path):
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = os.path.join(data_dir, "trypsin-indexed.pickle")
+    experiments_path = os.path.join(data_dir, "trypsin-experiments.json")
     result = subprocess.run(
         [
             shutil.which("dials.refine_bravais_settings"),
@@ -294,7 +294,7 @@ def test_refine_bravais_settings_non_primitive_input(dials_data, tmp_path):
     input_cs = input_expts[0].crystal.get_crystal_symmetry()
     for i in range(22):
         uc_input_to_ref = input_cs.unit_cell().change_basis(
-            sgtbx.change_of_basis_op(bravais_summary[f"{i+1}"]["cb_op"])
+            sgtbx.change_of_basis_op(bravais_summary[f"{i + 1}"]["cb_op"])
         )
-        uc_ref = uctbx.unit_cell(bravais_summary[f"{i+1}"]["unit_cell"])
+        uc_ref = uctbx.unit_cell(bravais_summary[f"{i + 1}"]["unit_cell"])
         assert uc_input_to_ref.is_similar_to(uc_ref)

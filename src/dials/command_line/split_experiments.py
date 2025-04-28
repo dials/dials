@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import functools
 
-from orderedset import OrderedSet
-
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
 
@@ -11,6 +9,7 @@ import dials.util
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.export_mtz import match_wavelengths
+from dials.util.multi_dataset_handling import OrderedSet
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
@@ -193,9 +192,9 @@ class Script:
                     refls.as_file(reflections_filename)
 
         elif params.by_detector:
-            assert (
-                not params.output.chunk_size
-            ), "chunk_size + by_detector is not implemented"
+            assert not params.output.chunk_size, (
+                "chunk_size + by_detector is not implemented"
+            )
             if reflections is None:
                 split_data = {
                     detector: {"experiments": ExperimentList()}
