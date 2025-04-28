@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
@@ -113,12 +112,9 @@ def test_export_single_cbf(dials_data, tmp_path, set_imageset_index):
     assert tmp_path.joinpath("image0002.png").is_file()
 
 
-def test_export_still_image(dials_regression: Path, tmp_path):
-    image = os.path.join(
-        dials_regression,
-        "image_examples",
-        "DLS_I24_stills",
-        "still_0001.cbf",
+def test_export_still_image(dials_data: Path, tmp_path):
+    image = str(
+        dials_data("image_examples", pathlib=True) / "DLS_I24_stills-still_0001.cbf.bz2"
     )
 
     export_bitmaps.run(
@@ -163,6 +159,6 @@ def test_export_restricted_multiimage(dials_data, tmp_path):
             f"output.directory={tmp_path}",
         ],
     )
-    assert [f.name for f in tmp_path.glob("*.png")] == [
-        "image0002.png"
-    ], "Only one image expected"
+    assert [f.name for f in tmp_path.glob("*.png")] == ["image0002.png"], (
+        "Only one image expected"
+    )

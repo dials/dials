@@ -1177,9 +1177,9 @@ def print_eigen_values_and_vectors_static(A):
     logger.info(
         f"""
  Invariant crystal mosaicity:
- M1 : {eigen_values[0]**0.5:.5f} Å⁻¹
- M2 : {eigen_values[1]**0.5:.5f} Å⁻¹
- M3 : {eigen_values[2]**0.5:.5f} Å⁻¹
+ M1 : {eigen_values[0] ** 0.5:.5f} Å⁻¹
+ M2 : {eigen_values[1] ** 0.5:.5f} Å⁻¹
+ M3 : {eigen_values[2] ** 0.5:.5f} Å⁻¹
 """
     )
 
@@ -1206,7 +1206,7 @@ def print_eigen_values_and_vectors_angular(A):
     logger.info(
         """
  Angular mosaicity in degrees equivalent units:\n"""
-        + "\n".join(f" M{i+1} : {m:.5f} degrees" for i, m in enumerate(mosaicity))
+        + "\n".join(f" M{i + 1} : {m:.5f} degrees" for i, m in enumerate(mosaicity))
     )
 
 

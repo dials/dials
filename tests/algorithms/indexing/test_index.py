@@ -446,11 +446,11 @@ def test_multiple_experiments(dials_data: pathlib.Path, tmp_path):
     )
 
 
-def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
+def test_index_4rotation(dials_data: pathlib.Path, tmp_path):
     # 1440 images of 1° rotation each
-    data_dir = dials_regression / "indexing_test_data" / "4rotation"
-    pickle_path = data_dir / "strong.pickle"
-    sequence_path = data_dir / "experiments.json"
+    data_dir = data_dir = dials_data("indexing_test_data")
+    pickle_path = data_dir / "4rotation-strong.refl"
+    sequence_path = data_dir / "4rotation-experiments.json"
     extra_args = [
         "max_refine=10",
         "reflections_per_degree=50",
@@ -470,7 +470,10 @@ def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
         expected_rmsds,
         expected_hall_symbol,
     )
-    assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
+    assert len(result.indexed_reflections)
+    assert result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True) > 0.9 * len(result.indexed_reflections)
 
 
 def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
@@ -554,12 +557,12 @@ def test_index_small_molecule_multi_sequence_3(
     )
 
 
-def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_path):
+def test_index_small_molecule_ice_max_cell(dials_data: pathlib.Path, tmp_path):
     # test for small molecule indexing: presence of ice rings makes max-cell
     # estimation tricky
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
-    pickle_path = os.path.join(data_dir, "1_SWEEP1_strong.pickle")
-    experiments = os.path.join(data_dir, "1_SWEEP1_experiments.json")
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = os.path.join(data_dir, "MXSW-904-1_SWEEP1_strong.pickle")
+    experiments = os.path.join(data_dir, "MXSW-904-1_SWEEP1_experiments.json")
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell((11.72, 11.72, 11.74, 109.08, 109.24, 108.99))
     expected_rmsds = (0.06, 0.05, 0.04)

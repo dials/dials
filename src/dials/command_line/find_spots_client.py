@@ -30,13 +30,13 @@ def work(host, port, filename, params):
 
 def response_to_xml(d):
     if "n_spots_total" in d:
-        response = f"""<image>{d['image']}</image>
-<spot_count>{d['n_spots_total']}</spot_count>
-<spot_count_no_ice>{d['n_spots_no_ice']}</spot_count_no_ice>
-<d_min>{d['estimated_d_min']:.2f}</d_min>
-<d_min_method_1>{d['d_min_distl_method_1']:.2f}</d_min_method_1>
-<d_min_method_2>{d['d_min_distl_method_2']:.2f}</d_min_method_2>
-<total_intensity>{d['total_intensity']:.0f}</total_intensity>"""
+        response = f"""<image>{d["image"]}</image>
+<spot_count>{d["n_spots_total"]}</spot_count>
+<spot_count_no_ice>{d["n_spots_no_ice"]}</spot_count_no_ice>
+<d_min>{d["estimated_d_min"]:.2f}</d_min>
+<d_min_method_1>{d["d_min_distl_method_1"]:.2f}</d_min_method_1>
+<d_min_method_2>{d["d_min_distl_method_2"]:.2f}</d_min_method_2>
+<total_intensity>{d["total_intensity"]:.0f}</total_intensity>"""
 
     else:
         assert "error" in d

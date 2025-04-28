@@ -146,10 +146,13 @@ def calculate_isoresolution_lines(
         offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
         rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
 
+        # Duplicate the first ray to close the loop
+        rays.append(rays[0])
+
         # Get the ray intersections. Need to set a dummy phi value
-        rt = flex.reflection_table.empty_standard(n_rays)
+        rt = flex.reflection_table.empty_standard(n_rays + 1)
         rt["s1"] = rays
-        rt["phi"] = flex.double(n_rays, 0)
+        rt["phi"] = flex.double(n_rays + 1, 0)
         from dials.algorithms.spot_prediction import ray_intersection
 
         intersect = ray_intersection(detector, rt)
@@ -578,9 +581,9 @@ class SpotFrame(XrayFrame):
                 )
                 assert p_id >= 0, "Point must be within a panel"
                 if panel_id is not None:
-                    assert (
-                        panel_id == p_id
-                    ), "All points must be contained within a single panel"
+                    assert panel_id == p_id, (
+                        "All points must be contained within a single panel"
+                    )
                 panel_id = p_id
                 point_.append((p0, p1))
             point = point_
@@ -892,199 +895,13 @@ class SpotFrame(XrayFrame):
                 [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
             )
 
-        # For non-coplanar detectors use a polygon method rather than ellipses
-        if detector.has_projection_2d():
-            return self._draw_resolution_polygons(
-                spacings,
-                beam,
-                detector,
-                unit_cell,
-                space_group,
-            )
-
-        wavelength = beam.get_wavelength()
-        twotheta = uctbx.d_star_sq_as_two_theta(
-            uctbx.d_as_d_star_sq(spacings), wavelength
+        return self._draw_resolution_polygons(
+            spacings,
+            beam,
+            detector,
+            unit_cell,
+            space_group,
         )
-
-        # Get beam vector and two orthogonal vectors
-        beamvec = matrix.col(beam.get_s0())
-        bor1 = beamvec.ortho()
-        bor2 = beamvec.cross(bor1)
-
-        resolution_text_data = []
-        ring_data = []
-        # FIXME Currently assuming that all panels are in same plane
-        p_id = detector.get_panel_intersection(beam.get_s0())
-        if p_id == -1:
-            # XXX beam doesn't intersect with any panels - is there a better solution?
-            p_id = 0
-        pan = detector[p_id]
-
-        for tt, d in zip(twotheta, spacings):
-            try:
-                # Find 4 rays for given d spacing / two theta angle
-                cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
-                cb2 = beamvec.rotate_around_origin(axis=bor1, angle=-tt)
-                cb3 = beamvec.rotate_around_origin(axis=bor2, angle=tt)
-                cb4 = beamvec.rotate_around_origin(axis=bor2, angle=-tt)
-
-                # Find intersection points with panel plane
-                dp1 = pan.get_ray_intersection_px(cb1)
-                dp2 = pan.get_ray_intersection_px(cb2)
-                dp3 = pan.get_ray_intersection_px(cb3)
-                dp4 = pan.get_ray_intersection_px(cb4)
-
-                # If all four points are in positive beam direction, draw an ellipse.
-                # Otherwise it's a hyperbola (not implemented yet)
-            except RuntimeError:
-                continue
-
-            # find ellipse centre, the only point equidistant to each axial pair
-            xs1 = dp1[0] + dp2[0]
-            xs2 = dp3[0] + dp4[0]
-            ys1 = dp1[1] + dp2[1]
-            ys2 = dp3[1] + dp4[1]
-            xd1 = dp2[0] - dp1[0]
-            xd2 = dp4[0] - dp3[0]
-            yd1 = dp1[1] - dp2[1]
-            yd2 = dp3[1] - dp4[1]
-            if abs(xd1) < 0.00001:
-                cy = ys1 / 2
-            elif abs(xd2) < 0.00001:
-                cy = ys2 / 2
-            else:
-                t2 = (xs1 - xs2 + (ys2 - ys1) * yd1 / xd1) / (yd2 - xd2 * yd1 / xd1)
-                t1 = (ys2 + t2 * xd2 - ys1) / xd1
-                cy = (ys1 + t1 * xd1) / 2
-                assert abs(cy - (ys2 + t2 * xd2) / 2) < 0.1
-            if abs(yd1) < 0.00001:
-                cx = xs1 / 2
-            elif abs(yd2) < 0.00001:
-                cx = xs2 / 2
-            else:
-                t2 = (xs1 - xs2 + (ys2 - ys1) * yd1 / xd1) / (yd2 - xd2 * yd1 / xd1)
-                t1 = (ys2 + t2 * xd2 - ys1) / xd1
-                cx = (xs1 + t1 * yd1) / 2
-                assert abs(cx - (xs2 + t2 * yd2) / 2) < 0.1
-
-            centre = self.pyslip.tiles.flex_image.tile_readout_to_picture(p_id, cy, cx)[
-                ::-1
-            ]
-            dp1 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                p_id, dp1[1], dp1[0]
-            )[::-1]
-            dp3 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                p_id, dp3[1], dp3[0]
-            )[::-1]
-
-            # translate ellipse centre and four points to map coordinates
-            centre = self.pyslip.tiles.picture_fast_slow_to_map_relative(*centre)
-            dp1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp1[0], dp1[1])
-            dp3 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp3[0], dp3[1])
-
-            # Determine eccentricity, cf. https://en.wikipedia.org/wiki/Eccentricity_(mathematics)
-            ecc = math.sin(matrix.col(pan.get_normal()).angle(beamvec)) / math.sin(
-                math.pi / 2 - tt
-            )
-
-            # Assuming that one detector axis is aligned with a major axis of
-            # the ellipse, obtain the semimajor axis length a to calculate the
-            # semiminor axis length b using the eccentricity ecc.
-            ldp1 = math.hypot(dp1[0] - centre[0], dp1[1] - centre[1])
-            ldp3 = math.hypot(dp3[0] - centre[0], dp3[1] - centre[1])
-            if ldp1 >= ldp3:
-                major = dp1
-                a = ldp1
-            else:
-                major = dp3
-                a = ldp3
-            b = math.sqrt(a * a * (1 - (ecc * ecc)))
-            # since e = f / a and f = sqrt(a^2 - b^2), cf. https://en.wikipedia.org/wiki/Ellipse
-
-            # calculate co-vertex
-            minor = (
-                matrix.col([-centre[1] - dp1[1], centre[0] - dp1[0]]).normalize() * b
-            )
-            minor = (minor[0] + centre[0], minor[1] + centre[1])
-
-            p = (centre, major, minor)
-            ring_data.append(
-                (
-                    p,
-                    self.pyslip.DefaultPolygonPlacement,
-                    self.pyslip.DefaultPolygonWidth,
-                    "red",
-                    True,
-                    self.pyslip.DefaultPolygonFilled,
-                    self.pyslip.DefaultPolygonFillcolour,
-                    self.pyslip.DefaultPolygonOffsetX,
-                    self.pyslip.DefaultPolygonOffsetY,
-                    None,
-                )
-            )
-
-            if unit_cell is None and space_group is None:
-                for angle in (45, 135, 225, 315):
-                    txtvec = cb1.rotate_around_origin(
-                        axis=beamvec, angle=math.radians(angle)
-                    )
-                    txtpos = pan.get_ray_intersection_px(txtvec)
-                    txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                        p_id, txtpos[1], txtpos[0]
-                    )[::-1]
-                    x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(
-                        txtpos[0], txtpos[1]
-                    )
-                    resolution_text_data.append(
-                        (
-                            x,
-                            y,
-                            f"{d:.2f}",
-                            {
-                                "placement": "cc",
-                                "colour": "red",
-                            },
-                        )
-                    )
-
-        # XXX Transparency?
-        # Remove the old ring layer, and draw a new one.
-        if hasattr(self, "_ring_layer") and self._ring_layer is not None:
-            self.pyslip.DeleteLayer(self._ring_layer, update=False)
-            self._ring_layer = None
-        if ring_data:
-            self._ring_layer = self.pyslip.AddLayer(
-                self.pyslip.DrawLightweightEllipticalSpline,
-                ring_data,
-                True,
-                True,
-                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-                selectable=False,
-                type=self.pyslip.TypeEllipse,
-                name="<ring_layer>",
-                update=False,
-            )
-
-        # Remove the old resolution text layer, and draw a new one.
-        if (
-            hasattr(self, "_resolution_text_layer")
-            and self._resolution_text_layer is not None
-        ):
-            self.pyslip.DeleteLayer(self._resolution_text_layer, update=False)
-            self._resolution_text_layer = None
-        if resolution_text_data:
-            self._resolution_text_layer = self.pyslip.AddTextLayer(
-                resolution_text_data,
-                map_rel=True,
-                visible=True,
-                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-                selectable=False,
-                name="<resolution_text_layer>",
-                fontsize=self.settings.fontsize,
-                textcolour=self._choose_text_colour(),
-                update=False,
-            )
 
     def stack_images(self):
         mode = self.params.stack_mode
@@ -2142,7 +1959,7 @@ class SpotSettingsPanel(wx.Panel):
         self.levels = self.GetParent().GetParent().pyslip.tiles.levels
         # from scitbx.math import continued_fraction as cf
         # choices = ["%s" %(cf.from_real(2**l).as_rational()) for l in self.levels]
-        choices = [f"{100 * 2 ** l:g}%" for l in self.levels]
+        choices = [f"{100 * 2**l:g}%" for l in self.levels]
         self.zoom_ctrl = wx.Choice(self, -1, choices=choices)
         self.zoom_ctrl.SetSelection(self.settings.zoom_level)
         grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)

@@ -72,6 +72,23 @@
 
                             {{ macros.panel('Cosym cluster plots', 'cosym_plots', cosym_graphs) }}
 
+                            <div class="panel panel-default">
+                                <div class="panel-heading" data-toggle="collapse" data-target="#collapse_pca">
+                                    <h4 class="panel-title">
+                                        <a>Principal component analysis</a>
+                                    </h4>
+                                </div>
+                                <div id="collapse_pca" class="panel-collapse collapse">
+                                    <div class="panel-body">
+
+                                        <div class="container-fluid">
+                                            {{ macros.plotly_graph("pca_analysis", pca_plot, style="dendrogram-plot") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
                         </div>
                     </div>
                 </div>

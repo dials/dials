@@ -218,7 +218,7 @@ def make_dano_table(anomalous_amplitudes):
         rows.append(
             [
                 f"{resolution_bin_edges[i]:6.2f}",
-                f"{resolution_bin_edges[i+1]:6.2f}",
+                f"{resolution_bin_edges[i + 1]:6.2f}",
                 f"{dF:6.3f}",
             ]
         )

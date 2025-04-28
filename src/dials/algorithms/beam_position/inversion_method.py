@@ -101,7 +101,7 @@ class InversionMethodSolver:
                 transform=ax.transAxes,
                 fontsize=7,
             )
-            label = f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})"
+            label = f"I_min, I_max = ({self.min_value:.1f}, {self.max_value:.1f})"
             ax.text(
                 0.01,
                 0.78,
@@ -142,7 +142,7 @@ class InversionMethodSolver:
                 rotation=-90,
                 fontsize=7,
             )
-            label = f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})"
+            label = f"I_min, I_max = ({self.min_value:.1f}, {self.max_value:.1f})"
             ax.text(
                 0.78,
                 0.99,

@@ -869,9 +869,9 @@ def print_progress(image_index, n_images, set_index, n_sets, x, y, bar_length=40
     set_bar_full = int(percent_sets * bar_length)
     set_bar = "=" * set_bar_full + " " * (bar_length - set_bar_full)
 
-    bar = f" Set:   [{set_bar}] {100*percent_sets:0.2f} % "
+    bar = f" Set:   [{set_bar}] {100 * percent_sets:0.2f} % "
     bar += f"{set_index:4d}/{n_sets:d}\n"
-    bar += f" Image: [{image_bar}] {100*percent_images:0.2f} % "
+    bar += f" Image: [{image_bar}] {100 * percent_images:0.2f} % "
     bar += f"{image_index:4d}/{n_images}\n"
 
     if abs(percent_sets - 1.0) < 1.0e-15 and abs(percent_images - 1.0) < 1.0e-15:

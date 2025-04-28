@@ -156,7 +156,7 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
 
     with open(ins_file, "w") as f:
         f.write(
-            f"TITL {sg.type().number()} in {sg.type().lookup_symbol().replace(' ','')}\n"
+            f"TITL {sg.type().number()} in {sg.type().lookup_symbol().replace(' ', '')}\n"
         )
         f.write(
             "CELL {:7.5f} {:9.5f} {:9.5f} {:9.5f} {:8.4f} {:8.4f} {:8.4f}\n".format(

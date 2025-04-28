@@ -1,0 +1,1 @@
+Remove deprecated use of ``pkg_resources``, which is removed in Python 3.12.
