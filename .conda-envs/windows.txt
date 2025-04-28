@@ -46,7 +46,7 @@ requests
 scikit-learn
 scipy
 scons
-setuptools
+setuptools<79
 six
 sphinx>=4
 sqlite
