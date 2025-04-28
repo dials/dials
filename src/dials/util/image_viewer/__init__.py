@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 from cctbx import uctbx
+from dxtbx.model import Beam, Detector
 from scitbx import matrix
 
 from dials.array_family import flex
@@ -11,14 +12,17 @@ __all__ = ["calculate_isoresolution_lines"]
 
 
 def calculate_isoresolution_lines(
-    spacings,
-    beam,
-    detector,
+    spacings: flex.double,
+    beam: Beam,
+    detector: Detector,
     flex_image,
-    add_text=True,
-    n_rays=720,
-    binning=1,
-):
+    add_text: bool = True,
+    n_rays: int = 720,
+    binning: int = 1,
+) -> tuple[
+    list[tuple[tuple[float, float], tuple[float, float]]],
+    list[tuple[float, float, str]],
+]:
     # Calculate 2θ angles
     wavelength = beam.get_wavelength()
     twotheta = uctbx.d_star_sq_as_two_theta(uctbx.d_as_d_star_sq(spacings), wavelength)
