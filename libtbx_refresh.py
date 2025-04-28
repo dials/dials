@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib.metadata
 import inspect
 import io
 import os
@@ -70,6 +71,25 @@ dials.precommitbx.nagger.nag()
 libtbx.pkg_utils.define_entry_points({})
 
 
+def _find_package_metadata_dir(package_name: str):
+    """Find the metadata directory for a package, whether .egg-info or .dist-info."""
+    try:
+        # Use importlib.metadata to find the package distribution
+        dist = importlib.metadata.distribution(package_name)
+        # Get the metadata location
+        return Path(dist._path)
+    except importlib.metadata.PackageNotFoundError:
+        # Fall back to searching common locations
+        for site_dir in sys.path:
+            site_path = Path(site_dir)
+            # Look for both .dist-info and .egg-info
+            for pattern in [f"{package_name}*.dist-info", f"{package_name}*.egg-info"]:
+                for metadata_dir in site_path.glob(pattern):
+                    if metadata_dir.exists():
+                        return metadata_dir
+    return None
+
+
 def _install_setup_readonly_fallback(package_name: str):
     """
     Partially install package in the libtbx build folder.
@@ -102,13 +122,20 @@ def _install_setup_readonly_fallback(package_name: str):
     env = _get_real_env_hack_hack_hack()
 
     # Update the libtbx environment pythonpaths to point to the source
-    # location which now has an .egg-info folder; this will mean that
+    # location; this will mean that
     # the PYTHONPATH is written into the libtbx dispatchers
     rel_path = libtbx.env.as_relocatable_path(import_path)
     if rel_path not in env.pythonpath:
         env.pythonpath.insert(0, rel_path)
 
-    # Update the sys.path so that we can find the .egg-info in this process
+    # Make sure the metadata directory is also in the path if it's not in site-packages
+    metadata_dir = _find_package_metadata_dir(package_name)
+    if metadata_dir and metadata_dir.parent not in sys.path:
+        metadata_parent = libtbx.env.as_relocatable_path(str(metadata_dir.parent))
+        if metadata_parent not in env.pythonpath:
+            env.pythonpath.append(metadata_parent)
+
+    # Update the sys.path so we can find the package in this process
     # if we do a full reconstruction of the working set
     if import_path not in sys.path:
         sys.path.insert(0, import_path)
