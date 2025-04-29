@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -84,12 +82,11 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmp_path):
         check_cchalf_result(f)
 
 
-def test_compute_delta_cchalf(dials_regression: Path):
+def test_compute_delta_cchalf(dials_data):
     """Test compute delta cchalf on an integrated mtz."""
 
-    filename = os.path.join(
-        dials_regression, "delta_cchalf_test_data", "test.XDS_ASCII.mtz"
-    )
+    data_dir = dials_data("misc_regression", pathlib=True)
+    filename = str(data_dir / "delta-cchalf-test_XDS_ASCII.mtz")
     params = phil_scope.extract()
     params.nbins = 1
 
