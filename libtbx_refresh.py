@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import importlib.metadata
 import inspect
 import io
 import os
@@ -71,22 +70,22 @@ dials.precommitbx.nagger.nag()
 libtbx.pkg_utils.define_entry_points({})
 
 
-def _find_package_metadata_dir(package_name: str):
-    """Find the metadata directory for a package, whether .egg-info or .dist-info."""
-    try:
-        # Use importlib.metadata to find the package distribution
-        dist = importlib.metadata.distribution(package_name)
-        # Get the metadata location
-        return Path(dist._path)
-    except importlib.metadata.PackageNotFoundError:
-        # Fall back to searching common locations
-        for site_dir in sys.path:
-            site_path = Path(site_dir)
-            # Look for both .dist-info and .egg-info
+def _find_site_packages_with_metadata(package_name: str, build_path: Path):
+    """
+    Find the site-packages directory containing the package metadata.
+    Returns the site-packages directory if metadata is found, None otherwise.
+    """
+    # Look for Python site-packages directories in the build path
+    for python_dir in build_path.glob("lib/python*"):
+        site_packages = python_dir / "site-packages"
+        if site_packages.exists():
+            # Look for both .dist-info and .egg-info directories
             for pattern in [f"{package_name}*.dist-info", f"{package_name}*.egg-info"]:
-                for metadata_dir in site_path.glob(pattern):
+                for metadata_dir in site_packages.glob(pattern):
                     if metadata_dir.exists():
-                        return metadata_dir
+                        # Return site-packages only if we actually found metadata
+                        return site_packages
+            # If no metadata found in this site-packages, continue searching
     return None
 
 
@@ -128,12 +127,13 @@ def _install_setup_readonly_fallback(package_name: str):
     if rel_path not in env.pythonpath:
         env.pythonpath.insert(0, rel_path)
 
-    # Make sure the metadata directory is also in the path if it's not in site-packages
-    metadata_dir = _find_package_metadata_dir(package_name)
-    if metadata_dir and metadata_dir.parent not in sys.path:
-        metadata_parent = libtbx.env.as_relocatable_path(str(metadata_dir.parent))
-        if metadata_parent not in env.pythonpath:
-            env.pythonpath.append(metadata_parent)
+    # As of PEP 660, the package metadata (dist-info) goes in the install dir,
+    # not the source dir. Add this location to the python path too.
+    metadata_dir = _find_site_packages_with_metadata(package_name, Path(build_path))
+    if metadata_dir and metadata_dir not in sys.path:
+        metadata_rel = libtbx.env.as_relocatable_path(str(metadata_dir))
+        if metadata_rel not in env.pythonpath:
+            env.pythonpath.insert(0, metadata_rel)
 
     # Update the sys.path so we can find the package in this process
     # if we do a full reconstruction of the working set
