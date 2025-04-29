@@ -1,1 +1,1 @@
-``dials.index``: as well as reporting # unindexed in the output, report # unindexed away from ice ring regions
+``dials.index``: Separately report unindexed reflection counts for reflections away from ice regions.
