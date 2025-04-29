@@ -1,3 +1,107 @@
+DIALS 3.24.0 (2025-04-29)
+=========================
+
+Features
+--------
+
+- ``dials.index``: Separately report unindexed reflection counts for reflections away from ice regions. (`#2827 <https://github.com/dials/dials/issues/2827>`_)
+- ``dials.cosym``: Add the option ``output.excluded=True`` to set aside the data sets that cosym rejected, so that these can more easily be investigated separately. (`#2854 <https://github.com/dials/dials/issues/2854>`_)
+- ``dials.image_viewer``: Support iso-resolution lines (circles, ellipses, hyperbola) on non-coplanar and/or two_theta != 0 detectors. (`#2867 <https://github.com/dials/dials/issues/2867>`_)
+- ``dials.correlation_matrix``: Hierarchical clustering now defaults to Ward linkages. (`#2876 <https://github.com/dials/dials/issues/2876>`_)
+- ``dials.cluster_unit_cell``: Add option to use Ward linkage, rather than single linkage. (`#2884 <https://github.com/dials/dials/issues/2884>`_)
+- ``dials.correlation_matrix``: Perform principal component analysis on optimised cosym coordinates. Coordinate plots now rotated by principal components. Add a new matrix-style plot for displaying all projections at once. (`#2885 <https://github.com/dials/dials/issues/2885>`_)
+
+
+Bugfixes
+--------
+
+- Switch from using unmaintained ``orderedset`` to ``ordered_set`` (`#2749 <https://github.com/dials/dials/issues/2749>`_)
+- ``dials.find_spots``: Prevent masked pixels from causing a "halo" of excluded pixels around them when using ``threashold.algorithm=extended_dispersion`` (the default). This previously caused strong pixels to be excluded from module edges and incorrectly classed strong pixels as background if close to masked pixels. (`#2790 <https://github.com/dials/dials/issues/2790>`_)
+- ``dials.ssx_index``: Fix crash when processing stills with no scan objects. (`#2841 <https://github.com/dials/dials/issues/2841>`_)
+- ``dials.export format=mosflm``: Do not write a DIRECTORY line if the image files do not exist (`#2845 <https://github.com/dials/dials/issues/2845>`_)
+- ``dials.cluster_unit_cell``: output each singleton point group and unit cell on its own line. (`#2850 <https://github.com/dials/dials/issues/2850>`_)
+- ``dials.cluster_unit_cell``: Use logging rather than print for output. (`#2852 <https://github.com/dials/dials/issues/2852>`_)
+- ``dials.refine``: Warn, don't crash, if trying to fix individual scan-varying parameters. (`#2856 <https://github.com/dials/dials/issues/2856>`_)
+- ``dials.cluster_unit_cell``: Clusters are given a ``cluster_id`` in order of decreasing size, and the output filenames match the ``cluster_id``. (`#2859 <https://github.com/dials/dials/issues/2859>`_)
+- ``dials.find_bad_pixels``: Use dispersion algorithm for filtering, instead of extended dispersion. This is more sensitive for lone pixels. (`#2881 <https://github.com/dials/dials/issues/2881>`_)
+- ``dials.scale``: Fix potential bad scaling against a reference if resolution limit is greater than 2 Angstroms. (`#2883 <https://github.com/dials/dials/issues/2883>`_)
+- ``dials.reciprocal_lattice_viewer``: Fix translate function for Python 3.12. (`#2888 <https://github.com/dials/dials/issues/2888>`_)
+- ``dials.stills_process``: Miscellaneous fixes when using with XTC files. (`#2899 <https://github.com/dials/dials/issues/2899>`_)
+
+
+Improved Documentation
+----------------------
+
+- 3DED/MicroED papers added to the website. (`#2847 <https://github.com/dials/dials/issues/2847>`_)
+- ``dials.export``: Revise usage documentation to be more explicit about which experiment files to use for different cases. (`#2864 <https://github.com/dials/dials/issues/2864>`_)
+- The user support mailing list is now dials-user-group@jiscmail.net (`#2866 <https://github.com/dials/dials/issues/2866>`_)
+- Add the user group e-mail address, ``dials-user-group@jiscmail.ac.uk``, to the message shown on errors. (`#2893 <https://github.com/dials/dials/issues/2893>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- Remove deprecated use of ``pkg_resources``, which is removed in Python 3.12. (`#2855 <https://github.com/dials/dials/issues/2855>`_)
+
+
+Misc
+----
+
+- `#2842 <https://github.com/dials/dials/issues/2842>`_, `#2843 <https://github.com/dials/dials/issues/2843>`_, `#2857 <https://github.com/dials/dials/issues/2857>`_, `#2871 <https://github.com/dials/dials/issues/2871>`_, `#2887 <https://github.com/dials/dials/issues/2887>`_, `#2892 <https://github.com/dials/dials/issues/2892>`_, `#2895 <https://github.com/dials/dials/issues/2895>`_, `#2901 <https://github.com/dials/dials/issues/2901>`_, `#2903 <https://github.com/dials/dials/issues/2903>`_, `#2904 <https://github.com/dials/dials/issues/2904>`_, `#2905 <https://github.com/dials/dials/issues/2905>`_
+
+
+Dials 3.24.0 (2025-04-28)
+=========================
+
+Features
+--------
+
+- ``dials.cosym``: Add the option ``output.excluded=True`` to set aside
+  the data sets that cosym rejected, so that these can more easily be
+  investigated separately. (`#2854 <https://github.com/dials/dials/issues/2854>`_)
+- dials.image_viewer: support iso-resolution lines (circles, ellipses, hyperbola) on non-coplanar and/or two_theta != 0 detectors (`#2867 <https://github.com/dials/dials/issues/2867>`_)
+- ``dials.correlation_matrix``: ward linkages now default for hierarchical clustering (tailorable through phil parameter) (`#2876 <https://github.com/dials/dials/issues/2876>`_)
+- ``dials.cluster_unit_cell``: Add option to use ward linkage rather than single linkage (`#2884 <https://github.com/dials/dials/issues/2884>`_)
+- ``dials.correlation_matrix``: Perform principal component analysis on optimised cosym coordinates. Coordinate plots now rotated by principal components. New matrix-style plot for displaying all projections. (`#2885 <https://github.com/dials/dials/issues/2885>`_)
+
+
+Bugfixes
+--------
+
+- Switch from using unmaintained ``orderedset`` to ``ordered_set`` (`#2749 <https://github.com/dials/dials/issues/2749>`_)
+- ``dials.find_spots``: Prevent masked pixels from causing a "halo" of excluded pixels around them when using ``threashold.algorithm=extended_dispersion`` (the default). This previously caused strong pixels to be excluded from module edges and incorrectly classed strong pixels as background if close to masked pixels. (`#2790 <https://github.com/dials/dials/issues/2790>`_)
+- ``dials.ssx_index``: Fix crash when processing stills with no scan objects. (`#2841 <https://github.com/dials/dials/issues/2841>`_)
+- ``dials.export format=mosflm``: Do not write a DIRECTORY line if the image files do not exist (`#2845 <https://github.com/dials/dials/issues/2845>`_)
+- ``dials.cluster_unit_cell``: output each singleton point group and unit cell on its own line. (`#2850 <https://github.com/dials/dials/issues/2850>`_)
+- ``dials.cluster_unit_cell``: Use logging rather than print for output. (`#2852 <https://github.com/dials/dials/issues/2852>`_)
+- Remove deprecated use of ``pkg_resources``, which is removed in Python 3.12. (`#2855 <https://github.com/dials/dials/issues/2855>`_)
+- ``dials.refine``: warn if trying to fix individual scan-varying parameters rather than crashing (`#2856 <https://github.com/dials/dials/issues/2856>`_)
+- ``precommitbx``: allow install on Python 3.12 (`#2857 <https://github.com/dials/dials/issues/2857>`_)
+- ``dials.cluster_unit_cell``: Clusters are given a ``cluster_id`` in order of decreasing size, and the output filenames match the ``cluster_id``. (`#2859 <https://github.com/dials/dials/issues/2859>`_)
+- ``dials.export``: revise usage documentation to be more explicit about which experiment files to use for different cases (`#2864 <https://github.com/dials/dials/issues/2864>`_)
+- Use locally defined ``OrderedSet`` for cases where the implementation in ``ordered_set`` does not work. (`#2871 <https://github.com/dials/dials/issues/2871>`_)
+- ``dials.find_bad_pixels``: use dispersion not dispersion extended for filtering (`#2881 <https://github.com/dials/dials/issues/2881>`_)
+- ``dials.scale``: Fix potential bad scaling against a reference if resolution limit greater than 2 Angstroms (`#2883 <https://github.com/dials/dials/issues/2883>`_)
+- No longer use files from ``dials_regression/indexing_test_data/`` in tests. The relevant files are now in ``dials-data``. (`#2887 <https://github.com/dials/dials/issues/2887>`_)
+- ``dials.reciprocal_lattice_viewer``: Fix translate function for Python 3.12 (`#2888 <https://github.com/dials/dials/issues/2888>`_)
+- Only use image example data from the publicly-available ``dials-data``. (`#2892 <https://github.com/dials/dials/issues/2892>`_)
+- Add the user group e-mail address, dials-user-group@jiscmail.ac.uk, to the message shown on errors. (`#2893 <https://github.com/dials/dials/issues/2893>`_)
+- Bugfixes for dials.stills_process when used with XTC files (`#2899 <https://github.com/dials/dials/issues/2899>`_)
+
+
+Improved Documentation
+----------------------
+
+- 3DED/MicroED papers added to the website. (`#2847 <https://github.com/dials/dials/issues/2847>`_)
+- The user support mailing list is now dials-user-group@jiscmail.net (`#2866 <https://github.com/dials/dials/issues/2866>`_)
+
+
+Misc
+----
+
+- `#2842 <https://github.com/dials/dials/issues/2842>`_, `#2843 <https://github.com/dials/dials/issues/2843>`_, `#2895 <https://github.com/dials/dials/issues/2895>`_, `#2901 <https://github.com/dials/dials/issues/2901>`_, `#2903 <https://github.com/dials/dials/issues/2903>`_, `#2904 <https://github.com/dials/dials/issues/2904>`_, `#2905 <https://github.com/dials/dials/issues/2905>`_
+
+
 DIALS 3.23.0 (2025-01-08)
 =========================
 
