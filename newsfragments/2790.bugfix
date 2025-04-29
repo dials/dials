@@ -1,1 +1,0 @@
-``dials.find_spots``: Prevent masked pixels from causing a "halo" of excluded pixels around them when using ``threashold.algorithm=extended_dispersion`` (the default). This previously caused strong pixels to be excluded from module edges and incorrectly classed strong pixels as background if close to masked pixels.

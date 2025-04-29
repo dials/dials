@@ -1,1 +1,0 @@
-Move ``calculate_isoresolution_lines`` into ``dials.util.image_viewer``. The function is still available at the old location, because it is used by it.
