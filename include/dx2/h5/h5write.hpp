@@ -1,3 +1,21 @@
+/**
+ * @file h5write.hpp
+ * @brief Utilities for writing raw and structured data to HDF5 files.
+ *
+ * This header provides two levels of HDF5 writing utilities:
+ *
+ * - **Raw Writer:** Directly writes typed raw memory buffers into
+ *   datasets. Suitable for low-level, performance-sensitive operations
+ *   like reflection table saving.
+ *
+ * - **High-Level Writer:** Dynamically infers shape from nested
+ *   standard containers (e.g., `std::vector<std::vector<double>>`),
+ *   flattens them, and writes them to HDF5. Useful for quickly
+ *   serializing in-memory C++ containers to disk.
+ *
+ * Intended for internal use in DX2 processing and general scientific
+ * data workflows.
+ */
 #pragma once
 
 #include <array>

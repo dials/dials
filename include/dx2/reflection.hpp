@@ -1,3 +1,18 @@
+/**
+ * @file reflection.hpp
+ * @brief Lightweight, type-safe reflection table for HDF5 datasets.
+ *
+ * This header defines a flexible structure for interacting with HDF5
+ * datasets as typed reflection tables. It allows datasets to be loaded
+ * into typed polymorphic containers, filtered by row selection, queried
+ * by column, and written back to disk.
+ *
+ * - `ReflectionTable` manages a collection of columns loaded from an
+ *   HDF5 group.
+ * - Each column is stored as a type-erased `ColumnBase`, which can be
+ *   downcast to a specific `TypedColumn<T>` when needed.
+ * - Support for adding, querying, selecting, and writing columns.
+ */
 #pragma once
 
 #include "dx2/h5/h5read_processed.hpp"
@@ -42,6 +57,7 @@ template <typename T> constexpr type_tag_t<T> type_tag{};
 template <typename Callback>
 void dispatch_h5_dataset_type(hid_t dataset_id, Callback &&cb) {
   using namespace reflection_table_type_utils;
+  // 🧬 Infer HDF5 type and map to C++ type
 
   // Get the dataset's datatype
   hid_t type_id = H5Dget_type(dataset_id);
@@ -97,7 +113,12 @@ struct ColumnBase {
   virtual std::unique_ptr<ColumnBase>
   clone_filtered(const std::vector<size_t> &selected_rows) const = 0;
 
-  /// Returns a pointer to the column as a specific type.
+  /**
+   * @brief Attempts to cast this column to a TypedColumn<T>.
+   *
+   * @tparam T The target type to cast to.
+   * @return A pointer to the TypedColumn<T>, or nullptr if types don't match.
+   */
   template <typename T> const TypedColumn<T> *as() const {
     if (get_type() != std::type_index(typeid(T)))
       return nullptr;
@@ -109,17 +130,37 @@ struct ColumnBase {
  * @brief Specialized container for HDF5 data of a specific type.
  */
 template <typename T> struct TypedColumn : public ColumnBase {
+  /**
+   * @brief Constructs a column with a given name and shape, allocating storage.
+   *
+   * @param name The name of the column.
+   * @param shape A vector specifying the shape (e.g. [rows, cols]).
+   */
   TypedColumn(const std::string &name, const std::vector<size_t> &shape)
       : name(name), shape(shape), data(compute_size(shape)) {
     setup_mdspan();
   }
 
+  /**
+   * @brief Constructs a column with a given name, shape, and preloaded data.
+   *
+   * @param name The name of the column.
+   * @param shape Shape of the column.
+   * @param data Flat vector of values, matching the given shape.
+   */
   TypedColumn(const std::string &name, const std::vector<size_t> &shape,
               const std::vector<T> &data)
       : name(name), shape(shape), data(data) {
     setup_mdspan();
   }
 
+  /**
+   * @brief Constructs a column from row/col dimensions.
+   *
+   * @param name The column name.
+   * @param rows Number of rows.
+   * @param cols Number of columns.
+   */
   TypedColumn(const std::string &name, size_t rows, size_t cols)
       : name(name), shape{rows, cols}, data(rows * cols) {
     setup_mdspan();
@@ -131,8 +172,22 @@ template <typename T> struct TypedColumn : public ColumnBase {
     return std::type_index(typeid(T));
   }
 
+  /**
+   * @brief Returns an mdspan view over the internal data.
+   *
+   * @return A constant reference to the mdspan view of the data.
+   */
   const mdspan_type<T> &span() const { return mdspan_data; }
 
+  /**
+   * @brief Creates a filtered copy of the column, keeping only selected rows.
+   *
+   * This method returns a new TypedColumn containing only the rows specified
+   * by the input indices. Column structure and type are preserved.
+   *
+   * @param selected_rows Indices of rows to keep.
+   * @return A new column with only the specified rows.
+   */
   std::unique_ptr<ColumnBase>
   clone_filtered(const std::vector<size_t> &selected_rows) const override {
     size_t new_rows = selected_rows.size();
@@ -143,6 +198,7 @@ template <typename T> struct TypedColumn : public ColumnBase {
 
     for (size_t row : selected_rows) {
       for (size_t col = 0; col < cols; ++col) {
+        // 🧵 Extract value row-wise
         new_data.push_back(mdspan_data(row, col));
       }
     }
@@ -157,6 +213,9 @@ template <typename T> struct TypedColumn : public ColumnBase {
   mdspan_type<T> mdspan_data; // mdspan view of the data
 
 private:
+  /**
+   * @brief Initializes the mdspan view based on the current shape.
+   */
   void setup_mdspan() {
     if (shape.size() == 1) {
       mdspan_data = mdspan_type<T>(data.data(), shape[0], 1);
@@ -168,6 +227,12 @@ private:
     }
   }
 
+  /**
+   * @brief Computes the total number of elements for a given shape.
+   *
+   * @param shape A vector of dimensions.
+   * @return The product of all shape dimensions.
+   */
   static size_t compute_size(const std::vector<size_t> &shape) {
     if (shape.empty())
       return 0;
@@ -389,12 +454,32 @@ public:
     return select(selected_rows);
   }
 
+  /**
+   * @brief Adds a new column to the table from row/col dimensions and flat
+   * data.
+   *
+   * @tparam T The data type of the column.
+   * @param name The name of the column.
+   * @param rows Number of rows.
+   * @param cols Number of columns.
+   * @param column_data Flat vector of data values.
+   */
   template <typename T>
   void add_column(const std::string &name, const size_t rows, const size_t cols,
                   const std::vector<T> &column_data) {
     add_column(name, std::vector<size_t>{rows, cols}, column_data);
   }
 
+  /**
+   * @brief Adds a new column to the table from shape vector and flat data.
+   *
+   * @tparam T The data type of the column.
+   * @param name The name of the column.
+   * @param shape Shape of the column.
+   * @param column_data Flat vector of data values.
+   *
+   * @throws std::runtime_error if shape does not match existing row count.
+   */
   template <typename T>
   void add_column(const std::string &name, const std::vector<size_t> &shape,
                   const std::vector<T> &column_data) {
@@ -409,6 +494,19 @@ public:
     data.push_back(std::move(col));
   }
 
+  /**
+   * @brief Writes all columns to an HDF5 file under the given group.
+   *
+   * This function iterates through all stored columns and writes each one
+   * to disk, provided its type is supported by the HDF5 backend.
+   * Currently supported types include: double, int, int64_t, and uint64_t.
+   *
+   * Columns with unsupported types will be skipped with a warning.
+   *
+   * @param filename Output HDF5 file path.
+   * @param group Target group inside the HDF5 file (defaults to
+   * /dials/processing/group_0).
+   */
   void write(const std::string &filename,
              const std::string &group = "/dials/processing/group_0") const {
     // 🗂️ Ensure the file exists or create it before writing
@@ -425,23 +523,33 @@ public:
 
     // 🔁 Iterate over all columns
     for (const auto &col : data) {
+      // 🏗️ Construct full dataset path: group + column name
       std::string path = group + "/" + col->get_name();
 
+      // Define a lambda that writes a column of a specific type T
       auto write_col = [&](auto tag) {
         using T = typename decltype(tag)::type;
 
+        // 🧪 Try to cast the typeless base pointer to TypedColumn<T>
         const auto *typed = col->as<T>();
-        if (!typed)
-          return; // Skip mismatched type
+        if (!typed) {
+          // This should not happen unless type registry is inconsistent
+          std::cerr << "Internal type mismatch for column: " << col->get_name()
+                    << "\n";
+          return;
+        }
 
+        // 💾 Call the HDF5 writer to write raw data to file
         write_raw_data_to_h5_file<T>(
             filename, path, typed->data.data(),
             {typed->shape.begin(), typed->shape.end()});
       };
 
+      // 🌀 Dispatch the column type and invoke the write_col lambda
       try {
         dispatch_column_type(*col, write_col);
       } catch (const std::exception &e) {
+        // ⚠️ If the type is unsupported or an error occurs, print warning
         std::cerr << "Skipping column " << col->get_name() << ": " << e.what()
                   << "\n";
       }

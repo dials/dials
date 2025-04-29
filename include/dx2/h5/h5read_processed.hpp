@@ -1,3 +1,20 @@
+/**
+ * @file h5read_processed.hpp
+ * @brief HDF5 dataset access utilities for reflection table loading.
+ *
+ * This header provides functions for reading typed datasets from HDF5
+ * files along with their dimensional metadata. It includes fast,
+ * shape-aware readers, recursive traversal of group structures, and
+ * scoped utilities for extracting datasets from flat HDF5 groups such
+ * as `/dials/processing/group_0`.
+ *
+ * Utilities in `h5read_processed_utils` focus on immediate dataset
+ * access, while recursive tools allow for full introspection of nested
+ * groups.
+ *
+ * Intended for internal use in processing pipelines.
+ */
+
 #pragma once
 
 #include <cassert>
@@ -13,8 +30,13 @@
 #include <vector>
 
 namespace h5read_processed_utils {
+
+#pragma region Internal Structs
+
 /**
  * @brief Container for shaped HDF5 data.
+ *
+ * Holds the raw flat data vector and shape information for a dataset.
  */
 template <typename T> struct H5ArrayData {
   std::vector<T> data;
@@ -24,12 +46,22 @@ template <typename T> struct H5ArrayData {
 /**
  * @brief Internal context for scanning a single HDF5 group.
  *
- * Used to pass state to the `H5Literate2` callback function.
+ * Used to pass state to the `H5Literate2` callback for flat dataset collection.
  */
 struct GroupScanContext {
-  std::string group_name;            /// Name of the group being scanned
-  std::vector<std::string> datasets; /// Collected dataset paths
+  std::string group_name;            // Name of the group being scanned
+  std::vector<std::string> datasets; // Collected dataset paths
 };
+
+///  @brief Traverse state context for recursive dataset discovery.
+struct TraverseData {
+  std::vector<std::string> *datasets;
+  std::string current_path;
+  std::unordered_set<std::string> *visited_groups;
+};
+
+#pragma endregion
+#pragma region Callbacks
 
 /**
  * @brief Callback for `H5Literate2` that collects only datasets.
@@ -65,13 +97,11 @@ void traverse_hdf5(hid_t loc_id, const std::string &path,
                    std::vector<std::string> &datasets,
                    std::unordered_set<std::string> &visited_groups);
 
-struct TraverseData {
-  std::vector<std::string> *datasets;
-  std::string current_path;
-  std::unordered_set<std::string> *visited_groups;
-};
-
-// Callback function for iterating through HDF5 objects
+/**
+ * @brief Callback for `H5Literate2` that walks both groups and datasets.
+ *
+ * Recursively visits groups and appends dataset paths to `TraverseData`.
+ */
 herr_t group_iterator(hid_t loc_id, const char *name, const H5L_info2_t *info,
                       void *op_data) {
   TraverseData *traverse_data = static_cast<TraverseData *>(op_data);
@@ -122,6 +152,17 @@ herr_t group_iterator(hid_t loc_id, const char *name, const H5L_info2_t *info,
   return 0; // Continue iteration
 }
 
+#pragma endregion
+#pragma region Group Traversal
+
+/**
+ * @brief Recursively traverses an HDF5 group and collects dataset paths.
+ *
+ * @param loc_id HDF5 group ID to start from.
+ * @param path Path prefix for entries.
+ * @param datasets Output vector to populate.
+ * @param visited_groups Prevents revisiting cycles.
+ */
 void traverse_hdf5(hid_t loc_id, const std::string &path,
                    std::vector<std::string> &datasets,
                    std::unordered_set<std::string> &visited_groups) {
@@ -132,16 +173,17 @@ void traverse_hdf5(hid_t loc_id, const std::string &path,
               &traverse_data);
 }
 
+#pragma endregion
 } // namespace h5read_processed_utils
 
+#pragma region Public API
 /**
  * @brief Lists all *immediate* datasets in an HDF5 group (non-recursive).
  *
- * Does not include datasets inside subgroups.
+ * Only returns datasets directly under `group_name`, not nested in subgroups.
  *
  * @param filename Path to the HDF5 file.
- * @param group_name Path to the group to scan (e.g.,
- * "/dials/processing/group_0").
+ * @param group_name Path to the group (e.g., "/dials/processing/group_0").
  * @return Vector of full dataset paths.
  */
 std::vector<std::string> get_datasets_in_group(const std::string &filename,
@@ -173,18 +215,12 @@ std::vector<std::string> get_datasets_in_group(const std::string &filename,
 }
 
 /**
- * @brief Reads a dataset from an HDF5 file into a vector with shape.
+ * @brief Reads an HDF5 dataset and returns its data and shape.
  *
- * This function reads a dataset from an HDF5 file and returns the data
- * along with its shape. It handles the opening and closing of the
- * HDF5 file and dataset, and checks for errors during the process.
- *
- * @tparam T The type of data to read (e.g., int, double).
- * @param filename The path to the HDF5 file.
- * @param dataset_name The name of the dataset to read.
- * @return A H5ArrayData<T> containing the data and its shape.
- * @throws std::runtime_error If the file, dataset, or datatype cannot be opened
- * or read.
+ * @tparam T Type of data to read (e.g., `double`, `int`).
+ * @param filename Path to the HDF5 file.
+ * @param dataset_name Full path to the dataset.
+ * @return H5ArrayData<T> containing flat data and shape vector.
  */
 template <typename T>
 h5read_processed_utils::H5ArrayData<T>
@@ -269,14 +305,12 @@ read_array_with_shape_from_h5_file(const std::string &filename,
 }
 
 /**
- * @brief Reads a dataset from an HDF5 file into an std::vector.
+ * @brief Reads an HDF5 dataset into a flat vector (no shape metadata).
  *
- * @tparam T The type of data to read (e.g., int, double).
- * @param filename The path to the HDF5 file.
- * @param dataset_name The name of the dataset to read.
- * @return A std::vector containing the data from the dataset.
- * @throws std::runtime_error If the file, dataset, or datatype cannot be opened
- * or read.
+ * @tparam T Type of the dataset (e.g., `float`, `int64_t`).
+ * @param filename HDF5 file path.
+ * @param dataset_name Full path to the dataset.
+ * @return Vector of raw values.
  */
 template <typename T>
 std::vector<T> read_array_from_h5_file(const std::string &filename,
@@ -285,11 +319,11 @@ std::vector<T> read_array_from_h5_file(const std::string &filename,
 }
 
 /**
- * @brief Discovers all datasets in a group in an HDF5 file.
+ * @brief Recursively finds all datasets in a group and subgroups.
  *
- * @param filename The path to the HDF5 file.
- * @param group_name The name of the group to search.
- * @return A vector containing the dataset paths.
+ * @param filename Path to the HDF5 file.
+ * @param group_name Name of the top-level group to search.
+ * @return Vector of full dataset paths.
  */
 std::vector<std::string>
 get_datasets_in_group_recursive(const std::string &filename,
@@ -323,10 +357,10 @@ get_datasets_in_group_recursive(const std::string &filename,
 }
 
 /**
- * @brief Extracts the dataset name from a full path.
+ * @brief Extracts just the leaf name from a full HDF5 dataset path.
  *
- * @param path The full path to the dataset.
- * @return The name of the dataset.
+ * @param path Full dataset path (e.g., `/a/b/c`).
+ * @return The base name (`c`).
  */
 std::string get_dataset_name(const std::string &path) {
   size_t pos = path.find_last_of('/');
@@ -335,3 +369,4 @@ std::string get_dataset_name(const std::string &path) {
   }
   return path.substr(pos + 1);
 }
+#pragma endregion
