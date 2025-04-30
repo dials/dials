@@ -53,6 +53,11 @@ jobs:
             --python "${{ env.PYTHON_TESTING_VERSION }}"
       - if: runner.os != 'Windows'
         run: echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+      - name: checkout dxtbx branch
+        run: |
+          pushd modules/dxtbx
+          git checkout libtbx_refresh_pep660
+          popd
       - name: Build
         run: python modules/dials/installer/bootstrap.py build --config-flags='-DCMAKE_UNITY_BUILD=true'
       - name: Prepare for cache restoration
@@ -103,6 +108,11 @@ jobs:
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
             --libtbx
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
+      - name: checkout dxtbx branch
+        run: |
+          pushd modules/dxtbx
+          git checkout libtbx_refresh_pep660
+          popd
       - name: Build
         run: python modules/dials/installer/bootstrap.py build --libtbx
       - name: Create Installer
