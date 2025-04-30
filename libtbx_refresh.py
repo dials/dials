@@ -121,7 +121,7 @@ def _install_setup_readonly_fallback(package_name: str):
     env = _get_real_env_hack_hack_hack()
 
     # As of PEP 660, the package metadata (dist-info) goes in the install dir,
-    # not the source dir. Add this location to the python path too.
+    # not the source dir. Add this location to the python path.
     metadata_dir = _find_site_packages_with_metadata(package_name, Path(build_path))
     if metadata_dir and metadata_dir not in sys.path:
         metadata_rel = libtbx.env.as_relocatable_path(str(metadata_dir))
