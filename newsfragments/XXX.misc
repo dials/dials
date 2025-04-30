@@ -1,0 +1,1 @@
+Update libtbx build (bootstrap.py --libtbx) to work with setuptools>=79.
