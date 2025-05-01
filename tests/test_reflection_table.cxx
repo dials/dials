@@ -37,7 +37,7 @@ TEST_F(ReflectionTableTest, LoadsAllColumns) {
 TEST_F(ReflectionTableTest, TryGetColumnSucceedsOnCorrectType) {
   ReflectionTable table(test_file_path.string());
 
-  auto px = table.get_column<double>("xyzobs.px.value");
+  auto px = table.column<double>("xyzobs.px.value");
   ASSERT_TRUE(px.has_value());
 
   const auto &span = px.value();
@@ -50,7 +50,7 @@ TEST_F(ReflectionTableTest, TryGetColumnSucceedsOnCorrectType) {
 TEST_F(ReflectionTableTest, TryGetColumnFailsOnWrongType) {
   ReflectionTable table(test_file_path.string());
 
-  auto col = table.get_column<int>("xyzobs.px.value");
+  auto col = table.column<int>("xyzobs.px.value");
   std::cout << "Column retrieval (int): "
             << (col.has_value() ? "found" : "not found") << "\n";
   EXPECT_FALSE(col.has_value());
@@ -59,7 +59,7 @@ TEST_F(ReflectionTableTest, TryGetColumnFailsOnWrongType) {
 TEST_F(ReflectionTableTest, SelectSubsetUsingFindRows) {
   ReflectionTable table(test_file_path.string());
 
-  auto px = table.get_column<double>("xyzobs.px.value");
+  auto px = table.column<double>("xyzobs.px.value");
   ASSERT_TRUE(px);
 
   const auto &span = px.value();
@@ -72,7 +72,7 @@ TEST_F(ReflectionTableTest, SelectSubsetUsingFindRows) {
   EXPECT_FALSE(selected.empty());
 
   auto filtered = table.select(selected);
-  auto filtered_px = filtered.get_column<double>("xyzobs.px.value");
+  auto filtered_px = filtered.column<double>("xyzobs.px.value");
   ASSERT_TRUE(filtered_px);
   const auto &filtered_span = filtered_px.value();
 
@@ -88,7 +88,7 @@ TEST_F(ReflectionTableTest, SelectSubsetUsingFindRows) {
 TEST_F(ReflectionTableTest, SelectWithMaskReturnsSameResultAsExplicitIndices) {
   ReflectionTable table(test_file_path.string());
 
-  auto px = table.get_column<double>("xyzobs.px.value");
+  auto px = table.column<double>("xyzobs.px.value");
   ASSERT_TRUE(px);
   const auto &span = px.value();
 
@@ -107,10 +107,8 @@ TEST_F(ReflectionTableTest, SelectWithMaskReturnsSameResultAsExplicitIndices) {
   auto table_from_mask = table.select(mask);
   auto table_from_indices = table.select(indices);
 
-  auto mask_span =
-      table_from_mask.get_column<double>("xyzobs.px.value").value();
-  auto idx_span =
-      table_from_indices.get_column<double>("xyzobs.px.value").value();
+  auto mask_span = table_from_mask.column<double>("xyzobs.px.value").value();
+  auto idx_span = table_from_indices.column<double>("xyzobs.px.value").value();
 
   ASSERT_EQ(mask_span.extent(0), idx_span.extent(0));
   ASSERT_EQ(mask_span.extent(1), idx_span.extent(1));
@@ -134,7 +132,7 @@ TEST_F(ReflectionTableTest, SelectEmptyReturnsEmptyTable) {
 
   std::cout << "Selecting with empty row set...\n";
   for (const auto &name : table.get_column_names()) {
-    auto span = empty.get_column<double>(name);
+    auto span = empty.column<double>(name);
     if (span) {
       std::cout << "  " << name << " has " << span->extent(0) << " rows\n";
       EXPECT_EQ(span.value().extent(0), 0);
@@ -189,8 +187,8 @@ TEST_F(ReflectionTableTest, WriteAndReloadProducesSameData) {
 
   for (const auto &name : column_names) {
     // Support double and int for now
-    auto original_d = subset.get_column<double>(name);
-    auto reloaded_d = reloaded.get_column<double>(name);
+    auto original_d = subset.column<double>(name);
+    auto reloaded_d = reloaded.column<double>(name);
 
     if (original_d && reloaded_d) {
       const auto &a = original_d.value();
@@ -207,8 +205,8 @@ TEST_F(ReflectionTableTest, WriteAndReloadProducesSameData) {
       continue;
     }
 
-    auto original_i = subset.get_column<int>(name);
-    auto reloaded_i = reloaded.get_column<int>(name);
+    auto original_i = subset.column<int>(name);
+    auto reloaded_i = reloaded.column<int>(name);
 
     if (original_i && reloaded_i) {
       const auto &a = original_i.value();

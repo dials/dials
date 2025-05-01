@@ -332,7 +332,7 @@ public:
    * owning ReflectionTable instance and its internal data remain alive.
    */
   template <typename T>
-  std::optional<mdspan_type<T>> get_column(const std::string &name) const {
+  std::optional<mdspan_type<T>> column(const std::string &name) const {
     // Iterate though all columns in the table
     for (const auto &col : data) {
       // Check if the column matches the requested type and name
