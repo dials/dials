@@ -503,18 +503,15 @@ def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
     assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_3(
-    dials_regression: pathlib.Path, tmp_path
-):
+def test_index_small_molecule_multi_sequence_3(dials_data, tmp_path):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
-    data_dir = dials_regression / "dials-191"
-    print(data_dir)
-    pickle_paths = [
-        sorted(data_dir.glob(f"*_SWEEP{i + 1}_strong.pickle"))[0] for i in range(3)
+    data_dir = dials_data("misc_regression", pathlib=True)
+    refl_paths = [
+        str(data_dir / f"dials-191_sweep{i + 1}_strong.refl") for i in range(3)
     ]
     sequence_paths = [
-        sorted(data_dir.glob(f"*_SWEEP{i + 1}_experiments.json"))[0] for i in range(3)
+        str(data_dir / f"dials-191_sweep{i + 1}_imported.expt") for i in range(3)
     ]
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell(
@@ -524,7 +521,7 @@ def test_index_small_molecule_multi_sequence_3(
     expected_hall_symbol = " P 1"
 
     result = run_indexing(
-        pickle_paths,
+        refl_paths,
         sequence_paths,
         tmp_path,
         extra_args,

@@ -4,7 +4,6 @@ import os
 import pickle
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -357,16 +356,15 @@ def test_find_spots_with_image_exclusions(dials_data, tmp_path):
     assert len(z.select((z > 3) & (z < 6.5))) == 0
 
 
-def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
+def test_find_spots_with_xfel_stills(dials_data, tmp_path):
     # now with XFEL stills
     result = subprocess.run(
         [
             shutil.which("dials.find_spots"),
             "nproc=1",
-            os.path.join(
-                dials_regression,
-                "spotfinding_test_data",
-                "idx-s00-20131106040302615.cbf",
+            str(
+                dials_data("image_examples", pathlib=True)
+                / "LCLS_cspad_nexus-idx-20130301060858801.cbf",
             ),
             "output.reflections=spotfinder.refl",
             "algorithm=dispersion",
@@ -378,7 +376,7 @@ def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
     assert (tmp_path / "spotfinder.refl").is_file()
 
     reflections = flex.reflection_table.from_file(tmp_path / "spotfinder.refl")
-    assert len(reflections) == 2643
+    assert len(reflections) == 1148
 
 
 def test_find_spots_with_per_image_statistics(dials_data, tmp_path):
