@@ -175,7 +175,7 @@ TEST_F(ReflectionTableTest, WriteAndReloadProducesSameData) {
 
   // Temporary write path
   std::filesystem::path temp_file =
-      std::filesystem::temp_directory_path() / "reflection_test_write.h5";
+      std::filesystem::current_path() / "reflection_test_write.h5";
   std::string temp_file_str = temp_file.string();
 
   // Write to file
@@ -228,6 +228,69 @@ TEST_F(ReflectionTableTest, WriteAndReloadProducesSameData) {
     std::cerr << "Skipping unsupported type or column not found: " << name
               << "\n";
   }
+
+  // Clean up
+  std::filesystem::remove(temp_file);
+}
+
+TEST_F(ReflectionTableTest, ExperimentMetadataRoundTrip) {
+  // Load original table
+  ReflectionTable table(test_file_path.string());
+
+  // Verify that metadata was loaded from the original file
+  const auto &ids = table.get_experiment_ids();
+  const auto &names = table.get_identifiers();
+
+  std::cout << "\nLoaded experiment_ids:\n";
+  for (const auto &id : ids) {
+    std::cout << "  - " << id << "\n";
+  }
+
+  std::cout << "Loaded identifiers:\n";
+  for (const auto &s : names) {
+    std::cout << "  - \"" << s << "\"\n";
+  }
+
+  ASSERT_FALSE(ids.empty()) << "experiment_ids not loaded from input file.";
+  ASSERT_FALSE(names.empty()) << "identifiers not loaded from input file.";
+  ASSERT_EQ(ids.size(), names.size()) << "Mismatch in metadata entry count.";
+
+  // Take a small sample with at least one experiment reference
+  std::vector<size_t> selected_rows = {0, 1};
+  ReflectionTable subset = table.select(selected_rows);
+
+  // Write to temp file
+  std::filesystem::path temp_file =
+      std::filesystem::current_path() / "reflection_test_metadata.h5";
+  std::string temp_file_str = temp_file.string();
+
+  std::cout << "Writing subset to: " << temp_file_str << "\n";
+  subset.write(temp_file_str);
+
+  // Reload from file
+  ReflectionTable reloaded(temp_file_str);
+
+  // Compare experiment_ids
+  const auto &ids_reloaded = reloaded.get_experiment_ids();
+  ASSERT_EQ(ids.size(), ids_reloaded.size());
+  for (size_t i = 0; i < ids.size(); ++i) {
+    std::cout << "ID[" << i << "]: original=" << ids[i]
+              << " reloaded=" << ids_reloaded[i] << "\n";
+    EXPECT_EQ(ids[i], ids_reloaded[i]);
+  }
+
+  // Compare identifiers
+  const auto &names_reloaded = reloaded.get_identifiers();
+  ASSERT_EQ(names.size(), names_reloaded.size());
+  for (size_t i = 0; i < names.size(); ++i) {
+    std::cout << "Identifier[" << i << "]: original=\"" << names[i]
+              << "\" reloaded=\"" << names_reloaded[i] << "\"\n";
+    EXPECT_EQ(names[i], names_reloaded[i]);
+  }
+
+  std::cout << "\n✅ Metadata round-trip test passed.\n";
+  std::cout << "Inspect manually in HDFView if needed: " << temp_file_str
+            << "\n";
 
   // Clean up
   std::filesystem::remove(temp_file);
