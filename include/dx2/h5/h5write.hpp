@@ -18,12 +18,15 @@
  */
 #pragma once
 
+#include "dx2/h5/h5dispatch.hpp"
 #include <array>
 #include <cstdlib>
 #include <hdf5.h>
 #include <iostream>
 #include <string>
 #include <vector>
+
+using namespace h5dispatch;
 
 #pragma region Raw writer
 /**
@@ -131,17 +134,7 @@ void write_raw_data_to_h5_file(const std::string &filename,
     hid_t dataspace = H5Screate_simple(shape.size(), shape.data(), nullptr);
 
     // Determine native HDF5 type
-    hid_t h5_type;
-    if constexpr (std::is_same_v<T, double>)
-      h5_type = H5T_NATIVE_DOUBLE;
-    else if constexpr (std::is_same_v<T, int>)
-      h5_type = H5T_NATIVE_INT;
-    else if constexpr (std::is_same_v<T, int64_t>)
-      h5_type = H5T_NATIVE_LLONG;
-    else if constexpr (std::is_same_v<T, uint64_t>)
-      h5_type = H5T_NATIVE_ULLONG;
-    else
-      throw std::runtime_error("Unsupported type for HDF5 writing");
+    hid_t h5_type = get_h5_native_type<T>();
 
     // Create or overwrite dataset
     hid_t dset = H5Dcreate2(group, dataset_name.c_str(), h5_type, dataspace,

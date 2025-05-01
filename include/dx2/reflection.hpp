@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include "dx2/h5/h5dispatch.hpp"
 #include "dx2/h5/h5read_processed.hpp"
 #include "dx2/h5/h5write.hpp"
 #include <experimental/mdspan>
@@ -23,6 +24,8 @@
 #include <optional>
 #include <string>
 #include <vector>
+
+using namespace h5dispatch;
 
 #pragma region Type Helpers
 /*
@@ -35,66 +38,6 @@ template <typename T> using storage_type = std::vector<T>;
 template <typename T>
 using mdspan_type =
     std::experimental::mdspan<T, std::experimental::dextents<size_t, 2>>;
-
-namespace reflection_table_type_utils {
-template <typename T> struct type_tag_t {
-  using type = T;
-};
-template <typename T> constexpr type_tag_t<T> type_tag{};
-} // namespace reflection_table_type_utils
-#pragma endregion
-
-#pragma region Type Dispatch
-/**
- * @brief Dispatches based on the type of an HDF5 dataset.
- *
- * This function inspects the type of the dataset identified by
- * `dataset_id`, and then calls the provided callback as a templated
- * function with the appropriate C++ type.
- *
- * @tparam Callback A callable with a templated `operator()<T>()`.
- * @param dataset_id An open HDF5 dataset identifier (hid_t).
- * @param cb The callback to invoke with the deduced template type.
- */
-template <typename Callback>
-void dispatch_h5_dataset_type(hid_t dataset_id, Callback &&cb) {
-  using namespace reflection_table_type_utils;
-  // 🧬 Infer HDF5 type and map to C++ type
-
-  // Get the dataset's datatype
-  hid_t type_id = H5Dget_type(dataset_id);
-  // Get the class of the datatype (e.g., integer, float)
-  H5T_class_t cls = H5Tget_class(type_id);
-  // Get the size of the datatype
-  size_t size = H5Tget_size(type_id);
-  // Get the order of the datatype (e.g., little-endian, big-endian)
-  H5T_order_t order = H5Tget_order(type_id);
-  // Get the sign of the datatype (e.g., signed, unsigned)
-  H5T_sign_t sign = H5Tget_sign(type_id);
-
-  // Match to supported types
-  if (cls == H5T_FLOAT && size == sizeof(double)) {
-    cb(type_tag<double>);
-  } else if (cls == H5T_INTEGER && size == sizeof(int) && sign == H5T_SGN_2) {
-    cb(type_tag<int>);
-  } else if (cls == H5T_INTEGER && size == sizeof(int64_t) &&
-             sign == H5T_SGN_2) {
-    cb(type_tag<int64_t>);
-  } else if (cls == H5T_INTEGER && size == sizeof(uint64_t) &&
-             sign == H5T_SGN_NONE) {
-    cb(type_tag<uint64_t>);
-  } else {
-    // Print full diagnostic
-    std::cerr << "Unsupported dataset type:\n";
-    std::cerr << "  class: " << static_cast<int>(cls) << "\n";
-    std::cerr << "  size: " << size << "\n";
-    std::cerr << "  order: " << static_cast<int>(order) << "\n";
-    std::cerr << "  sign: " << static_cast<int>(sign) << "\n";
-    throw std::runtime_error("Unsupported HDF5 dataset type.");
-  }
-
-  H5Tclose(type_id);
-}
 #pragma endregion
 
 #pragma region Column Definition
@@ -247,35 +190,9 @@ private:
   }
 };
 
-/**
- * @brief Dispatches based on the type of a column.
- *
- * This function inspects the type of the column and then calls the
- * provided callback as a templated function with the appropriate C++
- * type.
- *
- * @tparam Callback A callable with a templated `operator()<T>()`.
- * @param col A reference to the column to inspect.
- * @param cb The callback to invoke with the deduced template type.
- *
- */
 template <typename Callback>
 void dispatch_column_type(const ColumnBase &col, Callback &&cb) {
-  using namespace reflection_table_type_utils;
-
-  const std::type_index &t = col.get_type();
-
-  if (t == typeid(double)) {
-    cb(type_tag<double>);
-  } else if (t == typeid(int)) {
-    cb(type_tag<int>);
-  } else if (t == typeid(int64_t)) {
-    cb(type_tag<int64_t>);
-  } else if (t == typeid(uint64_t)) {
-    cb(type_tag<uint64_t>);
-  } else {
-    throw std::runtime_error("Unsupported column type: " + col.get_name());
-  }
+  dispatch_column_type(col.get_type(), std::forward<Callback>(cb));
 }
 #pragma endregion
 
@@ -341,7 +258,7 @@ public:
       try {
         // Dispatch based on the dataset's actual HDF5 type (float64, int32,
         // etc.)
-        dispatch_h5_dataset_type(dataset_id, [&](auto tag) {
+        h5dispatch::dispatch_h5_dataset_type(dataset_id, [&](auto tag) {
           // Deduce the type
           using T = typename decltype(tag)::type;
 
@@ -593,7 +510,7 @@ public:
 
       // 🌀 Dispatch the column type and invoke the write_col lambda
       try {
-        dispatch_column_type(*col, write_col);
+        dispatch_column_type(col->get_type(), write_col);
       } catch (const std::exception &e) {
         // ⚠️ If the type is unsupported or an error occurs, print warning
         std::cerr << "Skipping column " << col->get_name() << ": " << e.what()
