@@ -151,7 +151,11 @@ def test_refine_bravais_settings_554(dials_data, tmp_path):
     reflections_path = str(data_dir / "dials-554_indexed.refl")
     experiments_path = str(data_dir / "dials-554_indexed.expt")
     result = subprocess.run(
-        ["dials.refine_bravais_settings", reflections_path, experiments_path],
+        [
+            shutil.which("dials.refine_bravais_settings"),
+            reflections_path,
+            experiments_path,
+        ],
         cwd=tmp_path,
         capture_output=True,
     )
