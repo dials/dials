@@ -106,27 +106,30 @@ hid_t traverse_or_create_groups(hid_t parent, const std::string &path) {
  * cannot be written.
  */
 template <typename T>
-void write_raw_data_to_h5_file(const std::string &filename,
-                               const std::string &dataset_path,
-                               const T *data_ptr,
+void write_raw_data_to_h5_file(std::string_view filename,
+                               std::string_view dataset_path, const T *data_ptr,
                                const std::vector<hsize_t> &shape) {
+  // Convert to std::string when needed for C-style API
+  std::string fname(filename);
+  std::string dset_path(dataset_path);
+
   // Open or create the file
-  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
   if (file < 0) {
-    file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    file = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if (file < 0) {
-      throw std::runtime_error("Failed to create or open file: " + filename);
+      throw std::runtime_error("Failed to create or open file: " + fname);
     }
   }
 
   try {
     // Split group and dataset name
-    size_t slash_pos = dataset_path.find_last_of('/');
+    size_t slash_pos = dset_path.find_last_of('/');
     if (slash_pos == std::string::npos) {
-      throw std::runtime_error("Invalid dataset path: " + dataset_path);
+      throw std::runtime_error("Invalid dataset path: " + dset_path);
     }
-    std::string group_path = dataset_path.substr(0, slash_pos);
-    std::string dataset_name = dataset_path.substr(slash_pos + 1);
+    std::string group_path = dset_path.substr(0, slash_pos);
+    std::string dataset_name = dset_path.substr(slash_pos + 1);
 
     hid_t group = traverse_or_create_groups(file, group_path);
 
@@ -151,7 +154,7 @@ void write_raw_data_to_h5_file(const std::string &filename,
     herr_t status =
         H5Dwrite(dset, h5_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_ptr);
     if (status < 0) {
-      throw std::runtime_error("Failed to write dataset: " + dataset_path);
+      throw std::runtime_error("Failed to write dataset: " + dset_path);
     }
 
     H5Dclose(dset);
@@ -272,31 +275,35 @@ template <typename Container> auto flatten(const Container &container) {
  * cannot be written.
  */
 template <typename Container>
-void write_data_to_h5_file(const std::string &filename,
-                           const std::string &dataset_path,
+void write_data_to_h5_file(std::string_view filename,
+                           std::string_view dataset_path,
                            const Container &data) {
+  std::string fname(filename);
+  std::string dset_path(dataset_path);
+
+  // Suppress errors when trying to open non-existent files
   // Open or create the HDF5 file
-  H5Eset_auto2(H5E_DEFAULT, NULL, NULL); // Suppress errors to stdout when
-  // trying to open a file/group that may not exist.
-  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  H5Eset_auto2(H5E_DEFAULT, NULL,
+               NULL); // Suppress errors when trying to open non-existent files
+  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
   if (file < 0) {
-    file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    file = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if (file < 0) {
       throw std::runtime_error("Error: Unable to create or open file: " +
-                               filename);
+                               fname);
     }
   }
 
   try {
     // Separate the dataset path into group path and dataset name
-    size_t last_slash_pos = dataset_path.find_last_of('/');
+    size_t last_slash_pos = dset_path.find_last_of('/');
     if (last_slash_pos == std::string::npos) {
       throw std::runtime_error("Error: Invalid dataset path, no '/' found: " +
-                               dataset_path);
+                               dset_path);
     }
 
-    std::string group_path = dataset_path.substr(0, last_slash_pos);
-    std::string dataset_name = dataset_path.substr(last_slash_pos + 1);
+    std::string group_path = dset_path.substr(0, last_slash_pos);
+    std::string dataset_name = dset_path.substr(last_slash_pos + 1);
 
     // Traverse or create the groups leading to the dataset
     hid_t group = traverse_or_create_groups(file, group_path);

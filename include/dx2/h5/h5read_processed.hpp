@@ -186,23 +186,25 @@ void traverse_hdf5(hid_t loc_id, const std::string &path,
  * @param group_name Path to the group (e.g., "/dials/processing/group_0").
  * @return Vector of full dataset paths.
  */
-std::vector<std::string> get_datasets_in_group(const std::string &filename,
-                                               const std::string &group_name) {
+std::vector<std::string> get_datasets_in_group(std::string_view filename,
+                                               std::string_view group_name) {
+  std::string fname(filename);
+  std::string gpath(group_name);
   // Open file
-  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file < 0) {
-    throw std::runtime_error("Error: Unable to open file: " + filename);
+    throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
   // Open group
-  hid_t group = H5Gopen2(file, group_name.c_str(), H5P_DEFAULT);
+  hid_t group = H5Gopen2(file, gpath.c_str(), H5P_DEFAULT);
   if (group < 0) {
     H5Fclose(file);
-    std::cerr << "Warning: Missing group " << group_name << ", skipping.\n";
+    std::cerr << "Warning: Missing group " << gpath << ", skipping.\n";
     return {};
   }
 
-  h5read_processed_utils::GroupScanContext context{group_name, {}};
+  h5read_processed_utils::GroupScanContext context{gpath, {}};
 
   // Iterate over immediate children
   H5Literate2(group, H5_INDEX_NAME, H5_ITER_NATIVE, nullptr,
@@ -224,23 +226,25 @@ std::vector<std::string> get_datasets_in_group(const std::string &filename,
  */
 template <typename T>
 h5read_processed_utils::H5ArrayData<T>
-read_array_with_shape_from_h5_file(const std::string &filename,
-                                   const std::string &dataset_name) {
+read_array_with_shape_from_h5_file(std::string_view filename,
+                                   std::string_view dataset_name) {
   // Start measuring time
   auto start_time = std::chrono::high_resolution_clock::now();
 
+  std::string fname(filename);
+  std::string dset_name(dataset_name);
+
   // Open the HDF5 file
-  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file < 0) {
-    throw std::runtime_error("Error: Unable to open file: " + filename);
+    throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
   try {
     // Open the dataset
-    hid_t dataset = H5Dopen(file, dataset_name.c_str(), H5P_DEFAULT);
+    hid_t dataset = H5Dopen(file, dset_name.c_str(), H5P_DEFAULT);
     if (dataset < 0) {
-      throw std::runtime_error("Error: Unable to open dataset: " +
-                               dataset_name);
+      throw std::runtime_error("Error: Unable to open dataset: " + dset_name);
     }
 
     try {
@@ -275,8 +279,7 @@ read_array_with_shape_from_h5_file(const std::string &filename,
       herr_t status = H5Dread(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                               data_out.data());
       if (status < 0) {
-        throw std::runtime_error("Error: Unable to read dataset: " +
-                                 dataset_name);
+        throw std::runtime_error("Error: Unable to read dataset: " + dset_name);
       }
 
       H5Sclose(dataspace);
@@ -288,7 +291,7 @@ read_array_with_shape_from_h5_file(const std::string &filename,
       double elapsed_time =
           std::chrono::duration<double>(end_time - start_time).count();
       if (std::getenv("DX2_DEBUG")) {
-        std::cout << "READ TIME for " << dataset_name << " : " << elapsed_time
+        std::cout << "READ TIME for " << dset_name << " : " << elapsed_time
                   << "s" << std::endl;
       }
 
@@ -315,8 +318,8 @@ read_array_with_shape_from_h5_file(const std::string &filename,
  * @return Vector of raw values.
  */
 template <typename T>
-std::vector<T> read_array_from_h5_file(const std::string &filename,
-                                       const std::string &dataset_name) {
+std::vector<T> read_array_from_h5_file(std::string_view filename,
+                                       std::string_view dataset_name) {
   return read_array_with_shape_from_h5_file<T>(filename, dataset_name).data;
 }
 
@@ -328,28 +331,30 @@ std::vector<T> read_array_from_h5_file(const std::string &filename,
  * @return Vector of full dataset paths.
  */
 std::vector<std::string>
-get_datasets_in_group_recursive(const std::string &filename,
-                                const std::string &group_name) {
+get_datasets_in_group_recursive(std::string_view filename,
+                                std::string_view group_name) {
+  std::string fname(filename);
+  std::string gpath(group_name);
+
   std::vector<std::string> datasets;
   std::unordered_set<std::string> visited_groups;
 
   // Open the HDF5 file
-  hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (file < 0) {
-    throw std::runtime_error("Error: Unable to open file: " + filename);
+    throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
   // Open the group
-  hid_t group = H5Gopen2(file, group_name.c_str(), H5P_DEFAULT);
+  hid_t group = H5Gopen2(file, gpath.c_str(), H5P_DEFAULT);
   if (group < 0) {
     H5Fclose(file);
-    std::cerr << "Warning: Missing group " << group_name << ", skipping.\n";
+    std::cerr << "Warning: Missing group " << gpath << ", skipping.\n";
     return {};
   }
 
   // Start traversal from the group
-  h5read_processed_utils::traverse_hdf5(group, group_name, datasets,
-                                        visited_groups);
+  h5read_processed_utils::traverse_hdf5(group, gpath, datasets, visited_groups);
 
   // Close the group and file
   H5Gclose(group);

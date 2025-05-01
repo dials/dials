@@ -464,20 +464,21 @@ public:
    * @param group Target group inside the HDF5 file (defaults to
    * /dials/processing/group_0).
    */
-  void write(const std::string &filename,
-             const std::string &group = "/dials/processing/group_0") const {
+  void write(std::string_view filename,
+             std::string_view group = "/dials/processing/group_0") const {
+    std::string fname(filename);
+    std::string gpath(group);
     // 🗂️ Ensure the file exists or create it before writing
-    hid_t file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+    hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
     if (file < 0) {
-      file =
-          H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+      file = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
       if (file < 0) {
-        throw std::runtime_error("Failed to create or open file: " + filename);
+        throw std::runtime_error("Failed to create or open file: " + fname);
       }
     }
 
     // Traverse and get group
-    hid_t group_id = traverse_or_create_groups(file, group);
+    hid_t group_id = traverse_or_create_groups(file, gpath);
 
     // Write metadata
     write_experiment_metadata(group_id, experiment_ids, identifiers);
@@ -487,7 +488,7 @@ public:
     // 🔁 Write all data columns
     for (const auto &col : data) {
       // 🏗️ Construct full dataset path: group + column name
-      std::string path = group + "/" + col->get_name();
+      std::string path = gpath + "/" + col->get_name();
 
       // Define a lambda that writes a column of a specific type T
       auto write_col = [&](auto tag) {
@@ -504,7 +505,7 @@ public:
 
         // 💾 Call the HDF5 writer to write raw data to file
         write_raw_data_to_h5_file<T>(
-            filename, path, typed->data.data(),
+            fname, path, typed->data.data(),
             {typed->shape.begin(), typed->shape.end()});
       };
 

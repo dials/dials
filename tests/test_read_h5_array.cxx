@@ -63,7 +63,7 @@ TEST_F(HDF5ReadTest, ReadDoubleArrayFromH5) {
 
   // Read array from the test HDF5 file
   std::vector<double> xyzobs_px =
-      read_array_from_h5_file<double>(test_file_path, array_name);
+      read_array_from_h5_file<double>(test_file_path.c_str(), array_name);
 
   // Check a specific value
   double expected_value = 528.86470588235295;
@@ -75,7 +75,7 @@ TEST_F(HDF5ReadTest, ReadSizeTArrayFromH5) {
 
   // Read array from the test HDF5 file
   std::vector<std::size_t> flags_array =
-      read_array_from_h5_file<std::size_t>(test_file_path, flags_name);
+      read_array_from_h5_file<std::size_t>(test_file_path.c_str(), flags_name);
 
   // Check a specific value
   std::size_t expected_flag_value = 32;
@@ -95,8 +95,9 @@ TEST_F(HDF5ReadTest, ReadFromNonExistentFile) {
 TEST_F(HDF5ReadTest, ReadNonExistentDataset) {
   std::string invalid_dataset = "/this/does/not/exist";
 
-  EXPECT_THROW(read_array_from_h5_file<double>(test_file_path, invalid_dataset),
-               std::runtime_error);
+  EXPECT_THROW(
+      read_array_from_h5_file<double>(test_file_path.c_str(), invalid_dataset),
+      std::runtime_error);
 }
 
 // Test reading an empty dataset
@@ -104,7 +105,7 @@ TEST_F(HDF5ReadTest, ReadEmptyDataset) {
   std::string empty_dataset = "/dials/processing/empty_dataset";
 
   std::vector<double> result =
-      read_array_from_h5_file<double>(test_file_path, empty_dataset);
+      read_array_from_h5_file<double>(test_file_path.c_str(), empty_dataset);
   EXPECT_TRUE(result.empty()) << "Expected an empty vector for empty dataset.";
 }
 
@@ -113,15 +114,15 @@ TEST_F(HDF5ReadTest, ReadWithIncorrectType) {
   std::string dataset = "/dials/processing/group_0/xyzobs.px.value";
 
   // Try to read a float dataset as int (should fail)
-  EXPECT_THROW(read_array_from_h5_file<int>(test_file_path, dataset),
+  EXPECT_THROW(read_array_from_h5_file<int>(test_file_path.c_str(), dataset),
                std::runtime_error);
 }
 
 TEST_F(HDF5ReadTest, ReadWithShapeReturnsCorrectShape) {
   std::string dataset = "/dials/processing/group_0/xyzobs.px.value";
 
-  auto result =
-      read_array_with_shape_from_h5_file<double>(test_file_path, dataset);
+  auto result = read_array_with_shape_from_h5_file<double>(
+      test_file_path.c_str(), dataset);
 
   ASSERT_FALSE(result.shape.empty());
   EXPECT_EQ(result.shape.size(), 2); // 2D dataset
