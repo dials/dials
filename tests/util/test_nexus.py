@@ -12,7 +12,7 @@ def test_run(dials_data, run_in_tmp_path):
 
     # Read the experiments
     experiments1 = ExperimentListFactory.from_json_file(
-        str(data_dir / "nexus-refined.expt")
+        str(data_dir / "nexus-refined.expt"), check_format=False
     )
 
     # Read the reflections

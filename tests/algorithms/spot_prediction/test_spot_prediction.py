@@ -91,8 +91,8 @@ class SpotPredictor:
 
 
 @pytest.fixture(scope="session")
-def spotpredictor(dials_regression):
-    return SpotPredictor(dials_regression)
+def spotpredictor(dials_data):
+    return SpotPredictor(dials_data)
 
 
 def test_dmin(spotpredictor):

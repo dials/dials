@@ -507,9 +507,11 @@ def test_index_small_molecule_multi_sequence_3(dials_data, tmp_path):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
     data_dir = dials_data("misc_regression", pathlib=True)
-    refl_paths = [str(data_dir / f"dials-191_sweep{i}_strong.refl") for i in range(3)]
+    refl_paths = [
+        str(data_dir / f"dials-191_sweep{i + 1}_strong.refl") for i in range(3)
+    ]
     sequence_paths = [
-        str(data_dir / f"dials-191_sweep{i}_imported.expt") for i in range(3)
+        str(data_dir / f"dials-191_sweep{i + 1}_imported.expt") for i in range(3)
     ]
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell(

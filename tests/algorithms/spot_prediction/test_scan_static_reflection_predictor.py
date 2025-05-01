@@ -40,8 +40,8 @@ class Data:
 
 
 @pytest.fixture(scope="session")
-def data(dials_data, dials_regression):
-    return Data(dials_data, dials_regression)
+def data(dials_data):
+    return Data(dials_data)
 
 
 def test_number_of_predictions(data):

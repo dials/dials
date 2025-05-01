@@ -92,8 +92,8 @@ class RayPredictor:
 
 
 @pytest.fixture(scope="session")
-def raypredictor(dials_regression):
-    return RayPredictor(dials_regression)
+def raypredictor(dials_data):
+    return RayPredictor(dials_data)
 
 
 def test_miller_index_set(raypredictor):

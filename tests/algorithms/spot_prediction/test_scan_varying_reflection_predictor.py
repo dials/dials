@@ -16,7 +16,9 @@ class Data:
 
         from dxtbx.model.experiment_list import ExperimentListFactory
 
-        self.experiments = ExperimentListFactory.from_json_file(path)
+        self.experiments = ExperimentListFactory.from_json_file(
+            path, check_format=False
+        )
         assert len(self.experiments) == 1
         assert (
             self.experiments[0].crystal.num_scan_points
@@ -51,8 +53,8 @@ class Data:
 
 
 @pytest.fixture(scope="session")
-def data(dials_regression):
-    return Data(dials_regression)
+def data(dials_data):
+    return Data(dials_data)
 
 
 def test_regression(data):
