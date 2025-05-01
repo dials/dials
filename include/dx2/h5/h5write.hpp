@@ -372,3 +372,44 @@ void write_data_to_h5_file(const std::string &filename,
   H5Fclose(file);
 }
 #pragma endregion
+#pragma region Attribute writer
+inline void
+write_experiment_metadata(hid_t group_id,
+                          const std::vector<uint64_t> &experiment_ids,
+                          const std::vector<std::string> &identifiers) {
+  // Write experiment_ids
+  {
+    hsize_t dims = experiment_ids.size();
+    hid_t space = H5Screate_simple(1, &dims, nullptr);
+    hid_t attr = H5Acreate2(group_id, "experiment_ids", H5T_NATIVE_ULLONG,
+                            space, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, H5T_NATIVE_ULLONG, experiment_ids.data());
+    H5Aclose(attr);
+    H5Sclose(space);
+  }
+
+  // Write identifiers
+  {
+    hsize_t dims = identifiers.size();
+    hid_t space = H5Screate_simple(1, &dims, nullptr);
+
+    hid_t str_type = H5Tcopy(H5T_C_S1);
+    H5Tset_size(str_type, H5T_VARIABLE);
+    H5Tset_cset(str_type, H5T_CSET_UTF8);
+    H5Tset_strpad(str_type, H5T_STR_NULLTERM);
+
+    std::vector<const char *> c_strs;
+    for (const auto &s : identifiers) {
+      c_strs.push_back(s.c_str());
+    }
+
+    hid_t attr = H5Acreate2(group_id, "identifiers", str_type, space,
+                            H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, str_type, c_strs.data());
+
+    H5Aclose(attr);
+    H5Sclose(space);
+    H5Tclose(str_type);
+  }
+}
+#pragma endregion

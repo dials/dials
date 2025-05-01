@@ -284,6 +284,8 @@ private:
   std::vector<std::unique_ptr<ColumnBase>> data;
   std::string h5_filepath;
   const std::string DEFAULT_REFL_GROUP = "/dials/processing/group_0";
+  std::vector<uint64_t> experiment_ids;
+  std::vector<std::string> identifiers;
 
   /// Get the number of rows in the first column, assuming all columns
   /// have the same number of rows
@@ -307,10 +309,17 @@ public:
     std::vector<std::string> datasets =
         get_datasets_in_group(h5_filepath, DEFAULT_REFL_GROUP);
 
-    // Open the HDF5 file once for all dataset operations
+    // Open the HDF5 file
     hid_t file = H5Fopen(h5_filepath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     if (file < 0) {
       throw std::runtime_error("Could not open file: " + h5_filepath);
+    }
+
+    // Open group and read experiment metadata
+    hid_t group = H5Gopen(file, DEFAULT_REFL_GROUP.c_str(), H5P_DEFAULT);
+    if (group >= 0) {
+      read_experiment_metadata(group, experiment_ids, identifiers);
+      H5Gclose(group);
     }
 
     // Loop over every dataset path in the group
@@ -351,6 +360,20 @@ public:
     }
 
     H5Fclose(file);
+  }
+
+  /**
+   * @brief Get the list of experiment IDs.
+   */
+  const std::vector<uint64_t> &get_experiment_ids() const {
+    return experiment_ids;
+  }
+
+  /**
+   * @brief Get the list of identifiers.
+   */
+  const std::vector<std::string> &get_identifiers() const {
+    return identifiers;
   }
 
   /**
@@ -432,6 +455,10 @@ public:
     for (const auto &col : data) {
       filtered.data.push_back(col->clone_filtered(selected_rows));
     }
+
+    // Copy experiment_ids and identifiers
+    filtered.experiment_ids = this->experiment_ids;
+    filtered.identifiers = this->identifiers;
 
     return filtered;
   }
@@ -518,10 +545,16 @@ public:
         throw std::runtime_error("Failed to create or open file: " + filename);
       }
     }
-    // Close the file handle after opening/creating it
-    H5Fclose(file);
 
-    // 🔁 Iterate over all columns
+    // Traverse and get group
+    hid_t group_id = traverse_or_create_groups(file, group);
+
+    // Write metadata
+    write_experiment_metadata(group_id, experiment_ids, identifiers);
+
+    H5Gclose(group_id);
+
+    // 🔁 Write all data columns
     for (const auto &col : data) {
       // 🏗️ Construct full dataset path: group + column name
       std::string path = group + "/" + col->get_name();
@@ -554,6 +587,8 @@ public:
                   << "\n";
       }
     }
+
+    H5Fclose(file);
   }
 };
 #pragma endregion

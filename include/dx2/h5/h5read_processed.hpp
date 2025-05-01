@@ -356,6 +356,41 @@ get_datasets_in_group_recursive(const std::string &filename,
   return datasets;
 }
 
+inline void read_experiment_metadata(hid_t group_id,
+                                     std::vector<uint64_t> &experiment_ids,
+                                     std::vector<std::string> &identifiers) {
+  if (H5Aexists(group_id, "experiment_ids") > 0) {
+    hid_t attr = H5Aopen(group_id, "experiment_ids", H5P_DEFAULT);
+    hid_t space = H5Aget_space(attr);
+    hssize_t num_elements = H5Sget_simple_extent_npoints(space);
+
+    experiment_ids.resize(num_elements);
+    H5Aread(attr, H5T_NATIVE_ULLONG, experiment_ids.data());
+
+    H5Sclose(space);
+    H5Aclose(attr);
+  }
+
+  if (H5Aexists(group_id, "identifiers") > 0) {
+    hid_t attr = H5Aopen(group_id, "identifiers", H5P_DEFAULT);
+    hid_t type = H5Aget_type(attr);
+    hid_t space = H5Aget_space(attr);
+    hssize_t num_elements = H5Sget_simple_extent_npoints(space);
+
+    std::vector<char *> raw_strings(num_elements);
+    identifiers.resize(num_elements);
+    H5Aread(attr, type, raw_strings.data());
+
+    for (hssize_t i = 0; i < num_elements; ++i) {
+      identifiers[i] = std::string(raw_strings[i]);
+    }
+
+    H5Tclose(type);
+    H5Sclose(space);
+    H5Aclose(attr);
+  }
+}
+
 /**
  * @brief Extracts just the leaf name from a full HDF5 dataset path.
  *
