@@ -287,8 +287,10 @@ read_array_with_shape_from_h5_file(const std::string &filename,
       auto end_time = std::chrono::high_resolution_clock::now();
       double elapsed_time =
           std::chrono::duration<double>(end_time - start_time).count();
-      std::cout << "READ TIME for " << dataset_name << " : " << elapsed_time
-                << "s" << std::endl;
+      if (std::getenv("DX2_DEBUG")) {
+        std::cout << "READ TIME for " << dataset_name << " : " << elapsed_time
+                  << "s" << std::endl;
+      }
 
       return {std::move(data_out),
               std::vector<size_t>(dims.begin(), dims.end())};

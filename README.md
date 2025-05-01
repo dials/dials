@@ -18,6 +18,9 @@ cmake ..
 ```
 You can then build with `make`, and run a test with `./tests/test_crystal`.
 
+You can enable debugging printout by setting the `DX2_DEBUG` environment
+variable before running.
+
 ## Writing And Running Tests
 
 See https://google.github.io/googletest/primer.html. The `tests` subdirectory
