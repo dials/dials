@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -20,14 +19,13 @@ def plausible(table):
     return True
 
 
-def test_static_prediction(dials_regression: Path, tmp_path):
+def test_static_prediction(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            os.path.join(
-                dials_regression,
-                "prediction_test_data",
-                "experiments_scan_static_crystal.json",
+            str(
+                dials_data("misc_regression", pathlib=True)
+                / "prediction-static-crystal.expt"
             ),
         ],
         cwd=tmp_path,
@@ -40,14 +38,13 @@ def test_static_prediction(dials_regression: Path, tmp_path):
     assert plausible(table)
 
 
-def test_scan_varying_prediction(dials_regression: Path, tmp_path):
+def test_scan_varying_prediction(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            os.path.join(
-                dials_regression,
-                "prediction_test_data",
-                "experiments_scan_varying_crystal.json",
+            str(
+                dials_data("misc_regression", pathlib=True)
+                / "prediction-varying-crystal.expt"
             ),
         ],
         cwd=tmp_path,
@@ -60,14 +57,13 @@ def test_scan_varying_prediction(dials_regression: Path, tmp_path):
     assert plausible(table)
 
 
-def test_force_static_prediction(dials_regression: Path, tmp_path):
+def test_force_static_prediction(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            os.path.join(
-                dials_regression,
-                "prediction_test_data",
-                "experiments_scan_varying_crystal.json",
+            str(
+                dials_data("misc_regression", pathlib=True)
+                / "prediction-varying-crystal.expt"
             ),
             "force_static=True",
         ],
@@ -80,14 +76,13 @@ def test_force_static_prediction(dials_regression: Path, tmp_path):
     assert plausible(table)
 
 
-def test_experiment_parameters(dials_regression: Path, tmp_path):
+def test_experiment_parameters(dials_data: Path, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            os.path.join(
-                dials_regression,
-                "prediction_test_data",
-                "experiments_scan_varying_crystal.json",
+            str(
+                dials_data("misc_regression", pathlib=True)
+                / "prediction-varying-crystal.expt"
             ),
         ],
         cwd=tmp_path,
