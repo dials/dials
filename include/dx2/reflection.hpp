@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#pragma region Utils
+#pragma region Type Helpers
 /*
  * Type aliases for centralised control of storage types.
  */
@@ -42,7 +42,9 @@ template <typename T> struct type_tag_t {
 };
 template <typename T> constexpr type_tag_t<T> type_tag{};
 } // namespace reflection_table_type_utils
+#pragma endregion
 
+#pragma region Type Dispatch
 /**
  * @brief Dispatches based on the type of an HDF5 dataset.
  *
@@ -93,7 +95,9 @@ void dispatch_h5_dataset_type(hid_t dataset_id, Callback &&cb) {
 
   H5Tclose(type_id);
 }
+#pragma endregion
 
+#pragma region Column Definition
 // Forward declaration of TypedColumn
 template <typename T> struct TypedColumn;
 
@@ -302,6 +306,7 @@ private:
   }
 
 public:
+#pragma region Constructors
   ReflectionTable() = default;
 
   ReflectionTable(const std::string &h5_filepath) : h5_filepath(h5_filepath) {
@@ -361,7 +366,9 @@ public:
 
     H5Fclose(file);
   }
+#pragma endregion
 
+#pragma region Metadata Access
   /**
    * @brief Get the list of experiment IDs.
    */
@@ -386,7 +393,9 @@ public:
     }
     return names;
   }
+#pragma endregion
 
+#pragma region Column Access
   /**
    * @brief Retrieves a read-only view (mdspan) of a typed column by
    * name.
@@ -480,7 +489,9 @@ public:
     }
     return select(selected_rows);
   }
+#pragma endregion
 
+#pragma region Column Modification
   /**
    * @brief Adds a new column to the table from row/col dimensions and flat
    * data.
@@ -520,7 +531,9 @@ public:
 
     data.push_back(std::move(col));
   }
+#pragma endregion
 
+#pragma region Write
   /**
    * @brief Writes all columns to an HDF5 file under the given group.
    *
@@ -590,5 +603,6 @@ public:
 
     H5Fclose(file);
   }
+#pragma endregion
 };
 #pragma endregion
