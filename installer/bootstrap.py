@@ -864,7 +864,7 @@ def update_sources(options):
         repositories = {
             source.split("/")[1]: {"base-repository": source, "branch-local": branch}
             for source, branch in (
-                ("cctbx/dxtbx", "main"),
+                ("cctbx/dxtbx", "hatch_2"),
                 ("dials/dials", "main"),
                 ("xia2/xia2", "main"),
             )
