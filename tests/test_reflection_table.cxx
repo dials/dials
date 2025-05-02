@@ -56,35 +56,6 @@ TEST_F(ReflectionTableTest, TryGetColumnFailsOnWrongType) {
   EXPECT_FALSE(col.has_value());
 }
 
-TEST_F(ReflectionTableTest, SelectSubsetUsingFindRows) {
-  ReflectionTable table(test_file_path.string());
-
-  auto px = table.column<double>("xyzobs.px.value");
-  ASSERT_TRUE(px);
-
-  const auto &span = px.value();
-
-  auto selected = table.find_rows([&](size_t i) {
-    return span(i, 2) > 1.0; // z > 1.0
-  });
-
-  std::cout << "Selected " << selected.size() << " rows where z > 1.0\n";
-  EXPECT_FALSE(selected.empty());
-
-  auto filtered = table.select(selected);
-  auto filtered_px = filtered.column<double>("xyzobs.px.value");
-  ASSERT_TRUE(filtered_px);
-  const auto &filtered_span = filtered_px.value();
-
-  for (size_t i = 0; i < std::min<size_t>(filtered_span.extent(0), 5); ++i) {
-    std::cout << "z[" << i << "] = " << filtered_span(i, 2) << "\n";
-  }
-
-  for (size_t i = 0; i < filtered_span.extent(0); ++i) {
-    EXPECT_GT(filtered_span(i, 2), 1.0);
-  }
-}
-
 TEST_F(ReflectionTableTest, SelectWithMaskReturnsSameResultAsExplicitIndices) {
   ReflectionTable table(test_file_path.string());
 
@@ -292,4 +263,118 @@ TEST_F(ReflectionTableTest, ExperimentMetadataRoundTrip) {
 
   // Clean up
   std::filesystem::remove(temp_file);
+}
+
+TEST_F(ReflectionTableTest, SelectSubsetUsingTypedFindRows) {
+  ReflectionTable table(test_file_path.string());
+
+  // Define a predicate that selects rows where the z-coordinate (3rd column) is
+  // greater than 1.0
+  auto selected = table.find_rows(ColumnPredicate<double>{
+      "xyzobs.px.value",
+      [](const auto &span, size_t i) { return span(i, 2) > 1.0; }});
+
+  std::cout << "Selected " << selected.size() << " rows where z > 1.0\n";
+  EXPECT_FALSE(selected.empty());
+
+  // Filter the table to include only the selected rows
+  auto filtered = table.select(selected);
+
+  // Extract the filtered xyzobs.px.value column
+  auto filtered_px = filtered.column<double>("xyzobs.px.value");
+  ASSERT_TRUE(filtered_px);
+  const auto &filtered_span = filtered_px.value();
+
+  // Print the first few z-values (i.e. the value at column index 2)
+  for (size_t i = 0; i < std::min<size_t>(filtered_span.extent(0), 5); ++i) {
+    std::cout << "z[" << i << "] = " << filtered_span(i, 2) << "\n";
+  }
+
+  // Validate all selected rows meet the predicate condition
+  for (size_t i = 0; i < filtered_span.extent(0); ++i) {
+    EXPECT_GT(filtered_span(i, 2), 1.0);
+  }
+}
+
+TEST_F(ReflectionTableTest, SelectSubsetWithMultipleTypedPredicates_OR) {
+  ReflectionTable table(test_file_path.string());
+
+  // Combine two predicates: x > 200 (column 0) or z < 5.0 (column 2)
+  auto selected =
+      table.find_rows(logic::LogicalOp::Or,
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 0) > 200.0;
+                                              }},
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 2) < 5.0;
+                                              }});
+
+  std::cout << "Selected " << selected.size()
+            << " rows with x > 200 OR z < 5.0\n";
+  EXPECT_FALSE(selected.empty());
+
+  // Select rows from table and extract the column
+  auto filtered = table.select(selected);
+  auto filtered_px = filtered.column<double>("xyzobs.px.value");
+  ASSERT_TRUE(filtered_px);
+  const auto &span = filtered_px.value();
+
+  // Verify each selected row satisfies at least one predicate
+  for (size_t i = 0; i < span.extent(0); ++i) {
+    EXPECT_TRUE(span(i, 0) > 200.0 || span(i, 2) < 5.0);
+  }
+}
+
+TEST_F(ReflectionTableTest, SelectSubsetWithMultipleTypedPredicates_AND) {
+  ReflectionTable table(test_file_path.string());
+
+  // Combine two predicates: x > 200 (column 0) and z < 5.0 (column 2)
+  auto selected =
+      table.find_rows(logic::LogicalOp::And,
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 0) > 200.0;
+                                              }},
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 2) < 5.0;
+                                              }});
+
+  std::cout << "Selected " << selected.size()
+            << " rows with x > 200 AND z < 5.0\n";
+  EXPECT_FALSE(selected.empty());
+
+  // Select and validate all remaining rows satisfy both predicates
+  auto filtered = table.select(selected);
+  auto filtered_px = filtered.column<double>("xyzobs.px.value");
+  ASSERT_TRUE(filtered_px);
+  const auto &span = filtered_px.value();
+
+  for (size_t i = 0; i < span.extent(0); ++i) {
+    EXPECT_TRUE(span(i, 0) > 200.0 && span(i, 2) < 5.0);
+  }
+}
+
+TEST_F(ReflectionTableTest, AccessNonExistentColumn) {
+  ReflectionTable table(test_file_path.string());
+
+  // Attempt to access a column that does not exist
+  auto non_existent_column = table.column<double>("non_existent_column");
+
+  /**
+   * Attemtping to access a non-existent column should return an empty
+   * optional.
+   *
+   * This is a test to ensure that the column retrieval mechanism
+   * correctly handles cases where the requested column does not exist.
+   */
+
+  std::cout << "Attempting to access non-existent column: "
+            << (non_existent_column.has_value() ? "found" : "not found")
+            << "\n";
+
+  // Ensure the column retrieval fails
+  EXPECT_FALSE(non_existent_column.has_value());
 }

@@ -196,6 +196,37 @@ void dispatch_column_type(const ColumnBase &col, Callback &&cb) {
 }
 #pragma endregion
 
+#pragma region Predicate Helpers
+/**
+ * @brief Represents a type-safe row predicate bound to a specific
+ * column.
+ *
+ * This struct is used to associate a named column with a predicate
+ * function that inspects values from the corresponding column. It
+ * enables statically typed, variadic filtering of table rows.
+ *
+ * @tparam T The expected type of the column.
+ */
+template <typename T> struct ColumnPredicate {
+  ///< The name of the column to apply the predicate on.
+  std::string column_name;
+  ///< A predicate function over the column mdspan and row index.
+  std::function<bool(const mdspan_type<T> &, size_t)> predicate;
+};
+
+namespace logic {
+
+/**
+ * @brief Logical combination strategy for find_rows.
+ */
+enum class LogicalOp {
+  Or, ///< Union of all matching rows (default)
+  And ///< Intersection of all matching rows
+};
+
+} // namespace logic
+#pragma endregion
+
 #pragma region ReflectionTable
 class ReflectionTable {
 private:
@@ -221,6 +252,67 @@ private:
   bool matches_column(const ColumnBase &col, const std::string &name) const {
     return col.get_name() == name && col.get_type() == typeid(T);
   }
+
+  /**
+   * @brief Merges a vector of row indices into a set.
+   *
+   * This is used to accumulate matches from multiple predicates
+   * during a logical OR combination.
+   *
+   * @param set The target set to insert into.
+   * @param rows The row indices to insert.
+   */
+  void merge_into_set(std::unordered_set<size_t> &set,
+                      const std::vector<size_t> &rows) const {
+    set.insert(rows.begin(), rows.end());
+  }
+
+  /**
+   * @brief Evaluate a single ColumnPredicate against the table.
+   *
+   * This method retrieves the column referenced by the predicate,
+   * and evaluates the predicate function for each row. A list of
+   * row indices for which the predicate returned true is returned.
+   *
+   * The column is accessed via `column<T>(...)` which returns an
+   * `mdspan` view into the column data. The predicate receives this
+   * view and an index `i`, and should return true if that row is to be kept.
+   *
+   * Example predicate:
+   *   [](const auto &span, size_t i) { return span(i, 2) > 1.0; }
+   * will filter rows where the third component (z) exceeds 1.0.
+   *
+   * @tparam T The type of the column.
+   * @param condition The column predicate to evaluate.
+   * @return A vector of matching row indices.
+   * @throws std::runtime_error if the column is missing or of the wrong type.
+   */
+  template <typename T>
+  std::vector<size_t>
+  evaluate_column_predicate(const ColumnPredicate<T> &condition) const {
+    auto opt = column<T>(condition.column_name);
+    if (!opt)
+      throw std::runtime_error("Column not found or wrong type: " +
+                               condition.column_name);
+
+    const mdspan_type<T> &span = *opt;
+    std::vector<size_t> matches;
+    for (size_t i = 0; i < span.extent(0); ++i) {
+      if (condition.predicate(span, i)) {
+        matches.push_back(i);
+      }
+    }
+    return matches;
+  }
+
+  /**
+   * @brief Type trait used to ensure all variadic arguments are
+   * ColumnPredicate<T>.
+   */
+  template <typename T> struct is_column_predicate : std::false_type {};
+
+  template <typename T>
+  struct is_column_predicate<ColumnPredicate<T>> : std::true_type {};
 
 public:
 #pragma region Constructors
@@ -349,23 +441,86 @@ public:
   }
 
   /**
-   * @brief Finds rows matching a predicate.
+   * @brief Finds all rows matching any or all of the given typed
+   * predicates.
    *
-   * Applies the given predicate to each row (represented by its index).
-   * The predicate can fetch any columns it needs via the table interface.
+   * This function accepts any number of typed predicates, each bound to
+   * a specific column. It returns the union or intersection of all
+   * matching rows, depending on the specified logical operation.
    *
-   * @param predicate A function taking a row index and returning a bool.
-   * @return A vector of row indices for which the predicate returned true.
+   * Uses a parameter pack to accept a variadic number of predicates,
+   * and expands them into individual calls to evaluate_column_predicate.
+   * The resulting vectors are combined based on the logical operator.
+   *
+   * @tparam Predicates Parameter pack of ColumnPredicate<T> types.
+   * @param op Logical combination (AND or OR).
+   * @param conds The predicates to apply to rows.
+   * @return A vector of row indices matching the logical combination.
    */
-  std::vector<size_t> find_rows(std::function<bool(size_t)> predicate) const {
-    std::vector<size_t> matching_rows;
-    size_t row_count = get_row_count();
-    for (size_t i = 0; i < row_count; ++i) {
-      if (predicate(i)) {
-        matching_rows.push_back(i);
+  template <typename... Predicates>
+  std::vector<size_t> find_rows(logic::LogicalOp op,
+                                const Predicates &...conds) const {
+    // Ensure all predicates are of the correct type
+    static_assert((is_column_predicate<Predicates>::value && ...),
+                  "All arguments to find_rows must be ColumnPredicate<T>");
+
+    // Expand the parameter pack into a vector of row-index vectors
+    std::vector<std::vector<size_t>> all_matches = {
+        evaluate_column_predicate(conds)...};
+    std::unordered_set<size_t> result_set;
+
+    if (op == logic::LogicalOp::Or) {
+      // Combine all matching row indices (set union)
+      for (const auto &matches : all_matches) {
+        result_set.insert(matches.begin(), matches.end());
       }
+    } else if (op == logic::LogicalOp::And) {
+      // Combine only common row indices (set intersection)
+      if (all_matches.empty())
+        return {};
+
+      // Start with the first match set as the initial intersection base
+      std::unordered_set<size_t> intersection(all_matches[0].begin(),
+                                              all_matches[0].end());
+
+      // Iteratively refine the intersection by retaining only elements
+      // that are also present in the next predicate's results
+      for (size_t i = 1; i < all_matches.size(); ++i) {
+        std::unordered_set<size_t> next(all_matches[i].begin(),
+                                        all_matches[i].end());
+
+        // Iterate over current intersection set
+        for (auto it = intersection.begin(); it != intersection.end();) {
+          // If the current value is not present in the next result set,
+          // erase it from the intersection set
+          if (next.find(*it) == next.end()) {
+            it = intersection.erase(it); // erase returns the next iterator
+          } else {
+            ++it; // move to the next element if it's still present
+          }
+        }
+      }
+
+      result_set = std::move(intersection);
     }
-    return matching_rows;
+
+    return std::vector<size_t>(result_set.begin(), result_set.end());
+  }
+
+  /**
+   * @brief Finds all rows matching all of the given typed predicates.
+   *
+   * This overload enables simpler syntax when AND is desired (default).
+   * Because default parameters don't work with parameter packs,
+   * we provide this wrapper to make the interface intuitive.
+   *
+   * @tparam Predicates Parameter pack of ColumnPredicate<T> types.
+   * @param conds The predicates to apply to rows.
+   * @return A vector of row indices matching all predicates.
+   */
+  template <typename... Predicates>
+  std::vector<size_t> find_rows(const Predicates &...conds) const {
+    return find_rows(logic::LogicalOp::And, conds...);
   }
 
   /**
