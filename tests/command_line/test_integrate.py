@@ -477,28 +477,18 @@ def test_multi_sweep(dials_regression: pathlib.Path, tmp_path):
     assert flex.abs(I1 - I2) < 1e-6
 
 
-def test_multi_lattice(dials_regression: pathlib.Path, tmp_path):
-    expts = os.path.join(
-        dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
-    )
-
-    experiments = load.experiment_list(expts)
-    for i, expt in enumerate(experiments):
-        expt.identifier = str(100 + i)
-    experiments.as_json(tmp_path / "modified_input.json")
+def test_multi_lattice(dials_data, tmp_path):
+    expt = str(dials_data("trypsin_multi_lattice", pathlib=True) / "refined.expt")
+    refl = str(dials_data("trypsin_multi_lattice", pathlib=True) / "refined.refl")
 
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
             "nproc=1",
-            "modified_input.json",
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "multi_lattice",
-                "indexed.pickle",
-            ),
+            "d_min=4",
             "prediction.padding=0",
+            expt,
+            refl,
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -507,25 +497,34 @@ def test_multi_lattice(dials_regression: pathlib.Path, tmp_path):
     assert (tmp_path / "integrated.refl").is_file()
     assert (tmp_path / "integrated.expt").is_file()
 
+    # Expected identifiers (should be unchanged from the input)
+    expected_identifiers = {
+        0: "54924b82-9a0e-4b39-840d-0e14b780534b",
+        1: "6c80adf7-3e6f-47a6-abca-916ec3c056a7",
+        2: "7a8dbd6a-11be-429a-ba1f-2d855babaaa5",
+        3: "1b0937cc-e16d-4778-b5b5-4ddc0f772b91",
+        4: "6c745eeb-b835-4c4e-9a31-348ecd4607d8",
+        5: "1584899c-8f81-4d82-b093-44abe1a6f859",
+    }
     experiments = load.experiment_list(tmp_path / "integrated.expt")
-    for i, expt in enumerate(experiments):
-        assert expt.identifier == str(100 + i)
+    assert [e.identifier for e in experiments] == list(expected_identifiers.values())
 
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert len(table) == 4962
-    assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
-    # both should only have the imageset_id of zero as they share an imageset
+    assert len(table) == 4020
+    assert dict(table.experiment_identifiers()) == expected_identifiers
+
+    # all 6 experiments should have an imageset_id of zero as they share an imageset
     assert set(table["imageset_id"]) == {0}
 
-    # Check output contains from two lattices
+    # Check output contains from six lattices
     exp_id = list(set(table["id"]))
-    assert len(exp_id) == 2
+    assert len(exp_id) == 6
 
-    # Check both lattices have integrated reflections
+    # Check all lattices have integrated reflections
     mask = table.get_flags(table.flags.integrated_prf)
     table = table.select(mask)
     exp_id = list(set(table["id"]))
-    assert len(exp_id) == 2
+    assert len(exp_id) == 6
 
 
 def test_output_rubbish(dials_data, tmp_path):
