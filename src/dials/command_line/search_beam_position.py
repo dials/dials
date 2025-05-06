@@ -122,9 +122,9 @@ projection {
     .type = bool
     .help = "Plot the diffraction image with the computed beam center."
 
-    verbose = True
+    bar = True
     .type = bool
-    .help = "Print the beam position to the output."
+    .help = "Print progress bar."
 
     exclude_pixel_range_x = None
     .type = ints
@@ -795,7 +795,7 @@ def run(args=None):
                         (int(set_index), int(image_index), float(x), float(y))
                     )
 
-                    if params.projection.verbose:
+                    if params.projection.bar:
                         print_progress(
                             image_index=image_run_index,
                             n_images=num_selected_images,
@@ -804,6 +804,11 @@ def run(args=None):
                             x=x,
                             y=y,
                         )
+                    else:
+                        out_str = f"set {int(set_index):04d}, "
+                        out_str += f"image {int(image_index):04d}: "
+                        out_str += f"{x:.2f} {y:.2f}"
+                        print(out_str)
 
             # Compute beam position for the average image
             else:
@@ -822,7 +827,7 @@ def run(args=None):
                         else:
                             avg_image = avg_image + image
 
-                        if params.projection.verbose:
+                        if params.projection.bar:
                             print_progress(
                                 image_index=image_run_index,
                                 n_images=num_selected_images,
@@ -850,7 +855,7 @@ def run(args=None):
             with open(params.output.json, "w") as json_file:
                 json.dump(json_output, json_file, indent=4)
 
-            if params.projection.verbose:
+            if params.projection.bar:
                 print()
 
 
