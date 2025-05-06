@@ -19,6 +19,7 @@
 #include "dx2/h5/h5read_processed.hpp"
 #include "dx2/h5/h5utils.hpp"
 #include "dx2/h5/h5write.hpp"
+#include "dx2/logging.hpp"
 #include <experimental/mdspan>
 #include <functional>
 #include <memory>
@@ -321,9 +322,16 @@ public:
   ReflectionTable() = default;
 
   ReflectionTable(const std::string &h5_filepath) : h5_filepath(h5_filepath) {
+    auto start = std::chrono::high_resolution_clock::now(); // ⏱ Start timer
+
     // Discover all datasets in the default reflection group
     std::vector<std::string> datasets =
         get_datasets_in_group(h5_filepath, DEFAULT_REFL_GROUP);
+
+    if (datasets.empty()) {
+      dx2_log::warning(
+          fmt::format("No datasets found in group '{}'", DEFAULT_REFL_GROUP));
+    }
 
     // Open the HDF5 file
     H5File file(H5Fopen(h5_filepath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
@@ -344,7 +352,7 @@ public:
       // Open the specific dataset (within the file opened above)
       H5Dataset dataset_id(H5Dopen2(file, dataset.c_str(), H5P_DEFAULT));
       if (!dataset_id) {
-        std::cerr << "Could not open dataset: " << dataset << "\n";
+        dx2_log::warning(fmt::format("Could not open dataset '{}'", dataset));
         continue;
       }
 
@@ -357,13 +365,22 @@ public:
           data.push_back(std::make_unique<TypedColumn<T>>(
               dataset_name, result.shape, result.data));
 
-          std::cout << "Loaded column: " << dataset_name << " with type "
-                    << typeid(T).name() << "\n";
+          dx2_log::debug("Loaded column: {} with type {}", dataset_name,
+                         typeid(T).name());
         });
       } catch (const std::exception &e) {
-        std::cerr << "Skipping dataset " << dataset << ": " << e.what() << "\n";
+        dx2_log::warning(
+            fmt::format("Skipping dataset '{}': {}", dataset, e.what()));
+        // Continue to the next dataset
       }
     }
+
+    dx2_log::debug("Loaded {} column(s) from group '{}'", data.size(),
+                   DEFAULT_REFL_GROUP);
+
+    auto end = std::chrono::high_resolution_clock::now(); // ⏱ End timer
+    dx2_log::debug("ReflectionTable loaded in {:.4f}s",
+                   std::chrono::duration<double>(end - start).count());
   }
 #pragma endregion
 
@@ -646,7 +663,8 @@ public:
         const auto *typed = col->as<T>();
         if (!typed) {
           // This should not happen unless type registry is inconsistent
-          std::cerr << "Internal type mismatch for column: " << name << "\n";
+          dx2_log::error(
+              fmt::format("Internal type mismatch for column '{}'", name));
           return;
         }
 
@@ -661,7 +679,7 @@ public:
         dispatch_column_type(col->get_type(), write_col);
       } catch (const std::exception &e) {
         // ⚠️ If the type is unsupported or an error occurs, print warning
-        std::cerr << "Skipping column " << name << ": " << e.what() << "\n";
+        dx2_log::warning(fmt::format("Skipping column {}: {}", name, e.what()));
       }
     }
   }

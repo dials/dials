@@ -6,6 +6,7 @@ target_link_libraries(
     dx2
     PUBLIC
     Eigen3::Eigen
+    fmt::fmt
     nlohmann_json::nlohmann_json
     hdf5::hdf5
     gemmi::gemmi_cpp

@@ -11,6 +11,7 @@
 #pragma once
 
 #include "dx2/h5/h5utils.hpp"
+#include "dx2/logging.hpp"
 #include <hdf5.h>
 #include <iostream>
 #include <stdexcept>
@@ -144,10 +145,12 @@ void dispatch_h5_dataset_type(hid_t dataset_id, Callback &&cb) {
   try {
     dispatch_registered_type(matcher, std::forward<Callback>(cb));
   } catch (...) {
-    std::cerr << "Unsupported HDF5 dataset type:\n"
-              << "  class: " << static_cast<int>(cls) << "\n"
-              << "  size: " << size << "\n"
-              << "  sign: " << static_cast<int>(sign) << "\n";
+    dx2_log::error("Unsupported HDF5 dataset type:");
+    fmt::print(stderr,
+               "  • Class: {}\n"
+               "  • Size : {}\n"
+               "  • Sign : {}\n",
+               static_cast<int>(cls), size, static_cast<int>(sign));
     throw;
   }
 }

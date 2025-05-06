@@ -18,13 +18,13 @@
 #pragma once
 
 #include "dx2/h5/h5utils.hpp"
+#include "dx2/logging.hpp"
 #include <cassert>
 #include <chrono>
 #include <cstring>
 #include <experimental/mdspan>
 #include <hdf5.h>
 #include <hdf5_hl.h>
-#include <iostream>
 #include <string>
 #include <typeindex>
 #include <unordered_set>
@@ -127,8 +127,7 @@ herr_t group_iterator(hid_t loc_id, const char *name, const H5L_info2_t *info,
   H5O_info2_t obj_info;
   if (H5Oget_info_by_name3(loc_id, name, &obj_info, H5O_INFO_BASIC,
                            H5P_DEFAULT) < 0) {
-    std::cerr << "Error: Unable to get object info for: " << full_path
-              << std::endl;
+    dx2_log::error(fmt::format("Unable to get object info for: {}", full_path));
     return -1;
   }
 
@@ -147,7 +146,7 @@ herr_t group_iterator(hid_t loc_id, const char *name, const H5L_info2_t *info,
       traverse_hdf5(group_id, full_path, *(traverse_data->datasets),
                     *(traverse_data->visited_groups));
     } else {
-      std::cerr << "Error: Unable to open group: " << full_path << std::endl;
+      dx2_log::error(fmt::format("Unable to open group: {}", full_path));
     }
   }
 
@@ -201,7 +200,7 @@ std::vector<std::string> get_datasets_in_group(std::string_view filename,
   // Open group
   H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
   if (!group) {
-    std::cerr << "Warning: Missing group " << gpath << ", skipping.\n";
+    dx2_log::warning(fmt::format("Missing group '{}', skipping.", gpath));
     return {};
   }
 
@@ -278,10 +277,7 @@ read_array_with_shape_from_h5_file(std::string_view filename,
   auto end_time = std::chrono::high_resolution_clock::now();
   double elapsed_time =
       std::chrono::duration<double>(end_time - start_time).count();
-  if (std::getenv("DX2_DEBUG")) {
-    std::cout << "READ TIME for " << dset_name << " : " << elapsed_time << "s"
-              << std::endl;
-  }
+  dx2_log::debug("READ TIME for {} : {:.4f}s", dset_name, elapsed_time);
 
   return {std::move(data_out), std::vector<size_t>(dims.begin(), dims.end())};
 }
@@ -319,14 +315,14 @@ get_datasets_in_group_recursive(std::string_view filename,
   // Open the HDF5 file
   H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
   if (!file) {
-    throw std::runtime_error("Error: Unable to open file: " + fname);
+    dx2_log::error(fmt::format("Unable to open file: {}", fname));
   }
 
   // Open the group
   // hid_t group = H5Gopen2(file, gpath.c_str(), H5P_DEFAULT);
   H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
   if (!group) {
-    std::cerr << "Warning: Missing group " << gpath << ", skipping.\n";
+    dx2_log::warning(fmt::format("Missing group '{}', skipping.", gpath));
     return {};
   }
 

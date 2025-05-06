@@ -23,7 +23,6 @@
 #include <array>
 #include <cstdlib>
 #include <hdf5.h>
-#include <iostream>
 #include <string>
 #include <vector>
 
