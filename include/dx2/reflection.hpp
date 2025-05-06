@@ -17,6 +17,7 @@
 
 #include "dx2/h5/h5dispatch.hpp"
 #include "dx2/h5/h5read_processed.hpp"
+#include "dx2/h5/h5utils.hpp"
 #include "dx2/h5/h5write.hpp"
 #include <experimental/mdspan>
 #include <functional>
@@ -26,6 +27,7 @@
 #include <vector>
 
 using namespace h5dispatch;
+using namespace h5utils;
 
 #pragma region Type Helpers
 /*
@@ -324,16 +326,15 @@ public:
         get_datasets_in_group(h5_filepath, DEFAULT_REFL_GROUP);
 
     // Open the HDF5 file
-    hid_t file = H5Fopen(h5_filepath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-    if (file < 0) {
+    H5File file(H5Fopen(h5_filepath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+    if (!file) {
       throw std::runtime_error("Could not open file: " + h5_filepath);
     }
 
     // Open group and read experiment metadata
-    hid_t group = H5Gopen(file, DEFAULT_REFL_GROUP.c_str(), H5P_DEFAULT);
-    if (group >= 0) {
+    H5Group group(H5Gopen2(file, DEFAULT_REFL_GROUP.c_str(), H5P_DEFAULT));
+    if (group) {
       read_experiment_metadata(group, experiment_ids, identifiers);
-      H5Gclose(group);
     }
 
     // Loop over every dataset path in the group
@@ -341,24 +342,18 @@ public:
       std::string dataset_name = get_dataset_name(dataset);
 
       // Open the specific dataset (within the file opened above)
-      hid_t dataset_id = H5Dopen(file, dataset.c_str(), H5P_DEFAULT);
-      if (dataset_id < 0) {
+      H5Dataset dataset_id(H5Dopen2(file, dataset.c_str(), H5P_DEFAULT));
+      if (!dataset_id) {
         std::cerr << "Could not open dataset: " << dataset << "\n";
         continue;
       }
 
       try {
-        // Dispatch based on the dataset's actual HDF5 type (float64, int32,
-        // etc.)
         h5dispatch::dispatch_h5_dataset_type(dataset_id, [&](auto tag) {
-          // Deduce the type
           using T = typename decltype(tag)::type;
-
-          // Read the dataset as type T (returns raw data and shape)
           auto result =
               read_array_with_shape_from_h5_file<T>(h5_filepath, dataset);
 
-          // Create a TypedColumn<T> and store it in the typeless container
           data.push_back(std::make_unique<TypedColumn<T>>(
               dataset_name, result.shape, result.data));
 
@@ -366,14 +361,9 @@ public:
                     << typeid(T).name() << "\n";
         });
       } catch (const std::exception &e) {
-        // If dispatch or reading fails, skip this dataset
         std::cerr << "Skipping dataset " << dataset << ": " << e.what() << "\n";
       }
-
-      H5Dclose(dataset_id);
     }
-
-    H5Fclose(file);
   }
 #pragma endregion
 
@@ -623,27 +613,30 @@ public:
              std::string_view group = "/dials/processing/group_0") const {
     std::string fname(filename);
     std::string gpath(group);
+
     // 🗂️ Ensure the file exists or create it before writing
-    hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
-    if (file < 0) {
-      file = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-      if (file < 0) {
+    H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
+    if (!file) {
+      file = H5File(
+          H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT));
+      if (!file) {
         throw std::runtime_error("Failed to create or open file: " + fname);
       }
     }
 
-    // Traverse and get group
-    hid_t group_id = traverse_or_create_groups(file, gpath);
+    // Open or create group
+    H5Group group_id = traverse_or_create_groups(file, gpath);
+    if (!group_id) {
+      throw std::runtime_error("Failed to create or open group: " + gpath);
+    }
 
     // Write metadata
     write_experiment_metadata(group_id, experiment_ids, identifiers);
 
-    H5Gclose(group_id);
-
-    // 🔁 Write all data columns
+    // 🔁 Write all columns
     for (const auto &col : data) {
       // 🏗️ Construct full dataset path: group + column name
-      std::string path = gpath + "/" + col->get_name();
+      const std::string &name = col->get_name();
 
       // Define a lambda that writes a column of a specific type T
       auto write_col = [&](auto tag) {
@@ -653,15 +646,14 @@ public:
         const auto *typed = col->as<T>();
         if (!typed) {
           // This should not happen unless type registry is inconsistent
-          std::cerr << "Internal type mismatch for column: " << col->get_name()
-                    << "\n";
+          std::cerr << "Internal type mismatch for column: " << name << "\n";
           return;
         }
 
         // 💾 Call the HDF5 writer to write raw data to file
-        write_raw_data_to_h5_file<T>(
-            fname, path, typed->data.data(),
-            {typed->shape.begin(), typed->shape.end()});
+        write_raw_data_to_h5_group<T>(
+            group_id, name, typed->data.data(),
+            std::vector<hsize_t>(typed->shape.begin(), typed->shape.end()));
       };
 
       // 🌀 Dispatch the column type and invoke the write_col lambda
@@ -669,12 +661,9 @@ public:
         dispatch_column_type(col->get_type(), write_col);
       } catch (const std::exception &e) {
         // ⚠️ If the type is unsupported or an error occurs, print warning
-        std::cerr << "Skipping column " << col->get_name() << ": " << e.what()
-                  << "\n";
+        std::cerr << "Skipping column " << name << ": " << e.what() << "\n";
       }
     }
-
-    H5Fclose(file);
   }
 #pragma endregion
 };

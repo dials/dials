@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "dx2/h5/h5utils.hpp"
 #include <cassert>
 #include <chrono>
 #include <cstring>
@@ -28,6 +29,8 @@
 #include <typeindex>
 #include <unordered_set>
 #include <vector>
+
+using namespace h5utils;
 
 namespace h5read_processed_utils {
 
@@ -139,11 +142,10 @@ herr_t group_iterator(hid_t loc_id, const char *name, const H5L_info2_t *info,
     traverse_data->visited_groups->insert(full_path);
 
     // Open the group to recurse into it
-    hid_t group_id = H5Gopen2(loc_id, name, H5P_DEFAULT);
-    if (group_id >= 0) {
+    H5Group group_id(H5Gopen2(loc_id, name, H5P_DEFAULT));
+    if (group_id) {
       traverse_hdf5(group_id, full_path, *(traverse_data->datasets),
                     *(traverse_data->visited_groups));
-      H5Gclose(group_id);
     } else {
       std::cerr << "Error: Unable to open group: " << full_path << std::endl;
     }
@@ -191,15 +193,14 @@ std::vector<std::string> get_datasets_in_group(std::string_view filename,
   std::string fname(filename);
   std::string gpath(group_name);
   // Open file
-  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-  if (file < 0) {
+  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+  if (!file) {
     throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
   // Open group
-  hid_t group = H5Gopen2(file, gpath.c_str(), H5P_DEFAULT);
-  if (group < 0) {
-    H5Fclose(file);
+  H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
+  if (!group) {
     std::cerr << "Warning: Missing group " << gpath << ", skipping.\n";
     return {};
   }
@@ -209,9 +210,6 @@ std::vector<std::string> get_datasets_in_group(std::string_view filename,
   // Iterate over immediate children
   H5Literate2(group, H5_INDEX_NAME, H5_ITER_NATIVE, nullptr,
               h5read_processed_utils::scan_group_callback, &context);
-
-  H5Gclose(group);
-  H5Fclose(file);
 
   return context.datasets;
 }
@@ -228,85 +226,64 @@ template <typename T>
 h5read_processed_utils::H5ArrayData<T>
 read_array_with_shape_from_h5_file(std::string_view filename,
                                    std::string_view dataset_name) {
-  // Start measuring time
   auto start_time = std::chrono::high_resolution_clock::now();
 
   std::string fname(filename);
   std::string dset_name(dataset_name);
 
   // Open the HDF5 file
-  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-  if (file < 0) {
+  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+  if (!file) {
     throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
-  try {
-    // Open the dataset
-    hid_t dataset = H5Dopen(file, dset_name.c_str(), H5P_DEFAULT);
-    if (dataset < 0) {
-      throw std::runtime_error("Error: Unable to open dataset: " + dset_name);
-    }
-
-    try {
-      // Get the datatype and check size
-      hid_t datatype = H5Dget_type(dataset);
-      size_t datatype_size = H5Tget_size(datatype);
-      if (datatype_size != sizeof(T)) {
-        throw std::runtime_error(
-            "Error: Dataset type size does not match expected type size.");
-      }
-
-      // Get the dataspace and the number of elements
-      hid_t dataspace = H5Dget_space(dataset);
-      int ndims = H5Sget_simple_extent_ndims(dataspace);
-      if (ndims <= 0) {
-        throw std::runtime_error("Error: Dataset has invalid dimensionality.");
-      }
-
-      // Get the dimensions of the dataset
-      std::vector<hsize_t> dims(ndims);
-      H5Sget_simple_extent_dims(dataspace, dims.data(), nullptr);
-
-      // Calculate the number of elements
-      size_t num_elements = 1;
-      for (auto d : dims)
-        num_elements *= d;
-
-      // Allocate a vector to hold the data
-      std::vector<T> data_out(num_elements);
-
-      // Read the data into the vector
-      herr_t status = H5Dread(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                              data_out.data());
-      if (status < 0) {
-        throw std::runtime_error("Error: Unable to read dataset: " + dset_name);
-      }
-
-      H5Sclose(dataspace);
-      H5Tclose(datatype);
-      H5Dclose(dataset);
-      H5Fclose(file);
-
-      auto end_time = std::chrono::high_resolution_clock::now();
-      double elapsed_time =
-          std::chrono::duration<double>(end_time - start_time).count();
-      if (std::getenv("DX2_DEBUG")) {
-        std::cout << "READ TIME for " << dset_name << " : " << elapsed_time
-                  << "s" << std::endl;
-      }
-
-      return {std::move(data_out),
-              std::vector<size_t>(dims.begin(), dims.end())};
-
-    } catch (...) {
-      H5Dclose(dataset);
-      throw;
-    }
-
-  } catch (...) {
-    H5Fclose(file);
-    throw;
+  // Open the dataset
+  H5Dataset dataset(H5Dopen(file, dset_name.c_str(), H5P_DEFAULT));
+  if (!dataset) {
+    throw std::runtime_error("Error: Unable to open dataset: " + dset_name);
   }
+
+  // Get the datatype and check size
+  H5Type datatype(H5Dget_type(dataset));
+  if (H5Tget_size(datatype) != sizeof(T)) {
+    throw std::runtime_error(
+        "Error: Dataset type size does not match expected type size.");
+  }
+
+  // Get the dataspace and the number of elements
+  H5Space dataspace(H5Dget_space(dataset));
+  int ndims = H5Sget_simple_extent_ndims(dataspace);
+  if (ndims <= 0) {
+    throw std::runtime_error("Error: Dataset has invalid dimensionality.");
+  }
+
+  // Get the dimensions of the dataset
+  std::vector<hsize_t> dims(ndims);
+  H5Sget_simple_extent_dims(dataspace, dims.data(), nullptr);
+
+  // Calculate the number of elements
+  size_t num_elements = 1;
+  for (auto d : dims)
+    num_elements *= d;
+
+  // Allocate a vector to hold the data
+  std::vector<T> data_out(num_elements);
+  // Read the data into the vector
+  herr_t status = H5Dread(dataset, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                          data_out.data());
+  if (status < 0) {
+    throw std::runtime_error("Error: Unable to read dataset: " + dset_name);
+  }
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  double elapsed_time =
+      std::chrono::duration<double>(end_time - start_time).count();
+  if (std::getenv("DX2_DEBUG")) {
+    std::cout << "READ TIME for " << dset_name << " : " << elapsed_time << "s"
+              << std::endl;
+  }
+
+  return {std::move(data_out), std::vector<size_t>(dims.begin(), dims.end())};
 }
 
 /**
@@ -340,25 +317,21 @@ get_datasets_in_group_recursive(std::string_view filename,
   std::unordered_set<std::string> visited_groups;
 
   // Open the HDF5 file
-  hid_t file = H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-  if (file < 0) {
+  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+  if (!file) {
     throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
   // Open the group
-  hid_t group = H5Gopen2(file, gpath.c_str(), H5P_DEFAULT);
-  if (group < 0) {
-    H5Fclose(file);
+  // hid_t group = H5Gopen2(file, gpath.c_str(), H5P_DEFAULT);
+  H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
+  if (!group) {
     std::cerr << "Warning: Missing group " << gpath << ", skipping.\n";
     return {};
   }
 
   // Start traversal from the group
   h5read_processed_utils::traverse_hdf5(group, gpath, datasets, visited_groups);
-
-  // Close the group and file
-  H5Gclose(group);
-  H5Fclose(file);
 
   return datasets;
 }
@@ -367,21 +340,18 @@ inline void read_experiment_metadata(hid_t group_id,
                                      std::vector<uint64_t> &experiment_ids,
                                      std::vector<std::string> &identifiers) {
   if (H5Aexists(group_id, "experiment_ids") > 0) {
-    hid_t attr = H5Aopen(group_id, "experiment_ids", H5P_DEFAULT);
-    hid_t space = H5Aget_space(attr);
+    H5Attr attr(H5Aopen(group_id, "experiment_ids", H5P_DEFAULT));
+    H5Space space(H5Aget_space(attr));
     hssize_t num_elements = H5Sget_simple_extent_npoints(space);
 
     experiment_ids.resize(num_elements);
     H5Aread(attr, H5T_NATIVE_ULLONG, experiment_ids.data());
-
-    H5Sclose(space);
-    H5Aclose(attr);
   }
 
   if (H5Aexists(group_id, "identifiers") > 0) {
-    hid_t attr = H5Aopen(group_id, "identifiers", H5P_DEFAULT);
-    hid_t type = H5Aget_type(attr);
-    hid_t space = H5Aget_space(attr);
+    H5Attr attr(H5Aopen(group_id, "identifiers", H5P_DEFAULT));
+    H5Type type(H5Aget_type(attr));
+    H5Space space(H5Aget_space(attr));
     hssize_t num_elements = H5Sget_simple_extent_npoints(space);
 
     std::vector<char *> raw_strings(num_elements);
@@ -391,10 +361,6 @@ inline void read_experiment_metadata(hid_t group_id,
     for (hssize_t i = 0; i < num_elements; ++i) {
       identifiers[i] = std::string(raw_strings[i]);
     }
-
-    H5Tclose(type);
-    H5Sclose(space);
-    H5Aclose(attr);
   }
 }
 

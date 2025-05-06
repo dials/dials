@@ -10,12 +10,15 @@
 
 #pragma once
 
+#include "dx2/h5/h5utils.hpp"
 #include <hdf5.h>
 #include <iostream>
 #include <stdexcept>
 #include <type_traits>
 #include <typeindex>
 #include <vector>
+
+using namespace h5utils;
 
 namespace h5dispatch {
 
@@ -123,8 +126,11 @@ void dispatch_registered_type(const MatchFn &match_fn, Callback &&cb) {
  */
 template <typename Callback>
 void dispatch_h5_dataset_type(hid_t dataset_id, Callback &&cb) {
-  // Inspect the dataset's type
-  hid_t type_id = H5Dget_type(dataset_id);
+  H5Type type_id(H5Dget_type(dataset_id));
+  if (!type_id) {
+    throw std::runtime_error("Failed to get dataset type.");
+  }
+
   H5T_class_t cls = H5Tget_class(type_id);
   size_t size = H5Tget_size(type_id);
   H5T_sign_t sign = H5Tget_sign(type_id);
@@ -142,11 +148,8 @@ void dispatch_h5_dataset_type(hid_t dataset_id, Callback &&cb) {
               << "  class: " << static_cast<int>(cls) << "\n"
               << "  size: " << size << "\n"
               << "  sign: " << static_cast<int>(sign) << "\n";
-    H5Tclose(type_id);
     throw;
   }
-
-  H5Tclose(type_id);
 }
 
 /**
