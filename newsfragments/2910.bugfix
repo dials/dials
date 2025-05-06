@@ -1,0 +1,1 @@
+Fix printing of the beam center in ``dials.search_beam_position``.
