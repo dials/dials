@@ -5,6 +5,7 @@ import collections
 import math
 import pickle
 import shutil
+import tempfile
 
 import pytest
 
@@ -14,12 +15,13 @@ from dials.array_family import flex
 
 
 @pytest.fixture(scope="module")
-def data(dials_data, tmpdir):  # read experiments and reflections
+def data(dials_data):  # read experiments and reflections
     directory = dials_data("integration_test_data", pathlib=True)
     experiments_filename = str(directory / "thaumatin_i04-integrated.expt")
     reflections_filename = str(directory / "thaumatin_i04-shoeboxes_0_0.refl.bz2")
     reference_filename = str(directory / "thaumatin_i04-reference_profiles.pickle.bz2")
 
+    tmpdir = tempfile.mkdtemp()
     for f in [reflections_filename, reference_filename]:
         with bz2.BZ2File(f) as compr:
             with open(tmpdir / f.name[:-4], "wb") as decompr:
