@@ -553,7 +553,7 @@ def test_output_rubbish(dials_data, tmp_path):
 def test_integrate_with_kapton(dials_data, tmp_path):
     data_dir = dials_data("integration_test_data", pathlib=True)
     refl_path = str(data_dir / "kapton-idx-20161021225550223_indexed.refl")
-    expt_path = str(data_dir / "kapton-dx-20161021225550223_refined.expt")
+    expt_path = str(data_dir / "kapton-idx-20161021225550223_refined.expt")
     image_path = str(data_dir / "kapton-20161021225550223.pickle")
     mask_path = str(data_dir / "kapton-mask.pickle")
 
