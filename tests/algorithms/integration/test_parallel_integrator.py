@@ -18,7 +18,7 @@ from dials.array_family import flex
 def data(dials_data):  # read experiments and reflections
     directory = dials_data("integration_test_data", pathlib=True)
     experiments_filename = str(directory / "thaumatin_i04-integrated.expt")
-    reflections_filename = str(directory / "thaumatin_i04-shoeboxes_0_0.refl.bz2")
+    reflections_filename = str(directory / "thaumatin_i04-shoeboxes.refl.bz2")
     reference_filename = str(directory / "thaumatin_i04-reference_profiles.pickle.bz2")
 
     tmpdir = tempfile.mkdtemp()
