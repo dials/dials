@@ -3,6 +3,7 @@ from __future__ import annotations
 import bz2
 import collections
 import math
+import os
 import pickle
 import shutil
 import tempfile
@@ -17,23 +18,23 @@ from dials.array_family import flex
 @pytest.fixture(scope="module")
 def data(dials_data):  # read experiments and reflections
     directory = dials_data("integration_test_data", pathlib=True)
-    experiments_filename = str(directory / "thaumatin_i04-integrated.expt")
-    reflections_filename = str(directory / "thaumatin_i04-shoeboxes.refl.bz2")
-    reference_filename = str(directory / "thaumatin_i04-reference_profiles.pickle.bz2")
+    experiments_path = directory / "thaumatin_i04-integrated.expt"
+    reflections_path = directory / "thaumatin_i04-shoeboxes.refl.bz2"
+    reference_path = directory / "thaumatin_i04-reference_profiles.pickle.bz2"
 
     tmpdir = tempfile.mkdtemp()
-    for f in [reflections_filename, reference_filename]:
+    for f in [reflections_path, reference_path]:
         with bz2.BZ2File(f) as compr:
-            with open(tmpdir / f.name[:-4], "wb") as decompr:
+            with open(os.path.join(tmpdir, f.name[:-4]), "wb") as decompr:
                 shutil.copyfileobj(compr, decompr)
 
     experiments = ExperimentListFactory.from_json_file(
-        experiments_filename, check_format=False
+        experiments_path, check_format=False
     )
     reflections = flex.reflection_table.from_file(
-        tmpdir / reflections_filename.name[:-4]
+        os.path.join(tmpdir, reflections_path.name[:-4])
     )
-    with open(tmpdir / reference_filename.name[:-4], "rb") as fh:
+    with open(os.path.join(tmpdir, reference_path.name[:-4]), "rb") as fh:
         reference = pickle.load(fh, encoding="bytes")
 
     Data = collections.namedtuple("Data", ["experiments", "reflections", "reference"])
