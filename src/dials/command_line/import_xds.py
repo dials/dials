@@ -113,19 +113,22 @@ class IntegrateHKLImporter:
 
         # ideally we would like to do that - but because of limited precision in
         # INTEGRATE.HKL we could get into trouble here ...
-        if (handle.variance_model and undo_ab):
+        if handle.variance_model and undo_ab:
             variance_model_a = handle.variance_model[0]
             variance_model_b = handle.variance_model[1]
-            print("Undoing input variance model a, b = %s %s" % (variance_model_a,variance_model_b))
+            print(
+                "Undoing input variance model a, b = %s %s"
+                % (variance_model_a, variance_model_b)
+            )
 
             # undo variance model:
             vari0 = flex.pow2(sigma * peak / rlp)
-            isq  = flex.pow2(iobs * peak / rlp)
-            vari1 = (vari0/variance_model_a) - (variance_model_b*isq)
-            for i in range(0,(sigma.size()-1)):
+            isq = flex.pow2(iobs * peak / rlp)
+            vari1 = (vari0 / variance_model_a) - (variance_model_b * isq)
+            for i in range(0, (sigma.size() - 1)):
                 if vari1[i] <= 0:
-                    print("WARNING:",i,iobs[i],sigma[i],vari1[i])
-                    vari1[i] = sigma[i]*sigma[i]
+                    print("WARNING:", i, iobs[i], sigma[i], vari1[i])
+                    vari1[i] = sigma[i] * sigma[i]
             sigma = flex.sqrt(vari1) * rlp / peak
 
         if len(self._experiment.detector) > 1:
@@ -178,7 +181,7 @@ class IntegrateHKLImporter:
         table["intensity.cor.variance"] = flex.pow2(sigma)
         table["inverse_scale_factor"] = flex.double(table.size(), 1.0)
 
-        table["batch"] = flex.int(int(x[2])+handle.starting_frame for x in xyzcal)
+        table["batch"] = flex.int(int(x[2]) + handle.starting_frame for x in xyzcal)
 
         # compute ZETA
         table.compute_zeta(self._experiment)
@@ -244,10 +247,14 @@ class XDSFileImporter:
         experiments = ExperimentListFactory.from_xds(xds_inp, xds_file)
 
         # set some dummy epochs
-        nimg = experiments[0].scan.get_image_range()[1] - experiments[0].scan.get_image_range()[0] + 1
-        epochs = flex.double(nimg,0.)
-        for i in range(1,(nimg-1)):
-            epochs[i]=epochs[(i-1)]+1.0
+        nimg = (
+            experiments[0].scan.get_image_range()[1]
+            - experiments[0].scan.get_image_range()[0]
+            + 1
+        )
+        epochs = flex.double(nimg, 0.0)
+        for i in range(1, (nimg - 1)):
+            epochs[i] = epochs[(i - 1)] + 1.0
         experiments[0].scan.set_epochs(epochs)
         experiments[0].scan.set_exposure_times(epochs)
 
