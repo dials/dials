@@ -759,8 +759,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path)
         0:2
     ]
     reflist = refl.select(refl["id"] < 2)  # Only use the first 2 for convenience
-    # Construct crystal models that don't have mosaicity. These A,B,C values are the same
-    # as read in from the dials_regression folder
+    # Construct crystal models that don't have mosaicity.
     # Crystal-0
     cs0 = Crystal(explist[0].crystal)
     exp0 = Experiment(

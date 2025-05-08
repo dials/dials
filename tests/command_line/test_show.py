@@ -3,15 +3,14 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
 from dxtbx.serialize import load
 
 from dials.command_line.show import model_connectivity, run
 
 
-def test_dials_show(dials_regression: Path):
-    path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
+def test_dials_show(dials_data):
+    path = str(dials_data("experiment_test_data", pathlib=True) / "experiment_1.json")
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
