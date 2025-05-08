@@ -390,6 +390,12 @@ inline void
 write_experiment_metadata(hid_t group_id,
                           const std::vector<uint64_t> &experiment_ids,
                           const std::vector<std::string> &identifiers) {
+  // Check if the input vectors are empty
+  if (experiment_ids.empty() || identifiers.empty()) {
+    throw std::runtime_error(
+        "Experiment IDs and identifiers must not be empty.");
+  }
+
   // Suppress errors when opening non-existent files, groups, datasets..
   H5ErrorSilencer silencer;
 
