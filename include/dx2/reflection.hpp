@@ -631,6 +631,9 @@ public:
     std::string fname(filename);
     std::string gpath(group);
 
+    // Suppress errors when opening non-existent files, groups, datasets..
+    H5ErrorSilencer silencer;
+
     // 🗂️ Ensure the file exists or create it before writing
     H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
     if (!file) {

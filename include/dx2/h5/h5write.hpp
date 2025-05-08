@@ -70,7 +70,7 @@ H5Group traverse_or_create_groups(hid_t parent, const std::string &path) {
       (pos == std::string::npos) ? "" : cleaned_path.substr(pos + 1);
 
   // Try to open group, suppress errors if not found
-  H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr);
+  H5ErrorSilencer silencer;
   H5Group next_group(H5Gopen(parent, group_name.c_str(), H5P_DEFAULT));
 
   // If the group does not exist, create it
@@ -113,6 +113,9 @@ void write_raw_data_to_h5_file(std::string_view filename,
   // Convert to std::string when needed for C-style API
   std::string fname(filename);
   std::string dset_path(dataset_path);
+
+  // Suppress errors when opening non-existent files, groups, datasets..
+  H5ErrorSilencer silencer;
 
   // Open or create the file
   H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
@@ -174,9 +177,14 @@ template <typename T>
 void write_raw_data_to_h5_group(H5Group &group, const std::string &dataset_name,
                                 const T *data_ptr,
                                 const std::vector<hsize_t> &shape) {
+  // Suppress errors when opening non-existent files, groups, datasets..
+  H5ErrorSilencer silencer;
+
+  // Create dataspace and determine type
   H5Space dataspace(H5Screate_simple(shape.size(), shape.data(), nullptr));
   H5Type h5_type(get_h5_native_type<T>());
 
+  // Create or open dataset
   H5Dataset dset(H5Dcreate2(group, dataset_name.c_str(), h5_type, dataspace,
                             H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
   if (!dset) {
@@ -307,11 +315,10 @@ void write_data_to_h5_file(std::string_view filename,
   std::string fname(filename);
   std::string dset_path(dataset_path);
 
-  // Suppress errors when trying to open non-existent files
+  // Suppress errors when opening non-existent files, groups, datasets..
+  H5ErrorSilencer silencer;
+
   // Open or create the HDF5 file
-  H5Eset_auto2(H5E_DEFAULT, NULL,
-               NULL); // Suppress errors when trying to open non-existent files
-  // Open or create file
   H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
   if (!file) {
     file = H5File(
@@ -383,6 +390,9 @@ inline void
 write_experiment_metadata(hid_t group_id,
                           const std::vector<uint64_t> &experiment_ids,
                           const std::vector<std::string> &identifiers) {
+  // Suppress errors when opening non-existent files, groups, datasets..
+  H5ErrorSilencer silencer;
+
   // Write experiment_ids
   {
     hsize_t dims = experiment_ids.size();

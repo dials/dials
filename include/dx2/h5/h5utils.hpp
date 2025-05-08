@@ -1,17 +1,20 @@
 /**
  * @file h5utils.hpp
- * @brief Provides RAII wrappers for HDF5 resources to ensure proper
- * cleanup and type safety.
+ * @brief RAII utilities for safe and scoped management of HDF5
+ * resources.
  *
- * This header defines a template-based RAII utility, `H5Cleanup`, for
- * managing HDF5 resource lifetimes. It ensures that HDF5 objects are
- * properly closed when they go out of scope, preventing resource leaks.
- * Additionally, it provides type aliases for common HDF5 object types
- * such as files, groups, datasets, attributes, dataspaces, and
- * datatypes.
+ * This header provides:
  *
- * RAII - Resource Acquisition Is Initialization
- * Where resource management is tied to object lifetime.
+ * - `H5Cleanup<D>`: A generic RAII wrapper for HDF5 identifiers,
+ *   ensuring automatic resource cleanup via the correct close function.
+ * - Type aliases for commonly used HDF5 object types (e.g., files,
+ *   groups, datasets).
+ * - `H5ErrorSilencer`: A RAII guard that temporarily disables HDF5
+ *   error output and restores the original handler on scope exit.
+ *
+ * These utilities are designed to make HDF5 usage in C++ safer, less
+ * error-prone, and exception-friendly by tying resource management and
+ * error suppression to object lifetime.
  */
 
 #pragma once
@@ -49,5 +52,28 @@ using H5Dataset = H5Cleanup<H5Dclose>;
 using H5Attr = H5Cleanup<H5Aclose>;
 using H5Space = H5Cleanup<H5Sclose>;
 using H5Type = H5Cleanup<H5Tclose>;
+
+/**
+ * @brief RAII guard that temporarily suppresses HDF5 error output.
+ *
+ * Upon construction, this disables the HDF5 error printing mechanism.
+ * When destroyed, it restores the previous error handler.
+ *
+ * This avoids global suppression and ensures clean restoration even on
+ * exceptions.
+ */
+class H5ErrorSilencer {
+public:
+  H5ErrorSilencer() {
+    H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);
+    H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr);
+  }
+
+  ~H5ErrorSilencer() { H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data); }
+
+private:
+  H5E_auto2_t old_func = nullptr;
+  void *old_client_data = nullptr;
+};
 
 } // namespace h5utils
