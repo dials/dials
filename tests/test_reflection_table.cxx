@@ -378,3 +378,51 @@ TEST_F(ReflectionTableTest, AccessNonExistentColumn) {
   // Ensure the column retrieval fails
   EXPECT_FALSE(non_existent_column.has_value());
 }
+
+TEST_F(ReflectionTableTest, WriteTableFromScratchAndReload) {
+  // Construct a table from scratch
+  ReflectionTable table;
+
+  // Add an integer column
+  std::vector<int> example_data{0, 2, 3, 1};
+  std::string column_name = "id";
+  table.add_column<int>(column_name, 4, 1, example_data);
+
+  // Add metadata
+  std::vector<uint64_t> experiment_ids{101, 202};
+  std::vector<std::string> identifiers{"alpha", "beta"};
+  table.set_experiment_ids(experiment_ids);
+  table.set_identifiers(identifiers);
+
+  // Write to a temporary file
+  std::filesystem::path temp_file =
+      std::filesystem::current_path() / "reflection_test_scratch_write.h5";
+  table.write(temp_file.string());
+
+  // Reload from file
+  ReflectionTable loaded(temp_file.string());
+
+  // Validate column presence and contents
+  auto span = loaded.column<int>("id");
+  ASSERT_TRUE(span.has_value());
+  ASSERT_EQ(span->extent(0), 4);
+  ASSERT_EQ(span->extent(1), 1);
+  for (size_t i = 0; i < 4; ++i) {
+    EXPECT_EQ((*span)(i, 0), example_data[i]);
+  }
+
+  // Validate metadata round-trip
+  const auto &reloaded_ids = loaded.get_experiment_ids();
+  const auto &reloaded_identifiers = loaded.get_identifiers();
+
+  ASSERT_EQ(reloaded_ids.size(), experiment_ids.size());
+  ASSERT_EQ(reloaded_identifiers.size(), identifiers.size());
+
+  for (size_t i = 0; i < experiment_ids.size(); ++i) {
+    EXPECT_EQ(reloaded_ids[i], experiment_ids[i]);
+    EXPECT_EQ(reloaded_identifiers[i], identifiers[i]);
+  }
+
+  // Clean up
+  std::filesystem::remove(temp_file);
+}
