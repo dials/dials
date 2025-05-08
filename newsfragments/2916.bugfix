@@ -1,0 +1,1 @@
+Add missing implementation in multi-dataset-handling OrderedSet. This caused a crash running ``xia2.ssx_reduce``.
