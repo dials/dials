@@ -393,10 +393,24 @@ public:
   }
 
   /**
+   * @brief Set the list of experiment IDs.
+   */
+  void set_experiment_ids(const std::vector<uint64_t> &ids) {
+    experiment_ids = ids;
+  }
+
+  /**
    * @brief Get the list of identifiers.
    */
   const std::vector<std::string> &get_identifiers() const {
     return identifiers;
+  }
+
+  /**
+   * @brief Set the list of identifiers.
+   */
+  void set_identifiers(const std::vector<std::string> &ids) {
+    identifiers = ids;
   }
 
   /**
