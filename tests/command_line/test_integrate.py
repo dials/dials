@@ -609,7 +609,7 @@ def test_integrate_with_kapton(dials_data, tmp_path):
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
         result = subprocess.run(
-            ["dials.integrate", "nproc=1", refl_path, expt_path, phil],
+            [shutil.which("dials.integrate"), "nproc=1", refl_path, expt_path, phil],
             cwd=tmp_path,
             capture_output=True,
         )
