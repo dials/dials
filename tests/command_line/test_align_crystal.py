@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
-from pathlib import Path
 
 
-def test_align_crystal(dials_regression: Path, tmp_path):
-    path = os.path.join(dials_regression, "experiment_test_data")
+def test_align_crystal(dials_data, tmp_path):
+    path = str(dials_data("experiment_test_data", pathlib=True))
     result = subprocess.run(
         [shutil.which("dials.align_crystal"), f"{path}/kappa_experiments.json"],
         cwd=tmp_path,
