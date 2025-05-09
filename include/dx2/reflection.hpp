@@ -321,6 +321,25 @@ public:
 #pragma region Constructors
   ReflectionTable() = default;
 
+  /**
+   * @brief Constructs a ReflectionTable with given experiment IDs and
+   * identifiers.
+   *
+   * @param experiment_ids A vector of experiment IDs.
+   * @param identifiers A vector of identifiers.
+   */
+  ReflectionTable(const std::vector<uint64_t> &experiment_ids,
+                  const std::vector<std::string> &identifiers)
+      : experiment_ids(experiment_ids), identifiers(identifiers) {}
+
+  /**
+   * @brief Constructs a ReflectionTable from an HDF5 file.
+   *
+   * This constructor loads datasets from the specified HDF5 file and
+   * populates the table with the data.
+   *
+   * @param h5_filepath The path to the HDF5 file.
+   */
   ReflectionTable(const std::string &h5_filepath) : h5_filepath(h5_filepath) {
     auto start = std::chrono::high_resolution_clock::now(); // ⏱ Start timer
 
