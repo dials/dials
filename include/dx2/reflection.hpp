@@ -634,12 +634,26 @@ public:
       }
     }
 
+    // Check if type T is supported
+    const auto &registry = h5dispatch::get_supported_types();
+    bool supported = std::any_of(registry.begin(), registry.end(),
+                                 [](const h5dispatch::H5TypeInfo &info) {
+                                   return info.cpp_type == typeid(T);
+                                 });
+
+    if (!supported) {
+      throw std::runtime_error(
+          "Attempted to add column with unsupported type: " +
+          std::string(typeid(T).name()));
+    }
+
     // Ensure row count consistency
     if (!data.empty() && col->get_shape()[0] != get_row_count()) {
       throw std::runtime_error("Row count mismatch when adding column: " +
                                name);
     }
 
+    // Add the new column to the table
     data.push_back(std::move(col));
   }
 
