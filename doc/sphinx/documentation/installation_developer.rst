@@ -45,15 +45,6 @@ via the `dials-data package <https://pypi.org/project/dials-data/>`_.
 See the `dials-data instructions <https://dials-data.readthedocs.io/en/latest/installation.html>`_
 for more information.
 
-There is also a private dials_regression repository that is still used for some historic tests.
-For those with svn access to the CCI server, this can be obtained as
-follows, replacing "USERNAME" for your username::
-
-  cd modules
-  svn checkout svn+ssh://USERNAME@cci.lbl.gov/dials_regression/trunk dials_regression
-
-You do not need to configure the dials_regression module to run dials or dxtbx tests.
-
 Keeping a Development Environment current
 =========================================
 
