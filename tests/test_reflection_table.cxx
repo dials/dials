@@ -134,6 +134,52 @@ TEST_F(ReflectionTableTest, AllDatasetsLoadSuccessfully) {
   }
 }
 
+TEST_F(ReflectionTableTest, AddColumn) {
+  ReflectionTable table;
+
+  // 1D column (implicit shape overload)
+  std::vector<double> one_d_data{1.0, 2.0, 3.0};
+  table.add_column("1d_column", one_d_data);
+
+  auto one_d = table.column<double>("1d_column");
+  ASSERT_TRUE(one_d.has_value());
+
+  std::cout << "[1D] Shape: " << one_d->extent(0) << "x" << one_d->extent(1)
+            << "\n";
+  for (size_t i = 0; i < one_d->extent(0); ++i) {
+    std::cout << "  one_d(" << i << ", 0) = " << (*one_d)(i, 0) << "\n";
+  }
+
+  // 2D column (rows, cols overload)
+  std::vector<double> two_d_data{1.1, 1.2, 2.1, 2.2, 3.1, 3.2};
+  table.add_column("2d_column", 3, 2, two_d_data);
+
+  auto two_d = table.column<double>("2d_column");
+  ASSERT_TRUE(two_d.has_value());
+
+  std::cout << "[2D] Shape: " << two_d->extent(0) << "x" << two_d->extent(1)
+            << "\n";
+  for (size_t i = 0; i < two_d->extent(0); ++i) {
+    for (size_t j = 0; j < two_d->extent(1); ++j) {
+      std::cout << "  two_d(" << i << ", " << j << ") = " << (*two_d)(i, j)
+                << "\n";
+    }
+  }
+
+  // Shape vector overload (explicit shape)
+  std::vector<double> shaped_data{9.0, 8.0, 7.0};
+  table.add_column("shaped_column", std::vector<size_t>{3}, shaped_data);
+
+  auto shaped = table.column<double>("shaped_column");
+  ASSERT_TRUE(shaped.has_value());
+
+  std::cout << "[Shape Vector] Shape: " << shaped->extent(0) << "x"
+            << shaped->extent(1) << "\n";
+  for (size_t i = 0; i < shaped->extent(0); ++i) {
+    std::cout << "  shaped(" << i << ", 0) = " << (*shaped)(i, 0) << "\n";
+  }
+}
+
 TEST_F(ReflectionTableTest, WriteAndReloadProducesSameData) {
   // Load original table
   ReflectionTable table(test_file_path.string());

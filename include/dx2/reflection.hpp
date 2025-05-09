@@ -586,30 +586,22 @@ public:
 
 #pragma region Column Modification
   /**
-   * @brief Adds a new column to the table from row/col dimensions and flat
-   * data.
+   * @brief Adds a new column to the table with arbitrary shape.
    *
-   * @tparam T The data type of the column.
+   * This is the most general column-adding interface. You must specify
+   * the full shape of the column explicitly. The column is stored using
+   * a flat data buffer matching this shape in row-major order.
+   *
+   * @tparam T The data type of the column (e.g., `double`, `int`,
+   * `std::array<T, N>`).
    * @param name The name of the column.
-   * @param rows Number of rows.
-   * @param cols Number of columns.
-   * @param column_data Flat vector of data values.
-   */
-  template <typename T>
-  void add_column(const std::string &name, const size_t rows, const size_t cols,
-                  const std::vector<T> &column_data) {
-    add_column(name, std::vector<size_t>{rows, cols}, column_data);
-  }
-
-  /**
-   * @brief Adds a new column to the table from shape vector and flat data.
+   * @param shape A vector describing the shape of the column (e.g.,
+   * `{N}` for 1D, `{N, M}` for 2D).
+   * @param column_data A flat vector of `T` values, whose total number
+   * of elements must match the product of `shape`.
    *
-   * @tparam T The data type of the column.
-   * @param name The name of the column.
-   * @param shape Shape of the column.
-   * @param column_data Flat vector of data values.
-   *
-   * @throws std::runtime_error if shape does not match existing row count.
+   * @throws std::runtime_error if shape does not match existing row
+   * count (if table is non-empty).
    */
   template <typename T>
   void add_column(const std::string &name, const std::vector<size_t> &shape,
@@ -623,6 +615,41 @@ public:
     }
 
     data.push_back(std::move(col));
+  }
+
+  /**
+   * @brief Adds a 1D column to the table.
+   *
+   * This is a convenience overload for scalar or vector-style columns
+   * where each row has a single value. Internally calls the shape-based
+   * overload with a shape of `{N}`.
+   *
+   * @tparam T The data type of the column (e.g., `int`, `double`).
+   * @param name The name of the column.
+   * @param column_data A vector of `T` values, one per row.
+   */
+  template <typename T>
+  void add_column(const std::string &name, const std::vector<T> &column_data) {
+    add_column(name, std::vector<size_t>{column_data.size()}, column_data);
+  }
+
+  /**
+   * @brief Adds a 2D column to the table from row and column dimensions.
+   *
+   * Use this for matrix-style data where each row is a fixed-length vector.
+   * Internally calls the shape-based overload with a shape of `{rows, cols}`.
+   *
+   * @tparam T The data type of the column elements.
+   * @param name The name of the column.
+   * @param rows Number of rows (typically must match existing row count).
+   * @param cols Number of columns per row.
+   * @param column_data Flat vector of values in row-major order (size must be
+   * `rows * cols`).
+   */
+  template <typename T>
+  void add_column(const std::string &name, const size_t rows, const size_t cols,
+                  const std::vector<T> &column_data) {
+    add_column(name, std::vector<size_t>{rows, cols}, column_data);
   }
 #pragma endregion
 
