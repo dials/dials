@@ -20,6 +20,7 @@ protected:
   }
 };
 
+#pragma region Loading
 TEST_F(ReflectionTableTest, LoadsAllColumns) {
   ReflectionTable table(test_file_path.string());
 
@@ -56,6 +57,248 @@ TEST_F(ReflectionTableTest, TryGetColumnFailsOnWrongType) {
   EXPECT_FALSE(col.has_value());
 }
 
+TEST_F(ReflectionTableTest, ConstructorWithIDsStoresMetadataCorrectly) {
+  std::vector<uint64_t> ids = {123, 456};
+  std::vector<std::string> labels = {"foo", "bar"};
+
+  ReflectionTable table(ids, labels);
+
+  EXPECT_EQ(table.get_experiment_ids(), ids);
+  EXPECT_EQ(table.get_identifiers(), labels);
+}
+#pragma endregion
+
+#pragma region Validation
+TEST_F(ReflectionTableTest, AllDatasetsLoadSuccessfully) {
+  ReflectionTable table(test_file_path.string());
+
+  std::vector<std::string> expected = get_datasets_in_group(
+      test_file_path.string(), "/dials/processing/group_0");
+
+  std::vector<std::string> loaded = table.get_column_names();
+
+  for (const std::string &full_dataset_path : expected) {
+    std::string name = get_dataset_name(full_dataset_path);
+
+    // Make sure it's present
+    auto it = std::find(loaded.begin(), loaded.end(), name);
+    EXPECT_NE(it, loaded.end()) << "Dataset not loaded: " << name;
+
+    if (it != loaded.end()) {
+      std::cout << "✅ Dataset loaded: " << name << "\n";
+    } else {
+      std::cerr << "❌ Dataset missing: " << name << "\n";
+    }
+  }
+}
+#pragma endregion
+
+#pragma region Access
+TEST_F(ReflectionTableTest, AccessNonExistentColumn) {
+  ReflectionTable table(test_file_path.string());
+
+  // Attempt to access a column that does not exist
+  auto non_existent_column = table.column<double>("non_existent_column");
+
+  /**
+   * Attemtping to access a non-existent column should return an empty
+   * optional.
+   *
+   * This is a test to ensure that the column retrieval mechanism
+   * correctly handles cases where the requested column does not exist.
+   */
+
+  std::cout << "Attempting to access non-existent column: "
+            << (non_existent_column.has_value() ? "found" : "not found")
+            << "\n";
+
+  // Ensure the column retrieval fails
+  EXPECT_FALSE(non_existent_column.has_value());
+}
+#pragma endregion
+
+#pragma region Adding
+TEST_F(ReflectionTableTest, AddColumn1D) {
+  ReflectionTable table;
+  std::vector<double> data{1.0, 2.0, 3.0};
+  table.add_column("col_1d", data); // 1D: implicit shape [3]
+
+  auto col = table.column<double>("col_1d");
+  ASSERT_TRUE(col.has_value());
+
+  std::cout << "[AddColumn1D] Shape: " << col->extent(0) << "x"
+            << col->extent(1) << "\n";
+  for (size_t i = 0; i < col->extent(0); ++i) {
+    std::cout << "  col(" << i << ", 0) = " << (*col)(i, 0) << "\n";
+  }
+}
+
+TEST_F(ReflectionTableTest, AddColumn2D) {
+  ReflectionTable table;
+  std::vector<double> data{1.1, 1.2, 2.1, 2.2, 3.1, 3.2}; // 2D: shape [3, 2]
+  table.add_column("col_2d", 3, 2, data);
+
+  auto col = table.column<double>("col_2d");
+  ASSERT_TRUE(col.has_value());
+
+  std::cout << "[AddColumn2D] Shape: " << col->extent(0) << "x"
+            << col->extent(1) << "\n";
+  for (size_t i = 0; i < col->extent(0); ++i) {
+    for (size_t j = 0; j < col->extent(1); ++j) {
+      std::cout << "  col(" << i << ", " << j << ") = " << (*col)(i, j) << "\n";
+    }
+  }
+}
+
+TEST_F(ReflectionTableTest, AddColumnExplicit) {
+  ReflectionTable table;
+
+  // 2D shape explicitly specified as {3, 3}
+  std::vector<double> data{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+  table.add_column("col_explicit", std::vector<size_t>{3, 3}, data);
+
+  auto col = table.column<double>("col_explicit");
+  ASSERT_TRUE(col.has_value());
+
+  std::cout << "[AddColumnExplicit] Shape: " << col->extent(0) << "x"
+            << col->extent(1) << "\n";
+  for (size_t i = 0; i < col->extent(0); ++i) {
+    for (size_t j = 0; j < col->extent(1); ++j) {
+      std::cout << "  col(" << i << ", " << j << ") = " << (*col)(i, j) << "\n";
+    }
+  }
+
+  // Basic value check
+  EXPECT_DOUBLE_EQ((*col)(1, 1), 5.0);
+  EXPECT_DOUBLE_EQ((*col)(2, 2), 9.0);
+}
+
+TEST_F(ReflectionTableTest, AddColumnRejectsRank3) {
+  ReflectionTable table;
+
+  // Invalid rank-3 shape: {2, 2, 3}
+  std::vector<double> data(12);
+  std::iota(data.begin(), data.end(), 0.0);
+
+  try {
+    table.add_column("col_rank3", std::vector<size_t>{2, 2, 3}, data);
+    FAIL() << "Expected std::runtime_error";
+  } catch (const std::runtime_error &e) {
+    std::cout << "[AddColumnRejectsRank3] Caught error: " << e.what() << "\n";
+    EXPECT_TRUE(std::string(e.what()).find("unsupported rank") !=
+                std::string::npos);
+  } catch (...) {
+    FAIL() << "Expected std::runtime_error: unsupported rank";
+  }
+}
+
+TEST_F(ReflectionTableTest, AddColumnRejectsMismatchedRowCount) {
+  ReflectionTable table;
+
+  // First column: 3 rows
+  table.add_column("col1", std::vector<double>{1.0, 2.0, 3.0});
+
+  // Second column: 2 rows – should throw
+  std::vector<double> bad_data{4.0, 5.0};
+  try {
+    table.add_column("col2", bad_data);
+    FAIL() << "Expected std::runtime_error due to row count mismatch";
+  } catch (const std::runtime_error &e) {
+    std::cout << "[AddColumnRejectsMismatchedRowCount] Caught error: "
+              << e.what() << "\n";
+    EXPECT_TRUE(std::string(e.what()).find("Row count mismatch") !=
+                std::string::npos);
+  } catch (...) {
+    FAIL() << "Expected std::runtime_error: row count mismatch";
+  }
+}
+
+TEST_F(ReflectionTableTest, AddDuplicateColumnThrows) {
+  ReflectionTable table;
+  std::vector<double> data{1.0, 2.0, 3.0};
+  table.add_column("dup", data);
+
+  try {
+    table.add_column("dup", data); // Add column with same name again
+    FAIL() << "Expected logic_error or appropriate overwrite warning";
+  } catch (const std::exception &e) {
+    std::cout << "[AddDuplicateColumnThrows] Caught: " << e.what() << "\n";
+    EXPECT_TRUE(std::string(e.what()).find("already exists") !=
+                std::string::npos);
+  }
+}
+
+TEST_F(ReflectionTableTest, AddUnsupportedColumnTypeThrows) {
+  ReflectionTable table;
+
+  // Define a dummy type that is not supported
+  struct DummyType {
+    int x;
+  };
+
+  // Attempt to add a column with the unsupported type
+  std::vector<DummyType> data(3, DummyType{42});
+  try {
+    table.add_column("dummy", std::vector<size_t>{3}, data);
+  } catch (const std::exception &e) {
+    std::cout << "[AddUnsupportedColumnTypeThrows] Error (expected): "
+              << e.what() << "\n";
+    SUCCEED();
+    return;
+  }
+  FAIL() << "Expected std::runtime_error: unsupported column type";
+}
+
+TEST_F(ReflectionTableTest, WriteTableFromScratchAndReload) {
+  // Construct a table from scratch
+  ReflectionTable table;
+
+  // Add an integer column
+  std::vector<int> example_data{0, 2, 3, 1};
+  std::string column_name = "id";
+  table.add_column<int>(column_name, 4, 1, example_data);
+
+  // Add metadata
+  std::vector<uint64_t> experiment_ids{101, 202};
+  std::vector<std::string> identifiers{"alpha", "beta"};
+  table.set_experiment_ids(experiment_ids);
+  table.set_identifiers(identifiers);
+
+  // Write to a temporary file
+  std::filesystem::path temp_file =
+      std::filesystem::current_path() / "reflection_test_scratch_write.h5";
+  table.write(temp_file.string());
+
+  // Reload from file
+  ReflectionTable loaded(temp_file.string());
+
+  // Validate column presence and contents
+  auto span = loaded.column<int>("id");
+  ASSERT_TRUE(span.has_value());
+  ASSERT_EQ(span->extent(0), 4);
+  ASSERT_EQ(span->extent(1), 1);
+  for (size_t i = 0; i < 4; ++i) {
+    EXPECT_EQ((*span)(i, 0), example_data[i]);
+  }
+
+  // Validate metadata round-trip
+  const auto &reloaded_ids = loaded.get_experiment_ids();
+  const auto &reloaded_identifiers = loaded.get_identifiers();
+
+  ASSERT_EQ(reloaded_ids.size(), experiment_ids.size());
+  ASSERT_EQ(reloaded_identifiers.size(), identifiers.size());
+
+  for (size_t i = 0; i < experiment_ids.size(); ++i) {
+    EXPECT_EQ(reloaded_ids[i], experiment_ids[i]);
+    EXPECT_EQ(reloaded_identifiers[i], identifiers[i]);
+  }
+
+  // Clean up
+  std::filesystem::remove(temp_file);
+}
+#pragma endregion
+
+#pragma region Selection
 TEST_F(ReflectionTableTest, SelectWithMaskReturnsSameResultAsExplicitIndices) {
   ReflectionTable table(test_file_path.string());
 
@@ -111,75 +354,115 @@ TEST_F(ReflectionTableTest, SelectEmptyReturnsEmptyTable) {
   }
 }
 
-TEST_F(ReflectionTableTest, AllDatasetsLoadSuccessfully) {
+TEST_F(ReflectionTableTest, SelectSubsetUsingTypedFindRows) {
   ReflectionTable table(test_file_path.string());
 
-  std::vector<std::string> expected = get_datasets_in_group(
-      test_file_path.string(), "/dials/processing/group_0");
+  // Define a predicate that selects rows where the z-coordinate (3rd column) is
+  // greater than 1.0
+  auto selected = table.find_rows(ColumnPredicate<double>{
+      "xyzobs.px.value",
+      [](const auto &span, size_t i) { return span(i, 2) > 1.0; }});
 
-  std::vector<std::string> loaded = table.get_column_names();
+  std::cout << "Selected " << selected.size() << " rows where z > 1.0\n";
+  EXPECT_FALSE(selected.empty());
 
-  for (const std::string &full_dataset_path : expected) {
-    std::string name = get_dataset_name(full_dataset_path);
+  // Filter the table to include only the selected rows
+  auto filtered = table.select(selected);
 
-    // Make sure it's present
-    auto it = std::find(loaded.begin(), loaded.end(), name);
-    EXPECT_NE(it, loaded.end()) << "Dataset not loaded: " << name;
+  // Extract the filtered xyzobs.px.value column
+  auto filtered_px = filtered.column<double>("xyzobs.px.value");
+  ASSERT_TRUE(filtered_px);
+  const auto &filtered_span = filtered_px.value();
 
-    if (it != loaded.end()) {
-      std::cout << "✅ Dataset loaded: " << name << "\n";
-    } else {
-      std::cerr << "❌ Dataset missing: " << name << "\n";
-    }
+  // Print the first few z-values (i.e. the value at column index 2)
+  for (size_t i = 0; i < std::min<size_t>(filtered_span.extent(0), 5); ++i) {
+    std::cout << "z[" << i << "] = " << filtered_span(i, 2) << "\n";
+  }
+
+  // Validate all selected rows meet the predicate condition
+  for (size_t i = 0; i < filtered_span.extent(0); ++i) {
+    EXPECT_GT(filtered_span(i, 2), 1.0);
   }
 }
 
-TEST_F(ReflectionTableTest, AddColumn) {
-  ReflectionTable table;
+TEST_F(ReflectionTableTest, SelectSubsetWithMultipleTypedPredicates_OR) {
+  ReflectionTable table(test_file_path.string());
 
-  // 1D column (implicit shape overload)
-  std::vector<double> one_d_data{1.0, 2.0, 3.0};
-  table.add_column("1d_column", one_d_data);
+  // Combine two predicates: x > 200 (column 0) or z < 5.0 (column 2)
+  auto selected =
+      table.find_rows(logic::LogicalOp::Or,
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 0) > 200.0;
+                                              }},
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 2) < 5.0;
+                                              }});
 
-  auto one_d = table.column<double>("1d_column");
-  ASSERT_TRUE(one_d.has_value());
+  std::cout << "Selected " << selected.size()
+            << " rows with x > 200 OR z < 5.0\n";
+  EXPECT_FALSE(selected.empty());
 
-  std::cout << "[1D] Shape: " << one_d->extent(0) << "x" << one_d->extent(1)
-            << "\n";
-  for (size_t i = 0; i < one_d->extent(0); ++i) {
-    std::cout << "  one_d(" << i << ", 0) = " << (*one_d)(i, 0) << "\n";
-  }
+  // Select rows from table and extract the column
+  auto filtered = table.select(selected);
+  auto filtered_px = filtered.column<double>("xyzobs.px.value");
+  ASSERT_TRUE(filtered_px);
+  const auto &span = filtered_px.value();
 
-  // 2D column (rows, cols overload)
-  std::vector<double> two_d_data{1.1, 1.2, 2.1, 2.2, 3.1, 3.2};
-  table.add_column("2d_column", 3, 2, two_d_data);
-
-  auto two_d = table.column<double>("2d_column");
-  ASSERT_TRUE(two_d.has_value());
-
-  std::cout << "[2D] Shape: " << two_d->extent(0) << "x" << two_d->extent(1)
-            << "\n";
-  for (size_t i = 0; i < two_d->extent(0); ++i) {
-    for (size_t j = 0; j < two_d->extent(1); ++j) {
-      std::cout << "  two_d(" << i << ", " << j << ") = " << (*two_d)(i, j)
-                << "\n";
-    }
-  }
-
-  // Shape vector overload (explicit shape)
-  std::vector<double> shaped_data{9.0, 8.0, 7.0};
-  table.add_column("shaped_column", std::vector<size_t>{3}, shaped_data);
-
-  auto shaped = table.column<double>("shaped_column");
-  ASSERT_TRUE(shaped.has_value());
-
-  std::cout << "[Shape Vector] Shape: " << shaped->extent(0) << "x"
-            << shaped->extent(1) << "\n";
-  for (size_t i = 0; i < shaped->extent(0); ++i) {
-    std::cout << "  shaped(" << i << ", 0) = " << (*shaped)(i, 0) << "\n";
+  // Verify each selected row satisfies at least one predicate
+  for (size_t i = 0; i < span.extent(0); ++i) {
+    EXPECT_TRUE(span(i, 0) > 200.0 || span(i, 2) < 5.0);
   }
 }
 
+TEST_F(ReflectionTableTest, SelectSubsetWithMultipleTypedPredicates_AND) {
+  ReflectionTable table(test_file_path.string());
+
+  // Combine two predicates: x > 200 (column 0) and z < 5.0 (column 2)
+  auto selected =
+      table.find_rows(logic::LogicalOp::And,
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 0) > 200.0;
+                                              }},
+                      ColumnPredicate<double>{"xyzobs.px.value",
+                                              [](const auto &span, size_t i) {
+                                                return span(i, 2) < 5.0;
+                                              }});
+
+  std::cout << "Selected " << selected.size()
+            << " rows with x > 200 AND z < 5.0\n";
+  EXPECT_FALSE(selected.empty());
+
+  // Select and validate all remaining rows satisfy both predicates
+  auto filtered = table.select(selected);
+  auto filtered_px = filtered.column<double>("xyzobs.px.value");
+  ASSERT_TRUE(filtered_px);
+  const auto &span = filtered_px.value();
+
+  for (size_t i = 0; i < span.extent(0); ++i) {
+    EXPECT_TRUE(span(i, 0) > 200.0 && span(i, 2) < 5.0);
+  }
+}
+
+TEST_F(ReflectionTableTest, FindRowsThrowsOnWrongType) {
+  ReflectionTable table(test_file_path.string());
+
+  try {
+    table.find_rows(
+        ColumnPredicate<int>{"xyzobs.px.value", [](const auto &span, size_t i) {
+                               return span(i, 0) > 0;
+                             }});
+    FAIL() << "Expected std::runtime_error: type mismatch";
+  } catch (const std::runtime_error &e) {
+    std::cout << "[FindRowsThrowsOnWrongType] Error: " << e.what() << "\n";
+    EXPECT_TRUE(std::string(e.what()).find("wrong type") != std::string::npos);
+  }
+}
+#pragma endregion
+
+#pragma region Writing
 TEST_F(ReflectionTableTest, WriteAndReloadProducesSameData) {
   // Load original table
   ReflectionTable table(test_file_path.string());
@@ -311,164 +594,18 @@ TEST_F(ReflectionTableTest, ExperimentMetadataRoundTrip) {
   std::filesystem::remove(temp_file);
 }
 
-TEST_F(ReflectionTableTest, SelectSubsetUsingTypedFindRows) {
-  ReflectionTable table(test_file_path.string());
-
-  // Define a predicate that selects rows where the z-coordinate (3rd column) is
-  // greater than 1.0
-  auto selected = table.find_rows(ColumnPredicate<double>{
-      "xyzobs.px.value",
-      [](const auto &span, size_t i) { return span(i, 2) > 1.0; }});
-
-  std::cout << "Selected " << selected.size() << " rows where z > 1.0\n";
-  EXPECT_FALSE(selected.empty());
-
-  // Filter the table to include only the selected rows
-  auto filtered = table.select(selected);
-
-  // Extract the filtered xyzobs.px.value column
-  auto filtered_px = filtered.column<double>("xyzobs.px.value");
-  ASSERT_TRUE(filtered_px);
-  const auto &filtered_span = filtered_px.value();
-
-  // Print the first few z-values (i.e. the value at column index 2)
-  for (size_t i = 0; i < std::min<size_t>(filtered_span.extent(0), 5); ++i) {
-    std::cout << "z[" << i << "] = " << filtered_span(i, 2) << "\n";
-  }
-
-  // Validate all selected rows meet the predicate condition
-  for (size_t i = 0; i < filtered_span.extent(0); ++i) {
-    EXPECT_GT(filtered_span(i, 2), 1.0);
-  }
-}
-
-TEST_F(ReflectionTableTest, SelectSubsetWithMultipleTypedPredicates_OR) {
-  ReflectionTable table(test_file_path.string());
-
-  // Combine two predicates: x > 200 (column 0) or z < 5.0 (column 2)
-  auto selected =
-      table.find_rows(logic::LogicalOp::Or,
-                      ColumnPredicate<double>{"xyzobs.px.value",
-                                              [](const auto &span, size_t i) {
-                                                return span(i, 0) > 200.0;
-                                              }},
-                      ColumnPredicate<double>{"xyzobs.px.value",
-                                              [](const auto &span, size_t i) {
-                                                return span(i, 2) < 5.0;
-                                              }});
-
-  std::cout << "Selected " << selected.size()
-            << " rows with x > 200 OR z < 5.0\n";
-  EXPECT_FALSE(selected.empty());
-
-  // Select rows from table and extract the column
-  auto filtered = table.select(selected);
-  auto filtered_px = filtered.column<double>("xyzobs.px.value");
-  ASSERT_TRUE(filtered_px);
-  const auto &span = filtered_px.value();
-
-  // Verify each selected row satisfies at least one predicate
-  for (size_t i = 0; i < span.extent(0); ++i) {
-    EXPECT_TRUE(span(i, 0) > 200.0 || span(i, 2) < 5.0);
-  }
-}
-
-TEST_F(ReflectionTableTest, SelectSubsetWithMultipleTypedPredicates_AND) {
-  ReflectionTable table(test_file_path.string());
-
-  // Combine two predicates: x > 200 (column 0) and z < 5.0 (column 2)
-  auto selected =
-      table.find_rows(logic::LogicalOp::And,
-                      ColumnPredicate<double>{"xyzobs.px.value",
-                                              [](const auto &span, size_t i) {
-                                                return span(i, 0) > 200.0;
-                                              }},
-                      ColumnPredicate<double>{"xyzobs.px.value",
-                                              [](const auto &span, size_t i) {
-                                                return span(i, 2) < 5.0;
-                                              }});
-
-  std::cout << "Selected " << selected.size()
-            << " rows with x > 200 AND z < 5.0\n";
-  EXPECT_FALSE(selected.empty());
-
-  // Select and validate all remaining rows satisfy both predicates
-  auto filtered = table.select(selected);
-  auto filtered_px = filtered.column<double>("xyzobs.px.value");
-  ASSERT_TRUE(filtered_px);
-  const auto &span = filtered_px.value();
-
-  for (size_t i = 0; i < span.extent(0); ++i) {
-    EXPECT_TRUE(span(i, 0) > 200.0 && span(i, 2) < 5.0);
-  }
-}
-
-TEST_F(ReflectionTableTest, AccessNonExistentColumn) {
-  ReflectionTable table(test_file_path.string());
-
-  // Attempt to access a column that does not exist
-  auto non_existent_column = table.column<double>("non_existent_column");
-
-  /**
-   * Attemtping to access a non-existent column should return an empty
-   * optional.
-   *
-   * This is a test to ensure that the column retrieval mechanism
-   * correctly handles cases where the requested column does not exist.
-   */
-
-  std::cout << "Attempting to access non-existent column: "
-            << (non_existent_column.has_value() ? "found" : "not found")
-            << "\n";
-
-  // Ensure the column retrieval fails
-  EXPECT_FALSE(non_existent_column.has_value());
-}
-
-TEST_F(ReflectionTableTest, WriteTableFromScratchAndReload) {
-  // Construct a table from scratch
+TEST_F(ReflectionTableTest, EmptyTableWriteSucceeds) {
   ReflectionTable table;
+  table.set_experiment_ids({1, 2, 3});
+  table.set_identifiers({"a", "b", "c"});
 
-  // Add an integer column
-  std::vector<int> example_data{0, 2, 3, 1};
-  std::string column_name = "id";
-  table.add_column<int>(column_name, 4, 1, example_data);
-
-  // Add metadata
-  std::vector<uint64_t> experiment_ids{101, 202};
-  std::vector<std::string> identifiers{"alpha", "beta"};
-  table.set_experiment_ids(experiment_ids);
-  table.set_identifiers(identifiers);
-
-  // Write to a temporary file
   std::filesystem::path temp_file =
-      std::filesystem::current_path() / "reflection_test_scratch_write.h5";
-  table.write(temp_file.string());
+      std::filesystem::current_path() / "empty_table.h5";
+  EXPECT_NO_THROW(table.write(temp_file.string()));
 
-  // Reload from file
   ReflectionTable loaded(temp_file.string());
+  EXPECT_TRUE(loaded.get_column_names().empty());
 
-  // Validate column presence and contents
-  auto span = loaded.column<int>("id");
-  ASSERT_TRUE(span.has_value());
-  ASSERT_EQ(span->extent(0), 4);
-  ASSERT_EQ(span->extent(1), 1);
-  for (size_t i = 0; i < 4; ++i) {
-    EXPECT_EQ((*span)(i, 0), example_data[i]);
-  }
-
-  // Validate metadata round-trip
-  const auto &reloaded_ids = loaded.get_experiment_ids();
-  const auto &reloaded_identifiers = loaded.get_identifiers();
-
-  ASSERT_EQ(reloaded_ids.size(), experiment_ids.size());
-  ASSERT_EQ(reloaded_identifiers.size(), identifiers.size());
-
-  for (size_t i = 0; i < experiment_ids.size(); ++i) {
-    EXPECT_EQ(reloaded_ids[i], experiment_ids[i]);
-    EXPECT_EQ(reloaded_identifiers[i], identifiers[i]);
-  }
-
-  // Clean up
   std::filesystem::remove(temp_file);
 }
+#pragma endregion
