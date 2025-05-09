@@ -5,7 +5,7 @@ c-compiler
 colorlog
 conda
 cxx-compiler
-dials-data>=2.4.121
+dials-data>=2.4.123
 docutils
 eigen
 flexparser<0.4
