@@ -627,6 +627,13 @@ public:
                   const std::vector<T> &column_data) {
     auto col = std::make_unique<TypedColumn<T>>(name, shape, column_data);
 
+    // Check for duplicate column names
+    for (const auto &existing_col : data) {
+      if (existing_col->get_name() == name) {
+        throw std::runtime_error("Column with name already exists: " + name);
+      }
+    }
+
     // Ensure row count consistency
     if (!data.empty() && col->get_shape()[0] != get_row_count()) {
       throw std::runtime_error("Row count mismatch when adding column: " +
