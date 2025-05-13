@@ -1,3 +1,12 @@
+DIALS 3.24.1 (2025-05-13)
+=========================
+
+Bugfixes
+--------
+
+- Add missing implementation in multi-dataset-handling OrderedSet. This caused a crash running ``xia2.ssx_reduce``. (`#2916 <https://github.com/dials/dials/issues/2916>`_)
+
+
 DIALS 3.24.0 (2025-04-29)
 =========================
 
