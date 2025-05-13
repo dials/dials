@@ -851,6 +851,7 @@ def test_ffbidx(
         pytest.skip("ffbidx not installed")
     try:
         ffbidx.Indexer()
+        ffbidx.runtime_check()
     except RuntimeError:
         pytest.skip("ffbidx installed but not functional on this system")
 
