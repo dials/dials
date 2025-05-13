@@ -1,1 +1,0 @@
-``xia2.ssx_reduce``: Fix potential crashes with the error ``KeyError: <dxtbx_imageset_ext.ImageSequence object...>`` 
