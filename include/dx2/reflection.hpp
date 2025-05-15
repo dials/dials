@@ -838,6 +838,17 @@ public:
       throw std::runtime_error("Failed to create or open group: " + gpath);
     }
 
+    // Check if experiment IDs and identifiers are mapped
+    if (experiment_ids.size() != identifiers.size()) {
+      dx2_log::warning("Experiment IDs and identifiers not correctly mapped!");
+    }
+
+    // Check if ID column exists
+    std::vector<std::string> names = get_column_names();
+    if (std::find(names.begin(), names.end(), "id") == names.end()) {
+      dx2_log::warning("No 'id' column found! Did you forget to add it?");
+    }
+
     // Write metadata
     write_experiment_metadata(group_id, experiment_ids, identifiers);
 
