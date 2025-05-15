@@ -691,6 +691,25 @@ public:
                   const std::vector<T> &column_data) {
     add_column(name, std::vector<size_t>{rows, cols}, column_data);
   }
+
+  /**
+   * @brief Specialised overload to add a column from std::vector<bool>.
+   *
+   * std::vector<bool> does not provide `.data()` due to bit-packing, so
+   * this overload copies the data into a vector of uint8_t (1 byte per
+   * element).
+   *
+   * @param name The name of the column.
+   * @param column_data A vector of bools to convert and store as uint8_t.
+   */
+  void add_column(const std::string &name,
+                  const std::vector<bool> &column_data) {
+    std::vector<BoolEnum> converted(column_data.size());
+    for (size_t i = 0; i < column_data.size(); ++i) {
+      converted[i] = column_data[i] ? BoolEnum::TRUE : BoolEnum::FALSE;
+    }
+    add_column<BoolEnum>(name, converted);
+  }
 #pragma endregion
 
 #pragma region Write
@@ -699,13 +718,19 @@ public:
    *
    * This function iterates through all stored columns and writes each one
    * to disk, provided its type is supported by the HDF5 backend.
-   * Currently supported types include: double, int, int64_t, and uint64_t.
+   *
+   * Supported types include:
+   *   - double
+   *   - int
+   *   - int64_t
+   *   - uint64_t
+   *   - BoolEnum (internal enum for HDF5-stored booleans)
    *
    * Columns with unsupported types will be skipped with a warning.
    *
    * @param filename Output HDF5 file path.
    * @param group Target group inside the HDF5 file (defaults to
-   * /dials/processing/group_0).
+   *              /dials/processing/group_0).
    */
   void write(std::string_view filename,
              std::string_view group = "/dials/processing/group_0") const {

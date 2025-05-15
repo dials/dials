@@ -44,6 +44,17 @@ struct H5TypeInfo {
   H5T_sign_t h5_sign;       ///< Sign info for integers (signed/unsigned)
 };
 
+inline h5utils::H5Type create_hdf5_bool_enum_type() {
+  hid_t enum_type = H5Tenum_create(H5T_NATIVE_UINT8);
+  uint8_t false_val = 0;
+  uint8_t true_val = 1;
+  H5Tenum_insert(enum_type, "FALSE", &false_val);
+  H5Tenum_insert(enum_type, "TRUE", &true_val);
+  return h5utils::H5Type(enum_type);
+}
+
+enum class BoolEnum : uint8_t { FALSE = 0, TRUE = 1 };
+
 /**
  * @brief Central registry for all supported type mappings.
  *
@@ -51,6 +62,7 @@ struct H5TypeInfo {
  * and how they map to HDF5 native types.
  */
 inline const std::vector<H5TypeInfo> &get_supported_types() {
+  static const H5Type bool_enum_type = create_hdf5_bool_enum_type();
   static const std::vector<H5TypeInfo> registry = {
       {typeid(int), H5T_NATIVE_INT, H5T_INTEGER, sizeof(int), H5T_SGN_2},
       {typeid(int64_t), H5T_NATIVE_LLONG, H5T_INTEGER, sizeof(int64_t),
@@ -59,7 +71,8 @@ inline const std::vector<H5TypeInfo> &get_supported_types() {
        H5T_SGN_NONE},
       {typeid(double), H5T_NATIVE_DOUBLE, H5T_FLOAT, sizeof(double),
        H5T_SGN_ERROR},
-  };
+      {typeid(BoolEnum), bool_enum_type, H5T_ENUM, sizeof(uint8_t),
+       H5T_SGN_NONE}};
   return registry;
 }
 
@@ -105,6 +118,8 @@ void dispatch_registered_type(const MatchFn &match_fn, Callback &&cb) {
         cb(type_tag<uint64_t>);
       else if (entry.cpp_type == typeid(double))
         cb(type_tag<double>);
+      else if (entry.cpp_type == typeid(BoolEnum))
+        cb(type_tag<BoolEnum>);
       else
         throw std::runtime_error("Type registered but not dispatchable.");
       return;

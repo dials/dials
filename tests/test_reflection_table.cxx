@@ -296,6 +296,30 @@ TEST_F(ReflectionTableTest, WriteTableFromScratchAndReload) {
   // Clean up
   std::filesystem::remove(temp_file);
 }
+
+TEST_F(ReflectionTableTest, AddBooleanColumnFromVectorBool) {
+  ReflectionTable table;
+
+  std::vector<bool> bool_data = {true, false, true, true, false};
+  table.add_column("bools", bool_data);
+
+  // Try both forms:
+  auto col_bool = table.column<BoolEnum>("bools");
+  ASSERT_TRUE(col_bool.has_value());
+
+  for (size_t i = 0; i < bool_data.size(); ++i) {
+    bool expected = bool_data[i];
+    /* BoolEnum is stored in the HDF5 file as an 8-bit enum, not raw
+     * uint8_t. So we must query using the enum type, not uint8_t or
+     * bool.
+     */
+    bool actual = col_bool.value()(i, 0) == BoolEnum::TRUE;
+    std::cout << "Row " << i << ": expected " << expected << ", got " << actual
+              << "\n";
+    EXPECT_EQ(actual, expected) << "Mismatch at index " << i << ": expected "
+                                << expected << ", got " << actual;
+  }
+}
 #pragma endregion
 
 #pragma region Selection
@@ -605,6 +629,31 @@ TEST_F(ReflectionTableTest, EmptyTableWriteSucceeds) {
 
   ReflectionTable loaded(temp_file.string());
   EXPECT_TRUE(loaded.get_column_names().empty());
+
+  std::filesystem::remove(temp_file);
+}
+
+TEST_F(ReflectionTableTest, WriteAndReloadBoolColumn) {
+  ReflectionTable table;
+  table.set_experiment_ids({13, 42, 1997});
+  table.set_identifiers({"Mars", "Phobos", "Deimos"});
+  std::vector<bool> bool_data = {true, false, false, true};
+  table.add_column("bool_flags", bool_data);
+
+  std::filesystem::path temp_file =
+      std::filesystem::current_path() / "reflection_test_write_bool.h5";
+  table.write(temp_file.string());
+
+  ReflectionTable loaded(temp_file.string());
+  auto reloaded_col = loaded.column<BoolEnum>("bool_flags");
+
+  ASSERT_TRUE(reloaded_col.has_value());
+  const auto &span = reloaded_col.value();
+  ASSERT_EQ(span.extent(0), bool_data.size());
+
+  for (size_t i = 0; i < bool_data.size(); ++i) {
+    EXPECT_EQ(span(i, 0), (bool_data[i] ? BoolEnum::TRUE : BoolEnum::FALSE));
+  }
 
   std::filesystem::remove(temp_file);
 }
