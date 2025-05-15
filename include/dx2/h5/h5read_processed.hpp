@@ -366,11 +366,11 @@ inline void read_experiment_metadata(hid_t group_id,
  * @param path Full dataset path (e.g., `/a/b/c`).
  * @return The base name (`c`).
  */
-std::string get_dataset_name(const std::string &path) {
+std::string get_dataset_name(std::string_view path) {
   size_t pos = path.find_last_of('/');
-  if (pos == std::string::npos) {
-    return path; // No '/' found, return the whole path
+  if (pos == std::string_view::npos) {
+    return std::string(path); // No '/' found, return the whole path
   }
-  return path.substr(pos + 1);
+  return std::string(path.substr(pos + 1));
 }
 #pragma endregion
