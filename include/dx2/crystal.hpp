@@ -1,6 +1,6 @@
 #ifndef DX2_MODEL_CRYSTAL_H
 #define DX2_MODEL_CRYSTAL_H
-#include "utils.h"
+#include "utils.hpp"
 #include <Eigen/Dense>
 #include <gemmi/cellred.hpp>
 #include <gemmi/math.hpp>

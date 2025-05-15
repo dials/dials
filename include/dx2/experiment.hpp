@@ -1,11 +1,11 @@
 #ifndef DX2_MODEL_EXPERIMENT_H
 #define DX2_MODEL_EXPERIMENT_H
 #include <Eigen/Dense>
-#include <dx2/beam.h>
-#include <dx2/crystal.h>
-#include <dx2/detector.h>
-#include <dx2/goniometer.h>
-#include <dx2/scan.h>
+#include <dx2/beam.hpp>
+#include <dx2/crystal.hpp>
+#include <dx2/detector.hpp>
+#include <dx2/goniometer.hpp>
+#include <dx2/scan.hpp>
 #include <nlohmann/json.hpp>
 
 using Eigen::Vector3d;
