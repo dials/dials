@@ -138,27 +138,30 @@ TEST_F(HDF5Test, WriteOneDimensionalVector) {
   std::string dataset_path = "/group_1/dataset_1d";
   std::vector<double> data = {1.0, 2.0, 3.0, 4.0};
 
-  write_data_to_h5_file(test_file_path, dataset_path, data);
-  EXPECT_EQ(read_array_from_h5_file<double>(test_file_path, dataset_path),
-            data);
+  write_data_to_h5_file(test_file_path.string(), dataset_path, data);
+  EXPECT_EQ(
+      read_array_from_h5_file<double>(test_file_path.c_str(), dataset_path),
+      data);
 }
 
 TEST_F(HDF5Test, WriteTwoDimensionalVector) {
   std::string dataset_path = "/group_2/dataset_2d";
   std::vector<std::vector<double>> data = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
 
-  write_data_to_h5_file(test_file_path, dataset_path, data);
-  EXPECT_EQ(read_array_from_h5_file<double>(test_file_path, dataset_path),
-            flatten(data));
+  write_data_to_h5_file(test_file_path.string(), dataset_path, data);
+  EXPECT_EQ(
+      read_array_from_h5_file<double>(test_file_path.c_str(), dataset_path),
+      flatten(data));
 }
 
 TEST_F(HDF5Test, WriteEmptyDataset) {
   std::string dataset_path = "/group_empty/dataset_empty";
   std::vector<double> data = {};
 
-  write_data_to_h5_file(test_file_path, dataset_path, data);
+  write_data_to_h5_file(test_file_path.string(), dataset_path, data);
   EXPECT_TRUE(
-      read_array_from_h5_file<double>(test_file_path, dataset_path).empty());
+      read_array_from_h5_file<double>(test_file_path.c_str(), dataset_path)
+          .empty());
 }
 
 // Test writing to a file that already exists
@@ -171,9 +174,10 @@ TEST_F(HDF5Test, WriteToExistingFile) {
   std::string dataset_path = "/existing_group/existing_dataset";
   std::vector<double> data = {1.0, 2.0, 3.0, 4.0};
 
-  write_data_to_h5_file(test_file_path, dataset_path, data);
-  EXPECT_EQ(read_array_from_h5_file<double>(test_file_path, dataset_path),
-            data);
+  write_data_to_h5_file(test_file_path.string(), dataset_path, data);
+  EXPECT_EQ(
+      read_array_from_h5_file<double>(test_file_path.c_str(), dataset_path),
+      data);
 }
 
 // Test writing to a group that already exists
@@ -191,9 +195,10 @@ TEST_F(HDF5Test, WriteToExistingGroup) {
   std::string dataset_path = "/group_1/dataset_1";
   std::vector<double> data = {10.0, 20.0, 30.0, 40.0};
 
-  write_data_to_h5_file(test_file_path, dataset_path, data);
-  EXPECT_EQ(read_array_from_h5_file<double>(test_file_path, dataset_path),
-            data);
+  write_data_to_h5_file(test_file_path.string(), dataset_path, data);
+  EXPECT_EQ(
+      read_array_from_h5_file<double>(test_file_path.c_str(), dataset_path),
+      data);
 }
 
 // Test writing to a dataset that already exists
@@ -223,8 +228,9 @@ TEST_F(HDF5Test, WriteToExistingDataset) {
 
   // Now attempt to overwrite the dataset
   std::vector<double> new_data = {5.5, 6.6, 7.7, 8.8};
-  write_data_to_h5_file(test_file_path, "/group_2/dataset_existing", new_data);
-  EXPECT_EQ(read_array_from_h5_file<double>(test_file_path,
+  write_data_to_h5_file(test_file_path.string(), "/group_2/dataset_existing",
+                        new_data);
+  EXPECT_EQ(read_array_from_h5_file<double>(test_file_path.c_str(),
                                             "/group_2/dataset_existing"),
             new_data);
 }
