@@ -242,6 +242,7 @@ private:
   const std::string DEFAULT_REFL_GROUP = "/dials/processing/group_0";
   std::vector<uint64_t> experiment_ids;
   std::vector<std::string> identifiers;
+  uint64_t max_experiment_id = 0;
 
   /// Get the number of rows in the first column, assuming all columns
   /// have the same number of rows
@@ -368,7 +369,10 @@ public:
   /// Re-exported type aliase for convenience
   using BoolEnum = h5dispatch::BoolEnum;
 
-  ReflectionTable() = default;
+  ReflectionTable() {
+    // Generate default experiment IDs and identifiers
+    generate_new_attributes();
+  }
 
   /**
    * @brief Constructs a ReflectionTable with given experiment IDs and
@@ -468,6 +472,8 @@ public:
    */
   void set_experiment_ids(const std::vector<uint64_t> &ids) {
     experiment_ids = ids;
+    max_experiment_id =
+        *std::max_element(experiment_ids.begin(), experiment_ids.end());
   }
 
   /**
@@ -482,6 +488,29 @@ public:
    */
   void set_identifiers(const std::vector<std::string> &ids) {
     identifiers = ids;
+  }
+
+  /**
+   * @brief Generate a new experiment ID and identifier.
+   *
+   * This function generates a new experiment ID and a random
+   * identifier, adds them to the internal metadata, and returns them as
+   * a pair.
+   */
+  std::pair<uint64_t, std::string> generate_new_attributes() {
+    // Generate a new experiment ID and identifier pair
+    uint64_t experiment_id = max_experiment_id++;
+    std::string identifier = ersatz_uuid4();
+
+    // Add to the lists
+    experiment_ids.push_back(experiment_id);
+    identifiers.push_back(identifier);
+
+    dx2_log::debug("Generated new experiment ID: {} and identifier: {}",
+                   experiment_id, identifier);
+
+    // Return the new attributes
+    return std::make_pair(experiment_id, identifier);
   }
 
   /**
