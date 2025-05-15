@@ -91,6 +91,62 @@ TEST_F(ReflectionTableTest, AllDatasetsLoadSuccessfully) {
     }
   }
 }
+
+TEST_F(ReflectionTableTest, GenerateNewAttributesAppendsCorrectly) {
+  ReflectionTable table;
+  auto initial_ids = table.get_experiment_ids().size();
+  auto initial_labels = table.get_identifiers().size();
+
+  auto [new_id, new_label] = table.generate_new_attributes();
+
+  EXPECT_EQ(table.get_experiment_ids().size(), initial_ids + 1);
+  EXPECT_EQ(table.get_identifiers().size(), initial_labels + 1);
+  EXPECT_EQ(table.get_experiment_ids().back(), new_id);
+  EXPECT_EQ(table.get_identifiers().back(), new_label);
+  EXPECT_FALSE(new_label.empty());
+}
+
+TEST_F(ReflectionTableTest, GenerateMultipleAttributes_UniqueUUIDs) {
+  ReflectionTable table;
+
+  constexpr size_t num_to_generate = 10;
+  std::unordered_set<std::string> uuids;
+
+  for (size_t i = 0; i < num_to_generate; ++i) {
+    auto [id, uuid] = table.generate_new_attributes();
+
+    EXPECT_FALSE(uuid.empty()) << "UUID is empty at index " << i;
+
+    // Insert returns false if duplicate
+    bool inserted = uuids.insert(uuid).second;
+    EXPECT_TRUE(inserted) << "Duplicate UUID generated: " << uuid;
+  }
+
+  EXPECT_EQ(uuids.size(), num_to_generate) << "Expected all UUIDs to be unique";
+
+  std::cout << "✅ Generated " << num_to_generate << " unique UUIDs.\n";
+}
+
+TEST_F(ReflectionTableTest, GenerateMultipleAttributes_MonotonicExperimentIDs) {
+  ReflectionTable table;
+
+  constexpr size_t num_to_generate = 10;
+  std::vector<uint64_t> ids;
+
+  for (size_t i = 0; i < num_to_generate; ++i) {
+    auto [id, uuid] = table.generate_new_attributes();
+    ids.push_back(id);
+  }
+
+  for (size_t i = 1; i < ids.size(); ++i) {
+    EXPECT_LT(ids[i - 1], ids[i])
+        << "Experiment IDs not strictly increasing between index " << i - 1
+        << " and " << i << ": " << ids[i - 1] << " vs " << ids[i];
+  }
+
+  std::cout << "✅ Generated " << num_to_generate
+            << " monotonically increasing experiment IDs.\n";
+}
 #pragma endregion
 
 #pragma region Access
