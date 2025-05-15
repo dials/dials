@@ -26,9 +26,6 @@
 #include <string>
 #include <vector>
 
-using namespace h5dispatch;
-using namespace h5utils;
-
 #pragma region Raw writer
 /**
  * @brief Recursively traverses or creates groups in an HDF5 file based
@@ -44,11 +41,12 @@ using namespace h5utils;
  * @return The identifier of the final group in the path.
  * @throws std::runtime_error If a group cannot be created or opened.
  */
-H5Group traverse_or_create_groups(hid_t parent, const std::string &path) {
+h5utils::H5Group traverse_or_create_groups(hid_t parent,
+                                           const std::string &path) {
   // Strip leading '/' characters, if any, to prevent empty group names
   size_t start_pos = path.find_first_not_of('/');
   if (start_pos == std::string::npos) {
-    return H5Group(parent); // Path is just "/", return parent as-is
+    return h5utils::H5Group(parent); // Path is just "/", return parent as-is
   }
 
   std::string cleaned_path = path.substr(start_pos);
@@ -59,7 +57,7 @@ H5Group traverse_or_create_groups(hid_t parent, const std::string &path) {
    * group.
    */
   if (cleaned_path.empty()) {
-    return H5Group(parent);
+    return h5utils::H5Group(parent);
   }
 
   // Split the path into the current group name and the remaining path
@@ -71,12 +69,12 @@ H5Group traverse_or_create_groups(hid_t parent, const std::string &path) {
 
   // Try to open group, suppress errors if not found
   H5ErrorSilencer silencer;
-  H5Group next_group(H5Gopen(parent, group_name.c_str(), H5P_DEFAULT));
+  h5utils::H5Group next_group(H5Gopen(parent, group_name.c_str(), H5P_DEFAULT));
 
   // If the group does not exist, create it
   if (!next_group) {
-    next_group = H5Group(H5Gcreate(parent, group_name.c_str(), H5P_DEFAULT,
-                                   H5P_DEFAULT, H5P_DEFAULT));
+    next_group = h5utils::H5Group(H5Gcreate(
+        parent, group_name.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
     if (!next_group) {
       throw std::runtime_error("Error: Unable to create or open group: " +
                                group_name);
@@ -118,9 +116,9 @@ void write_raw_data_to_h5_file(std::string_view filename,
   H5ErrorSilencer silencer;
 
   // Open or create the file
-  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
+  h5utils::H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
   if (!file) {
-    file = H5File(
+    file = h5utils::H5File(
         H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT));
     if (!file) {
       throw std::runtime_error("Failed to create or open file: " + fname);
@@ -134,20 +132,23 @@ void write_raw_data_to_h5_file(std::string_view filename,
   std::string group_path = dset_path.substr(0, slash_pos);
   std::string dataset_name = dset_path.substr(slash_pos + 1);
 
-  H5Group group = traverse_or_create_groups(file, group_path);
+  h5utils::H5Group group = traverse_or_create_groups(file, group_path);
   if (!group) {
     throw std::runtime_error("Failed to create or open group: " + group_path);
   }
 
   // Create dataspace and determine type
-  H5Space dataspace(H5Screate_simple(shape.size(), shape.data(), nullptr));
-  H5Type h5_type(get_h5_native_type<T>());
+  h5utils::H5Space dataspace(
+      H5Screate_simple(shape.size(), shape.data(), nullptr));
+  h5utils::H5Type h5_type(h5dispatch::get_h5_native_type<T>());
 
   // Create or open dataset
-  H5Dataset dset(H5Dcreate2(group, dataset_name.c_str(), h5_type, dataspace,
-                            H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
+  h5utils::H5Dataset dset(H5Dcreate2(group, dataset_name.c_str(), h5_type,
+                                     dataspace, H5P_DEFAULT, H5P_DEFAULT,
+                                     H5P_DEFAULT));
   if (!dset) {
-    dset = H5Dataset(H5Dopen2(group, dataset_name.c_str(), H5P_DEFAULT));
+    dset =
+        h5utils::H5Dataset(H5Dopen2(group, dataset_name.c_str(), H5P_DEFAULT));
     if (!dset) {
       throw std::runtime_error("Failed to create or open dataset: " +
                                dataset_name);
@@ -174,21 +175,25 @@ void write_raw_data_to_h5_file(std::string_view filename,
  * @param shape Shape of the dataset as a vector of hsize_t.
  */
 template <typename T>
-void write_raw_data_to_h5_group(H5Group &group, const std::string &dataset_name,
+void write_raw_data_to_h5_group(h5utils::H5Group &group,
+                                const std::string &dataset_name,
                                 const T *data_ptr,
                                 const std::vector<hsize_t> &shape) {
   // Suppress errors when opening non-existent files, groups, datasets..
   H5ErrorSilencer silencer;
 
   // Create dataspace and determine type
-  H5Space dataspace(H5Screate_simple(shape.size(), shape.data(), nullptr));
-  H5Type h5_type(get_h5_native_type<T>());
+  h5utils::H5Space dataspace(
+      H5Screate_simple(shape.size(), shape.data(), nullptr));
+  h5utils::H5Type h5_type(h5dispatch::get_h5_native_type<T>());
 
   // Create or open dataset
-  H5Dataset dset(H5Dcreate2(group, dataset_name.c_str(), h5_type, dataspace,
-                            H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
+  h5utils::H5Dataset dset(H5Dcreate2(group, dataset_name.c_str(), h5_type,
+                                     dataspace, H5P_DEFAULT, H5P_DEFAULT,
+                                     H5P_DEFAULT));
   if (!dset) {
-    dset = H5Dataset(H5Dopen2(group, dataset_name.c_str(), H5P_DEFAULT));
+    dset =
+        h5utils::H5Dataset(H5Dopen2(group, dataset_name.c_str(), H5P_DEFAULT));
     if (!dset) {
       throw std::runtime_error("Failed to create or open dataset: " +
                                dataset_name);
@@ -319,9 +324,9 @@ void write_data_to_h5_file(std::string_view filename,
   H5ErrorSilencer silencer;
 
   // Open or create the HDF5 file
-  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
+  h5utils::H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
   if (!file) {
-    file = H5File(
+    file = h5utils::H5File(
         H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT));
     if (!file) {
       throw std::runtime_error("Failed to create or open file: " + fname);
@@ -339,7 +344,7 @@ void write_data_to_h5_file(std::string_view filename,
   std::string dataset_name = dset_path.substr(last_slash_pos + 1);
 
   // Traverse or create the groups leading to the dataset
-  H5Group group = traverse_or_create_groups(file, group_path);
+  h5utils::H5Group group = traverse_or_create_groups(file, group_path);
   if (!group) {
     throw std::runtime_error("Failed to create or open group: " + group_path);
   }
@@ -351,20 +356,21 @@ void write_data_to_h5_file(std::string_view filename,
   auto flat_data = flatten(data);
 
   // Check if dataset exists
-  H5Dataset dataset(H5Dopen(group, dataset_name.c_str(), H5P_DEFAULT));
+  h5utils::H5Dataset dataset(H5Dopen(group, dataset_name.c_str(), H5P_DEFAULT));
   if (!dataset) {
     // Dataset does not exist, create it
-    H5Space dataspace(H5Screate_simple(shape.size(), shape.data(), nullptr));
-    dataset =
-        H5Dataset(H5Dcreate(group, dataset_name.c_str(), H5T_NATIVE_DOUBLE,
-                            dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
+    h5utils::H5Space dataspace(
+        H5Screate_simple(shape.size(), shape.data(), nullptr));
+    dataset = h5utils::H5Dataset(
+        H5Dcreate(group, dataset_name.c_str(), H5T_NATIVE_DOUBLE, dataspace,
+                  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
     if (!dataset) {
       throw std::runtime_error("Error: Unable to create dataset: " +
                                dataset_name);
     }
   } else {
     // Dataset exists, check if the shape matches
-    H5Space existing_space(H5Dget_space(dataset));
+    h5utils::H5Space existing_space(H5Dget_space(dataset));
     int ndims = H5Sget_simple_extent_ndims(existing_space);
     std::vector<hsize_t> existing_dims(ndims);
     H5Sget_simple_extent_dims(existing_space, existing_dims.data(), nullptr);
@@ -402,18 +408,19 @@ write_experiment_metadata(hid_t group_id,
   // Write experiment_ids
   {
     hsize_t dims = experiment_ids.size();
-    H5Space space(H5Screate_simple(1, &dims, nullptr));
-    H5Attr attr(H5Acreate2(group_id, "experiment_ids", H5T_NATIVE_ULLONG, space,
-                           H5P_DEFAULT, H5P_DEFAULT));
+    h5utils::H5Space space(H5Screate_simple(1, &dims, nullptr));
+    h5utils::H5Attr attr(H5Acreate2(group_id, "experiment_ids",
+                                    H5T_NATIVE_ULLONG, space, H5P_DEFAULT,
+                                    H5P_DEFAULT));
     H5Awrite(attr, H5T_NATIVE_ULLONG, experiment_ids.data());
   }
 
   // Write identifiers
   {
     hsize_t dims = identifiers.size();
-    H5Space space(H5Screate_simple(1, &dims, nullptr));
+    h5utils::H5Space space(H5Screate_simple(1, &dims, nullptr));
 
-    H5Type str_type(H5Tcopy(H5T_C_S1));
+    h5utils::H5Type str_type(H5Tcopy(H5T_C_S1));
     H5Tset_size(str_type, H5T_VARIABLE);
     H5Tset_cset(str_type, H5T_CSET_UTF8);
     H5Tset_strpad(str_type, H5T_STR_NULLTERM);
@@ -423,8 +430,8 @@ write_experiment_metadata(hid_t group_id,
       c_strs.push_back(s.c_str());
     }
 
-    H5Attr attr(H5Acreate2(group_id, "identifiers", str_type, space,
-                           H5P_DEFAULT, H5P_DEFAULT));
+    h5utils::H5Attr attr(H5Acreate2(group_id, "identifiers", str_type, space,
+                                    H5P_DEFAULT, H5P_DEFAULT));
     H5Awrite(attr, str_type, c_strs.data());
   }
 }

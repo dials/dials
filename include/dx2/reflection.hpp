@@ -27,9 +27,6 @@
 #include <string>
 #include <vector>
 
-using namespace h5dispatch;
-using namespace h5utils;
-
 #pragma region Type Helpers
 /*
  * Type aliases for centralised control of storage types.
@@ -319,6 +316,9 @@ private:
 
 public:
 #pragma region Constructors
+  /// Re-exported type aliase for convenience
+  using BoolEnum = h5dispatch::BoolEnum;
+
   ReflectionTable() = default;
 
   /**
@@ -353,13 +353,15 @@ public:
     }
 
     // Open the HDF5 file
-    H5File file(H5Fopen(h5_filepath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+    h5utils::H5File file(
+        H5Fopen(h5_filepath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
     if (!file) {
       throw std::runtime_error("Could not open file: " + h5_filepath);
     }
 
     // Open group and read experiment metadata
-    H5Group group(H5Gopen2(file, DEFAULT_REFL_GROUP.c_str(), H5P_DEFAULT));
+    h5utils::H5Group group(
+        H5Gopen2(file, DEFAULT_REFL_GROUP.c_str(), H5P_DEFAULT));
     if (group) {
       read_experiment_metadata(group, experiment_ids, identifiers);
     }
@@ -369,7 +371,8 @@ public:
       std::string dataset_name = get_dataset_name(dataset);
 
       // Open the specific dataset (within the file opened above)
-      H5Dataset dataset_id(H5Dopen2(file, dataset.c_str(), H5P_DEFAULT));
+      h5utils::H5Dataset dataset_id(
+          H5Dopen2(file, dataset.c_str(), H5P_DEFAULT));
       if (!dataset_id) {
         dx2_log::warning(fmt::format("Could not open dataset '{}'", dataset));
         continue;
@@ -704,11 +707,12 @@ public:
    */
   void add_column(const std::string &name,
                   const std::vector<bool> &column_data) {
-    std::vector<BoolEnum> converted(column_data.size());
+    std::vector<h5dispatch::BoolEnum> converted(column_data.size());
     for (size_t i = 0; i < column_data.size(); ++i) {
-      converted[i] = column_data[i] ? BoolEnum::TRUE : BoolEnum::FALSE;
+      converted[i] = column_data[i] ? h5dispatch::BoolEnum::TRUE
+                                    : h5dispatch::BoolEnum::FALSE;
     }
-    add_column<BoolEnum>(name, converted);
+    add_column<h5dispatch::BoolEnum>(name, converted);
   }
 #pragma endregion
 
@@ -741,9 +745,9 @@ public:
     H5ErrorSilencer silencer;
 
     // 🗂️ Ensure the file exists or create it before writing
-    H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
+    h5utils::H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDWR, H5P_DEFAULT));
     if (!file) {
-      file = H5File(
+      file = h5utils::H5File(
           H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT));
       if (!file) {
         throw std::runtime_error("Failed to create or open file: " + fname);
@@ -751,7 +755,7 @@ public:
     }
 
     // Open or create group
-    H5Group group_id = traverse_or_create_groups(file, gpath);
+    h5utils::H5Group group_id = traverse_or_create_groups(file, gpath);
     if (!group_id) {
       throw std::runtime_error("Failed to create or open group: " + gpath);
     }
@@ -785,7 +789,7 @@ public:
 
       // 🌀 Dispatch the column type and invoke the write_col lambda
       try {
-        dispatch_column_type(col->get_type(), write_col);
+        h5dispatch::dispatch_column_type(col->get_type(), write_col);
       } catch (const std::exception &e) {
         // ⚠️ If the type is unsupported or an error occurs, print warning
         dx2_log::warning(fmt::format("Skipping column {}: {}", name, e.what()));

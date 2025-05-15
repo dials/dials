@@ -304,7 +304,7 @@ TEST_F(ReflectionTableTest, AddBooleanColumnFromVectorBool) {
   table.add_column("bools", bool_data);
 
   // Try both forms:
-  auto col_bool = table.column<BoolEnum>("bools");
+  auto col_bool = table.column<ReflectionTable::BoolEnum>("bools");
   ASSERT_TRUE(col_bool.has_value());
 
   for (size_t i = 0; i < bool_data.size(); ++i) {
@@ -313,7 +313,7 @@ TEST_F(ReflectionTableTest, AddBooleanColumnFromVectorBool) {
      * uint8_t. So we must query using the enum type, not uint8_t or
      * bool.
      */
-    bool actual = col_bool.value()(i, 0) == BoolEnum::TRUE;
+    bool actual = col_bool.value()(i, 0) == ReflectionTable::BoolEnum::TRUE;
     std::cout << "Row " << i << ": expected " << expected << ", got " << actual
               << "\n";
     EXPECT_EQ(actual, expected) << "Mismatch at index " << i << ": expected "
@@ -645,14 +645,15 @@ TEST_F(ReflectionTableTest, WriteAndReloadBoolColumn) {
   table.write(temp_file.string());
 
   ReflectionTable loaded(temp_file.string());
-  auto reloaded_col = loaded.column<BoolEnum>("bool_flags");
+  auto reloaded_col = loaded.column<ReflectionTable::BoolEnum>("bool_flags");
 
   ASSERT_TRUE(reloaded_col.has_value());
   const auto &span = reloaded_col.value();
   ASSERT_EQ(span.extent(0), bool_data.size());
 
   for (size_t i = 0; i < bool_data.size(); ++i) {
-    EXPECT_EQ(span(i, 0), (bool_data[i] ? BoolEnum::TRUE : BoolEnum::FALSE));
+    EXPECT_EQ(span(i, 0), (bool_data[i] ? ReflectionTable::BoolEnum::TRUE
+                                        : ReflectionTable::BoolEnum::FALSE));
   }
 
   std::filesystem::remove(temp_file);

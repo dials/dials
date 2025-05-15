@@ -30,8 +30,6 @@
 #include <unordered_set>
 #include <vector>
 
-using namespace h5utils;
-
 namespace h5read_processed_utils {
 
 #pragma region Internal Structs
@@ -141,7 +139,7 @@ herr_t group_iterator(hid_t loc_id, const char *name, const H5L_info2_t *info,
     traverse_data->visited_groups->insert(full_path);
 
     // Open the group to recurse into it
-    H5Group group_id(H5Gopen2(loc_id, name, H5P_DEFAULT));
+    h5utils::H5Group group_id(H5Gopen2(loc_id, name, H5P_DEFAULT));
     if (group_id) {
       traverse_hdf5(group_id, full_path, *(traverse_data->datasets),
                     *(traverse_data->visited_groups));
@@ -192,13 +190,13 @@ std::vector<std::string> get_datasets_in_group(std::string_view filename,
   std::string fname(filename);
   std::string gpath(group_name);
   // Open file
-  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+  h5utils::H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
   if (!file) {
     throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
   // Open group
-  H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
+  h5utils::H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
   if (!group) {
     dx2_log::warning(fmt::format("Missing group '{}', skipping.", gpath));
     return {};
@@ -231,26 +229,26 @@ read_array_with_shape_from_h5_file(std::string_view filename,
   std::string dset_name(dataset_name);
 
   // Open the HDF5 file
-  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+  h5utils::H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
   if (!file) {
     throw std::runtime_error("Error: Unable to open file: " + fname);
   }
 
   // Open the dataset
-  H5Dataset dataset(H5Dopen(file, dset_name.c_str(), H5P_DEFAULT));
+  h5utils::H5Dataset dataset(H5Dopen(file, dset_name.c_str(), H5P_DEFAULT));
   if (!dataset) {
     throw std::runtime_error("Error: Unable to open dataset: " + dset_name);
   }
 
   // Get the datatype and check size
-  H5Type datatype(H5Dget_type(dataset));
+  h5utils::H5Type datatype(H5Dget_type(dataset));
   if (H5Tget_size(datatype) != sizeof(T)) {
     throw std::runtime_error(
         "Error: Dataset type size does not match expected type size.");
   }
 
   // Get the dataspace and the number of elements
-  H5Space dataspace(H5Dget_space(dataset));
+  h5utils::H5Space dataspace(H5Dget_space(dataset));
   int ndims = H5Sget_simple_extent_ndims(dataspace);
   if (ndims <= 0) {
     throw std::runtime_error("Error: Dataset has invalid dimensionality.");
@@ -313,14 +311,14 @@ get_datasets_in_group_recursive(std::string_view filename,
   std::unordered_set<std::string> visited_groups;
 
   // Open the HDF5 file
-  H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
+  h5utils::H5File file(H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT));
   if (!file) {
     dx2_log::error(fmt::format("Unable to open file: {}", fname));
   }
 
   // Open the group
   // hid_t group = H5Gopen2(file, gpath.c_str(), H5P_DEFAULT);
-  H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
+  h5utils::H5Group group(H5Gopen2(file, gpath.c_str(), H5P_DEFAULT));
   if (!group) {
     dx2_log::warning(fmt::format("Missing group '{}', skipping.", gpath));
     return {};
@@ -336,8 +334,8 @@ inline void read_experiment_metadata(hid_t group_id,
                                      std::vector<uint64_t> &experiment_ids,
                                      std::vector<std::string> &identifiers) {
   if (H5Aexists(group_id, "experiment_ids") > 0) {
-    H5Attr attr(H5Aopen(group_id, "experiment_ids", H5P_DEFAULT));
-    H5Space space(H5Aget_space(attr));
+    h5utils::H5Attr attr(H5Aopen(group_id, "experiment_ids", H5P_DEFAULT));
+    h5utils::H5Space space(H5Aget_space(attr));
     hssize_t num_elements = H5Sget_simple_extent_npoints(space);
 
     experiment_ids.resize(num_elements);
@@ -345,9 +343,9 @@ inline void read_experiment_metadata(hid_t group_id,
   }
 
   if (H5Aexists(group_id, "identifiers") > 0) {
-    H5Attr attr(H5Aopen(group_id, "identifiers", H5P_DEFAULT));
-    H5Type type(H5Aget_type(attr));
-    H5Space space(H5Aget_space(attr));
+    h5utils::H5Attr attr(H5Aopen(group_id, "identifiers", H5P_DEFAULT));
+    h5utils::H5Type type(H5Aget_type(attr));
+    h5utils::H5Space space(H5Aget_space(attr));
     hssize_t num_elements = H5Sget_simple_extent_npoints(space);
 
     std::vector<char *> raw_strings(num_elements);
