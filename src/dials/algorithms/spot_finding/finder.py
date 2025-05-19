@@ -84,11 +84,13 @@ class ExtractPixelsFromImage:
         """
         # In the case of stills processing. The mask from the imageset is constant for all
         # frames. This only needs to be performed once
-        if self.imageset_mask is None or self.is_stills == False:
+        if self.imageset_mask is None or not self.is_stills:
             self.imageset_mask = self.imageset.get_mask(index)
             assert len(self.image_mask) == len(self.imageset_mask)
             assert len(self.image_mask) == len(self.imageset.get_detector())
-            self.mask = tuple(m1 & m2 for m1, m2 in zip(self.imageset_mask, self.image_mask))
+            self.mask = tuple(
+                m1 & m2 for m1, m2 in zip(self.imageset_mask, self.image_mask)
+            )
             logger.debug(
                 f"Number of masked pixels: {sum(m.count(False) for m in self.mask)}",
             )
@@ -196,6 +198,7 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         min_spot_size,
         max_spot_size,
         filter_spots,
+        is_stills,
     ):
         """
         Initialise the class
@@ -397,7 +400,7 @@ class ExtractSpots:
         no_shoeboxes_2d=False,
         min_chunksize=50,
         write_hot_pixel_mask=False,
-        is_stills=False
+        is_stills=False,
     ):
         """
         Initialise the class with the strategy
@@ -491,7 +494,7 @@ class ExtractSpots:
         assert mp_chunksize > 0, "Invalid chunk size"
 
         # The extract pixels function
-        if self.function is None or self.is_stills == False:
+        if self.function is None or not self.is_stills:
             self.function = ExtractPixelsFromImage(
                 imageset=imageset,
                 threshold_function=self.threshold_function,
@@ -586,19 +589,19 @@ class ExtractSpots:
         assert mp_chunksize > 0, "Invalid chunk size"
 
         # The extract pixels function
-        if self.function is None or self.is_stills == False:
+        if self.function is None or not self.is_stills:
             self.function = ExtractPixelsFromImage2DNoShoeboxes(
-            imageset=imageset,
-            threshold_function=self.threshold_function,
-            mask=self.mask,
-            max_strong_pixel_fraction=self.max_strong_pixel_fraction,
-            compute_mean_background=self.compute_mean_background,
-            region_of_interest=self.region_of_interest,
-            min_spot_size=self.min_spot_size,
-            max_spot_size=self.max_spot_size,
-            filter_spots=self.filter_spots,
-            is_stills=self.is_stills,
-        )
+                imageset=imageset,
+                threshold_function=self.threshold_function,
+                mask=self.mask,
+                max_strong_pixel_fraction=self.max_strong_pixel_fraction,
+                compute_mean_background=self.compute_mean_background,
+                region_of_interest=self.region_of_interest,
+                min_spot_size=self.min_spot_size,
+                max_spot_size=self.max_spot_size,
+                filter_spots=self.filter_spots,
+                is_stills=self.is_stills,
+            )
 
         # The indices to iterate over
         indices = list(range(len(imageset)))
@@ -782,15 +785,17 @@ class SpotFinder:
         :return: The observed spots
         """
         # The input mask
-        if self.imageset_mask is None or self.is_stills == False:
+        if self.imageset_mask is None or not self.is_stills:
             self.imageset_mask = self.mask_generator(imageset)
             if self.mask is not None:
-                self.imageset_mask = tuple(m1 & m2 for m1, m2 in zip(self.imageset_mask, self.mask))
+                self.imageset_mask = tuple(
+                    m1 & m2 for m1, m2 in zip(self.imageset_mask, self.mask)
+                )
 
         # Set the spot finding algorithm
         # In the case of processing stills, cache the object.
         # Otherwise, create a new object each call.
-        if self.extract_spots is None or self.is_stills == False:
+        if self.extract_spots is None or not self.is_stills:
             self.extract_spots = ExtractSpots(
                 threshold_function=self.threshold_function,
                 mask=self.imageset_mask,
@@ -807,7 +812,7 @@ class SpotFinder:
                 no_shoeboxes_2d=self.no_shoeboxes_2d,
                 min_chunksize=self.min_chunksize,
                 write_hot_pixel_mask=self.write_hot_mask,
-                is_stills=self.is_stills
+                is_stills=self.is_stills,
             )
 
         # Get the max scan range
