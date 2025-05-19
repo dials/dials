@@ -190,7 +190,7 @@ def run_simple_integrate(params, experiments, reflections):
     )
 
     # Get actual shoebox values and the reflections for each image
-    if params.scan_range is not None:
+    if params.scan_range:
         scan_start, scan_end = params.scan_range[0]
         shoebox_processor = ShoeboxProcessor(
             predicted_reflections,
