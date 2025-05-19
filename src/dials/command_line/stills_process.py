@@ -11,12 +11,12 @@ import tarfile
 import time
 from io import BytesIO
 
+import libtbx
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
     ExperimentListFactory,
 )
-import libtbx
 from libtbx.phil import parse
 from libtbx.utils import Abort, Sorry
 
@@ -1218,7 +1218,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def index(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
 
-        def update_indexer(indexer, experiments, reflections, known_crystal_models=None):
+        def update_indexer(
+            indexer, experiments, reflections, known_crystal_models=None
+        ):
             # This function mimics the initialization in the StillsIndexer and Indexer objects.
             # It removes the need to repeatively instantiate and Indexing object that adds a
             # non-trivial amount of overhead.
