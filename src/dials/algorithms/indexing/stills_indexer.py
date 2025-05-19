@@ -68,7 +68,9 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     assert params.refinement.reflections.outlier.algorithm in (
         None,
         "null",
-    ), "Cannot index, set refinement.reflections.outlier.algorithm=null"  # we do our own outlier rejection
+    ), (
+        "Cannot index, set refinement.reflections.outlier.algorithm=null"
+    )  # we do our own outlier rejection
 
     from dials.algorithms.refinement.refiner import RefinerFactory
 
@@ -101,8 +103,8 @@ class StillsIndexer(Indexer):
         self.warn_if_setting_unused_refinement_protocol_params()
 
         import iotbx.phil
-        from rstbx.phil.phil_preferences import indexing_api_defs
         from rstbx.indexing_api.outlier_procedure import OutlierPlotPDF
+        from rstbx.phil.phil_preferences import indexing_api_defs
 
         self.hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
         # comment this in if PDF graph is desired:
@@ -128,9 +130,7 @@ class StillsIndexer(Indexer):
             if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
-                cutoff_fraction = (
-                    self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-                )
+                cutoff_fraction = self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
                 d_spacings = 1 / self.reflections["rlp"].norms()
                 d_min_indexed = flex.min(d_spacings.select(self.indexed_reflections))
                 min_reflections_for_indexing = cutoff_fraction * len(
@@ -216,9 +216,7 @@ class StillsIndexer(Indexer):
                 # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
                 self.all_params.refinement.reflections.outlier.algorithm = "null"
                 self.all_params.refinement.parameterisation.crystal.fix = "cell"
-                self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = (
-                    []
-                )
+                self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
 
                 for expt_id, experiment in enumerate(experiments):
                     reflections = reflections_for_refinement.select(
@@ -604,9 +602,9 @@ class StillsIndexer(Indexer):
                         graph_verbose=False,
                     )
                     crystal_model = nv()
-                    assert (
-                        len(crystal_model) == 1
-                    ), "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
+                    assert len(crystal_model) == 1, (
+                        "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
+                    )
                     crystal_model = crystal_model[0]
 
                     # Drop candidates that after refinement can no longer be converted to the known target space group
