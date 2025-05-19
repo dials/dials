@@ -1,3 +1,9 @@
+DIALS 3.24.2 (2025-05-16)
+=========================
+
+Internal release to fix generation of release-tagged docker images.
+
+
 DIALS 3.24.1 (2025-05-13)
 =========================
 
