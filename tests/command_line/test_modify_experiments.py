@@ -8,7 +8,7 @@ import pytest
 
 from dxtbx.serialize import load
 
-from dials.command_line.modify_geometry import phil_scope, update
+from dials.command_line.modify_experiments import phil_scope, update
 
 
 def test_run(dials_data, tmp_path):
@@ -21,7 +21,12 @@ def test_run(dials_data, tmp_path):
     assert orig_gonio.get_angles() == pytest.approx([0, 180, 0])
 
     result = subprocess.run(
-        [shutil.which("dials.modify_geometry"), orig_expt_json, "angles=10,20,30"],
+        [
+            shutil.which("dials.modify_experiments"),
+            orig_expt_json,
+            "angles=10,20,30",
+            "unit_cell=94,94,130,90,90,120",
+        ],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -34,6 +39,11 @@ def test_run(dials_data, tmp_path):
 
     new_gonio = new_expt.goniometers()[0]
     assert new_gonio.get_angles() == pytest.approx([10, 20, 30])
+
+    new_crystal = new_expt.crystals()[0]
+    assert new_crystal.get_unit_cell().parameters() == pytest.approx(
+        [94, 94, 130, 90, 90, 120]
+    )
 
 
 def test_update(dials_data):
