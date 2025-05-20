@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
+from dxtbx.model.crystal import CrystalFactory
 
 import dials.util
 from dials.command_line.dials_import import ManualGeometryUpdater
@@ -13,6 +14,7 @@ help_message = """
 phil_scope = libtbx.phil.parse(
     """
 include scope dials.util.options.geometry_phil_scope
+include scope dxtbx.model.crystal.crystal_phil_scope
 output {
   experiments = modified.expt
     .type = path
@@ -26,7 +28,7 @@ def update(
     experiments: ExperimentList, new_params: libtbx.phil.scope_extract
 ) -> ExperimentList:
     """
-    Modify detector, beam, goniometer and scan in experiments with the values in new_params
+    Modify the models in experiments with the values in new_params
     """
 
     update_geometry = ManualGeometryUpdater(new_params)
@@ -38,7 +40,9 @@ def update(
         experiment.beam = imageset.get_beam()
         experiment.goniometer = imageset.get_goniometer()
         experiment.scan = imageset.get_scan()
-
+        experiment.scan.set_valid_image_ranges(experiment.identifier, [])
+        crystal = CrystalFactory.from_phil(new_params, experiment.crystal)
+        experiment.crystal = crystal
     return experiments
 
 
