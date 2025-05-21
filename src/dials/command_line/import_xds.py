@@ -278,7 +278,9 @@ class XDSFileImporter:
         # Check a file is given
         if xds_file is None:
             msg = "one of " + ", ".join(required_files_to_make_experiments)
-            raise RuntimeError(f"No XDS file ({msg}) found in {self.xds_directory}")
+            raise RuntimeError(
+                f"No XDS file ({msg}) found in {self.xds_directory}. Unable to create experiments."
+            )
 
         # Load the experiment list
         experiments = ExperimentListFactory.from_xds(xds_inp, xds_file)
@@ -612,13 +614,16 @@ based on the input files available.
             spot_xds = xds_directory / "SPOT.XDS"
             use_spot_xds = True
 
-    # First make the experiments
+    # First try to make the experiments
     importer = XDSFileImporter(xds_directory=xds_directory)
     try:
         expts = importer(params, options)
     except RuntimeError as e:
         logger.info(e)
-        sys.exit(0)
+        if (
+            not use_spot_xds
+        ):  # We need the experiment for reading INTEGRATE.HKL but not SPOT.XDS
+            sys.exit(0)
 
     # If we specified SPOT.XDS (or only SPOT.XDS exists), use that
     if use_spot_xds:
