@@ -1,0 +1,3 @@
+``dials.index``: Do not lose the
+``dials.export``: Write MTZ history lines for ``dials.integrate`` and ``dials.scale``
+
