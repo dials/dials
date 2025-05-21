@@ -74,16 +74,19 @@ class SpotXDSImporter:
 
 
 class IntegrateHKLImporter:
-    """Class to import an integrate.hkl file to a reflection table."""
+    """Class to import an INTEGRATE.HKL file to a reflection table."""
 
-    def __init__(self, integrate_hkl, experiment):
+    def __init__(self, integrate_hkl, experiments):
         self._integrate_hkl = integrate_hkl
-        self._experiment = experiment
+        self._experiment = experiments[0]
+        self._experiments = experiments
 
     def __call__(self, params, options):
         """Import the integrate.hkl file."""
         # Get the unit cell to calculate the resolution
+        Command.start("Get the unit cell to calculate the resolution")
         uc = self._experiment.crystal.get_unit_cell()
+        print("\n")
 
         # Read the INTEGRATE.HKL file
         Command.start("Reading INTEGRATE.HKL")
@@ -94,13 +97,39 @@ class IntegrateHKLImporter:
         xyzobs = flex.vec3_double(handle.xyzobs)
         iobs = flex.double(handle.iobs)
         sigma = flex.double(handle.sigma)
+
+        # CV-20250507: for INTEGRATE.HKL this contains /only/ L - not P!
         rlp = flex.double(handle.rlp)
+
         peak = flex.double(handle.peak) * 0.01
+        corr = flex.double(handle.corr) * 0.01
         if len(handle.iseg):
             panel = flex.size_t(handle.iseg) - 1
         else:
             panel = flex.size_t(len(hkl), 0)
         Command.end(f"Read {len(hkl)} reflections from INTEGRATE.HKL file.")
+
+        undo_ab = True
+
+        # ideally we would like to do that - but because of limited precision in
+        # INTEGRATE.HKL we could get into trouble here ...
+        if handle.variance_model and undo_ab:
+            variance_model_a = handle.variance_model[0]
+            variance_model_b = handle.variance_model[1]
+            print(
+                "Undoing input variance model a, b = %s %s"
+                % (variance_model_a, variance_model_b)
+            )
+
+            # undo variance model:
+            vari0 = flex.pow2(sigma * peak / rlp)
+            isq = flex.pow2(iobs * peak / rlp)
+            vari1 = (vari0 / variance_model_a) - (variance_model_b * isq)
+            for i in range(0, (sigma.size() - 1)):
+                if vari1[i] <= 0:
+                    print("WARNING:", i, iobs[i], sigma[i], vari1[i])
+                    vari1[i] = sigma[i] * sigma[i]
+            sigma = flex.sqrt(vari1) * rlp / peak
 
         if len(self._experiment.detector) > 1:
             for p_id, p in enumerate(self._experiment.detector):
@@ -125,14 +154,40 @@ class IntegrateHKLImporter:
         table["id"] = flex.int(len(hkl), 0)
         table["panel"] = panel
         table["miller_index"] = hkl
+
         table["xyzcal.px"] = xyzcal
         table["xyzobs.px.value"] = xyzobs
-        table["intensity.cor.value"] = iobs
-        table["intensity.cor.variance"] = flex.pow2(sigma)
+        # uncorrected "partials":
         table["intensity.prf.value"] = iobs * peak / rlp
         table["intensity.prf.variance"] = flex.pow2(sigma * peak / rlp)
-        table["lp"] = 1.0 / rlp
+        table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
+
         table["d"] = flex.double(uc.d(h) for h in hkl)
+
+        table["partiality"] = peak
+        table["profile.correlation"] = corr
+
+        table.centroid_px_to_mm(self._experiments)
+
+        # same as prf?
+        table["intensity.sum.value"] = iobs * peak / rlp
+        table["intensity.sum.variance"] = flex.pow2(sigma * peak / rlp)
+        table.map_centroids_to_reciprocal_space(self._experiments)
+
+        # LP-corrected fulls:
+        table["intensity.cor.value"] = iobs
+        table["intensity.cor.variance"] = flex.pow2(sigma)
+
+        table["batch"] = flex.int(int(x[2]) + handle.starting_frame for x in xyzcal)
+
+        # compute ZETA
+        table.compute_zeta(self._experiment)
+        # compute LP
+        table.compute_corrections(self._experiments)
+
+        table.set_flags(flex.bool(table.size(), True), table.flags.predicted)
+        table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
+
         Command.end(f"Created table with {len(table)} reflections")
 
         # Output the table to pickle file
@@ -187,6 +242,18 @@ class XDSFileImporter:
         # Load the experiment list
         unhandled = []
         experiments = ExperimentListFactory.from_xds(xds_inp, xds_file)
+
+        # set some dummy epochs
+        nimg = (
+            experiments[0].scan.get_image_range()[1]
+            - experiments[0].scan.get_image_range()[0]
+            + 1
+        )
+        epochs = flex.double(nimg, 0.0)
+        for i in range(1, (nimg - 1)):
+            epochs[i] = epochs[(i - 1)] + 1.0
+        experiments[0].scan.set_epochs(epochs)
+        experiments[0].scan.set_exposure_times(epochs)
 
         # Print out any unhandled files
         if len(unhandled) > 0:
@@ -287,6 +354,11 @@ class XDSFileImporter:
             )
             return
         experiment = experiments[0]
+
+        # NOTE: we are not reading SEGMENT information here - so HKL
+        # file needs also be without SEGMENT information, e.g. via
+        #
+        # egrep -v "^.SEGMENT=|^! .*=" INTEGRATE.HKL.orig | sed "s/,ISEG//g" | sed "s/^ \(.*\) [ ]*[0-9][0-9]*[ ]*$/ \1/g" > INTEGRATE.HKL
 
         # read required records from the file. Relies on them being in the
         # right order as we read through once
@@ -447,7 +519,7 @@ class Script:
             assert len(args) == 2
             experiments = ExperimentListFactory.from_json_file(args[1])
             assert len(experiments) == 1
-            return IntegrateHKLImporter(args[0], experiments[0])
+            return IntegrateHKLImporter(args[0], experiments)
         else:
             raise RuntimeError(f"expected (SPOT.XDS|INTEGRATE.HKL), got {filename}")
 
