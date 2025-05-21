@@ -1097,3 +1097,82 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
     assert len(expts) == 8
     assert len(expts.crystals()) == 2
     refls.assert_experiment_identifiers_are_consistent(expts)
+
+
+def test_rigaku_hypix_arc_150(dials_data, tmp_path):
+    # This is a test of multi-sweep indexing with a three-panel Rigaku HyPix-Arc
+    # 150° detector. It additionally checks successful import with the unusual
+    # non-zero-padded image numbering used by Rigaku.
+    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+
+    command = [
+        shutil.which("dials.import"),
+    ] + list(data_dir.glob("CHNOS_*.rodhypix"))
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    command = [
+        shutil.which("dials.find_spots"),
+        "imported.expt",
+    ]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    expected_unit_cell = uctbx.unit_cell(
+        (6.1634, 13.198, 28.564, 89.928, 90.093, 89.839)
+    )
+    expected_rmsds = (0.09, 0.06, 0.009)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        "strong.refl",
+        "imported.expt",
+        tmp_path,
+        [],
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 1  # joint indexing
+
+
+def test_rigaku_hypix_arc_100(dials_data, tmp_path):
+    # This is a test of multi-sweep indexing with a two-panel Rigaku HyPix-Arc
+    # 100° detector.
+    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+
+    command = [
+        shutil.which("dials.import"),
+    ] + list(data_dir.glob("YbCDTA_Mo_*.rodhypix"))
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    command = [
+        shutil.which("dials.find_spots"),
+        "imported.expt",
+    ]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    expected_unit_cell = uctbx.unit_cell(
+        (8.3838, 16.721, 16.407, 88.482, 83.533, 83.314)
+    )
+    expected_rmsds = (0.05, 0.05, 0.003)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        "strong.refl",
+        "imported.expt",
+        tmp_path,
+        [],
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 3
+    assert len(expts.crystals()) == 1  # joint indexing
