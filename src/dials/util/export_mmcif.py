@@ -90,24 +90,17 @@ class MMCIFOutputFile:
     def make_cif_block(self, experiments, reflections):
         """Write the data to a cif block"""
         # Select reflections
-        # if rotation, get reflections integrated by both integration methods
-        # else if stills, only summation integrated reflections are available.
-        if all(e.scan and e.scan.get_oscillation()[1] != 0.0 for e in experiments):
-            selection = reflections.get_flags(reflections.flags.integrated, all=True)
-        else:
-            selection = reflections.get_flags(reflections.flags.integrated, all=False)
+        selection = reflections.get_flags(reflections.flags.integrated, all=False)
         reflections = reflections.select(selection)
 
-        # Filter out bad variances and other issues, but don't filter on ice rings
-        # or alter partialities.
-
         # Assumes you want to apply the lp and dqe corrections to sum and prf
-        # Do we want to combine partials?
         reflections = filter_reflection_table(
             reflections,
             self.params.intensity,
-            combine_partials=False,
-            partiality_threshold=0.0,
+            partiality_threshold=self.params.mtz.partiality_threshold,
+            combine_partials=self.params.mtz.combine_partials,
+            min_isigi=self.params.mtz.min_isigi,
+            filter_ice_rings=self.params.mtz.filter_ice_rings,
             d_min=self.params.mtz.d_min,
         )
 
