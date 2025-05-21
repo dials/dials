@@ -9,16 +9,12 @@ from dials.array_family import flex
 def test_import_integrate_hkl(dials_data, tmp_path):
     data = dials_data("centroid_test_data", pathlib=True)
     result = subprocess.run(
-        [
-            shutil.which("dials.import_xds"),
-            "input.method=reflections",
-            data / "INTEGRATE.HKL",
-            data / "experiments.json",
-        ],
+        [shutil.which("dials.import_xds"), data / "INTEGRATE.HKL"],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
+    assert (tmp_path / "integrate_hkl.refl").is_file()
 
     table = flex.reflection_table.from_file(tmp_path / "integrate_hkl.refl")
     assert "miller_index" in table
@@ -35,13 +31,13 @@ def test_import_spot_xds(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
-            "input.method=reflections",
             dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS",
         ],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
+    assert (tmp_path / "spot_xds.refl").is_file()
 
     table = flex.reflection_table.from_file(tmp_path / "spot_xds.refl")
     assert "miller_index" in table
@@ -56,7 +52,6 @@ def test_import_spot_xds_with_filtering(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
-            "input.method=reflections",
             dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS",
             "remove_invalid=True",
         ],
@@ -64,6 +59,7 @@ def test_import_spot_xds_with_filtering(dials_data, tmp_path):
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
+    assert (tmp_path / "spot_xds.refl").is_file()
 
     table = flex.reflection_table.from_file(tmp_path / "spot_xds.refl")
     assert "miller_index" in table
@@ -79,8 +75,6 @@ def test_from_xds_files(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
-            "input.method=experiment",
-            "output.filename=import_xds.expt",
             dials_data("centroid_test_data", pathlib=True),
         ],
         cwd=tmp_path,
@@ -88,4 +82,5 @@ def test_from_xds_files(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
 
-    assert tmp_path.joinpath("import_xds.expt").is_file()
+    assert (tmp_path / "xds_models.expt").is_file()
+    assert (tmp_path / "integrate_hkl.refl").is_file()
