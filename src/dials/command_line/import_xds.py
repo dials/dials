@@ -173,13 +173,10 @@ class IntegrateHKLImporter:
         table["intensity.sum.value"] = iobs * peak / rlp
         table["intensity.sum.variance"] = flex.pow2(sigma * peak / rlp)
         table.map_centroids_to_reciprocal_space(self._experiments)
-        table["intensity.scale.value"] = flex.double(table.size(), 1.0)
-        table["intensity.scale.variance"] = flex.double(table.size(), 0.0)
 
         # LP-corrected fulls:
         table["intensity.cor.value"] = iobs
         table["intensity.cor.variance"] = flex.pow2(sigma)
-        table["inverse_scale_factor"] = flex.double(table.size(), 1.0)
 
         table["batch"] = flex.int(int(x[2]) + handle.starting_frame for x in xyzcal)
 
