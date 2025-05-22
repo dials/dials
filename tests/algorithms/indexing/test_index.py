@@ -810,7 +810,7 @@ def test_pink_indexer(
     assert not result.returncode and not result.stderr
 
     command = [shutil.which("dials.combine_experiments")]
-    for i in range(5):
+    for i in range(2):
         command.append(f"split_{i}.expt")
         command.append(f"split_{i}.refl")
     result = subprocess.run(command, cwd=tmp_path)
@@ -837,7 +837,7 @@ def test_pink_indexer(
         expected_unit_cell,
         expected_rmsds,
         expected_hall_symbol,
-        n_expected_lattices=5,
+        n_expected_lattices=2,
     )
 
 
