@@ -8,7 +8,7 @@ cxx-compiler
 dials-data>=2.4.123
 docutils
 eigen
-ffbidx
+ffbidx>=1.1.3
 flexparser<0.4
 future
 gemmi>=0.7
