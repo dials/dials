@@ -24,7 +24,7 @@ mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy>=1.21.5,<2
+numpy>=1.21.5
 nxmx
 ordered-set
 pandas
