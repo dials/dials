@@ -123,6 +123,10 @@ indexing {
       .help = "Maximum allowed Le Page delta used in searching for basis vector"
               "combinations that are consistent with the given symmetry."
       .expert_level = 1
+    A_matrix = None
+      .type = floats(size=9)
+      .help = "A crystal setting A=UB matrix to construct a trial crystal model for indexing."
+      .expert_level = 1
   }
 
   index_assignment {
