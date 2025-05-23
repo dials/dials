@@ -1020,6 +1020,31 @@ def test_index_known_orientation(dials_data, tmp_path):
     )
 
 
+def test_index_known_A_matrix(dials_data, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    experiments_json = data_dir / "imported.expt"
+    reflections = data_dir / "strong.refl"
+
+    # Choose non-primitive basis on purpose to test A matrix
+    extra_args = [
+        "known_symmetry.A_matrix=0.0125566,-0.0004292,0.0024708,0.001788,0.0103783,-0.0072836,-0.0017585,0.0074876,0.0102372"
+    ]
+
+    expected_unit_cell = uctbx.unit_cell((78.097, 78.097, 78.097, 90, 90, 90))
+    expected_rmsds = (0.03, 0.03, 0.005)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        reflections,
+        experiments_json,
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
 def test_all_expt_ids_have_expts(dials_data, tmp_path):
     result = subprocess.run(
         [
