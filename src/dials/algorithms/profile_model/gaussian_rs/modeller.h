@@ -26,6 +26,7 @@ namespace dials { namespace algorithms {
 
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformForward;
+  using dials::algorithms::profile_model::gaussian_rs::transform::TransformForwardInFlight;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverse;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformSpec;
   using dials::model::Shoebox;
@@ -418,13 +419,13 @@ namespace dials { namespace algorithms {
             CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
             // Create the data array
-            af::versa<double, af::c_grid<3> > data(sbox[i].data.accessor());
-            std::copy(sbox[i].data.begin(), sbox[i].data.end(), data.begin());
+            /*af::versa<double, af::c_grid<3> > data(sbox[i].data.accessor());
+            std::copy(sbox[i].data.begin(), sbox[i].data.end(), data.begin());*/
 
             // Create the background array
-            af::versa<double, af::c_grid<3> > background(sbox[i].background.accessor());
+            /*af::versa<double, af::c_grid<3> > background(sbox[i].background.accessor());
             std::copy(
-              sbox[i].background.begin(), sbox[i].background.end(), background.begin());
+              sbox[i].background.begin(), sbox[i].background.end(), background.begin());*/
 
             // Create the mask array
             af::versa<bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
@@ -434,13 +435,38 @@ namespace dials { namespace algorithms {
                            detail::check_mask_code(Valid | Foreground));
 
             // Compute the transform
-            TransformForward<double> transform(spec_,
+
+            TransformForwardInFlight<double> transform(spec_,
+                                               cs,
+                                               sbox[i].bbox,
+                                               sbox[i].panel);
+            int6 bbox = sbox[i].bbox;
+            int x0 = bbox[0];
+            int x1 = bbox[1];
+            int y0 = bbox[2];
+            int y1 = bbox[3];
+            int z0 = bbox[4];
+            int z1 = bbox[5];
+            for (int z=0;z<z1-z0;++z){
+              for (int y=0;y<y1-y0;++y){
+                for (int x=0;x<x1-x0;++x){
+                  if (mask(z,y,x)){
+                    transform.add_single(sbox[i].data(z,y,x),sbox[i].background(z,y,x), mask(z,y,x), x, y,z);
+                  }
+                }
+              }
+            }
+
+
+                                  
+
+            /*TransformForward<double> transform(spec_,
                                                cs,
                                                sbox[i].bbox,
                                                sbox[i].panel,
                                                data.const_ref(),
                                                background.const_ref(),
-                                               mask.const_ref());
+                                               mask.const_ref());*/
 
             // Get the transformed shoebox
             data_const_reference c = transform.profile().const_ref();
