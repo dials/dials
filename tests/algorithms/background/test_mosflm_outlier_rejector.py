@@ -1,25 +1,23 @@
 from __future__ import annotations
 
+import bz2
 import math
-import os
 import pickle
 from pathlib import Path
 
 
-def test_run(dials_regression: Path):
+def test_run(dials_data):
     from dials.algorithms.background.simple import (
         Linear2dModeller,
         MosflmOutlierRejector,
     )
 
     # The directory path
-    path = os.path.join(
-        dials_regression, "integration_test_data", "i04-weak-data", "jmp_mosflm_test"
-    )
+    data_dir = Path(dials_data("misc_regression", pathlib=True))
 
     # The input files
-    reflection_filename = os.path.join(path, "mosflm_reflections.pickle")
-    shoebox_filename = os.path.join(path, "shoeboxes.pickle")
+    reflection_filename = str(data_dir / "mosflm-outlier-rejection.refl")
+    shoebox_filename = str(data_dir / "mosflm-outlier-rejection-shoeboxes.pickle.bz2")
     fraction = 1.0
     n_sigma = 4
     outlier_rejector = MosflmOutlierRejector(fraction, n_sigma)
@@ -28,10 +26,9 @@ def test_run(dials_regression: Path):
     from dials.algorithms.shoebox import MaskCode
     from dials.array_family import flex
 
-    print(shoebox_filename)
     # Read the data
     rtable = flex.reflection_table.from_file(reflection_filename)
-    with open(shoebox_filename, "rb") as fh:
+    with bz2.open(shoebox_filename, "rb") as fh:
         shoeboxes, masks = pickle.load(fh, encoding="bytes")
     assert len(rtable) == len(shoeboxes)
     assert len(rtable) == len(masks)

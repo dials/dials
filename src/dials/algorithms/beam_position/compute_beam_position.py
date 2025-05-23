@@ -38,14 +38,17 @@ def compute_beam_position(image, params, image_index=None, imageset_index=None):
     else:
         imageset_str = ""
 
-    fig = Figure(f"beam_position{imageset_str}{image_str}.png")
+    if params.projection.plot:
+        fig = Figure(f"beam_position{imageset_str}{image_str}.png")
 
-    fig.plot_main(image, params, beam_position=(x, y))
-    solver_x.plot(fig)
-    solver_y.plot(fig)
+        fig.plot_main(image, params, beam_position=(x, y))
+        solver_x.plot(fig)
+        solver_y.plot(fig)
 
-    fig.save_and_close()
+        fig.save_and_close()
 
+    if not params.projection.per_image:
+        print(f"{x:.2f}, {y:.2f}")
     return x, y
 
 

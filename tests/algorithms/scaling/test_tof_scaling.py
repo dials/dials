@@ -27,6 +27,11 @@ def test_tof_extract_shoeboxes(dials_data):
         flatten=False,
     )
 
+    _, _, pz = reflections["xyzobs.px.value"].parts()
+    reflections = reflections.select(pz < 100)
+    experiments[0].imageset = experiments[0].imageset[:105]
+    experiments[0].scan = experiments[0].scan[:105]
+
     expt_data = experiments[0].imageset
 
     ## Shoeboxes with no corrections

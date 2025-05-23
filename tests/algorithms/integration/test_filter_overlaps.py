@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
+import pytest
 
 
-def test_for_overlaps(dials_regression: Path):
+@pytest.mark.xfail(
+    reason="Test does not appear correct. See https://github.com/dials/dials/issues/2909"
+)
+def test_for_overlaps(dials_data):
     from cctbx.array_family import flex
 
     from dials.algorithms.shoebox import MaskCode
@@ -24,21 +26,15 @@ def test_for_overlaps(dials_regression: Path):
     from dials.util.options import Importer, flatten_experiments, flatten_reflections
 
     # test data
-    refl_path = os.path.join(
-        dials_regression,
-        "integration_test_data",
-        "stills_PSII",
-        "idx-20161021225550223_integrated.pickle",
+    refl_path = str(
+        dials_data("trypsin_multi_lattice", pathlib=True) / "refined.refl",
     )
-    expt_path = os.path.join(
-        dials_regression,
-        "integration_test_data",
-        "stills_PSII",
-        "idx-20161021225550223_refined_experiments.json",
+    expt_path = str(
+        dials_data("trypsin_multi_lattice", pathlib=True) / "refined.expt",
     )
 
     importer = Importer(
-        [refl_path, refl_path, expt_path, expt_path],
+        [refl_path, expt_path],
         read_experiments=True,
         read_reflections=True,
         check_format=False,
@@ -49,7 +45,12 @@ def test_for_overlaps(dials_regression: Path):
 
     from dials.algorithms.integration.overlaps_filter import OverlapsFilterMultiExpt
 
-    overlaps_filter = OverlapsFilterMultiExpt(reflections[0], experiments)
+    # Take just first two experiments
+    refl = reflections[0]
+    refl = refl.select((refl["id"] == 0) | (refl["id"] == 1))
+    experiments = experiments[0:2]
+
+    overlaps_filter = OverlapsFilterMultiExpt(refl, experiments)
     overlaps_filter.remove_foreground_foreground_overlaps()
     overlaps_filter.remove_foreground_background_overlaps()
     reflections = [overlaps_filter.refl]
@@ -72,9 +73,10 @@ def test_for_overlaps(dials_regression: Path):
                 ), "Overlapping foreground found at indexed position (%d, %d), " % (
                     f_abs,
                     s_abs,
-                ) + "observed centroid (%d, %d)" % (
+                ) + "observed centroid (%d, %d) on image %d" % (
                     obs["xyzcal.px"][0],
                     obs["xyzcal.px"][1],
+                    obs["xyzcal.px"][2],
                 )
                 try:
                     mask_array[posn] |= shoebox.mask[posn_in_shoebox]

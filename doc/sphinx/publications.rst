@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 39608945 xia2.ssx
 * .. pubmed:: 39386198 Laue-DIALS
 * .. pubmed:: 35647922 xia2.multiplex
 * .. pubmed:: 34747533 DIALS as a toolkit

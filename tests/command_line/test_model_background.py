@@ -1,27 +1,21 @@
 from __future__ import annotations
 
-import datetime
 import pickle
 import shutil
 import subprocess
-import sys
 
 import pytest
 
+from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
 
-@pytest.mark.skipif(
-    (sys.platform == "darwin")
-    and (datetime.date.today() < datetime.date(2023, 10, 20)),
-    reason="Temporary skip to dodge SEGV on Azure pipelines",
-)
 def test_model_background(dials_data, tmp_path):
-    centroid = dials_data("centroid_test_data", pathlib=True)
-    expts = centroid / "experiments.json"
+    # Use a data set from a P2M for speed (small detector).
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
 
     result = subprocess.run(
-        [shutil.which("dials.model_background"), expts],
+        [shutil.which("dials.model_background"), data_dir / "11_integrated.expt"],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -45,20 +39,35 @@ def test_model_background(dials_data, tmp_path):
 
     panel = 0
     data = background.data(panel)
-    assert data.all() == (2527, 2463)
+    assert data.all() == (1679, 1475)
     min_max_mean = flex.min_max_mean_double(data.as_1d())
-    assert min_max_mean.max == pytest.approx(5.9114028830604095)
+    assert min_max_mean.max == pytest.approx(0.1800928143817288)
     assert min_max_mean.min == 0.0
-    assert min_max_mean.mean == pytest.approx(0.5013730161480899)
+    assert min_max_mean.mean == pytest.approx(0.020816338853321865)
+
+    # Test integration using this background model. It turns out that 11_integrated.{expt,refl}
+    # can't be passed to dials.integrate, so we will make our own input from the
+    # indexed.{expt,refl}. This has 4 experiments and 1700 images, and we'll take just the first
+    # experiment and 10 images for this test.
+    subprocess.run(
+        [
+            shutil.which("dials.split_experiments"),
+            data_dir / "indexed.expt",
+            data_dir / "indexed.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    expts = ExperimentList.from_file(tmp_path / "split_0.expt")
+    expts[0].scan.set_image_range((1, 10))
+    expts.as_file(tmp_path / "modified.expt")
 
     # Test integration using the background model, with robust.algorithm=(True|False)
-    refls = centroid / "indexed.refl"
-
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
-            expts,
-            refls,
+            tmp_path / "modified.expt",
+            tmp_path / "split_0.refl",
             "background.algorithm=gmodel",
             "gmodel.robust.algorithm=False",
             "gmodel.model=background.pickle",
@@ -66,13 +75,14 @@ def test_model_background(dials_data, tmp_path):
         cwd=tmp_path,
         capture_output=True,
     )
+
     assert not result.returncode and not result.stderr
 
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
-            expts,
-            refls,
+            tmp_path / "modified.expt",
+            tmp_path / "split_0.refl",
             "background.algorithm=gmodel",
             "gmodel.robust.algorithm=True",
             "gmodel.model=background.pickle",

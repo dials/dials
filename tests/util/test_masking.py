@@ -4,7 +4,6 @@ import json
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -18,16 +17,16 @@ from dials.array_family import flex
 
 
 @pytest.mark.parametrize(
-    "path,count_only_shadow,count_mask_shadow,count_mask_no_shadow",
+    "fname,count_only_shadow,count_mask_shadow,count_mask_no_shadow",
     [
         (
-            "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf",
+            "DLS_I04_SmarGon-Th_3_O45_C45_P48_1_0500.cbf.gz",
             pytest.approx(426758, abs=1e2),
             pytest.approx(917940, abs=1e2),
             pytest.approx(528032, abs=1e2),
         ),
         (
-            "shadow_test_data/DLS_I03_SmarGon/protk_2_0600.cbf",
+            "DLS_I03_SmarGon-protk_2_0600.cbf.gz",
             pytest.approx(519100, abs=1e2),
             pytest.approx(1002068, abs=1e2),
             pytest.approx(527314, abs=1e2),
@@ -35,9 +34,9 @@ from dials.array_family import flex
     ],
 )
 def test_dynamic_shadowing(
-    path, count_only_shadow, count_mask_shadow, count_mask_no_shadow, dials_regression
+    fname, count_only_shadow, count_mask_shadow, count_mask_no_shadow, dials_data
 ):
-    path = os.path.join(dials_regression, path)
+    path = str(dials_data("shadow_test_data", pathlib=True) / fname)
     assert os.path.exists(path), path
     for shadowing in (libtbx.Auto, True, False):
         format_kwargs = {"dynamic_shadowing": shadowing}
@@ -103,12 +102,12 @@ def test_shadow_plot(dials_data, tmp_path):
     assert tmp_path.joinpath("shadow_2d.png").is_file()
 
 
-def test_filter_shadowed_reflections(dials_regression: Path):
-    experiments_json = os.path.join(
-        dials_regression, "shadow_test_data", "DLS_I04_SmarGon", "experiments.json"
+def test_filter_shadowed_reflections(dials_data):
+    experiments_json = str(
+        dials_data("shadow_test_data", pathlib=True) / "DLS_I04_SmarGon-indexed.expt"
     )
-    predicted_pickle = os.path.join(
-        dials_regression, "shadow_test_data", "DLS_I04_SmarGon", "predicted.pickle"
+    predicted_pickle = str(
+        dials_data("shadow_test_data", pathlib=True) / "DLS_I04_SmarGon-predicted.refl"
     )
 
     experiments = load.experiment_list(experiments_json, check_format=True)
