@@ -9,6 +9,7 @@ import logging
 import sys
 
 import iotbx.phil
+from cctbx.sgtbx import space_group_info
 from dxtbx.model import Crystal
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import Auto
@@ -150,8 +151,8 @@ def index(experiments, reflections, params):
     if params.indexing.known_symmetry.A_matrix is not None:
         sg = params.indexing.known_symmetry.space_group
         if sg is None:
-            sg = "P1"
-        crystal = Crystal(params.indexing.known_symmetry.A_matrix, sg)
+            sg = space_group_info("P1")
+        crystal = Crystal(params.indexing.known_symmetry.A_matrix, sg.group())
         for expt in experiments:
             expt.crystal = crystal
 
