@@ -44,10 +44,11 @@ from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.import_xds")
 
+# For automated lookup, prefer to read from INTEGRATE.HKL as it contains the most up to
+# date data if it exists, else fall back to XPARM.XDS.
+
 required_files_to_make_experiments = [
-    "XDS_ASCII.HKL",
     "INTEGRATE.HKL",
-    "GXPARM.XDS",
     "XPARM.XDS",
 ]
 
@@ -593,11 +594,6 @@ based on the input files available.
         use_spot_xds = True
 
     if integrate_hkl:
-        if not params.input.xds_file:  # use the specified integrate.hkl when creating the models, to ensure consistency.
-            if integrate_hkl.is_file():
-                params.input.xds_file = integrate_hkl
-            elif (xds_directory / "INTEGRATE.HKL").is_file():
-                params.input.xds_file = xds_directory / "INTEGRATE.HKL"
         if not integrate_hkl.exists():  # i.e. just the word on the command line
             if not (xds_directory / "INTEGRATE.HKL").exists():
                 logger.info(

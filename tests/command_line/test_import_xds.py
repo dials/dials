@@ -28,16 +28,22 @@ def test_import_integrate_hkl(dials_data, tmp_path):
 
 
 def test_import_spot_xds(dials_data, tmp_path):
+    ## Make sure we can run this in a folder which just contains SPOT.XDS, as this
+    ## is relied on by xia2 running XDS.
+    shutil.copy(dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS", tmp_path)
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
-            dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS",
+            tmp_path / "SPOT.XDS",
         ],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "spot_xds.refl").is_file()
+    assert not (
+        tmp_path / "xds_models.expt"
+    ).is_file()  # Don't expect this to be created in this case.
 
     table = flex.reflection_table.from_file(tmp_path / "spot_xds.refl")
     assert "miller_index" in table
