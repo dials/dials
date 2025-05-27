@@ -10,7 +10,7 @@ on:
 
 env:
   # Python minimum version is used for testing full libtbx-bootstrap
-  PYTHON_MINIMUM_VERSION: "3.10"
+  PYTHON_MINIMUM_VERSION: "3.11"
   # Testing version is used for everything else
   PYTHON_TESTING_VERSION: "3.12"
 
