@@ -1,7 +1,7 @@
 """
 This program imports xds processed data for use in dials.
 
-It requires up to three things to create and experiment list and reflection table.
+It requires up to three things to create an experiment list and reflection table.
     - an XDS.INP, to specify the geometry,
     - one of "INTEGRATE.HKL" or "XPARM.XDS", which is needed to create the experiment (
       alternatively "XDS_ASCII.HKL" or "GXPARM.XDS" can be specified with xds_file=)
@@ -11,15 +11,15 @@ To run the program, the easiest thing to do is provide a directory containing th
 
 Example use cases:
 
-dials.import_xds /path/to/folder/containing/xds/inp/
+dials.import_xds /path/to/folder/containing/xds/inp/                          # Extract all the relevant files from this directory (defaults to importing INTEGRATE.HKL if it exists)
 
-dials.import_xds /path/to/folder/containing/xds/inp/INTEGRATE.HKL
+dials.import_xds /path/to/folder/containing/xds/inp/INTEGRATE.HKL             # Specify a path to an INTEGRATE.HKL - the XDS.INP must be in the same directory.
 
-dials.import_xds /path/to/folder/containing/xds/inp/ SPOT.XDS   # be explicit about which file to use to create reflections (default is to use INTEGRATE.HKL)
+dials.import_xds /path/to/folder/containing/xds/inp/ SPOT.XDS                 # Be explicit about which file to use to create reflections (default is to use INTEGRATE.HKL)
 
-dials.import_xds /path/to/folder/containing/xds/inp/ xds_file=XPARM.XDS   # specify which extra file should be used to create experiment metadata
+dials.import_xds /path/to/folder/containing/xds/inp/ xds_file=XPARM.XDS       # Specify which extra file should be used to create experiment metadata
 
-dials.import_xds /path/to/folder/containing/xds/inp/ /path/to/INTEGRATE.HKL   # will take XDS.INP from the directory, and everything else needed from the specified INTEGRATE.HKL file
+dials.import_xds /path/to/folder/containing/xds/inp/ /path/to/INTEGRATE.HKL   # Will take XDS.INP from the directory, and everything else needed from the specified INTEGRATE.HKL file
 """
 
 from __future__ import annotations
@@ -489,6 +489,7 @@ input {
     method = experiment reflections
         .type = choice
         .help = "Deprecated option - has no effect"
+        .expert_level = 3
 
     xds_file = None
         .type = path
@@ -499,6 +500,7 @@ output {
     filename = None
         .type = str
         .help = "Deprecated option - has no effect"
+        .expert_level = 3
     reflections = None
         .type = str
         .help = "The output filname of the reflections file (defaults to either integrate_hkl.refl or spot_xds.refl)"
@@ -531,7 +533,7 @@ def run(args=None):
         "dials.import_xds /path/to/folder/containing/xds/inp/ (SPOT.XDS|INTEGRATE.HKL)"
     )
 
-    parser = ArgumentParser(usage=usage, phil=phil_scope)
+    parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=__doc__)
     # Parse the command line arguments
     params, options, unhandled = parser.parse_args(
         args, show_diff_phil=True, return_unhandled=True
