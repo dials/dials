@@ -51,6 +51,7 @@ Utilities:
    dials_anvil_correction
    dials_missing_reflections
    dials_filter_reflections
+   dials_import_xds
 
 Printable command line reference:
 
