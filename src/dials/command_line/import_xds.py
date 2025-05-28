@@ -3,7 +3,8 @@ This program imports xds processed data for use in dials.
 
 It requires up to three things to create and experiment list and reflection table.
     - an XDS.INP, to specify the geometry,
-    - one of "XDS_ASCII.HKL", "INTEGRATE.HKL", "GXPARM.XDS", "XPARM.XDS", which is needed to create the experiment
+    - one of "INTEGRATE.HKL" or "XPARM.XDS", which is needed to create the experiment (
+      alternatively "XDS_ASCII.HKL" or "GXPARM.XDS" can be specified with xds_file=)
     - INTEGRATE.HKL or SPOT.XDS file to create a reflection table.
 
 To run the program, the easiest thing to do is provide a directory containing these files
@@ -608,6 +609,11 @@ based on the input files available.
         use_spot_xds = True
 
     if integrate_hkl:
+        if not params.input.xds_file:  # use the specified integrate.hkl when creating the models, to ensure consistency.
+            if integrate_hkl.is_file():
+                params.input.xds_file = integrate_hkl
+            elif (xds_directory / "INTEGRATE.HKL").is_file():
+                params.input.xds_file = xds_directory / "INTEGRATE.HKL"
         if not integrate_hkl.exists():  # i.e. just the word on the command line
             if not (xds_directory / "INTEGRATE.HKL").exists():
                 logger.info(
