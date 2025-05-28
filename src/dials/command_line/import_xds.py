@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+import cctbx.array_family.flex
 from cctbx import sgtbx
 from dxtbx.model import Crystal
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -37,6 +38,7 @@ from libtbx.phil import parse
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
+from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import ArgumentParser
@@ -202,6 +204,18 @@ class IntegrateHKLImporter:
         table["profile.correlation"] = corr
 
         table.centroid_px_to_mm(self._experiments)
+
+        table["xyzcal.mm"] = flex.vec3_double(table.size())
+        for i_panel in range(len(set(panel))):
+            sel = panel == i_panel
+            xyzcal_mm, _, _ = centroid_px_to_mm_panel(
+                self._experiment.detector[i_panel],
+                self._experiment.scan,
+                table["xyzobs.px.value"].select(sel),
+                table["xyzobs.px.variance"].select(sel),
+                cctbx.array_family.flex.vec3_double(sel.count(True), (1, 1, 1)),
+            )
+            table["xyzcal.mm"].set_selected(sel, xyzcal_mm)
 
         # same as prf?
         table["intensity.sum.value"] = iobs * peak / rlp
