@@ -9,17 +9,17 @@ It requires up to three things to create an experiment list and reflection table
 
 To run the program, the easiest thing to do is provide a directory containing these files
 
-Example use cases:
+Example use cases::
 
-dials.import_xds /path/to/folder/containing/xds/inp/                          # Extract all the relevant files from this directory (defaults to importing INTEGRATE.HKL if it exists)
+  dials.import_xds /path/to/folder/containing/xds/inp/                          # Extract all the relevant files from this directory (defaults to importing INTEGRATE.HKL if it exists)
 
-dials.import_xds /path/to/folder/containing/xds/inp/INTEGRATE.HKL             # Specify a path to an INTEGRATE.HKL - the XDS.INP must be in the same directory.
+  dials.import_xds /path/to/folder/containing/xds/inp/INTEGRATE.HKL             # Specify a path to an INTEGRATE.HKL - the XDS.INP must be in the same directory.
 
-dials.import_xds /path/to/folder/containing/xds/inp/ SPOT.XDS                 # Be explicit about which file to use to create reflections (default is to use INTEGRATE.HKL)
+  dials.import_xds /path/to/folder/containing/xds/inp/ SPOT.XDS                 # Be explicit about which file to use to create reflections (default is to use INTEGRATE.HKL)
 
-dials.import_xds /path/to/folder/containing/xds/inp/ xds_file=XPARM.XDS       # Specify which extra file should be used to create experiment metadata
+  dials.import_xds /path/to/folder/containing/xds/inp/ xds_file=XPARM.XDS       # Specify which extra file should be used to create experiment metadata
 
-dials.import_xds /path/to/folder/containing/xds/inp/ /path/to/INTEGRATE.HKL   # Will take XDS.INP from the directory, and everything else needed from the specified INTEGRATE.HKL file
+  dials.import_xds /path/to/folder/containing/xds/inp/ /path/to/INTEGRATE.HKL   # Will take XDS.INP from the directory, and everything else needed from the specified INTEGRATE.HKL file
 """
 
 from __future__ import annotations
