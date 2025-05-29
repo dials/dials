@@ -202,19 +202,19 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(maxiter >= 1);
 
       // Compute the sums of the background and foreground
-      double sumd = 0;
-      double sumb = 0;
-      double sump = 0;
+      double sumd = 0, somb = 0, sumf = 0, sump = 0;
       for (std::size_t i = 0; i < m.size(); ++i) {
         if (m[i]) {
           DIALS_ASSERT(p[i] >= 0);
           sumd += d[i];
           sumb += b[i];
+          if (p[i]) sumf += b[i];
           sump += p[i];
         }
       }
-      DIALS_ASSERT(sumb >= 0);
       DIALS_ASSERT(sumd >= 0);
+      DIALS_ASSERT(sumb >= 0);
+      DIALS_ASSERT(sumf >= 0);
       DIALS_ASSERT(sump > 0);
 
       // Iterate to calculate the intensity. Exit if intensity goes less
@@ -235,7 +235,7 @@ namespace dials { namespace algorithms {
         }
         DIALS_ASSERT(sum2 > 0);
         I = sum1 / sum2;
-        V = std::abs(I) + std::abs(sumb);
+        V = std::abs(I) + std::abs(sumf);
         if ((error_ = std::abs(I - I0)) < eps) {
           break;
         }
