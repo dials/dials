@@ -150,7 +150,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
     )
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
-    z[:] = np.NAN
+    z[:] = np.nan
     z[nonzeros] = H[nonzeros]
     key = f"i_over_sig_i_vs_i_{label}" if label is not None else "i_over_sig_i_vs_i"
     title = "I/σ(I) vs I"
@@ -1248,7 +1248,7 @@ https://doi.org/10.1107/S0907444905036693
         H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H[nonzeros]
 
         # also make a histogram
