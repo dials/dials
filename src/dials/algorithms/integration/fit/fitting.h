@@ -202,7 +202,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(maxiter >= 1);
 
       // Compute the sums of the background and foreground
-      double sumd = 0, somb = 0, sumf = 0, sump = 0;
+      double sumd = 0, sumb = 0, sumf = 0, sump = 0;
       for (std::size_t i = 0; i < m.size(); ++i) {
         if (m[i]) {
           DIALS_ASSERT(p[i] >= 0);
