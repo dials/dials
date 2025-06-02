@@ -490,8 +490,8 @@ def run(args: list[str] = None, phil=working_phil) -> None:
             for expt in int_expt:
                 elist.append(combine(expt))
             int_expt = elist
-        reflections_filename = f"integrated_{i+1}.refl"
-        experiments_filename = f"integrated_{i+1}.expt"
+        reflections_filename = f"integrated_{i + 1}.refl"
+        experiments_filename = f"integrated_{i + 1}.expt"
         if int_refl.size() > 0:
             logger.info(
                 f"Saving {int_refl.size()} reflections to {reflections_filename}"
