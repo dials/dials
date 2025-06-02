@@ -108,7 +108,9 @@ refinement {
 
 }
 
-prediction {
+prediction
+    .expert_level = 1
+{
     d_min = None
         .type = float
 
@@ -211,7 +213,7 @@ class EllipsoidProfileModel(ProfileModelExt):
         return d
 
 
-class ProfileModelBase(object):
+class ProfileModelBase:
     """
     Class to store profile model
 
@@ -264,7 +266,7 @@ class ProfileModelBase(object):
         L = eigen_decomposition.values()
         if max(L) > (self.mosaicity_max_limit**2):
             raise RuntimeError(
-                f"Mosaicity matrix is unphysically large {max(L)**0.5:.6f} > {self.mosaicity_max_limit} (mosaicity_max_limit)"
+                f"Mosaicity matrix is unphysically large {max(L) ** 0.5:.6f} > {self.mosaicity_max_limit} (mosaicity_max_limit)"
             )
         if min(L) < 1e-12:
             val = min(L) ** 0.5 if min(L) > 0 else 0.0
@@ -724,7 +726,7 @@ class Simple6Angular3ProfileModel(AngularProfileModelBase):
         )
 
 
-class ProfileModelFactory(object):
+class ProfileModelFactory:
     """
     Class to create profile models
 

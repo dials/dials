@@ -12,7 +12,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from glob import glob
 
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
@@ -938,9 +938,7 @@ class ArgumentParser(ArgumentParserBase):
                     )
                 elif isinstance(err[0].exception, Sorry):
                     msg.append(
-                        '  "{}" failed during {} processing:\n    {}\n'.format(
-                            arg, err[0].type, err[0].message
-                        )
+                        f'  "{arg}" failed during {err[0].type} processing:\n    {err[0].message}\n'
                     )
                 else:
                     msg.append(

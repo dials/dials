@@ -102,8 +102,7 @@ def run(args=None):
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         sys.exit(
-            "Mismatched number of experiments and reflection tables found: %s & %s."
-            % (len(experiments), len(reflections))
+            f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
         )
     if len(experiments) < 2:
         sys.exit(
@@ -146,6 +145,7 @@ def run(args=None):
             cos_angle_cluster_table=matrices.cos_table,
             image_range_tables=[matrices.table_list],
             cosym_graphs=matrices.rij_graphs,
+            pca_plot=matrices.pca_plot,
         )
 
         logger.info(

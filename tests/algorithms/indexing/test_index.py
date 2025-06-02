@@ -283,7 +283,9 @@ def test_index_imosflm_tutorial(dials_data, tmp_path, specify_unit_cell):
     ]
     if specify_unit_cell:
         extra_args.append(
-            'known_symmetry.unit_cell="%s %s %s %s %s %s"' % unit_cell.parameters()
+            'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+                *unit_cell.parameters()
+            )
         )
 
     expected_unit_cell = unit_cell
@@ -337,8 +339,9 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmp_path, method):
     expected_hall_symbol = " I 2 2 3"
     expected_rmsds = (0.05, 0.06, 0.01)
     extra_args = [
-        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
-        % expected_unit_cell.parameters(),
+        'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+            *expected_unit_cell.parameters()
+        ),
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
         "treat_single_image_as_still=False",
@@ -394,8 +397,9 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method
 
     extra_args = [
         "stills.indexer=stills",
-        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
-        % expected_unit_cell.parameters(),
+        'known_symmetry.unit_cell="{} {} {} {} {} {}"'.format(
+            *expected_unit_cell.parameters()
+        ),
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
     ]
@@ -442,11 +446,11 @@ def test_multiple_experiments(dials_data: pathlib.Path, tmp_path):
     )
 
 
-def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
+def test_index_4rotation(dials_data: pathlib.Path, tmp_path):
     # 1440 images of 1° rotation each
-    data_dir = dials_regression / "indexing_test_data" / "4rotation"
-    pickle_path = data_dir / "strong.pickle"
-    sequence_path = data_dir / "experiments.json"
+    data_dir = data_dir = dials_data("indexing_test_data")
+    pickle_path = data_dir / "4rotation-strong.refl"
+    sequence_path = data_dir / "4rotation-experiments.json"
     extra_args = [
         "max_refine=10",
         "reflections_per_degree=50",
@@ -466,7 +470,10 @@ def test_index_4rotation(dials_regression: pathlib.Path, tmp_path):
         expected_rmsds,
         expected_hall_symbol,
     )
-    assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
+    assert len(result.indexed_reflections)
+    assert result.indexed_reflections.get_flags(
+        result.indexed_reflections.flags.indexed
+    ).count(True) > 0.9 * len(result.indexed_reflections)
 
 
 def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
@@ -496,18 +503,15 @@ def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
     assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_3(
-    dials_regression: pathlib.Path, tmp_path
-):
+def test_index_small_molecule_multi_sequence_3(dials_data, tmp_path):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
-    data_dir = dials_regression / "dials-191"
-    print(data_dir)
-    pickle_paths = [
-        sorted(data_dir.glob(f"*_SWEEP{i + 1}_strong.pickle"))[0] for i in range(3)
+    data_dir = dials_data("misc_regression", pathlib=True)
+    refl_paths = [
+        str(data_dir / f"dials-191_sweep{i + 1}_strong.refl") for i in range(3)
     ]
     sequence_paths = [
-        sorted(data_dir.glob(f"*_SWEEP{i + 1}_experiments.json"))[0] for i in range(3)
+        str(data_dir / f"dials-191_sweep{i + 1}_imported.expt") for i in range(3)
     ]
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell(
@@ -517,7 +521,7 @@ def test_index_small_molecule_multi_sequence_3(
     expected_hall_symbol = " P 1"
 
     result = run_indexing(
-        pickle_paths,
+        refl_paths,
         sequence_paths,
         tmp_path,
         extra_args,
@@ -550,12 +554,12 @@ def test_index_small_molecule_multi_sequence_3(
     )
 
 
-def test_index_small_molecule_ice_max_cell(dials_regression: pathlib.Path, tmp_path):
+def test_index_small_molecule_ice_max_cell(dials_data: pathlib.Path, tmp_path):
     # test for small molecule indexing: presence of ice rings makes max-cell
     # estimation tricky
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
-    pickle_path = os.path.join(data_dir, "1_SWEEP1_strong.pickle")
-    experiments = os.path.join(data_dir, "1_SWEEP1_experiments.json")
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = os.path.join(data_dir, "MXSW-904-1_SWEEP1_strong.pickle")
+    experiments = os.path.join(data_dir, "MXSW-904-1_SWEEP1_experiments.json")
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell((11.72, 11.72, 11.74, 109.08, 109.24, 108.99))
     expected_rmsds = (0.06, 0.05, 0.04)
@@ -755,8 +759,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path)
         0:2
     ]
     reflist = refl.select(refl["id"] < 2)  # Only use the first 2 for convenience
-    # Construct crystal models that don't have mosaicity. These A,B,C values are the same
-    # as read in from the dials_regression folder
+    # Construct crystal models that don't have mosaicity.
     # Crystal-0
     cs0 = Crystal(explist[0].crystal)
     exp0 = Experiment(
@@ -807,7 +810,7 @@ def test_pink_indexer(
     assert not result.returncode and not result.stderr
 
     command = [shutil.which("dials.combine_experiments")]
-    for i in range(5):
+    for i in range(2):
         command.append(f"split_{i}.expt")
         command.append(f"split_{i}.refl")
     result = subprocess.run(command, cwd=tmp_path)
@@ -819,7 +822,59 @@ def test_pink_indexer(
         "min_lattices=5",
         "percent_bandwidth=2",
         'known_symmetry.space_group="P 21 3"',
-        "known_symmetry.unit_cell=96.410, 96.410,96.410,90.0,90.0,90.0",
+        "known_symmetry.unit_cell=96.410,96.410,96.410,90.0,90.0,90.0",
+    ]
+
+    expected_unit_cell = uctbx.unit_cell((96.41, 96.41, 96.41, 90, 90, 90))
+    expected_rmsds = (0.200, 0.200, 0.000)
+    expected_hall_symbol = " P 2ac 2ab 3"
+
+    run_indexing(
+        "combined.expt",
+        "combined.refl",
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=2,
+    )
+
+
+def test_ffbidx(
+    dials_data,
+    tmp_path,
+):
+    try:
+        import ffbidx  # noqa: F401
+    except ModuleNotFoundError:
+        pytest.skip("ffbidx not installed")
+    try:
+        ffbidx.Indexer()
+        ffbidx.runtime_check()
+    except RuntimeError:
+        pytest.skip("ffbidx installed but not functional on this system")
+
+    data_dir = dials_data("cunir_serial_processed", pathlib=True)
+    expt_file = data_dir / "imported_with_ref_5.expt"
+    refl_file = data_dir / "strong_5.refl"
+
+    command = [shutil.which("dials.split_experiments"), expt_file, refl_file]
+    result = subprocess.run(command, cwd=tmp_path)
+    assert not result.returncode and not result.stderr
+
+    command = [shutil.which("dials.combine_experiments")]
+    for i in range(5):
+        command.append(f"split_{i}.expt")
+        command.append(f"split_{i}.refl")
+    result = subprocess.run(command, cwd=tmp_path)
+    assert not result.returncode and not result.stderr
+
+    extra_args = [
+        "joint_indexing=False",
+        "indexing.method=ffbidx",
+        'known_symmetry.space_group="P 21 3"',
+        "known_symmetry.unit_cell=96.410,96.410,96.410,90.0,90.0,90.0",
     ]
 
     expected_unit_cell = uctbx.unit_cell((96.41, 96.41, 96.41, 90, 90, 90))
@@ -965,6 +1020,31 @@ def test_index_known_orientation(dials_data, tmp_path):
     )
 
 
+def test_index_known_A_matrix(dials_data, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    experiments_json = data_dir / "imported.expt"
+    reflections = data_dir / "strong.refl"
+
+    # Choose non-primitive basis on purpose to test A matrix
+    extra_args = [
+        "known_symmetry.A_matrix=0.0125566,-0.0004292,0.0024708,0.001788,0.0103783,-0.0072836,-0.0017585,0.0074876,0.0102372"
+    ]
+
+    expected_unit_cell = uctbx.unit_cell((78.097, 78.097, 78.097, 90, 90, 90))
+    expected_rmsds = (0.03, 0.03, 0.005)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        reflections,
+        experiments_json,
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
 def test_all_expt_ids_have_expts(dials_data, tmp_path):
     result = subprocess.run(
         [
@@ -1043,3 +1123,82 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
     assert len(expts) == 8
     assert len(expts.crystals()) == 2
     refls.assert_experiment_identifiers_are_consistent(expts)
+
+
+def test_rigaku_hypix_arc_150(dials_data, tmp_path):
+    # This is a test of multi-sweep indexing with a three-panel Rigaku HyPix-Arc
+    # 150° detector. It additionally checks successful import with the unusual
+    # non-zero-padded image numbering used by Rigaku.
+    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+
+    command = [
+        shutil.which("dials.import"),
+    ] + list(data_dir.glob("CHNOS_*.rodhypix"))
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    command = [
+        shutil.which("dials.find_spots"),
+        "imported.expt",
+    ]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    expected_unit_cell = uctbx.unit_cell(
+        (6.1634, 13.198, 28.564, 89.928, 90.093, 89.839)
+    )
+    expected_rmsds = (0.09, 0.06, 0.009)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        "strong.refl",
+        "imported.expt",
+        tmp_path,
+        [],
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 1  # joint indexing
+
+
+def test_rigaku_hypix_arc_100(dials_data, tmp_path):
+    # This is a test of multi-sweep indexing with a two-panel Rigaku HyPix-Arc
+    # 100° detector.
+    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+
+    command = [
+        shutil.which("dials.import"),
+    ] + list(data_dir.glob("YbCDTA_Mo_*.rodhypix"))
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    command = [
+        shutil.which("dials.find_spots"),
+        "imported.expt",
+    ]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    expected_unit_cell = uctbx.unit_cell(
+        (8.3838, 16.721, 16.407, 88.482, 83.533, 83.314)
+    )
+    expected_rmsds = (0.05, 0.05, 0.003)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        "strong.refl",
+        "imported.expt",
+        tmp_path,
+        [],
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 3
+    assert len(expts.crystals()) == 1  # joint indexing

@@ -106,16 +106,16 @@ def write_mosflm_input(
     mat_file=None,
 ):
     lines = []
-    if directory is not None:
+    if directory:
         lines.append(f"DIRECTORY {directory}")
-    if template is not None:
+    if template:
         lines.append(f"TEMPLATE {template}")
-    if symmetry is not None:
+    if symmetry:
         lines.append(f"SYMMETRY {symmetry}")
-    if beam_centre is not None:
-        lines.append("BEAM %.3f %.3f" % beam_centre)
-    if distance is not None:
+    if beam_centre:
+        lines.append("BEAM {:.3f} {:.3f}".format(*beam_centre))
+    if distance:
         lines.append(f"DISTANCE {distance:.4f}")
-    if mat_file is not None:
+    if mat_file:
         lines.append(f"MATRIX {mat_file}")
     return "\n".join(lines)

@@ -25,11 +25,8 @@
 #include <dials/algorithms/profile_model/gaussian_rs/transform/beam_vector_map.h>
 #include <dials/model/data/shoebox.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace transform {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace transform {
 
     using dials::algorithms::polygon::simple_area;
     using dials::algorithms::polygon::clip::quad_with_convex_quad;

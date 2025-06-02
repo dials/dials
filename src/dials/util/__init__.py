@@ -165,7 +165,7 @@ def show_mail_on_error():
     try:
         yield
     except Exception as e:
-        text = "Please report this error at https://github.com/dials/dials/issues:"
+        text = "Please report this error at https://github.com/dials/dials/issues or to dials-user-group@jiscmail.ac.uk:"
         if issubclass(e.__class__, Sorry):
             raise
 
@@ -217,8 +217,8 @@ def show_mail_handle_errors():
 
 @dataclasses.dataclass
 class HTCondorJobClassAd:
-    cpus_provisioned: Optional[int] = None
-    memory_provisioned: Optional[float] = None
+    cpus_provisioned: int | None = None
+    memory_provisioned: float | None = None
 
 
 def parse_htcondor_job_classad(filepath: pathlib.Path) -> HTCondorJobClassAd:

@@ -39,8 +39,19 @@ Contact
 =======
 
 For feature requests, bug reports or any other information, please contact
-the DIALS developers at dials-support@lists.sourceforge.net, or post an
+the DIALS developers at dials-user-group@jiscmail.net, or post an
 `issue`_.
+
+Citing DIALS
+============
+
+Researchers using DIALS to process their data should cite the DIALS publication:
+
+**DIALS: implementation and evaluation of a new integration package**.
+Winter G, Waterman DG, Parkhurst JM, Brewster AS, Gildea RJ, Gerstel M, Fuentes-Montero L, Vollmar M, Michels-Clark T, Young ID, Sauter NK, Evans G (2018).
+Acta Crystallogr D Struct Biol 74, 85-97
+
+To acknowledge direct support from the :ref:`DIALS Resource<national_resource>`, such as when Resource staff assist with data collection or processing, or to acknowledge DIALS software integration at a facility or instrument, please acknowledge NiH grant R24GM154040.
 
 Funding
 =======
@@ -74,7 +85,7 @@ grant R24GM154040.
 
    .. container:: leftside-nih
 
-        .. image:: https://www.nigms.nih.gov/Style%20Library/NIGMS2/images/nih.svg
+        .. image:: https://upload.wikimedia.org/wikipedia/commons/f/fb/NIH_2012_logo_arrow.svg
            :alt: NIH NIGMS
            :target: `NIH`_
            :height: 70px

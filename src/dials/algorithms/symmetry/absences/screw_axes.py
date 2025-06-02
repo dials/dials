@@ -113,15 +113,23 @@ class ScrewAxis(Subject):
                 self.sigmas.extend(sigmas)
 
     @Subject.notify_event(event="scored axis")
-    def score_axis(self, reflection_table, significance_level=0.95, method="direct"):
+    def score_axis(
+        self,
+        reflection_table,
+        significance_level=0.95,
+        method="direct",
+        fourier_oversample=50,
+    ):
         """Score the axis given a reflection table of data."""
         if method == "direct":
             return self.score_axis_direct(reflection_table, significance_level)
         else:
-            return self.score_axis_fourier(reflection_table, significance_level)
+            return self.score_axis_fourier(
+                reflection_table, significance_level, oversample=fourier_oversample
+            )
 
     @staticmethod
-    def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat):
+    def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat, oversample=50):
         """
         Score screw axis based on selected miller indices and I over SigI values
 
@@ -133,6 +141,9 @@ class ScrewAxis(Subject):
             Vector of signal to noise ratios with the same shape as miller_indices.
         axis_repeat : int
             The expected periodicity of the screw axis. Must be one of {2, 3, 4, 6}.
+        oversample : int
+            The amount of oversampling to use in smoothing the fourier power spectrum.
+            This must be greater than zero.
         """
         if axis_repeat not in {2, 3, 4, 6}:
             raise ValueError(
@@ -143,39 +154,75 @@ class ScrewAxis(Subject):
         miller_index = miller_index - miller_index.min()
         n = miller_index.max() + 1
         n = 6 * ((n // 6) + 1)
+
         direct_space = np.zeros(n)
         direct_space[miller_index] = i_over_sigma
+
+        # Zero pad the fft input
+        direct_space = np.concatenate(
+            (
+                direct_space,
+                np.zeros_like(
+                    direct_space,
+                    shape=len(direct_space) * oversample,
+                ),
+            )
+        )
 
         # Fourier transform i over sigma
         fourier_space = np.abs(np.fft.fft(direct_space))
 
         # Indices for Fourier frequencies which may correspond to screw periodicities
         # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
-        screw_idx = [0]
+        d = len(fourier_space)
         if axis_repeat == 2:
-            screw_idx += [n // 2]
+            peak_locations = [0, d // 2, d - 1]
         elif axis_repeat == 3:
-            screw_idx += [n // 3, -n // 3]
+            peak_locations = [0, d // 3, 2 * d // 3, d - 1]
         elif axis_repeat == 4:
-            screw_idx += [n // 4, n // 2, -n // 4]
+            peak_locations = [0, d // 4, d // 2, 3 * d // 4, d - 1]
         else:
-            screw_idx += [n // 6, n // 3, n // 2, -n // 3, -n // 6]
+            peak_locations = [0, d // 6, d // 3, d // 2, 2 * d // 3, 5 * d // 6, d - 1]
 
-        null_idx = np.ones_like(fourier_space, dtype=bool)
-        null_idx[screw_idx] = False
+        # Creates a boolean mask len(peak_locations) by len(fourier_space)
+        # This mask takes the value True in the vicinity of expected peaks
+        peak_mask = []
+        for loc in peak_locations:
+            peak = np.zeros(d, dtype="bool")
+            peak[loc] = True
+            peak = np.convolve(peak, np.ones(oversample, dtype=bool), mode="same")
+            peak_mask.append(peak)
+        peak_mask = np.stack(peak_mask)
+
+        # Combine all peak regions
+        screw_idx = peak_mask.any(0)
+        null_idx = ~screw_idx
 
         # To determine the probability of a screw axis, use the frequencies which do not
-        # correspond to any screw axis periodicity to form a null model. The ask what
+        # correspond to any screw axis periodicity to form a null model. Then ask what
         # the probability of the candidate frequency is under the null model.
-        # In this case, we will parameterize the null frequencies by a normal distribution.
+        # In this case, we will use the nonparametric, wilcoxon ranksums test.
 
-        mean = fourier_space[null_idx].mean()
-        std = fourier_space[null_idx].std()
-        p_screw = norm.cdf(fourier_space[n // axis_repeat], loc=mean, scale=std)
+        from scipy.stats import ranksums
+
+        p_peaks = []
+        for peak in peak_mask:
+            stat = ranksums(
+                fourier_space[peak],
+                fourier_space[null_idx],
+                alternative="greater",  # hypothesis: peak > null
+            )
+            p_peaks.append(1.0 - stat.pvalue)
+
+        # Final p-value is the product of each peak's p-value
+        p_screw = np.prod(p_peaks)
+
         fourier_space_data = {"fourier_space": fourier_space, "n": n}
         return p_screw, fourier_space_data
 
-    def score_axis_fourier(self, reflection_table, significance_level=0.95):
+    def score_axis_fourier(
+        self, reflection_table, significance_level=0.95, oversample=50
+    ):
         """Estimate the probability of a screw axis using Fourier analysis."""
 
         self.get_all_suitable_reflections(reflection_table)
@@ -197,7 +244,7 @@ class ScrewAxis(Subject):
         i_over_sigma = np.array(self.i_over_sigma)
         miller_index = np.array(self.miller_axis_vals.iround())
         p_screw, fourier_space_data = self._score_axis_fourier(
-            miller_index, i_over_sigma, self.axis_repeat
+            miller_index, i_over_sigma, self.axis_repeat, oversample=oversample
         )
         # Record the fourier data for reporting.
         self.fourier_space_data = fourier_space_data

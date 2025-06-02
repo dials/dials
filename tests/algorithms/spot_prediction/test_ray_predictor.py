@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import os
 
 import pytest
 
@@ -9,7 +8,7 @@ from scitbx import matrix
 
 
 class RayPredictor:
-    def __init__(self, dials_regression):
+    def __init__(self, dials_data):
         import dxtbx
         from iotbx.xds import integrate_hkl, xparm
         from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
@@ -21,10 +20,9 @@ class RayPredictor:
         from dials.util import ioutil
 
         # The XDS files to read from
-        integrate_filename = os.path.join(
-            dials_regression, "data", "sim_mx", "INTEGRATE.HKL"
-        )
-        gxparm_filename = os.path.join(dials_regression, "data", "sim_mx", "GXPARM.XDS")
+        data_dir = dials_data("misc_regression", pathlib=True)
+        integrate_filename = str(data_dir / "sim_mx-INTEGRATE.HKL")
+        gxparm_filename = str(data_dir / "sim_mx-GXPARM.XDS")
 
         # Read the XDS files
         self.integrate_handle = integrate_hkl.reader()
@@ -94,8 +92,8 @@ class RayPredictor:
 
 
 @pytest.fixture(scope="session")
-def raypredictor(dials_regression):
-    return RayPredictor(dials_regression)
+def raypredictor(dials_data):
+    return RayPredictor(dials_data)
 
 
 def test_miller_index_set(raypredictor):

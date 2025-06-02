@@ -17,11 +17,8 @@
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace transform {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace transform {
 
     using scitbx::vec2;
     using scitbx::vec3;
