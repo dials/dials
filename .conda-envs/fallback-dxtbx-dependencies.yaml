@@ -1,0 +1,20 @@
+# Fallback dxtbx dependencies
+#
+# This file contains a rough copy of the extra dependencies required
+# for dxtbx. This is exclusively so that the old plain-list dependencies
+# can continue to be generated while downstream packages rely on them.
+#
+# It should not be considered an up-to-date or authoritative recording
+# of any of the dxtbx extra dependencies.
+
+host:
+  - hdf5
+  - pybind11
+
+run:
+  - hdf5plugin
+  - mrcfile
+  - natsort
+  - nxmx
+  - pint
+  - python-dateutil >=2.7.0

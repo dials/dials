@@ -15,6 +15,7 @@ for platform in ["macos", "linux", "windows"]:
         "--header",
         str(root / "dependencies.yaml"),
         str(root / ".conda-envs" / "cctbx-dependencies.yaml"),
+        str(root / ".conda-envs" / "fallback-dxtbx-dependencies.yaml"),
     ]
     data = subprocess.run(
         command,
