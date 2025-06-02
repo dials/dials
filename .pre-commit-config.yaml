@@ -44,3 +44,8 @@ repos:
       https://github.com/dials/dials.github.io
     language: fail
     files: '.*\.png$'
+  - id: regenerate_deps
+    name: Regenerate old dependency-lists
+    language: python
+    entry: .conda-envs/regenerate.py
+    files: dependencies.yaml
