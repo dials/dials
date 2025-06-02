@@ -1,7 +1,36 @@
+"""
+This program imports xds processed data for use in dials.
+
+It requires up to three things to create an experiment list and reflection table.
+    - an XDS.INP, to specify the geometry,
+    - one of "INTEGRATE.HKL" or "XPARM.XDS", which is needed to create the experiment (
+      alternatively "XDS_ASCII.HKL" or "GXPARM.XDS" can be specified with xds_file=)
+    - INTEGRATE.HKL or SPOT.XDS file to create a reflection table.
+
+To run the program, the easiest thing to do is provide a directory containing these files
+
+Example use cases::
+
+  dials.import_xds /path/to/folder/containing/xds/inp/                          # Extract all the relevant files from this directory (defaults to importing INTEGRATE.HKL if it exists)
+
+  dials.import_xds /path/to/folder/containing/xds/inp/INTEGRATE.HKL             # Specify a path to an INTEGRATE.HKL - the XDS.INP must be in the same directory.
+
+  dials.import_xds /path/to/folder/containing/xds/inp/ SPOT.XDS                 # Be explicit about which file to use to create reflections (default is to use INTEGRATE.HKL)
+
+  dials.import_xds /path/to/folder/containing/xds/inp/ xds_file=XPARM.XDS       # Specify which extra file should be used to create experiment metadata
+
+  dials.import_xds /path/to/folder/containing/xds/inp/ /path/to/INTEGRATE.HKL   # Will take XDS.INP from the directory, and everything else needed from the specified INTEGRATE.HKL file
+"""
+
 from __future__ import annotations
 
+import logging
 import os
+import sys
+from pathlib import Path
+from typing import Optional
 
+import cctbx.array_family.flex
 from cctbx import sgtbx
 from dxtbx.model import Crystal
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -10,10 +39,21 @@ from libtbx.phil import parse
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
+from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.array_family import flex
-from dials.util import show_mail_handle_errors
-from dials.util.command_line import Command
+from dials.util import log, show_mail_handle_errors
 from dials.util.options import ArgumentParser
+from dials.util.version import dials_version
+
+logger = logging.getLogger("dials.command_line.import_xds")
+
+# For automated lookup, prefer to read from INTEGRATE.HKL as it contains the most up to
+# date data if it exists, else fall back to XPARM.XDS.
+
+required_files_to_make_experiments = [
+    "INTEGRATE.HKL",
+    "XPARM.XDS",
+]
 
 
 class SpotXDSImporter:
@@ -25,7 +65,7 @@ class SpotXDSImporter:
     def __call__(self, params, options):
         """Import the spot.xds file."""
         # Read the SPOT.XDS file
-        Command.start("Reading SPOT.XDS")
+        logger.info(f"Reading {self._spot_xds}")
         handle = spot_xds.reader()
         handle.read_file(self._spot_xds)
         centroid = handle.centroid
@@ -34,10 +74,10 @@ class SpotXDSImporter:
             miller_index = handle.miller_index
         except AttributeError:
             miller_index = None
-        Command.end(f"Read {len(centroid)} spots from SPOT.XDS file.")
+        logger.info(f"Read {len(centroid)} spots from {self._spot_xds}")
 
         # Create the reflection list
-        Command.start("Creating reflection list")
+        logger.info("Creating reflection list")
         table = flex.reflection_table()
         table["id"] = flex.int(len(centroid), 0)
         table["panel"] = flex.size_t(len(centroid), 0)
@@ -45,40 +85,40 @@ class SpotXDSImporter:
             table["miller_index"] = flex.miller_index(miller_index)
         table["xyzobs.px.value"] = flex.vec3_double(centroid)
         table["intensity.sum.value"] = flex.double(intensity)
-        Command.end("Created reflection list")
 
         # Remove invalid reflections
-        Command.start("Removing invalid reflections")
+        logger.info("Removing invalid reflections")
         if miller_index and params.remove_invalid:
             flags = flex.bool([h != (0, 0, 0) for h in table["miller_index"]])
             table = table.select(flags)
-        Command.end(f"Removed invalid reflections, {len(table)} remaining")
+        logger.info(f"Removed invalid reflections, {len(table)} remaining")
 
         # Fill empty standard columns
         if params.add_standard_columns:
-            Command.start("Adding standard columns")
+            logger.info("Adding standard columns")
             rt = flex.reflection_table.empty_standard(len(table))
             rt.update(table)
             table = rt
             # set variances to unity
             table["xyzobs.mm.variance"] = flex.vec3_double(len(table), (1, 1, 1))
             table["xyzobs.px.variance"] = flex.vec3_double(len(table), (1, 1, 1))
-            Command.end("Standard columns added")
+            logger.info("Standard columns added")
 
         # Output the table to pickle file
-        if params.output.filename is None:
-            params.output.filename = "spot_xds.refl"
-        Command.start(f"Saving reflection table to {params.output.filename}")
-        table.as_file(params.output.filename)
-        Command.end(f"Saved reflection table to {params.output.filename}")
+        if params.output.reflections is None:
+            params.output.reflections = "spot_xds.refl"
+        logger.info(f"Saving reflection table to {params.output.reflections}")
+        table.as_file(params.output.reflections)
+        logger.info(f"Saved reflection table to {params.output.reflections}")
 
 
 class IntegrateHKLImporter:
-    """Class to import an integrate.hkl file to a reflection table."""
+    """Class to import an INTEGRATE.HKL file to a reflection table."""
 
-    def __init__(self, integrate_hkl, experiment):
+    def __init__(self, integrate_hkl, experiments):
         self._integrate_hkl = integrate_hkl
-        self._experiment = experiment
+        self._experiment = experiments[0]
+        self._experiments = experiments
 
     def __call__(self, params, options):
         """Import the integrate.hkl file."""
@@ -86,7 +126,7 @@ class IntegrateHKLImporter:
         uc = self._experiment.crystal.get_unit_cell()
 
         # Read the INTEGRATE.HKL file
-        Command.start("Reading INTEGRATE.HKL")
+        logger.info(f"Reading {self._integrate_hkl}")
         handle = integrate_hkl.reader()
         handle.read_file(self._integrate_hkl)
         hkl = flex.miller_index(handle.hkl)
@@ -94,13 +134,39 @@ class IntegrateHKLImporter:
         xyzobs = flex.vec3_double(handle.xyzobs)
         iobs = flex.double(handle.iobs)
         sigma = flex.double(handle.sigma)
+
+        # for INTEGRATE.HKL this contains /only/ L - not P!
         rlp = flex.double(handle.rlp)
+
         peak = flex.double(handle.peak) * 0.01
+        corr = flex.double(handle.corr) * 0.01
         if len(handle.iseg):
             panel = flex.size_t(handle.iseg) - 1
         else:
             panel = flex.size_t(len(hkl), 0)
-        Command.end(f"Read {len(hkl)} reflections from INTEGRATE.HKL file.")
+        logger.info(f"Read {len(hkl)} reflections from {self._integrate_hkl}")
+
+        undo_ab = True
+
+        # ideally we would like to do that - but because of limited precision in
+        # INTEGRATE.HKL we could get into trouble here ...
+        if handle.variance_model and undo_ab:
+            variance_model_a = handle.variance_model[0]
+            variance_model_b = handle.variance_model[1]
+            logger.info(
+                "Undoing input variance model a, b = %s %s"
+                % (variance_model_a, variance_model_b)
+            )
+
+            # undo variance model:
+            vari0 = flex.pow2(sigma * peak / rlp)
+            isq = flex.pow2(iobs * peak / rlp)
+            vari1 = (vari0 / variance_model_a) - (variance_model_b * isq)
+            for i in range(0, (sigma.size() - 1)):
+                if vari1[i] <= 0:
+                    logger.info("WARNING:", i, iobs[i], sigma[i], vari1[i])
+                    vari1[i] = sigma[i] * sigma[i]
+            sigma = flex.sqrt(vari1) * rlp / peak
 
         if len(self._experiment.detector) > 1:
             for p_id, p in enumerate(self._experiment.detector):
@@ -111,36 +177,74 @@ class IntegrateHKLImporter:
 
         # Derive the reindex matrix
         rdx = self.derive_reindex_matrix(handle)
-        print("Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d" % (rdx.elems))
+        logger.info("Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d" % (rdx.elems))
 
         # Reindex the reflections
-        Command.start("Reindexing reflections")
+        logger.info("Reindexing reflections")
         cb_op = sgtbx.change_of_basis_op(sgtbx.rt_mx(sgtbx.rot_mx(rdx.elems)))
         hkl = cb_op.apply(hkl)
-        Command.end(f"Reindexed {len(hkl)} reflections")
+        logger.info(f"Reindexed {len(hkl)} reflections")
 
         # Create the reflection list
-        Command.start("Creating reflection table")
+        logger.info("Creating reflection table")
         table = flex.reflection_table()
         table["id"] = flex.int(len(hkl), 0)
         table["panel"] = panel
         table["miller_index"] = hkl
+
         table["xyzcal.px"] = xyzcal
         table["xyzobs.px.value"] = xyzobs
-        table["intensity.cor.value"] = iobs
-        table["intensity.cor.variance"] = flex.pow2(sigma)
+        # uncorrected "partials":
         table["intensity.prf.value"] = iobs * peak / rlp
         table["intensity.prf.variance"] = flex.pow2(sigma * peak / rlp)
-        table["lp"] = 1.0 / rlp
+        table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
+
         table["d"] = flex.double(uc.d(h) for h in hkl)
-        Command.end(f"Created table with {len(table)} reflections")
+
+        table["partiality"] = peak
+        table["profile.correlation"] = corr
+
+        table.centroid_px_to_mm(self._experiments)
+
+        table["xyzcal.mm"] = flex.vec3_double(table.size())
+        for i_panel in range(len(set(panel))):
+            sel = panel == i_panel
+            xyzcal_mm, _, _ = centroid_px_to_mm_panel(
+                self._experiment.detector[i_panel],
+                self._experiment.scan,
+                table["xyzobs.px.value"].select(sel),
+                table["xyzobs.px.variance"].select(sel),
+                cctbx.array_family.flex.vec3_double(sel.count(True), (1, 1, 1)),
+            )
+            table["xyzcal.mm"].set_selected(sel, xyzcal_mm)
+
+        # same as prf?
+        table["intensity.sum.value"] = iobs * peak / rlp
+        table["intensity.sum.variance"] = flex.pow2(sigma * peak / rlp)
+        table.map_centroids_to_reciprocal_space(self._experiments)
+
+        # LP-corrected fulls:
+        table["intensity.cor.value"] = iobs
+        table["intensity.cor.variance"] = flex.pow2(sigma)
+
+        table["batch"] = flex.int(int(x[2]) + handle.starting_frame for x in xyzcal)
+
+        # compute ZETA
+        table.compute_zeta(self._experiment)
+        # compute LP
+        table.compute_corrections(self._experiments)
+
+        table.set_flags(flex.bool(table.size(), True), table.flags.predicted)
+        table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
+
+        logger.info(f"Created table with {len(table)} reflections")
 
         # Output the table to pickle file
-        if params.output.filename is None:
-            params.output.filename = "integrate_hkl.refl"
-        Command.start(f"Saving reflection table to {params.output.filename}")
-        table.as_file(params.output.filename)
-        Command.end(f"Saved reflection table to {params.output.filename}")
+        if params.output.reflections is None:
+            params.output.reflections = "integrate_hkl.refl"
+        logger.info(f"Saving reflection table to {params.output.reflections}")
+        table.as_file(params.output.reflections)
+        logger.info(f"Saved reflection table to {params.output.reflections}")
 
     def derive_reindex_matrix(self, handle):
         """Derive a reindexing matrix to go from the orientation matrix used
@@ -166,38 +270,54 @@ class IntegrateHKLImporter:
 
 
 class XDSFileImporter:
-    """Import a data block from xds."""
+    """Import an experimentlist from xds.
 
-    def __init__(self, args):
+    This will try to find the xds inp file - if that doesn't exist, it
+    will try to find the best available file.
+    """
+
+    def __init__(self, xds_directory: Path):
         """Initialise with the options"""
-        self.args = args
+        self.xds_directory = xds_directory
 
     def __call__(self, params, options):
         # Get the XDS.INP file
-        xds_inp = os.path.join(self.args[0], "XDS.INP")
+        xds_inp = self.xds_directory / "XDS.INP"
+        if not xds_inp.exists():
+            raise RuntimeError(f"Unable to find XDS.INP file in {self.xds_directory}.")
+
         if params.input.xds_file is None:
-            xds_file = XDSFileImporter.find_best_xds_file(self.args[0])
+            xds_file = XDSFileImporter.find_best_xds_file(self.xds_directory)
         else:
-            xds_file = os.path.join(self.args[0], params.input.xds_file)
+            xds_file = params.input.xds_file
 
         # Check a file is given
         if xds_file is None:
-            raise RuntimeError("No XDS file found")
+            msg = "one of " + ", ".join(required_files_to_make_experiments)
+            raise RuntimeError(
+                f"No XDS file ({msg}) found in {self.xds_directory}. Unable to create experiments."
+            )
 
         # Load the experiment list
-        unhandled = []
         experiments = ExperimentListFactory.from_xds(xds_inp, xds_file)
 
-        # Print out any unhandled files
-        if len(unhandled) > 0:
-            print("-" * 80)
-            print("The following command line arguments were not handled:")
-            for filename in unhandled:
-                print(f"  {filename}")
+        # set some dummy epochs
+        nimg = (
+            experiments[0].scan.get_image_range()[1]
+            - experiments[0].scan.get_image_range()[0]
+            + 1
+        )
+        epochs = flex.double(nimg, 0.0)
+        for i in range(1, (nimg - 1)):
+            epochs[i] = epochs[(i - 1)] + 1.0
+        experiments[0].scan.set_epochs(epochs)
+        experiments[0].scan.set_exposure_times(epochs)
 
         # Print some general info
-        print("-" * 80)
-        print(f"Read {len(experiments)} experiments from {xds_file}")
+        logger.info("-" * 80)
+        logger.info(
+            f"Read {len(experiments)} experiment{'s' if len(experiments) > 1 else ''} from {xds_file}"
+        )
 
         # Attempt to create scan-varying crystal model if requested
         if params.read_varying_crystal:
@@ -205,65 +325,55 @@ class XDSFileImporter:
             if os.path.isfile(integrate_lp):
                 self.extract_varying_crystal(integrate_lp, experiments)
             else:
-                print("No INTEGRATE.LP to extract varying crystal model. Skipping")
+                logger.info(
+                    "No INTEGRATE.LP to extract varying crystal model. Skipping"
+                )
 
         # Loop through the data blocks
         for i, exp in enumerate(experiments):
             # Print some experiment info
-            print("-" * 80)
-            print("Experiment %d" % i)
-            print(f"  format: {exp.imageset.get_format_class()}")
-            print(f"  type: {type(exp.imageset)}")
-            print(f"  num images: {len(exp.imageset)}")
+            logger.info("-" * 80)
+            logger.info("Experiment %d" % i)
+            logger.info(f"  format: {exp.imageset.get_format_class()}")
+            logger.info(f"  type: {type(exp.imageset)}")
+            logger.info(f"  num images: {len(exp.imageset)}")
 
             # Print some model info
             if options.verbose > 1:
-                print("")
+                logger.info("")
                 if exp.beam:
-                    print(exp.beam)
+                    logger.info(exp.beam)
                 else:
-                    print("no beam!")
+                    logger.info("no beam!")
                 if exp.detector:
-                    print(exp.detector)
+                    logger.info(exp.detector)
                 else:
-                    print("no detector!")
+                    logger.info("no detector!")
                 if exp.goniometer:
-                    print(exp.goniometer)
+                    logger.info(exp.goniometer)
                 else:
-                    print("no goniometer!")
+                    logger.info("no goniometer!")
                 if exp.scan:
-                    print(exp.scan)
+                    logger.info(exp.scan)
                 else:
-                    print("no scan!")
+                    logger.info("no scan!")
                 if exp.crystal:
-                    print(exp.crystal)
+                    logger.info(exp.crystal)
                 else:
-                    print("no crystal!")
+                    logger.info("no crystal!")
 
-        # Write the experiment list to a JSON or pickle file
-        if params.output.filename is None:
-            params.output.filename = "xds_models.expt"
-        print("-" * 80)
-        print(f"Writing experiments to {params.output.filename}")
-        experiments.as_file(params.output.filename)
-
-        # Optionally save as a data block
-        if params.output.xds_experiments:
-            print("-" * 80)
-            print(f"Writing data block to {params.output.xds_experiments}")
-            experiments.as_file(params.output.xds_experiments)
+        # Write the experiment list
+        logger.info("-" * 80)
+        logger.info(f"Writing experiments to {params.output.xds_experiments}")
+        experiments.as_file(params.output.xds_experiments)
+        return experiments
 
     @staticmethod
     def find_best_xds_file(xds_dir):
         """Find the best available file."""
 
         # The possible files to check
-        paths = [
-            os.path.join(xds_dir, "XDS_ASCII.HKL"),
-            os.path.join(xds_dir, "INTEGRATE.HKL"),
-            os.path.join(xds_dir, "GXPARM.XDS"),
-            os.path.join(xds_dir, "XPARM.XDS"),
-        ]
+        paths = [xds_dir / f for f in required_files_to_make_experiments]
 
         # Return the first path that exists
         for p in paths:
@@ -281,12 +391,17 @@ class XDSFileImporter:
         """
 
         if len(experiments) > 1:
-            print(
+            logger.info(
                 "Can only read a varying crystal model for a single "
                 + "experiment. Skipping."
             )
             return
         experiment = experiments[0]
+
+        # NOTE: we are not reading SEGMENT information here - so HKL
+        # file needs also be without SEGMENT information, e.g. via
+        #
+        # egrep -v "^.SEGMENT=|^! .*=" INTEGRATE.HKL.orig | sed "s/,ISEG//g" | sed "s/^ \(.*\) [ ]*[0-9][0-9]*[ ]*$/ \1/g" > INTEGRATE.HKL
 
         # read required records from the file. Relies on them being in the
         # right order as we read through once
@@ -323,7 +438,7 @@ class XDSFileImporter:
             assert len(a_axis) == len(b_axis) == len(c_axis) == nblocks
             assert (xds_axis, xds_beam).count(None) == 0
         except AssertionError:
-            print(msg)
+            logger.info(msg)
             return
 
         # conversions to numeric
@@ -335,7 +450,7 @@ class XDSFileImporter:
             xds_beam = [float(e) for e in xds_beam]
             xds_axis = [float(e) for e in xds_axis]
         except ValueError:
-            print(msg)
+            logger.info(msg)
             return
 
         # coordinate frame conversions
@@ -369,93 +484,180 @@ class XDSFileImporter:
         experiment.crystal.set_A_at_scan_points(A_list)
 
 
-class Script:
-    """A class to encapsulate the script."""
+phil_scope = parse("""
+input {
+    method = experiment reflections
+        .type = choice
+        .help = "Deprecated option - has no effect"
+        .expert_level = 3
 
-    def __init__(self):
-        """Initialise the script."""
-        # Create the phil parameters
-        phil_scope = parse(
-            """
-      input {
-        method = *experiment reflections
-          .type = choice
-          .help = "The input method"
+    xds_file = None
+        .type = path
+        .help = "Explicitly specify the file to use "
+}
 
-        xds_file = None
-          .type = str
-          .help = "Explicitly specify the file to use"
-      }
+output {
+    filename = None
+        .type = str
+        .help = "Deprecated option - has no effect"
+        .expert_level = 3
+    reflections = None
+        .type = str
+        .help = "The output filname of the reflections file (defaults to either integrate_hkl.refl or spot_xds.refl)"
+    xds_experiments = "xds_models.expt"
+        .type = str
+        .help = "The output filename of the experiment list created from xds"
+    log = dials.import_xds.log
+        .type = path
+}
 
-      output {
-        filename = None
-          .type = str
-          .help = "The output file"
+remove_invalid = False
+    .type = bool
+    .help = "Remove non-index reflections (if miller indices are present)"
 
-        xds_experiments = None
-          .type = str
-          .help = "Output filename of data block with xds"
-      }
+add_standard_columns = False
+    .type = bool
+    .help = "Add empty standard columns to the reflections. Note columns"
+            "for centroid variances are set to contain 1s, not 0s"
 
-      remove_invalid = False
-        .type = bool
-        .help = "Remove non-index reflections (if miller indices are present)"
-
-      add_standard_columns = False
-        .type = bool
-        .help = "Add empty standard columns to the reflections. Note columns"
-                "for centroid variances are set to contain 1s, not 0s"
-
-      read_varying_crystal = False
-        .type = bool
-        .help = "Attempt to create a scan-varying crystal model from"
-                "INTEGRATE.LP, if present"
-    """
-        )
-
-        # The option parser
-        usage = "usage: dials.import_xds [options] (SPOT.XDS|INTEGRATE.HKL)"
-        self.parser = ArgumentParser(usage=usage, phil=phil_scope)
-
-    def run(self, args=None):
-        """Run the script."""
-
-        # Parse the command line arguments
-        params, options, args = self.parser.parse_args(
-            args, show_diff_phil=True, return_unhandled=True
-        )
-
-        # Check number of arguments
-        if len(args) == 0:
-            self.parser.print_help()
-            exit(0)
-
-        # Select the importer class
-        if params.input.method == "experiment":
-            importer = XDSFileImporter(args)
-        else:
-            importer = self.select_importer(args)
-
-        # Import the XDS data
-        importer(params, options)
-
-    def select_importer(self, args):
-        path, filename = os.path.split(args[0])
-        if filename == "SPOT.XDS":
-            return SpotXDSImporter(args[0])
-        elif filename == "INTEGRATE.HKL":
-            assert len(args) == 2
-            experiments = ExperimentListFactory.from_json_file(args[1])
-            assert len(experiments) == 1
-            return IntegrateHKLImporter(args[0], experiments[0])
-        else:
-            raise RuntimeError(f"expected (SPOT.XDS|INTEGRATE.HKL), got {filename}")
+read_varying_crystal = False
+    .type = bool
+    .help = "Attempt to create a scan-varying crystal model from"
+            "INTEGRATE.LP, if present"
+""")
 
 
 @show_mail_handle_errors()
 def run(args=None):
-    script = Script()
-    script.run(args)
+    usage = (
+        "dials.import_xds /path/to/folder/containing/xds/inp/ (SPOT.XDS|INTEGRATE.HKL)"
+    )
+
+    parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=__doc__)
+    # Parse the command line arguments
+    params, options, unhandled = parser.parse_args(
+        args, show_diff_phil=True, return_unhandled=True
+    )
+
+    # Configure the logging
+    log.config(verbosity=options.verbose, logfile=params.output.log)
+
+    logger.info(dials_version())
+
+    # Log the diff phil
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil != "":
+        logger.info("The following parameters have been modified:\n")
+        logger.info(diff_phil)
+
+    if params.output.filename:
+        logger.warning("""
+The option output.filename= is deprecated and has no effect.
+To set the output reflections filename, please use output.reflections=
+To set the output experiment filename, please use output.xds_experiments=
+""")
+
+    if params.input.method:
+        logger.warning("""
+The option input.method= is deprecated and has no effect.
+The program now attempts to output both experiment and reflection data
+based on the input files available.
+""")
+
+    # Check number of arguments
+    if len(unhandled) == 0:
+        parser.print_help()
+        exit(0)
+
+    ## Assume that the unhandled arguments contain a directory and possibly a filepath or filename (e.g. "INTEGRATE.HKL", "SPOT.XDS")
+    directories = [Path(u).resolve() for u in unhandled if Path(u).is_dir()]
+    for d in list(directories):
+        if d.name == "INTEGRATE.HKL" or d.name == "SPOT.XDS":
+            directories.remove(d)
+
+    if len(directories) == 0:
+        # We might be in the implicit case where a path to the SPOT.XDS/INTEGRATE.HKL was provided (old usage)
+        # if so, extract the directory
+        directories = list({Path(u).resolve().parent for u in unhandled})
+
+    if len(directories) != 1:
+        msg = "\n ".join(str(d) for d in directories)
+        logger.info(
+            f"A single xds directory is required, found more than one in input arguments:\n {msg}"
+        )
+        sys.exit(0)
+
+    xds_directory = Path(directories[0])
+
+    # check whether we have an explicit choice of SPOT.XDS (to override default INTEGRATE.HKL)
+    use_spot_xds: bool = False
+    spot_xds: Optional[Path] = None
+    integrate_hkl: Optional[Path] = None
+
+    for arg in unhandled:
+        if Path(arg).name == "SPOT.XDS":
+            spot_xds = Path(arg)
+        elif Path(arg).name == "INTEGRATE.HKL":
+            integrate_hkl = Path(arg)
+
+    if spot_xds and not integrate_hkl:
+        if not spot_xds.exists():  # i.e. just the word on the command line
+            if not (xds_directory / "SPOT.XDS").exists():
+                logger.info(
+                    f"Unable to find SPOT_XDS as specified or in {xds_directory}"
+                )
+                sys.exit(0)
+            spot_xds = xds_directory / "SPOT.XDS"
+        use_spot_xds = True
+
+    if integrate_hkl:
+        if not params.input.xds_file:  # use the specified integrate.hkl when creating the models, to ensure consistency.
+            if integrate_hkl.is_file():
+                params.input.xds_file = integrate_hkl
+            elif (xds_directory / "INTEGRATE.HKL").is_file():
+                params.input.xds_file = xds_directory / "INTEGRATE.HKL"
+        if not integrate_hkl.exists():  # i.e. just the word on the command line
+            if not (xds_directory / "INTEGRATE.HKL").exists():
+                logger.info(
+                    f"Unable to find INTEGRATE.HKL as specified or in {xds_directory}"
+                )
+                sys.exit(0)
+            integrate_hkl = xds_directory / "INTEGRATE.HKL"
+
+    # If neither explicitly specified on command line, default to using INTEGRATE.HKL, then SPOT.XDS if they exist
+    if not spot_xds and not integrate_hkl:
+        if (xds_directory / "INTEGRATE.HKL").exists():
+            integrate_hkl = xds_directory / "INTEGRATE.HKL"
+        elif (xds_directory / "SPOT.XDS").exists():
+            spot_xds = xds_directory / "SPOT.XDS"
+            use_spot_xds = True
+
+    # First try to make the experiments
+    importer = XDSFileImporter(xds_directory=xds_directory)
+    try:
+        expts = importer(params, options)
+    except RuntimeError as e:
+        logger.info(e)
+        if (
+            not use_spot_xds
+        ):  # We need the experiment for reading INTEGRATE.HKL but not SPOT.XDS
+            sys.exit(0)
+
+    # If we specified SPOT.XDS (or only SPOT.XDS exists), use that
+    if use_spot_xds:
+        refl_importer = SpotXDSImporter(spot_xds)
+    else:  # Else use the INTEGRATE.HKL as identified above.
+        if not integrate_hkl:
+            logger.info(
+                "Unable to find SPOT.XDS or INTEGRATE.HKL in order to create a reflection table, finishing."
+            )  # allow to just import expt file.
+            sys.exit(0)
+        refl_importer = IntegrateHKLImporter(integrate_hkl, expts)
+    try:
+        refl_importer(params, options)
+    except RuntimeError as e:
+        logger.info(e)
+        sys.exit(0)
 
 
 if __name__ == "__main__":

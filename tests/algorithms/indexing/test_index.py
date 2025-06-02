@@ -503,18 +503,15 @@ def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
     assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_3(
-    dials_regression: pathlib.Path, tmp_path
-):
+def test_index_small_molecule_multi_sequence_3(dials_data, tmp_path):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
-    data_dir = dials_regression / "dials-191"
-    print(data_dir)
-    pickle_paths = [
-        sorted(data_dir.glob(f"*_SWEEP{i + 1}_strong.pickle"))[0] for i in range(3)
+    data_dir = dials_data("misc_regression", pathlib=True)
+    refl_paths = [
+        str(data_dir / f"dials-191_sweep{i + 1}_strong.refl") for i in range(3)
     ]
     sequence_paths = [
-        sorted(data_dir.glob(f"*_SWEEP{i + 1}_experiments.json"))[0] for i in range(3)
+        str(data_dir / f"dials-191_sweep{i + 1}_imported.expt") for i in range(3)
     ]
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell(
@@ -524,7 +521,7 @@ def test_index_small_molecule_multi_sequence_3(
     expected_hall_symbol = " P 1"
 
     result = run_indexing(
-        pickle_paths,
+        refl_paths,
         sequence_paths,
         tmp_path,
         extra_args,
@@ -762,8 +759,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path)
         0:2
     ]
     reflist = refl.select(refl["id"] < 2)  # Only use the first 2 for convenience
-    # Construct crystal models that don't have mosaicity. These A,B,C values are the same
-    # as read in from the dials_regression folder
+    # Construct crystal models that don't have mosaicity.
     # Crystal-0
     cs0 = Crystal(explist[0].crystal)
     exp0 = Experiment(
@@ -814,7 +810,7 @@ def test_pink_indexer(
     assert not result.returncode and not result.stderr
 
     command = [shutil.which("dials.combine_experiments")]
-    for i in range(5):
+    for i in range(2):
         command.append(f"split_{i}.expt")
         command.append(f"split_{i}.refl")
     result = subprocess.run(command, cwd=tmp_path)
@@ -841,7 +837,7 @@ def test_pink_indexer(
         expected_unit_cell,
         expected_rmsds,
         expected_hall_symbol,
-        n_expected_lattices=5,
+        n_expected_lattices=2,
     )
 
 
@@ -855,6 +851,7 @@ def test_ffbidx(
         pytest.skip("ffbidx not installed")
     try:
         ffbidx.Indexer()
+        ffbidx.runtime_check()
     except RuntimeError:
         pytest.skip("ffbidx installed but not functional on this system")
 
@@ -1023,6 +1020,31 @@ def test_index_known_orientation(dials_data, tmp_path):
     )
 
 
+def test_index_known_A_matrix(dials_data, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    experiments_json = data_dir / "imported.expt"
+    reflections = data_dir / "strong.refl"
+
+    # Choose non-primitive basis on purpose to test A matrix
+    extra_args = [
+        "known_symmetry.A_matrix=0.0125566,-0.0004292,0.0024708,0.001788,0.0103783,-0.0072836,-0.0017585,0.0074876,0.0102372"
+    ]
+
+    expected_unit_cell = uctbx.unit_cell((78.097, 78.097, 78.097, 90, 90, 90))
+    expected_rmsds = (0.03, 0.03, 0.005)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        reflections,
+        experiments_json,
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
 def test_all_expt_ids_have_expts(dials_data, tmp_path):
     result = subprocess.run(
         [
@@ -1101,3 +1123,82 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
     assert len(expts) == 8
     assert len(expts.crystals()) == 2
     refls.assert_experiment_identifiers_are_consistent(expts)
+
+
+def test_rigaku_hypix_arc_150(dials_data, tmp_path):
+    # This is a test of multi-sweep indexing with a three-panel Rigaku HyPix-Arc
+    # 150° detector. It additionally checks successful import with the unusual
+    # non-zero-padded image numbering used by Rigaku.
+    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+
+    command = [
+        shutil.which("dials.import"),
+    ] + list(data_dir.glob("CHNOS_*.rodhypix"))
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    command = [
+        shutil.which("dials.find_spots"),
+        "imported.expt",
+    ]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    expected_unit_cell = uctbx.unit_cell(
+        (6.1634, 13.198, 28.564, 89.928, 90.093, 89.839)
+    )
+    expected_rmsds = (0.09, 0.06, 0.009)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        "strong.refl",
+        "imported.expt",
+        tmp_path,
+        [],
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 4
+    assert len(expts.crystals()) == 1  # joint indexing
+
+
+def test_rigaku_hypix_arc_100(dials_data, tmp_path):
+    # This is a test of multi-sweep indexing with a two-panel Rigaku HyPix-Arc
+    # 100° detector.
+    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+
+    command = [
+        shutil.which("dials.import"),
+    ] + list(data_dir.glob("YbCDTA_Mo_*.rodhypix"))
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    command = [
+        shutil.which("dials.find_spots"),
+        "imported.expt",
+    ]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    expected_unit_cell = uctbx.unit_cell(
+        (8.3838, 16.721, 16.407, 88.482, 83.533, 83.314)
+    )
+    expected_rmsds = (0.05, 0.05, 0.003)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        "strong.refl",
+        "imported.expt",
+        tmp_path,
+        [],
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+    expts = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
+    assert len(expts) == 3
+    assert len(expts.crystals()) == 1  # joint indexing

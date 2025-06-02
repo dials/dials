@@ -857,7 +857,7 @@ class ReflectionManager:
         row_data = five_number_summary(w_y)
         rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_phi)
-        rows.append(["Phi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data])
+        rows.append(["Phi weights"] + [f"{e * DEG2RAD**2:.4g}" for e in row_data])
 
         logger.info(msg)
         logger.info(dials.util.tabulate(rows, header, numalign="right") + "\n")
@@ -954,9 +954,7 @@ class StillsReflectionManager(ReflectionManager):
         row_data = five_number_summary(w_y)
         rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_delpsi)
-        rows.append(
-            ["DeltaPsi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data]
-        )
+        rows.append(["DeltaPsi weights"] + [f"{e * DEG2RAD**2:.4g}" for e in row_data])
 
         msg = (
             f"\nSummary statistics for {nref} observations" + " matched to predictions:"

@@ -144,10 +144,10 @@ class ClusteringResult:
         Highest possible metric symmetry and unit cell using LePage (J Appl Cryst 1982, 15:255) method, maximum delta 3deg."""
         )
         n_clusters = len(self.clusters) - len(singletons)
-        text.insert(0, f"\n{n_clusters} cluster{'s'[:n_clusters^1]}")
+        text.insert(0, f"\n{n_clusters} cluster{'s'[: n_clusters ^ 1]}")
         n_singletons = len(singletons)
         text[:0] = [
-            f"{n_singletons} singleton{'s'[:n_singletons^1]}:\n",
+            f"{n_singletons} singleton{'s'[: n_singletons ^ 1]}:\n",
             "{:<14} {:<11} {:<11} {:<11}{:<12} {:<12} {:<12}".format(
                 "Point group", "a", "b", "c", "alpha", "beta", "gamma"
             ),

@@ -669,9 +669,7 @@ class PowderCalibrator:
 
         # Tell me what calibrant I am using
         logger.info(
-            f"Starting calibration using {self.standard}:\n"
-            f"-----\n"
-            f"{self.calibrant}\n"
+            f"Starting calibration using {self.standard}:\n-----\n{self.calibrant}\n"
         )
 
     def show_pyfai_improvement(
@@ -805,7 +803,7 @@ class PowderCalibrator:
         self.geometry.update_from_ai(ai)
         self.geometry.save_to_expt(output=self.output.calibrated_geom)
 
-        logger.info(f"Geometry fitted by pyFAI:\n" f"-----\n" f"{self.geometry}\n")
+        logger.info(f"Geometry fitted by pyFAI:\n-----\n{self.geometry}\n")
         self.show_straight_lines(ai, show=plots)
 
 

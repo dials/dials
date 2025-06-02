@@ -84,12 +84,11 @@ namespace dials { namespace algorithms { namespace filter { namespace boost_pyth
         &by_xds_small_angle,
         (arg("g"), arg("b"), arg("r"), arg("delta_m")));
     def("by_xds_angle", &by_xds_angle, (arg("g"), arg("b"), arg("r"), arg("delta_m")));
-    def(
-      "by_bbox_volume",
-      (af::shared<bool>(*)(const af::const_ref<int6> &, std::size_t)) & by_bbox_volume,
-      (arg("bbox"), arg("num")));
     def("by_bbox_volume",
-        (af::shared<bool>(*)(const af::const_ref<int6> &)) & by_bbox_volume,
+        (af::shared<bool> (*)(const af::const_ref<int6> &, std::size_t))&by_bbox_volume,
+        (arg("bbox"), arg("num")));
+    def("by_bbox_volume",
+        (af::shared<bool> (*)(const af::const_ref<int6> &))&by_bbox_volume,
         (arg("bbox")));
 
     def("is_bbox_outside_image_range", &is_bbox_outside_image_range);

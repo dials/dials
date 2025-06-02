@@ -60,7 +60,7 @@ build:
   - pre-commit #[bootstrap]
 
 host:
-  - cctbx-base >=2024 #[prebuilt_cctbx]
+  - cctbx-base >=2025 #[prebuilt_cctbx]
   - dxtbx ={{ version_xy }} #[not bootstrap]
   - hatchling
   - libboost-devel
@@ -76,14 +76,13 @@ host:
 run:
   - {{ pin_compatible('cctbx-base') }} #[not bootstrap]
   - {{ pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) }} #[not bootstrap]
-  - ffbidx #[linux]
+  - ffbidx >=1.1.3 #[linux]
   - gemmi >=0.7
   - h5py >=3.1.0
   - jinja2
   - matplotlib-base >=3.0.2
   - msgpack-python
-  - numpy >=1.21.5,<2 #[bootstrap]
-  - numpy #[not bootstrap]
+  - numpy
   - ordered-set
   - pandas
   - pillow >=5.4.1
@@ -101,7 +100,7 @@ run:
   - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
 
 test:
-  - dials-data >=2.4.102
+  - dials-data >=2.4.123
   - pip
   - pytest
   - pytest-forked

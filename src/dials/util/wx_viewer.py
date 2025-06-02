@@ -1078,7 +1078,7 @@ class App(wx.App):
             self.fit_on_screen_id,
             images.fit_img.as_wx_Bitmap(),
             "Fit in window",
-            "Resizes and shifts object to fit into window." " Keyboard shortcut: f",
+            "Resizes and shifts object to fit into window. Keyboard shortcut: f",
         )
 
         self.mark_snap_back_id = wx.NewId()
@@ -1095,8 +1095,7 @@ class App(wx.App):
             self.snap_back_id,
             images.snap_back_img.as_wx_Bitmap(),
             "Snap back orientation",
-            "Rotates object back to the last marked orientation."
-            " Keyboard shortcut: a",
+            "Rotates object back to the last marked orientation. Keyboard shortcut: a",
         )
 
         self.toggle_spin_id = wx.NewId()

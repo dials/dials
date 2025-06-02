@@ -116,7 +116,7 @@ class XrayFrame(XFBaseClass):
         self._uc_frame = None
         self._score_frame = None
         self._line_frame = None
-        self._plugins_frame = {key: None for key in self.plugins}
+        self._plugins_frame = dict.fromkeys(self.plugins)
         self.zoom_frame = None
         self.plot_frame = None
 

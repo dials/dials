@@ -87,9 +87,9 @@ if __name__ == "__main__":
         release.write(
             f"""
 {caption}
-{'=' * len(caption)}
+{"=" * len(caption)}
 
-The current stable release can be downloaded from `Github <{latest_release['html_url']}>`_,
+The current stable release can be downloaded from `Github <{latest_release["html_url"]}>`_,
 where you can also find further release notes.
 
 """.lstrip()

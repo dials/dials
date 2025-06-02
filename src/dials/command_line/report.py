@@ -806,10 +806,10 @@ class CentroidAnalyser:
 
         nonzeros = np.nonzero(H)
         z1 = np.empty(H.shape)
-        z1[:] = np.NAN
+        z1[:] = np.nan
         z1[nonzeros] = H1[nonzeros] / H[nonzeros]
         z2 = np.empty(H.shape)
-        z2[:] = np.NAN
+        z2[:] = np.nan
         z2[nonzeros] = H2[nonzeros] / H[nonzeros]
 
         return {
@@ -1320,7 +1320,7 @@ class IntensityAnalyser:
 
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -1436,7 +1436,7 @@ class IntensityAnalyser:
 
         nonzeros = np.nonzero(H)
         z1 = np.empty(H.shape)
-        z1[:] = np.NAN
+        z1[:] = np.nan
         z1[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -1960,7 +1960,7 @@ class ReferenceProfileAnalyser:
 
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {

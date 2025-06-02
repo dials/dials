@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import os
 
 import pytest
 
@@ -11,16 +10,15 @@ from .test_scan_static_reflection_predictor import (  # noqa: F401, used as test
 
 
 class Data:
-    def __init__(self, dials_regression):
-        path = os.path.join(
-            dials_regression,
-            "prediction_test_data",
-            "experiments_scan_varying_crystal.json",
-        )
+    def __init__(self, dials_data):
+        data_dir = dials_data("misc_regression", pathlib=True)
+        path = str(data_dir / "prediction-varying-crystal.expt")
 
         from dxtbx.model.experiment_list import ExperimentListFactory
 
-        self.experiments = ExperimentListFactory.from_json_file(path)
+        self.experiments = ExperimentListFactory.from_json_file(
+            path, check_format=False
+        )
         assert len(self.experiments) == 1
         assert (
             self.experiments[0].crystal.num_scan_points
@@ -55,8 +53,8 @@ class Data:
 
 
 @pytest.fixture(scope="session")
-def data(dials_regression):
-    return Data(dials_regression)
+def data(dials_data):
+    return Data(dials_data)
 
 
 def test_regression(data):

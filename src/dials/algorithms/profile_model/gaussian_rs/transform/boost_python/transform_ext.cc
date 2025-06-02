@@ -17,11 +17,8 @@
 #include <dials/algorithms/profile_model/gaussian_rs/transform/map_frames.h>
 #include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace transform { namespace boost_python {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace transform { namespace boost_python {
 
     using namespace boost::python;
 

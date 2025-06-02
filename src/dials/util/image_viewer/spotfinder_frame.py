@@ -30,6 +30,7 @@ from dials.array_family import flex
 from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 from dials.extensions import SpotFinderThreshold
 from dials.util import masking
+from dials.util.image_viewer import calculate_isoresolution_lines
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
@@ -113,119 +114,6 @@ class RadialProfileThresholdDebug:
         dispersion.final_mask = types.MethodType(lambda x: x._final_mask, dispersion)
         self._i_panel += 1
         return dispersion
-
-
-def calculate_isoresolution_lines(
-    spacings,
-    beam,
-    detector,
-    flex_image,
-    add_text=True,
-    n_rays=720,
-    binning=1,
-):
-    # Calculate 2θ angles
-    wavelength = beam.get_wavelength()
-    twotheta = uctbx.d_star_sq_as_two_theta(uctbx.d_as_d_star_sq(spacings), wavelength)
-
-    # Get beam vector and two orthogonal vectors
-    beamvec = matrix.col(beam.get_s0())
-    bor1 = beamvec.ortho()
-    bor2 = beamvec.cross(bor1)
-
-    ring_data = []
-    resolution_text_data = []
-    for tt, d in zip(twotheta, spacings):
-        # Generate rays at 2θ
-        cone_base_centre = beamvec * math.cos(tt)
-        cone_base_radius = (beamvec * math.sin(tt)).length()
-        rad1 = bor1.normalize() * cone_base_radius
-        rad2 = bor2.normalize() * cone_base_radius
-        ticks = (2 * math.pi / n_rays) * flex.double_range(n_rays)
-        offset1 = flex.vec3_double(n_rays, rad1) * flex.cos(ticks)
-        offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
-        rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
-
-        # Duplicate the first ray to close the loop
-        rays.append(rays[0])
-
-        # Get the ray intersections. Need to set a dummy phi value
-        rt = flex.reflection_table.empty_standard(n_rays + 1)
-        rt["s1"] = rays
-        rt["phi"] = flex.double(n_rays + 1, 0)
-        from dials.algorithms.spot_prediction import ray_intersection
-
-        intersect = ray_intersection(detector, rt)
-        rt = rt.select(intersect)
-        if len(rt) == 0:
-            continue
-
-        curr_panel_id = rt[0]["panel"]
-        panel = detector[curr_panel_id]
-
-        # Split the intersections into sets of vertices in separate paths
-        paths = []
-        vertices = []
-        for ref in rt.rows():
-            if ref["panel"] != curr_panel_id:
-                # close off the current path and reset the vertices
-                paths.append(vertices)
-                vertices = []
-                curr_panel_id = ref["panel"]
-                panel = detector[curr_panel_id]
-            x, y = panel.millimeter_to_pixel(ref["xyzcal.mm"][0:2])
-            try:
-                # Multi-panel case
-                y, x = flex_image.tile_readout_to_picture(
-                    curr_panel_id, y - 0.5, x - 0.5
-                )
-            except AttributeError:
-                # Single panel FlexImage
-                pass
-            vertices.append((x / binning, y / binning))
-        paths.append(vertices)
-
-        # For each path, convert vertices to segments and add to the ring data
-        segments = []
-        for vertices in paths:
-            for i in range(len(vertices) - 1):
-                # Avoid long segments along the image edges
-                dx = abs(vertices[i + 1][0] - vertices[i][0])
-                dy = abs(vertices[i + 1][1] - vertices[i][1])
-                if dx > 30 or dy > 30:
-                    continue
-                segments.append((vertices[i], vertices[i + 1]))
-        ring_data.extend(segments)
-
-        # Add labels to the iso-resolution lines
-        if add_text:
-            cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
-            for angle in (45, 135, 225, 315):
-                txtvec = cb1.rotate_around_origin(
-                    axis=beamvec, angle=math.radians(angle)
-                )
-                try:
-                    panel_id, txtpos = detector.get_ray_intersection(txtvec)
-                except RuntimeError:
-                    continue
-                txtpos = detector[panel_id].millimeter_to_pixel(txtpos)
-                try:
-                    # Multi-panel case
-                    x, y = flex_image.tile_readout_to_picture(
-                        panel_id, txtpos[1], txtpos[0]
-                    )[::-1]
-                except AttributeError:
-                    # Single panel FlexImage
-                    x, y = txtpos
-                resolution_text_data.append(
-                    (
-                        x / binning,
-                        y / binning,
-                        f"{d:.2f}",
-                    )
-                )
-
-    return (ring_data, resolution_text_data)
 
 
 class SpotFrame(XrayFrame):
@@ -581,9 +469,9 @@ class SpotFrame(XrayFrame):
                 )
                 assert p_id >= 0, "Point must be within a panel"
                 if panel_id is not None:
-                    assert (
-                        panel_id == p_id
-                    ), "All points must be contained within a single panel"
+                    assert panel_id == p_id, (
+                        "All points must be contained within a single panel"
+                    )
                 panel_id = p_id
                 point_.append((p0, p1))
             point = point_
@@ -1959,7 +1847,7 @@ class SpotSettingsPanel(wx.Panel):
         self.levels = self.GetParent().GetParent().pyslip.tiles.levels
         # from scitbx.math import continued_fraction as cf
         # choices = ["%s" %(cf.from_real(2**l).as_rational()) for l in self.levels]
-        choices = [f"{100 * 2 ** l:g}%" for l in self.levels]
+        choices = [f"{100 * 2**l:g}%" for l in self.levels]
         self.zoom_ctrl = wx.Choice(self, -1, choices=choices)
         self.zoom_ctrl.SetSelection(self.settings.zoom_level)
         grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
