@@ -175,7 +175,9 @@ class CCHalfFromDials:
             table["group"] = table["dataset"]
             self._group_to_dataset_id = list(range(len(experiments)))
             self.datasetid_to_groups = list(range(len(experiments)))
-            batch_offsets = [expt.scan.get_batch_offset() for expt in experiments]
+            batch_offsets = [
+                expt.scan.get_batch_offset() if expt.scan else 0 for expt in experiments
+            ]
             self._group_to_batches = get_batch_ranges(experiments, batch_offsets)
 
         elif self.params.mode == "image_group":
