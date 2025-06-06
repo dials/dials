@@ -13,15 +13,18 @@ import logging
 import operator
 import os
 import pickle
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx import flumpy
 from dxtbx.model import ExperimentType
 from scitbx import matrix
 
@@ -374,6 +377,79 @@ class _:
 
         with HDF5TableFile(filename, "w") as handle:
             handle.add_tables([self])
+
+    def to_xarray(
+        self,
+        ignore: Optional[List[str]] = None,
+    ) -> xr.Dataset:
+        """Return an xarray Dataset representing the reflection table."""
+
+        sz = self.nrows()
+
+        def shoebox_to_dict(
+            shoebox: dials_array_family_flex_ext.shoebox,
+        ) -> dict[str, np.ndarray]:
+            """Return an dictionary representing the shoebox array.
+
+            Args:
+                shoebox (dials_array_family_flex_ext.shoebox): A DIALS shoebox array.
+
+            Returns:
+                dict[str, np.ndarray]: A dictionary with keys being the shoebox's
+                    sub-column names and values being numpy arrays representing data
+                    stored under each column.
+            """
+
+            sbdata, bg, mask = shoebox.get_shoebox_data_arrays()
+            sbdata = flumpy.to_numpy(sbdata)
+            bg = flumpy.to_numpy(bg)
+            mask = flumpy.to_numpy(mask)
+            bbox = shoebox.bounding_boxes()
+            bbox = flumpy.to_numpy(bbox.as_int()).reshape(bbox.size(), 6)
+            panel = flumpy.to_numpy(shoebox.panels())
+
+            # TEMP
+            print(
+                {
+                    "shoebox_data": sbdata,
+                    "shoebox_background": bg,
+                    "shoebox_mask": mask,
+                    "bbox": bbox,
+                    "panel": panel,
+                }
+            )
+
+            return {
+                "shoebox_data": sbdata,
+                "shoebox_background": bg,
+                "shoebox_mask": mask,
+                "bbox": bbox,
+                "panel": panel,
+            }
+
+        ds = xr.Dataset()
+        # The xarray coordinate used here is a simple 0-based index.
+        # TODO: Decide what the index column should be called; named "index" for now.
+        index_name = "index"
+        ds.coords[index_name] = list(range(sz))
+        for key, data in self.cols():
+            print(key, data)
+            if ignore and key in ignore:
+                continue
+            if isinstance(data, dials_array_family_flex_ext.shoebox):
+                for k, v in shoebox_to_dict(data).items():
+                    print(k, " : ", v)
+                    print(".........")
+                    ds[k] = ((index_name), v)
+            elif isinstance(data, dials_array_family_flex_ext.int6):
+                ds[key] = ((index_name), flumpy.to_numpy(data.as_int()).reshape(sz, 6))
+            elif isinstance(data, cctbx.array_family.flex.std_string):
+                ds[key] = ((index_name), [s.encode("utf-8") for s in data])
+            else:
+                ds[key] = ((index_name), np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+                # ds[key] = ((index_name), flumpy.to_numpy(data))
+
+        return ds
 
     @classmethod
     def from_hdf5(cls, filename):
