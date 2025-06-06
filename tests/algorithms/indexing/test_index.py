@@ -963,10 +963,12 @@ def test_unconventional_P1_cell(dials_data, tmp_path, cell_params):
     reflections = data_dir / "strong.refl"
 
     cell_params_str = ",".join([str(x) for x in cell_params])
+    # Set max_refine=5 to speed up the test
     extra_args = [
         "indexing.method=fft3d",
         "known_symmetry.space_group=P1",
         "known_symmetry.unit_cell=" + cell_params_str,
+        "max_refine=5",
     ]
     expected_unit_cell = uctbx.unit_cell(cell_params)
     expected_rmsds = (1, 1, 1)
