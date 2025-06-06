@@ -349,6 +349,7 @@ def do_import(filename, load_models=True):
     logger.info("Loading %s", os.path.basename(filename))
     experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
     if len(experiments) == 0:
+        return experiments # horrible kludge
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
@@ -787,7 +788,7 @@ class Script:
                     copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
                 )
 
-                if rank == 0:
+                if rank == 2:
                     # server process
                     num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
@@ -799,25 +800,35 @@ class Script:
                             continue
 
                         print("Getting next available process")
-                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print(f"Process {rankreq} is ready, sending {item[0]}\n")
-                        comm.send(item, dest=rankreq)
+                        while True:
+                            rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                            if rankreq > 2: # horrible
+                                print(f"Process {rankreq} is ready, sending {item[0]}\n")
+                                comm.send(item, dest=rankreq)
+                                break
+                            #else:
+                            #    print("Sending stop to %d\n" % rankreq)
+                            #    comm.send("endrun", dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
-                    for rankreq in range(size - 1):
-                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                    #for rankreq in range(size - 1):
+                    for rankreq in range(3, size): # horrible
+                        rank = comm.recv(source=rankreq)
+                        #rankreq = comm.recv(source=MPI.ANY_SOURCE)
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                else:
+                elif rank > 2:
+                #else:
                     # client process
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
-                        comm.send(rank, dest=0)
+                        comm.send(rank, dest=2) #horrible
                         print("Rank %d waiting for response" % rank)
-                        item = comm.recv(source=0)
+                        item = comm.recv(source=2) #horrible
+                        print(f'receiving item: {rank=} {item=}')
                         if item == "endrun":
                             print("Rank %d received endrun" % rank)
                             break
@@ -830,6 +841,9 @@ class Script:
                                 str(e),
                             )
                         print("Rank %d event processed" % rank)
+                else:
+                    pass
+                print(f'about to finalize with {rank=}')
                 processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
@@ -1698,11 +1712,11 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
     def finalize(self):
         """Perform any final operations"""
+        print(f'made it to finalize {self.params.output.composite_output=} {self.params.mp.composite_stride=}')
         if self.params.output.composite_output:
             if self.params.mp.composite_stride is not None:
                 assert self.params.mp.method == "mpi"
                 stride = self.params.mp.composite_stride
-
                 from libtbx.mpi4py import MPI
 
                 comm = MPI.COMM_WORLD
@@ -1810,7 +1824,12 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
-
+            
+            from libtbx.mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
+            size = comm.Get_size()  # size: number of processes running in this job
+            print(f'before dumping composite to disk {rank=}')
             # Dump composite files to disk
             if (
                 len(self.all_imported_experiments) > 0
@@ -1900,7 +1919,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()
-
+        print(f'end of finalize for {rank=}')
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
