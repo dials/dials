@@ -513,7 +513,8 @@ def test_index_small_molecule_multi_sequence_3(dials_data, tmp_path):
     sequence_paths = [
         str(data_dir / f"dials-191_sweep{i + 1}_imported.expt") for i in range(3)
     ]
-    extra_args = ["filter_ice=False"]
+    # max_refine is set to speed the test up
+    extra_args = ["filter_ice=False", "max_refine=10"]
     expected_unit_cell = uctbx.unit_cell(
         (9.440, 15.313, 17.126, 90.073, 90.106, 79.248)
     )
