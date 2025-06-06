@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import warnings
-
 import libtbx.phil
 from dxtbx.model import ExperimentList
+from dxtbx.model.crystal import CrystalFactory
 
 import dials.util
 from dials.command_line.dials_import import ManualGeometryUpdater
@@ -15,6 +14,7 @@ help_message = """
 phil_scope = libtbx.phil.parse(
     """
 include scope dials.util.options.geometry_phil_scope
+include scope dxtbx.model.crystal.crystal_phil_scope
 output {
   experiments = modified.expt
     .type = path
@@ -28,20 +28,21 @@ def update(
     experiments: ExperimentList, new_params: libtbx.phil.scope_extract
 ) -> ExperimentList:
     """
-    Modify detector, beam, goniometer and scan in experiments with the values in new_params
+    Modify the models in experiments with the values in new_params
     """
 
     update_geometry = ManualGeometryUpdater(new_params)
 
-    imagesets = experiments.imagesets()
-
-    for imageset in imagesets:
-        imageset_new = update_geometry(imageset)
-        imageset.set_detector(imageset_new.get_detector())
-        imageset.set_beam(imageset_new.get_beam())
-        imageset.set_goniometer(imageset_new.get_goniometer())
-        imageset.set_scan(imageset_new.get_scan())
-
+    for experiment in experiments:
+        imageset = update_geometry(experiment.imageset)
+        experiment.imageset = imageset
+        experiment.detector = imageset.get_detector()
+        experiment.beam = imageset.get_beam()
+        experiment.goniometer = imageset.get_goniometer()
+        experiment.scan = imageset.get_scan()
+        experiment.scan.set_valid_image_ranges(experiment.identifier, [])
+        crystal = CrystalFactory.from_phil(new_params, experiment.crystal)
+        experiment.crystal = crystal
     return experiments
 
 
@@ -73,9 +74,4 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
 
 
 if __name__ == "__main__":
-    warnings.warn(
-        "dials.modify_geometry is deprecated, please use dials.modify_experiments instead.\n",
-        DeprecationWarning,
-        stacklevel=1,
-    )
     run()
