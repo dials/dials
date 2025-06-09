@@ -15,6 +15,9 @@ phil_scope = libtbx.phil.parse(
     """
 include scope dials.util.options.geometry_phil_scope
 include scope dxtbx.model.crystal.crystal_phil_scope
+select_experiments = None
+    .type = ints
+    .help = "A list of experiment ids to select for modification. If None, all experiments are modified."
 output {
   experiments = modified.expt
     .type = path
@@ -32,8 +35,11 @@ def update(
     """
 
     update_geometry = ManualGeometryUpdater(new_params)
-
-    for experiment in experiments:
+    if new_params.select_experiments is None:
+        new_params.select_experiments = list(range(len(experiments)))
+    for iexp, experiment in enumerate(experiments):
+        if iexp not in new_params.select_experiments:
+            continue
         imageset = update_geometry(experiment.imageset)
         experiment.imageset = imageset
         experiment.detector = imageset.get_detector()

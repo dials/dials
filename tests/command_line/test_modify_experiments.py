@@ -46,6 +46,49 @@ def test_run(dials_data, tmp_path):
     )
 
 
+def test_select_experiments(dials_data, tmp_path):
+    orig_expt_json = dials_data("indexing_test_data") / "multi_sweep-experiments.json"
+
+    assert path.exists(orig_expt_json)
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.modify_experiments"),
+            orig_expt_json,
+            "select_experiments=0,1",
+            "A_matrix=-0.076948,0.058256,0.104294,-0.010462,0.113451,-0.081650,-0.112936,-0.050201,-0.063496",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    new_expt_json = tmp_path / "modified.expt"
+    assert new_expt_json.is_file()
+
+    new_expt = load.experiment_list(new_expt_json, check_format=False)
+
+    assert len(new_expt.crystals()) == 2
+    assert len(new_expt) == 4
+
+    assert new_expt[0].crystal.get_A().elems == pytest.approx(
+        [
+            -0.076948,
+            0.058256,
+            0.104294,
+            -0.010462,
+            0.113451,
+            -0.081650,
+            -0.112936,
+            -0.050201,
+            -0.063496,
+        ]
+    )
+    assert new_expt[1].crystal is new_expt[0].crystal
+
+    assert new_expt[2].crystal.get_A().elems != new_expt[0].crystal
+
+
 def test_update(dials_data):
     orig_expt = dials_data("aluminium_standard", pathlib=True) / "imported.expt"
     assert orig_expt.is_file()
