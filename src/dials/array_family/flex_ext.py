@@ -408,17 +408,6 @@ class _:
             bbox = flumpy.to_numpy(bbox.as_int()).reshape(bbox.size(), 6)
             panel = flumpy.to_numpy(shoebox.panels())
 
-            # TEMP
-            print(
-                {
-                    "shoebox_data": sbdata,
-                    "shoebox_background": bg,
-                    "shoebox_mask": mask,
-                    "bbox": bbox,
-                    "panel": panel,
-                }
-            )
-
             return {
                 "shoebox_data": sbdata,
                 "shoebox_background": bg,
@@ -432,22 +421,75 @@ class _:
         # TODO: Decide what the index column should be called; named "index" for now.
         index_name = "index"
         ds.coords[index_name] = list(range(sz))
+        # The current coordinate names are ugly since they require knowledge of the underlying flex types. These coordinates cannot be done away with, however.
+        # TODO: Are there better names to use?
+        ds.coords["miller_index"] = ["h", "k", "l"]
+        ds.coords["vec2_index"] = [0, 1]
+        ds.coords["vec3_index"] = [0, 1, 2]
+        ds.coords["int6_index"] = [0, 1, 2, 3, 4, 5]
+        ds.coords["mat3_index1"] = [0, 1, 2]
+        ds.coords["mat3_index2"] = [0, 1, 2]
         for key, data in self.cols():
-            print(key, data)
+            print(ds)
+            # print(key, data)
             if ignore and key in ignore:
                 continue
             if isinstance(data, dials_array_family_flex_ext.shoebox):
-                for k, v in shoebox_to_dict(data).items():
-                    print(k, " : ", v)
-                    print(".........")
-                    ds[k] = ((index_name), v)
+                d = shoebox_to_dict(data)
+                ds["bbox"] = ((index_name, "int6_index"), d["bbox"].reshape(sz, 6))
+                ds["panel"] = ((index_name), d["panel"])
+                # i = 0
+                # # TODO Since xarray requires names axes and coordinates, an arbitrary-shape shoebox is not allowed.
+                # # Bboxes and paneled are allowed, but not sbdata, bg, or mask (unless they are guaranteed to be of a fixed shape for the entire reflection table.)
+                # for bbox in d["bbox"]:
+                #     vol = (
+                #         (bbox[5] - bbox[4]) * (bbox[3] - bbox[2]) * (bbox[1] - bbox[0])
+                #     )
+                #     sbdata = np.reshape(
+                #         d["shoebox_data"][i : i + vol],
+                #         ((bbox[5] - bbox[4]), (bbox[3] - bbox[2]), (bbox[1] - bbox[0])),
+                #     )
+                #     bg = np.reshape(
+                #         d["shoebox_background"][i : i + vol],
+                #         ((bbox[5] - bbox[4]), (bbox[3] - bbox[2]), (bbox[1] - bbox[0])),
+                #     )
+                #     mask = np.reshape(
+                #         d["shoebox_mask"][i : i + vol],
+                #         ((bbox[5] - bbox[4]), (bbox[3] - bbox[2]), (bbox[1] - bbox[0])),
+                #     )
+                #     print(sbdata)
+                #     print(bg)
+                #     print(mask)
+                #     i += vol
             elif isinstance(data, dials_array_family_flex_ext.int6):
-                ds[key] = ((index_name), flumpy.to_numpy(data.as_int()).reshape(sz, 6))
+                ds[key] = (
+                    (index_name, "int6_index"),
+                    flumpy.to_numpy(data.as_int()).reshape(sz, 6),
+                )
+            elif isinstance(data, cctbx.array_family.flex.vec2_double):
+                ds[key] = (
+                    (index_name, "vec2_index"),
+                    flumpy.to_numpy(data).reshape(sz, 2),
+                )
+            elif isinstance(data, cctbx.array_family.flex.vec3_double):
+                ds[key] = (
+                    (index_name, "vec3_index"),
+                    flumpy.to_numpy(data).reshape(sz, 3),
+                )
+            elif isinstance(data, cctbx.array_family.flex.mat3_double):
+                ds[key] = (
+                    (index_name, "mat3_index1", "mat3_index2"),
+                    flumpy.to_numpy(data).reshape(sz, 3, 3),
+                )
             elif isinstance(data, cctbx.array_family.flex.std_string):
                 ds[key] = ((index_name), [s.encode("utf-8") for s in data])
+            elif isinstance(data, cctbx.array_family.flex.miller_index):
+                ds[key] = (
+                    (index_name, "miller_index"),
+                    flumpy.to_numpy(data),
+                )
             else:
-                ds[key] = ((index_name), np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
-                # ds[key] = ((index_name), flumpy.to_numpy(data))
+                ds[key] = ((index_name), flumpy.to_numpy(data))
 
         return ds
 
