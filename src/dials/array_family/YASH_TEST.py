@@ -10,7 +10,7 @@ def gen_shoebox():
     for k in range(1):
         for j in range(3):
             for i in range(4):
-                shoebox.data[k, j, i] = i + j + k + 0.1
+                shoebox.data[k, j, i] = i + 2 * j + 3 * k + 0.1
                 shoebox.mask[k, j, i] = i % 2
                 shoebox.background[k, j, i] = i * j + 0.2
     return shoebox
