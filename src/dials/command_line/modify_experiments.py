@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 import libtbx.phil
 from dxtbx.model import ExperimentList
 from dxtbx.model.crystal import CrystalFactory
@@ -37,9 +39,17 @@ def update(
     update_geometry = ManualGeometryUpdater(new_params)
     if new_params.select_experiments is None:
         new_params.select_experiments = list(range(len(experiments)))
-    for iexp, experiment in enumerate(experiments):
-        if iexp not in new_params.select_experiments:
-            continue
+    else:
+        # Copy the selected experiments to ensure they do not share models with
+        # the original experiments
+        for iexp in new_params.select_experiments:
+            if iexp < 0 or iexp >= len(experiments):
+                raise ValueError(
+                    f"Experiment index {iexp} is out of range for the number of experiments ({len(experiments)})"
+                )
+            experiments[iexp] = deepcopy(experiments[iexp])
+    for iexp in new_params.select_experiments:
+        experiment = experiments[iexp]
         imageset = update_geometry(experiment.imageset)
         experiment.imageset = imageset
         experiment.detector = imageset.get_detector()
@@ -49,6 +59,7 @@ def update(
         experiment.scan.set_valid_image_ranges(experiment.identifier, [])
         crystal = CrystalFactory.from_phil(new_params, experiment.crystal)
         experiment.crystal = crystal
+        experiments[iexp] = experiment
     return experiments
 
 

@@ -68,10 +68,13 @@ def test_select_experiments(dials_data, tmp_path):
 
     new_expt = load.experiment_list(new_expt_json, check_format=False)
 
-    assert len(new_expt.crystals()) == 2
+    # The original experiment list contains 4 experiments, all sharing a crystal model.
+    # The selected experiments were copied so they do not share models. As a result,
+    # there should now be 3 crystal models.
+    assert len(new_expt.crystals()) == 3
     assert len(new_expt) == 4
 
-    assert new_expt[0].crystal.get_A().elems == pytest.approx(
+    assert new_expt[0].crystal.get_A() == pytest.approx(
         [
             -0.076948,
             0.058256,
@@ -84,9 +87,9 @@ def test_select_experiments(dials_data, tmp_path):
             -0.063496,
         ]
     )
-    assert new_expt[1].crystal is new_expt[0].crystal
+    assert new_expt[1].crystal == new_expt[0].crystal
 
-    assert new_expt[2].crystal.get_A().elems != new_expt[0].crystal
+    assert new_expt[2].crystal != new_expt[0].crystal
 
 
 def test_update(dials_data):
