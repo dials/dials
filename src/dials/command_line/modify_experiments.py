@@ -11,6 +11,14 @@ from dials.command_line.dials_import import ManualGeometryUpdater
 from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
+
+This program modifies the experimental models of the experiments in an experiment list.
+
+Examples::
+
+  dials.modify_experiments models.expt distance=100.0
+
+  dials.modify_experiments models.expt select_experiments=0,1 A_matrix=-0.076948,0.058256,0.104294,-0.010462,0.113451,-0.081650,-0.112936,-0.050201,-0.063496
 """
 
 phil_scope = libtbx.phil.parse(
