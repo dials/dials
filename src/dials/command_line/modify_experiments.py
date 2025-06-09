@@ -12,7 +12,10 @@ from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
-This program modifies the experimental models of the experiments in an experiment list.
+This program modifies the experimental models of the experiments in an experiment
+list. The modifications will be made to all the experiments unless a selection is
+made. In the case of a selection, the selected experiments will first be copied
+so that they no longer share models with the original experiments.
 
 Examples::
 
