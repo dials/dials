@@ -237,6 +237,20 @@ class IntegrateHKLImporter:
         table.set_flags(flex.bool(table.size(), True), table.flags.predicted)
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
 
+        # XDS outputs zero values for xyzobs if "unobserved" (i.e. not strong)
+        # So we must either remove the xyzobs.px.value column or set the unobserved
+        # to sensible values. Choice is to set them to the calculated values,
+        # then any refinements (e.g. two theta refinement) can be run, but must
+        # only be run on the strong observations.
+        unobserved = table["xyzobs.px.value"].parts()[2] == 0
+        table["xyzobs.px.value"].set_selected(
+            unobserved, table["xyzcal.px"].select(unobserved)
+        )
+        table["xyzobs.mm.value"].set_selected(
+            unobserved, table["xyzcal.mm"].select(unobserved)
+        )
+        table.set_flags(~unobserved, table.flags.strong)
+
         logger.info(f"Created table with {len(table)} reflections")
 
         # Output the table to pickle file
