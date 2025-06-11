@@ -238,10 +238,15 @@ class IntegrateHKLImporter:
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
 
         # XDS outputs zero values for xyzobs if "unobserved" (i.e. not strong)
-        # So we must either remove the xyzobs.px.value column or set the unobserved
-        # to sensible values. Choice is to set them to the calculated values,
-        # then any refinements (e.g. two theta refinement) can be run, but must
-        # only be run on the strong observations.
+        # So we must either remove the xyzobs.px.value column, set the unobserved
+        # to sensible values, or handle the (0,0,0) values when encountered in the
+        # code. The choice is to set them to the calculated values as the best available,
+        # estimate, then any refinements (e.g. two theta refinement) can be run, but must
+        # only be run on the valid observations. This is codified in the
+        # not_suitable_for_refinement flag, which is used as a filter in the
+        # setup of the refinement reflection manager. Any non-refinement code can
+        # also use this flag to handle imported xds data if true xyzobs values are necessary
+        # for a given analysis.
         x, y, z = table["xyzobs.px.value"].parts()
         unobserved = (x == 0) and (y == 0) and (z == 0)
         table["xyzobs.px.value"].set_selected(
