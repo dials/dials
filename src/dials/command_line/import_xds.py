@@ -1,6 +1,12 @@
 """
 This program imports xds processed data for use in dials.
 
+The files created are the closest mapping from XDS data to DIALS models, however
+this is not always exact so care should be taken when interpreting results.
+For XDS-integrated data, the main intention for this tool is to enable the use of
+DIALS data reduction tools. This tool is likely to be unsuitable for informing
+direct comparisons between XDS and DIALS.
+
 It requires up to three things to create an experiment list and reflection table.
     - an XDS.INP, to specify the geometry,
     - one of "INTEGRATE.HKL" or "XPARM.XDS", which is needed to create the experiment (
