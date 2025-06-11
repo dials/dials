@@ -672,6 +672,7 @@ class ReflectionManager:
         # exclude reflections with overloads, as these have worse centroids
         sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
 
+        # exclude reflections marked as not suitable
         sel3 = ~obs_data.get_flags(obs_data.flags.not_suitable_for_refinement)
 
         # combine selections
@@ -915,8 +916,11 @@ class StillsReflectionManager(ReflectionManager):
         # exclude reflections with overloads, as these have worse centroids
         sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
 
+        # exclude reflections marked as not suitable
+        sel3 = ~obs_data.get_flags(obs_data.flags.not_suitable_for_refinement)
+
         # combine selections
-        sel = sel1 & sel2
+        sel = sel1 & sel2 & sel3
         inc = flex.size_t_range(len(obs_data)).select(sel)
 
         return inc
@@ -1074,8 +1078,11 @@ class LaueReflectionManager(ReflectionManager):
         # exclude reflections with overloads, as these have worse centroids
         sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
 
+        # exclude reflections marked as not suitable
+        sel3 = ~obs_data.get_flags(obs_data.flags.not_suitable_for_refinement)
+
         # combine selections
-        sel = sel1 & sel2
+        sel = sel1 & sel2 & sel3
         inc = flex.size_t_range(len(obs_data)).select(sel)
 
         return inc
