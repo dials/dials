@@ -284,7 +284,15 @@ class XDSFileImporter:
         # Get the XDS.INP file
         xds_inp = self.xds_directory / "XDS.INP"
         if not xds_inp.exists():
-            raise RuntimeError(f"Unable to find XDS.INP file in {self.xds_directory}.")
+            candidates = sorted(
+                self.xds_directory.glob("XDS.INP", case_sensitive=False)
+            )
+            addendum = ""
+            if candidates:
+                addendum = f" Case insensitive matches are: {', '.join(str(c) for c in candidates)}"
+            raise RuntimeError(
+                f"Unable to find XDS.INP file in {self.xds_directory}." + addendum
+            )
 
         if params.input.xds_file is None:
             xds_file = XDSFileImporter.find_best_xds_file(self.xds_directory)
