@@ -423,15 +423,13 @@ class _:
         ds.coords[index_name] = list(range(sz))
         # The current coordinate names are ugly since they require knowledge of the underlying flex types. These coordinates cannot be done away with, however.
         # TODO: Are there better names to use?
-        ds.coords["miller_index"] = ["h", "k", "l"]
+        ds.coords["hkl"] = ["h", "k", "l"]
         ds.coords["vec2_index"] = [0, 1]
         ds.coords["vec3_index"] = [0, 1, 2]
         ds.coords["int6_index"] = [0, 1, 2, 3, 4, 5]
         ds.coords["mat3_index1"] = [0, 1, 2]
         ds.coords["mat3_index2"] = [0, 1, 2]
         for key, data in self.cols():
-            print(ds)
-            # print(key, data)
             if ignore and key in ignore:
                 continue
             if isinstance(data, dials_array_family_flex_ext.shoebox):
@@ -439,8 +437,8 @@ class _:
                 ds["bbox"] = ((index_name, "int6_index"), d["bbox"].reshape(sz, 6))
                 ds["panel"] = ((index_name), d["panel"])
                 # i = 0
-                # # TODO Since xarray requires names axes and coordinates, an arbitrary-shape shoebox is not allowed.
-                # # Bboxes and paneled are allowed, but not sbdata, bg, or mask (unless they are guaranteed to be of a fixed shape for the entire reflection table.)
+                # # TODO Since xarray requires named axes and coordinates, an arbitrary-shape shoebox is not allowed.
+                # # Bboxes and panels are allowed, but not sbdata, bg, or mask (unless they are guaranteed to be of a fixed shape for the entire reflection table.)
                 # for bbox in d["bbox"]:
                 #     vol = (
                 #         (bbox[5] - bbox[4]) * (bbox[3] - bbox[2]) * (bbox[1] - bbox[0])
@@ -485,7 +483,7 @@ class _:
                 ds[key] = ((index_name), [s.encode("utf-8") for s in data])
             elif isinstance(data, cctbx.array_family.flex.miller_index):
                 ds[key] = (
-                    (index_name, "miller_index"),
+                    (index_name, "hkl"),
                     flumpy.to_numpy(data),
                 )
             else:
