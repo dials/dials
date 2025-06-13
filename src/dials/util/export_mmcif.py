@@ -154,8 +154,8 @@ class MMCIFOutputFile:
         citations_loop.add_row((1,) + integration_software.mmcif_citation_loop_data())
         next_id = 2
         if (
-            experiments.profiles()
-            and experiments.profiles()[0].to_dict()["__id__"] == "ellipsoid"
+            experiments[0].profile
+            and experiments[0].profile.to_dict()["__id__"] == "ellipsoid"
         ):
             software_loop.add_row(
                 (next_id, next_id) + ssx_citation.mmcif_software_loop_data()
