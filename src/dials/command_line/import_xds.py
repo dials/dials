@@ -1,6 +1,12 @@
 """
 This program imports xds processed data for use in dials.
 
+The files created are the closest mapping from XDS data to DIALS models, however
+this is not always exact so care should be taken when interpreting results.
+For XDS-integrated data, the main intention for this tool is to enable the use of
+DIALS data reduction tools. This tool is likely to be unsuitable for informing
+direct comparisons between XDS and DIALS.
+
 It requires up to three things to create an experiment list and reflection table.
     - an XDS.INP, to specify the geometry,
     - one of "INTEGRATE.HKL" or "XPARM.XDS", which is needed to create the experiment (
@@ -236,6 +242,30 @@ class IntegrateHKLImporter:
 
         table.set_flags(flex.bool(table.size(), True), table.flags.predicted)
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
+
+        # XDS outputs zero values for xyzobs if "unobserved" (i.e. not strong)
+        # So we must either remove the xyzobs.px.value column, set the unobserved
+        # to sensible values, or handle the (0,0,0) values when encountered in the
+        # code. The choice is to set them to the calculated values as the best available,
+        # estimate, then any refinements (e.g. two theta refinement) can be run, but must
+        # only be run on the valid observations. This is codified in the
+        # not_suitable_for_refinement flag, which is used as a filter in the
+        # setup of the refinement reflection manager. Any non-refinement code can
+        # also use this flag to handle imported xds data if true xyzobs values are necessary
+        # for a given analysis.
+        x, y, z = table["xyzobs.px.value"].parts()
+        unobserved = (x == 0) and (y == 0) and (z == 0)
+        table["xyzobs.px.value"].set_selected(
+            unobserved, table["xyzcal.px"].select(unobserved)
+        )
+        table["xyzobs.mm.value"].set_selected(
+            unobserved, table["xyzcal.mm"].select(unobserved)
+        )
+        table.set_flags(unobserved, table.flags.not_suitable_for_refinement)
+        table.set_flags(~unobserved, table.flags.strong)
+        logger.info(f"""Warning: {unobserved.count(True)} unobserved reflections did not have an xyzobs value: for
+these reflections, the xyzobs value has been set to the xyzcal value, but
+will not be used in any dials refinement programs.""")
 
         logger.info(f"Created table with {len(table)} reflections")
 
