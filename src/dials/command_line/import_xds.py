@@ -314,9 +314,14 @@ class XDSFileImporter:
         # Get the XDS.INP file
         xds_inp = self.xds_directory / "XDS.INP"
         if not xds_inp.exists():
-            candidates = sorted(
-                self.xds_directory.glob("XDS.INP", case_sensitive=False)
-            )
+            candidates = []
+            try:
+                # Python 3.12+ for glob case insensitive matching
+                candidates = sorted(
+                    self.xds_directory.glob("XDS.INP", case_sensitive=False)
+                )
+            except TypeError:
+                pass
             addendum = ""
             if candidates:
                 addendum = f" Case insensitive matches are: {', '.join(str(c) for c in candidates)}"
