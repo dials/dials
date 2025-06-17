@@ -389,16 +389,7 @@ class _:
         def shoebox_to_dict(
             shoebox: dials_array_family_flex_ext.shoebox,
         ) -> dict[str, np.ndarray]:
-            """Return an dictionary representing the shoebox array.
-
-            Args:
-                shoebox (dials_array_family_flex_ext.shoebox): A DIALS shoebox array.
-
-            Returns:
-                dict[str, np.ndarray]: A dictionary with keys being the shoebox's
-                    sub-column names and values being numpy arrays representing data
-                    stored under each column.
-            """
+            """Return an dictionary representing the shoebox array."""
 
             sbdata, bg, mask = shoebox.get_shoebox_data_arrays()
             sbdata = flumpy.to_numpy(sbdata)
@@ -480,7 +471,7 @@ class _:
                     flumpy.to_numpy(data).reshape(sz, 3, 3),
                 )
             elif isinstance(data, cctbx.array_family.flex.std_string):
-                ds[key] = ((index_name), [s.encode("utf-8") for s in data])
+                ds[key] = ((index_name), list(data))
             elif isinstance(data, cctbx.array_family.flex.miller_index):
                 ds[key] = (
                     (index_name, "hkl"),

@@ -5,9 +5,11 @@ import logging
 import pickle
 import random
 
+import numpy as np
 import pytest
 
 from cctbx import sgtbx
+from dxtbx import flumpy
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.serialize import load
 
@@ -1186,6 +1188,42 @@ def test_to_from_h5(tmp_path):
     assert not dict(empty_table.experiment_identifiers())
 
 
+def test_to_xarray():
+    # The columns as lists
+    table, columns = table_and_columns()
+    c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
+    table["id"] = flex.int(table.size(), 0)
+    table.experiment_identifiers()[0] = "test"
+
+    xarray_dataset = table.to_xarray()
+    assert (xarray_dataset["col1"].to_numpy() == c1).all()
+    assert (xarray_dataset["col2"].to_numpy() == c2).all()
+    assert (xarray_dataset["col3"].to_numpy() == c3).all()
+    assert (xarray_dataset["col4"].to_numpy() == c4).all()
+    assert (xarray_dataset["col5"].to_numpy() == c5).all()
+    assert (xarray_dataset["col6"].to_numpy() == c6).all()
+    assert (xarray_dataset["col7"].to_numpy() == c7).all()
+    assert (xarray_dataset["col8"].to_numpy().flatten() == np.array(c8).flatten()).all()
+    assert (xarray_dataset["col9"].to_numpy() == c9).all()
+    assert (xarray_dataset["col10"].to_numpy() == c10).all()
+
+    # Test available shoebox columns
+    shoeboxes = flex.shoebox(c11)
+    bbox = flumpy.to_numpy(shoeboxes.bounding_boxes().as_int()).reshape(
+        shoeboxes.bounding_boxes().size(), 6
+    )
+    panel = flumpy.to_numpy(shoeboxes.panels())
+    assert (xarray_dataset["bbox"].to_numpy() == bbox).all()
+    assert (xarray_dataset["panel"].to_numpy() == panel).all()
+
+    assert (xarray_dataset["id"].to_numpy() == 0).all()
+
+    # Test empty table
+    t = flex.reflection_table([])
+    empty_xarray_dataset = t.to_xarray()
+    assert list(empty_xarray_dataset.keys()) == []
+
+
 def test_to_from_msgpack(tmp_path):
     table, columns = table_and_columns()
     c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
@@ -1653,3 +1691,7 @@ def test_concat():
     table1 = flex.reflection_table()
     table2 = flex.reflection_table()
     table1 = flex.reflection_table.concat([table1, table2])
+
+
+if __name__ == "__main__":
+    test_to_xarray()
