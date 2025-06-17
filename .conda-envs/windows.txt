@@ -41,6 +41,7 @@ pytest-nunit
 pytest-xdist
 python-dateutil>=2.7.0
 reportlab
+xarray
 requests
 scikit-learn
 scipy

@@ -42,6 +42,7 @@ pytest-mock
 pytest-xdist
 python-dateutil>=2.7.0
 python.app
+xarray
 reportlab
 requests
 scikit-learn
