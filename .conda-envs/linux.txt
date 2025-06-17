@@ -50,11 +50,11 @@ scons
 setuptools
 six
 sphinx>=4
-xarray
 sqlite
 tabulate
 tqdm
 urllib3
 wxpython>=4.2.0
+xarray
 xz
 zlib

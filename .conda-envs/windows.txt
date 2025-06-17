@@ -41,7 +41,6 @@ pytest-nunit
 pytest-xdist
 python-dateutil>=2.7.0
 reportlab
-xarray
 requests
 scikit-learn
 scipy
@@ -54,5 +53,6 @@ tabulate
 tqdm
 urllib3
 wxpython>=4.2.2
+xarray
 xz
 zlib
