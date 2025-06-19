@@ -13,7 +13,6 @@ import logging
 import operator
 import os
 import pickle
-from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -380,7 +379,7 @@ class _:
 
     def to_xarray(
         self,
-        ignore: Optional[List[str]] = None,
+        ignore: list[str] | None = None,
     ) -> xr.Dataset:
         """Return an xarray Dataset representing the reflection table."""
 

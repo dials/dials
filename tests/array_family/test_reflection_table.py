@@ -1691,7 +1691,3 @@ def test_concat():
     table1 = flex.reflection_table()
     table2 = flex.reflection_table()
     table1 = flex.reflection_table.concat([table1, table2])
-
-
-if __name__ == "__main__":
-    test_to_xarray()
