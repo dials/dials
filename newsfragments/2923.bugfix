@@ -1,1 +1,0 @@
-Avoid ``dials.index`` test failure on systems where the ``ffbidx`` package is not functional
