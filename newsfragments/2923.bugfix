@@ -1,1 +1,1 @@
-Avoid ``dials.index`` test failure on systems where the ``ffbidx`` package is not functional
+``dials.index``: Avoid test failure when the ``ffbidx`` package is not functional.

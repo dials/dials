@@ -1,1 +1,1 @@
-Updated miscellaneous tests to use data from ``dials-data`` rather than ``dials_regression``.
+Updated test suite to use data from ``dials-data`` rather than ``dials_regression``, meaning that much more of the test suite can be run outside of Diamond.

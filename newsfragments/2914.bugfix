@@ -1,3 +1,1 @@
-Reworked the import of INTEGRATE.HKL from XDS to have a more complete
-matchup between the data provided in that file and the reflection list
-expected by Dials.
+``dials.import_xds``: Reworked the import from INTEGRATE.HKL to have a more complete matchup between the data provided in that file and the reflection list expected by DIALS.
