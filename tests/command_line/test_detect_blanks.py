@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
-import subprocess
 
 import pytest
 
@@ -74,33 +72,10 @@ Potential blank images: 41 -> 45
 
 
 def test_passing_still_images_raises_sysexit(dials_data, run_in_tmp_path):
-    path = dials_data("thaumatin_grid_scan", pathlib=True)
+    path = dials_data("vmxi_thaumatin_grid_index", pathlib=True)
 
-    # Import the data
-    result = subprocess.run(
-        [shutil.which("dials.import"), "output.experiments=imported.expt"]
-        + list(path.glob("*.cbf*")),
-        cwd=run_in_tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-    expts_file = run_in_tmp_path / "imported.expt"
-    assert expts_file.is_file()
-
-    # Find the spots
-    result = subprocess.run(
-        [
-            shutil.which("dials.find_spots"),
-            "imported.expt",
-            "min_spot_size=3",
-            "nproc=1",
-        ],
-        cwd=run_in_tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-    refl_file = run_in_tmp_path / "strong.refl"
-    assert refl_file.is_file()
+    expts_file = path / "split_07602.expt"
+    refl_file = path / "split_07602.refl"
 
     # Now test that passing stills raises a sys.exit
     with pytest.raises(SystemExit):
