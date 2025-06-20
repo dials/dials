@@ -1,1 +1,0 @@
-``dials.import_xds``: Warn the user if ``XDS.INP`` is not found, but a case-insensitive variant is present.
