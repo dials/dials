@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 import libtbx.phil
 from dxtbx.model import ExperimentList
 
@@ -71,4 +73,9 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
 
 
 if __name__ == "__main__":
+    warnings.warn(
+        "dials.modify_geometry is deprecated, please use dials.modify_experiments instead.\n",
+        DeprecationWarning,
+        stacklevel=1,
+    )
     run()
