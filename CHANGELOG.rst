@@ -1,6 +1,11 @@
 DIALS 3.25.0 (2025-06-20)
 =========================
 
+This release contains a number of new features for multi-crystal processing.
+- The ``dials.import_xds`` program has been significantly updated; given an INTEGRATE.HKL and XDS.INP from XDS processing, one can now convert these to DIALS data files that can be used in ``xia2.multiplex`` and other DIALS data reduction tools. See https://dials.github.io/documentation/programs/dials_import_xds.html for the program documentation.
+- ``xia2.multiplex`` now generates unmerged mmcif files that are suitable for deposition of unmerged data.
+- Improvements have been made to the ``xia2.multiplex`` log output (better logging of progress and individual logs for more DIALS programs) and runtime performance has been improved for large datasets.
+
 Features
 --------
 
