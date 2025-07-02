@@ -36,3 +36,10 @@ target_link_libraries( dials_algorithms_integration_bayes_ext PUBLIC CCTBX::cctb
 
 Python_add_library( dials_algorithms_integration_kapton_ext MODULE boost_python/kapton_ext.cc )
 target_link_libraries( dials_algorithms_integration_kapton_ext PUBLIC CCTBX::cctbx Boost::python )
+
+Python_add_library(
+    dials_algorithms_tof_integration_ext
+    MODULE
+    tof/boost_python/tof_integration_ext.cc
+)
+target_link_libraries( dials_algorithms_tof_integration_ext PUBLIC CCTBX::cctbx Boost::python )
