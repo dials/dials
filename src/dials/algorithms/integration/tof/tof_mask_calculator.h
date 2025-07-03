@@ -41,7 +41,8 @@ namespace dials { namespace algorithms {
                                   std::vector<double>& values,
                                   Eigen::Vector3d& mean,
                                   Eigen::Matrix3d& eigenvectors,
-                                  Eigen::Vector3d& axes_lengths) {
+                                  Eigen::Vector3d& axes_lengths,
+                                  bool calculate_mean) {
     if (points.size() != values.size() || points.empty()) {
       throw std::invalid_argument(
         "Points and values must have the same size and cannot be empty.");
@@ -58,12 +59,15 @@ namespace dials { namespace algorithms {
       weights[i] = values[i] / totalWeight;
     }
 
-    // Compute the weighted mean
-    Eigen::Vector3d weightedSum = Eigen::Vector3d::Zero();
-    for (size_t i = 0; i < points.size(); ++i) {
-      weightedSum += weights[i] * points[i];
+    if (calculate_mean) {
+      // Compute the weighted mean
+      Eigen::Vector3d weightedSum = Eigen::Vector3d::Zero();
+      for (size_t i = 0; i < points.size(); ++i) {
+        weightedSum += weights[i] * points[i];
+      }
+
+      mean = weightedSum;
     }
-    mean = weightedSum;
 
     // Compute the weighted covariance matrix
     Eigen::Matrix3d covMatrix = Eigen::Matrix3d::Zero();
@@ -381,10 +385,17 @@ namespace dials { namespace algorithms {
       }
 
       // Now update the shoebox mask with selected pixels as foreground
-      for (std::size_t m = 0; m < mask.size(); ++m) {
-        int mask_value =
-          selected_pixels.find(m) != selected_pixels.end() ? Foreground : Background;
-        mask[m] |= mask_value;
+      for (std::size_t z = 0; z < zsize; ++z) {
+        for (std::size_t y = 0; y < ysize; ++y) {
+          for (std::size_t x = 0; x < xsize; ++x) {
+            std::size_t idx = z * (ysize * xsize) + y * xsize + x;
+            int mask_value = selected_pixels.find(idx) != selected_pixels.end()
+                               ? Foreground
+                               : Background;
+            mask(z, y, x) &= ~(Foreground | Background);
+            mask(z, y, x) |= mask_value;
+          }
+        }
       }
 
       mask = fill_holes_in_mask(mask);
@@ -447,11 +458,15 @@ namespace dials { namespace algorithms {
                        unit_s0,
                        sample_to_source_distance,
                        setting_rotation);
-      Eigen::Vector3d mean;
+
+      // Centre the ellipse around the peak value
+      auto peak_val = std::max_element(shoebox_values.begin(), shoebox_values.end());
+      size_t peak_idx = std::distance(shoebox_values.begin(), peak_val);
+      Eigen::Vector3d mean = shoebox_rlps[peak_idx];
       Eigen::Matrix3d eigenvectors;
       Eigen::Vector3d axes_lengths;
       compute_weighted_ellipsoid(
-        shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths);
+        shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths, false);
       int count = 0;
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
