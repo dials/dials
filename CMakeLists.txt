@@ -75,13 +75,11 @@ add_subdirectory(tests)
 
 # #######################################################################
 # Installation
-# install(
-#     TARGETS dx2
-#     EXPORT DX2Targets
-#     LIBRARY DESTINATION lib
-
-#     # FILE_SET HEADERS DESTINATION include/dx2
-# )
+install(
+    TARGETS dx2
+    EXPORT DX2Targets
+    LIBRARY DESTINATION lib
+)
 # install(
 #     FILES
 #     include/dx2/dx2.h
