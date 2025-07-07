@@ -16,7 +16,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
-import xarray as xr
+import xarray
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python
@@ -380,7 +380,7 @@ class _:
     def to_xarray(
         self,
         ignore: list[str] | None = None,
-    ) -> xr.Dataset:
+    ) -> xarray.Dataset:
         """Return an xarray Dataset representing the reflection table."""
 
         sz = self.nrows()
@@ -406,7 +406,7 @@ class _:
                 "panel": panel,
             }
 
-        ds = xr.Dataset()
+        ds = xarray.Dataset()
         # The xarray coordinate used here is a simple 0-based index.
         # TODO: Decide what the index column should be called; named "index" for now.
         index_name = "index"
