@@ -70,6 +70,7 @@ install(
         dials_algorithms_indexing_ext
         dials_algorithms_integration_bayes_ext
         dials_algorithms_integration_ext
+        dials_algorithms_tof_integration_ext
         dials_algorithms_integration_fit_ext
         dials_algorithms_integration_integrator_ext
         dials_algorithms_integration_kapton_ext
