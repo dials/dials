@@ -16,12 +16,14 @@ import pickle
 
 import numpy as np
 import pandas as pd
+import xarray
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx import flumpy
 from dxtbx.model import ExperimentType
 from scitbx import matrix
 
@@ -374,6 +376,110 @@ class _:
 
         with HDF5TableFile(filename, "w") as handle:
             handle.add_tables([self])
+
+    def to_xarray(
+        self,
+        ignore: list[str] | None = None,
+    ) -> xarray.Dataset:
+        """Return an xarray Dataset representing the reflection table."""
+
+        sz = self.nrows()
+
+        def shoebox_to_dict(
+            shoebox: dials_array_family_flex_ext.shoebox,
+        ) -> dict[str, np.ndarray]:
+            """Return an dictionary representing the shoebox array."""
+
+            sbdata, bg, mask = shoebox.get_shoebox_data_arrays()
+            sbdata = flumpy.to_numpy(sbdata)
+            bg = flumpy.to_numpy(bg)
+            mask = flumpy.to_numpy(mask)
+            bbox = shoebox.bounding_boxes()
+            bbox = flumpy.to_numpy(bbox.as_int()).reshape(bbox.size(), 6)
+            panel = flumpy.to_numpy(shoebox.panels())
+
+            return {
+                "shoebox_data": sbdata,
+                "shoebox_background": bg,
+                "shoebox_mask": mask,
+                "bbox": bbox,
+                "panel": panel,
+            }
+
+        ds = xarray.Dataset()
+        # The xarray coordinate used here is a simple 0-based index.
+        # TODO: Decide what the index column should be called; named "index" for now.
+        index_name = "index"
+        ds.coords[index_name] = list(range(sz))
+        # The current coordinate names are ugly since they require knowledge of the underlying flex types. These coordinates cannot be done away with, however.
+        # TODO: Are there better names to use?
+        ds.coords["hkl"] = ["h", "k", "l"]
+        ds.coords["vec2_index"] = [0, 1]
+        ds.coords["vec3_index"] = [0, 1, 2]
+        ds.coords["int6_index"] = [0, 1, 2, 3, 4, 5]
+        ds.coords["mat3_index1"] = [0, 1, 2]
+        ds.coords["mat3_index2"] = [0, 1, 2]
+        for key, data in self.cols():
+            if ignore and key in ignore:
+                continue
+            if isinstance(data, dials_array_family_flex_ext.shoebox):
+                d = shoebox_to_dict(data)
+                ds["bbox"] = ((index_name, "int6_index"), d["bbox"].reshape(sz, 6))
+                ds["panel"] = ((index_name), d["panel"])
+                # i = 0
+                # # TODO Since xarray requires named axes and coordinates, an arbitrary-shape shoebox is not allowed.
+                # # Bboxes and panels are allowed, but not sbdata, bg, or mask (unless they are guaranteed to be of a fixed shape for the entire reflection table.)
+                # for bbox in d["bbox"]:
+                #     vol = (
+                #         (bbox[5] - bbox[4]) * (bbox[3] - bbox[2]) * (bbox[1] - bbox[0])
+                #     )
+                #     sbdata = np.reshape(
+                #         d["shoebox_data"][i : i + vol],
+                #         ((bbox[5] - bbox[4]), (bbox[3] - bbox[2]), (bbox[1] - bbox[0])),
+                #     )
+                #     bg = np.reshape(
+                #         d["shoebox_background"][i : i + vol],
+                #         ((bbox[5] - bbox[4]), (bbox[3] - bbox[2]), (bbox[1] - bbox[0])),
+                #     )
+                #     mask = np.reshape(
+                #         d["shoebox_mask"][i : i + vol],
+                #         ((bbox[5] - bbox[4]), (bbox[3] - bbox[2]), (bbox[1] - bbox[0])),
+                #     )
+                #     print(sbdata)
+                #     print(bg)
+                #     print(mask)
+                #     i += vol
+            elif isinstance(data, dials_array_family_flex_ext.int6):
+                ds[key] = (
+                    (index_name, "int6_index"),
+                    flumpy.to_numpy(data.as_int()).reshape(sz, 6),
+                )
+            elif isinstance(data, cctbx.array_family.flex.vec2_double):
+                ds[key] = (
+                    (index_name, "vec2_index"),
+                    flumpy.to_numpy(data).reshape(sz, 2),
+                )
+            elif isinstance(data, cctbx.array_family.flex.vec3_double):
+                ds[key] = (
+                    (index_name, "vec3_index"),
+                    flumpy.to_numpy(data).reshape(sz, 3),
+                )
+            elif isinstance(data, cctbx.array_family.flex.mat3_double):
+                ds[key] = (
+                    (index_name, "mat3_index1", "mat3_index2"),
+                    flumpy.to_numpy(data).reshape(sz, 3, 3),
+                )
+            elif isinstance(data, cctbx.array_family.flex.std_string):
+                ds[key] = ((index_name), list(data))
+            elif isinstance(data, cctbx.array_family.flex.miller_index):
+                ds[key] = (
+                    (index_name, "hkl"),
+                    flumpy.to_numpy(data),
+                )
+            else:
+                ds[key] = ((index_name), flumpy.to_numpy(data))
+
+        return ds
 
     @classmethod
     def from_hdf5(cls, filename):
