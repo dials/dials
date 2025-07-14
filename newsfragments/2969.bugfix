@@ -1,0 +1,1 @@
+``dials.find_spots``: do not write out an empty ``strong.refl`` if no reflections are found.
