@@ -959,3 +959,74 @@ class TOFSpotFinder(SpotFinder):
                 reflections["s0"].set_selected(sel, s0s)
                 reflections["L1"].set_selected(sel, L1)
         return reflections
+
+
+class LaueSpotFinder(SpotFinder):
+    """
+    Class to do spot finding tailored to Laue experiments
+    """
+
+    def __init__(
+        self,
+        experiments,
+        threshold_function=None,
+        mask=None,
+        region_of_interest=None,
+        max_strong_pixel_fraction=0.1,
+        compute_mean_background=False,
+        mp_method=None,
+        mp_nproc=1,
+        mp_njobs=1,
+        mp_chunksize=1,
+        mask_generator=None,
+        filter_spots=None,
+        scan_range=None,
+        write_hot_mask=True,
+        hot_mask_prefix="hot_mask",
+        min_spot_size=1,
+        max_spot_size=20,
+        min_chunksize=50,
+        initial_wavelength=None,
+    ):
+        super().__init__(
+            threshold_function=threshold_function,
+            mask=mask,
+            region_of_interest=region_of_interest,
+            max_strong_pixel_fraction=max_strong_pixel_fraction,
+            compute_mean_background=compute_mean_background,
+            mp_method=mp_method,
+            mp_nproc=mp_nproc,
+            mp_njobs=mp_njobs,
+            mp_chunksize=mp_chunksize,
+            mask_generator=mask_generator,
+            filter_spots=filter_spots,
+            scan_range=scan_range,
+            write_hot_mask=write_hot_mask,
+            hot_mask_prefix=hot_mask_prefix,
+            min_spot_size=min_spot_size,
+            max_spot_size=max_spot_size,
+            no_shoeboxes_2d=False,
+            min_chunksize=min_chunksize,
+            is_stills=False,
+        )
+
+        self.experiments = experiments
+        self.initial_wavelength = initial_wavelength
+
+    def _post_process(self, reflections):
+        n_rows = len(reflections)
+        if self.initial_wavelength is not None:
+            initial_wavelength = self.initial_wavelength
+        else:
+            wavelength_range = self.experiments[0].beam.get_wavelength_range()
+            initial_wavelength = (wavelength_range[0] + wavelength_range[1]) / 2
+        assert initial_wavelength > 0.0
+        reflections["wavelength"] = flex.double(n_rows, initial_wavelength)
+        unit_s0 = self.experiments[0].beam.get_unit_s0()
+        s0 = (
+            unit_s0[0] / initial_wavelength,
+            unit_s0[1] / initial_wavelength,
+            unit_s0[2] / initial_wavelength,
+        )
+        reflections["s0"] = flex.vec3_double(n_rows, s0)
+        return reflections
