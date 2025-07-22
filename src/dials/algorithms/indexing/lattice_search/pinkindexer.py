@@ -414,11 +414,11 @@ class PinkIndexer(Strategy):
 
         # Rotate reflections to common coordinate frame
         for i, expt in enumerate(experiments):
-            if expt.goniometer is not None:
-                sel_expt = refls["imageset_id"] == i
-                s1_hat_expt = s1_hat.select(sel_expt)
-                q = s1_hat_expt - s0_hat
+            sel_expt = refls["imageset_id"] == i
+            s1_hat_expt = s1_hat.select(sel_expt)
+            q = s1_hat_expt - s0_hat
 
+            if expt.goniometer is not None:
                 setting_rotation = matrix.sqr(expt.goniometer.get_setting_rotation())
                 rotation_axis = expt.goniometer.get_rotation_axis_datum()
                 sample_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
@@ -430,7 +430,7 @@ class PinkIndexer(Strategy):
 
                 q = tuple(sample_rotation.inverse()) * q
 
-                rlps.set_selected(sel_expt, q)
+            rlps.set_selected(sel_expt, q)
 
         rlps = np.array(rlps, dtype="float32")
         self.candidate_crystal_models = []
