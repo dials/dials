@@ -131,6 +131,14 @@ def generate_phil_scope():
         .type = int(value_min=1)
         .help = "When chunksize is auto, this is the minimum chunksize"
     }
+    tof {
+        rs_proximity_threshold_multiplier = None
+          .type = float
+          .help = "If not None, spots in close proximity in reciprocal space"
+                  "are filtered out based on this value. The distance is"
+                  "calculated as the first peak of a histrogram of distances,"
+                  "multiplied by the rs_proximity_threshold_multiplier"
+    }
   }
   """,
         process_includes=True,
@@ -487,6 +495,7 @@ class SpotFinderFactory:
                 min_spot_size=params.spotfinder.filter.min_spot_size,
                 max_spot_size=params.spotfinder.filter.max_spot_size,
                 min_chunksize=params.spotfinder.mp.min_chunksize,
+                rs_proximity_threshold_multiplier=params.spotfinder.tof.rs_proximity_threshold_multiplier,
             )
 
         filter_spots = SpotFinderFactory.configure_filter(params)
