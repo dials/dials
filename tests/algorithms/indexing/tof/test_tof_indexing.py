@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from os.path import join
 
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
 from dials.array_family.flex import reflection_table
@@ -14,9 +15,12 @@ def test_tof_indexing(dials_data, tmp_path):
     Run indexing methods expected to work with ToF data
     """
 
-    experiments_file = join(
-        dials_data("isis_sxd_nacl_processed", pathlib=True), "imported.expt"
+    image_file = join(
+        dials_data("isis_sxd_example_data", pathlib=True), "sxd_nacl_run.nxs"
     )
+    experiments = ExperimentListFactory.from_filenames([image_file])
+    experiments_file = join(tmp_path, "imported.expt")
+    experiments.as_file(experiments_file)
 
     reflections_file = join(
         dials_data("isis_sxd_nacl_processed", pathlib=True), "strong.refl"
