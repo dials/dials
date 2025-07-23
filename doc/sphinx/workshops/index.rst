@@ -3,6 +3,30 @@
 Workshops
 +++++++++
 
+* `2025 SSRL/LCLS Users' Meeting`_: September 2025 (Menlo Park, CA)
+
+.. _`2025 SSRL/LCLS Users' Meeting`: https://www6.slac.stanford.edu/events/2025-09-22-2025-ssrllcls-users-meeting
+
+* `ALS Users Meeting 2025, DIALS Tutorial: Hands-On Processing of X-Ray Crystallography Diffraction Data`_: August 2025 (Berkeley, CA)
+
+.. _`ALS Users Meeting 2025, DIALS Tutorial: Hands-On Processing of X-Ray Crystallography Diffraction Data`: https://als.lbl.gov/2025-user-meeting-workshops-tutorials/
+
+* `ACA Meeting 2025, HDRMX (High Data Rate Macromolecular Crystallography) Workshop`_: July 2025 (Lombard, IL)
+
+.. _`ACA Meeting 2025, HDRMX (High Data Rate Macromolecular Crystallography) Workshop`: https://www.acameeting2025.com/workshops
+
+* `CHESS User Meeting (X-CITE)`_: June 2025 (Ithaca, NY)
+
+.. _`Chess User Meeting (X-CITE)`: https://www.chess.cornell.edu/x-cite-cyberinfrastructure-training-and-education-synchrotron-x-ray-science
+
+* `CCP4/APS School in Macromolecular Crystallography 2025`_: June 2025 (Lemont, IL)
+
+.. _`CCP4/APS School in Macromolecular Crystallography 2025`: https://www.ccp4.ac.uk/schools/APS-2025/index.php
+
+* `RapiData 2025 Workshop at SSRL`_: May 2025 (Menlo Park, CA)
+
+.. _`RapiData 2025 Workshop at SSRL`: https://www-ssrl.slac.stanford.edu/rapidata/rapidata-2025/index.html
+
 * `Serial Crystallography Methods Workshop`_: July 2023 (Ithaca, NY)
 
 .. _`Serial Crystallography Methods Workshop`: https://indico.classe.cornell.edu/event/2248/
