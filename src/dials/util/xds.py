@@ -84,9 +84,11 @@ def dump(experiments, reflections, directory):
 
 
 def export_spot_xds(reflections, filename):
+    if not reflections:
+        return
     reflections = reflections.select(reflections.get_flags(reflections.flags.strong))
     reflections.sort("intensity.sum.value", reverse=True)
-    if reflections is not None and len(reflections) > 0:
+    if len(reflections):
         centroids = reflections["xyzobs.px.value"]
         intensities = reflections["intensity.sum.value"]
         miller_indices = None
