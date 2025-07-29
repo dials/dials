@@ -365,6 +365,9 @@ class CorrelationMatrix:
     def minimise_DB_score(self):
         optuna.logging.set_verbosity(logging.WARNING)
 
+        # Heuristic using number of dimensions as a proxy for number of systematic differences
+        # Includes a buffer for groups of different sizes
+
         initial_guess = max(
             5,
             int(
@@ -375,9 +378,15 @@ class CorrelationMatrix:
         sampler = optuna.samplers.RandomSampler(seed=42)
 
         def objective(trial):
+            # the min_samples parameter can really be anywhere from 5 to the total number of datasets
+            # 5 as a base value recommended for OPTICS algorithm
+
             min_samples = trial.suggest_int(
                 "min_samples", 5, len(self.unmerged_datasets)
             )
+
+            # Calculate OPTICS clusters
+
             optics_model = OPTICS(
                 min_samples=min_samples, xi=self.params.significant_clusters.xi
             )
@@ -386,12 +395,19 @@ class CorrelationMatrix:
             trial.set_user_attr("labels", optics_model.labels_)
             trial.set_user_attr("model", optics_model)
 
+            # Mask noise datasets for DB-Score calculation as doesn't accept
+
             mask = optics_model.labels_ != -1
             if len(set(optics_model.labels_[mask])) <= 1:
                 return 1e6
+
+            # Lower DB-Score means cluster are better defined
+
             score = davies_bouldin_score(
                 self.cosym_analysis.coords[mask], optics_model.labels_[mask]
             )
+
+            # Include penalty for noise as don't want to bias for only tiny dense groups if majority a bit less dense
 
             noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
 
@@ -399,7 +415,13 @@ class CorrelationMatrix:
                 score + self.params.significant_clusters.noise_tolerance * noise_ratio
             )
 
+        # Test a series of min_samples to find best clusters
+        # Optuna uses a Bayesian Optimization approach to "intelligently" select which parameters to test
+
         study = optuna.create_study(direction="minimize", sampler=sampler)
+
+        # Use heuristic relating dimensions to systematic differences as an initial starting point
+
         study.enqueue_trial({"min_samples": initial_guess})
         study.optimize(objective, n_trials=20)
 
