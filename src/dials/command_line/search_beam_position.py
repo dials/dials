@@ -376,6 +376,7 @@ def run(args=None):
 
                 for i, ii in enumerate(range(start_index, end_index)):
                     if params.projection.bar and not params.projection.per_image:
+
                         print_progress(
                             image_index=i,
                             n_images=abs(end_index - start_index),

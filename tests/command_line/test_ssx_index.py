@@ -85,10 +85,8 @@ def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
     refls = str(ssx / "strong_1.refl")
 
     run([expts, refls])
-    assert os.path.exists("indexed.refl")
-    assert os.path.exists("indexed.expt")
-    experiments = load.experiment_list("indexed.expt", check_format=False)
-    assert len(experiments) == 0
+    assert not os.path.exists("indexed.refl")
+    assert not os.path.exists("indexed.expt")
 
 
 def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):

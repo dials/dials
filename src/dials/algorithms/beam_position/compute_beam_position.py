@@ -47,6 +47,8 @@ def compute_beam_position(image, params, image_index=None, detector_index=None):
 
         fig.save_and_close()
 
+    if not params.projection.per_image:
+        print(f"{x:.2f}, {y:.2f}")
     return x, y
 
 

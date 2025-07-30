@@ -181,11 +181,13 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
             crystal_symmetries,
             make_plots=(params.output.html or params.output.json),
         )
-
-    logger.info(f"Saving indexed experiments to {params.output.experiments}")
-    indexed_experiments.as_file(params.output.experiments)
-    logger.info(f"Saving indexed reflections to {params.output.reflections}")
-    indexed_reflections.as_file(params.output.reflections)
+    if indexed_experiments:
+        logger.info(f"Saving indexed experiments to {params.output.experiments}")
+        indexed_experiments.as_file(params.output.experiments)
+        logger.info(f"Saving indexed reflections to {params.output.reflections}")
+        indexed_reflections.as_file(params.output.reflections)
+    else:
+        logger.info("No reflections indexed")
 
     if (params.output.html or params.output.json) and indexed_experiments:
         summary_plots = generate_plots(summary_data)
