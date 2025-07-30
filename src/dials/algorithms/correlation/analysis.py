@@ -407,6 +407,8 @@ class CorrelationMatrix:
                 self.cosym_analysis.coords[mask], optics_model.labels_[mask]
             )
 
+            trial.set_user_attr("db_score", score)
+
             # Include penalty for noise as don't want to bias for only tiny dense groups if majority a bit less dense
 
             noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
@@ -427,7 +429,7 @@ class CorrelationMatrix:
 
         return (
             study.best_params["min_samples"],
-            study.best_value,
+            study.best_trial.user_attrs["db_score"],
             study.best_trial.user_attrs["labels"],
             study.best_trial.user_attrs["model"],
         )
