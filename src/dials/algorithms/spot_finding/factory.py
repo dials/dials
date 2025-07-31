@@ -135,7 +135,6 @@ def generate_phil_scope():
         .type = int(value_min=1)
         .help = "When chunksize is auto, this is the minimum chunksize"
     }
-<<<<<<< tof_rs_proximity_find_spots_threshld
     tof {
         rs_proximity_threshold_multiplier = None
           .type = float
