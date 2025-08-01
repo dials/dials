@@ -1,0 +1,1 @@
+Remove `beam.get_s0()` calls from geometry_viewer and rlv to allow these to be used with experiments containing PolychromaticBeams.
