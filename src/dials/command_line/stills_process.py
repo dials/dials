@@ -1900,6 +1900,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()
+        if self.debug_file_handle:
+            self.debug_file_handle
+            del self.debug_file_handle
 
 
 @dials.util.show_mail_handle_errors()
