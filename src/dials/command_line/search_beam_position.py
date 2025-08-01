@@ -42,7 +42,7 @@ Other methods are based on horizontal and vertical projection, and only
 require an imported experiment.
 
 Example:
-  dials.search_beam_position method=midpoint imported.exp
+  dials.search_beam_position method=midpoint imported.expt
 
 More information about the projection methods can be found at
 https://autoed.readthedocs.io/en/latest/pages/beam_position_methods.html
@@ -243,8 +243,8 @@ output {
 def run(args=None):
     usage = """
     dials.search_beam_position imported.expt strong.refl
-    dials.search_beam_position method=midpoint imported.exp
-    dials.search_beam_position method_x=midpoint method_y=maximum imported.exp
+    dials.search_beam_position method=midpoint imported.expt
+    dials.search_beam_position method_x=midpoint method_y=maximum imported.expt
     """
 
     try:
