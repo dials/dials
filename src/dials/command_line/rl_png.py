@@ -11,8 +11,8 @@ from scitbx import matrix
 from scitbx.array_family import flex
 
 import dials.util
+from dials.algorithms.beam_position.labelit_method import run_dps
 from dials.algorithms.indexing.indexer import find_max_cell
-from dials.command_line.search_beam_position import run_dps
 from dials.util.reciprocal_lattice import Render3d
 
 try:
