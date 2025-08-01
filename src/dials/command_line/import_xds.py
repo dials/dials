@@ -91,6 +91,7 @@ class SpotXDSImporter:
             table["miller_index"] = flex.miller_index(miller_index)
         table["xyzobs.px.value"] = flex.vec3_double(centroid)
         table["intensity.sum.value"] = flex.double(intensity)
+        table.set_flags(flex.bool(len(table), True), table.flags.strong)
 
         # Remove invalid reflections
         logger.info("Removing invalid reflections")
@@ -110,7 +111,7 @@ class SpotXDSImporter:
             table["xyzobs.px.variance"] = flex.vec3_double(len(table), (1, 1, 1))
             logger.info("Standard columns added")
 
-        # Output the table to pickle file
+        # Output the table to a reflections file
         if params.output.reflections is None:
             params.output.reflections = "spot_xds.refl"
         logger.info(f"Saving reflection table to {params.output.reflections}")
