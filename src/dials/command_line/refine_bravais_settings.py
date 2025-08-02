@@ -37,7 +37,7 @@ import logging
 import os
 import sys
 
-import libtbx.phil
+import iotbx.phil
 from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
 from dxtbx.model import ExperimentList
@@ -53,7 +53,7 @@ from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 
-phil_scope = libtbx.phil.parse(
+phil_scope = iotbx.phil.parse(
     """
 include scope dials.algorithms.indexing.bravais_settings.phil_scope
 
@@ -72,6 +72,26 @@ output {
 """,
     process_includes=True,
 )
+
+# Override default parameterisation to fix beam and detector models
+phil_overrides = phil_scope.fetch(
+    source=iotbx.phil.parse(
+        """\
+refinement {
+    parameterisation {
+      beam {
+        fix=all
+      }
+      detector {
+        fix=all
+      }
+    }
+}
+"""
+    )
+)
+
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def bravais_lattice_to_space_groups(chiral_only=True):
@@ -162,7 +182,7 @@ def run(args=None):
 
     parser = ArgumentParser(
         usage=usage,
-        phil=phil_scope,
+        phil=working_phil,
         read_experiments=True,
         read_reflections=True,
         check_format=False,
