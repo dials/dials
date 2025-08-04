@@ -19,6 +19,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    workshops/index
    US National Resource <national_resource>
    publications
+   Metrics <metrics>
    projects
    License <license>
 
