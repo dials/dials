@@ -362,7 +362,9 @@ class CorrelationMatrix:
 
         return cos_angle, cos_linkage_matrix
 
-    def minimise_DB_score(self):
+    def minimise_DB_score(
+        self,
+    ) -> tuple[int, np.float64, np.ndarray, OPTICS]:
         optuna.logging.set_verbosity(logging.WARNING)
 
         # Heuristic using number of dimensions as a proxy for number of systematic differences
@@ -377,7 +379,7 @@ class CorrelationMatrix:
         )
         sampler = optuna.samplers.RandomSampler(seed=42)
 
-        def objective(trial):
+        def objective(trial) -> float:
             # the min_samples parameter can really be anywhere from 5 to the total number of datasets
             # 5 as a base value recommended for OPTICS algorithm
 
