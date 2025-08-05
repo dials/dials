@@ -453,7 +453,7 @@ class CorrelationMatrix:
             optics_model.fit(self.cosym_analysis.coords)
             self.cluster_labels = optics_model.labels_
             mask = optics_model.labels_ != -1
-            if len(set(optics_model.labels_[mask])) <= 1:
+            if len(set(optics_model.labels_[mask])) > 1:
                 db_score = davies_bouldin_score(
                     self.cosym_analysis.coords[mask], optics_model.labels_[mask]
                 )
