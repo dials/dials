@@ -379,7 +379,7 @@ class CorrelationMatrix:
         )
         sampler = optuna.samplers.RandomSampler(seed=42)
 
-        def objective(trial) -> float:
+        def objective(trial: optuna.trial._trial.Trial) -> float:
             # the min_samples parameter can really be anywhere from 5 to the total number of datasets
             # 5 as a base value recommended for OPTICS algorithm
 
