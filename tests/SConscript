@@ -1,7 +1,5 @@
 Import("env")
 
-env.Replace(LIBS=[])
-
 env.Program(
     target="algorithms/spot_prediction/tst_reeke_model",
     source="algorithms/spot_prediction/tst_reeke_model.cc",
@@ -13,4 +11,5 @@ env.Program(
 env.Program(
     target="util/tst_thread_pool",
     source="util/tst_thread_pool.cc",
+    LIBS=env["LIBS"],
 )
