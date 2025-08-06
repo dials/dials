@@ -3,7 +3,7 @@
 #include <iostream>
 #include <atomic>
 #include <chrono>
-#include <thread>
+#include <boost/thread.hpp>
 #include <dials/util/thread_pool.h>
 
 using dials::util::ThreadPool;
@@ -46,7 +46,7 @@ void tst_concurrent_execution() {
       }
 
       // Simulate some work
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      boost::this_thread::sleep_for(std::chrono::milliseconds(10));
 
       --concurrent_count;
       ++completed;
