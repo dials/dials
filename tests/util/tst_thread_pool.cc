@@ -2,8 +2,6 @@
 #include <vector>
 #include <iostream>
 #include <atomic>
-#include <boost/chrono.hpp>
-#include <boost/thread.hpp>
 #include <dials/util/thread_pool.h>
 
 using dials::util::ThreadPool;
@@ -46,7 +44,7 @@ void tst_concurrent_execution() {
       }
 
       // Simulate some work
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
+      for (volatile int j = 0; j < 10000; ++j) {}
 
       --concurrent_count;
       ++completed;
