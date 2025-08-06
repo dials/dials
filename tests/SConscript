@@ -10,3 +10,7 @@ env.Program(
     target="algorithms/spatial_indexing/tst_collision_detection",
     source="algorithms/spatial_indexing/tst_collision_detection.cc",
 )
+env.Program(
+    target="util/tst_thread_pool",
+    source="util/tst_thread_pool.cc",
+)
