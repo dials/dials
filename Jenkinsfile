@@ -1,3 +1,5 @@
+def DATE = new Date().format("yyyy-MM-dd")
+
 pipeline {
     agent { label "dials && linux && rhel8" }
 
@@ -9,9 +11,19 @@ pipeline {
         pollSCM ''
     }
 
+    parameters {
+        booleanParam(name: 'CLEAN_BUILD', defaultValue: false, description: 'Start from a fresh build. This will recompile DIALS from scratch.')
+    }
+
     stages {
         stage('Prepare') {
             steps {
+                script {
+                    if (!fileExists("${WORKSPACE}/${DATE}") || params.CLEAN_BUILD) {
+                        deleteDir()
+                        writeFile file: "${WORKSPACE}/${DATE}", text: ""
+                    }
+                }
                 dir("modules") {
                     dir("dials") {
                         checkout scm
