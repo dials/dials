@@ -590,21 +590,21 @@ class MetaDataUpdater:
 
         if self.params.geometry.convert_stills_to_sequences:
             if any(not isinstance(i, ImageSequence) for i in experiments.imagesets()):
-                files_to_indiv = defaultdict(int)
-                beams = []
+                files_to_beams = defaultdict(list)
                 formats = []
                 detectors = []
                 iset_params = []
                 existing_isets_sequences = []
                 for i, iset in enumerate(experiments.imagesets()):
                     if not isinstance(iset, ImageSequence):
+                        assert len(iset) == 1
+
                         path = iset.get_path(0)
-                        if path not in files_to_indiv:
-                            beams.append(iset.get_beam())
+                        if path not in files_to_beams:
                             detectors.append(iset.get_detector())
                             formats.append(iset.get_format_class())
                             iset_params.append(iset.params())
-                        files_to_indiv[iset.get_path(0)] += 1
+                        files_to_beams[iset.get_path(0)].append(iset.get_beam())
                     else:
                         existing_isets_sequences.append(iset)
 
@@ -612,7 +612,8 @@ class MetaDataUpdater:
                 from dxtbx.model import GoniometerFactory, Scan
 
                 new_experiments = ExperimentList()
-                for i, (file, n) in enumerate(files_to_indiv.items()):
+                for i, (file, beams) in enumerate(files_to_beams.items()):
+                    n = len(beams)
                     if self.params.geometry.scan.image_range:
                         user_start, user_end = self.params.geometry.scan.image_range
                         first, last = user_start, user_end
@@ -623,7 +624,7 @@ class MetaDataUpdater:
                         template=file,
                         indices=list(range(first, last + 1)),
                         format_class=formats[i],
-                        beam=beams[i],
+                        beam=beams[0],  # does not matter; updated later
                         detector=detectors[i],
                         goniometer=GoniometerFactory.make_goniometer(
                             (0.0, 1.0, 0.0), (1, 0, 0, 0, 1, 0, 0, 0, 1)
@@ -637,7 +638,7 @@ class MetaDataUpdater:
                         new_experiments.append(
                             Experiment(
                                 imageset=sequence,
-                                beam=sequence.get_beam(),
+                                beam=beams[j - first + 1],  # first is 1-indexed
                                 detector=sequence.get_detector(),
                                 goniometer=sequence.get_goniometer(),
                                 scan=subset.get_scan(),
