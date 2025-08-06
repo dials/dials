@@ -44,7 +44,8 @@ void tst_concurrent_execution() {
       }
 
       // Simulate some work
-      for (volatile int j = 0; j < 10000; ++j) {}
+      for (volatile int j = 0; j < 10000; ++j) {
+      }
 
       --concurrent_count;
       ++completed;
