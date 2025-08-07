@@ -8,3 +8,7 @@ target_link_libraries( tst_reeke_model PUBLIC Boost::boost CCTBX::scitbx )
 add_executable( tst_collision_detection algorithms/spatial_indexing/tst_collision_detection.cc )
 set_target_properties( tst_collision_detection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "algorithms/spatial_indexing")
 target_link_libraries( tst_collision_detection PUBLIC Boost::boost CCTBX::scitbx )
+
+add_executable( tst_thread_pool util/tst_thread_pool.cc )
+set_target_properties( tst_thread_pool PROPERTIES RUNTIME_OUTPUT_DIRECTORY "util")
+target_link_libraries( tst_thread_pool PUBLIC Boost::thread CCTBX::scitbx )
