@@ -3,6 +3,9 @@
 #include <iostream>
 #include <atomic>
 #include <dials/util/thread_pool.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <cstdlib>
 
 using dials::util::ThreadPool;
 
@@ -99,6 +102,12 @@ void tst_exception_handling() {
   // Just document the current behavior: ThreadPool does not attempt to handle
   // exceptions, instead it just crashes.
 
+#ifdef _WIN32
+  std::cout << "Exception handling test skipped on Windows" << std::endl;
+  std::cout << "Note: Exceptions thrown in thread pool tasks will terminate the program"
+            << std::endl;
+  std::cout << "OK" << std::endl;
+#else
   // Fork a child process to test exception behavior
   pid_t pid = fork();
   if (pid == 0) {
@@ -114,6 +123,7 @@ void tst_exception_handling() {
     assert(!WIFEXITED(status) || WEXITSTATUS(status) != 0);  // Should not exit normally
     std::cout << "OK" << std::endl;
   }
+#endif
 }
 
 void tst_single_thread_pool() {
