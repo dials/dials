@@ -5,6 +5,7 @@
 #include <dials/util/thread_pool.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <cstdio>
 
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -115,6 +116,8 @@ void tst_exception_handling() {
   pid_t pid = fork();
   if (pid == 0) {
     // Child process - this should crash
+    // Don't print stderr
+    freopen("/dev/null", "w", stderr);
     ThreadPool pool(1);
     pool.post([]() { throw std::runtime_error("Raise an exception"); });
     pool.wait();
