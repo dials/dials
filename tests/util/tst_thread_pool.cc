@@ -3,12 +3,12 @@
 #include <iostream>
 #include <atomic>
 #include <dials/util/thread_pool.h>
-#include <unistd.h>
 #include <cstdlib>
 #include <cstdio>
 
 #ifndef _WIN32
 #include <sys/wait.h>
+#include <unistd.h>
 #endif
 
 using dials::util::ThreadPool;
