@@ -27,7 +27,8 @@ namespace dials { namespace util {
      * Instantiate with the number of required threads
      * @param N The number of threads
      */
-    ThreadPool(std::size_t N) : started_(0), finished_(0) {
+    ThreadPool(std::size_t N)
+        : work_(boost::asio::make_work_guard(io_context_)), started_(0), finished_(0) {
       for (std::size_t i = 0; i < N; ++i) {
         threads_.create_thread(
           boost::bind(&boost::asio::io_context::run, &io_context_));
@@ -53,7 +54,7 @@ namespace dials { namespace util {
     template <typename Function>
     void post(Function function) {
       started_++;
-      io_context_.post(FunctionRunner<Function>(function, finished_));
+      boost::asio::post(io_context_, FunctionRunner<Function>(function, finished_));
     }
 
     /**
@@ -93,6 +94,7 @@ namespace dials { namespace util {
     };
 
     boost::asio::io_context io_context_;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
     boost::thread_group threads_;
     std::size_t started_;
     std::atomic<std::size_t> finished_;
