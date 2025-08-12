@@ -244,6 +244,7 @@ def index(experiments, reflections, params):
                     tables_list.append(idx_refl)
                     indexed_experiments.extend(idx_expts)
         indexed_reflections = flex.reflection_table.concat(tables_list)
+
     return indexed_experiments, indexed_reflections
 
 
@@ -286,6 +287,11 @@ def run(args=None, phil=working_phil):
         )
     except (DialsIndexError, ValueError) as e:
         sys.exit(str(e))
+
+    # Copy history from the imported experiments to the output
+    history = experiments.consolidate_histories()
+    for experiment in indexed_experiments:
+        experiment.history = history
 
     # Save experiments
     logger.info("Saving refined experiments to %s", params.output.experiments)
