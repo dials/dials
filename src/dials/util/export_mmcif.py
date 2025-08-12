@@ -18,10 +18,17 @@ from scitbx.array_family import flex
 
 import dials.util.version
 from dials.algorithms.symmetry import median_unit_cell
+from dials.util.citations import (
+    dials_citation,
+    dials_scale_citation,
+    ssx_citation,
+    xds_citation,
+)
 from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
+dials_version = dials.util.version.dials_version()
 
 
 class MMCIFOutputFile:
@@ -90,24 +97,17 @@ class MMCIFOutputFile:
     def make_cif_block(self, experiments, reflections):
         """Write the data to a cif block"""
         # Select reflections
-        # if rotation, get reflections integrated by both integration methods
-        # else if stills, only summation integrated reflections are available.
-        if all(e.scan and e.scan.get_oscillation()[1] != 0.0 for e in experiments):
-            selection = reflections.get_flags(reflections.flags.integrated, all=True)
-        else:
-            selection = reflections.get_flags(reflections.flags.integrated, all=False)
+        selection = reflections.get_flags(reflections.flags.integrated, all=False)
         reflections = reflections.select(selection)
 
-        # Filter out bad variances and other issues, but don't filter on ice rings
-        # or alter partialities.
-
         # Assumes you want to apply the lp and dqe corrections to sum and prf
-        # Do we want to combine partials?
         reflections = filter_reflection_table(
             reflections,
             self.params.intensity,
-            combine_partials=False,
-            partiality_threshold=0.0,
+            partiality_threshold=self.params.mtz.partiality_threshold,
+            combine_partials=self.params.mtz.combine_partials,
+            min_isigi=self.params.mtz.min_isigi,
+            filter_ice_rings=self.params.mtz.filter_ice_rings,
             d_min=self.params.mtz.d_min,
         )
 
@@ -115,7 +115,6 @@ class MMCIFOutputFile:
         cif_block = iotbx.cif.model.block()
 
         # Audit trail
-        dials_version = dials.util.version.dials_version()
         cif_block["_audit.revision_id"] = 1
         cif_block["_audit.creation_method"] = dials_version
         cif_block["_audit.creation_date"] = datetime.date.today().isoformat()
@@ -124,7 +123,7 @@ class MMCIFOutputFile:
         mmcif_software_header = (
             "_software.pdbx_ordinal",
             "_software.citation_id",
-            "_software.name",  # as defined at [1]
+            "_software.name",
             "_software.version",
             "_software.type",
             "_software.classification",
@@ -145,52 +144,30 @@ class MMCIFOutputFile:
         software_loop = iotbx.cif.model.loop(header=mmcif_software_header)
         citations_loop = iotbx.cif.model.loop(header=mmcif_citations_header)
 
-        software_loop.add_row(
-            (
-                1,
-                1,
-                "DIALS",
-                dials_version,
-                "package",
-                "data processing",
-                "Data processing and integration within the DIALS software package",
+        ## for now, only sign it was obtained by dials.import_xds is if some
+        ## not_suitable_for_refinement flags are set.
+        if any(reflections.get_flags(reflections.flags.not_suitable_for_refinement)):
+            integration_software = xds_citation
+        else:
+            integration_software = dials_citation
+        software_loop.add_row((1, 1) + integration_software.mmcif_software_loop_data())
+        citations_loop.add_row((1,) + integration_software.mmcif_citation_loop_data())
+        next_id = 2
+        if (
+            experiments[0].profile
+            and experiments[0].profile.to_dict()["__id__"] == "ellipsoid"
+        ):
+            software_loop.add_row(
+                (next_id, next_id) + ssx_citation.mmcif_software_loop_data()
             )
-        )
-        citations_loop.add_row(
-            (
-                1,
-                "Acta Cryst. D",
-                74,
-                2,
-                85,
-                97,
-                2018,
-                "DIALS: implementation and evaluation of a new integration package",
-            )
-        )
+            citations_loop.add_row((next_id,) + ssx_citation.mmcif_citation_loop_data())
+            next_id += 1
         if "scale" in self.params.intensity:
             software_loop.add_row(
-                (
-                    2,
-                    2,
-                    "DIALS",
-                    dials_version,
-                    "program",
-                    "data scaling",
-                    "Data scaling and merging within the DIALS software package",
-                )
+                (next_id, next_id) + dials_scale_citation.mmcif_software_loop_data()
             )
             citations_loop.add_row(
-                (
-                    2,
-                    "Acta Cryst. D",
-                    76,
-                    4,
-                    385,
-                    399,
-                    2020,
-                    "Scaling diffraction data in the DIALS software package: algorithms and new approaches for multi-crystal scaling",
-                )
+                (next_id,) + dials_scale_citation.mmcif_citation_loop_data()
             )
         cif_block.add_loop(software_loop)
         cif_block.add_loop(citations_loop)

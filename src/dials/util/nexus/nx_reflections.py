@@ -339,7 +339,7 @@ def dump(entry, reflections, experiments):
     refls.attrs["NX_class"] = "NXreflections"
     refls.attrs["description"] = ""
 
-    refls["experiments"] = [np.string_(e) for e in experiments]
+    refls["experiments"] = [np.bytes_(e) for e in experiments]
 
     if reflections is None:
         return

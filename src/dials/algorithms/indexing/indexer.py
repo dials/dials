@@ -123,6 +123,10 @@ indexing {
       .help = "Maximum allowed Le Page delta used in searching for basis vector"
               "combinations that are consistent with the given symmetry."
       .expert_level = 1
+    A_matrix = None
+      .type = floats(size=9)
+      .help = "A crystal setting A=UB matrix to construct a trial crystal model for indexing."
+      .expert_level = 1
   }
 
   index_assignment {
@@ -886,8 +890,10 @@ class Indexer:
                     z.set_selected(z < min(tof), min(tof))
                     z.set_selected(z > max(tof), max(tof))
                     z_px = flex.double(tof_to_frame(z))
-                else:
+                elif expt.scan.has_property("oscillation"):
                     z_px = expt.scan.get_array_index_from_angle(z, deg=False)
+                else:
+                    z_px = z
             else:
                 # must be a still image, z centroid not meaningful
                 z_px = z

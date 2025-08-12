@@ -1,3 +1,59 @@
+DIALS 3.25.0 (2025-06-20)
+=========================
+
+This release contains a number of new features for multi-crystal processing.
+- The ``dials.import_xds`` program has been significantly updated; given an INTEGRATE.HKL and XDS.INP from XDS processing, one can now convert these to DIALS data files that can be used in ``xia2.multiplex`` and other DIALS data reduction tools. See https://dials.github.io/documentation/programs/dials_import_xds.html for the program documentation.
+- ``xia2.multiplex`` now generates unmerged mmcif files that are suitable for deposition of unmerged data.
+- Improvements have been made to the ``xia2.multiplex`` log output (better logging of progress and individual logs for more DIALS programs) and runtime performance has been improved for large datasets.
+
+Features
+--------
+
+- ``dials.reflection_viewer``: Report reflection table columns on launch. (`#2912 <https://github.com/dials/dials/issues/2912>`_)
+- ``dials.index``: Allow a trial crystal to be specified by full setting matrix ``A=UB``. (`#2939 <https://github.com/dials/dials/issues/2939>`_)
+- DIALS is now NumPy 2.0+ compatible. (`#2942 <https://github.com/dials/dials/issues/2942>`_)
+- Python 3.13 is now supported, and is the default version in ``bootstrap.py``. (`#2946 <https://github.com/dials/dials/issues/2946>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.ssx_integrate``: Do not output a reflection file if no reflections were integrated. (`#2804 <https://github.com/dials/dials/issues/2804>`_)
+- Updated test suite to use data from ``dials-data`` rather than ``dials_regression``, meaning that much more of the test suite can be run outside of Diamond. (`#2907 <https://github.com/dials/dials/issues/2907>`_)
+- ``dials.search_beam_position``: Fix printing of the beam center. (`#2910 <https://github.com/dials/dials/issues/2910>`_)
+- ``dials.import_xds``: Reworked the import from INTEGRATE.HKL to have a more complete matchup between the data provided in that file and the reflection list expected by DIALS. (`#2914 <https://github.com/dials/dials/issues/2914>`_)
+- ``dials.index``: Avoid test failure when the ``ffbidx`` package is not functional. (`#2923 <https://github.com/dials/dials/issues/2923>`_)
+- ``dials.export``: Ensure mmcif output contains the same reflections as mtz output by default. (`#2929 <https://github.com/dials/dials/issues/2929>`_)
+- ``dials.import_xds``: Clarify expected inputs and improve program structure and output. (`#2938 <https://github.com/dials/dials/issues/2938>`_)
+- ``dials.import_xds``: Fill xyzobs column values for xds unobserved reflections (i.e. not strong). (`#2950 <https://github.com/dials/dials/issues/2950>`_)
+- ``dials.import_xds``: Warn the user if ``XDS.INP`` is not found, but a case-insensitive variant is present. (`#2951 <https://github.com/dials/dials/issues/2951>`_)
+- Make mmcif citations correct for import_xds and ssx data processing. (`#2955 <https://github.com/dials/dials/issues/2955>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- The ``dials_regression`` fixture for tests is removed, as no tests use this repository any more. (`#2919 <https://github.com/dials/dials/issues/2919>`_)
+
+
+Misc
+----
+
+- `#2906 <https://github.com/dials/dials/issues/2906>`_, `#2915 <https://github.com/dials/dials/issues/2915>`_, `#2925 <https://github.com/dials/dials/issues/2925>`_, `#2928 <https://github.com/dials/dials/issues/2928>`_, `#2932 <https://github.com/dials/dials/issues/2932>`_, `#2933 <https://github.com/dials/dials/issues/2933>`_, `#2935 <https://github.com/dials/dials/issues/2935>`_, `#2937 <https://github.com/dials/dials/issues/2937>`_, `#2940 <https://github.com/dials/dials/issues/2940>`_, `#2947 <https://github.com/dials/dials/issues/2947>`_, `#2952 <https://github.com/dials/dials/issues/2952>`_
+
+
+DIALS 3.24.3 (2025-05-27)
+=========================
+
+No significant changes.
+
+
+DIALS 3.24.2 (2025-05-16)
+=========================
+
+Internal release to fix generation of release-tagged docker images.
+
+
 DIALS 3.24.1 (2025-05-13)
 =========================
 

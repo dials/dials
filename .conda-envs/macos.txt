@@ -8,7 +8,6 @@ cxx-compiler
 dials-data>=2.4.123
 docutils
 eigen
-flexparser<0.4
 future
 gemmi>=0.7
 h5py>=3.1.0
@@ -25,7 +24,7 @@ mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy>=1.21.5,<2
+numpy<2.3.0
 nxmx
 ordered-set
 pandas
