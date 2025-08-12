@@ -83,25 +83,13 @@ namespace dials { namespace model {
       boost::python::list mask;
 
       for (int i = 0; i < acc0; i++) {
-        boost::python::list data_row;
-        boost::python::list background_row;
-        boost::python::list mask_row;
         for (int j = 0; j < acc1; j++) {
-          boost::python::list data_col;
-          boost::python::list background_col;
-          boost::python::list mask_col;
           for (int k = 0; k < acc2; k++) {
-            data_col.append(data_(i, j, k));
-            background_col.append(background_(i, j, k));
-            mask_col.append(mask_(i, j, k));
+            data.append(data_(i, j, k));
+            background.append(background_(i, j, k));
+            mask.append(mask_(i, j, k));
           }
-          data_row.append(data_col);
-          background_row.append(background_col);
-          mask_row.append(mask_col);
         }
-        data.append(data_row);
-        background.append(background_row);
-        mask.append(mask_row);
       }
 
       return boost::python::make_tuple(
@@ -121,17 +109,14 @@ namespace dials { namespace model {
       grid_(acc0, acc1, acc2);
 
       for (int i = 0; i < acc0; i++) {
-        boost::python::object data_row = data[i];
-        boost::python::object background_row = background[i];
-        boost::python::object mask_row = mask[i];
         for (int j = 0; j < acc1; j++) {
-          boost::python::object data_col = data_row[j];
-          boost::python::object background_col = background_row[j];
-          boost::python::object mask_col = mask_row[j];
           for (int k = 0; k < acc2; k++) {
-            data_(i, j, k) = boost::python::extract<FloatType>(data_col[k]);
-            background_(i, j, k) = boost::python::extract<FloatType>(background_col[k]);
-            mask_(i, j, k) = boost::python::extract<int>(mask_col[k]);
+            data_(i, j, k) =
+              boost::python::extract<FloatType>(data[i * acc2 * acc1 + j * acc2 + k]);
+            background_(i, j, k) = boost::python::extract<FloatType>(
+              background[i * acc2 * acc1 + j * acc2 + k]);
+            mask_(i, j, k) =
+              boost::python::extract<int>(mask[i * acc2 * acc1 + j * acc2 + k]);
           }
         }
       }
