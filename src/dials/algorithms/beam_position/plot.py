@@ -52,7 +52,7 @@ class Figure:
         if params.projection.color_cutoff:
             vmax = float(params.projection.color_cutoff)
         else:
-            temp_image = remove_pixels_by_intensity(image, percent=0.0045)
+            temp_image = remove_pixels_by_intensity(image, percent=0.2)
             vmax = temp_image.max()
         img = self.main_axis.imshow(
             image,

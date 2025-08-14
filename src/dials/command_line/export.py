@@ -683,11 +683,7 @@ def run(args=None):
         sys.exit(f"Unknown format: {params.format}")
 
     # Export the data
-    try:
-        exporter(params, experiments, reflections)
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        sys.exit(1)
+    exporter(params, experiments, reflections)
 
 
 if __name__ == "__main__":

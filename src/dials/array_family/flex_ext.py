@@ -210,6 +210,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Writing compressed reflections to {filename}")
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             self.as_msgpack_to_file(dials.util.ext.streambuf(python_file_obj=outfile))
 
@@ -220,6 +223,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Reading compressed reflections from {filename}")
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
             return dials_array_family_flex_ext.reflection_table.from_msgpack(
                 infile.read()

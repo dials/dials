@@ -9,6 +9,7 @@ cpp_tests = [
     # Paths are under /build/
     "tests/algorithms/spatial_indexing/tst_collision_detection",
     "tests/algorithms/spot_prediction/tst_reeke_model",
+    "tests/util/tst_thread_pool",
 ]
 
 

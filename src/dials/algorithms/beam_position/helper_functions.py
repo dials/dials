@@ -67,26 +67,6 @@ def smooth(curve, width=2):
     return smooth_curve
 
 
-def get_indices_from_slices(nmax, slices):
-    """
-    Takes a string of comma-separated numpy slices (e.g. "::2, 2, 3:5:7")
-    and turns it into a list of indices. The indices are selected from a range
-    [0, nmax] using each slice, and each comma-separated component is included
-    in the final array.
-    """
-
-    indices = np.array([], dtype=np.dtype("uint"))
-    full_range = np.arange(0, nmax, dtype=np.dtype("uint"))
-
-    for slice_str in slices.split(","):
-        slice_str = slice_str.replace(" ", "")
-        parsed_slice = parse_numpy_slice(slice_str)
-        selected = full_range[parsed_slice]
-        indices = np.append(indices, selected)
-
-    return np.unique(indices)
-
-
 def parse_numpy_slice(slice_str):
     if slice_str is None:
         return None
@@ -94,3 +74,35 @@ def parse_numpy_slice(slice_str):
         return eval(f"np.s_[{slice_str}]")
     except Exception as e:
         raise ValueError(f"Invalid slice format: {slice_str}") from e
+
+
+def print_progress(image_index, n_images, set_index, n_sets, bar_length=40):
+    image_index += 1
+    set_index += 1
+
+    percent_images = 1.0 * image_index / n_images
+    percent_sets = 1.0 * set_index / n_sets
+
+    move_up = "\033[F"
+
+    img_bar_full = int(percent_images * bar_length)
+    image_bar = "=" * img_bar_full + " " * (bar_length - img_bar_full)
+
+    set_bar_full = int(percent_sets * bar_length)
+    set_bar = "=" * set_bar_full + " " * (bar_length - set_bar_full)
+
+    bar = f" Set:   [{set_bar}] {100 * percent_sets:0.2f} % "
+    bar += f"{set_index:4d}/{n_sets:d}\n"
+    bar += f" Image: [{image_bar}] {100 * percent_images:0.2f} % "
+    bar += f"{image_index:4d}/{n_images}\n"
+
+    condition_01 = abs(percent_sets - 1.0) < 1.0e-15
+    condition_02 = abs(percent_images - 1.0) < 1.0e-15
+
+    if condition_01 and condition_02:
+        end_str = ""
+    else:
+        end_str = f"{move_up}{move_up}\r"
+
+    bar += end_str
+    print(bar, end="")
