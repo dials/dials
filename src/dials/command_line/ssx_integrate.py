@@ -35,7 +35,7 @@ import logging
 import pathlib
 from dataclasses import dataclass
 from multiprocessing import Pool
-from typing import Any
+from typing import Any, List
 
 import iotbx.phil
 from cctbx import crystal
@@ -292,20 +292,20 @@ def wrap_integrate_one(input_to_integrate: InputToIntegrate):
     return result
 
 
-def pretty_ellipsoid_mosaicity(m: dict[str, float]):
-    m_arr = []
+def pretty_ellipsoid_mosaicity(mosaicity: dict[str, float]) -> tuple[str, str]:
+    mosaicity_array = []
     names_and_units = []
-    for k, v in m.items():
+    for k, v in mosaicity.items():
         if not k.startswith("angular"):
-            m_arr.append(f"{v * 1e6:.2f}")  # Invariant components to 2.d.p.
+            mosaicity_array.append(f"{v * 1e6:.2f}")  # Invariant components to 2.d.p.
             names_and_units.append(f"{k}(µÅ⁻¹)")
         else:
-            m_arr.append(f"{v:.3g}")  # Angular to 3.s.f.
+            mosaicity_array.append(f"{v:.3g}")  # Angular to 3.s.f.
             names_and_units.append(f"{k}(°)")
-    return ",".join(m_arr), ",".join(names_and_units)
+    return ",".join(mosaicity_array), ",".join(names_and_units)
 
 
-def make_summary_table(results, algorithm="stills"):
+def make_summary_table(results: List[IntegrationResult], algorithm: str = "stills"):
     overall_summary_header = [
         "Image",
         "crystal",
