@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import pathlib
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -113,6 +114,7 @@ class OutputCollector:
     # for integration of a single image.
 
     def initial_collect(self, experiment, reflection_table):
+        self.data["image"] = pathlib.Path(experiment.imageset.paths()[0]).name
         self.data["initial_n_refl"] = reflection_table.size()
         xobs, yobs, _ = reflection_table["xyzobs.px.value"].parts()
         xcal, ycal, _ = reflection_table["xyzcal.px"].parts()
