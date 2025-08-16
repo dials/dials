@@ -45,11 +45,6 @@ from dials.util.options import ArgumentParser, reflections_and_experiments_from_
 from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
-try:
-    from typing import List
-except ImportError:
-    pass
-
 logger = logging.getLogger("dials")
 
 program_defaults_phil_str = """
@@ -79,7 +74,7 @@ refinement {
 
 phil_scope = phil.parse(
     """
-method = *fft1d *real_space_grid_search pink_indexer low_res_spot_match
+method = *fft1d *real_space_grid_search pink_indexer low_res_spot_match ffbidx
     .type = choice(multi=True)
 nproc = Auto
     .type = int
@@ -113,7 +108,7 @@ phil_scope.adopt_scope(
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     """
     Run dials.ssx_index as from the command line.
 
@@ -186,11 +181,13 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             crystal_symmetries,
             make_plots=(params.output.html or params.output.json),
         )
-
-    logger.info(f"Saving indexed experiments to {params.output.experiments}")
-    indexed_experiments.as_file(params.output.experiments)
-    logger.info(f"Saving indexed reflections to {params.output.reflections}")
-    indexed_reflections.as_file(params.output.reflections)
+    if indexed_experiments:
+        logger.info(f"Saving indexed experiments to {params.output.experiments}")
+        indexed_experiments.as_file(params.output.experiments)
+        logger.info(f"Saving indexed reflections to {params.output.reflections}")
+        indexed_reflections.as_file(params.output.reflections)
+    else:
+        logger.info("No reflections indexed")
 
     if (params.output.html or params.output.json) and indexed_experiments:
         summary_plots = generate_plots(summary_data)

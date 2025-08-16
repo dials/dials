@@ -17,6 +17,7 @@ from dials.algorithms.scaling.scale_and_filter import (
 )
 from dials.algorithms.statistics.delta_cchalf import PerGroupCChalfStatistics
 from dials.array_family import flex
+from dials.util.batch_handling import get_batch_ranges
 from dials.util.exclude_images import exclude_image_ranges_for_scaling
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
@@ -168,9 +169,17 @@ class CCHalfFromDials:
         table, unit_cell, space_group = self.read_experiments(
             self.experiments, self.reflection_table
         )
-
+        self._group_to_batches = []
+        self._group_to_dataset_id = []
         if self.params.mode == "dataset":
             table["group"] = table["dataset"]
+            self._group_to_dataset_id = list(range(len(experiments)))
+            self.datasetid_to_groups = list(range(len(experiments)))
+            batch_offsets = [
+                expt.scan.get_batch_offset() if expt.scan else 0 for expt in experiments
+            ]
+            self._group_to_batches = get_batch_ranges(experiments, batch_offsets)
+
         elif self.params.mode == "image_group":
             # set up tracking of groups to expts
 
@@ -198,8 +207,10 @@ class CCHalfFromDials:
                         expid,
                         (start, group_starts[i + 1] - 1),
                     )
+                    self._group_to_batches.append((start, group_starts[i + 1] - 1))
                     self.datasetid_to_groups[expid].append(counter)
                     counter += 1
+                    self._group_to_dataset_id.append(id_)
                 # now do last group
                 group_sel = images_in_dataset >= group_starts[-1]
                 image_groups.set_selected((sel.iselection().select(group_sel)), counter)
@@ -209,6 +220,8 @@ class CCHalfFromDials:
                 )
                 self.datasetid_to_groups[expid].append(counter)
                 counter += 1
+                self._group_to_dataset_id.append(id_)
+                self._group_to_batches.append((group_starts[-1], max_img))
 
             table["group"] = image_groups
 
@@ -242,6 +255,44 @@ class CCHalfFromDials:
             )
         self.filtered_reflection_table = filtered_reflections
         self.results_summary = results
+
+    def get_table(self, html: bool = False) -> list[list[str]]:
+        """Generate a table for multiplex-style output of cc-half analysis.
+
+        Table consists of dataset-id, batch-range, cc1/2, Δcc1/2 and standard deviation.
+        """
+        cc_half_i = flex.double(list(self.algorithm.cchalf_i.values()))
+        mav = flex.mean_and_variance(cc_half_i)
+        normalised_score = (
+            mav.mean() - cc_half_i
+        ) / mav.unweighted_sample_standard_deviation()
+        delta_cc_half = flex.double(list(self.algorithm.delta_cchalf_i.values()))
+        if html:
+            cc_half_header = "CC<sub>½</sub>"
+        else:
+            cc_half_header = "CC½"
+        rows = [
+            [
+                "Dataset",
+                "Batches",
+                cc_half_header,
+                f"Δ{cc_half_header}",
+                "σ",
+            ]
+        ]
+        perm = flex.sort_permutation(delta_cc_half)
+        for i in perm:
+            bmin, bmax = self._group_to_batches[i]
+            rows.append(
+                [
+                    str(self._group_to_dataset_id[i]),
+                    f"{bmin} to {bmax}",
+                    f"{cc_half_i[i]: .3f}",
+                    f"{delta_cc_half[i]: .3f}",
+                    f"{normalised_score[i]: .2f}",
+                ]
+            )
+        return rows
 
     def output(self):
         """Save the output data and updated datafiles."""
@@ -450,7 +501,9 @@ class CCHalfFromDials:
             mean_unit_cell = unit_cell_list[0]
 
         # Require a dials scaled experiments file.
-        filtered_table = filter_reflection_table(reflection_table, ["scale"])
+        filtered_table = filter_reflection_table(
+            reflection_table, ["scale"], combine_partials=False
+        )
         filtered_table["intensity"] = filtered_table["intensity.scale.value"]
         filtered_table["variance"] = filtered_table["intensity.scale.variance"]
         filtered_table["dataset"] = filtered_table["id"]
@@ -505,6 +558,7 @@ Choose a suitable option for group_size to divide the dataset into multiple grou
         statistics.run()
 
         self.delta_cchalf_i = statistics.delta_cchalf_i()
+        self.cchalf_i = statistics.cchalf_i()
         self.results_summary["mean_cc_half"] = statistics._cchalf_mean
         # Print out the datasets in order of ΔCC½
         self.sort_deltacchalf_values(self.delta_cchalf_i, self.results_summary)

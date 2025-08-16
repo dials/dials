@@ -806,10 +806,10 @@ class CentroidAnalyser:
 
         nonzeros = np.nonzero(H)
         z1 = np.empty(H.shape)
-        z1[:] = np.NAN
+        z1[:] = np.nan
         z1[nonzeros] = H1[nonzeros] / H[nonzeros]
         z2 = np.empty(H.shape)
-        z2[:] = np.NAN
+        z2[:] = np.nan
         z2[nonzeros] = H2[nonzeros] / H[nonzeros]
 
         return {
@@ -913,6 +913,7 @@ class CentroidAnalyser:
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
         mask = I_over_S > threshold
+        mask &= ~rlist.get_flags(rlist.flags.not_suitable_for_refinement)
         if mask.count(True) == 0:
             return {}
         rlist = rlist.select(mask)
@@ -1320,7 +1321,7 @@ class IntensityAnalyser:
 
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -1436,7 +1437,7 @@ class IntensityAnalyser:
 
         nonzeros = np.nonzero(H)
         z1 = np.empty(H.shape)
-        z1[:] = np.NAN
+        z1[:] = np.nan
         z1[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -1960,7 +1961,7 @@ class ReferenceProfileAnalyser:
 
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -2276,7 +2277,7 @@ class Analyser:
                     (
                         "<strong>Panel %i</strong>:" % (panel_id + 1),
                         "Pixel size (mm):",
-                        "%.4f, %.4f" % panel.get_pixel_size(),
+                        "{:.4f}, {:.4f}".format(*panel.get_pixel_size()),
                         "Image size (pixels):",
                         "%i, %i" % panel.get_image_size(),
                     )
@@ -2285,7 +2286,7 @@ class Analyser:
                     (
                         "",
                         "Trusted range:",
-                        "%g, %g" % panel.get_trusted_range(),
+                        "{:g}, {:g}".format(*panel.get_trusted_range()),
                         "Thickness (mm):",
                         f"{panel.get_thickness():g}",
                     )
@@ -2345,7 +2346,9 @@ class Analyser:
                         "Image range:",
                         "%i, %i" % expt.scan.get_image_range(),
                         "Oscillation:",
-                        "%.2f&deg;, %+.2f&deg;/frame" % expt.scan.get_oscillation(),
+                        "{:.2f}&deg;, {:+.2f}&deg;/frame".format(
+                            *expt.scan.get_oscillation()
+                        ),
                     )
                 )
 

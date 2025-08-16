@@ -5,7 +5,7 @@ import sys
 
 import wx
 
-from .flex_image import (  # noqa: F401; moved but other places import from here
+from .flex_image import (  # noqa: F401 # Moved, but other places import from here
     get_flex_image,
     get_flex_image_multipanel,
 )
@@ -438,7 +438,6 @@ class _Tiles:
         beam = self.raw_image.get_beam()
         if detector is None or beam is None:
             return None
-        beam = beam.get_unit_s0()
 
         if readout is None:
             return None

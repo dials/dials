@@ -9,7 +9,7 @@ import logging
 import math
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 
 from cctbx import uctbx
 from dxtbx import flumpy
@@ -72,8 +72,7 @@ def assert_is_json_serialisable(thing, name, path=None):
             json.dumps(thing)
         except TypeError as e:
             raise TypeError(
-                "JSON serialisation error '%s' for value '%s' type %s in %s%s"
-                % (
+                "JSON serialisation error '{}' for value '{}' type {} in {}{}".format(
                     e,
                     str(thing),
                     type(thing),
@@ -104,12 +103,7 @@ def print_scaling_summary(script):
         if valid:
             if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                 msg.append(
-                    "Excluded images for experiment id: %s, image range: %s, limited range: %s"
-                    % (
-                        refl.experiment_identifiers().keys()[0],
-                        list(img),
-                        list(valid),
-                    )
+                    f"Excluded images for experiment id: {refl.experiment_identifiers().keys()[0]}, image range: {list(img)}, limited range: {list(valid)}"
                 )
     if msg:
         msg = ["Summary of image ranges removed:"] + msg
@@ -287,15 +281,15 @@ def print_scaling_model_error_summary(experiments):
         )
         if frac_high_uncertainty > 0.5:
             msg = (
-                "Warning: Over half ({:.2f}%) of model parameters have significant\n"
+                f"Warning: Over half ({frac_high_uncertainty * 100:.2f}%) of model parameters have significant\n"
                 "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
                 "poorly-determined scaling problem or overparameterisation.\n"
-            ).format(frac_high_uncertainty * 100)
+            )
         else:
             msg = (
-                "{:.2f}% of model parameters have significant uncertainty\n"
+                f"{frac_high_uncertainty * 100:.2f}% of model parameters have significant uncertainty\n"
                 "(sigma/abs(parameter) > 0.5)\n"
-            ).format(frac_high_uncertainty * 100)
+            )
     return msg
 
 
@@ -345,7 +339,7 @@ def make_error_model_plots(params, experiments):
             for i, e in enumerate(unique_error_models):
                 indices = [str(j + 1) for j, x in enumerate(error_models) if e is x]
                 d["error_model_summary"] += (
-                    f"\nError model {i+1}, applied to sweeps {', '.join(indices)}:"
+                    f"\nError model {i + 1}, applied to sweeps {', '.join(indices)}:"
                     + str(e)
                 )
         for em in unique_error_models:

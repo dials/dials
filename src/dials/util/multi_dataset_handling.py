@@ -8,8 +8,6 @@ from __future__ import annotations
 import copy
 import logging
 
-from orderedset import OrderedSet
-
 import iotbx.phil
 from dxtbx.util import ersatz_uuid4
 
@@ -36,6 +34,29 @@ phil_scope = iotbx.phil.parse(
   }
 """
 )
+
+
+class OrderedSet:
+    """A minimal OrderedSet implementation defined here because the one from
+    ordered_set does not work with imageset objects."""
+
+    def __init__(self):
+        self._dict = {}
+        self._counter = 0
+
+    def add(self, item):
+        if item not in self._dict:
+            self._dict[item] = self._counter
+            self._counter += 1
+
+    def index(self, item):
+        return self._dict[item]
+
+    def __contains__(self, item):
+        return item in self._dict
+
+    def __iter__(self):
+        return iter(self._dict)
 
 
 def generate_experiment_identifiers(experiments, identifier_type="uuid"):
@@ -116,7 +137,7 @@ def renumber_table_id_columns(reflection_tables):
 
     new_id_ = 0
     for table in reflection_tables:
-        if not table:
+        if not table or "id" not in table:
             continue
         table_id_values = sorted(set(table["id"]).difference({-1}), reverse=True)
         highest_new_id = new_id_ + len(table_id_values) - 1
@@ -213,15 +234,13 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
     """
     if len(experiments) != len(reflections):
         raise ValueError(
-            "The experiments and reflections lists are unequal in length: %s & %s"
-            % (len(experiments), len(reflections))
+            f"The experiments and reflections lists are unequal in length: {len(experiments)} & {len(reflections)}"
         )
     # if identifiers given, use these to set the identifiers
     if identifiers:
         if len(identifiers) != len(reflections):
             raise ValueError(
-                "The identifiers and reflections lists are unequal in length: %s & %s"
-                % (len(identifiers), len(reflections))
+                f"The identifiers and reflections lists are unequal in length: {len(identifiers)} & {len(reflections)}"
             )
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
             exp.identifier = identifiers[i]
@@ -235,8 +254,7 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
         if exp.identifier != "":
             if list(refl.experiment_identifiers().values()) != [exp.identifier]:
                 raise ValueError(
-                    "Corrupted identifiers, please check input: in reflections: %s, in experiment: %s"
-                    % (list(refl.experiment_identifiers().values()), exp.identifier)
+                    f"Corrupted identifiers, please check input: in reflections: {list(refl.experiment_identifiers().values())}, in experiment: {exp.identifier}"
                 )
             used_str_ids.append(exp.identifier)
 

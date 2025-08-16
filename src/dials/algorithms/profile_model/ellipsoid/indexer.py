@@ -169,12 +169,11 @@ def _filter_reflections_based_on_centroid_distance(
     logger.info(" Mean X RMSD: %f" % (sqrt(flex.sum(Xres**2) / len(Xres))))
     logger.info(" Mean Y RMSD: %f" % (sqrt(flex.sum(Yres**2) / len(Yres))))
     logger.info(" Mean E RMSD: %f" % (sqrt(flex.sum(Eres**2) / len(Eres))))
-    logger.info(" MCD location estimate: %.4f, %.4f" % tuple(T))
+    logger.info(" MCD location estimate: {:.4f}, {:.4f}".format(*tuple(T)))
     logger.info(
         """ MCD scatter estimate:
-    %.7f, %.7f,
-    %.7f, %.7f"""
-        % tuple(S)
+    {:.7f}, {:.7f},
+    {:.7f}, {:.7f}""".format(*tuple(S))
     )
     logger.info(" Number of outliers: %d" % selection1.count(False))
     logger.info(

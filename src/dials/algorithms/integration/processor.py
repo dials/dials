@@ -402,9 +402,9 @@ class Task:
         exp_id = list(set(self.reflections["id"]))
         imageset = self.experiments[exp_id[0]].imageset
         for i in exp_id[1:]:
-            assert (
-                self.experiments[i].imageset == imageset
-            ), "Task can only handle 1 imageset"
+            assert self.experiments[i].imageset == imageset, (
+                "Task can only handle 1 imageset"
+            )
 
         # Get the sub imageset
         frame0, frame1 = self.job
@@ -788,7 +788,7 @@ class _Manager:
         report = ["Memory situation report:"]
 
         def _report(description, numbytes):
-            report.append(f"  {description:<50}: {numbytes/1e9:5.1f} GB")
+            report.append(f"  {description:<50}: {numbytes / 1e9:5.1f} GB")
 
         _report("Available system memory", available_memory)
         _report("Maximum memory for processing", available_limit)

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import math
-
-import pkg_resources
 
 import iotbx.phil
 import libtbx
@@ -22,6 +21,7 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
 from dials.algorithms.indexing.max_cell import find_max_cell
 from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
+from dials.algorithms.spot_finding.per_image_analysis import ice_rings_selection
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
 
@@ -122,6 +122,10 @@ indexing {
       .type = float(value_min=0)
       .help = "Maximum allowed Le Page delta used in searching for basis vector"
               "combinations that are consistent with the given symmetry."
+      .expert_level = 1
+    A_matrix = None
+      .type = floats(size=9)
+      .help = "A crystal setting A=UB matrix to construct a trial crystal model for indexing."
       .expert_level = 1
   }
 
@@ -438,8 +442,8 @@ class Indexer:
                     experiment.goniometer = None
 
             IndexerType = None
-            for entry_point in pkg_resources.iter_entry_points(
-                "dials.index.basis_vector_search"
+            for entry_point in importlib.metadata.entry_points(
+                group="dials.index.basis_vector_search"
             ):
                 if params.indexing.method == entry_point.name:
                     if use_stills_indexer:
@@ -453,8 +457,8 @@ class Indexer:
                         )
 
             if IndexerType is None:
-                for entry_point in pkg_resources.iter_entry_points(
-                    "dials.index.lattice_search"
+                for entry_point in importlib.metadata.entry_points(
+                    group="dials.index.lattice_search"
                 ):
                     if params.indexing.method == entry_point.name:
                         if use_stills_indexer:
@@ -540,7 +544,7 @@ class Indexer:
                     )
                     break
 
-            n_lattices_previous_cycle = len(experiments)
+            n_lattices_previous_cycle = len(experiments.crystals())
 
             if self.d_min is None:
                 self.d_min = self.params.refinement_protocol.d_min_start
@@ -574,7 +578,7 @@ class Indexer:
 
             if len(experiments) == 0:
                 raise DialsIndexError("No suitable lattice could be found.")
-            elif len(experiments) == n_lattices_previous_cycle:
+            elif len(experiments.crystals()) == n_lattices_previous_cycle:
                 logger.warning("No more suitable lattices could be found")
                 # no more lattices found
                 break
@@ -850,7 +854,7 @@ class Indexer:
                 logger.info(R_ab)
                 logger.info(
                     f"Rotation of {angle:.3f} degrees"
-                    + " about axis (%.3f, %.3f, %.3f)" % axis
+                    + " about axis ({:.3f}, {:.3f}, {:.3f})".format(*axis)
                 )
                 have_similar_crystal_models = True
                 for id_ in sorted(models_to_reject, reverse=True):
@@ -886,8 +890,10 @@ class Indexer:
                     z.set_selected(z < min(tof), min(tof))
                     z.set_selected(z > max(tof), max(tof))
                     z_px = flex.double(tof_to_frame(z))
-                else:
+                elif expt.scan.has_property("oscillation"):
                     z_px = expt.scan.get_array_index_from_angle(z, deg=False)
+                else:
+                    z_px = z
             else:
                 # must be a still image, z centroid not meaningful
                 z_px = z
@@ -915,21 +921,40 @@ class Indexer:
             logger.info(expt.crystal)
 
         indexed_flags = reflections.get_flags(reflections.flags.indexed)
+        ice_rings = ice_rings_selection(reflections)
+        if unindexed_reflections:
+            unindexed_rings = ice_rings_selection(unindexed_reflections)
+        else:
+            unindexed_rings = None
         imageset_id = reflections["imageset_id"]
-        rows = [["Imageset", "# indexed", "# unindexed", "% indexed"]]
+        rows = [
+            [
+                "Imageset",
+                "# indexed",
+                "# unindexed\ntotal",
+                "# unindexed\nnon-ice",
+                "% indexed",
+            ]
+        ]
         for i in range(flex.max(imageset_id) + 1):
-            imageset_indexed_flags = indexed_flags.select(imageset_id == i)
+            sel = imageset_id == i
+            imageset_indexed_flags = indexed_flags.select(sel)
+            ice = ice_rings.select(sel)
             indexed_count = imageset_indexed_flags.count(True)
             unindexed_count = imageset_indexed_flags.count(False)
+            unindexed_noice = (~imageset_indexed_flags & ~ice).count(True)
+
             if unindexed_reflections:
                 sel = unindexed_reflections["imageset_id"] == i
                 unindexed_count += sel.count(True)
+                unindexed_noice += unindexed_rings.select(sel).count(False)
             rows.append(
                 [
                     str(i),
                     str(indexed_count),
                     str(unindexed_count),
-                    f"{indexed_count / (indexed_count + unindexed_count)*100:.1f}",
+                    str(unindexed_noice),
+                    f"{indexed_count / (indexed_count + unindexed_count) * 100:.1f}",
                 ]
             )
         logger.info(dials.util.tabulate(rows, headers="firstrow"))

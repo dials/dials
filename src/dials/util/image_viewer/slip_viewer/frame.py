@@ -115,7 +115,8 @@ class XrayFrame(XFBaseClass):
         self._ring_frame = None
         self._uc_frame = None
         self._score_frame = None
-        self._plugins_frame = {key: None for key in self.plugins}
+        self._line_frame = None
+        self._plugins_frame = dict.fromkeys(self.plugins)
         self.zoom_frame = None
         self.plot_frame = None
 
@@ -143,6 +144,7 @@ class XrayFrame(XFBaseClass):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIRing, id=self._id_ring)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIUC, id=self._id_uc)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIScore, id=self._id_score)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUILine, id=self._id_line)
         for p in self.plugins:
             self.Bind(
                 wx.EVT_UPDATE_UI,
@@ -202,10 +204,7 @@ class XrayFrame(XFBaseClass):
                 lon, lat
             )
 
-            posn_str = "Picture:  fast={:.3f} / slow={:.3f} pixels.".format(
-                fast_picture + 0.5,
-                slow_picture + 0.5,
-            )
+            posn_str = f"Picture:  fast={fast_picture + 0.5:.3f} / slow={slow_picture + 0.5:.3f} pixels."
             coords = self.pyslip.tiles.get_flex_pixel_coordinates(lon, lat)
             if len(coords) >= 2:
                 if len(coords) == 3:
@@ -311,6 +310,11 @@ class XrayFrame(XFBaseClass):
         item = self._actions_menu.Append(self._id_score, " ")
         self.Bind(wx.EVT_MENU, self.OnScore, source=item)
 
+        # XXX Placement
+        self._id_line = wx.NewId()
+        item = self._actions_menu.Append(self._id_line, " ")
+        self.Bind(wx.EVT_MENU, self.OnLine, source=item)
+
         self._id_plugins = {}
         for p in self.plugins:
             self._id_plugins[p] = wx.NewId()
@@ -374,9 +378,7 @@ class XrayFrame(XFBaseClass):
             lowest_res = 0
             for p_id, panel in enumerate(detector):
                 w, h = panel.get_image_size()
-                res = panel.get_resolution_at_pixel(
-                    beam.get_unit_s0(), (w // 2, h // 2)
-                )
+                res = panel.get_resolution_at_pixel(beam, (w // 2, h // 2))
                 if res > lowest_res:
                     panel_id = p_id
                     lowest_res = res
@@ -585,6 +587,21 @@ class XrayFrame(XFBaseClass):
         else:
             self._score_frame.Destroy()
 
+    def OnLine(self, event):
+        from .line_frame import LineSettingsFrame
+
+        if not self._line_frame:
+            self._line_frame = LineSettingsFrame(
+                self,
+                wx.ID_ANY,
+                "Line tool",
+                style=wx.CAPTION | wx.CLOSE_BOX | wx.RESIZE_BORDER,
+            )
+            self._line_frame.Show()
+            self._line_frame.Raise()
+        else:
+            self._line_frame.Destroy()
+
     def OnPluginWrapper(self, p):
         def OnPlugin(event):
             if not self._plugins_frame[p]:
@@ -654,6 +671,14 @@ class XrayFrame(XFBaseClass):
             event.SetText("Hide score tool")
         else:
             event.SetText("Show score tool")
+
+    def OnUpdateUILine(self, event):
+        # Toggle the menu item text depending on the state of the tool.
+
+        if self._line_frame:
+            event.SetText("Hide line tool")
+        else:
+            event.SetText("Show line tool")
 
     def OnUpdateUIPluginWrapper(self, p):
         def OnUpdateUIPlugin(event):

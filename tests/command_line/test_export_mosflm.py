@@ -1,22 +1,14 @@
 from __future__ import annotations
 
-import json
-import os
 import shutil
 import subprocess
-from pathlib import Path
 
 
-def test_export_mosflm(dials_regression: Path, tmp_path):
-    dials_regression_escaped = json.dumps(str(dials_regression)).strip('"')
-    with open(
-        os.path.join(dials_regression, "experiment_test_data/experiment_1.json")
-    ) as fi:
-        with (tmp_path / "experiments.json").open("w") as fo:
-            fo.write(fi.read().replace("$DIALS_REGRESSION", dials_regression_escaped))
-
+def test_export_mosflm(dials_data, tmp_path):
+    data_dir = dials_data("i04_weak_data", pathlib=True)
+    experiments = data_dir / "experiments.json"
     result = subprocess.run(
-        [shutil.which("dials.export"), "format=mosflm", "experiments.json"],
+        [shutil.which("dials.export"), "format=mosflm", experiments],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -27,14 +19,14 @@ def test_export_mosflm(dials_regression: Path, tmp_path):
     assert (
         lines
         == """
- -0.01210200 -0.01954526  0.00309519
- -0.00416605 -0.00080573 -0.02427340
-  0.01931593 -0.01241956 -0.00329641
+  0.01492625  0.00495607 -0.00238037
+  0.00660784 -0.01505459  0.00149210
+ -0.00437699 -0.00583805 -0.00587092
        0.000       0.000       0.000
- -0.52228050 -0.84350975  0.12535704
- -0.17980379 -0.03477015 -0.98308781
-  0.83360283 -0.53598726 -0.13350648
-     42.2717     42.2720     39.6704     90.0001     89.9993     89.9998
+  0.88323967  0.29347317 -0.36573377
+  0.39109500 -0.89133994  0.22925490
+ -0.25871295 -0.34552367 -0.90204268
+     57.7658     57.7991    149.9967     90.0076     90.0138     90.0101
        0.000       0.000       0.000
 """.strip("\n")
     )
@@ -43,12 +35,10 @@ def test_export_mosflm(dials_regression: Path, tmp_path):
     assert (
         lines
         == """
-DIRECTORY %s%scentroid_test_data
-TEMPLATE centroid_####.cbf
-SYMMETRY 89
-BEAM 220.002 212.478
-DISTANCE 190.1800
+TEMPLATE th_8_2_####.cbf
+SYMMETRY 1
+BEAM 205.383 211.023
+DISTANCE 265.1161
 MATRIX index.mat
 """.strip("\n")
-        % (dials_regression, os.path.sep)
     )

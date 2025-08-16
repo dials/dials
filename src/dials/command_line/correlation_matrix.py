@@ -36,6 +36,11 @@ output {
     .type = str
     .help = "Filename for the cluster information output in json format"
 }
+significant_clusters {
+  output = False
+    .type = bool
+    .help = "Toggle to output expt/refl files for significant clusters as determined by OPTICS clustering on cosine angle coordinates"
+}
 """,
     process_includes=True,
 )
@@ -97,8 +102,7 @@ def run(args=None):
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         sys.exit(
-            "Mismatched number of experiments and reflection tables found: %s & %s."
-            % (len(experiments), len(reflections))
+            f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
         )
     if len(experiments) < 2:
         sys.exit(
@@ -113,6 +117,13 @@ def run(args=None):
         sys.exit(e)
 
     matrices.calculate_matrices()
+
+    if params.significant_clusters.output:
+        matrices.output_clusters()
+    else:
+        logger.info(
+            "For separated clusters in DIALS .expt/.refl output please re-run with significant_clusters.output=True"
+        )
 
     if params.output.json:
         matrices.output_json()
@@ -134,6 +145,7 @@ def run(args=None):
             cos_angle_cluster_table=matrices.cos_table,
             image_range_tables=[matrices.table_list],
             cosym_graphs=matrices.rij_graphs,
+            pca_plot=matrices.pca_plot,
         )
 
         logger.info(

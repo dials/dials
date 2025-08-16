@@ -8,7 +8,7 @@ import libtbx
 from iotbx import phil
 from scitbx import matrix
 
-from dials.algorithms.image.distortion import CreateEllipticalDistortionMaps
+from dials.algorithms.image.distortion import PlaneLinearTransformationMaps
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments
@@ -20,12 +20,14 @@ help_message = """
 
 Generate dx.pickle, dy.pickle distortion maps for a detector model picked up
 from an image file or experiment.expt. These maps can be used to
-represent distortion within the millimetre to pixel mapping
+represent distortion within the millimetre to pixel mapping. For elliptical
+distortion note that the ellipse parameters should describe the observed
+ellipse, which will then be corrected to a circle.
 
 Examples::
 
   dials.generate_distortion_maps image_001.cbf dx=0.5 dy=1.5
-  dials.generate_distortion_maps models.expt mode=ellipse phi=0 l2=0.95
+  dials.generate_distortion_maps models.expt mode=ellipse phi=10 l2=0.95
 """
 
 scope = phil.parse(
@@ -98,22 +100,42 @@ def make_dx_dy_translate(imageset, dx, dy):
     return tuple(distortion_map_x), tuple(distortion_map_y)
 
 
-def ellipse_matrix_form(phi, l1, l2):
-    """Return the matrix for the quadratic form describing the oblique ellipse
-    where the first axis makes an angle phi with the X axis and the scale factors
-    for the axes are l1 and l2.
-    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf"""
-    deg2rad = math.pi / 180.0
-    phi *= deg2rad
+def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
+    """Return the matrix for the transformation from an ellipse to a circle
+    where the first axis makes an angle φ in degrees with the X axis and the
+    scale factors for the axes are l1 and l2.
+    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf for
+    definitions, noting that l1 = 1 / sqrt(λ1) and l2 = 1 / sqrt(λ2)."""
+
+    phi = math.radians(phi)
+    cphi = math.cos(phi)
+    sphi = math.sin(phi)
+    l1_inv = 1.0 / l1
+    l2_inv = 1.0 / l2
+
+    a11 = l1_inv * cphi
+    a12 = -l1_inv * sphi
+    a21 = l2_inv * sphi
+    a22 = l2_inv * cphi
+
+    return matrix.sqr((a11, a12, a21, a22))
+
+
+def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
+    """Return the matrix for the transformation from a circle to an ellipse
+    where the first axis makes an angle φ in degrees with the X axis and the
+    scale factors for the axes are l1 and l2.
+    See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf for
+    definitions, noting that l1 = 1 / sqrt(λ1) and l2 = 1 / sqrt(λ2)."""
+
+    phi = math.radians(phi)
     cphi = math.cos(phi)
     sphi = math.sin(phi)
 
-    a11 = l1 * cphi**2 + l2 * sphi**2
-    a12 = (l2 - l1) * sphi * cphi
-    a21 = a12
-    a22 = l1 * sphi**2 + l2 * cphi**2
-
-    assert a11 * a22 - 2 * a12 > 0.0
+    a11 = l1 * cphi
+    a12 = l2 * sphi
+    a21 = -l1 * sphi
+    a22 = l2 * cphi
 
     return matrix.sqr((a11, a12, a21, a22))
 
@@ -130,14 +152,14 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     topleft = matrix.col(p0.get_pixel_lab_coord((0, 0)))
     mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow
 
-    # Get matrix describing the elliptical distortion
-    M = ellipse_matrix_form(phi, l1, l2)
+    # Get matrix that describes the elliptical distortion
+    M = circle_to_ellipse_transform(phi, l1, l2)
 
     distortion_map_x = []
     distortion_map_y = []
 
     for panel in detector:
-        map_maker = CreateEllipticalDistortionMaps(panel, M, fast, slow, mid)
+        map_maker = PlaneLinearTransformationMaps(panel, M, fast, slow, mid)
         distortion_map_x.append(map_maker.get_dx())
         distortion_map_y.append(map_maker.get_dy())
 

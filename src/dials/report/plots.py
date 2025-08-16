@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 from io import StringIO
-from typing import Type
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -151,7 +150,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
     )
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
-    z[:] = np.NAN
+    z[:] = np.nan
     z[nonzeros] = H[nonzeros]
     key = f"i_over_sig_i_vs_i_{label}" if label is not None else "i_over_sig_i_vs_i"
     title = "I/σ(I) vs I"
@@ -603,8 +602,8 @@ class ResolutionPlotsAndStats:
 
     def __init__(
         self,
-        dataset_statistics: Type[dataset_statistics],
-        anomalous_dataset_statistics: Type[dataset_statistics],
+        dataset_statistics: type[dataset_statistics],
+        anomalous_dataset_statistics: type[dataset_statistics],
         is_centric=False,
     ):
         self.dataset_statistics = dataset_statistics
@@ -926,16 +925,14 @@ class ResolutionPlotsAndStats:
                 row.append(f"{r_split_vals[i]:.3f}")
             if cc_half_method == "sigma_tau":
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half_sigma_tau,
                         "*" if bin_stats.cc_one_half_sigma_tau_significance else "",
                     )
                 )
             else:
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half,
                         "*" if bin_stats.cc_one_half_significance else "",
                     )
@@ -943,8 +940,9 @@ class ResolutionPlotsAndStats:
 
             if not self.is_centric:
                 row.append(
-                    "%.3f%s"
-                    % (bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else "")
+                    "{:.3f}{}".format(
+                        bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else ""
+                    )
                 )
             rows.append(row)
 
@@ -1250,7 +1248,7 @@ https://doi.org/10.1107/S0907444905036693
         H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H[nonzeros]
 
         # also make a histogram

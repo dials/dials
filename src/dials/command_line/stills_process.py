@@ -436,7 +436,7 @@ class Script:
         from libtbx import easy_mp
 
         try:
-            from mpi4py import MPI
+            from libtbx.mpi4py import MPI
         except ImportError:
             rank = 0
             size = 1
@@ -656,7 +656,7 @@ class Script:
                         update_geometry(imageset)
                         experiment.beam = imageset.get_beam()
                         experiment.detector = imageset.get_detector()
-                    except RuntimeError as e:
+                    except (RuntimeError, AttributeError) as e:
                         logger.warning("Error updating geometry on item %s, %s", tag, e)
                         continue
 
@@ -899,6 +899,7 @@ class Processor:
         assert os.path.exists(debug_dir)
         self.debug_file_path = os.path.join(debug_dir, "debug_%d.txt" % rank)
         write_newline = os.path.exists(self.debug_file_path)
+        self.debug_file_handle = None
         if write_newline:  # needed if the there was a crash
             self.debug_write("")
 
@@ -1006,14 +1007,14 @@ class Processor:
         from serialtbx.util.time import timestamp  # XXX move to common timestamp format
 
         ts = timestamp()  # Now
-        debug_file_handle = open(self.debug_file_path, "a")
+        if not self.debug_file_handle:
+            self.debug_file_handle = open(self.debug_file_path, "a")
         if string == "":
-            debug_file_handle.write("\n")
+            self.debug_file_handle.write("\n")
         else:
             if state is None:
                 state = "    "
-            debug_file_handle.write(self.debug_str % (ts, state, string))
-        debug_file_handle.close()
+            self.debug_file_handle.write(self.debug_str % (ts, state, string))
 
     def process_experiments(self, tag, experiments):
         if not self.params.output.composite_output:
@@ -1136,9 +1137,8 @@ class Processor:
                     for panel in detector:
                         if panel.get_gain() != 1.0 and panel.get_gain() != gain:
                             raise RuntimeError(
-                                """
-The detector is reporting a gain of %f but you have also supplied a gain of %f. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
-                                % (panel.get_gain(), gain)
+                                f"""
+The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
                             )
 
     def find_spots(self, experiments):
@@ -1594,10 +1594,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: {:f}, half mosaicity degrees: {:f}".format(
-                    crystal_model.get_domain_size_ang(),
-                    crystal_model.get_half_mosaicity_deg(),
-                )
+                log_str += f". Final ML model: domain size angstroms: {crystal_model.get_domain_size_ang():f}, half mosaicity degrees: {crystal_model.get_half_mosaicity_deg():f}"
 
         logger.info(log_str)
 
@@ -1726,7 +1723,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 assert self.params.mp.method == "mpi"
                 stride = self.params.mp.composite_stride
 
-                from mpi4py import MPI
+                from libtbx.mpi4py import MPI
 
                 comm = MPI.COMM_WORLD
                 rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
@@ -1923,6 +1920,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()
+        if self.debug_file_handle:
+            self.debug_file_handle
+            del self.debug_file_handle
 
 
 @dials.util.show_mail_handle_errors()

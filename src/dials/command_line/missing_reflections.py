@@ -17,7 +17,6 @@ from __future__ import annotations
 import io
 import logging
 import sys
-from typing import List
 
 import libtbx.phil
 from cctbx import uctbx
@@ -45,7 +44,7 @@ phil_scope = libtbx.phil.parse(
 
 
 @dials.util.show_mail_handle_errors()
-def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     usage = "dials.missing_reflections [options] scaled.expt scaled.refl"
 
     parser = ArgumentParser(

@@ -13,7 +13,11 @@ from iotbx.phil import parse
 import dials.extensions
 import dials.util.masking
 from dials.algorithms.background.simple import Linear2dModeller
-from dials.algorithms.spot_finding.finder import SpotFinder, TOFSpotFinder
+from dials.algorithms.spot_finding.finder import (
+    LaueSpotFinder,
+    SpotFinder,
+    TOFSpotFinder,
+)
 from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
@@ -131,6 +135,21 @@ def generate_phil_scope():
         .type = int(value_min=1)
         .help = "When chunksize is auto, this is the minimum chunksize"
     }
+    tof {
+        rs_proximity_threshold_multiplier = None
+          .type = float
+          .help = "If not None, spots in close proximity in reciprocal space"
+                  "are filtered out based on this value. The distance is"
+                  "calculated as the first peak of a histrogram of distances,"
+                  "multiplied by the rs_proximity_threshold_multiplier"
+        }
+    laue {
+      initial_wavelength = None
+        .type = float(value_min=.1)
+        .help = "Initial wavelength assignment for reflections from Laue data"
+                "If None, initial_wavelength will be set as the average of "
+                "beam.wavelength_range"
+    }
   }
   """,
         process_includes=True,
@@ -180,7 +199,7 @@ class FilterRunner:
         predictions=None,
         observations=None,
         shoeboxes=None,
-        **kwargs,  # noqa: U100
+        **kwargs,  # noqa: ARG001
     ):
         """
         Check the flags are set, if they're not then create a list
@@ -225,7 +244,7 @@ class PeakCentroidDistanceFilter:
         """
         self.maxd = maxd
 
-    def run(self, flags, observations=None, shoeboxes=None, **kwargs):  # noqa: U100
+    def run(self, flags, observations=None, shoeboxes=None, **kwargs):  # noqa: ARG001
         """
         Run the filtering.
         """
@@ -242,7 +261,7 @@ class PeakCentroidDistanceFilter:
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered %d of %d spots by peak-centroid distance", num_after, num_before
+            f"Filtered {num_after} of {num_before} spots by peak-centroid distance"
         )
         return flags
 
@@ -252,7 +271,7 @@ class BackgroundGradientFilter:
         self.background_size = background_size
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):  # noqa: U100
+    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):  # noqa: ARG001
         modeller = Linear2dModeller()
         detector = sequence.get_detector()
 
@@ -332,7 +351,7 @@ class BackgroundGradientFilter:
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered %d of %d spots by background gradient", num_after, num_before
+            f"Filtered {num_after} of {num_before} spots by background gradient"
         )
         return flags
 
@@ -342,7 +361,7 @@ class SpotDensityFilter:
         self.nbins = nbins
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, observations=None, **kwargs):  # noqa: U100
+    def run(self, flags, sequence=None, observations=None, **kwargs):  # noqa: ARG001
         obs_x, obs_y = observations.centroids().px_position_xy().parts()
 
         H, xedges, yedges = np.histogram2d(
@@ -398,7 +417,7 @@ class SpotDensityFilter:
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
-        logger.info("Filtered %d of %d spots by spot density", num_after, num_before)
+        logger.info(f"Filtered {num_after} of {num_before} spots by spot density")
         return flags
 
 
@@ -459,7 +478,7 @@ class SpotFinderFactory:
             elif contains_tof_experiments:
                 raise RuntimeError("All experiment scans must contain time_of_flight")
 
-        if contains_tof_experiments:
+        if experiments.all_tof():
             # ToF spots from spallation sources typically have elongated tails
             if params.spotfinder.filter.max_separation < 6:
                 # Based on ISISSXD data
@@ -487,6 +506,32 @@ class SpotFinderFactory:
                 min_spot_size=params.spotfinder.filter.min_spot_size,
                 max_spot_size=params.spotfinder.filter.max_spot_size,
                 min_chunksize=params.spotfinder.mp.min_chunksize,
+                rs_proximity_threshold_multiplier=params.spotfinder.tof.rs_proximity_threshold_multiplier,
+            )
+
+        if experiments.all_laue():
+            filter_spots = SpotFinderFactory.configure_filter(params)
+
+            return LaueSpotFinder(
+                experiments=experiments,
+                threshold_function=threshold_function,
+                mask=params.spotfinder.lookup.mask,
+                filter_spots=filter_spots,
+                scan_range=params.spotfinder.scan_range,
+                write_hot_mask=params.spotfinder.write_hot_mask,
+                hot_mask_prefix=params.spotfinder.hot_mask_prefix,
+                mp_method=params.spotfinder.mp.method,
+                mp_nproc=params.spotfinder.mp.nproc,
+                mp_njobs=params.spotfinder.mp.njobs,
+                mp_chunksize=params.spotfinder.mp.chunksize,
+                max_strong_pixel_fraction=params.spotfinder.filter.max_strong_pixel_fraction,
+                compute_mean_background=params.spotfinder.compute_mean_background,
+                region_of_interest=params.spotfinder.region_of_interest,
+                mask_generator=mask_generator,
+                min_spot_size=params.spotfinder.filter.min_spot_size,
+                max_spot_size=params.spotfinder.filter.max_spot_size,
+                min_chunksize=params.spotfinder.mp.min_chunksize,
+                initial_wavelength=params.spotfinder.laue.initial_wavelength,
             )
 
         filter_spots = SpotFinderFactory.configure_filter(params)

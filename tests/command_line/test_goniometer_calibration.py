@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
-from pathlib import Path
 
 
-def test_goniometer_calibration(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "rotation_calibration")
-    o0_k0_p0 = os.path.join(data_dir, "experiments_o0_k0_p0.json")
-    o0_k0_p48 = os.path.join(data_dir, "experiments_o0_k0_p48.json")
-    o0_k48_p48 = os.path.join(data_dir, "experiments_o0_k48_p48.json")
-    o48_k48_p48 = os.path.join(data_dir, "experiments_o48_k48_p48.json")
+def test_goniometer_calibration(dials_data, tmp_path):
+    data_dir = dials_data("misc_regression", pathlib=True)
+    o0_k0_p0 = str(data_dir / "gonio-calib_o0_k0_p0.expt")
+    o0_k0_p48 = str(data_dir / "gonio-calib_o0_k0_p48.expt")
+    o0_k48_p48 = str(data_dir / "gonio-calib_o0_k48_p48.expt")
+    o48_k48_p48 = str(data_dir / "gonio-calib_o48_k48_p48.expt")
 
     command = [
         shutil.which("dials.goniometer_calibration"),

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import os
 
 import pytest
 
@@ -12,7 +11,7 @@ from dials.array_family import flex
 
 
 class Data:
-    def __init__(self, dials_data, dials_regression):
+    def __init__(self, dials_data):
         self.experiments = ExperimentListFactory.from_json_file(
             dials_data("centroid_test_data", pathlib=True) / "experiments.json"
         )
@@ -22,10 +21,9 @@ class Data:
         self.experiments[0].imageset.set_goniometer(self.experiments[0].goniometer)
         self.experiments[0].imageset.set_scan(self.experiments[0].scan)
 
-        reflection_filename = os.path.join(
-            dials_regression, "prediction_test_data", "expected_reflections.pickle"
+        reflection_filename = str(
+            dials_data("misc_regression", pathlib=True) / "prediction-expected.refl"
         )
-
         self.reflections = flex.reflection_table.from_file(reflection_filename)
 
     def predict_new(self, experiment=None, hkl=None, panel=None):
@@ -42,8 +40,8 @@ class Data:
 
 
 @pytest.fixture(scope="session")
-def data(dials_data, dials_regression):
-    return Data(dials_data, dials_regression)
+def data(dials_data):
+    return Data(dials_data)
 
 
 def test_number_of_predictions(data):

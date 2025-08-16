@@ -81,9 +81,13 @@ class MaskSettingsPanel(wx.Panel):
         if self._mode_circle_layer:
             self._pyslip.DeleteLayer(self._mode_circle_layer)
 
-        self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
-        self._pyslip.Unbind(wx.EVT_LEFT_UP, handler=self.OnLeftUp)
-        self._pyslip.Unbind(wx.EVT_MOTION, handler=self.OnMove)
+        try:
+            self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
+            self._pyslip.Unbind(wx.EVT_LEFT_UP, handler=self.OnLeftUp)
+            self._pyslip.Unbind(wx.EVT_MOTION, handler=self.OnMove)
+        except RuntimeError:
+            # If the application is closing, the PySlip object has already been deleted
+            pass
 
     def draw_settings(self):
         for child in self.GetChildren():
@@ -964,9 +968,9 @@ class MaskSettingsPanel(wx.Panel):
             p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
             assert p_id >= 0, "Point must be within a panel"
             if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
+                assert panel_id == p_id, (
+                    "All points must be contained within a single panel"
+                )
             panel_id = int(p_id)
             point_.append((p0, p1))
         points = point_
@@ -1012,9 +1016,9 @@ class MaskSettingsPanel(wx.Panel):
             p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
             assert p_id >= 0, "Point must be within a panel"
             if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
+                assert panel_id == p_id, (
+                    "All points must be contained within a single panel"
+                )
             panel_id = p_id
             points_.append((p0, p1))
         points = points_

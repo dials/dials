@@ -147,7 +147,7 @@ class RestraintsParameterisation:
         if param_i.parameterisation in self._param_to_restraint:
             raise DialsRefineConfigError(
                 "Parameterisation already restrained. Cannot create "
-                "additional restraint with experiment {}".format(experiment_id)
+                f"additional restraint with experiment {experiment_id}"
             )
 
         # create new restraint
@@ -181,9 +181,7 @@ class RestraintsParameterisation:
             if param in self._param_to_restraint:
                 raise DialsRefineConfigError(
                     "Parameterisation already restrained. Cannot create "
-                    "additional group restraint for experiment(s) {}".format(
-                        str(experiment_ids)
-                    )
+                    f"additional group restraint for experiment(s) {str(experiment_ids)}"
                 )
 
         # create new group of restraints
