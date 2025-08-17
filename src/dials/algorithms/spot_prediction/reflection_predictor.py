@@ -87,7 +87,7 @@ class ReflectionPredictor:
             )
 
         # Select the predictor class
-        if isinstance(experiment.imageset, ImageSequence):
+        if isinstance(experiment.imageset, ImageSequence) and not experiment.is_still():
             xl_nsp = experiment.crystal.num_scan_points
             bm_nsp = experiment.beam.num_scan_points
             gn_nsp = experiment.goniometer.num_scan_points
