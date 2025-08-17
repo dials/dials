@@ -306,6 +306,7 @@ def _program_defaults_phil_str():
     return """
 indexing {
   method = fft1d
+  stills.indexer=stills
 }
 refinement {
   parameterisation {
