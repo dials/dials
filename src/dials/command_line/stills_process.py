@@ -681,9 +681,7 @@ class Script:
             basenames = []
             basename_counts = {}
             split_experiments = []
-            # for i, imageset in enumerate(experiments.imagesets()):
             for i, experiment in enumerate(experiments):
-                # assert len(imageset) == 1
                 index = experiment.scan.get_image_range()[0] - 1
                 path = experiment.imageset.paths()[index]
                 indices.append(index)
@@ -722,7 +720,8 @@ class Script:
                     try:
                         assert len(experiments) == 1
                         experiment = experiments[0]
-                        experiment.load_models()
+                        if experiment.detector is None:
+                            experiment.load_models()  # Assume an imageset with one image, which is no longer the case
                         imageset = experiment.imageset
                         update_geometry(imageset)
                         experiment.beam = imageset.get_beam()
