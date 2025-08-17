@@ -1226,12 +1226,12 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         )
 
         # Reset z coordinates for dials.image_viewer; see Issues #226 for details
-        xyzobs = observed["xyzobs.px.value"]
-        for i in range(len(xyzobs)):
-            xyzobs[i] = (xyzobs[i][0], xyzobs[i][1], 0)
-        bbox = observed["bbox"]
-        for i in range(len(bbox)):
-            bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
+        # xyzobs = observed["xyzobs.px.value"]
+        # for i in range(len(xyzobs)):
+        #    xyzobs[i] = (xyzobs[i][0], xyzobs[i][1], 0)
+        # bbox = observed["bbox"]
+        # for i in range(len(bbox)):
+        #    bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
         if self.params.output.composite_output:
             n = len(self.all_strong_reflections.experiment_identifiers())
@@ -1519,6 +1519,11 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("")
         logger.info("Predicting reflections")
         logger.info("")
+
+        # x, y, _ = indexed['xyzcal.px'].parts()
+        # indexed['xyzcal.px'] = flex.vec3_double(x, y, flex.double(len(indexed), experiments[0].scan.get_array_range()[0] + 0.5))
+        # x, y, _ = indexed['xyzcal.mm'].parts()
+        # indexed['xyzcal.mm'] = flex.vec3_double(x, y, flex.double(len(indexed), experiments[0].scan.get_array_range()[0] + 0.5))
         predicted = flex.reflection_table.from_predictions_multi(
             experiments,
             dmin=self.params.prediction.d_min,
