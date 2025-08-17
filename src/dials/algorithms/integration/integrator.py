@@ -1665,9 +1665,9 @@ def create_integrator(params, experiments, reflections):
         raise ValueError(f"Unknown integration type {params.integration.integrator}")
 
     # Remove scan if stills
-    if experiments.all_stills():
-        for experiment in experiments:
-            experiment.scan = None
+    # if experiments.all_stills():
+    #    for experiment in experiments:
+    #        experiment.scan = None
 
     # Return an instantiation of the class
     return IntegratorClass(experiments, reflections, params)

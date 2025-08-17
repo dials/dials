@@ -345,6 +345,72 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 )
 
 
+def convert_stills_to_sequences(experiments):
+    from dxtbx.imageset import ImageSequence, ImageSetFactory
+
+    if any(not isinstance(i, ImageSequence) for i in experiments.imagesets()):
+        from dxtbx.model import GoniometerFactory, Scan
+
+        files_to_indiv = collections.defaultdict(int)
+        beams = []
+        formats = []
+        detectors = []
+        iset_params = []
+        existing_isets_sequences = []
+        for i, iset in enumerate(experiments.imagesets()):
+            if not isinstance(iset, ImageSequence):
+                path = iset.get_path(0)
+                if path not in files_to_indiv:
+                    beams.append(iset.get_beam())
+                    detectors.append(iset.get_detector())
+                    formats.append(iset.get_format_class())
+                    iset_params.append(iset.params())
+                files_to_indiv[iset.get_path(0)] += 1
+            else:
+                existing_isets_sequences.append(iset)
+
+        new_experiments = ExperimentList()
+        for i, (file, n) in enumerate(files_to_indiv.items()):
+            # if self.params.geometry.scan.image_range:
+            #    user_start, user_end = self.params.geometry.scan.image_range
+            #    first, last = user_start, user_end
+            # else:
+            #    first, last = 1, n
+            first, last = 1, n
+            iset_params[i].update({"lazy": False})
+            sequence = ImageSetFactory.make_sequence(
+                template=file,
+                indices=list(range(first, last + 1)),
+                format_class=formats[i],
+                beam=beams[i],
+                detector=detectors[i],
+                goniometer=GoniometerFactory.make_goniometer(
+                    (0.0, 1.0, 0.0), (1, 0, 0, 0, 1, 0, 0, 0, 1)
+                ),
+                scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
+                format_kwargs=iset_params[i],
+            )
+            # sequence = self.update_lookup(sequence, lookup)  # for mask etc
+            for j in range(len(sequence)):
+                subset = sequence[j : j + 1]
+                new_experiments.append(
+                    Experiment(
+                        imageset=sequence,
+                        beam=sequence.get_beam(),
+                        detector=sequence.get_detector(),
+                        goniometer=sequence.get_goniometer(),
+                        scan=subset.get_scan(),
+                        crystal=None,
+                    )
+                )
+        if existing_isets_sequences:
+            for expt in experiments:
+                if expt.imageset in existing_isets_sequences:
+                    new_experiments.append(expt)
+        experiments = new_experiments
+    return experiments
+
+
 def do_import(filename, load_models=True):
     logger.info("Loading %s", os.path.basename(filename))
     experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
@@ -356,6 +422,8 @@ def do_import(filename, load_models=True):
 
     if len(experiments) == 0:
         raise Abort(f"Could not load {filename}")
+
+    return convert_stills_to_sequences(experiments)
 
     from dxtbx.imageset import ImageSetFactory
 
@@ -612,11 +680,13 @@ class Script:
             basenames = []
             basename_counts = {}
             split_experiments = []
-            for i, imageset in enumerate(experiments.imagesets()):
-                assert len(imageset) == 1
-                paths = imageset.paths()
-                indices.append(i)
-                basename = os.path.splitext(os.path.basename(paths[0]))[0]
+            # for i, imageset in enumerate(experiments.imagesets()):
+            for i, experiment in enumerate(experiments):
+                # assert len(imageset) == 1
+                index = experiment.scan.get_image_range()[0] - 1
+                path = experiment.imageset.paths()[index]
+                indices.append(index)
+                basename = os.path.splitext(os.path.basename(path))[0]
                 basenames.append(basename)
                 if basename in basename_counts:
                     basename_counts[basename] += 1
@@ -1149,6 +1219,8 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("*" * 80)
 
         # Find the strong spots
+        assert len(experiments) == 1
+        self.params.spotfinder.scan_range = [experiments[0].scan.get_image_range()]
         observed = flex.reflection_table.from_observations(
             experiments, self.params, is_stills=True
         )
