@@ -418,29 +418,6 @@ class Indexer:
                 else:
                     params.indexing.basis_vector_combinations.max_refine = 50
 
-            if use_stills_indexer:
-                # Ensure the indexer and downstream applications treat this as set of stills
-                from dxtbx.imageset import ImageSet  # , MemImageSet
-
-                for experiment in experiments:
-                    # Elsewhere, checks are made for ImageSequence when picking between algorithms
-                    # specific to rotations vs. stills, so here reset any ImageSequences to stills.
-                    # Note, dials.stills_process resets ImageSequences to ImageSets already,
-                    # and it's not free (the ImageSet cache is dropped), only do it if needed
-                    if isinstance(experiment.imageset, ImageSequence):
-                        experiment.imageset = ImageSet(
-                            experiment.imageset.data(), experiment.imageset.indices()
-                        )
-                    # if isinstance(imageset, MemImageSet):
-                    #   imageset = MemImageSet(imagesequence._images, imagesequence.indices())
-                    # else:
-                    #   imageset = ImageSet(imagesequence.reader(), imagesequence.indices())
-                    #   imageset._models = imagesequence._models
-                    experiment.imageset.set_scan(None)
-                    experiment.imageset.set_goniometer(None)
-                    experiment.scan = None
-                    experiment.goniometer = None
-
             IndexerType = None
             for entry_point in importlib.metadata.entry_points(
                 group="dials.index.basis_vector_search"

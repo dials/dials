@@ -475,14 +475,15 @@ class StillsIndexer(Indexer):
 
     def experiment_list_for_crystal(self, crystal):
         experiments = ExperimentList()
-        for imageset in self.experiments.imagesets():
+        assert len(self.experiments) == 1
+        for experiment in self.experiments:
             experiments.append(
                 Experiment(
-                    imageset=imageset,
-                    beam=imageset.get_beam(),
-                    detector=imageset.get_detector(),
-                    goniometer=imageset.get_goniometer(),
-                    scan=imageset.get_scan(),
+                    imageset=experiment.imageset,
+                    beam=experiment.beam,
+                    detector=experiment.detector,
+                    goniometer=experiment.goniometer,
+                    scan=experiment.scan,
                     crystal=crystal,
                 )
             )
