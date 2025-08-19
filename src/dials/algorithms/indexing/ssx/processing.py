@@ -263,7 +263,7 @@ def index_all_concurrent(
             else:  # experiments that have already been filtered
                 image = pathlib.Path(iset.get_image_identifier(i)).name
                 if issubclass(iset.get_format_class(), FormatMultiImage):
-                    index = iset.indices()[i]
+                    index = iset.indices()[i] + 1
                     image += f"-{index}"
                 results_summary[refl_index].append(
                     {
@@ -368,7 +368,7 @@ def _add_results_to_summary_dict(
             if issubclass(
                 res.experiments[0].imageset.get_format_class(), FormatMultiImage
             ):
-                index = res.experiments[0].imageset.indices()[res.imageset_index]
+                index = res.experiments[0].imageset.indices()[res.imageset_index] + 1
                 image += f"-{index}"
             for j in range(len(res.n_indexed)):
                 results_summary[res.image_no].append(

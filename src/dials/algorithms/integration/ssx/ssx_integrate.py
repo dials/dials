@@ -122,7 +122,7 @@ class OutputCollector:
         # experiment_0050.cbf, experiment_0062.cbf, etc.
         self.data["image"] = pathlib.Path(experiment.imageset.paths()[0]).name
         if issubclass(experiment.imageset.get_format_class(), FormatMultiImage):
-            index = experiment.imageset.indices()[0]
+            index = experiment.imageset.indices()[0] + 1
             self.data["image"] += f"-{index}"
         self.data["initial_n_refl"] = reflection_table.size()
         xobs, yobs, _ = reflection_table["xyzobs.px.value"].parts()
