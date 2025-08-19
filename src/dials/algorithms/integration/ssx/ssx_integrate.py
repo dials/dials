@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
+from dxtbx.format.FormatMultiImage import FormatMultiImage
+
 import dials.extensions
 from dials.array_family import flex
 
@@ -114,7 +116,15 @@ class OutputCollector:
     # for integration of a single image.
 
     def initial_collect(self, experiment, reflection_table):
+        # self.data["image"] = pathlib.Path(experiment.imageset.paths()[0]).name
+        # for things like nexus files, we want image to be expressed like
+        # experiment_001.nxs-50, experiment_001.nxs-62, etc.
+        # for things like cbfs, we want image to be expressed like
+        # experiment_0050.cbf, experiment_0062.cbf, etc.
         self.data["image"] = pathlib.Path(experiment.imageset.paths()[0]).name
+        if issubclass(experiment.imageset.get_format_class(), FormatMultiImage):
+            index = experiment.imageset.indices()[0]
+            self.data["image"] += f"-{index}"
         self.data["initial_n_refl"] = reflection_table.size()
         xobs, yobs, _ = reflection_table["xyzobs.px.value"].parts()
         xcal, ycal, _ = reflection_table["xyzcal.px"].parts()
