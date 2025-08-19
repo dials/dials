@@ -116,7 +116,6 @@ class OutputCollector:
     # for integration of a single image.
 
     def initial_collect(self, experiment, reflection_table):
-        # self.data["image"] = pathlib.Path(experiment.imageset.paths()[0]).name
         # for things like nexus files, we want image to be expressed like
         # experiment_001.nxs-50, experiment_001.nxs-62, etc.
         # for things like cbfs, we want image to be expressed like
