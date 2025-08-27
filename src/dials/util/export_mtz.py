@@ -8,6 +8,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from math import isclose
 
+import dateutil.parser
 import gemmi
 import numpy as np
 import pandas as pd
@@ -674,12 +675,28 @@ def export_mtz(
     # Create the mtz file
     mtz = gemmi.Mtz(with_base=True)
     mtz.title = f"From {env.dispatcher_name}"
-    date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
-    if time.strftime("%Z") != "GMT":
-        date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
-    mtz.history += [
-        f"From {dials_version()}, run on {date_str}",
-    ]
+    # If the experiments have history lines, use the integrated and scaled
+    # entries from these for MTZ history
+    filtered_lines = {}
+    if experiment_list[0].history:
+        history_lines = experiment_list[0].history.get_history()
+        for line in history_lines:
+            items = line.split("|")
+            if len(items) == 4 and ("integrated" in items[3] or "scaled" in items[3]):
+                program = items[1] + " " + items[2]
+                filtered_lines[program] = dateutil.parser.isoparse(items[0])
+        for program, date in filtered_lines.items():
+            mtz.history += [
+                f"From {program}, run on {date.strftime('%Y-%m-%d at %H:%M:%S %Z')}",
+            ]
+    if not filtered_lines:
+        # Retain the old approach when experiments don't have history
+        date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
+        if time.strftime("%Z") != "GMT":
+            date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+        mtz.history += [
+            f"From {dials_version()}, run on {date_str}",
+        ]
 
     # Create the right gemmi spacegroup from the crystal's cctbx space_group
     # via a Hall symbol
