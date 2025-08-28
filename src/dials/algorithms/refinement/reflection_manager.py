@@ -1131,11 +1131,11 @@ class LaueReflectionManager(ReflectionManager):
 
     def update_residuals(self):
         x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
-        x_calc, y_calc, _ = self._reflections["xyzcal.mm"].parts()
+        x_cal, y_cal, _ = self._reflections["xyzcal.mm"].parts()
         wavelength_obs = self._reflections["wavelength"]
         wavelength_cal = self._reflections["wavelength_cal"]
-        self._reflections["x_resid"] = x_calc - x_obs
-        self._reflections["y_resid"] = y_calc - y_obs
+        self._reflections["x_resid"] = x_cal - x_obs
+        self._reflections["y_resid"] = y_cal - y_obs
         self._reflections["wavelength_resid"] = wavelength_cal - wavelength_obs
         self._reflections["wavelength_resid2"] = (
             self._reflections["wavelength_resid"] ** 2
@@ -1189,16 +1189,32 @@ class TOFReflectionManager(LaueReflectionManager):
 
     def update_residuals(self):
         x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
-        x_calc, y_calc, _ = self._reflections["xyzcal.mm"].parts()
+        x_cal, y_cal, _ = self._reflections["xyzcal.mm"].parts()
         wavelength_obs = self._reflections["wavelength"]
         wavelength_cal = self._reflections["wavelength_cal"]
-        L2 = self._reflections["s1"].norms() * 10**-3
-        self._reflections["x_resid"] = x_calc - x_obs
-        self._reflections["y_resid"] = y_calc - y_obs
+        L1 = self._reflections["s1"].norms() * 10**-3  # (m)
+        self._reflections["x_resid"] = x_cal - x_obs
+        self._reflections["y_resid"] = y_cal - y_obs
         self._reflections["wavelength_resid"] = wavelength_cal - wavelength_obs
         self._reflections["wavelength_resid2"] = (
             self._reflections["wavelength_resid"] ** 2
         )
+
+        L1_cal = flex.double(len(self._reflections))
+        for idx, expt in enumerate(self._experiments):
+            if "imageset_id" in self._reflections:
+                r_expt = self._reflections["imageset_id"] == idx
+            else:
+                r_expt = self._reflections["id"] == idx
+            for i_panel in range(len(expt.detector)):
+                sel = r_expt & (self._reflections["panel"] == i_panel)
+                x_cal_p = x_cal.select(sel)
+                y_cal_p = y_cal.select(sel)
+                s1_cal = expt.detector[i_panel].get_lab_coord(
+                    flex.vec2_double(x_cal_p, y_cal_p)
+                )
+                L1_cal_p = s1_cal.norms() * 10**-3  # (m)
+                L1_cal.set_selected(sel, L1_cal_p)
 
         frame_resid = flex.double(len(self._reflections))
         frame_resid2 = flex.double(len(self._reflections))
@@ -1208,7 +1224,8 @@ class TOFReflectionManager(LaueReflectionManager):
             else:
                 r_expt = self._reflections["id"] == idx
 
-            L_expt = self._sample_to_source_distances[idx] + L2.select(r_expt)
+            L_expt = self._sample_to_source_distances[idx] + L1.select(r_expt)
+            L_expt_cal = self._sample_to_source_distances[idx] + L1_cal.select(r_expt)
 
             tof_obs_expt = (
                 tof_helpers.tof_from_wavelength(L_expt, wavelength_obs.select(r_expt))
@@ -1222,7 +1239,9 @@ class TOFReflectionManager(LaueReflectionManager):
             )
 
             tof_cal_expt = (
-                tof_helpers.tof_from_wavelength(L_expt, wavelength_cal.select(r_expt))
+                tof_helpers.tof_from_wavelength(
+                    L_expt_cal, wavelength_cal.select(r_expt)
+                )
                 * 10**6
             )  # (usec)
             tof_cal_expt.set_selected(

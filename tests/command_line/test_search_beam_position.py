@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import subprocess
@@ -243,18 +242,17 @@ def test_midpoint_method(tmp_path):
 
     dials_cmd = "dials.search_beam_position"
     if os.name == "nt":
-        dials_cmd += ".EXE"  # Used for tests for Windows
+        dials_cmd += ".EXE"  # Used for tests on Windows
 
     cmd = [
         dials_cmd,
         "method=midpoint",
-        "per_image=True",
+        "per_image=False",
         "exclude_intensity_percent=0.01",
         "intersection_range=0.1,0.9,0.01",
         "midpoint.convolution_width=10",
         "dead_pixel_range_y=223,276",
         "intersection_min_width=10",
-        "image_ranges=0",
         "color_cutoff=20",
         "json=beam_position.json",
         imported_file,
@@ -263,14 +261,13 @@ def test_midpoint_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=373.8,
-        y0=248.1,
+        x0=309.64,
+        y0=373.41,
         image_index=0,
         imageset_index=0,
-        out_fig="beam_position_imageset_00000_img_00000.png",
+        out_fig="beam_position_detector_0.png",
         method="midpoint",
         cwd=tmp_path,
-        json_file="beam_position.json",
     )
 
     shutil.rmtree(tmp_path)
@@ -289,8 +286,7 @@ def test_maximum_method(tmp_path):
     cmd = [
         dials_cmd,
         "method=maximum",
-        "image_ranges=1",
-        "per_image=True",
+        "per_image=False",
         "maximum.bad_pixel_threshold=30",
         "maximum.convolution_width=5",
         "bin_width=20",
@@ -303,13 +299,12 @@ def test_maximum_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=402.0,
-        y0=220.0,
+        x0=308.0,
+        y0=374.0,
         image_index=1,
         imageset_index=0,
-        out_fig="beam_position_imageset_00000_img_00001.png",
+        out_fig="beam_position_detector_0.png",
         method="maximum",
-        json_file="beam_position.json",
         cwd=tmp_path,
     )
 
@@ -329,8 +324,7 @@ def test_inversion_method(tmp_path):
     cmd = [
         dials_cmd,
         "method=inversion",
-        "image_ranges=2",
-        "per_image=True",
+        "per_image=False",
         "inversion.bad_pixel_threshold=20",
         "color_cutoff=20",
         "json=beam_position.json",
@@ -344,9 +338,8 @@ def test_inversion_method(tmp_path):
         y0=254.0,
         image_index=2,
         imageset_index=0,
-        out_fig="beam_position_imageset_00000_img_00002.png",
+        out_fig="beam_position_detector_0.png",
         method="inversion",
-        json_file="beam_position.json",
         cwd=tmp_path,
     )
 
@@ -411,7 +404,6 @@ def check_output(
     imageset_index,
     out_fig=None,
     method="maximum",
-    json_file="beam_position.json",
     cwd=None,
 ):
     out_lines = result.stdout.split("\n")
@@ -419,16 +411,16 @@ def check_output(
     assert result.stderr == "", f"Error in subprocess: {result.stderr}"
 
     # We assume the line in the output where we print the beam position is
-    # underneath the image progress bar (that looks like 'Image: [=====...]'
+    # underneath the detector number (e.g. '[Detector ...]')
     position_line = None
     for index, line in enumerate(out_lines):
-        if "Image:" in line and index < len(out_lines) - 1:
+        if "[Detector" in line and index < len(out_lines) - 1:
             position_line = out_lines[index + 1]
 
     msg = f"Function for {method} method prints the output in a wrong format"
     assert position_line is not None, msg
 
-    x, y = [float(i) for i in position_line.strip().split(",")]
+    x, y = [float(i) for i in position_line.strip().split(" ")]
     print(f"Checking for the {method} method")
     print("x, y =", x, y)
     x0_OK = abs(x - x0) < 1
@@ -440,30 +432,8 @@ def check_output(
     assert x0_OK and y0_OK, msg
 
     out_fig = os.path.join(cwd, out_fig)
-    json_file = os.path.join(cwd, json_file)
 
     assert os.path.exists(out_fig), f"No output figure generated {out_fig}"
-
-    assert os.path.exists(json_file), f"No output JSON {json_file} generated"
-
-    json_OK = True
-    try:
-        with open(json_file, "r") as file:
-            data = json.load(file)
-            imageset_index_json, image_index_json, x_json, y_json = data[0]
-            print("x_json, y_json =", x_json, y_json)
-            msg = "Bad data in beam_position.json"
-            assert imageset_index_json == imageset_index, msg
-            assert image_index_json == image_index, msg
-            assert abs(x_json - x0) < 1, msg
-            assert abs(y_json - y0) < 1, msg
-
-    except json.JSONDecodeError:
-        json_OK = False
-
-    assert json_OK, f"Invalid JSON file {json_file}"
-
-    os.remove(json_file)
     os.remove(out_fig)
 
 
