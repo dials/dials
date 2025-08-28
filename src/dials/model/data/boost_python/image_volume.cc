@@ -65,9 +65,9 @@ namespace dials { namespace model { namespace boost_python {
       int6 b = v.trim_bbox(bbox[i]);
 
       // Get the data arrays
-      af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
-      af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-      af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
+      af::versa<FloatType, af::c_grid<3>> data = v.extract_data(b);
+      af::versa<FloatType, af::c_grid<3>> bgrd = v.extract_background(b);
+      af::versa<int, af::c_grid<3>> mask = v.extract_mask(b, i);
 
       // Compute numbers of pixels
       std::size_t num1 = 0;
@@ -135,8 +135,49 @@ namespace dials { namespace model { namespace boost_python {
   }
 
   template <typename FloatType>
-  void image_volume_wrapper(const char *name) {
+  void image_volume_wrapper(const char* name) {
     typedef ImageVolume<FloatType> Class;
+
+    struct IVPickleSuite : pickle_suite {
+      static tuple getinitargs(Class& obj) {
+        return make_tuple(0, 1, std::size_t(1), std::size_t(1));
+      }
+
+      static object getstate(Class& obj) {
+        return obj.get_all();
+      }
+
+      static void setstate(Class& obj, object state) {
+        obj.set_all(extract<int>(state[0]),
+                    extract<int>(state[1]),
+                    extract<std::size_t>(state[2]),
+                    extract<std::size_t>(state[3]),
+                    extract<std::size_t>(state[4]),
+                    extract<boost::python::list>(state[5]),
+                    extract<boost::python::list>(state[6]),
+                    extract<boost::python::list>(state[7]));
+      }
+    };
+
+    struct SIVPickleSuite : pickle_suite {
+      static tuple getinitargs(af_shared_with_getitem<Class>& obj) {
+        return tuple();
+      }
+
+      static object getstate(af_shared_with_getitem<Class>& obj) {
+        list arg_lst;
+        for (int i = 0; i < obj.size(); i++) {
+          arg_lst.append(obj[i]);
+        }
+        return tuple(arg_lst);
+      }
+
+      static void setstate(af_shared_with_getitem<Class>& obj, object state) {
+        for (int i = 0; i < len(state); i++) {
+          obj.push_back(extract<Class>(state[i]));
+        }
+      }
+    };
 
     class_<Class>(name, no_init)
       .def(init<int, int, std::size_t, std::size_t>())
@@ -151,11 +192,29 @@ namespace dials { namespace model { namespace boost_python {
       .def("is_consistent", &Class::is_consistent)
       .def("extract_data", &Class::extract_data)
       .def("extract_background", &Class::extract_background)
-      .def("extract_mask", &Class::extract_mask);
+      .def("extract_mask", &Class::extract_mask)
+      .def_pickle(IVPickleSuite());
+
+    class_<af_shared_with_getitem<Class>>("shared_ImageVolume")
+      .def_pickle(SIVPickleSuite());
   }
 
+  struct MPIVPickleSuite : pickle_suite {
+    static tuple getinitargs(MultiPanelImageVolume<>& obj) {
+      return make_tuple();
+    }
+
+    static object getstate(MultiPanelImageVolume<>& obj) {
+      return make_tuple(obj.get_volume());
+    }
+
+    static void setstate(MultiPanelImageVolume<>& obj, object state) {
+      obj.set_volume(extract<af_shared_with_getitem<ImageVolume<>>>(state[0]));
+    }
+  };
+
   template <typename FloatType>
-  void multi_panel_image_volume_wrapper(const char *name) {
+  void multi_panel_image_volume_wrapper(const char* name) {
     typedef MultiPanelImageVolume<FloatType> Class;
 
     class_<Class>(name)
@@ -167,7 +226,8 @@ namespace dials { namespace model { namespace boost_python {
       .def("set_image", &Class::template set_image<double>)
       .def("update_reflection_info",
            &MultiPanelImageVolume_update_reflection_info<FloatType>)
-      .def("__len__", &Class::size);
+      .def("__len__", &Class::size)
+      .def_pickle(MPIVPickleSuite());
   }
 
   void export_image_volume() {

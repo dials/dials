@@ -16,11 +16,19 @@
 #include <dials/model/data/image.h>
 #include <dials/model/data/mask_code.h>
 #include <dials/error.h>
+#include <boost/python.hpp>
 
 namespace dials { namespace model {
 
   using dials::model::Valid;
   using scitbx::af::int6;
+  template <typename ElementType>
+  class af_shared_with_getitem : public af::shared<ElementType> {
+  public:
+    ElementType getitem(const int i) {
+      return (*this)[i];
+    }
+  };
 
   class Label {
   public:
@@ -66,6 +74,58 @@ namespace dials { namespace model {
               && mask_.accessor().all_eq(grid_) && label_.accessor().all_eq(grid_));
     }
 
+    boost::python::object get_all() {
+      std::size_t acc0 = grid_[0];
+      std::size_t acc1 = grid_[1];
+      std::size_t acc2 = grid_[2];
+      boost::python::list data;
+      boost::python::list background;
+      boost::python::list mask;
+
+      for (int i = 0; i < acc0; i++) {
+        for (int j = 0; j < acc1; j++) {
+          for (int k = 0; k < acc2; k++) {
+            data.append(data_(i, j, k));
+            background.append(background_(i, j, k));
+            mask.append(mask_(i, j, k));
+          }
+        }
+      }
+
+      return boost::python::make_tuple(
+        frame0_, frame1_, acc0, acc1, acc2, data, background, mask);
+    }
+
+    void set_all(int frame0,
+                 int frame1,
+                 std::size_t acc0,
+                 std::size_t acc1,
+                 std::size_t acc2,
+                 boost::python::list data,
+                 boost::python::list background,
+                 boost::python::list mask) {
+      frame0_ = frame0;
+      frame1_ = frame1;
+      grid_(acc0, acc1, acc2);
+
+      for (int i = 0; i < acc0; i++) {
+        for (int j = 0; j < acc1; j++) {
+          for (int k = 0; k < acc2; k++) {
+            data_(i, j, k) =
+              boost::python::extract<FloatType>(data[i * acc2 * acc1 + j * acc2 + k]);
+            background_(i, j, k) = boost::python::extract<FloatType>(
+              background[i * acc2 * acc1 + j * acc2 + k]);
+            mask_(i, j, k) =
+              boost::python::extract<int>(mask[i * acc2 * acc1 + j * acc2 + k]);
+          }
+        }
+      }
+
+      // Not setting the labels here. Implement a get()-set() pair for the contents of
+      // label if required.
+      // label_(grid_);
+    }
+
     /**
      * @returns the first frame
      */
@@ -90,28 +150,28 @@ namespace dials { namespace model {
     /**
      * @returns The data array
      */
-    af::versa<FloatType, af::c_grid<3> > data() const {
+    af::versa<FloatType, af::c_grid<3>> data() const {
       return data_;
     }
 
     /**
      * @returns The background array
      */
-    af::versa<FloatType, af::c_grid<3> > background() const {
+    af::versa<FloatType, af::c_grid<3>> background() const {
       return background_;
     }
 
     /**
      * @returns The mask array
      */
-    af::versa<int, af::c_grid<3> > mask() const {
+    af::versa<int, af::c_grid<3>> mask() const {
       return mask_;
     }
 
     /**
      * @returns The labels
      */
-    af::versa<Label, af::c_grid<3> > label1() const {
+    af::versa<Label, af::c_grid<3>> label1() const {
       return label_;
     }
 
@@ -134,7 +194,7 @@ namespace dials { namespace model {
     /**
      * Extract data with the given bbox
      */
-    af::versa<FloatType, af::c_grid<3> > extract_data(int6 bbox) const {
+    af::versa<FloatType, af::c_grid<3>> extract_data(int6 bbox) const {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -147,7 +207,7 @@ namespace dials { namespace model {
       std::size_t xsize = bbox[1] - bbox[0];
       std::size_t ysize = bbox[3] - bbox[2];
       std::size_t zsize = bbox[5] - bbox[4];
-      af::versa<FloatType, af::c_grid<3> > result(af::c_grid<3>(zsize, ysize, xsize));
+      af::versa<FloatType, af::c_grid<3>> result(af::c_grid<3>(zsize, ysize, xsize));
       std::size_t i0 = bbox[0];
       std::size_t j0 = bbox[2];
       std::size_t k0 = bbox[4] - frame0_;
@@ -164,7 +224,7 @@ namespace dials { namespace model {
     /**
      * Extract data with the given bbox
      */
-    af::versa<FloatType, af::c_grid<3> > extract_background(int6 bbox) const {
+    af::versa<FloatType, af::c_grid<3>> extract_background(int6 bbox) const {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -177,7 +237,7 @@ namespace dials { namespace model {
       std::size_t xsize = bbox[1] - bbox[0];
       std::size_t ysize = bbox[3] - bbox[2];
       std::size_t zsize = bbox[5] - bbox[4];
-      af::versa<FloatType, af::c_grid<3> > result(af::c_grid<3>(zsize, ysize, xsize));
+      af::versa<FloatType, af::c_grid<3>> result(af::c_grid<3>(zsize, ysize, xsize));
       std::size_t i0 = bbox[0];
       std::size_t j0 = bbox[2];
       std::size_t k0 = bbox[4] - frame0_;
@@ -194,7 +254,7 @@ namespace dials { namespace model {
     /**
      * Extract data with the given bbox
      */
-    af::versa<int, af::c_grid<3> > extract_mask(int6 bbox, std::size_t index) const {
+    af::versa<int, af::c_grid<3>> extract_mask(int6 bbox, std::size_t index) const {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -207,7 +267,7 @@ namespace dials { namespace model {
       std::size_t xsize = bbox[1] - bbox[0];
       std::size_t ysize = bbox[3] - bbox[2];
       std::size_t zsize = bbox[5] - bbox[4];
-      af::versa<int, af::c_grid<3> > result(af::c_grid<3>(zsize, ysize, xsize));
+      af::versa<int, af::c_grid<3>> result(af::c_grid<3>(zsize, ysize, xsize));
       std::size_t i0 = bbox[0];
       std::size_t j0 = bbox[2];
       std::size_t k0 = bbox[4] - frame0_;
@@ -233,7 +293,7 @@ namespace dials { namespace model {
     /**
      * Set data with the given bbox
      */
-    void set_data(int6 bbox, const af::const_ref<FloatType, af::c_grid<3> > &data) {
+    void set_data(int6 bbox, const af::const_ref<FloatType, af::c_grid<3>> &data) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -265,7 +325,7 @@ namespace dials { namespace model {
      * Set data with the given bbox
      */
     void set_background(int6 bbox,
-                        const af::const_ref<FloatType, af::c_grid<3> > &background) {
+                        const af::const_ref<FloatType, af::c_grid<3>> &background) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -298,7 +358,7 @@ namespace dials { namespace model {
      */
     void set_mask(int6 bbox,
                   std::size_t index,
-                  const af::const_ref<int, af::c_grid<3> > &mask) {
+                  const af::const_ref<int, af::c_grid<3>> &mask) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -366,8 +426,8 @@ namespace dials { namespace model {
      */
     template <typename T>
     void set_image(int frame,
-                   const af::const_ref<T, af::c_grid<2> > &data,
-                   const af::const_ref<bool, af::c_grid<2> > &mask) {
+                   const af::const_ref<T, af::c_grid<2>> &data,
+                   const af::const_ref<bool, af::c_grid<2>> &mask) {
       DIALS_ASSERT(frame >= frame0_);
       DIALS_ASSERT(frame < frame1_);
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
@@ -395,10 +455,10 @@ namespace dials { namespace model {
     int frame0_;
     int frame1_;
     af::c_grid<3> grid_;
-    af::versa<FloatType, af::c_grid<3> > data_;
-    af::versa<FloatType, af::c_grid<3> > background_;
-    af::versa<int, af::c_grid<3> > mask_;
-    af::versa<Label, af::c_grid<3> > label_;
+    af::versa<FloatType, af::c_grid<3>> data_;
+    af::versa<FloatType, af::c_grid<3>> background_;
+    af::versa<int, af::c_grid<3>> mask_;
+    af::versa<Label, af::c_grid<3>> label_;
   };
 
   /**
@@ -411,6 +471,14 @@ namespace dials { namespace model {
     typedef ImageVolume<FloatType> volume_type;
 
     MultiPanelImageVolume() {}
+
+    af_shared_with_getitem<ImageVolume<FloatType>> get_volume() const {
+      return volume_;
+    }
+
+    void set_volume(af_shared_with_getitem<ImageVolume<FloatType>> volume) {
+      volume_ = volume;
+    }
 
     /**
      * Add an image volume
@@ -471,7 +539,7 @@ namespace dials { namespace model {
     }
 
   private:
-    af::shared<ImageVolume<FloatType> > volume_;
+    af_shared_with_getitem<ImageVolume<FloatType>> volume_;
   };
 
 }};  // namespace dials::model
