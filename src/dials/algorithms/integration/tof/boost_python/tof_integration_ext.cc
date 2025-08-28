@@ -54,6 +54,30 @@ namespace dials { namespace algorithms { namespace boost_python {
                              double,
                              TOFAbsorptionParams&,
                              bool)>(&integrate_reflection_table));
+
+    def("integrate_reflection_table_profile1d",
+        static_cast<void (*)(dials::af::reflection_table&,
+                             dxtbx::model::Experiment&,
+                             dxtbx::ImageSequence&,
+                             bool,
+                             double,
+                             double,
+                             double,
+                             double)>(&integrate_reflection_table_profile1d));
+    def("integrate_reflection_table_profile1d",
+        static_cast<void (*)(dials::af::reflection_table&,
+                             dxtbx::model::Experiment&,
+                             dxtbx::ImageSequence&,
+                             dxtbx::ImageSequence&,
+                             dxtbx::ImageSequence&,
+                             double,
+                             double,
+                             double,
+                             bool,
+                             double,
+                             double,
+                             double,
+                             double)>(&integrate_reflection_table_profile1d));
   }
 
 }}}  // namespace dials::algorithms::boost_python

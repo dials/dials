@@ -27,6 +27,7 @@ from dials_algorithms_tof_integration_ext import (
     TOFAbsorptionParams,
     extract_shoeboxes_to_reflection_table,
     integrate_reflection_table,
+    integrate_reflection_table_profile1d,
     tof_calculate_ellipse_shoebox_mask,
     tof_calculate_seed_skewness_shoebox_mask,
 )
@@ -201,6 +202,77 @@ def calculate_shoebox_masks(experiment, reflections, method):
         tof_calculate_ellipse_shoebox_mask(reflections, experiment)
 
     return reflections
+
+
+def integrate_reflection_table_for_experiment_profile1d(
+    expt, expt_reflections, expt_data, apply_lorentz, **kwargs
+):
+    alpha = 1.0
+    beta = 0.2
+    sigma = 1.0
+    A = 1.0
+
+    if len(kwargs) == 0:
+        if apply_lorentz:
+            logger.info("    Integrating reflections with Lorentz correction")
+        else:
+            logger.info("    Integrating reflections")
+        integrate_reflection_table_profile1d(
+            expt_reflections, expt, expt_data, apply_lorentz, A, alpha, beta, sigma
+        )
+
+        return expt_reflections
+
+    if "incident_data" in kwargs:
+        if "absorption_params" in kwargs:
+            if apply_lorentz:
+                logger.info(
+                    "    Integrating reflections with incident spectrum, Lorentz, and spherical absorption corrections"
+                )
+            else:
+                logger.info(
+                    "    Integrating reflections with incident spectrum and spherical absorption corrections"
+                )
+            integrate_reflection_table_profile1d(
+                expt_reflections,
+                expt,
+                expt_data,
+                kwargs["incident_data"],
+                kwargs["empty_data"],
+                kwargs["expt_proton_charge"],
+                kwargs["incident_proton_charge"],
+                kwargs["empty_proton_charge"],
+                kwargs["absorption_params"],
+                apply_lorentz,
+                A,
+                alpha,
+                beta,
+                sigma,
+            )
+            return expt_reflections
+
+        if apply_lorentz:
+            logger.info(
+                "    Integrating reflections with incident spectrum and Lorentz corrections"
+            )
+        else:
+            logger.info("    Integrating reflections with incident spectrum correction")
+        integrate_reflection_table_profile1d(
+            expt_reflections,
+            expt,
+            expt_data,
+            kwargs["incident_data"],
+            kwargs["empty_data"],
+            kwargs["expt_proton_charge"],
+            kwargs["incident_proton_charge"],
+            kwargs["empty_proton_charge"],
+            apply_lorentz,
+            A,
+            alpha,
+            beta,
+            sigma,
+        )
+        return expt_reflections
 
 
 def integrate_reflection_table_for_experiment(
@@ -639,10 +711,12 @@ def run_integrate(params, experiments, reflections):
         logger.info(f"Integrating experiment {idx}")
 
         expt_data = expt.imageset
-        expt_proton_charge = experiment_cls.get_instance(
-            expt.imageset.paths()[0], **expt.imageset.data().get_params()
-        ).get_proton_charge()
-        corrections_data["expt_proton_charge"] = expt_proton_charge
+
+        if "incident_proton_charge" in corrections_data:
+            expt_proton_charge = experiment_cls.get_instance(
+                expt.imageset.paths()[0], **expt.imageset.data().get_params()
+            ).get_proton_charge()
+            corrections_data["expt_proton_charge"] = expt_proton_charge
 
         sel_expt = predicted_reflections["id"] == idx
         expt_reflections = predicted_reflections.select(sel_expt)
@@ -688,13 +762,23 @@ def run_integrate(params, experiments, reflections):
             ~success, expt_reflections.flags.failed_during_background_modelling
         )
 
-        expt_reflections = integrate_reflection_table_for_experiment(
-            expt,
-            expt_reflections,
-            expt_data,
-            params.corrections.lorentz,
-            **corrections_data,
-        )
+        logger.info(f"    Integrating using {params.method}")
+        if params.method == "profile1d":
+            expt_reflections = integrate_reflection_table_for_experiment_profile1d(
+                expt,
+                expt_reflections,
+                expt_data,
+                params.corrections.lorentz,
+                **corrections_data,
+            )
+        else:
+            expt_reflections = integrate_reflection_table_for_experiment(
+                expt,
+                expt_reflections,
+                expt_data,
+                params.corrections.lorentz,
+                **corrections_data,
+            )
 
         predicted_reflections.set_selected(sel_expt, expt_reflections)
 
