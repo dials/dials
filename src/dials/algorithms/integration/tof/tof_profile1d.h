@@ -30,6 +30,14 @@ inline double erfc_safe(double x) {
   if (x < -10.0) return std::erfc(-10.0);
   return std::erfc(x);
 }
+
+inline double erfcx_safe(double x) {
+  if (x > 25.0) {
+    return 1.0 / (x * std::sqrt(M_PI));
+  }
+  return std::exp(x * x) * std::erfc(x);
+}
+
 inline bool is_finite_double(double x) {
   return std::isfinite(x);
 }
@@ -37,32 +45,35 @@ inline bool is_finite_double(double x) {
 inline double simpson_integrate(const std::vector<double>& y,
                                 const std::vector<double>& x) {
   /*
-   * Based on https://en.wikipedia.org/wiki/Simpson%27s_rule
+   * Composite 1/3 implementation
+   * based on https://en.wikipedia.org/wiki/Simpson%27s_rule
    */
 
   const size_t n = y.size();
+  // Min amount of data required
   if (n < 2) return 0.0;
-  // If spacing is uniform we can use simple Simpson; handle general by composite
-  // Simpson on subintervals
+
+  // Points must be odd for even number of intervals
+  // If even use trapezoid on final point
   if (n % 2 == 0) {
-    // Points must be odd; for even n, drop last point
-    // use trapezoid on final point
     double res = 0.0;
     size_t m = n - 1;
+
+    // Main loop
     for (size_t i = 0; i + 2 < m; i += 2) {
       double h0 = x[i + 1] - x[i];
       double h1 = x[i + 2] - x[i + 1];
-      // map to local quadratic: use Simpson on three points i,i+1,i+2 with nonuniform
-      // spacing via quadratic interpolation Simpler: res += (x[i+2] - x[i]) / 6.0 *
-      // (y[i] + 4.0*y[i+1] + y[i+2]);
       res += (x[i + 2] - x[i]) / 6.0 * (y[i] + 4.0 * y[i + 1] + y[i + 2]);
     }
-    // trapezoid for last interval (m-1,m)
+
+    // Trapezoid for last interval (m-1,m)
     res += 0.5 * (x[n - 1] - x[n - 2]) * (y[n - 2] + y[n - 1]);
     return res;
   } else {
-    // odd n -> standard composite Simpson across whole range
+    // No need for Trapezoid on last point
     double res = 0.0;
+
+    // Main loop
     for (size_t i = 0; i + 2 < n; i += 2) {
       res += (x[i + 2] - x[i]) / 6.0 * (y[i] + 4.0 * y[i + 1] + y[i + 2]);
     }
@@ -78,22 +89,26 @@ static std::vector<double> profile1d_func(const std::vector<double>& tof,
                                           double T_ph) {
   const size_t m = tof.size();
   std::vector<double> out(m, 0.0);
+
+  // (Numbers) refer to equations in https://doi.org/10.1038/srep36628
+
   double sigma2 = sigma * sigma;
   double sigma_sqrt = std::sqrt(2.0 * sigma2);
-  double N = (alpha * beta) / (2.0 * (alpha + beta + 1e-300));  // avoid /0
+  double N = (alpha * beta) / (2.0 * (alpha + beta));  // (5)
 
   for (size_t i = 0; i < m; ++i) {
-    double dT = tof[i] - T_ph;
-    double u = alpha * 0.5 * (alpha * sigma2 + 2.0 * dT);
-    double v = beta * 0.5 * (beta * sigma2 - 2.0 * dT);
-    double y = (alpha * sigma2 + dT) / (sigma_sqrt + 1e-300);
-    double z = (beta * sigma2 - dT) / (sigma_sqrt + 1e-300);
-    double exp_u = exp_safe(u);
-    double exp_v = exp_safe(v);
-    double erfc_y = erfc_safe(y);
-    double erfc_z = erfc_safe(z);
-    double val = A * N * (exp_u * erfc_y + exp_v * erfc_z);
-    if (!is_finite_double(val)) val = 1e-12;
+    double dT = tof[i] - T_ph;                             // (11)
+    double u = alpha * 0.5 * (alpha * sigma2 + 2.0 * dT);  // (7)
+    double v = beta * 0.5 * (beta * sigma2 - 2.0 * dT);    // (8)
+    double y = (alpha * sigma2 + dT) / sigma_sqrt;         // (9)
+    double z = (beta * sigma2 - dT) / sigma_sqrt;          // (10)
+
+    // Stable evaluation with erfcx
+    double term1 = std::exp(u - y * y) * erfcx_safe(y);
+    double term2 = std::exp(v - z * z) * erfcx_safe(z);
+
+    double val = A * N * (term1 + term2);  // (1)
+    if (!std::isfinite(val)) val = 1e-12;
     out[i] = val;
   }
   return out;
@@ -121,7 +136,7 @@ struct Functor {
 
 struct TOFProfileFunctor : Functor<double> {
   const std::vector<double>& tof;
-  const std::vector<double>& y_norm;  // assumed normalized
+  const std::vector<double>& y_norm;  // Assumed normalized
   std::array<double, 5> min_bounds;
   std::array<double, 5> max_bounds;
 
@@ -158,7 +173,7 @@ struct TOFProfileFunctor : Functor<double> {
     return 0;
   }
 
-  // numerical Jacobian (central differences)
+  // Numerical Jacobian (central differences)
   int df(const Eigen::VectorXd& x, Eigen::MatrixXd& J) const {
     const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
     Eigen::VectorXd xc = clamp_params(x);
@@ -202,20 +217,18 @@ public:
                double A_,
                double alpha_,
                double beta_,
-               double sigma_,
                double T_ph_,
-               const std::array<double, 5>& minb = {1.0, 0.0, 0.0, 1.0, 0.0},
-               const std::array<double, 5>& maxb = {1e6, 1.0, 1e5, 1e7, 1e6})
+               const std::array<double, 2> alpha_bounds,
+               const std::array<double, 2> beta_bounds)
       : tof(tof_),
         intensities(intensities_),
         A(A_),
         alpha(alpha_),
         beta(beta_),
-        sigma(sigma_),
-        T_ph(T_ph_),
-        min_bounds(minb),
-        max_bounds(maxb) {
-    assert(tof.size() == intensities.size());
+        sigma(1.0),
+        T_ph(T_ph_) {
+    DIALS_ASSERT(tof.size() > 0);
+    DIALS_ASSERT(tof.size() == intensities.size());
 
     // Ensure no negative values
     for (auto& v : intensities)
@@ -226,9 +239,6 @@ public:
       if (intensity_max <= 0.0) intensity_max = 1.0;
     }
 
-    // Rescale max A based on max intensity
-    max_bounds[0] = 4.0 * intensity_max;
-
     // build normalized y vector
     const size_t n = intensities.size();
     y_norm.resize(n);
@@ -237,23 +247,84 @@ public:
       if (!is_finite_double(v)) v = 0.0;
       y_norm[i] = v / intensity_max;
     }
+
+    // Set initial sigma from estimating peak width
+    sigma = estimate_sigma_from_fwhm(tof, y_norm);
+
+    //  0.029 - 1.0, 0.0 - 1.0
+    // Param bounds (A, alpha, beta, sigma, T_ph)
+    min_bounds = {1.0, alpha_bounds[0], beta_bounds[0], sigma / 4.0, tof.front()};
+    max_bounds = {
+      4.0 * intensity_max, alpha_bounds[1], beta_bounds[1], 100, tof.back()};
+
+    // Sanity check
+    DIALS_ASSERT(A >= min_bounds[0] && sigma <= max_bounds[0]);
+    DIALS_ASSERT(alpha >= min_bounds[1] && alpha <= max_bounds[1]);
+    DIALS_ASSERT(beta >= min_bounds[2] && beta <= max_bounds[2]);
+    DIALS_ASSERT(sigma >= min_bounds[3] && sigma <= max_bounds[3]);
+    DIALS_ASSERT(T_ph >= min_bounds[4] && T_ph <= max_bounds[4]);
   }
 
-  // compute model (unnormalized)
-  std::vector<double> model(double A_,
-                            double alpha_,
-                            double beta_,
-                            double sigma_,
-                            double T_ph_) const {
-    std::vector<double> m = profile1d_func(tof, A_, alpha_, beta_, sigma_, T_ph_);
+  std::vector<double> result() const {
+    std::vector<double> m = profile1d_func(tof, A, alpha, beta, sigma, T_ph);
     for (auto& v : m)
       v *= intensity_max;
     return m;
   }
 
-  // return fitted (unnormalized) model using current params
-  std::vector<double> result() const {
-    return model(A, alpha, beta, sigma, T_ph);
+  double estimate_sigma_from_fwhm(const std::vector<double>& tof,
+                                  const std::vector<double>& y) {
+    /*
+     * Estimate sigma using full width at half maximum of peak in y
+     */
+
+    // Not enough data
+    DIALS_ASSERT(tof.size() >= 3);
+
+    // locate peak
+    size_t imax = std::distance(y.begin(), std::max_element(y.begin(), y.end()));
+    double ymax = y[imax];
+
+    // Negative peak
+    DIALS_ASSERT(ymax > 0.0);
+
+    double half_max = 0.5 * ymax;
+
+    // Search left crossing
+    double tL = tof.front();
+    for (size_t i = imax; i-- > 0;) {
+      if (y[i] <= half_max && y[i + 1] > half_max) {
+        double t0 = tof[i], t1 = tof[i + 1];
+        double y0 = y[i], y1 = y[i + 1];
+        double frac = (half_max - y0) / (y1 - y0);
+        tL = t0 + frac * (t1 - t0);
+        break;
+      }
+    }
+
+    // Search right crossing
+    double tR = tof.back();
+    for (size_t i = imax; i + 1 < y.size(); ++i) {
+      if (y[i] > half_max && y[i + 1] <= half_max) {
+        double t0 = tof[i], t1 = tof[i + 1];
+        double y0 = y[i], y1 = y[i + 1];
+        double frac = (half_max - y0) / (y1 - y0);
+        tR = t0 + frac * (t1 - t0);
+        break;
+      }
+    }
+
+    // Full width at half maximum
+    double fwhm = std::max(tR - tL, 0.0);
+    DIALS_ASSERT(fwhm > 0.0);
+
+    // 2.354520045 = approx(sqrt(2ln2))
+    double sigma0 = fwhm / 2.354820045;
+
+    // Unphysical sigma (large as at least one sample spacing)
+    double mean_dt = (tof.back() - tof.front()) / std::max<size_t>(tof.size() - 1, 1);
+    DIALS_ASSERT(sigma0 > mean_dt);
+    return sigma0;
   }
 
   double calc_intensity() const {
@@ -262,15 +333,14 @@ public:
   }
 
   double calc_variance(const std::vector<double>& projected_variance) const {
-    std::vector<double> profile = result();  // current best-fit model (includes A)
+    std::vector<double> profile = profile1d_func(tof, A, alpha, beta, sigma, T_ph);
     DIALS_ASSERT(profile.size() == projected_variance.size());
 
-    // Compute normalized profile shape (divide out amplitude A)
+    // Normalized profile divided by amplitude (A)
     std::vector<double> p(profile.size());
-    double A_local = A;
-    if (A_local == 0.0) return 0.0;
+    DIALS_ASSERT(A > 0.0);
     for (size_t i = 0; i < p.size(); ++i) {
-      p[i] = profile[i] / A_local;
+      p[i] = profile[i] / A;
     }
 
     // Variance of amplitude A
@@ -290,21 +360,25 @@ public:
     return varA * (integral_p * integral_p);
   }
 
-  // Fit method: does LM and updates A,alpha,beta,sigma,T_ph
   bool fit(int maxfev = 2000, double xtol = 1e-8, double ftol = 1e-8) {
+    /*
+     * Does least-squares minimization and updates A, alpha, beta, sigma, T_ph
+     * Returns success of fitting
+     */
+
     const int ndata = static_cast<int>(tof.size());
+
     if (ndata < 5) {
-      std::cerr << "Too few data points for fitting\n";
+      // Not enough data
       return false;
     }
 
-    // Build functor
     TOFProfileFunctor functor(tof, y_norm, min_bounds, max_bounds);
 
     typedef Eigen::LevenbergMarquardt<TOFProfileFunctor, double> LM;
     LM lm(functor);
 
-    // initial parameter vector
+    // Initial parameter vector
     Eigen::VectorXd x(5);
     x[0] = A;
     x[1] = alpha;
@@ -312,20 +386,18 @@ public:
     x[3] = sigma;
     x[4] = T_ph;
 
-    // set LM parameters
     lm.parameters.maxfev = maxfev;
     lm.parameters.xtol = xtol;
     lm.parameters.ftol = ftol;
 
-    // run
-    int ret = lm.minimize(x);
+    int result = lm.minimize(x);
 
-    // clamp final
+    // Clamp final params to bounds
     for (int i = 0; i < 5; ++i) {
       x[i] = std::min(std::max(x[i], min_bounds[i]), max_bounds[i]);
     }
 
-    // store back
+    // Update params
     A = x[0];
     alpha = x[1];
     beta = x[2];
@@ -333,15 +405,30 @@ public:
     T_ph = x[4];
 
     // check convergence
-    if (ret == Eigen::LevenbergMarquardtSpace::ImproperInputParameters) {
+    if (result == Eigen::LevenbergMarquardtSpace::ImproperInputParameters) {
       std::cerr << "LM improper input parameters\n";
       return false;
     }
-    if (ret < 0) {
-      std::cerr << "LM failed with code " << ret << "\n";
+    if (result < 0) {
+      std::cerr << "LM failed with code " << result << "\n";
     }
 
     return true;
+  }
+
+  bool trust_result(double I_prf, double var_prf, double I_sum, double var_sum) {
+    /*
+     * Check for reasonable variance and if I/sigma is not too far from summation
+     */
+
+    if (var_prf < 1e-7) {
+      return false;
+    }
+
+    double i_sigma_sum = I_sum / std::sqrt(var_sum);
+    double i_sigma_prf = I_prf / std::sqrt(var_prf);
+    double z_score = (i_sigma_sum - i_sigma_prf) / std::sqrt(var_sum + var_prf);
+    return std::abs(z_score) < 0.25;
   }
 };
 

@@ -270,6 +270,34 @@ namespace dials { namespace algorithms {
     }
   };
 
+  /*
+   * Holds params required for profile1d
+   */
+  struct TOFProfile1DParams {
+    double A;
+    double alpha;
+    double alpha_min;
+    double alpha_max;
+    double beta;
+    double beta_min;
+    double beta_max;
+
+    TOFProfile1DParams(double A,
+                       double alpha,
+                       double alpha_min,
+                       double alpha_max,
+                       double beta,
+                       double beta_min,
+                       double beta_max)
+        : A(A),
+          alpha(alpha),
+          alpha_min(alpha_min),
+          alpha_max(alpha_max),
+          beta(beta),
+          beta_min(beta_min),
+          beta_max(beta_max) {}
+  };
+
   void extract_shoeboxes_to_reflection_table(
     dials::af::reflection_table &reflection_table,
     Experiment &experiment,
@@ -1147,10 +1175,7 @@ namespace dials { namespace algorithms {
     Experiment &experiment,
     ImageSequence &data,
     bool apply_lorentz_correction,
-    double A,
-    double alpha,
-    double beta,
-    double sigma) {
+    TOFProfile1DParams profile_params) {
     /*
      * Updates reflection_table with intensities and variances with
      * optional Lorentz correction
@@ -1315,25 +1340,35 @@ namespace dials { namespace algorithms {
       variances[i] = variance;
 
       if (success) {
+        // Get T_ph (peak position)
         auto max_it =
           std::max_element(projected_intensity.begin(), projected_intensity.end());
         size_t max_index = std::distance(projected_intensity.begin(), max_it);
         double T_ph = tof_z[max_index];
-        TOFProfile1D profile(tof_z, projected_intensity, A, alpha, beta, sigma, T_ph);
+
+        // Fit profile
+        const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
+                                                    profile_params.alpha_max};
+        const std::array<double, 2> beta_bounds = {profile_params.beta_min,
+                                                   profile_params.beta_max};
+
+        TOFProfile1D profile(tof_z,
+                             projected_intensity,
+                             profile_params.A,
+                             profile_params.alpha,
+                             profile_params.beta,
+                             T_ph,
+                             alpha_bounds,
+                             beta_bounds);
 
         bool profile_success = profile.fit();
+
         if (profile_success) {
           double I_prf = profile.calc_intensity();
           double var_prf = profile.calc_variance(projected_variance);
-          if (var_prf > 1e-7) {
-            double i_sigma_sum = intensity / std::sqrt(variance);
-            double i_sigma_prf = I_prf / std::sqrt(var_prf);
-            if (i_sigma_prf > i_sigma_sum) {
-              intensities_prf[i] = I_prf;
-              variances_prf[i] = var_prf;
-            } else {
-              profile_success = false;
-            }
+          if (profile.trust_result(I_prf, var_prf, intensity, variance)) {
+            intensities_prf[i] = I_prf;
+            variances_prf[i] = var_prf;
           } else {
             profile_success = false;
           }
@@ -1380,10 +1415,7 @@ namespace dials { namespace algorithms {
     double incident_proton_charge,
     double empty_proton_charge,
     bool apply_lorentz_correction,
-    double A,
-    double alpha,
-    double beta,
-    double sigma) {
+    TOFProfile1DParams profile_params) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, and an optional Lorentz correction
@@ -1639,7 +1671,20 @@ namespace dials { namespace algorithms {
           std::max_element(projected_intensity.begin(), projected_intensity.end());
         size_t max_index = std::distance(projected_intensity.begin(), max_it);
         double T_ph = tof_z[max_index];
-        TOFProfile1D profile(tof_z, projected_intensity, A, alpha, beta, sigma, T_ph);
+
+        const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
+                                                    profile_params.alpha_max};
+        const std::array<double, 2> beta_bounds = {profile_params.beta_min,
+                                                   profile_params.beta_max};
+
+        TOFProfile1D profile(tof_z,
+                             projected_intensity,
+                             profile_params.A,
+                             profile_params.alpha,
+                             profile_params.beta,
+                             T_ph,
+                             alpha_bounds,
+                             beta_bounds);
 
         bool profile_success = profile.fit();
         if (profile_success) {
@@ -1690,25 +1735,72 @@ namespace dials { namespace algorithms {
     }
   }
 
-  void integrate_shoebox_profile1d(Shoebox<> &shoebox,
-                                   Experiment &experiment,
-                                   ImageSequence &data,
-                                   bool apply_lorentz_correction,
-                                   double A,
-                                   double alpha,
-                                   double beta,
-                                   double sigma,
-                                   dials::af::shared<double> projected_intensity_out,
-                                   dials::af::shared<double> line_profile_out,
-                                   double &prf_intensity_out,
-                                   double &prf_variance_out,
-                                   double &sum_intensity_out,
-                                   double &sum_variance_out,
-                                   bool &profile_success) {
+  bool fit_profile1d(const std::vector<double> &projected_intensity,
+                     const std::vector<double> &tof_z,
+                     const std::vector<double> &projected_variance,
+                     const TOFProfile1DParams &profile_params,
+                     const double &I_sum,
+                     const double &var_sum,
+                     double &I_prf_out,
+                     double &var_prf_out,
+                     std::vector<double> &line_profile_out) {
+    // Get T_ph (peak position)
+    auto max_it =
+      std::max_element(projected_intensity.begin(), projected_intensity.end());
+    size_t max_index = std::distance(projected_intensity.begin(), max_it);
+    double T_ph = tof_z[max_index];
+
+    // Fit profile
+    const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
+                                                profile_params.alpha_max};
+    const std::array<double, 2> beta_bounds = {profile_params.beta_min,
+                                               profile_params.beta_max};
+
+    TOFProfile1D profile(tof_z,
+                         projected_intensity,
+                         profile_params.A,
+                         profile_params.alpha,
+                         profile_params.beta,
+                         T_ph,
+                         alpha_bounds,
+                         beta_bounds);
+
+    bool profile_success = profile.fit();
+
+    if (profile_success) {
+      double I_prf = profile.calc_intensity();
+      double var_prf = profile.calc_variance(projected_variance);
+
+      if (profile.trust_result(I_prf, var_prf, I_sum, var_sum)) {
+        I_prf_out = I_prf;
+        var_prf_out = var_prf;
+        line_profile_out = profile.result();
+        return profile_success;
+      } else {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  boost::python::tuple integrate_shoebox_profile1d(
+    dials::model::Shoebox<> &shoebox,
+    Experiment &experiment,
+    ImageSequence &data,
+    scitbx::af::shared<double> projected_intensity_out,
+    scitbx::af::shared<double> projected_background_out,
+    scitbx::af::shared<double> line_profile_out,
+    bool apply_lorentz_correction,
+    TOFProfile1DParams profile_params) {
     /*
-     * Calculates projected_intensity, line_profile, prf_intensity,
-     * prf_variance, sum_intensity, sum_variance
+     * Calculates projected_intensity, projected_background, line_profile,
+     * prf_intensity, prf_variance, sum_intensity, sum_variance, profile_success
      */
+    double prf_intensity_out = 0;
+    double prf_variance_out = 0;
+    double sum_intensity_out = 0;
+    double sum_variance_out = 0;
+    int profile_success = 0;
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -1725,11 +1817,11 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> img_tof = scan.get_property<double>("time_of_flight");
 
     // Required detector params
-    int n_panels = detector.size();
     int num_images = data.size();
     vec2<std::size_t> image_size = detector[0].get_image_size();
     DIALS_ASSERT(num_images == img_tof.size());
 
+    // Mask codes
     int bg_code = Valid | Background | BackgroundUsed;
 
     int6 bbox = shoebox.bbox;
@@ -1774,10 +1866,12 @@ namespace dials { namespace algorithms {
 
     std::vector<double> tof_z(shoebox.zsize(), 0.0);
     std::vector<double> projected_intensity(shoebox.zsize(), 0.0);
+    std::vector<double> projected_background(shoebox.zsize(), 0.0);
     std::vector<double> projected_variance(shoebox.zsize(), 0.0);
     // Second pass to perform actual integration
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       double intensity_z = 0;
+      double background_z = 0;
       double variance_z = 0;
 
       if (!success) {
@@ -1842,6 +1936,7 @@ namespace dials { namespace algorithms {
               && (mask & Overlapped) == 0) {
             intensity_z += I;
             variance_z += var_I;
+            background_z += raw_B;
             intensity += I;
             variance += var_I;
           } else if ((mask & Foreground) == Foreground) {
@@ -1850,46 +1945,47 @@ namespace dials { namespace algorithms {
           }
         }
         projected_intensity[z] = intensity_z;
+        projected_intensity_out[z] = intensity_z;
         projected_variance[z] = variance_z;
+        projected_background[z] = background_z;
       }
     }
 
     if (success) {
-      auto max_it =
-        std::max_element(projected_intensity.begin(), projected_intensity.end());
-      size_t max_index = std::distance(projected_intensity.begin(), max_it);
-      double T_ph = tof_z[max_index];
-      TOFProfile1D profile(tof_z, projected_intensity, A, alpha, beta, sigma, T_ph);
+      double I_prf, var_prf;
+      std::vector<double> line_profile;
+      profile_success = fit_profile1d(projected_intensity,
+                                      tof_z,
+                                      projected_variance,
+                                      profile_params,
+                                      intensity,
+                                      variance,
+                                      I_prf,
+                                      var_prf,
+                                      line_profile);
 
-      profile_success = profile.fit();
       if (profile_success) {
-        double I_prf = profile.calc_intensity();
-        double var_prf = profile.calc_variance(projected_variance);
-        if (var_prf > 1e-7) {
-          double i_sigma_sum = intensity / std::sqrt(variance);
-          double i_sigma_prf = I_prf / std::sqrt(var_prf);
-          if (i_sigma_prf > i_sigma_sum) {
-            prf_intensity_out = I_prf;
-            prf_variance_out = var_prf;
-            sum_intensity_out = intensity;
-            sum_variance_out = variance;
-            std::vector<double> line_profile = profile.result();
-            DIALS_ASSERT(line_profile.size() == line_profile_out.size());
-            DIALS_ASSERT(projected_intensity.size() == projected_intensity_out.size());
-            for (std::size_t i = 0; i < line_profile.size(); ++i) {
-              line_profile_out[i] = line_profile[i];
-              projected_intensity_out[i] = projected_intensity[i];
-            }
-          } else {
-            profile_success = false;
-          }
-        } else {
-          profile_success = false;
+        DIALS_ASSERT(line_profile.size() == line_profile_out.size());
+        DIALS_ASSERT(projected_intensity.size() == projected_intensity_out.size());
+        for (std::size_t i = 0; i < line_profile.size(); ++i) {
+          line_profile_out[i] = line_profile[i];
+          projected_intensity_out[i] = projected_intensity[i];
+          projected_background_out[i] = projected_background[i];
+          prf_intensity_out = I_prf;
+          prf_variance_out = var_prf;
+          sum_intensity_out = intensity;
+          sum_variance_out = variance;
         }
       }
+
     } else {
       profile_success = false;
     }
+    return boost::python::make_tuple(prf_intensity_out,
+                                     prf_variance_out,
+                                     sum_intensity_out,
+                                     sum_variance_out,
+                                     profile_success);
   }
 
 }}  // namespace dials::algorithms
