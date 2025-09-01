@@ -61,7 +61,7 @@ significant_clusters {
   xi = 0.05
     .type = float(value_min=0, value_max=1)
     .help = "xi parameter to determine min steepness to define cluster boundary"
-  noise_tolerance = 1
+  noise_tolerance = 1.0
     .type = float
     .help = "multiplier to down-weight clustering results which contain lots of noise"
 }
@@ -362,37 +362,42 @@ class CorrelationMatrix:
 
         return cos_angle, cos_linkage_matrix
 
+    @staticmethod
     def minimise_DB_score(
-        self,
+        cosym_coords: np.ndarray,
+        initial_guess: int = 5,
+        xi: float = 0.05,
+        noise_tolerance: float = 1.0,
     ) -> tuple[int, np.float64, np.ndarray, OPTICS]:
+        """
+        Performs OPTICS analysis on coordinates output from cosym by minimising the db_score for more robust classification.
+        Args:
+            cosym_coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
+            initial_guess(int): initial guess for the minimum number of datasets in a cluster
+            xi(float): parameter to determine min steepness to define cluster boundary
+            noise_tolerance: penalty applied to overall score being minimised for presence of noise
+
+        Returns:
+            study.best_params["min_samples"](int): min_samples value that minimises the noise-weighted db-score
+            study.best_trial.user_attrs["db_score"](np.float64): db-score of the best trial
+            study.best_trial.user_attrs["labels"](np.ndarray): OPTICS classification of cosym_coordinates from best trial
+            study.best_trial.usser_attrs["model"](OPTICS): The OPTICS model from the best trial
+        """
+
         optuna.logging.set_verbosity(logging.WARNING)
 
-        # Heuristic using number of dimensions as a proxy for number of systematic differences
-        # Includes a buffer for groups of different sizes
-
-        initial_guess = max(
-            5,
-            int(
-                (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
-                * self.params.significant_clusters.min_points_buffer
-            ),
-        )
         sampler = optuna.samplers.RandomSampler(seed=42)
 
         def objective(trial: optuna.Trial) -> float:
             # the min_samples parameter can really be anywhere from 5 to the total number of datasets
             # 5 as a base value recommended for OPTICS algorithm
 
-            min_samples = trial.suggest_int(
-                "min_samples", 5, len(self.unmerged_datasets)
-            )
+            min_samples = trial.suggest_int("min_samples", 5, len(cosym_coords))
 
             # Calculate OPTICS clusters
 
-            optics_model = OPTICS(
-                min_samples=min_samples, xi=self.params.significant_clusters.xi
-            )
-            optics_model.fit(self.cosym_analysis.coords)
+            optics_model = OPTICS(min_samples=min_samples, xi=xi)
+            optics_model.fit(cosym_coords)
 
             trial.set_user_attr("labels", optics_model.labels_)
             trial.set_user_attr("model", optics_model)
@@ -405,9 +410,7 @@ class CorrelationMatrix:
 
             # Lower DB-Score means cluster are better defined
 
-            score = davies_bouldin_score(
-                self.cosym_analysis.coords[mask], optics_model.labels_[mask]
-            )
+            score = davies_bouldin_score(cosym_coords[mask], optics_model.labels_[mask])
 
             trial.set_user_attr("db_score", score)
 
@@ -415,9 +418,7 @@ class CorrelationMatrix:
 
             noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
 
-            return (
-                score + self.params.significant_clusters.noise_tolerance * noise_ratio
-            )
+            return score + noise_tolerance * noise_ratio
 
         # Test a series of min_samples to find best clusters
         # Optuna uses a Bayesian Optimization approach to "intelligently" select which parameters to test
@@ -462,8 +463,24 @@ class CorrelationMatrix:
             else:
                 db_score = "Not applicable for only one cluster."
         else:
+            # Heuristic using number of dimensions as a proxy for number of systematic differences
+            # Includes a buffer for groups of different sizes
+
+            initial_guess = max(
+                5,
+                int(
+                    (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
+                    * self.params.significant_clusters.min_points_buffer
+                ),
+            )
+
             min_points, db_score, self.cluster_labels, optics_model = (
-                self.minimise_DB_score()
+                self.minimise_DB_score(
+                    self.cosym_analysis.coords,
+                    initial_guess,
+                    self.params.significant_clusters.xi,
+                    self.params.significant_clusters.noise_tolerance,
+                )
             )
 
         logger.info(f"Set Minimum Samples to {min_points}")
