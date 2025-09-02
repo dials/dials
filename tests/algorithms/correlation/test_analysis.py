@@ -1705,29 +1705,31 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
 
 # Test for very clearcut cases
 @pytest.mark.parametrize(
-    "coordinates,expected_labels",
+    "coordinates,expected_labels,initial_guess",
     [
-        (data_1, expected_1),
-        (data_2, expected_2),
-        (data_3, expected_3),
+        (data_1, expected_1, 4),
+        (data_2, expected_2, 6),
+        (data_3, expected_3, 8),
     ],
 )
-def test_optics_classification_definitive(coordinates, expected_labels):
-    _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(coordinates)
+def test_optics_classification_definitive(coordinates, expected_labels, initial_guess):
+    _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
+        coordinates, initial_guess=initial_guess
+    )
 
     assert np.array_equal(actual_labels, expected_labels)
 
 
 # Test for more ambiguous datasets - set up to add more in future if needed
 @pytest.mark.parametrize(
-    "coordinates,expected_labels",
+    "coordinates,expected_labels,initial_guess",
     [
-        (data_4, expected_4),
+        (data_4, expected_4, 27),
     ],
 )
-def test_optics_classification_variable(coordinates, expected_labels):
+def test_optics_classification_variable(coordinates, expected_labels, initial_guess):
     _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
-        coordinates, initial_guess=27
+        coordinates, initial_guess=initial_guess
     )
 
     differences = actual_labels != expected_labels
