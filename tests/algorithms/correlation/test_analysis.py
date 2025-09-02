@@ -1704,10 +1704,11 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
 
 
 # Test for very clearcut cases
+# initial guesses taken from heuristic (Thompson, A.J. et al 2025) for known datasets
 @pytest.mark.parametrize(
     "coordinates,expected_labels,initial_guess",
     [
-        (data_1, expected_1, 4),
+        (data_1, expected_1, 5),
         (data_2, expected_2, 6),
         (data_3, expected_3, 8),
     ],

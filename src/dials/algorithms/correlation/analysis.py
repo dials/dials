@@ -386,6 +386,8 @@ class CorrelationMatrix:
 
         optuna.logging.set_verbosity(logging.WARNING)
 
+        logger.info("Test")
+
         sampler = optuna.samplers.RandomSampler(seed=42)
 
         def objective(trial: optuna.Trial) -> float:
@@ -406,6 +408,7 @@ class CorrelationMatrix:
 
             mask = optics_model.labels_ != -1
             if len(set(optics_model.labels_[mask])) <= 1:
+                trial.set_user_attr("db_score", "N/A as only one cluster")
                 return 1e6
 
             # Lower DB-Score means cluster are better defined
@@ -418,7 +421,7 @@ class CorrelationMatrix:
 
             noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
 
-            return score + noise_tolerance * noise_ratio
+            return score + (noise_tolerance * noise_ratio)
 
         # Test a series of min_samples to find best clusters
         # Optuna uses a Bayesian Optimization approach to "intelligently" select which parameters to test
