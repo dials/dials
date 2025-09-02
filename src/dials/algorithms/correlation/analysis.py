@@ -483,10 +483,6 @@ class CorrelationMatrix:
                 )
             )
 
-            print(repr(self.cluster_labels.tolist()))
-            print(repr(self.cosym_analysis.coords.tolist()))
-            exit()
-
         logger.info(f"Set Minimum Samples to {min_points}")
 
         self.optics_reachability = optics_model.reachability_[optics_model.ordering_]
