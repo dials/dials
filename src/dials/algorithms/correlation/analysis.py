@@ -386,8 +386,6 @@ class CorrelationMatrix:
 
         optuna.logging.set_verbosity(logging.WARNING)
 
-        logger.info("Test")
-
         sampler = optuna.samplers.RandomSampler(seed=42)
 
         def objective(trial: optuna.Trial) -> float:
