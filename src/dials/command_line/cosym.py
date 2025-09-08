@@ -79,7 +79,7 @@ absolute_angle_tolerance = 2
 exclude_inconsistent_unit_cells = True
   .type = bool
   .help = "Exclude datasets with unit cells that cannot be mapped to a common"
-          "minimum cell, as controlled by the absolute_angle_tolerance and
+          "minimum cell, as controlled by the absolute_angle_tolerance and"
           "relative_length_tolerance parameters. If False, an error will be"
           "raised instead."
 
