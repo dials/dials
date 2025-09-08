@@ -236,12 +236,19 @@ class cosym(Subject):
         )
 
         # transform models into miller arrays
+        n_datasets = len(self.experiments)
         datasets = filtered_arrays_from_experiments_reflections(
             self.experiments,
             self.reflections,
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
+        if len(datasets) != n_datasets:
+            raise ValueError(
+                """Some datasets have no reflection after prefiltering, please check
+    input data and filtering settings e.g partiality_threshold"""
+            )
+
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]

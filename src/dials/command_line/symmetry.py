@@ -375,9 +375,6 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info("Performing Laue group analysis")
         logger.info("")
 
-        # Transform models into miller arrays
-        n_datasets = len(experiments)
-
         # Map experiments and reflections to minimum cell
         cb_ops = change_of_basis_ops_to_minimum_cell(
             experiments,
@@ -451,7 +448,8 @@ def symmetry(experiments, reflection_tables, params=None):
             experiments, reflection_tables, params.exclude_images
         )
 
-        # transform models into miller arrays
+        # Transform models into miller arrays
+        n_datasets = len(experiments)
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
             refls_for_sym,
