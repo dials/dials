@@ -72,6 +72,13 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
+exclude_inconsistent_unit_cells = True
+  .type = bool
+  .help = "Exclude datasets with unit cells that cannot be mapped to a common"
+          "minimum cell, as controlled by the absolute_angle_tolerance and
+          "relative_length_tolerance parameters. If False, an error will be"
+          "raised instead."
+
 output {
   suffix = "_reindexed"
     .type = str
@@ -164,6 +171,14 @@ class cosym(Subject):
             if not cb_op
         ]
         if len(exclude):
+            if not self.params.exclude_inconsistent_unit_cells:
+                indices = [str(i + 1) for i, v in enumerate(cb_ops) if v is None]
+                raise ValueError(
+                    "Exiting symmetry analysis: Unable to match all cells to target symmetry.\n"
+                    + "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
+                    + "if the cells are similar enough.\n"
+                    + f"Alternatively, remove dataset number{'s' if len(indices) > 1 else ''} {', '.join(indices)} from the input"
+                )
             exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
             logger.info(
                 f"Excluding {len(exclude)} datasets from cosym analysis "

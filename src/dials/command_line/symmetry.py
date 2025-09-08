@@ -40,6 +40,7 @@ from dials.util.filter_reflections import filtered_arrays_from_experiments_refle
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
+    select_datasets_on_identifiers,
     update_imageset_ids,
 )
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
@@ -76,6 +77,13 @@ relative_length_tolerance = 0.05
 
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
+
+exclude_inconsistent_unit_cells = False
+  .type = bool
+  .help = "Exclude datasets with unit cells that cannot be mapped to a common"
+          "minimum cell, as controlled by the absolute_angle_tolerance and"
+          "relative_length_tolerance parameters. If False, an error will be"
+          "raised instead."
 
 partiality_threshold = 0.4
   .type = float
@@ -118,6 +126,10 @@ output {
   experiments = "symmetrized.expt"
     .type = path
   reflections = "symmetrized.refl"
+    .type = path
+  excluded = False
+    .type = bool
+  excluded_prefix = "excluded"
     .type = path
   json = dials.symmetry.json
     .type = path
@@ -376,14 +388,59 @@ def symmetry(experiments, reflection_tables, params=None):
             params.relative_length_tolerance,
             params.absolute_angle_tolerance,
         )
-        if None in cb_ops:
-            indices = [str(i + 1) for i, v in enumerate(cb_ops) if v is None]
-            raise ValueError(
-                "Exiting symmetry analysis: Unable to match all cells to target symmetry.\n"
-                + "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
-                + "if the cells are similar enough.\n"
-                + f"Alternatively, remove dataset number{'s' if len(indices) > 1 else ''} {', '.join(indices)} from the input"
+        exclude = [
+            expt.identifier for expt, cb_op in zip(experiments, cb_ops) if not cb_op
+        ]
+        if len(exclude):
+            if not params.exclude_inconsistent_unit_cells:
+                indices = [str(i + 1) for i, v in enumerate(cb_ops) if v is None]
+                raise ValueError(
+                    "Exiting symmetry analysis: Unable to match all cells to target symmetry.\n"
+                    + "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
+                    + "if the cells are similar enough.\n"
+                    + f"Alternatively, remove dataset number{'s' if len(indices) > 1 else ''} {', '.join(indices)} from the input"
+                )
+            exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
+            logger.info(
+                f"Excluding {len(exclude)} datasets from symmetry analysis "
+                f"(couldn't determine consistent cb_op to minimum cell):\n"
+                f"dataset indices: {exclude_indices}",
             )
+            logger.info(
+                "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
+                + "if the cells are similar enough.\n"
+            )
+
+            if params.output.excluded:
+                excluded_experiments = copy.deepcopy(experiments)
+                excluded_reflections = copy.deepcopy(reflection_tables)
+                excluded_experiments, excluded_reflections = (
+                    select_datasets_on_identifiers(
+                        excluded_experiments, excluded_reflections, use_datasets=exclude
+                    )
+                )
+                logger.info(
+                    "Saving excluded experiments to %s",
+                    params.output.excluded_prefix + ".expt",
+                )
+                excluded_experiments.as_file(params.output.excluded_prefix + ".expt")
+                logger.info(
+                    "Saving excluded reflections to %s",
+                    params.output.excluded_prefix + ".refl",
+                )
+                joined = flex.reflection_table()
+                excluded_reflections = update_imageset_ids(
+                    excluded_experiments, excluded_reflections
+                )
+                for refl in excluded_reflections:
+                    joined.extend(refl)
+                joined.as_file(params.output.excluded_prefix + ".refl")
+
+            experiments, reflection_tables = select_datasets_on_identifiers(
+                experiments, reflection_tables, exclude_datasets=exclude
+            )
+            cb_ops = list(filter(None, cb_ops))
+
         reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
         experiments, reflection_tables = apply_change_of_basis_ops(
             experiments, reflection_tables, cb_ops
