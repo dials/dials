@@ -22,10 +22,13 @@ from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
+    get_subset_for_symmetry,
     median_unit_cell,
 )
 from dials.util import Sorry, log, show_mail_handle_errors
-from dials.util.exclude_images import get_selection_for_valid_image_ranges
+from dials.util.exclude_images import (
+    get_selection_for_valid_image_ranges,
+)
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -41,6 +44,7 @@ logger = logging.getLogger("dials.command_line.cosym")
 
 phil_scope = iotbx.phil.parse(
     """\
+include scope dials.util.exclude_images.phil_scope
 partiality_threshold = 0.4
   .type = float
   .help = "Use reflections with a partiality above the threshold."
@@ -225,6 +229,10 @@ class cosym(Subject):
 
         self._experiments, self._reflections = apply_change_of_basis_ops(
             self._experiments, self._reflections, cb_ops
+        )
+
+        self._reflections = get_subset_for_symmetry(
+            self._experiments, self._reflections, params.exclude_images
         )
 
         # transform models into miller arrays
