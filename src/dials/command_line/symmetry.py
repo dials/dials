@@ -379,9 +379,6 @@ def symmetry(experiments, reflection_tables, params=None):
         n_datasets = len(experiments)
 
         # Map experiments and reflections to minimum cell
-        # Eliminate reflections that are systematically absent due to centring
-        # of the lattice, otherwise they would lead to non-integer miller indices
-        # when reindexing to a primitive setting
         cb_ops = change_of_basis_ops_to_minimum_cell(
             experiments,
             params.lattice_symmetry_max_delta,
