@@ -441,7 +441,11 @@ def symmetry(experiments, reflection_tables, params=None):
             )
             cb_ops = list(filter(None, cb_ops))
 
+        # Eliminate reflections that are systematically absent due to centring
+        # of the lattice, otherwise they would lead to non-integer miller indices
+        # when reindexing to a primitive setting
         reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
+
         experiments, reflection_tables = apply_change_of_basis_ops(
             experiments, reflection_tables, cb_ops
         )
@@ -450,6 +454,7 @@ def symmetry(experiments, reflection_tables, params=None):
             experiments, reflection_tables, params.exclude_images
         )
 
+        # transform models into miller arrays
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
             refls_for_sym,
