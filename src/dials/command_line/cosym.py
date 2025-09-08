@@ -113,10 +113,6 @@ class cosym(Subject):
             params = phil_scope.extract()
         self.params = params
 
-        # if all datasets have been through scaling, a decision about error models has
-        # been made, so don't apply any further sigma correction
-        apply_sigma_correction = not all(s for s in experiments.scaling_models())
-
         reference_intensities = None
         if self.params.reference:
             wl = np.mean([expt.beam.get_wavelength() for expt in experiments])
@@ -235,19 +231,23 @@ class cosym(Subject):
             self._experiments, self._reflections, params.exclude_images
         )
 
-        # transform models into miller arrays
-        n_datasets = len(self.experiments)
+        # Transform models into miller arrays
+        # n_datasets = len(self.experiments)
         datasets = filtered_arrays_from_experiments_reflections(
             self.experiments,
             self.reflections,
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-        if len(datasets) != n_datasets:
-            raise ValueError(
-                """Some datasets have no reflection after prefiltering, please check
-    input data and filtering settings e.g partiality_threshold"""
-            )
+        # if len(datasets) != n_datasets:
+        #    raise ValueError(
+        #        """Some datasets have no reflection after prefiltering, please check
+        # input data and filtering settings e.g partiality_threshold"""
+        #    )
+
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in self.experiments.scaling_models())
 
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
