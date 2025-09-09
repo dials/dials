@@ -11,6 +11,13 @@ import iotbx.phil
 from cctbx import crystal, sgtbx
 
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
+from dials.algorithms.symmetry import (
+    apply_change_of_basis_ops,
+    change_of_basis_ops_to_minimum_cell,
+    eliminate_sys_absent,
+    get_subset_for_symmetry,
+    median_unit_cell,
+)
 from dials.algorithms.symmetry.cosym import (
     CosymAnalysis,
     change_of_basis_op_to_best_cell,
@@ -18,13 +25,6 @@ from dials.algorithms.symmetry.cosym import (
 )
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.array_family import flex
-from dials.command_line.symmetry import (
-    apply_change_of_basis_ops,
-    change_of_basis_ops_to_minimum_cell,
-    eliminate_sys_absent,
-    get_subset_for_symmetry,
-    median_unit_cell,
-)
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.exclude_images import (
     get_selection_for_valid_image_ranges,
@@ -236,18 +236,12 @@ class cosym(Subject):
         )
 
         # Transform models into miller arrays
-        # n_datasets = len(self.experiments)
         datasets = filtered_arrays_from_experiments_reflections(
             self.experiments,
             self.reflections,
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-        # if len(datasets) != n_datasets:
-        #    raise ValueError(
-        #        """Some datasets have no reflection after prefiltering, please check
-        # input data and filtering settings e.g partiality_threshold"""
-        #    )
 
         # if all datasets have been through scaling, a decision about error models has
         # been made, so don't apply any further sigma correction
