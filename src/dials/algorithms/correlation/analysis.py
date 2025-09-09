@@ -368,7 +368,7 @@ class CorrelationMatrix:
         initial_guess: int = 5,
         xi: float = 0.05,
         noise_tolerance: float = 1.0,
-    ) -> tuple[int, np.float64, np.ndarray, OPTICS]:
+    ) -> tuple[int, np.float64, np.float64, np.ndarray, OPTICS]:
         """
         Performs OPTICS analysis on coordinates output from cosym by minimising the db_score for more robust classification.
         Args:
@@ -379,7 +379,8 @@ class CorrelationMatrix:
 
         Returns:
             study.best_params["min_samples"](int): min_samples value that minimises the noise-weighted db-score
-            study.best_trial.user_attrs["db_score"](np.float64): db-score of the best trial
+            study.best_trial.user_attrs["db_score"](np.float64): db-score of the best trial or study.best_trial.user_attrs["reachability"](np.float64): median reachability if only one cluster present
+            study.best_trial.user_attrs["score"](np.float64): overall score including noise penalty
             study.best_trial.user_attrs["labels"](np.ndarray): OPTICS classification of cosym_coordinates from best trial
             study.best_trial.usser_attrs["model"](OPTICS): The OPTICS model from the best trial
         """
@@ -405,21 +406,59 @@ class CorrelationMatrix:
             # Mask noise datasets for DB-Score calculation as doesn't accept
 
             mask = optics_model.labels_ != -1
-            if len(set(optics_model.labels_[mask])) <= 1:
-                trial.set_user_attr("db_score", "N/A as only one cluster")
-                return 1e6
-
-            # Lower DB-Score means cluster are better defined
-
-            score = davies_bouldin_score(cosym_coords[mask], optics_model.labels_[mask])
-
-            trial.set_user_attr("db_score", score)
 
             # Include penalty for noise as don't want to bias for only tiny dense groups if majority a bit less dense
 
             noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
 
-            return score + (noise_tolerance * noise_ratio)
+            if len(set(optics_model.labels_[mask])) <= 1:
+                trial.set_user_attr("db_score", "N/A as only one cluster")
+                trial.set_user_attr("score", 1e6)
+                return 1e6
+
+            # Lower DB-Score means cluster are better defined
+
+            db_score = davies_bouldin_score(
+                cosym_coords[mask], optics_model.labels_[mask]
+            )
+            score = db_score + (noise_tolerance * noise_ratio)
+
+            trial.set_user_attr("db_score", db_score)
+            trial.set_user_attr("score", score)
+
+            return score
+
+        def single_cluster_objective(trial: optuna.Trial) -> float:
+            # the min_samples parameter can really be anywhere from 5 to the total number of datasets
+            # 5 as a base value recommended for OPTICS algorithm
+
+            min_samples = trial.suggest_int("min_samples", 5, len(cosym_coords))
+
+            # Calculate OPTICS clusters
+
+            optics_model = OPTICS(min_samples=min_samples, xi=xi)
+            optics_model.fit(cosym_coords)
+
+            trial.set_user_attr("labels", optics_model.labels_)
+            trial.set_user_attr("model", optics_model)
+
+            # Mask noise datasets for DB-Score calculation as doesn't accept
+
+            mask = optics_model.labels_ != -1
+
+            # Include penalty for noise as don't want to bias for only tiny dense groups if majority a bit less dense
+
+            noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
+
+            # Use median because will always be a cluster boundary which is very high
+            # lower reachability means clusters are better defined
+
+            median_reachability = np.median(optics_model.reachability_[mask])
+            score = median_reachability + (noise_tolerance * noise_ratio)
+            trial.set_user_attr("median reachability", median_reachability)
+            trial.set_user_attr("score", score)
+
+            return score
 
         # Test a series of min_samples to find best clusters
         # Optuna uses a Bayesian Optimization approach to "intelligently" select which parameters to test
@@ -431,12 +470,31 @@ class CorrelationMatrix:
         study.enqueue_trial({"min_samples": initial_guess})
         study.optimize(objective, n_trials=20)
 
-        return (
-            study.best_params["min_samples"],
-            study.best_trial.user_attrs["db_score"],
-            study.best_trial.user_attrs["labels"],
-            study.best_trial.user_attrs["model"],
-        )
+        if study.best_trial.user_attrs["score"] == 1e6:
+            logger.info(
+                "Only one cluster identified, switching to reachability-based minimisation"
+            )
+            single_cluster_study = optuna.create_study(
+                direction="minimize", sampler=sampler
+            )
+            single_cluster_study.enqueue_trial({"min_samples": initial_guess})
+            single_cluster_study.optimize(single_cluster_objective, n_trials=20)
+            return (
+                single_cluster_study.best_params["min_samples"],
+                single_cluster_study.best_trial.user_attrs["median reachability"],
+                single_cluster_study.best_trial.user_attrs["score"],
+                single_cluster_study.best_trial.user_attrs["labels"],
+                single_cluster_study.best_trial.user_attrs["model"],
+            )
+
+        else:
+            return (
+                study.best_params["min_samples"],
+                study.best_trial.user_attrs["db_score"],
+                study.best_trial.user_attrs["score"],
+                study.best_trial.user_attrs["labels"],
+                study.best_trial.user_attrs["model"],
+            )
 
     def cluster_cosine_coords(self):
         """
@@ -458,11 +516,16 @@ class CorrelationMatrix:
             self.cluster_labels = optics_model.labels_
             mask = optics_model.labels_ != -1
             if len(set(optics_model.labels_[mask])) > 1:
-                db_score = davies_bouldin_score(
+                density_score = davies_bouldin_score(
                     self.cosym_analysis.coords[mask], optics_model.labels_[mask]
                 )
             else:
-                db_score = "Not applicable for only one cluster."
+                density_score = np.median(optics_model.reachability_[mask])
+
+            noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
+            overall_score = density_score + (
+                self.params.significant_clusters.noise_tolerance * noise_ratio
+            )
         else:
             # Heuristic using number of dimensions as a proxy for number of systematic differences
             # Includes a buffer for groups of different sizes
@@ -475,13 +538,17 @@ class CorrelationMatrix:
                 ),
             )
 
-            min_points, db_score, self.cluster_labels, optics_model = (
-                self.minimise_DB_score(
-                    self.cosym_analysis.coords,
-                    initial_guess,
-                    self.params.significant_clusters.xi,
-                    self.params.significant_clusters.noise_tolerance,
-                )
+            (
+                min_points,
+                density_score,
+                overall_score,
+                self.cluster_labels,
+                optics_model,
+            ) = self.minimise_DB_score(
+                self.cosym_analysis.coords,
+                initial_guess,
+                self.params.significant_clusters.xi,
+                self.params.significant_clusters.noise_tolerance,
             )
 
         logger.info(f"Set Minimum Samples to {min_points}")
@@ -504,7 +571,16 @@ class CorrelationMatrix:
         logger.info(
             f"OPTICS identified {len(unique_labels)} clusters and {outliers} outlier datasets."
         )
-        logger.info(f"Davies-Bouldin Score of OPTICS result is {db_score}.")
+        if len(unique_labels) > 1:
+            logger.info(f"Davies-Bouldin Score of OPTICS result is {density_score}.")
+        else:
+            logger.info(
+                f"Median reachability of the identified cluster is {density_score}."
+            )
+
+        logger.info(
+            f"Overall score including noise penalty (using tolerance of {self.params.significant_clusters.noise_tolerance}) is {overall_score}."
+        )
 
         sig_cluster_dict = OrderedDict()
 

@@ -1624,6 +1624,30 @@ expected_4 = np.array(
     ]
 )
 
+data_5 = np.array(
+    [
+        [0.5, 0.5],
+        [0.51, 0.51],
+        [0.51, 0.52],
+        [0.52, 0.5],
+        [0.51, 0.5],
+        [0.75, 0.75],
+        [0.3, 0.25],
+        [1, 1],
+        [0.53, 0.5],
+        [0.53, 0.51],
+        [0.53, 0.52],
+        [0.49, 0.50],
+        [0.49, 0.49],
+        [0.48, 0.50],
+        [0.48, 0.49],
+        [0.6, 0.6],
+        [0.1, 0.1],
+    ]
+)
+
+expected_5 = np.array([0, 0, 0, 0, 0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, -1, -1])
+
 
 @pytest.fixture()
 def proteinase_k(dials_data):
@@ -1714,7 +1738,7 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
     ],
 )
 def test_optics_classification_definitive(coordinates, expected_labels, initial_guess):
-    _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
+    _, _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
         coordinates, initial_guess=initial_guess
     )
 
@@ -1726,10 +1750,11 @@ def test_optics_classification_definitive(coordinates, expected_labels, initial_
     "coordinates,expected_labels,initial_guess",
     [
         (data_4, expected_4, 27),
+        (data_5, expected_5, 10),
     ],
 )
 def test_optics_classification_variable(coordinates, expected_labels, initial_guess):
-    _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
+    _, _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
         coordinates, initial_guess=initial_guess
     )
 
