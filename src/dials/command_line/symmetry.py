@@ -375,6 +375,8 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info("Performing Laue group analysis")
         logger.info("")
 
+        n_datasets = len(experiments)
+
         # Map experiments and reflections to minimum cell
         cb_ops = change_of_basis_ops_to_minimum_cell(
             experiments,
@@ -396,7 +398,7 @@ def symmetry(experiments, reflection_tables, params=None):
                 )
             exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
             logger.info(
-                f"Excluding {len(exclude)} datasets from symmetry analysis "
+                f"Excluding {len(exclude)} datasets from further analysis "
                 f"(couldn't determine consistent cb_op to minimum cell):\n"
                 f"dataset indices: {exclude_indices}",
             )
@@ -449,18 +451,12 @@ def symmetry(experiments, reflection_tables, params=None):
         )
 
         # Transform models into miller arrays
-        n_datasets = len(experiments)
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
             refls_for_sym,
             outlier_rejection_after_filter=True,
             partiality_threshold=params.partiality_threshold,
         )
-        if len(datasets) != n_datasets:
-            raise ValueError(
-                """Some datasets have no reflection after prefiltering, please check
-    input data and filtering settings e.g partiality_threshold"""
-            )
 
         # if all datasets have been through scaling, a decision about error models has
         # been made, so don't apply any further sigma correction
@@ -469,6 +465,13 @@ def symmetry(experiments, reflection_tables, params=None):
         datasets = [
             ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
+
+        if len(datasets) != n_datasets:
+            raise ValueError(
+                """Some datasets have no reflection after prefiltering, please check
+    input data and filtering settings e.g partiality_threshold"""
+            )
+
         result = LaueGroupAnalysis(
             datasets,
             normalisation=params.normalisation,

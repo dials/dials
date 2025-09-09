@@ -181,9 +181,13 @@ class cosym(Subject):
                 )
             exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
             logger.info(
-                f"Excluding {len(exclude)} datasets from cosym analysis "
+                f"Excluding {len(exclude)} datasets from further analysis "
                 f"(couldn't determine consistent cb_op to minimum cell):\n"
                 f"dataset indices: {exclude_indices}",
+            )
+            logger.info(
+                "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
+                + "if the cells are similar enough.\n"
             )
 
             if self.params.output.excluded:
