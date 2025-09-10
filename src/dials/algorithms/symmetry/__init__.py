@@ -626,6 +626,7 @@ def prepare_datasets_for_symmetry_analysis(
     experiments,
     reflection_tables,
     params,
+    outlier_rejection_after_filter,
 ):
     """Prepare datasets for symmetry analysis.
 
@@ -637,6 +638,8 @@ def prepare_datasets_for_symmetry_analysis(
         reflection_tables (list): a list of reflection tables
         params (dials.command_line.cosym.phil_scope.extract()): The parameters for
             symmetry analysis.
+        outlier_rejection_after_filter (bool): Whether to perform outlier rejection
+            after filtering reflections for symmetry analysis.
 
     Returns:
         A tuple of (datasets,experiments, reflection_tables, cb_ops) after
@@ -715,7 +718,7 @@ def prepare_datasets_for_symmetry_analysis(
     datasets = filtered_arrays_from_experiments_reflections(
         experiments,
         refls_for_sym,
-        outlier_rejection_after_filter=True,
+        outlier_rejection_after_filter=outlier_rejection_after_filter,
         partiality_threshold=params.partiality_threshold,
     )
 

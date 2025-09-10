@@ -156,7 +156,10 @@ def symmetry(experiments, reflection_tables, params=None):
 
         datasets, experiments, refls_for_sym, cb_ops = (
             prepare_datasets_for_symmetry_analysis(
-                experiments, reflection_tables, params
+                experiments,
+                reflection_tables,
+                params,
+                outlier_rejection_after_filter=True,
             )
         )
 
