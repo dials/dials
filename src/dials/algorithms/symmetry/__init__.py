@@ -627,6 +627,7 @@ def prepare_datasets_for_symmetry_analysis(
     reflection_tables,
     params,
     outlier_rejection_after_filter,
+    anomalous,
 ):
     """Prepare datasets for symmetry analysis.
 
@@ -640,6 +641,7 @@ def prepare_datasets_for_symmetry_analysis(
             symmetry analysis.
         outlier_rejection_after_filter (bool): Whether to perform outlier rejection
             after filtering reflections for symmetry analysis.
+        anomalous (bool): Whether to convert to anomalous miller arrays or not.
 
     Returns:
         A tuple of (datasets,experiments, reflection_tables, cb_ops) after
@@ -722,6 +724,13 @@ def prepare_datasets_for_symmetry_analysis(
         partiality_threshold=params.partiality_threshold,
     )
 
-    datasets = [ma.as_anomalous_array().merge_equivalents().array() for ma in datasets]
+    if anomalous:
+        datasets = [
+            ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
+        ]
+    else:
+        datasets = [
+            ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
+        ]
 
     return datasets, experiments, refls_for_sym, cb_ops

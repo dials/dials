@@ -160,6 +160,7 @@ def symmetry(experiments, reflection_tables, params=None):
                 reflection_tables,
                 params,
                 outlier_rejection_after_filter=True,
+                anomalous=True,
             )
         )
 
