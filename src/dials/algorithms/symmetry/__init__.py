@@ -7,6 +7,7 @@ utility functions for symmetry analysis.
 from __future__ import annotations
 
 import collections
+import copy
 import logging
 import math
 from io import StringIO
@@ -24,6 +25,11 @@ from dials.util import resolution_analysis
 from dials.util.exclude_images import (
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
+)
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.multi_dataset_handling import (
+    select_datasets_on_identifiers,
+    update_imageset_ids,
 )
 from dials.util.normalisation import quasi_normalisation
 
@@ -614,3 +620,105 @@ def change_of_basis_ops_to_minimum_cell(
         )
         cb_ops = [cb_op_ref_min * cb_op if cb_op else None for cb_op in cb_ops]
     return cb_ops
+
+
+def prepare_datasets_for_symmetry_analysis(
+    experiments,
+    reflection_tables,
+    params,
+):
+    """Prepare datasets for symmetry analysis.
+
+    This involves selecting suitable image ranges, mapping to a common minimum cell,
+    eliminating systematic absences and filtering reflections by resolution.
+
+    Args:
+        experiments (ExperimentList): a list of experiments.
+        reflection_tables (list): a list of reflection tables
+        params (dials.command_line.cosym.phil_scope.extract()): The parameters for
+            symmetry analysis.
+
+    Returns:
+        A tuple of (datasets,experiments, reflection_tables, cb_ops) after
+        preparation for symmetry analysis.
+    """
+    # Map experiments and reflections to minimum cell
+    cb_ops = change_of_basis_ops_to_minimum_cell(
+        experiments,
+        params.lattice_symmetry_max_delta,
+        params.relative_length_tolerance,
+        params.absolute_angle_tolerance,
+    )
+    exclude = [expt.identifier for expt, cb_op in zip(experiments, cb_ops) if not cb_op]
+    if len(exclude):
+        if not params.exclude_inconsistent_unit_cells:
+            indices = [str(i + 1) for i, v in enumerate(cb_ops) if v is None]
+            raise ValueError(
+                "Exiting symmetry analysis: Unable to match all cells to target symmetry.\n"
+                + "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
+                + "if the cells are similar enough.\n"
+                + f"Alternatively, remove dataset number{'s' if len(indices) > 1 else ''} {', '.join(indices)} from the input"
+            )
+        exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
+        logger.info(
+            f"Excluding {len(exclude)} datasets from further analysis "
+            f"(couldn't determine consistent cb_op to minimum cell):\n"
+            f"dataset indices: {exclude_indices}",
+        )
+        logger.info(
+            "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
+            + "if the cells are similar enough.\n"
+        )
+
+        if params.output.excluded:
+            excluded_experiments = copy.deepcopy(experiments)
+            excluded_reflections = copy.deepcopy(reflection_tables)
+            excluded_experiments, excluded_reflections = select_datasets_on_identifiers(
+                excluded_experiments, excluded_reflections, use_datasets=exclude
+            )
+            logger.info(
+                "Saving excluded experiments to %s",
+                params.output.excluded_prefix + ".expt",
+            )
+            excluded_experiments.as_file(params.output.excluded_prefix + ".expt")
+            logger.info(
+                "Saving excluded reflections to %s",
+                params.output.excluded_prefix + ".refl",
+            )
+            joined = flex.reflection_table()
+            excluded_reflections = update_imageset_ids(
+                excluded_experiments, excluded_reflections
+            )
+            for refl in excluded_reflections:
+                joined.extend(refl)
+            joined.as_file(params.output.excluded_prefix + ".refl")
+
+        experiments, reflection_tables = select_datasets_on_identifiers(
+            experiments, reflection_tables, exclude_datasets=exclude
+        )
+        cb_ops = list(filter(None, cb_ops))
+
+    # Eliminate reflections that are systematically absent due to centring
+    # of the lattice, otherwise they would lead to non-integer miller indices
+    # when reindexing to a primitive setting
+    reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
+
+    experiments, reflection_tables = apply_change_of_basis_ops(
+        experiments, reflection_tables, cb_ops
+    )
+
+    refls_for_sym = get_subset_for_symmetry(
+        experiments, reflection_tables, params.exclude_images
+    )
+
+    # Transform models into miller arrays
+    datasets = filtered_arrays_from_experiments_reflections(
+        experiments,
+        refls_for_sym,
+        outlier_rejection_after_filter=True,
+        partiality_threshold=params.partiality_threshold,
+    )
+
+    datasets = [ma.as_anomalous_array().merge_equivalents().array() for ma in datasets]
+
+    return datasets, experiments, refls_for_sym, cb_ops

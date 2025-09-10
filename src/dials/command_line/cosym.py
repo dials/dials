@@ -243,13 +243,13 @@ class cosym(Subject):
             partiality_threshold=params.partiality_threshold,
         )
 
-        # if all datasets have been through scaling, a decision about error models has
-        # been made, so don't apply any further sigma correction
-        apply_sigma_correction = not all(s for s in self.experiments.scaling_models())
-
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
+
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in self.experiments.scaling_models())
 
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.
