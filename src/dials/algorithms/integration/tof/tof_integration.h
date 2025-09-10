@@ -229,6 +229,30 @@ namespace dials { namespace algorithms {
   }
 
   /*
+   * Holds constants required for corrected time-of-flight data for the incident
+   * spectrum
+   */
+
+  struct TOFIncidentSpectrumParams {
+    ImageSequence &incident_data;
+    ImageSequence &empty_data;
+    double sample_proton_charge;
+    double incident_proton_charge;
+    double empty_proton_charge;
+
+    TOFIncidentSpectrumParams(ImageSequence &incident_data,
+                              ImageSequence &empty_data,
+                              double sample_proton_charge,
+                              double incident_proton_charge,
+                              double empty_proton_charge)
+        : incident_data(incident_data),
+          empty_data(empty_data),
+          sample_proton_charge(sample_proton_charge),
+          incident_proton_charge(incident_proton_charge),
+          empty_proton_charge(empty_proton_charge) {}
+  };
+
+  /*
    * Holds constants required for correcting time-of-flight data for absorption
    */
   struct TOFAbsorptionParams {
@@ -298,6 +322,107 @@ namespace dials { namespace algorithms {
           beta_max(beta_max) {}
   };
 
+  bool fit_profile1d(scitbx::af::const_ref<double> projected_intensity,
+                     scitbx::af::const_ref<double> tof_z,
+                     scitbx::af::const_ref<double> projected_variance,
+                     const TOFProfile1DParams &profile_params,
+                     const double &I_sum,
+                     const double &var_sum,
+                     double &I_prf_out,
+                     double &var_prf_out) {
+    // Get T_ph (peak position)
+    auto max_it =
+      std::max_element(projected_intensity.begin(), projected_intensity.end());
+    size_t max_index = std::distance(projected_intensity.begin(), max_it);
+    double T_ph = tof_z[max_index];
+
+    // Fit profile
+    const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
+                                                profile_params.alpha_max};
+    const std::array<double, 2> beta_bounds = {profile_params.beta_min,
+                                               profile_params.beta_max};
+
+    // Peak negative or all zeros
+    double intensity_max =
+      *std::max_element(projected_intensity.begin(), projected_intensity.end());
+    if (intensity_max < 1e-7) {
+      return false;
+    }
+
+    TOFProfile1D profile(tof_z,
+                         projected_intensity,
+                         profile_params.A,
+                         profile_params.alpha,
+                         profile_params.beta,
+                         T_ph,
+                         alpha_bounds,
+                         beta_bounds);
+
+    bool profile_success = profile.fit();
+
+    if (profile_success) {
+      double I_prf = profile.calc_intensity();
+      double var_prf = profile.calc_variance(projected_variance);
+
+      if (profile.trust_result(I_prf, var_prf, I_sum, var_sum)) {
+        I_prf_out = I_prf;
+        var_prf_out = var_prf;
+        return profile_success;
+      } else {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  bool fit_profile1d(scitbx::af::const_ref<double> projected_intensity,
+                     scitbx::af::const_ref<double> tof_z,
+                     scitbx::af::const_ref<double> projected_variance,
+                     const TOFProfile1DParams &profile_params,
+                     const double &I_sum,
+                     const double &var_sum,
+                     double &I_prf_out,
+                     double &var_prf_out,
+                     scitbx::af::shared<double> &line_profile_out) {
+    // Get T_ph (peak position)
+    auto max_it =
+      std::max_element(projected_intensity.begin(), projected_intensity.end());
+    size_t max_index = std::distance(projected_intensity.begin(), max_it);
+    double T_ph = tof_z[max_index];
+
+    // Fit profile
+    const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
+                                                profile_params.alpha_max};
+    const std::array<double, 2> beta_bounds = {profile_params.beta_min,
+                                               profile_params.beta_max};
+
+    TOFProfile1D profile(tof_z,
+                         projected_intensity,
+                         profile_params.A,
+                         profile_params.alpha,
+                         profile_params.beta,
+                         T_ph,
+                         alpha_bounds,
+                         beta_bounds);
+
+    bool profile_success = profile.fit();
+
+    if (profile_success) {
+      double I_prf = profile.calc_intensity();
+      double var_prf = profile.calc_variance(projected_variance);
+
+      if (profile.trust_result(I_prf, var_prf, I_sum, var_sum)) {
+        I_prf_out = I_prf;
+        var_prf_out = var_prf;
+        line_profile_out = profile.result();
+        return profile_success;
+      } else {
+        return false;
+      }
+    }
+    return false;
+  }
+
   void extract_shoeboxes_to_reflection_table(
     dials::af::reflection_table &reflection_table,
     Experiment &experiment,
@@ -338,7 +463,7 @@ namespace dials { namespace algorithms {
   void integrate_reflection_table(dials::af::reflection_table &reflection_table,
                                   Experiment &experiment,
                                   ImageSequence &data,
-                                  bool apply_lorentz_correction) {
+                                  const bool &apply_lorentz_correction) {
     /*
      * Updates reflection_table with intensities and variances with
      * optional Lorentz correction
@@ -508,9 +633,9 @@ namespace dials { namespace algorithms {
     }
   }
 
-  std::vector<double> savitzky_golay(const std::vector<double> &signal,
-                                     int window_size,
-                                     int poly_order) {
+  scitbx::af::shared<double> savitzky_golay(scitbx::af::shared<double> signal,
+                                            int window_size,
+                                            int poly_order) {
     /*
      * Method to smooth spectra to reduce noise
      * Based on https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
@@ -523,14 +648,14 @@ namespace dials { namespace algorithms {
 
     int half_window = (window_size - 1) / 2;
     int n = signal.size();
-    std::vector<double> result(n, 0.0);
+    scitbx::af::shared<double> result(n, 0.0);
 
     // Precompute coefficients using least-squares polynomial fit
-    std::vector<double> coeffs(window_size);
+    scitbx::af::shared<double> coeffs(window_size);
     {
       // Build Vandermonde matrix and compute pseudoinverse
-      std::vector<std::vector<double>> A(window_size,
-                                         std::vector<double>(poly_order + 1, 0.0));
+      std::vector<scitbx::af::shared<double>> A(
+        window_size, scitbx::af::shared<double>(poly_order + 1, 0.0));
       for (int i = -half_window; i <= half_window; ++i) {
         for (int j = 0; j <= poly_order; ++j) {
           A[i + half_window][j] = std::pow(i, j);
@@ -538,8 +663,8 @@ namespace dials { namespace algorithms {
       }
 
       // Compute pseudoinverse using normal equations (A^T A)^-1 A^T
-      std::vector<std::vector<double>> ATA(poly_order + 1,
-                                           std::vector<double>(poly_order + 1, 0.0));
+      std::vector<scitbx::af::shared<double>> ATA(
+        poly_order + 1, scitbx::af::shared<double>(poly_order + 1, 0.0));
       for (int i = 0; i <= poly_order; ++i) {
         for (int j = 0; j <= poly_order; ++j) {
           for (int k = 0; k < window_size; ++k) {
@@ -549,7 +674,7 @@ namespace dials { namespace algorithms {
       }
       // Solve linear system ATA * c = b
       // where b = column corresponding to evaluating at center point
-      std::vector<double> b(poly_order + 1, 0.0);
+      scitbx::af::shared<double> b(poly_order + 1, 0.0);
       b[0] = 1.0;  // evaluate polynomial at x=0
 
       // Gaussian elimination
@@ -600,12 +725,8 @@ namespace dials { namespace algorithms {
   void integrate_reflection_table(dials::af::reflection_table &reflection_table,
                                   Experiment &experiment,
                                   ImageSequence &data,
-                                  ImageSequence &incident_data,
-                                  ImageSequence &empty_data,
-                                  double sample_proton_charge,
-                                  double incident_proton_charge,
-                                  double empty_proton_charge,
-                                  bool apply_lorentz_correction) {
+                                  const TOFIncidentSpectrumParams &incident_params,
+                                  const bool &apply_lorentz_correction) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, and an optional Lorentz correction
@@ -653,8 +774,9 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for incident data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img = incident_data.get_corrected_data(img_num);
-      dxtbx::format::Image<bool> mask = incident_data.get_mask(img_num);
+      dxtbx::format::Image<double> img =
+        incident_params.incident_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.incident_data.get_mask(img_num);
 
       dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
         n_panels);
@@ -671,8 +793,9 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for empty data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img = empty_data.get_corrected_data(img_num);
-      dxtbx::format::Image<bool> mask = empty_data.get_mask(img_num);
+      dxtbx::format::Image<double> img =
+        incident_params.empty_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.empty_data.get_mask(img_num);
 
       dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
         n_panels);
@@ -711,8 +834,8 @@ namespace dials { namespace algorithms {
 
       // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
       // Shoebox data are ordered (z, y, x)
-      std::vector<double> incident_spectrum(shoebox.zsize(), 0.0);
-      std::vector<double> empty_spectrum(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
       std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
 
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
@@ -753,8 +876,9 @@ namespace dials { namespace algorithms {
       }
 
       // Smooth incident and empty to avoid dividing by a noisy signal
-      std::vector<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
-      std::vector<double> smoothed_incident = savitzky_golay(incident_spectrum, 7, 2);
+      scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
+      scitbx::af::shared<double> smoothed_incident =
+        savitzky_golay(incident_spectrum, 7, 2);
 
       // Second pass to integrate the shoeboxes
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
@@ -786,21 +910,20 @@ namespace dials { namespace algorithms {
             int mask = shoebox.mask(z, y, x);
 
             // Normalise by proton charge
-            double S = raw_S / sample_proton_charge;
-            double B = raw_B / sample_proton_charge;
-            double J = raw_J / incident_proton_charge;
-            double E = raw_E / empty_proton_charge;
+            double sample_pc = incident_params.sample_proton_charge;
+            double incident_pc = incident_params.incident_proton_charge;
+            double empty_pc = incident_params.empty_proton_charge;
+            double S = raw_S / sample_pc;
+            double B = raw_B / sample_pc;
+            double J = raw_J / incident_pc;
+            double E = raw_E / empty_pc;
 
             // Variances
-            double var_S =
-              std::abs(raw_S) / (sample_proton_charge * sample_proton_charge);
-            double var_B =
-              (std::abs(raw_B) / (sample_proton_charge * sample_proton_charge))
-              * (1.0 + double(n_signal) / double(n_background));
-            double var_J = (std::abs(raw_J) * n)
-                           / (incident_proton_charge * incident_proton_charge * n * n);
-            double var_E = (std::abs(raw_E) * n)
-                           / (empty_proton_charge * empty_proton_charge * n * n);
+            double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+            double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
+                           * (1.0 + double(n_signal) / double(n_background));
+            double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+            double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
             // Lorentz correction
             scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
@@ -866,13 +989,9 @@ namespace dials { namespace algorithms {
   void integrate_reflection_table(dials::af::reflection_table &reflection_table,
                                   Experiment &experiment,
                                   ImageSequence &data,
-                                  ImageSequence &incident_data,
-                                  ImageSequence &empty_data,
-                                  double sample_proton_charge,
-                                  double incident_proton_charge,
-                                  double empty_proton_charge,
-                                  TOFAbsorptionParams &corrections_data,
-                                  bool apply_lorentz_correction) {
+                                  const TOFIncidentSpectrumParams &incident_params,
+                                  const TOFAbsorptionParams &corrections_data,
+                                  const bool &apply_lorentz_correction) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, spherical absorption, and an optional Lorentz
@@ -921,8 +1040,9 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for incident data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img = incident_data.get_corrected_data(img_num);
-      dxtbx::format::Image<bool> mask = incident_data.get_mask(img_num);
+      dxtbx::format::Image<double> img =
+        incident_params.incident_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.incident_data.get_mask(img_num);
 
       dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
         n_panels);
@@ -939,8 +1059,9 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for empty data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img = empty_data.get_corrected_data(img_num);
-      dxtbx::format::Image<bool> mask = empty_data.get_mask(img_num);
+      dxtbx::format::Image<double> img =
+        incident_params.empty_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.empty_data.get_mask(img_num);
 
       dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
         n_panels);
@@ -979,8 +1100,8 @@ namespace dials { namespace algorithms {
 
       // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
       // Shoebox data are ordered (z, y, x)
-      std::vector<double> incident_spectrum(shoebox.zsize(), 0.0);
-      std::vector<double> empty_spectrum(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
       std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
 
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
@@ -1022,8 +1143,9 @@ namespace dials { namespace algorithms {
       }
 
       // Smooth incident and empty to avoid dividing by a noisy signal
-      std::vector<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
-      std::vector<double> smoothed_incident = savitzky_golay(incident_spectrum, 7, 2);
+      scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
+      scitbx::af::shared<double> smoothed_incident =
+        savitzky_golay(incident_spectrum, 7, 2);
 
       // Second pass to integrate the shoeboxes
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
@@ -1060,21 +1182,20 @@ namespace dials { namespace algorithms {
             int mask = shoebox.mask(z, y, x);
 
             // Normalise by proton charge
-            double S = raw_S / sample_proton_charge;
-            double B = raw_B / sample_proton_charge;
-            double J = raw_J / incident_proton_charge;
-            double E = raw_E / empty_proton_charge;
+            double sample_pc = incident_params.sample_proton_charge;
+            double incident_pc = incident_params.incident_proton_charge;
+            double empty_pc = incident_params.empty_proton_charge;
+            double S = raw_S / sample_pc;
+            double B = raw_B / sample_pc;
+            double J = raw_J / incident_pc;
+            double E = raw_E / empty_pc;
 
             // Variances
-            double var_S =
-              std::abs(raw_S) / (sample_proton_charge * sample_proton_charge);
-            double var_B =
-              (std::abs(raw_B) / (sample_proton_charge * sample_proton_charge))
-              * (1.0 + double(n_signal) / double(n_background));
-            double var_J = (std::abs(raw_J) * n)
-                           / (incident_proton_charge * incident_proton_charge * n * n);
-            double var_E = (std::abs(raw_E) * n)
-                           / (empty_proton_charge * empty_proton_charge * n * n);
+            double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+            double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
+                           * (1.0 + double(n_signal) / double(n_background));
+            double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+            double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
             // Lorentz correction
             scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
@@ -1174,8 +1295,8 @@ namespace dials { namespace algorithms {
     dials::af::reflection_table &reflection_table,
     Experiment &experiment,
     ImageSequence &data,
-    bool apply_lorentz_correction,
-    TOFProfile1DParams profile_params) {
+    const bool &apply_lorentz_correction,
+    const TOFProfile1DParams &profile_params) {
     /*
      * Updates reflection_table with intensities and variances with
      * optional Lorentz correction
@@ -1254,9 +1375,9 @@ namespace dials { namespace algorithms {
         }
       }
 
-      std::vector<double> tof_z(shoebox.zsize(), 0.0);
-      std::vector<double> projected_intensity(shoebox.zsize(), 0.0);
-      std::vector<double> projected_variance(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
@@ -1319,11 +1440,11 @@ namespace dials { namespace algorithms {
               var_I *= (L * L);
             }
 
+            intensity_z += I;
+            variance_z += var_I;
             // Accumulate if pixel in foreground & valid
             if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
                 && (mask & Overlapped) == 0) {
-              intensity_z += I;
-              variance_z += var_I;
               intensity += I;
               variance += var_I;
             } else if ((mask & Foreground) == Foreground) {
@@ -1339,44 +1460,29 @@ namespace dials { namespace algorithms {
       intensities[i] = intensity;
       variances[i] = variance;
 
+      bool profile_success = false;
+      double I_sum = 0.;
+      double var_sum = 0.;
+
       if (success) {
-        // Get T_ph (peak position)
-        auto max_it =
-          std::max_element(projected_intensity.begin(), projected_intensity.end());
-        size_t max_index = std::distance(projected_intensity.begin(), max_it);
-        double T_ph = tof_z[max_index];
-
-        // Fit profile
-        const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
-                                                    profile_params.alpha_max};
-        const std::array<double, 2> beta_bounds = {profile_params.beta_min,
-                                                   profile_params.beta_max};
-
-        TOFProfile1D profile(tof_z,
-                             projected_intensity,
-                             profile_params.A,
-                             profile_params.alpha,
-                             profile_params.beta,
-                             T_ph,
-                             alpha_bounds,
-                             beta_bounds);
-
-        bool profile_success = profile.fit();
-
-        if (profile_success) {
-          double I_prf = profile.calc_intensity();
-          double var_prf = profile.calc_variance(projected_variance);
-          if (profile.trust_result(I_prf, var_prf, intensity, variance)) {
-            intensities_prf[i] = I_prf;
-            variances_prf[i] = var_prf;
-          } else {
-            profile_success = false;
-          }
-        }
-        succeeded_prf[i] = profile_success;
-      } else {
-        succeeded_prf[i] = false;
+        I_sum = intensity;
+        var_sum = variance;
       }
+
+      double I_prf, var_prf;
+      profile_success = fit_profile1d(projected_intensity.const_ref(),
+                                      tof_z.const_ref(),
+                                      projected_variance.const_ref(),
+                                      profile_params,
+                                      I_sum,
+                                      var_sum,
+                                      I_prf,
+                                      var_prf);
+      if (profile_success) {
+        intensities_prf[i] = I_prf;
+        variances_prf[i] = var_prf;
+      }
+      succeeded_prf[i] = profile_success;
     }
 
     reflection_table["intensity.sum.value"] = intensities;
@@ -1409,13 +1515,9 @@ namespace dials { namespace algorithms {
     dials::af::reflection_table &reflection_table,
     Experiment &experiment,
     ImageSequence &data,
-    ImageSequence &incident_data,
-    ImageSequence &empty_data,
-    double sample_proton_charge,
-    double incident_proton_charge,
-    double empty_proton_charge,
-    bool apply_lorentz_correction,
-    TOFProfile1DParams profile_params) {
+    const TOFIncidentSpectrumParams &incident_params,
+    const bool &apply_lorentz_correction,
+    const TOFProfile1DParams &profile_params) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, and an optional Lorentz correction
@@ -1463,8 +1565,9 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for incident data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img = incident_data.get_corrected_data(img_num);
-      dxtbx::format::Image<bool> mask = incident_data.get_mask(img_num);
+      dxtbx::format::Image<double> img =
+        incident_params.incident_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.incident_data.get_mask(img_num);
 
       dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
         n_panels);
@@ -1481,8 +1584,9 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for empty data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img = empty_data.get_corrected_data(img_num);
-      dxtbx::format::Image<bool> mask = empty_data.get_mask(img_num);
+      dxtbx::format::Image<double> img =
+        incident_params.empty_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.empty_data.get_mask(img_num);
 
       dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
         n_panels);
@@ -1523,8 +1627,8 @@ namespace dials { namespace algorithms {
 
       // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
       // Shoebox data are ordered (z, y, x)
-      std::vector<double> incident_spectrum(shoebox.zsize(), 0.0);
-      std::vector<double> empty_spectrum(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
       std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
 
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
@@ -1561,12 +1665,13 @@ namespace dials { namespace algorithms {
       }
 
       // Smooth incident and empty to avoid dividing by a noisy signal
-      std::vector<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
-      std::vector<double> smoothed_incident = savitzky_golay(incident_spectrum, 7, 2);
+      scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
+      scitbx::af::shared<double> smoothed_incident =
+        savitzky_golay(incident_spectrum, 7, 2);
 
-      std::vector<double> tof_z(shoebox.zsize(), 0.0);
-      std::vector<double> projected_intensity(shoebox.zsize(), 0.0);
-      std::vector<double> projected_variance(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
@@ -1602,21 +1707,20 @@ namespace dials { namespace algorithms {
             int mask = shoebox.mask(z, y, x);
 
             // Normalise by proton charge
-            double S = raw_S / sample_proton_charge;
-            double B = raw_B / sample_proton_charge;
-            double J = raw_J / incident_proton_charge;
-            double E = raw_E / empty_proton_charge;
+            double sample_pc = incident_params.sample_proton_charge;
+            double incident_pc = incident_params.incident_proton_charge;
+            double empty_pc = incident_params.empty_proton_charge;
+            double S = raw_S / sample_pc;
+            double B = raw_B / sample_pc;
+            double J = raw_J / incident_pc;
+            double E = raw_E / empty_pc;
 
             // Variances
-            double var_S =
-              std::abs(raw_S) / (sample_proton_charge * sample_proton_charge);
-            double var_B =
-              (std::abs(raw_B) / (sample_proton_charge * sample_proton_charge))
-              * (1.0 + double(n_signal) / double(n_background));
-            double var_J = (std::abs(raw_J) * n)
-                           / (incident_proton_charge * incident_proton_charge * n * n);
-            double var_E = (std::abs(raw_E) * n)
-                           / (empty_proton_charge * empty_proton_charge * n * n);
+            double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+            double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
+                           * (1.0 + double(n_signal) / double(n_background));
+            double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+            double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
             // Lorentz correction
             scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
@@ -1646,11 +1750,12 @@ namespace dials { namespace algorithms {
               var_I = (1 / (J * J)) * var_I0 + (I0 * I0 / (J * J * J * J)) * var_J;
             }
 
+            intensity_z += I;
+            variance_z += var_I;
+
             // Accumulate if pixel in foreground & valid
             if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
                 && (mask & Overlapped) == 0) {
-              intensity_z += I;
-              variance_z += var_I;
               intensity += I;
               variance += var_I;
             } else if ((mask & Foreground) == Foreground) {
@@ -1666,47 +1771,29 @@ namespace dials { namespace algorithms {
       intensities[i] = intensity;
       variances[i] = variance;
 
+      bool profile_success = false;
+      double I_sum = 0.;
+      double var_sum = 0.;
+
       if (success) {
-        auto max_it =
-          std::max_element(projected_intensity.begin(), projected_intensity.end());
-        size_t max_index = std::distance(projected_intensity.begin(), max_it);
-        double T_ph = tof_z[max_index];
-
-        const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
-                                                    profile_params.alpha_max};
-        const std::array<double, 2> beta_bounds = {profile_params.beta_min,
-                                                   profile_params.beta_max};
-
-        TOFProfile1D profile(tof_z,
-                             projected_intensity,
-                             profile_params.A,
-                             profile_params.alpha,
-                             profile_params.beta,
-                             T_ph,
-                             alpha_bounds,
-                             beta_bounds);
-
-        bool profile_success = profile.fit();
-        if (profile_success) {
-          double I_prf = profile.calc_intensity();
-          double var_prf = profile.calc_variance(projected_variance);
-          if (var_prf > 1e-7) {
-            double i_sigma_sum = intensity / std::sqrt(variance);
-            double i_sigma_prf = I_prf / std::sqrt(var_prf);
-            if (i_sigma_prf > i_sigma_sum) {
-              intensities_prf[i] = I_prf;
-              variances_prf[i] = var_prf;
-            } else {
-              profile_success = false;
-            }
-          } else {
-            profile_success = false;
-          }
-        }
-        succeeded_prf[i] = profile_success;
-      } else {
-        succeeded_prf[i] = false;
+        I_sum = intensity;
+        var_sum = variance;
       }
+
+      double I_prf, var_prf;
+      profile_success = fit_profile1d(projected_intensity.const_ref(),
+                                      tof_z.const_ref(),
+                                      projected_variance.const_ref(),
+                                      profile_params,
+                                      I_sum,
+                                      var_sum,
+                                      I_prf,
+                                      var_prf);
+      if (profile_success) {
+        intensities_prf[i] = I_prf;
+        variances_prf[i] = var_prf;
+      }
+      succeeded_prf[i] = profile_success;
     }
 
     reflection_table["intensity.sum.value"] = intensities;
@@ -1735,72 +1822,377 @@ namespace dials { namespace algorithms {
     }
   }
 
-  bool fit_profile1d(const std::vector<double> &projected_intensity,
-                     const std::vector<double> &tof_z,
-                     const std::vector<double> &projected_variance,
-                     const TOFProfile1DParams &profile_params,
-                     const double &I_sum,
-                     const double &var_sum,
-                     double &I_prf_out,
-                     double &var_prf_out,
-                     std::vector<double> &line_profile_out) {
-    // Get T_ph (peak position)
-    auto max_it =
-      std::max_element(projected_intensity.begin(), projected_intensity.end());
-    size_t max_index = std::distance(projected_intensity.begin(), max_it);
-    double T_ph = tof_z[max_index];
-
-    // Fit profile
-    const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
-                                                profile_params.alpha_max};
-    const std::array<double, 2> beta_bounds = {profile_params.beta_min,
-                                               profile_params.beta_max};
-
-    TOFProfile1D profile(tof_z,
-                         projected_intensity,
-                         profile_params.A,
-                         profile_params.alpha,
-                         profile_params.beta,
-                         T_ph,
-                         alpha_bounds,
-                         beta_bounds);
-
-    bool profile_success = profile.fit();
-
-    if (profile_success) {
-      double I_prf = profile.calc_intensity();
-      double var_prf = profile.calc_variance(projected_variance);
-
-      if (profile.trust_result(I_prf, var_prf, I_sum, var_sum)) {
-        I_prf_out = I_prf;
-        var_prf_out = var_prf;
-        line_profile_out = profile.result();
-        return profile_success;
-      } else {
-        return false;
-      }
-    }
-    return false;
-  }
-
-  boost::python::tuple integrate_shoebox_profile1d(
-    dials::model::Shoebox<> &shoebox,
+  void integrate_reflection_table_profile1d(
+    dials::af::reflection_table &reflection_table,
     Experiment &experiment,
     ImageSequence &data,
+    const TOFIncidentSpectrumParams &incident_params,
+    const TOFAbsorptionParams &corrections_data,
+    const bool &apply_lorentz_correction,
+    const TOFProfile1DParams &profile_params) {
+    /*
+     * Updates reflection_table with intensities and variances corrected by
+     * incident and empty runs, a spherical absorptin correction,
+     * and an optional Lorentz correction
+     */
+
+    Detector detector = *experiment.get_detector();
+    Scan scan = *experiment.get_scan();
+
+    // Required beam params
+    std::shared_ptr<dxtbx::model::BeamBase> beam_ptr = experiment.get_beam();
+    std::shared_ptr<PolychromaticBeam> beam =
+      std::dynamic_pointer_cast<PolychromaticBeam>(beam_ptr);
+    DIALS_ASSERT(beam != nullptr);
+    vec3<double> unit_s0 = beam->get_unit_s0();
+    double sample_to_source_distance = beam->get_sample_to_source_distance();
+
+    // Required scan params
+    scitbx::af::shared<double> img_tof = scan.get_property<double>("time_of_flight");
+
+    // Required detector params
+    int n_panels = detector.size();
+    int num_images = data.size();
+    vec2<std::size_t> image_size = detector[0].get_image_size();
+    DIALS_ASSERT(num_images == img_tof.size());
+
+    // Copy reflections for incident and empty runs
+    boost::python::dict d;
+    dials::af::reflection_table i_reflection_table =
+      dxtbx::af::flex_table_suite::deepcopy(reflection_table, d);
+    dials::af::reflection_table e_reflection_table =
+      dxtbx::af::flex_table_suite::deepcopy(reflection_table, d);
+
+    dials::af::ref<Shoebox<>> i_shoeboxes = i_reflection_table["shoebox"];
+    dials::af::ref<Shoebox<>> e_shoeboxes = e_reflection_table["shoebox"];
+    for (std::size_t i = 0; i < i_reflection_table.size(); ++i) {
+      i_shoeboxes[i].deallocate();
+      e_shoeboxes[i].deallocate();
+    }
+
+    ShoeboxProcessor incident_shoebox_processor(
+      i_reflection_table, n_panels, 0, num_images, false);
+
+    ShoeboxProcessor empty_shoebox_processor(
+      e_reflection_table, n_panels, 0, num_images, false);
+
+    // Get shoeboxes for incident data
+    for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
+      dxtbx::format::Image<double> img =
+        incident_params.incident_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.incident_data.get_mask(img_num);
+
+      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+        n_panels);
+      dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
+        n_panels);
+
+      for (std::size_t i = 0; i < output_data.size(); ++i) {
+        output_data[i] = img.tile(i).data();
+        output_mask[i] = mask.tile(i).data();
+      }
+      incident_shoebox_processor.next_data_only(
+        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+    }
+
+    // Get shoeboxes for empty data
+    for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
+      dxtbx::format::Image<double> img =
+        incident_params.empty_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.empty_data.get_mask(img_num);
+
+      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+        n_panels);
+      dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
+        n_panels);
+
+      for (std::size_t i = 0; i < output_data.size(); ++i) {
+        output_data[i] = img.tile(i).data();
+        output_mask[i] = mask.tile(i).data();
+      }
+      empty_shoebox_processor.next_data_only(
+        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+    }
+
+    dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
+    dials::af::const_ref<int6> bboxes = reflection_table["bbox"];
+
+    dials::af::shared<bool> succeeded(reflection_table.size());
+    dials::af::shared<bool> succeeded_prf(reflection_table.size());
+    dials::af::shared<double> intensities(reflection_table.size());
+    dials::af::shared<double> variances(reflection_table.size());
+    dials::af::shared<double> intensities_prf(reflection_table.size());
+    dials::af::shared<double> variances_prf(reflection_table.size());
+    int bg_code = Valid | Background | BackgroundUsed;
+
+    for (std::size_t i = 0; i < reflection_table.size(); ++i) {
+      Shoebox<> shoebox = shoeboxes[i];
+      Shoebox<> i_shoebox = i_shoeboxes[i];
+      Shoebox<> e_shoebox = e_shoeboxes[i];
+      int6 bbox = bboxes[i];
+      int panel = shoebox.panel;
+
+      bool success = true;
+      int n_background = 0;
+      int n_signal = 0;
+      double intensity = 0.0;
+      double variance = 0.0;
+
+      // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
+      // Shoebox data are ordered (z, y, x)
+      scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
+      std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+
+      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+        if (!success) {
+          break;
+        }
+        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+          int panel_y = bbox[2] + y;
+          if (panel_y > image_size[1] || panel_y < 0) {
+            continue;
+          }
+          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+            int panel_x = bbox[0] + x;
+            if (panel_x > image_size[0] || panel_x < 0) {
+              continue;
+            }
+
+            incident_spectrum[z] += i_shoebox.data(z, y, x);
+            empty_spectrum[z] += e_shoebox.data(z, y, x);
+            n_contrib[z]++;
+
+            int mask = shoebox.mask(z, y, x);
+            if ((mask & Foreground) == Foreground) {
+              if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
+                n_signal++;
+              } else {
+                success = false;
+              }
+            } else if ((mask & bg_code) == bg_code) {
+              n_background++;
+            }
+          }
+        }
+      }
+
+      // Smooth incident and empty to avoid dividing by a noisy signal
+      scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
+      scitbx::af::shared<double> smoothed_incident =
+        savitzky_golay(incident_spectrum, 7, 2);
+
+      scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
+      // Second pass to perform actual integration
+      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+        double intensity_z = 0;
+        double variance_z = 0;
+
+        if (!success) {
+          break;
+        }
+
+        int frame_z = bbox[4] + z;
+        double tof = img_tof[frame_z];
+        tof_z[z] = tof;
+        tof *= std::pow(10, -6);  // (s)
+
+        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+          int panel_y = bbox[2] + y;
+          if (panel_y > image_size[1] || panel_y < 0) {
+            continue;
+          }
+          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+            int panel_x = bbox[0] + x;
+            if (panel_x > image_size[0] || panel_x < 0) {
+              continue;
+            }
+
+            // Raw counts
+            double raw_S = shoebox.data(z, y, x);
+            double raw_B = shoebox.background(z, y, x);
+            double n = n_contrib[z];
+            double raw_J = smoothed_incident[z] / n;
+            double raw_E = smoothed_empty[z] / n;
+
+            // Pixel data will be divided by incident spectrum
+            if (raw_J < 1e-7) {
+              continue;
+            }
+
+            int mask = shoebox.mask(z, y, x);
+
+            // Normalise by proton charge
+            double sample_pc = incident_params.sample_proton_charge;
+            double incident_pc = incident_params.incident_proton_charge;
+            double empty_pc = incident_params.empty_proton_charge;
+            double S = raw_S / sample_pc;
+            double B = raw_B / sample_pc;
+            double J = raw_J / incident_pc;
+            double E = raw_E / empty_pc;
+
+            // Variances
+            double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+            double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
+                           * (1.0 + double(n_signal) / double(n_background));
+            double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+            double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
+
+            // Lorentz correction
+            scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
+              scitbx::vec2<double>(panel_x, panel_y));
+            double distance = s1.length() + sample_to_source_distance;
+            distance *= std::pow(10, -3);  // (m)
+            double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
+            double two_theta = detector[panel].get_two_theta_at_pixel(
+              unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+            double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+            double L = sin_two_theta_sq / std::pow(wl, 4);
+
+            // Spherical absorption correction
+            // for image data and incident data
+            double two_theta_deg = two_theta * (180 / pi);
+            int two_theta_idx = static_cast<int>(two_theta_deg / 10);
+            double sample_muR =
+              (corrections_data.sample_linear_scattering_c
+               + (corrections_data.sample_linear_absorption_c / 1.8) * wl)
+              * corrections_data.sample_radius;
+            double T = tof_pixel_spherical_absorption_correction(
+              sample_muR, two_theta, two_theta_idx);
+
+            // Pixel data will be divided by the absorption correction
+            if (T < 1e-7) {
+              continue;
+            }
+            double incident_muR =
+              (corrections_data.incident_linear_scattering_c
+               + (corrections_data.incident_linear_absorption_c / 1.8) * wl)
+              * corrections_data.incident_radius;
+            double J_T = tof_pixel_spherical_absorption_correction(
+              incident_muR, two_theta, two_theta_idx);
+
+            // Pixel data will be divided by absorption correction
+            if (J_T < 1e-7) {
+              continue;
+            }
+
+            // Net signal
+            double I0 = (S - B - E);
+            double var_I0 = var_S + var_B + var_E;
+
+            J /= J_T;
+
+            if (J < 1e-7) {
+              continue;
+            }
+
+            var_J /= (J_T * J_T);
+
+            // Apply Lorentz correction and normalise by incident spectrum
+            double I, var_I;
+            if (apply_lorentz_correction) {
+              I = L * I0 / (J * T);
+
+              var_I = (L * L / (J * J * T * T)) * var_I0
+                      + (L * L * I0 * I0 / (J * J * J * J * T * T)) * var_J;
+            } else {
+              I = I0 / (J * T);
+              var_I = (1 / (J * J * T * T)) * var_I0
+                      + (I0 * I0 / (J * J * J * J * T * T)) * var_J;
+            }
+
+            // Accumulate if pixel in foreground & valid
+            if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
+                && (mask & Overlapped) == 0) {
+              intensity += I;
+              variance += var_I;
+            } else if ((mask & Foreground) == Foreground) {
+              success = false;
+              break;
+            }
+          }
+          projected_intensity[z] = intensity_z;
+          projected_variance[z] = variance_z;
+        }
+      }
+      succeeded[i] = success;
+      intensities[i] = intensity;
+      variances[i] = variance;
+
+      bool profile_success = false;
+      double I_sum = 0.;
+      double var_sum = 0.;
+
+      if (success) {
+        I_sum = intensity;
+        var_sum = variance;
+      }
+
+      double I_prf, var_prf;
+      profile_success = fit_profile1d(projected_intensity.const_ref(),
+                                      tof_z.const_ref(),
+                                      projected_variance.const_ref(),
+                                      profile_params,
+                                      I_sum,
+                                      var_sum,
+                                      I_prf,
+                                      var_prf);
+      if (profile_success) {
+        intensities_prf[i] = I_prf;
+        variances_prf[i] = var_prf;
+      }
+      succeeded_prf[i] = profile_success;
+    }
+
+    reflection_table["intensity.sum.value"] = intensities;
+    reflection_table["intensity.sum.variance"] = variances;
+    reflection_table["intensity.prf.value"] = intensities_prf;
+    reflection_table["intensity.prf.variance"] = variances_prf;
+
+    // Update flags
+    dials::af::ref<std::size_t> flags =
+      reflection_table.get<std::size_t>("flags").ref();
+    for (std::size_t i = 0; i < flags.size(); ++i) {
+      if (succeeded[i]) {
+        flags[i] &= ~dials::af::FailedDuringSummation;
+        flags[i] |= dials::af::IntegratedSum;
+      } else {
+        flags[i] &= ~dials::af::IntegratedSum;
+        flags[i] |= dials::af::FailedDuringSummation;
+      }
+      if (succeeded_prf[i]) {
+        flags[i] &= ~dials::af::FailedDuringProfileFitting;
+        flags[i] |= dials::af::IntegratedPrf;
+      } else {
+        flags[i] &= ~dials::af::IntegratedPrf;
+        flags[i] |= dials::af::FailedDuringProfileFitting;
+      }
+    }
+  }
+
+  boost::python::tuple calculate_line_profile_for_reflection(
+    dials::af::reflection_table &reflection,
+    Experiment &experiment,
+    ImageSequence &data,
+    scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
-    scitbx::af::shared<double> line_profile_out,
-    bool apply_lorentz_correction,
-    TOFProfile1DParams profile_params) {
+    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> tof_z_out,
+    const bool &apply_lorentz_correction) {
     /*
-     * Calculates projected_intensity, projected_background, line_profile,
-     * prf_intensity, prf_variance, sum_intensity, sum_variance, profile_success
+     * Calculates raw_projected_intensity, projected_intensity,
+     * projected_background, sum_intensity, sum_variance
      */
-    double prf_intensity_out = 0;
-    double prf_variance_out = 0;
+
+    // This is a slight hack to make using current interfaces eaiser
+    // E.g. the shoebox processor
+    DIALS_ASSERT(reflection.size() == 1);
+
     double sum_intensity_out = 0;
     double sum_variance_out = 0;
-    int profile_success = 0;
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -1823,6 +2215,15 @@ namespace dials { namespace algorithms {
 
     // Mask codes
     int bg_code = Valid | Background | BackgroundUsed;
+
+    dials::af::shared<Shoebox<>> shoeboxes = reflection["shoebox"];
+    dials::model::Shoebox<> shoebox = shoeboxes[0];
+
+    DIALS_ASSERT(raw_projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_background_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_variance_out.size() == shoebox.zsize());
+    DIALS_ASSERT(tof_z_out.size() == shoebox.zsize());
 
     int6 bbox = shoebox.bbox;
     int panel = shoebox.panel;
@@ -1864,13 +2265,10 @@ namespace dials { namespace algorithms {
       }
     }
 
-    std::vector<double> tof_z(shoebox.zsize(), 0.0);
-    std::vector<double> projected_intensity(shoebox.zsize(), 0.0);
-    std::vector<double> projected_background(shoebox.zsize(), 0.0);
-    std::vector<double> projected_variance(shoebox.zsize(), 0.0);
     // Second pass to perform actual integration
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       double intensity_z = 0;
+      double intensity_raw_z = 0;
       double background_z = 0;
       double variance_z = 0;
 
@@ -1880,7 +2278,7 @@ namespace dials { namespace algorithms {
 
       int frame_z = bbox[4] + z;
       double tof = img_tof[frame_z];
-      tof_z[z] = tof;
+      tof_z_out[z] = tof;
       tof *= std::pow(10, -6);  // (s)
 
       for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
@@ -1922,21 +2320,344 @@ namespace dials { namespace algorithms {
           // Net signal
           double I0 = raw_S - raw_B;
           double var_I0 = var_S + var_B;
+          double I_raw = raw_S;
+          double B_raw = raw_B;
 
           double I = I0 / bin_width_correction;
+          I_raw /= bin_width_correction;
           double var_I = var_I0 / (bin_width_correction * bin_width_correction);
+          B_raw /= bin_width_correction;
 
           if (apply_lorentz_correction) {
             I *= L;
             var_I *= (L * L);
+            I_raw *= L;
+            B_raw *= L;
+          }
+
+          intensity_z += I;
+          intensity_raw_z += I_raw;
+          background_z += B_raw;
+
+          // Accumulate if pixel in foreground & valid
+          if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
+              && (mask & Overlapped) == 0) {
+            intensity += I;
+            variance += var_I;
+            variance_z += var_I;
+          } else if ((mask & Foreground) == Foreground) {
+            success = false;
+            break;
+          }
+        }
+        raw_projected_intensity_out[z] = intensity_raw_z;
+        projected_intensity_out[z] = intensity_z;
+        projected_variance_out[z] = variance_z;
+        projected_background_out[z] = background_z;
+      }
+    }
+
+    return boost::python::make_tuple(sum_intensity_out, sum_variance_out, success);
+  }
+
+  boost::python::tuple calculate_line_profile_for_reflection(
+    dials::af::reflection_table &reflection,
+    Experiment &experiment,
+    ImageSequence &data,
+    scitbx::af::shared<double> raw_projected_intensity_out,
+    scitbx::af::shared<double> projected_intensity_out,
+    scitbx::af::shared<double> projected_background_out,
+    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> tof_z_out,
+    scitbx::af::shared<double> line_profile_out,
+    const bool &apply_lorentz_correction,
+    const TOFProfile1DParams &profile_params) {
+    /*
+     * Calculates raw_projected_intensity, projected_intensity, line_profile
+     * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
+     */
+
+    boost::python::tuple result =
+      calculate_line_profile_for_reflection(reflection,
+                                            experiment,
+                                            data,
+                                            raw_projected_intensity_out,
+                                            projected_intensity_out,
+                                            projected_background_out,
+                                            projected_variance_out,
+                                            tof_z_out,
+                                            apply_lorentz_correction);
+
+    double I_sum = boost::python::extract<double>(result[0]);
+    double var_sum = boost::python::extract<double>(result[1]);
+    bool success = boost::python::extract<bool>(result[2]);
+
+    double I_prf = 0;
+    double var_prf = 0;
+    bool profile_success = false;
+
+    if (success) {
+      profile_success = fit_profile1d(projected_intensity_out.const_ref(),
+                                      tof_z_out.const_ref(),
+                                      projected_variance_out.const_ref(),
+                                      profile_params,
+                                      I_sum,
+                                      var_sum,
+                                      I_prf,
+                                      var_prf,
+                                      line_profile_out);
+
+    } else {
+      profile_success = false;
+    }
+    return boost::python::make_tuple(I_prf, var_prf, I_sum, var_sum, profile_success);
+  }
+
+  boost::python::tuple calculate_line_profile_for_reflection(
+    dials::af::reflection_table &reflection,
+    Experiment &experiment,
+    ImageSequence &data,
+    const TOFIncidentSpectrumParams &incident_params,
+    scitbx::af::shared<double> raw_projected_intensity_out,
+    scitbx::af::shared<double> projected_intensity_out,
+    scitbx::af::shared<double> projected_background_out,
+    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> tof_z_out,
+    const bool &apply_lorentz_correction) {
+    /*
+     * Calculates raw_projected_intensity, projected_intensity,
+     * projected_background, sum_intensity, sum_variance
+     */
+    double sum_intensity_out = 0;
+    double sum_variance_out = 0;
+
+    // This is a slight hack to make using current interfaces eaiser
+    // E.g. the shoebox processor
+    DIALS_ASSERT(reflection.size() == 1);
+    dials::af::shared<Shoebox<>> shoeboxes = reflection["shoebox"];
+    dials::model::Shoebox<> shoebox = shoeboxes[0];
+
+    Detector detector = *experiment.get_detector();
+    Scan scan = *experiment.get_scan();
+
+    // Required beam params
+    std::shared_ptr<dxtbx::model::BeamBase> beam_ptr = experiment.get_beam();
+    std::shared_ptr<PolychromaticBeam> beam =
+      std::dynamic_pointer_cast<PolychromaticBeam>(beam_ptr);
+    DIALS_ASSERT(beam != nullptr);
+    vec3<double> unit_s0 = beam->get_unit_s0();
+    double sample_to_source_distance = beam->get_sample_to_source_distance();
+
+    // Required scan params
+    scitbx::af::shared<double> img_tof = scan.get_property<double>("time_of_flight");
+
+    // Required detector params
+    int num_images = data.size();
+    vec2<std::size_t> image_size = detector[0].get_image_size();
+    DIALS_ASSERT(num_images == img_tof.size());
+    int n_panels = detector.size();
+
+    int6 bbox = shoebox.bbox;
+    int panel = shoebox.panel;
+
+    // Copy reflections for incident and empty runs
+    boost::python::dict d;
+    dials::af::reflection_table i_reflection_table =
+      dxtbx::af::flex_table_suite::deepcopy(reflection, d);
+    dials::af::reflection_table e_reflection_table =
+      dxtbx::af::flex_table_suite::deepcopy(reflection, d);
+
+    dials::af::ref<Shoebox<>> i_shoeboxes = i_reflection_table["shoebox"];
+    dials::af::ref<Shoebox<>> e_shoeboxes = e_reflection_table["shoebox"];
+    i_shoeboxes[0].deallocate();
+    e_shoeboxes[0].deallocate();
+
+    ShoeboxProcessor incident_shoebox_processor(
+      i_reflection_table, n_panels, 0, num_images, false);
+
+    ShoeboxProcessor empty_shoebox_processor(
+      e_reflection_table, n_panels, 0, num_images, false);
+
+    // Get shoebox for incident data
+    for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
+      dxtbx::format::Image<double> img =
+        incident_params.incident_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.incident_data.get_mask(img_num);
+
+      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+        n_panels);
+      dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
+        n_panels);
+
+      for (std::size_t i = 0; i < output_data.size(); ++i) {
+        output_data[i] = img.tile(i).data();
+        output_mask[i] = mask.tile(i).data();
+      }
+      incident_shoebox_processor.next_data_only(
+        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+    }
+
+    // Get shoeboxes for empty data
+    for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
+      dxtbx::format::Image<double> img =
+        incident_params.empty_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.empty_data.get_mask(img_num);
+
+      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+        n_panels);
+      dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
+        n_panels);
+
+      for (std::size_t i = 0; i < output_data.size(); ++i) {
+        output_data[i] = img.tile(i).data();
+        output_mask[i] = mask.tile(i).data();
+      }
+      empty_shoebox_processor.next_data_only(
+        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+    }
+
+    // Mask codes
+    int bg_code = Valid | Background | BackgroundUsed;
+
+    bool success = true;
+    int n_background = 0;
+    int n_signal = 0;
+    double intensity = 0.0;
+    double variance = 0.0;
+
+    scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+    scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
+    std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+    Shoebox<> i_shoebox = i_shoeboxes[0];
+    Shoebox<> e_shoebox = e_shoeboxes[0];
+
+    // First pass to get, n_signal, n_background
+    // Shoebox data are ordered (z, y, x)
+    for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+      if (!success) {
+        break;
+      }
+      for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+        int panel_y = bbox[2] + y;
+        if (panel_y > image_size[1] || panel_y < 0) {
+          continue;
+        }
+        for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+          int panel_x = bbox[0] + x;
+          if (panel_x > image_size[0] || panel_x < 0) {
+            continue;
+          }
+
+          incident_spectrum[z] += i_shoebox.data(z, y, x);
+          empty_spectrum[z] += e_shoebox.data(z, y, x);
+          n_contrib[z]++;
+
+          int mask = shoebox.mask(z, y, x);
+          if ((mask & Foreground) == Foreground) {
+            if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
+              n_signal++;
+            } else {
+              success = false;
+            }
+          } else if ((mask & bg_code) == bg_code) {
+            n_background++;
+          }
+        }
+      }
+    }
+    // Smooth incident and empty to avoid dividing by a noisy signal
+    scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
+    scitbx::af::shared<double> smoothed_incident =
+      savitzky_golay(incident_spectrum, 7, 2);
+
+    DIALS_ASSERT(raw_projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_background_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_variance_out.size() == shoebox.zsize());
+    DIALS_ASSERT(tof_z_out.size() == shoebox.zsize());
+
+    // Second pass to perform actual integration
+    for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+      double intensity_z = 0;
+      double intensity_raw_z = 0;
+      double background_z = 0;
+      double variance_z = 0;
+
+      if (!success) {
+        break;
+      }
+
+      int frame_z = bbox[4] + z;
+      double tof = img_tof[frame_z];
+      tof_z_out[z] = tof;
+      tof *= std::pow(10, -6);  // (s)
+
+      for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+        int panel_y = bbox[2] + y;
+        if (panel_y > image_size[1] || panel_y < 0) {
+          continue;
+        }
+        for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+          int panel_x = bbox[0] + x;
+          if (panel_x > image_size[0] || panel_x < 0) {
+            continue;
+          }
+          // Raw counts
+          double raw_S = shoebox.data(z, y, x);
+          double raw_B = shoebox.background(z, y, x);
+          double n = n_contrib[z];
+          double raw_J = smoothed_incident[z] / n;
+          double raw_E = smoothed_empty[z] / n;
+
+          int mask = shoebox.mask(z, y, x);
+
+          // Normalise by proton charge
+          double sample_pc = incident_params.sample_proton_charge;
+          double incident_pc = incident_params.incident_proton_charge;
+          double empty_pc = incident_params.empty_proton_charge;
+          double S = raw_S / sample_pc;
+          double B = raw_B / sample_pc;
+          double J = raw_J / incident_pc;
+          double E = raw_E / empty_pc;
+
+          // Variances
+          double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+          double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
+                         * (1.0 + double(n_signal) / double(n_background));
+          double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+          double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
+
+          // Lorentz correction
+          scitbx::vec3<double> s1 =
+            detector[panel].get_pixel_lab_coord(scitbx::vec2<double>(panel_x, panel_y));
+          double distance = s1.length() + sample_to_source_distance;
+          distance *= std::pow(10, -3);  // (m)
+          double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
+          double two_theta = detector[panel].get_two_theta_at_pixel(
+            unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+          double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+          double L = sin_two_theta_sq / std::pow(wl, 4);
+
+          // Net signal
+          double I0 = S - B - E;
+          double var_I0 = var_S + var_B + var_E;
+
+          // Apply Lorentz correction and normalise by incident spectrum
+          double I, var_I;
+          if (apply_lorentz_correction) {
+            I = L * I0 / J;
+            // Var( L*I0/J ) = (L/J)^2 Var(I0) + (L*I0/J^2)^2 Var(J)
+            var_I =
+              (L * L / (J * J)) * var_I0 + (L * L * I0 * I0 / (J * J * J * J)) * var_J;
+          } else {
+            I = I0 / J;
+            // Var( I0/J ) = (1/J)^2 Var(I0) + (I0/J^2)^2 Var(J)
+            var_I = (1 / (J * J)) * var_I0 + (I0 * I0 / (J * J * J * J)) * var_J;
           }
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
               && (mask & Overlapped) == 0) {
-            intensity_z += I;
-            variance_z += var_I;
-            background_z += raw_B;
             intensity += I;
             variance += var_I;
           } else if ((mask & Foreground) == Foreground) {
@@ -1944,48 +2665,423 @@ namespace dials { namespace algorithms {
             break;
           }
         }
-        projected_intensity[z] = intensity_z;
+        raw_projected_intensity_out[z] = intensity_raw_z;
         projected_intensity_out[z] = intensity_z;
-        projected_variance[z] = variance_z;
-        projected_background[z] = background_z;
+        projected_variance_out[z] = variance_z;
+        projected_background_out[z] = background_z;
       }
     }
 
+    return boost::python::make_tuple(sum_intensity_out, sum_variance_out, success);
+  }
+
+  boost::python::tuple calculate_line_profile_for_reflection(
+    dials::af::reflection_table &reflection,
+    Experiment &experiment,
+    ImageSequence &data,
+    const TOFIncidentSpectrumParams &incident_params,
+    scitbx::af::shared<double> raw_projected_intensity_out,
+    scitbx::af::shared<double> projected_intensity_out,
+    scitbx::af::shared<double> projected_background_out,
+    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> tof_z_out,
+    scitbx::af::shared<double> line_profile_out,
+    const bool &apply_lorentz_correction,
+    const TOFProfile1DParams &profile_params) {
+    /*
+     * Calculates raw_projected_intensity, projected_intensity, line_profile
+     * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
+     */
+
+    boost::python::tuple result =
+      calculate_line_profile_for_reflection(reflection,
+                                            experiment,
+                                            data,
+                                            incident_params,
+                                            raw_projected_intensity_out,
+                                            projected_intensity_out,
+                                            projected_background_out,
+                                            projected_variance_out,
+                                            tof_z_out,
+                                            apply_lorentz_correction);
+
+    double I_sum = boost::python::extract<double>(result[0]);
+    double var_sum = boost::python::extract<double>(result[1]);
+    bool success = boost::python::extract<bool>(result[2]);
+
+    double I_prf = 0;
+    double var_prf = 0;
+    bool profile_success = false;
     if (success) {
-      double I_prf, var_prf;
-      std::vector<double> line_profile;
-      profile_success = fit_profile1d(projected_intensity,
-                                      tof_z,
-                                      projected_variance,
+      profile_success = fit_profile1d(projected_intensity_out.const_ref(),
+                                      tof_z_out.const_ref(),
+                                      projected_variance_out.const_ref(),
                                       profile_params,
-                                      intensity,
-                                      variance,
+                                      I_sum,
+                                      var_sum,
                                       I_prf,
                                       var_prf,
-                                      line_profile);
-
-      if (profile_success) {
-        DIALS_ASSERT(line_profile.size() == line_profile_out.size());
-        DIALS_ASSERT(projected_intensity.size() == projected_intensity_out.size());
-        for (std::size_t i = 0; i < line_profile.size(); ++i) {
-          line_profile_out[i] = line_profile[i];
-          projected_intensity_out[i] = projected_intensity[i];
-          projected_background_out[i] = projected_background[i];
-          prf_intensity_out = I_prf;
-          prf_variance_out = var_prf;
-          sum_intensity_out = intensity;
-          sum_variance_out = variance;
-        }
-      }
+                                      line_profile_out);
 
     } else {
       profile_success = false;
     }
-    return boost::python::make_tuple(prf_intensity_out,
-                                     prf_variance_out,
-                                     sum_intensity_out,
-                                     sum_variance_out,
-                                     profile_success);
+    return boost::python::make_tuple(I_prf, var_prf, I_sum, var_sum, profile_success);
+  }
+
+  boost::python::tuple calculate_line_profile_for_reflection(
+    dials::af::reflection_table &reflection,
+    Experiment &experiment,
+    ImageSequence &data,
+    const TOFIncidentSpectrumParams &incident_params,
+    const TOFAbsorptionParams &corrections_data,
+    scitbx::af::shared<double> raw_projected_intensity_out,
+    scitbx::af::shared<double> projected_intensity_out,
+    scitbx::af::shared<double> projected_background_out,
+    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> tof_z_out,
+    const bool &apply_lorentz_correction) {
+    /*
+     * Calculates raw_projected_intensity, projected_intensity,
+     * projected_background, sum_intensity, sum_variance
+     */
+    double sum_intensity_out = 0;
+    double sum_variance_out = 0;
+
+    // This is a slight hack to make using current interfaces eaiser
+    // E.g. the shoebox processor
+    DIALS_ASSERT(reflection.size() == 1);
+    dials::af::shared<Shoebox<>> shoeboxes = reflection["shoebox"];
+    dials::model::Shoebox<> shoebox = shoeboxes[0];
+
+    Detector detector = *experiment.get_detector();
+    Scan scan = *experiment.get_scan();
+
+    // Required beam params
+    std::shared_ptr<dxtbx::model::BeamBase> beam_ptr = experiment.get_beam();
+    std::shared_ptr<PolychromaticBeam> beam =
+      std::dynamic_pointer_cast<PolychromaticBeam>(beam_ptr);
+    DIALS_ASSERT(beam != nullptr);
+    vec3<double> unit_s0 = beam->get_unit_s0();
+    double sample_to_source_distance = beam->get_sample_to_source_distance();
+
+    // Required scan params
+    scitbx::af::shared<double> img_tof = scan.get_property<double>("time_of_flight");
+
+    // Required detector params
+    int num_images = data.size();
+    vec2<std::size_t> image_size = detector[0].get_image_size();
+    DIALS_ASSERT(num_images == img_tof.size());
+    int n_panels = detector.size();
+
+    int6 bbox = shoebox.bbox;
+    int panel = shoebox.panel;
+
+    // Copy reflections for incident and empty runs
+    boost::python::dict d;
+    dials::af::reflection_table i_reflection_table =
+      dxtbx::af::flex_table_suite::deepcopy(reflection, d);
+    dials::af::reflection_table e_reflection_table =
+      dxtbx::af::flex_table_suite::deepcopy(reflection, d);
+
+    dials::af::ref<Shoebox<>> i_shoeboxes = i_reflection_table["shoebox"];
+    dials::af::ref<Shoebox<>> e_shoeboxes = e_reflection_table["shoebox"];
+    i_shoeboxes[0].deallocate();
+    e_shoeboxes[0].deallocate();
+
+    ShoeboxProcessor incident_shoebox_processor(
+      i_reflection_table, n_panels, 0, num_images, false);
+
+    ShoeboxProcessor empty_shoebox_processor(
+      e_reflection_table, n_panels, 0, num_images, false);
+
+    // Get shoebox for incident data
+    for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
+      dxtbx::format::Image<double> img =
+        incident_params.incident_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.incident_data.get_mask(img_num);
+
+      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+        n_panels);
+      dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
+        n_panels);
+
+      for (std::size_t i = 0; i < output_data.size(); ++i) {
+        output_data[i] = img.tile(i).data();
+        output_mask[i] = mask.tile(i).data();
+      }
+      incident_shoebox_processor.next_data_only(
+        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+    }
+
+    // Get shoeboxes for empty data
+    for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
+      dxtbx::format::Image<double> img =
+        incident_params.empty_data.get_corrected_data(img_num);
+      dxtbx::format::Image<bool> mask = incident_params.empty_data.get_mask(img_num);
+
+      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+        n_panels);
+      dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
+        n_panels);
+
+      for (std::size_t i = 0; i < output_data.size(); ++i) {
+        output_data[i] = img.tile(i).data();
+        output_mask[i] = mask.tile(i).data();
+      }
+      empty_shoebox_processor.next_data_only(
+        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+    }
+
+    // Mask codes
+    int bg_code = Valid | Background | BackgroundUsed;
+
+    bool success = true;
+    int n_background = 0;
+    int n_signal = 0;
+    double intensity = 0.0;
+    double variance = 0.0;
+
+    scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+    scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
+    std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+    dials::model::Shoebox<> i_shoebox = i_shoeboxes[0];
+    dials::model::Shoebox<> e_shoebox = e_shoeboxes[0];
+
+    // First pass to get, n_signal, n_background
+    // Shoebox data are ordered (z, y, x)
+    for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+      if (!success) {
+        break;
+      }
+      for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+        int panel_y = bbox[2] + y;
+        if (panel_y > image_size[1] || panel_y < 0) {
+          continue;
+        }
+        for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+          int panel_x = bbox[0] + x;
+          if (panel_x > image_size[0] || panel_x < 0) {
+            continue;
+          }
+
+          incident_spectrum[z] += i_shoebox.data(z, y, x);
+          empty_spectrum[z] += e_shoebox.data(z, y, x);
+          n_contrib[z]++;
+
+          int mask = shoebox.mask(z, y, x);
+          if ((mask & Foreground) == Foreground) {
+            if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
+              n_signal++;
+            } else {
+              success = false;
+            }
+          } else if ((mask & bg_code) == bg_code) {
+            n_background++;
+          }
+        }
+      }
+    }
+
+    DIALS_ASSERT(raw_projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_background_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_variance_out.size() == shoebox.zsize());
+    DIALS_ASSERT(tof_z_out.size() == shoebox.zsize());
+
+    // Smooth incident and empty to avoid dividing by a noisy signal
+    scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
+    scitbx::af::shared<double> smoothed_incident =
+      savitzky_golay(incident_spectrum, 7, 2);
+
+    // Second pass to perform actual integration
+    for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+      double intensity_z = 0;
+      double intensity_raw_z = 0;
+      double background_z = 0;
+      double variance_z = 0;
+
+      if (!success) {
+        break;
+      }
+
+      int frame_z = bbox[4] + z;
+      double tof = img_tof[frame_z];
+      tof_z_out[z] = tof;
+      tof *= std::pow(10, -6);  // (s)
+
+      for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+        int panel_y = bbox[2] + y;
+        if (panel_y > image_size[1] || panel_y < 0) {
+          continue;
+        }
+        for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+          int panel_x = bbox[0] + x;
+          if (panel_x > image_size[0] || panel_x < 0) {
+            continue;
+          }
+          // Raw counts
+          double raw_S = shoebox.data(z, y, x);
+          double raw_B = shoebox.background(z, y, x);
+          double n = n_contrib[z];
+          double raw_J = smoothed_incident[z] / n;
+          double raw_E = smoothed_empty[z] / n;
+
+          int mask = shoebox.mask(z, y, x);
+
+          // Normalise by proton charge
+          double sample_pc = incident_params.sample_proton_charge;
+          double incident_pc = incident_params.incident_proton_charge;
+          double empty_pc = incident_params.empty_proton_charge;
+          double S = raw_S / sample_pc;
+          double B = raw_B / sample_pc;
+          double J = raw_J / incident_pc;
+          double E = raw_E / empty_pc;
+
+          // Variances
+          double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+          double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
+                         * (1.0 + double(n_signal) / double(n_background));
+          double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+          double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
+
+          // Lorentz correction
+          scitbx::vec3<double> s1 =
+            detector[panel].get_pixel_lab_coord(scitbx::vec2<double>(panel_x, panel_y));
+          double distance = s1.length() + sample_to_source_distance;
+          distance *= std::pow(10, -3);  // (m)
+          double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
+          double two_theta = detector[panel].get_two_theta_at_pixel(
+            unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+          double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+          double L = sin_two_theta_sq / std::pow(wl, 4);
+
+          // Spherical absorption correction
+          // for image data and incident data
+          double two_theta_deg = two_theta * (180 / pi);
+          int two_theta_idx = static_cast<int>(two_theta_deg / 10);
+          double sample_muR =
+            (corrections_data.sample_linear_scattering_c
+             + (corrections_data.sample_linear_absorption_c / 1.8) * wl)
+            * corrections_data.sample_radius;
+          double T = tof_pixel_spherical_absorption_correction(
+            sample_muR, two_theta, two_theta_idx);
+
+          // Pixel data will be divided by the absorption correction
+          if (T < 1e-7) {
+            continue;
+          }
+          double incident_muR =
+            (corrections_data.incident_linear_scattering_c
+             + (corrections_data.incident_linear_absorption_c / 1.8) * wl)
+            * corrections_data.incident_radius;
+          double J_T = tof_pixel_spherical_absorption_correction(
+            incident_muR, two_theta, two_theta_idx);
+
+          // Pixel data will be divided by absorption correction
+          if (J_T < 1e-7) {
+            continue;
+          }
+
+          // Net signal
+          double I0 = S - B - E;
+          double var_I0 = var_S + var_B + var_E;
+
+          J /= J_T;
+
+          if (J < 1e-7) {
+            continue;
+          }
+
+          var_J /= (J_T * J_T);
+
+          // Apply Lorentz correction and normalise by incident spectrum
+          double I, var_I;
+          if (apply_lorentz_correction) {
+            I = L * I0 / (J * T);
+
+            var_I = (L * L / (J * J * T * T)) * var_I0
+                    + (L * L * I0 * I0 / (J * J * J * J * T * T)) * var_J;
+          } else {
+            I = I0 / (J * T);
+            var_I = (1 / (J * J * T * T)) * var_I0
+                    + (I0 * I0 / (J * J * J * J * T * T)) * var_J;
+          }
+
+          // Accumulate if pixel in foreground & valid
+          if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
+              && (mask & Overlapped) == 0) {
+            intensity += I;
+            variance += var_I;
+          } else if ((mask & Foreground) == Foreground) {
+            success = false;
+            break;
+          }
+        }
+        raw_projected_intensity_out[z] = intensity_raw_z;
+        projected_intensity_out[z] = intensity_z;
+        projected_variance_out[z] = variance_z;
+        projected_background_out[z] = background_z;
+      }
+    }
+
+    return boost::python::make_tuple(sum_intensity_out, sum_variance_out, success);
+  }
+
+  boost::python::tuple calculate_line_profile_for_reflection(
+    dials::af::reflection_table &reflection,
+    Experiment &experiment,
+    ImageSequence &data,
+    const TOFIncidentSpectrumParams &incident_params,
+    const TOFAbsorptionParams &corrections_data,
+    scitbx::af::shared<double> raw_projected_intensity_out,
+    scitbx::af::shared<double> projected_intensity_out,
+    scitbx::af::shared<double> projected_background_out,
+    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> tof_z_out,
+    scitbx::af::shared<double> line_profile_out,
+    const bool &apply_lorentz_correction,
+    const TOFProfile1DParams &profile_params) {
+    /*
+     * Calculates raw_projected_intensity, projected_intensity, line_profile
+     * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
+     */
+
+    boost::python::tuple result =
+      calculate_line_profile_for_reflection(reflection,
+                                            experiment,
+                                            data,
+                                            incident_params,
+                                            corrections_data,
+                                            raw_projected_intensity_out,
+                                            projected_intensity_out,
+                                            projected_background_out,
+                                            projected_variance_out,
+                                            tof_z_out,
+                                            apply_lorentz_correction);
+
+    double I_sum = boost::python::extract<double>(result[0]);
+    double var_sum = boost::python::extract<double>(result[1]);
+    bool success = boost::python::extract<bool>(result[2]);
+
+    double I_prf = 0;
+    double var_prf = 0;
+    bool profile_success = false;
+    if (success) {
+      profile_success = fit_profile1d(projected_intensity_out.const_ref(),
+                                      tof_z_out.const_ref(),
+                                      projected_variance_out.const_ref(),
+                                      profile_params,
+                                      I_sum,
+                                      var_sum,
+                                      I_prf,
+                                      var_prf,
+                                      line_profile_out);
+
+    } else {
+      profile_success = false;
+    }
+    return boost::python::make_tuple(I_prf, var_prf, I_sum, var_sum, profile_success);
   }
 
 }}  // namespace dials::algorithms
