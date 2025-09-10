@@ -1,24 +1,20 @@
 from __future__ import annotations
 
-import collections
 import copy
 import json
 import logging
-import math
 import random
 import sys
 
 import iotbx.phil
 from cctbx import sgtbx
-from cctbx.sgtbx.bravais_types import bravais_lattice
-from cctbx.sgtbx.lattice_symmetry import metric_subgroups
-from dxtbx.model import ExperimentList
 from libtbx import Auto
 
 import dials.util
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
 from dials.algorithms.symmetry import (
-    median_unit_cell,
+    get_subset_for_symmetry,
+    prepare_datasets_for_symmetry_analysis,
     resolution_filter_from_reflections_experiments,
 )
 from dials.algorithms.symmetry.absences.laue_groups_info import (
@@ -32,11 +28,6 @@ from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
 from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
 from dials.util import log, tabulate
-from dials.util.exclude_images import (
-    exclude_image_ranges_from_scans,
-    get_selection_for_valid_image_ranges,
-)
-from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -76,6 +67,13 @@ relative_length_tolerance = 0.05
 
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
+
+exclude_inconsistent_unit_cells = False
+  .type = bool
+  .help = "Exclude datasets with unit cells that cannot be mapped to a common"
+          "minimum cell, as controlled by the absolute_angle_tolerance and"
+          "relative_length_tolerance parameters. If False, an error will be"
+          "raised instead."
 
 partiality_threshold = 0.4
   .type = float
@@ -119,6 +117,10 @@ output {
     .type = path
   reflections = "symmetrized.refl"
     .type = path
+  excluded = False
+    .type = bool
+  excluded_prefix = "excluded"
+    .type = path
   json = dials.symmetry.json
     .type = path
   html = "dials.symmetry.html"
@@ -128,219 +130,6 @@ output {
 """,
     process_includes=True,
 )
-
-
-def unit_cells_are_similar_to(
-    experiments, unit_cell, relative_length_tolerance, absolute_angle_tolerance
-):
-    return all(
-        expt.crystal.get_unit_cell().is_similar_to(
-            unit_cell,
-            relative_length_tolerance=relative_length_tolerance,
-            absolute_angle_tolerance=absolute_angle_tolerance,
-        )
-        for expt in experiments
-    )
-
-
-def change_of_basis_ops_to_minimum_cell(
-    experiments, max_delta, relative_length_tolerance, absolute_angle_tolerance
-):
-    """
-    Compute change of basis ops to map experiments to the minimum cell
-
-    Map to the minimum cell via the best cell, which appears to guarantee that the
-    resulting minimum cells are consistent.
-
-    Args:
-        experiments (ExperimentList): a list of experiments.
-        reflections (list): a list of reflection tables
-
-    Returns: The experiments and reflections mapped to the minimum cell
-    """
-    logger.info("Mapping all input cells to a common minimum cell")
-    median_cell = median_unit_cell(experiments)
-    unit_cells_are_similar = unit_cells_are_similar_to(
-        experiments, median_cell, relative_length_tolerance, absolute_angle_tolerance
-    )
-    centring_symbols = [
-        bravais_lattice(group=expt.crystal.get_space_group()).centring_symbol
-        for expt in experiments
-    ]
-    if unit_cells_are_similar and len(set(centring_symbols)) == 1:
-        groups = metric_subgroups(
-            experiments[0]
-            .crystal.get_crystal_symmetry()
-            .customized_copy(unit_cell=median_cell),
-            max_delta,
-            enforce_max_delta_for_generated_two_folds=True,
-        )
-        group = groups.result_groups[0]
-        cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
-        cb_ops = [cb_op_best_to_min * group["cb_op_inp_best"]] * len(experiments)
-    else:
-        if len(set(centring_symbols)) > 1:
-            logger.info(
-                f"Multiple lattice centerings in input cells: {', '.join(list(set(centring_symbols)))}.\n"
-                + "Attempting to map to a common minimum cell through the most common lattice group."
-            )
-        else:
-            median_params = ", ".join(f"{i:.2f}" for i in median_cell.parameters())
-            logger.info(
-                f"Some input cells are not sufficiently similar to the median cell:\n  {median_params}\n"
-                + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
-                + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}.\n"
-                + "Attempting to map to a common minimum cell through the most common lattice group."
-            )
-        groups = [
-            metric_subgroups(
-                expt.crystal.get_crystal_symmetry(),
-                max_delta,
-                best_monoclinic_beta=False,
-                enforce_max_delta_for_generated_two_folds=True,
-            )
-            for expt in experiments
-        ]
-        counter = collections.Counter(
-            g.result_groups[0]["best_subsym"].space_group() for g in groups
-        )
-        target_group = counter.most_common()[0][0]
-        cb_ops = []
-        best_cells = []
-        for expt in experiments:
-            groups = metric_subgroups(
-                expt.crystal.get_crystal_symmetry(),
-                max_delta,
-                best_monoclinic_beta=False,
-                enforce_max_delta_for_generated_two_folds=True,
-            )
-            group = None
-            for g in groups.result_groups:
-                if g["best_subsym"].space_group() == target_group:
-                    group = g
-            if group:
-                cb_ops.append(group["cb_op_inp_best"])
-                best_cells.append(group["best_subsym"].unit_cell())
-            else:
-                cb_ops.append(None)
-                logger.info(
-                    f"Couldn't match unit cell to target symmetry:\n"
-                    f"{expt.crystal.get_crystal_symmetry()}\n"
-                    f"Target symmetry: {target_group.info()}"
-                )
-        # now get median best cell
-        from cctbx import uctbx
-
-        uc_params = [flex.double() for i in range(6)]
-        for unit_cell in best_cells:
-            for i, p in enumerate(unit_cell.parameters()):
-                uc_params[i].append(p)
-        overall_best_unit_cell = uctbx.unit_cell(
-            parameters=[flex.median(p) for p in uc_params]
-        )
-        n = 0
-        for i, cb_op in enumerate(cb_ops):
-            if cb_op is not None:
-                best_cell = best_cells[n]
-                n += 1
-                if not best_cell.is_similar_to(
-                    overall_best_unit_cell,
-                    relative_length_tolerance,
-                    absolute_angle_tolerance,
-                ):
-                    best_params = ", ".join(
-                        f"{i:.2f}" for i in overall_best_unit_cell.parameters()
-                    )
-                    this_params = ", ".join(f"{i:.2f}" for i in best_cell.parameters())
-                    logger.info(
-                        f"Unable to map input cell for dataset {i} to a minimum cell through\n"
-                        + f"a consistent best cell in space group {target_group.info()}.\n"
-                        + f"Incompatible best cells:\n  {best_params},\n  {this_params},\n"
-                        + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
-                        + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}"
-                    )
-                    cb_ops[i] = None
-        if not any(cb_ops):
-            raise ValueError(
-                "Exiting symmetry analysis: Unable to map any cells to a minimum cell through a consistent best cell"
-            )
-
-        ref_expts = ExperimentList(
-            [expt for expt, cb_op in zip(experiments, cb_ops) if cb_op]
-        ).change_basis(list(filter(None, cb_ops)))
-        cb_op_ref_min = (
-            ref_expts[0]
-            .crystal.get_crystal_symmetry()
-            .customized_copy(unit_cell=median_unit_cell(ref_expts))
-            .change_of_basis_op_to_minimum_cell()
-        )
-        cb_ops = [cb_op_ref_min * cb_op if cb_op else None for cb_op in cb_ops]
-    return cb_ops
-
-
-def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
-    """
-    Apply the given change of basis ops to the input experiments and reflections
-
-    Args:
-        experiments (ExperimentList): a list of experiments.
-        reflections (list): a list of reflection tables
-        change_of_basis_ops (list): a list of cctbx.sgtbx.change_of_basis_op
-
-    Returns: The experiments and reflections after application of the change of basis ops
-    """
-
-    for expt, refl, cb_op_inp_min in zip(experiments, reflections, change_of_basis_ops):
-        refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
-        expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
-        expt.crystal.set_space_group(sgtbx.space_group())
-    return experiments, reflections
-
-
-def eliminate_sys_absent(experiments, reflections):
-    for i, expt in enumerate(experiments):
-        if expt.crystal.get_space_group().n_ltr() > 1:
-            effective_group = (
-                expt.crystal.get_space_group().build_derived_reflection_intensity_group(
-                    anomalous_flag=True
-                )
-            )
-            sys_absent_flags = effective_group.is_sys_absent(
-                reflections[i]["miller_index"]
-            )
-            if sys_absent_flags.count(True):
-                reflections[i] = reflections[i].select(~sys_absent_flags)
-                logger.info(
-                    "Eliminating %i systematic absences for experiment %s",
-                    sys_absent_flags.count(True),
-                    expt.identifier,
-                )
-    return reflections
-
-
-def get_subset_for_symmetry(experiments, reflection_tables, exclude_images=None):
-    """Select an image range for symmetry analysis, or just select
-    the first 360 degrees of data."""
-    refls_for_sym = []
-    if exclude_images:
-        experiments = exclude_image_ranges_from_scans(
-            reflection_tables, experiments, exclude_images
-        )
-        for refl, exp in zip(reflection_tables, experiments):
-            sel = get_selection_for_valid_image_ranges(refl, exp)
-            refls_for_sym.append(refl.select(sel))
-    else:
-        for expt, refl in zip(experiments, reflection_tables):
-            sel = get_selection_for_valid_image_ranges(refl, expt)
-            if expt.scan and not sel.count(False):
-                # Use first 360 degrees if <360 deg i.e. first measured data,
-                # but only if no reflections have been explicitly excluded
-                # already
-                scan_end = int(math.ceil(360 / abs(expt.scan.get_oscillation()[1])))
-                if scan_end < len(expt.scan):
-                    sel = refl["xyzobs.px.value"].parts()[2] <= scan_end
-            refls_for_sym.append(refl.select(sel))
-    return refls_for_sym
 
 
 def symmetry(experiments, reflection_tables, params=None):
@@ -363,42 +152,18 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info("Performing Laue group analysis")
         logger.info("")
 
-        # Transform models into miller arrays
         n_datasets = len(experiments)
 
-        # Map experiments and reflections to minimum cell
-        # Eliminate reflections that are systematically absent due to centring
-        # of the lattice, otherwise they would lead to non-integer miller indices
-        # when reindexing to a primitive setting
-        cb_ops = change_of_basis_ops_to_minimum_cell(
-            experiments,
-            params.lattice_symmetry_max_delta,
-            params.relative_length_tolerance,
-            params.absolute_angle_tolerance,
-        )
-        if None in cb_ops:
-            indices = [str(i + 1) for i, v in enumerate(cb_ops) if v is None]
-            raise ValueError(
-                "Exiting symmetry analysis: Unable to match all cells to target symmetry.\n"
-                + "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
-                + "if the cells are similar enough.\n"
-                + f"Alternatively, remove dataset number{'s' if len(indices) > 1 else ''} {', '.join(indices)} from the input"
+        datasets, experiments, refls_for_sym, cb_ops = (
+            prepare_datasets_for_symmetry_analysis(
+                experiments,
+                reflection_tables,
+                params,
+                outlier_rejection_after_filter=True,
+                anomalous=True,
             )
-        reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
-        experiments, reflection_tables = apply_change_of_basis_ops(
-            experiments, reflection_tables, cb_ops
         )
 
-        refls_for_sym = get_subset_for_symmetry(
-            experiments, reflection_tables, params.exclude_images
-        )
-
-        datasets = filtered_arrays_from_experiments_reflections(
-            experiments,
-            refls_for_sym,
-            outlier_rejection_after_filter=True,
-            partiality_threshold=params.partiality_threshold,
-        )
         if len(datasets) != n_datasets:
             raise ValueError(
                 """Some datasets have no reflection after prefiltering, please check
@@ -409,9 +174,6 @@ def symmetry(experiments, reflection_tables, params=None):
         # been made, so don't apply any further sigma correction
         apply_sigma_correction = not all(s for s in experiments.scaling_models())
 
-        datasets = [
-            ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
-        ]
         result = LaueGroupAnalysis(
             datasets,
             normalisation=params.normalisation,

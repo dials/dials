@@ -9,7 +9,7 @@ from cctbx import crystal, miller, uctbx
 from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
-from dials.command_line.symmetry import median_unit_cell
+from dials.algorithms.symmetry import median_unit_cell
 from dials.pychef import interpret_images_to_doses_options
 from dials.report.plots import d_star_sq_to_d_ticks
 from dials.util.export_mtz import MTZWriterBase
