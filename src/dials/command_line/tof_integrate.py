@@ -25,6 +25,7 @@ from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
     TOFAbsorptionParams,
+    TOFProfile1DParams,
     extract_shoeboxes_to_reflection_table,
     integrate_reflection_table,
     integrate_reflection_table_profile1d,
@@ -207,10 +208,17 @@ def calculate_shoebox_masks(experiment, reflections, method):
 def integrate_reflection_table_for_experiment_profile1d(
     expt, expt_reflections, expt_data, apply_lorentz, **kwargs
 ):
-    alpha = 1.0
-    beta = 0.2
+    alpha = 0.03
+    beta = 0.03
     sigma = 1.0
     A = 1.0
+    alpha_min = 0.029
+    alpha_max = 1.0
+    beta_min = 0.0
+    beta_max = 1.0
+    profile_params = TOFProfile1DParams(
+        A, alpha, alpha_min, alpha_max, beta, beta_min, beta_max
+    )
 
     if len(kwargs) == 0:
         if apply_lorentz:
@@ -218,7 +226,7 @@ def integrate_reflection_table_for_experiment_profile1d(
         else:
             logger.info("    Integrating reflections")
         integrate_reflection_table_profile1d(
-            expt_reflections, expt, expt_data, apply_lorentz, A, alpha, beta, sigma
+            expt_reflections, expt, expt_data, apply_lorentz, profile_params
         )
 
         return expt_reflections
@@ -267,10 +275,7 @@ def integrate_reflection_table_for_experiment_profile1d(
             kwargs["incident_proton_charge"],
             kwargs["empty_proton_charge"],
             apply_lorentz,
-            A,
-            alpha,
-            beta,
-            sigma,
+            profile_params,
         )
         return expt_reflections
 
