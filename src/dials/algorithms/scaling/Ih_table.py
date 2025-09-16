@@ -516,7 +516,7 @@ class IhTableBlock:
         """Create empty datastructures to which data can later be added."""
         self.Ih_table = pd.DataFrame()
         self.block_selections = [None] * n_datasets
-        self.h_index_matrix = sparse.matrix(n_refl, n_groups)
+        self.h_index_matrix = sparse.matrix(int(n_refl), n_groups)
         self._setup_info = {"next_row": 0, "next_dataset": 0, "setup_complete": False}
         self.dataset_info = {}
         self.n_datasets = n_datasets
