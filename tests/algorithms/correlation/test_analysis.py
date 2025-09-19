@@ -1738,7 +1738,7 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
     ],
 )
 def test_optics_classification_definitive(coordinates, expected_labels, initial_guess):
-    _, _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
+    _, _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
         coordinates, initial_guess=initial_guess
     )
 
@@ -1754,7 +1754,7 @@ def test_optics_classification_definitive(coordinates, expected_labels, initial_
     ],
 )
 def test_optics_classification_variable(coordinates, expected_labels, initial_guess):
-    _, _, _, actual_labels, _ = CorrelationMatrix.minimise_DB_score(
+    _, _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
         coordinates, initial_guess=initial_guess
     )
 
@@ -1777,5 +1777,8 @@ def test_optics_classification_variable(coordinates, expected_labels, initial_gu
         else:
             changed_classification.append(i)
 
-    assert noise_change_count < 6
+    print(actual_labels)
+    print(expected_labels)
+
+    assert noise_change_count < 0.03 * len(coordinates)  # 3% error in noise permitted
     assert len(changed_classification) == 0
