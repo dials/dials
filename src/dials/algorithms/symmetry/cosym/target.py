@@ -337,6 +337,9 @@ class Target:
         if self._weights:
             ## use the counts as weights
             wij_matrix = wij_matrix.toarray().astype(np.float64)
+            wij_matrix_sel = wij_matrix[wij_matrix > 0]
+            logger.info("Mean number of effective common reflections:")
+            logger.info(np.mean(wij_matrix_sel))
             if self._weights == "standard_error":
                 # N.B. using effective n due to sigma weighting, which can be below 2
                 # but approches 1 in the limit, so rather say efective sample size
