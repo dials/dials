@@ -53,5 +53,6 @@ tabulate
 tqdm
 urllib3
 wxpython>=4.2.2
+xarray
 xz
 zlib
