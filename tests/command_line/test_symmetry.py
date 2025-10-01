@@ -13,18 +13,19 @@ from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 from dxtbx.serialize import load
 from dxtbx.util import ersatz_uuid4
 
-from dials.algorithms.symmetry.cosym._generate_test_data import (
-    generate_experiments_reflections,
-)
-from dials.array_family import flex
-from dials.command_line import symmetry
-from dials.command_line.symmetry import (
+from dials.algorithms import symmetry  # import module for mocker
+from dials.algorithms.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
     get_subset_for_symmetry,
     median_unit_cell,
 )
+from dials.algorithms.symmetry.cosym._generate_test_data import (
+    generate_experiments_reflections,
+)
+from dials.array_family import flex
+from dials.command_line import symmetry as dials_symmetry
 from dials.util.exclude_images import exclude_image_ranges_from_scans
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.phil import parse
@@ -516,7 +517,7 @@ def test_few_reflections(dials_data, run_in_tmp_path):
                          directory.
     """
     # Get and use the default parameters for dials.symmetry.
-    params = symmetry.phil_scope.fetch(source=parse("")).extract()
+    params = dials_symmetry.phil_scope.fetch(source=parse("")).extract()
 
     # Use the integrated data from the first ten images of the first sweep.
     data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
@@ -524,7 +525,7 @@ def test_few_reflections(dials_data, run_in_tmp_path):
     reflections = [flex.reflection_table.from_file(data_dir / "11_integrated.refl")]
 
     # Run dials.symmetry on the above data files.
-    symmetry.symmetry(experiments, reflections, params)
+    dials_symmetry.symmetry(experiments, reflections, params)
 
 
 def test_x4wide(dials_data, tmp_path):
