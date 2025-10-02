@@ -405,6 +405,10 @@ def symmetry(experiments, reflection_tables, params=None):
     input data and filtering settings e.g partiality_threshold"""
             )
 
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in experiments.scaling_models())
+
         datasets = [
             ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
@@ -417,6 +421,7 @@ def symmetry(experiments, reflection_tables, params=None):
             relative_length_tolerance=params.relative_length_tolerance,
             absolute_angle_tolerance=params.absolute_angle_tolerance,
             best_monoclinic_beta=params.best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
         logger.info("")
         logger.info(result)
@@ -625,8 +630,7 @@ def run(args=None):
 
     if len(experiments) != len(reflections):
         sys.exit(
-            "Mismatched number of experiments and reflection tables found: %s & %s."
-            % (len(experiments), len(reflections))
+            f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
         )
     try:
         experiments, reflections = assign_unique_identifiers(experiments, reflections)

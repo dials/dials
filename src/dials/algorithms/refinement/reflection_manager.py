@@ -34,8 +34,7 @@ DEG2RAD = math.pi / 180.0
 
 # PHIL
 format_data = {"outlier_phil": outlier_phil_str}
-phil_str = (
-    """
+phil_str = """
     reflections_per_degree = Auto
       .help = "The number of centroids per degree of the sequence to use in"
               "refinement. The default (Auto) uses all reflections unless"
@@ -88,7 +87,7 @@ phil_str = (
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
       .expert_level = 1
-    {
+    {{
       override = statistical stills constant external_deltapsi
         .help = "selection of a strategy to override default weighting behaviour"
         .type = choice
@@ -108,12 +107,10 @@ phil_str = (
         .help = "Weight for the wavelength term in the target function for"
                 "Laue refinement"
         .type = float(value_min = 0)
-    }
+    }}
 
-    %(outlier_phil)s
-"""
-    % format_data
-)
+    {outlier_phil}
+""".format(**format_data)
 phil_scope = parse(phil_str)
 
 
@@ -362,8 +359,9 @@ class ReflectionManagerFactory:
         # check incompatible weighting strategy
         if params.weighting_strategy.override in ["stills", "external_deltapsi"]:
             msg = (
-                'The "{}" weighting strategy is not compatible with ' "scan refinement"
-            ).format(params.weighting_strategy.override)
+                f'The "{params.weighting_strategy.override}" weighting strategy is not compatible with '
+                "scan refinement"
+            )
             raise DialsRefineConfigError(msg)
 
         if params.outlier.algorithm in ("null", None):
@@ -709,8 +707,11 @@ class ReflectionManager:
         # exclude reflections with overloads, as these have worse centroids
         sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
 
+        # exclude reflections marked as not suitable
+        sel3 = ~obs_data.get_flags(obs_data.flags.not_suitable_for_refinement)
+
         # combine selections
-        sel = sel1 & sel2
+        sel = sel1 & sel2 & sel3
         inc = flex.size_t_range(len(obs_data)).select(sel)
         obs_data = obs_data.select(sel)
 
@@ -758,7 +759,7 @@ class ReflectionManager:
             # third test: reject reflections close to the centres of the first and
             # last images in the scan
             if self._scan_margin > 0.0:
-                edge1, edge2 = [e + 0.5 for e in exp.scan.get_image_range()]
+                edge1, edge2 = (e + 0.5 for e in exp.scan.get_image_range())
                 edge1 = exp.scan.get_angle_from_image_index(edge1, deg=False)
                 edge1 += self._scan_margin
                 edge2 = exp.scan.get_angle_from_image_index(edge2, deg=False)
@@ -894,7 +895,7 @@ class ReflectionManager:
         row_data = five_number_summary(w_y)
         rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_phi)
-        rows.append(["Phi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data])
+        rows.append(["Phi weights"] + [f"{e * DEG2RAD**2:.4g}" for e in row_data])
 
         logger.info(msg)
         logger.info(dials.util.tabulate(rows, header, numalign="right") + "\n")
@@ -950,8 +951,11 @@ class StillsReflectionManager(ReflectionManager):
         # exclude reflections with overloads, as these have worse centroids
         sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
 
+        # exclude reflections marked as not suitable
+        sel3 = ~obs_data.get_flags(obs_data.flags.not_suitable_for_refinement)
+
         # combine selections
-        sel = sel1 & sel2
+        sel = sel1 & sel2 & sel3
         inc = flex.size_t_range(len(obs_data)).select(sel)
 
         return inc
@@ -991,9 +995,7 @@ class StillsReflectionManager(ReflectionManager):
         row_data = five_number_summary(w_y)
         rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_delpsi)
-        rows.append(
-            ["DeltaPsi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data]
-        )
+        rows.append(["DeltaPsi weights"] + [f"{e * DEG2RAD**2:.4g}" for e in row_data])
 
         msg = (
             f"\nSummary statistics for {nref} observations" + " matched to predictions:"
@@ -1111,8 +1113,11 @@ class LaueReflectionManager(ReflectionManager):
         # exclude reflections with overloads, as these have worse centroids
         sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
 
+        # exclude reflections marked as not suitable
+        sel3 = ~obs_data.get_flags(obs_data.flags.not_suitable_for_refinement)
+
         # combine selections
-        sel = sel1 & sel2
+        sel = sel1 & sel2 & sel3
         inc = flex.size_t_range(len(obs_data)).select(sel)
 
         return inc
@@ -1161,11 +1166,11 @@ class LaueReflectionManager(ReflectionManager):
 
     def update_residuals(self):
         x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
-        x_calc, y_calc, _ = self._reflections["xyzcal.mm"].parts()
+        x_cal, y_cal, _ = self._reflections["xyzcal.mm"].parts()
         wavelength_obs = self._reflections["wavelength"]
         wavelength_cal = self._reflections["wavelength_cal"]
-        self._reflections["x_resid"] = x_calc - x_obs
-        self._reflections["y_resid"] = y_calc - y_obs
+        self._reflections["x_resid"] = x_cal - x_obs
+        self._reflections["y_resid"] = y_cal - y_obs
         self._reflections["wavelength_resid"] = wavelength_cal - wavelength_obs
         self._reflections["wavelength_resid2"] = (
             self._reflections["wavelength_resid"] ** 2
@@ -1219,16 +1224,32 @@ class TOFReflectionManager(LaueReflectionManager):
 
     def update_residuals(self):
         x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
-        x_calc, y_calc, _ = self._reflections["xyzcal.mm"].parts()
+        x_cal, y_cal, _ = self._reflections["xyzcal.mm"].parts()
         wavelength_obs = self._reflections["wavelength"]
         wavelength_cal = self._reflections["wavelength_cal"]
-        L2 = self._reflections["s1"].norms() * 10**-3
-        self._reflections["x_resid"] = x_calc - x_obs
-        self._reflections["y_resid"] = y_calc - y_obs
+        L1 = self._reflections["s1"].norms() * 10**-3  # (m)
+        self._reflections["x_resid"] = x_cal - x_obs
+        self._reflections["y_resid"] = y_cal - y_obs
         self._reflections["wavelength_resid"] = wavelength_cal - wavelength_obs
         self._reflections["wavelength_resid2"] = (
             self._reflections["wavelength_resid"] ** 2
         )
+
+        L1_cal = flex.double(len(self._reflections))
+        for idx, expt in enumerate(self._experiments):
+            if "imageset_id" in self._reflections:
+                r_expt = self._reflections["imageset_id"] == idx
+            else:
+                r_expt = self._reflections["id"] == idx
+            for i_panel in range(len(expt.detector)):
+                sel = r_expt & (self._reflections["panel"] == i_panel)
+                x_cal_p = x_cal.select(sel)
+                y_cal_p = y_cal.select(sel)
+                s1_cal = expt.detector[i_panel].get_lab_coord(
+                    flex.vec2_double(x_cal_p, y_cal_p)
+                )
+                L1_cal_p = s1_cal.norms() * 10**-3  # (m)
+                L1_cal.set_selected(sel, L1_cal_p)
 
         frame_resid = flex.double(len(self._reflections))
         frame_resid2 = flex.double(len(self._reflections))
@@ -1238,7 +1259,8 @@ class TOFReflectionManager(LaueReflectionManager):
             else:
                 r_expt = self._reflections["id"] == idx
 
-            L_expt = self._sample_to_source_distances[idx] + L2.select(r_expt)
+            L_expt = self._sample_to_source_distances[idx] + L1.select(r_expt)
+            L_expt_cal = self._sample_to_source_distances[idx] + L1_cal.select(r_expt)
 
             tof_obs_expt = (
                 tof_helpers.tof_from_wavelength(L_expt, wavelength_obs.select(r_expt))
@@ -1252,7 +1274,9 @@ class TOFReflectionManager(LaueReflectionManager):
             )
 
             tof_cal_expt = (
-                tof_helpers.tof_from_wavelength(L_expt, wavelength_cal.select(r_expt))
+                tof_helpers.tof_from_wavelength(
+                    L_expt_cal, wavelength_cal.select(r_expt)
+                )
                 * 10**6
             )  # (usec)
             tof_cal_expt.set_selected(

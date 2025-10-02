@@ -38,8 +38,8 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path)
 
     # Combine experiments. Write PHIL file to avoid "command line is too long" error on Windows
     with open(tmp_path / "input.phil", "w") as f:
-        f.writelines((f"input.reflections={i}" + os.linesep for i in reflections))
-        f.writelines((f"input.experiments={i}" + os.linesep for i in experiments))
+        f.writelines(f"input.reflections={i}" + os.linesep for i in reflections)
+        f.writelines(f"input.experiments={i}" + os.linesep for i in experiments)
     result = subprocess.run(
         [shutil.which("dials.combine_experiments"), "input.phil"],
         cwd=tmp_path,
@@ -64,17 +64,17 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path)
     )
     assert not result.returncode
     assert (tmp_path / "cluster_unit_cell.png").is_file()
-    assert (tmp_path / "cluster_0.refl").is_file()
-    assert (tmp_path / "cluster_0.expt").is_file()
-    expts = load.experiment_list(tmp_path / "cluster_0.expt", check_format=False)
-    assert len(expts) == 101
     assert (tmp_path / "cluster_1.refl").is_file()
     assert (tmp_path / "cluster_1.expt").is_file()
     expts = load.experiment_list(tmp_path / "cluster_1.expt", check_format=False)
-    assert len(expts) == 1
+    assert len(expts) == 101
     assert (tmp_path / "cluster_2.refl").is_file()
     assert (tmp_path / "cluster_2.expt").is_file()
     expts = load.experiment_list(tmp_path / "cluster_2.expt", check_format=False)
+    assert len(expts) == 1
+    assert (tmp_path / "cluster_3.refl").is_file()
+    assert (tmp_path / "cluster_3.expt").is_file()
+    expts = load.experiment_list(tmp_path / "cluster_3.expt", check_format=False)
     assert len(expts) == 1
 
     result = subprocess.run(
@@ -92,8 +92,8 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path)
 
     # Write PHIL file to avoid "command line is too long" error on Windows
     with open(tmp_path / "input.phil", "w") as f:
-        f.writelines((f"input.reflections={i}" + os.linesep for i in reflections))
-        f.writelines((f"input.experiments={i}" + os.linesep for i in experiments))
+        f.writelines(f"input.reflections={i}" + os.linesep for i in reflections)
+        f.writelines(f"input.experiments={i}" + os.linesep for i in experiments)
     result = subprocess.run(
         [
             shutil.which("dials.cluster_unit_cell"),

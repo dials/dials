@@ -102,7 +102,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
             "algorithm=ellipsoid",
             f"ellipsoid.rlp_mosaicity={model}",
             "n_macro_cycles=2",
-            f"output.history={tmp_path /'history.json'}",
+            f"output.history={tmp_path / 'history.json'}",
             "max_iter=100",
             "LL_tolerance=1e-3",
         ],

@@ -24,7 +24,7 @@ def metric_supergroup(group):
 
 
 def groups_cache(fn):
-    class MultiClassCache(object):
+    class MultiClassCache:
         "A set of caches for different bravais types"
 
         instances = {}
@@ -190,9 +190,9 @@ class SymmetryHandler:
             target_space_group = target_space_group.build_derived_patterson_group()
 
         if unit_cell is not None:
-            assert (
-                space_group
-            ), "space_group must be provided in combination with unit_cell"
+            assert space_group, (
+                "space_group must be provided in combination with unit_cell"
+            )
 
             self.target_symmetry_inp = crystal.symmetry(
                 unit_cell=unit_cell, space_group=target_space_group

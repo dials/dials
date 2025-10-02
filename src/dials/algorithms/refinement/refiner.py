@@ -64,43 +64,42 @@ phil_scope = parse(
     """
 refinement
   .help = "Parameters to configure the refinement"
-{
+{{
 
   mp
     .expert_level = 2
-  {
+  {{
     nproc = 1
       .type = int(value_min=1)
       .help = "The number of processes to use. Not all choices of refinement"
               "engine support nproc > 1. Where multiprocessing is possible,"
               "it is helpful only in certain circumstances, so this is not"
               "recommended for typical use."
-  }
+  }}
 
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"
-  {
-    %(parameterisation_phil)s
-  }
+  {{
+    {parameterisation_phil}
+  }}
 
-  %(refinery_phil)s
+  {refinery_phil}
 
   target
     .help = "Parameters to configure the target function"
     .expert_level = 1
-  {
-    %(target_phil)s
-  }
+  {{
+    {target_phil}
+  }}
 
   reflections
     .help = "Parameters used by the reflection manager"
-  {
-    %(reflections_phil)s
-  }
+  {{
+    {reflections_phil}
+  }}
 
-}
-"""
-    % format_data,
+}}
+""".format(**format_data),
     process_includes=True,
 )
 
@@ -208,10 +207,8 @@ def _trim_scans_to_observations(experiments, reflections):
             im_stop = min(obs_stop, stop)
 
             logger.warning(
-                "The reflections for experiment {0} do not fill the scan range. The scan will be trimmed "
-                "to images {{{1},{2}}} to match the range of observed data".format(
-                    iexp, im_start, im_stop
-                )
+                f"The reflections for experiment {iexp} do not fill the scan range. The scan will be trimmed "
+                f"to images {{{im_start},{im_stop}}} to match the range of observed data"
             )
 
             # Ensure the scan is unique to this experiment and set trimmed limits

@@ -20,6 +20,7 @@ def test_against_dials_integrate(dials_data, tmp_path):
             dials_data("insulin_processed", pathlib=True) / "refined.refl",
             "mp.njobs=1",
             "mp.nproc=1",
+            "scan_range=1,2",
         ),
         cwd=tmp_path,
         capture_output=True,
@@ -30,15 +31,14 @@ def test_against_dials_integrate(dials_data, tmp_path):
             shutil.which("dev.dials.simple_integrate"),
             dials_data("insulin_processed", pathlib=True) / "refined.expt",
             dials_data("insulin_processed", pathlib=True) / "refined.refl",
+            "scan_range=1,2",
         ),
         cwd=tmp_path,
         capture_output=True,
     ).check_returncode()
 
-    simple_refl = flex.reflection_table.from_msgpack_file(
-        tmp_path / "simple_integrated.refl"
-    )
-    dials_refl = flex.reflection_table.from_msgpack_file(tmp_path / "integrated.refl")
+    simple_refl = flex.reflection_table.from_file(tmp_path / "simple_integrated.refl")
+    dials_refl = flex.reflection_table.from_file(tmp_path / "integrated.refl")
 
     matches = dials_refl.match_with_reference(simple_refl)[0]
     dials_refl = dials_refl.select(matches)

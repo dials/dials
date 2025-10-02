@@ -66,15 +66,10 @@ output.composite_output = True
 
 
 @pytest.mark.parametrize("composite_output", [True, False])
-def test_cspad_cbf_in_memory(dials_regression: Path, tmp_path, composite_output):
-    # Check the data files for this test exist
-    image_path = Path(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858801.cbf",
+def test_cspad_cbf_in_memory(dials_data: Path, tmp_path, composite_output):
+    image_path = str(
+        dials_data("image_examples") / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     )
-    assert image_path.is_file()
 
     tmp_path.joinpath("process_lcls.phil").write_text(cspad_cbf_in_memory_phil)
 

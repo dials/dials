@@ -140,7 +140,8 @@ def _mmtbx_intensity_from_structure(
     if wavelength:
         xray_structure.set_inelastic_form_factors(photon=wavelength, table="sasaki")
     params = fmodel_phil.extract()
-    params.high_resolution = d_min
+    if d_min:
+        params.high_resolution = d_min
     params.fmodel.k_sol = k_sol
     params.fmodel.b_sol = b_sol
     if wavelength:

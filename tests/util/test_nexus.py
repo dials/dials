@@ -1,26 +1,24 @@
 from __future__ import annotations
 
-from pathlib import Path
 
-
-def test_run(dials_regression: Path, run_in_tmp_path):
-    from os.path import join
-
+def test_run(dials_data, run_in_tmp_path):
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     from dials.array_family import flex
     from dials.command_line.export import phil_scope
     from dials.util.nexus import dump, load
 
-    path = join(dials_regression, "nexus_test_data")
+    data_dir = dials_data("misc_regression", pathlib=True)
 
     # Read the experiments
     experiments1 = ExperimentListFactory.from_json_file(
-        join(path, "refined_experiments.json")
+        str(data_dir / "nexus-refined.expt"), check_format=False
     )
 
     # Read the reflections
-    reflections1 = flex.reflection_table.from_file(join(path, "integrated.pickle"))
+    reflections1 = flex.reflection_table.from_file(
+        str(data_dir / "nexus-integrated.refl")
+    )
 
     # Delete some columns for the test
     del reflections1["s1"]

@@ -7,9 +7,16 @@ from __future__ import annotations
 import logging
 import math
 import pickle
-from typing import Iterable, Tuple
+from collections import defaultdict
+from collections.abc import Iterable
+from copy import deepcopy
+
+import numpy as np
+from scipy.signal import find_peaks
+from scipy.spatial import cKDTree
 
 import libtbx
+from dxtbx import flumpy
 from dxtbx.format.image import ImageBool
 from dxtbx.imageset import ImageSequence, ImageSet
 from dxtbx.model import ExperimentList
@@ -86,9 +93,7 @@ class ExtractPixelsFromImage:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
         logger.debug(
-            "Number of masked pixels for image %i: %i",
-            index,
-            sum(m.count(False) for m in mask),
+            f"Number of masked pixels for image {index}: {sum(m.count(False) for m in mask)}",
         )
 
         # Add the images to the pixel lists
@@ -154,13 +159,10 @@ class ExtractPixelsFromImage:
         # Print some info
         if self.compute_mean_background:
             logger.info(
-                "Found %d strong pixels on image %d with average background %f",
-                num_strong,
-                frame + 1,
-                average_background,
+                f"Found {num_strong} strong pixels on image {frame + 1} with average background {average_background}",
             )
         else:
-            logger.info("Found %d strong pixels on image %d", num_strong, frame + 1)
+            logger.info(f"Found {num_strong} strong pixels on image {frame + 1}")
 
         # Return the result
         return pixel_list
@@ -271,7 +273,7 @@ def pixel_list_to_shoeboxes(
     min_spot_size: int,
     max_spot_size: int,
     write_hot_pixel_mask: bool,
-) -> Tuple[flex.shoebox, Tuple[flex.size_t, ...]]:
+) -> tuple[flex.shoebox, tuple[flex.size_t, ...]]:
     """Convert a pixel list to shoeboxes"""
     # Extract the pixel lists into a list of reflections
     shoeboxes = flex.shoebox()
@@ -295,7 +297,7 @@ def pixel_list_to_shoeboxes(
             shoeboxes.extend(creator.result())
             spotsizes.extend(creator.spot_size())
             hp.extend(creator.hot_pixels())
-    logger.info("\nExtracted %d spots", len(shoeboxes))
+    logger.info(f"\nExtracted {len(shoeboxes)} spots")
 
     # Get the unallocated spots and print some info
     selection = shoeboxes.is_allocated()
@@ -303,8 +305,8 @@ def pixel_list_to_shoeboxes(
     ntoosmall = (spotsizes < min_spot_size).count(True)
     ntoolarge = (spotsizes > max_spot_size).count(True)
     assert ntoosmall + ntoolarge == selection.count(False)
-    logger.info("Removed %d spots with size < %d pixels", ntoosmall, min_spot_size)
-    logger.info("Removed %d spots with size > %d pixels", ntoolarge, max_spot_size)
+    logger.info(f"Removed {ntoosmall} spots with size < {min_spot_size} pixels")
+    logger.info(f"Removed {ntoolarge} spots with size > {max_spot_size} pixels")
 
     # Return the shoeboxes
     return shoeboxes, hotpixels
@@ -316,11 +318,11 @@ def shoeboxes_to_reflection_table(
     """Filter shoeboxes and create reflection table"""
     # Calculate the spot centroids
     centroid = shoeboxes.centroid_valid()
-    logger.info("Calculated %d spot centroids", len(shoeboxes))
+    logger.info(f"Calculated {len(shoeboxes)} spot centroids")
 
     # Calculate the spot intensities
     intensity = shoeboxes.summed_intensity()
-    logger.info("Calculated %d spot intensities", len(shoeboxes))
+    logger.info(f"Calculated {len(shoeboxes)} spot intensities")
 
     # Create the observations
     observed = flex.observation(shoeboxes.panels(), centroid, intensity)
@@ -343,7 +345,7 @@ def pixel_list_to_reflection_table(
     min_spot_size: int,
     max_spot_size: int,
     write_hot_pixel_mask: bool,
-) -> Tuple[flex.shoebox, Tuple[flex.size_t, ...]]:
+) -> tuple[flex.shoebox, tuple[flex.size_t, ...]]:
     """Convert pixel list to reflection table"""
     shoeboxes, hot_pixels = pixel_list_to_shoeboxes(
         imageset,
@@ -459,7 +461,7 @@ class ExtractSpots:
             mp_chunksize = self._compute_chunksize(
                 len(imageset), mp_njobs * mp_nproc, self.min_chunksize
             )
-            logger.info("Setting chunksize=%i", mp_chunksize)
+            logger.info(f"Setting chunksize={mp_chunksize}")
 
         len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
@@ -492,13 +494,10 @@ class ExtractSpots:
         logger.info("Extracting strong pixels from images")
         if mp_njobs > 1:
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n",
-                mp_method,
-                mp_njobs,
-                mp_nproc,
+                f" Using {mp_method} with {mp_njobs} parallel job(s) and {mp_nproc} processes per node\n"
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+            logger.info(f" Using multiprocessing with {mp_nproc} parallel job(s)\n")
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
@@ -555,7 +554,7 @@ class ExtractSpots:
             mp_chunksize = self._compute_chunksize(
                 len(imageset), mp_njobs * mp_nproc, self.min_chunksize
             )
-            logger.info("Setting chunksize=%i", mp_chunksize)
+            logger.info(f"Setting chunksize={mp_chunksize}")
 
         len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
@@ -588,13 +587,10 @@ class ExtractSpots:
         logger.info("Extracting strong spots from images")
         if mp_njobs > 1:
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n",
-                mp_method,
-                mp_njobs,
-                mp_nproc,
+                f" Using {mp_method} with {mp_njobs} parallel job(s) and {mp_nproc} processes per node\n"
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+            logger.info(f" Using multiprocessing with {mp_nproc} parallel job(s)\n")
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
@@ -700,7 +696,7 @@ class SpotFinder:
         for j, imageset in enumerate(imagesets):
             # Find the strong spots in the sequence
             logger.info(
-                "-" * 80 + "\nFinding strong spots in imageset %d\n" + "-" * 80, j
+                "-" * 80 + f"\nFinding strong spots in imageset {j}\n" + "-" * 80
             )
             table, hot_mask = self._find_spots_in_imageset(imageset)
 
@@ -720,8 +716,8 @@ class SpotFinder:
                     if experiment.identifier:
                         table.experiment_identifiers()[j] = experiment.identifier
             missed = table["id"] == -1
-            assert missed.count(True) == 0, "Failed to remap {} experiment IDs".format(
-                missed.count(True)
+            assert missed.count(True) == 0, (
+                f"Failed to remap {missed.count(True)} experiment IDs"
             )
 
             reflections.extend(table)
@@ -805,12 +801,10 @@ class SpotFinder:
                 raise Sorry("Scan range must be in ascending order")
             elif j0 < max_scan_range[0] or j1 > max_scan_range[1]:
                 raise Sorry(
-                    "Scan range must be within image range {}..{}".format(
-                        max_scan_range[0] + 1, max_scan_range[1]
-                    )
+                    f"Scan range must be within image range {max_scan_range[0] + 1}..{max_scan_range[1]}"
                 )
 
-            logger.info("\nFinding spots in image %s to %s...", j0, j1)
+            logger.info(f"\nFinding spots in image {j0} to {j1}...")
             j0 -= 1
             if isinstance(imageset, ImageSequence):
                 j0 -= imageset.get_array_range()[0]
@@ -847,7 +841,7 @@ class SpotFinder:
                     for i in range(len(hp)):
                         hm[hp[i]] = False
                     num_hot += len(hp)
-            logger.info("Found %d possible hot pixel(s)", num_hot)
+            logger.info(f"Found {num_hot} possible hot pixel(s)")
 
         else:
             hot_mask = None
@@ -884,6 +878,7 @@ class TOFSpotFinder(SpotFinder):
         min_spot_size=1,
         max_spot_size=20,
         min_chunksize=50,
+        rs_proximity_threshold_multiplier=None,
     ):
         super().__init__(
             threshold_function=threshold_function,
@@ -908,6 +903,7 @@ class TOFSpotFinder(SpotFinder):
         )
 
         self.experiments = experiments
+        self.rs_proximity_threshold_multiplier = rs_proximity_threshold_multiplier
 
     def _correct_centroid_tof(self, reflections):
         """
@@ -916,11 +912,114 @@ class TOFSpotFinder(SpotFinder):
         centroid for spallation sources.
         """
 
-        x, y, tof = reflections["xyzobs.px.value"].parts()
-        peak_x, peak_y, peak_tof = reflections["shoebox"].peak_coordinates().parts()
+        x, y, _ = reflections["xyzobs.px.value"].parts()
+        _, _, peak_tof = reflections["shoebox"].peak_coordinates().parts()
         reflections["xyzobs.px.value"] = flex.vec3_double(x, y, peak_tof)
 
         return reflections
+
+    def _filter_reflections_by_rs_proximity(
+        self, reflections, threshold_multiplier=0.5
+    ):
+        """
+        Calculates distances between reflections in reciprocal space.
+        A histogram of these distances is used to estimate erroneous reflections.
+        For reflections in closer proximity than the distance to
+        the first peak * threshold_multiplier, only the reflection with the
+        largest bounding box is retained.
+        """
+
+        def find(parent, i):
+            if parent[i] != i:
+                parent[i] = find(parent, parent[i])
+            return parent[i]
+
+        def union(parent, i, j):
+            pi, pj = find(parent, i), find(parent, j)
+            if pi != pj:
+                parent[pi] = pj
+
+        def calculate_threshold(points, threshold_multiplier):
+            """
+            Threshold is based on a histogram of distances in reciprocal space
+            and taking the distance to the first peak * threshold_multiplier
+            """
+
+            # Sample points for efficiency
+            sample_size = min(1000, len(points))
+            sample_indices = np.random.choice(
+                len(points), size=sample_size, replace=False
+            )
+            sample_points = points[sample_indices]
+            sample_tree = cKDTree(sample_points)
+            sample_pairs = sample_tree.query_pairs(r=5)
+            pair_dists = np.array(
+                [
+                    np.linalg.norm(sample_points[i] - sample_points[j])
+                    for i, j in sample_pairs
+                ]
+            )
+
+            hist, bin_edges = np.histogram(pair_dists, bins=1000)
+            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+            peaks, _ = find_peaks(hist, prominence=0.05 * np.max(hist))
+
+            threshold = bin_centers[peaks[0]] * threshold_multiplier
+            return threshold
+
+        filtered_reflections = deepcopy(reflections)
+        filtered_reflections.map_centroids_to_reciprocal_space(self.experiments)
+        filter_mask = flex.bool(len(filtered_reflections))
+
+        for i, _ in enumerate(self.experiments):
+            if "imageset_id" in filtered_reflections:
+                sel_expt = filtered_reflections["imageset_id"] == i
+            else:
+                sel_expt = filtered_reflections["id"] == i
+
+            expt_reflections = filtered_reflections.select(sel_expt)
+            expt_filter_mask = filter_mask.select(sel_expt)
+
+            ## Extract required data
+            points = flumpy.to_numpy(expt_reflections["rlp"])
+            x0, x1, y0, y1, z0, z1 = expt_reflections["bbox"].parts()
+            bbox_volumes = flumpy.to_numpy((x1 - x0) * (y1 - y0) * (z1 - z0))
+
+            distance_threshold = calculate_threshold(points, threshold_multiplier)
+
+            ## Cluster points
+            tree = cKDTree(points)
+            pairs = tree.query_pairs(r=distance_threshold)
+
+            N = len(points)
+            parent = list(range(N))
+            for i, j in pairs:
+                union(parent, i, j)
+
+            # Build clusters
+            clusters = defaultdict(list)
+            for i in range(N):
+                root = find(parent, i)
+                clusters[root].append(i)
+
+            for group_indices in clusters.values():
+                if len(group_indices) == 1:
+                    # Unique point
+                    expt_filter_mask[group_indices[0]] = True
+                else:
+                    # Select largest reflection
+                    group_bbox_volumes = bbox_volumes[group_indices]
+                    best_idx = group_indices[np.argmax(group_bbox_volumes)]
+                    expt_filter_mask[best_idx] = True
+
+            filter_mask.set_selected(sel_expt, expt_filter_mask)
+
+        filtered_reflections = reflections.select(filter_mask)
+        logger.info(
+            f"Filtered {len(filtered_reflections)} of {len(reflections)} by reciprocal space proximity"
+        )
+        return filtered_reflections
 
     def _post_process(self, reflections):
         reflections = self._correct_centroid_tof(reflections)
@@ -971,4 +1070,82 @@ class TOFSpotFinder(SpotFinder):
                 reflections["wavelength"].set_selected(sel, wavelengths)
                 reflections["s0"].set_selected(sel, s0s)
                 reflections["L1"].set_selected(sel, L1)
+
+        if self.rs_proximity_threshold_multiplier is not None:
+            reflections = self._filter_reflections_by_rs_proximity(
+                reflections=reflections,
+                threshold_multiplier=self.rs_proximity_threshold_multiplier,
+            )
+
+        return reflections
+
+
+class LaueSpotFinder(SpotFinder):
+    """
+    Class to do spot finding tailored to Laue experiments
+    """
+
+    def __init__(
+        self,
+        experiments,
+        threshold_function=None,
+        mask=None,
+        region_of_interest=None,
+        max_strong_pixel_fraction=0.1,
+        compute_mean_background=False,
+        mp_method=None,
+        mp_nproc=1,
+        mp_njobs=1,
+        mp_chunksize=1,
+        mask_generator=None,
+        filter_spots=None,
+        scan_range=None,
+        write_hot_mask=True,
+        hot_mask_prefix="hot_mask",
+        min_spot_size=1,
+        max_spot_size=20,
+        min_chunksize=50,
+        initial_wavelength=None,
+    ):
+        super().__init__(
+            threshold_function=threshold_function,
+            mask=mask,
+            region_of_interest=region_of_interest,
+            max_strong_pixel_fraction=max_strong_pixel_fraction,
+            compute_mean_background=compute_mean_background,
+            mp_method=mp_method,
+            mp_nproc=mp_nproc,
+            mp_njobs=mp_njobs,
+            mp_chunksize=mp_chunksize,
+            mask_generator=mask_generator,
+            filter_spots=filter_spots,
+            scan_range=scan_range,
+            write_hot_mask=write_hot_mask,
+            hot_mask_prefix=hot_mask_prefix,
+            min_spot_size=min_spot_size,
+            max_spot_size=max_spot_size,
+            no_shoeboxes_2d=False,
+            min_chunksize=min_chunksize,
+            is_stills=False,
+        )
+
+        self.experiments = experiments
+        self.initial_wavelength = initial_wavelength
+
+    def _post_process(self, reflections):
+        n_rows = len(reflections)
+        if self.initial_wavelength is not None:
+            initial_wavelength = self.initial_wavelength
+        else:
+            wavelength_range = self.experiments[0].beam.get_wavelength_range()
+            initial_wavelength = (wavelength_range[0] + wavelength_range[1]) / 2
+        assert initial_wavelength > 0.0
+        reflections["wavelength"] = flex.double(n_rows, initial_wavelength)
+        unit_s0 = self.experiments[0].beam.get_unit_s0()
+        s0 = (
+            unit_s0[0] / initial_wavelength,
+            unit_s0[1] / initial_wavelength,
+            unit_s0[2] / initial_wavelength,
+        )
+        reflections["s0"] = flex.vec3_double(n_rows, s0)
         return reflections

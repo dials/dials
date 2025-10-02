@@ -8,8 +8,10 @@ from scipy.spatial.transform import Rotation
 
 import iotbx.phil
 from dxtbx.model import Crystal
+from scitbx import matrix
 
 from dials.algorithms.indexing import DialsIndexError
+from dials.array_family import flex
 
 from .strategy import Strategy
 
@@ -185,12 +187,11 @@ class Indexer:
         self.wav_peak = wavelength
         self.wav_min = wavelength - bandwidth * wavelength / 200.0
         self.wav_max = wavelength + bandwidth * wavelength / 200.0
-        self.B = np.asarray(cell.fractionalization_matrix, dtype=self.float_dtype).T
+        self.B = np.asarray(cell.frac.mat, dtype=self.float_dtype).T
 
     def index_pink(
         self,
-        s0,
-        s1,
+        rlps,
         max_refls=50,
         rotogram_grid_points=200,
         voxel_grid_points=200,
@@ -201,8 +202,7 @@ class Indexer:
     ):
         """
         Args:
-            s0 (array): An array of 3 floating point numbers corresponding to the s0 vector. This will be normalized.
-            s1 (array): An n x 3 array floating point numbers corresponding to the s1 vectors. This will be normalized.
+            rlps (array): An n x 3 array floating point numbers corresponding to the rlp vectors. This will be normalized.
             max_refls (int, optional): The maximum number of refls to consider.
             rotogram_grid_points (int, optional): The number of points at which to evaluate the rotograms.
             voxel_grid_points (int, optional): The fineness of the discretization used to quantitate rotograms.
@@ -214,10 +214,7 @@ class Indexer:
         Returns:
             iter_UB: an interable of crystal bases as numpy arrays
         """
-        s0_hat = normalize(np.asarray(s0, dtype=self.float_dtype))
-        s1_hat = normalize(np.asarray(s1, dtype=self.float_dtype))
-
-        q = s1_hat - s0_hat[None, :]
+        q = rlps
         q_len = norm2(q, keepdims=True)  # length of q if lambda is 1A
 
         # Possible resolution range for each observation considering wavelength range
@@ -229,8 +226,6 @@ class Indexer:
         if len(res_min) > max_refls:
             dmin = np.sort(res_min)[-max_refls]
             in_range = res_min >= dmin
-            s1_hat = s1_hat[in_range]
-            s1 = s1[in_range]
             q = q[in_range]
             q_len = q_len[in_range]
             res_min = res_min[in_range]
@@ -365,7 +360,7 @@ class PinkIndexer(Strategy):
 
         if target_symmetry_primitive is None:
             raise DialsIndexError(
-                "Target unit cell and space group must be provided for small_cell"
+                "Target unit cell and space group must be provided for pink_indexer"
             )
 
         target_cell = target_symmetry_primitive.unit_cell()
@@ -394,28 +389,53 @@ class PinkIndexer(Strategy):
         reflections["id"] *= 0
         reflections["id"] -= 1
 
-        if len(experiments) < 1:
-            msg = "pink_indexer received an experimentlist with length > 1. To use the pink_indexer method, you must set joint_indexing=False when you call dials.index"
-            raise ValueError(msg)
-
         expt = experiments[0]
         refls = reflections
 
         cell = gemmi.UnitCell(*self.cell.parameters())
 
-        beam = expt.beam
-        s0 = beam.get_s0()
         wav, bw = self.wavelength, self.percent_bandwidth
+        beam = expt.beam
         if wav is None:
-            wav = beam.get_wavelength()
+            if experiments.all_laue() or experiments.all_tof():
+                assert "wavelength" in reflections
+                wav = reflections["wavelength"]
+            else:
+                wav = beam.get_wavelength()
+
         if bw is None:
             bw = 1.0
         pidxr = Indexer(cell, wav, bw)
-        s1 = np.array(refls["s1"], dtype="float32")
+
+        rlps = flex.vec3_double(len(refls))
+        s1 = refls["s1"]
+        s1_hat = s1 / s1.norms()
+        s0_hat = beam.get_unit_s0()
+
+        # Rotate reflections to common coordinate frame
+        for i, expt in enumerate(experiments):
+            sel_expt = refls["imageset_id"] == i
+            s1_hat_expt = s1_hat.select(sel_expt)
+            q = s1_hat_expt - s0_hat
+
+            if expt.goniometer is not None:
+                setting_rotation = matrix.sqr(expt.goniometer.get_setting_rotation())
+                rotation_axis = expt.goniometer.get_rotation_axis_datum()
+                sample_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
+                q = tuple(setting_rotation.inverse()) * q
+
+                if expt.scan is not None and expt.scan.has_property("oscillation"):
+                    _, _, z = refls["xyzobs.mm.value"].select(sel_expt).parts()
+                    q.rotate_around_origin(rotation_axis, -z)
+
+                q = tuple(sample_rotation.inverse()) * q
+
+            rlps.set_selected(sel_expt, q)
+
+        rlps = np.array(rlps, dtype="float32")
         self.candidate_crystal_models = []
         for UB in pidxr.index_pink(
-            s0,
-            s1,
+            rlps,
             self.max_refls,
             rotogram_grid_points=self.rotogram_grid_points,
             voxel_grid_points=self.voxel_grid_points,

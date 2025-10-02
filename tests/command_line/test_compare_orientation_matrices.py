@@ -5,10 +5,7 @@ from libtbx import easy_run
 
 def test_compare_orientation_matrices(dials_data, run_in_tmp_path):
     data_dir = dials_data("refinement_test_data", pathlib=True)
-    cmd = (
-        "dials.compare_orientation_matrices %s/i04-weak.json %s/i04-weak-regression.json"
-        % (data_dir, data_dir)
-    )
+    cmd = f"dials.compare_orientation_matrices {data_dir}/i04-weak.json {data_dir}/i04-weak-regression.json"
     result = easy_run.fully_buffered(cmd).raise_if_errors()
     out = "\n".join(result.stdout_lines[7:])
     out = out.replace("-0", "0")

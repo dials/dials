@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+import importlib.metadata
 import sys
-
-import pkg_resources
 
 import dials.util
 
@@ -18,7 +17,7 @@ def read_entry_point(entry_point):
 
     :return: A dictionary of entry point plugins
     """
-    return {e.name: e for e in pkg_resources.iter_entry_points(entry_point)}
+    return {e.name: e for e in importlib.metadata.entry_points(group=entry_point)}
 
 
 def installation_is_valid():
@@ -66,9 +65,7 @@ def run(_=None):
         plugins = read_entry_point(ep)
         for p in sorted(plugins):
             print(
-                " {GREEN}{p} {NC}({pp.module_name} via {BOLD}{pp.dist.project_name}{NC} {pp.dist.version})".format(
-                    BOLD=BOLD, p=p, GREEN=GREEN, NC=NC, pp=plugins[p]
-                )
+                f" {GREEN}{p} {NC}({plugins[p].module_name} via {BOLD}{plugins[p].dist.project_name}{NC} {plugins[p].dist.version})"
             )
         required_plugins = set(ep_dict.get("required", []))
         missing_plugins = required_plugins - set(plugins)

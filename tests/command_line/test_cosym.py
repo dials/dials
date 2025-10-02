@@ -7,6 +7,7 @@ import pytest
 
 from cctbx import sgtbx, uctbx
 from dxtbx.serialize import load
+from dxtbx.util import ersatz_uuid4
 
 import dials.command_line.cosym as dials_cosym
 from dials.algorithms.symmetry.cosym._generate_test_data import (
@@ -19,7 +20,7 @@ from dials.util import Sorry
 @pytest.mark.parametrize(
     "space_group,engine,weights,cc_weights",
     [
-        (None, "scitbx", None, None),
+        (None, "scitbx", "count", None),
         ("P 1", "scipy", None, None),
         ("P 4", "scipy", "standard_error", "sigma"),
     ],
@@ -87,7 +88,7 @@ def test_cosym_partial_dataset(dials_data, run_in_tmp_path):
 
 def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmp_path):
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
-    args = ["space_group=P4", "seed=0", "d_min=20.0"]
+    args = ["space_group=P4", "seed=0", "d_min=10.0", "min_reflections=15"]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
         args.append(os.fspath(mcp / f"experiments_{i}.json"))
         args.append(os.fspath(mcp / f"reflections_{i}.pickle"))
@@ -165,6 +166,8 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
     experiments.as_json("tmp.expt")
     expt_file = "tmp.expt"
     joint_table = flex.reflection_table.concat(reflections)
+    for id in set(joint_table["id"]):
+        joint_table.experiment_identifiers()[id] = ersatz_uuid4()
     joint_table.as_file("tmp.refl")
     refl_file = "tmp.refl"
 
@@ -175,22 +178,27 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
         "output.reflections=symmetrized.refl",
         "output.html=cosym.html",
         "output.json=cosym.json",
+        "output.excluded=True",
     ]
 
     dials_cosym.run(args=args)
     assert pathlib.Path("symmetrized.refl").is_file()
     assert pathlib.Path("symmetrized.expt").is_file()
     expts = load.experiment_list("symmetrized.expt", check_format=False)
+    excl = load.experiment_list("excluded.expt", check_format=False)
     assert len(expts) == 3
+    assert len(excl) == 4
 
     # Increase the angle tolerance so that the cells are determined as similar
     # and can therefore be correctly mapped to the same cell setting.
     args.append("absolute_angle_tolerance=3.0")
+    args.append("excluded_prefix=excluded2")
     dials_cosym.run(args=args)
     assert pathlib.Path("symmetrized.refl").is_file()
     assert pathlib.Path("symmetrized.expt").is_file()
     assert pathlib.Path("cosym.html").is_file()
     assert pathlib.Path("cosym.json").is_file()
+    assert not pathlib.Path("excluded2.expt").is_file()  # Nothing excluded this time
     expts = load.experiment_list("symmetrized.expt", check_format=False)
     assert len(expts) == 7
 
@@ -239,6 +247,8 @@ def test_synthetic(
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
+    for id in set(joint_table["id"]):
+        joint_table.experiment_identifiers()[id] = ersatz_uuid4()
     joint_table.as_file("tmp.refl")
     refl_file = "tmp.refl"
 

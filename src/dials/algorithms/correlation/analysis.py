@@ -9,15 +9,23 @@ from collections import OrderedDict
 import numpy as np
 import scipy.spatial.distance as ssd
 from scipy.cluster import hierarchy
+from sklearn.cluster import OPTICS
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
+from libtbx import Auto
 from libtbx.phil import scope_extract
 from scitbx.array_family import flex
 
 from dials.algorithms.correlation.cluster import ClusterInfo
-from dials.algorithms.correlation.plots import linkage_matrix_to_dict, to_plotly_json
-from dials.algorithms.symmetry.cosym import CosymAnalysis
+from dials.algorithms.correlation.plots import (
+    linkage_matrix_to_dict,
+    plot_dims,
+    plot_pca_coords,
+    plot_reachability,
+    to_plotly_json,
+)
+from dials.algorithms.symmetry.cosym import CosymAnalysis, cosym_scope
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.array_family.flex import reflection_table
 from dials.util import tabulate
@@ -33,22 +41,44 @@ partiality_threshold = 0.4
   .type = float(value_min=0, value_max=1)
   .help = "Use reflections with a partiality greater than the threshold."
 
-include scope dials.algorithms.symmetry.cosym.phil_scope
+%s
 
-relative_length_tolerance = 0.05
-  .type = float(value_min=0)
-  .help = "Datasets are only accepted if unit cell lengths fall within this relative tolerance of the median cell lengths."
+dimensionality_assessment {
+  outlier_rejection = True
+    .type = bool
+    .help = "Use outlier rejection when determining optimal dimensions for analysis."
+  maximum_dimensions = 50
+    .type = int
+    .help = "Maximum number of dimensions to test for reasonable processing time"
+}
 
-absolute_angle_tolerance = 2
-  .type = float(value_min=0)
-  .help = "Datasets are only accepted if unit cell angles fall within this absolute tolerance of the median cell angles."
+significant_clusters {
+  min_points_buffer = 0.5
+    .type = float(value_min=0, value_max=1)
+    .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
+  xi = 0.05
+    .type = float(value_min=0, value_max=1)
+    .help = "xi parameter to determine min steepness to define cluster boundary"
+}
 
-min_reflections = 10
-  .type = int(value_min=1)
-  .help = "The minimum number of reflections per experiment."
-""",
+hierarchical_clustering {
+  linkage_method = *ward average
+    .type = choice
+    .help = "Linkage method for constructing dendorgrams for both correlation and cosine angle clustering methods"
+}
+"""
+    % cosym_scope,
     process_includes=True,
 )
+phil_overrides = phil_scope.fetch(
+    source=iotbx.phil.parse(
+        """\
+cc_weights=sigma
+weights=count
+"""
+    )
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 class CorrelationMatrix:
@@ -74,6 +104,11 @@ class CorrelationMatrix:
         if params is None:
             params = phil_scope.extract()
         self.params = params
+
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in experiments.scaling_models())
+
         self._reflections = []
         self.ids_to_identifiers_map = ids_to_identifiers_map
 
@@ -119,10 +154,14 @@ class CorrelationMatrix:
 
         # Set required params for cosym to skip symmetry determination and reduce dimensions
 
-        self.params.lattice_group = self.datasets[0].space_group_info()
-        self.params.space_group = self.datasets[0].space_group_info()
+        self.params.__inject__("lattice_group", self.datasets[0].space_group_info())
+        self.params.__inject__("space_group", self.datasets[0].space_group_info())
+        self.params.__inject__("lattice_symmetry_max_delta", 0.0)
+        self.params.__inject__("best_monoclinic_beta", True)
 
-        self.cosym_analysis = CosymAnalysis(self.datasets, self.params)
+        self.cosym_analysis = CosymAnalysis(
+            self.datasets, self.params, apply_sigma_correction=apply_sigma_correction
+        )
 
     def _merge_intensities(self, datasets: list) -> list:
         """
@@ -182,19 +221,39 @@ class CorrelationMatrix:
         self.cosym_analysis._intialise_target()
 
         # Cosym proceedures to calculate the cos-angle matrix
-        self.cosym_analysis._determine_dimensions()
+        if (
+            len(self.unmerged_datasets)
+            <= self.params.dimensionality_assessment.maximum_dimensions
+        ):
+            dims_to_test = len(self.unmerged_datasets)
+        else:
+            dims_to_test = self.params.dimensionality_assessment.maximum_dimensions
+
+        self._dimension_optimisation_data = {}
+
+        if self.params.dimensions is Auto:
+            (
+                self._dimension_optimisation_data["dimensions"],
+                self._dimension_optimisation_data["functional"],
+            ) = self.cosym_analysis._determine_dimensions(
+                dims_to_test,
+                outlier_rejection=self.params.dimensionality_assessment.outlier_rejection,
+            )
         self.cosym_analysis._optimise(
             self.cosym_analysis.params.minimization.engine,
             max_iterations=self.cosym_analysis.params.minimization.max_iterations,
             max_calls=self.cosym_analysis.params.minimization.max_calls,
         )
 
+        self.cosym_analysis._principal_component_analysis(cluster=True)
+
         # Convert cosym output into cc/cos matrices in correct form and compute linkage matrices as clustering method
         (
             self.correlation_matrix,
             self.cc_linkage_matrix,
         ) = self.compute_correlation_coefficient_matrix(
-            self.cosym_analysis.target.rij_matrix
+            self.cosym_analysis.target.rij_matrix,
+            self.params.hierarchical_clustering.linkage_method,
         )
 
         self.correlation_clusters = self.cluster_info(
@@ -205,7 +264,8 @@ class CorrelationMatrix:
         self.cc_table = ClusterInfo.as_table(self.correlation_clusters)
         logger.info(tabulate(self.cc_table, headers="firstrow", tablefmt="rst"))
         self.cos_angle, self.cos_linkage_matrix = self.compute_cos_angle_matrix(
-            self.cosym_analysis.coords
+            self.cosym_analysis.coords,
+            self.params.hierarchical_clustering.linkage_method,
         )
 
         self.cos_angle_clusters = self.cluster_info(
@@ -216,15 +276,20 @@ class CorrelationMatrix:
         self.cos_table = ClusterInfo.as_table(self.cos_angle_clusters)
         logger.info(tabulate(self.cos_table, headers="firstrow", tablefmt="rst"))
 
+        logger.info("\nEvaluating Significant Clusters from Cosine-Angle Coordinates:")
+        self.cluster_cosine_coords()
+
     @staticmethod
     def compute_correlation_coefficient_matrix(
         correlation_matrix: np.ndarray,
+        linkage_method: str,
     ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the correlation matrix and clustering linkage matrix from the rij cosym matrix.
 
         Args:
             correlation_matrix(numpy.ndarray): pair-wise matrix of correlation coefficients
+            linkage_method(str): linkage method for hierarchical clustering
 
         Returns:
             correlation_matrix(numpy.ndarray): correlation matrix with corrections to diagonals and accounting for floating point errors
@@ -233,6 +298,9 @@ class CorrelationMatrix:
         """
 
         logger.info("\nCalculating Correlation Matrix (rij matrix - see dials.cosym)")
+        logger.info(
+            f"Hierarchical clustering performed using the {linkage_method} linkage method"
+        )
 
         # Make diagonals equal to 1 (each dataset correlated with itself)
         np.fill_diagonal(correlation_matrix, 1)
@@ -253,18 +321,20 @@ class CorrelationMatrix:
         cc_dist_mat = ssd.squareform(diffraction_dissimilarity, checks=False)
 
         # Clustering method
-        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method="average")
+        cc_linkage_matrix = hierarchy.linkage(cc_dist_mat, method=linkage_method)
 
         return correlation_matrix, cc_linkage_matrix
 
     @staticmethod
     def compute_cos_angle_matrix(
         coords: np.ndarray,
+        linkage_method: str,
     ) -> tuple(np.ndarray, np.ndarray):
         """
         Computes the cos_angle matrix and clustering linkage matrix from the optimized cosym coordinates.
         Args:
             coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
+            linkage_method(str): linkage method for hierarchical clustering
 
         Returns:
             cos_angle(numpy.ndarray): pair-wise cos angle matrix
@@ -274,15 +344,103 @@ class CorrelationMatrix:
         logger.info(
             "\nCalculating Cos Angle Matrix from optimised cosym coordinates (see dials.cosym)"
         )
+        logger.info(
+            f"Hierarchical clustering performed using the {linkage_method} linkage method"
+        )
 
         # Convert coordinates to cosine distances and then reversed so closer cosine distances have higher values to match CC matrix
         cos_dist_mat = ssd.pdist(coords, metric="cosine")
         cos_angle = 1 - ssd.squareform(cos_dist_mat)
 
         # Clustering method
-        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method="average")
+        cos_linkage_matrix = hierarchy.linkage(cos_dist_mat, method=linkage_method)
 
         return cos_angle, cos_linkage_matrix
+
+    def cluster_cosine_coords(self):
+        """
+        Cluster cosine coords using the OPTICS algorithm to determine significant clusters.
+        """
+
+        logger.info("Using OPTICS Algorithm (M. Ankerst et al, 1999, ACM SIGMOD)")
+
+        # Minimum number required to make sense for such algorithms
+
+        min_points = max(
+            5,
+            int(
+                (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
+                * self.params.significant_clusters.min_points_buffer
+            ),
+        )
+
+        # Check for very small datasets
+        if len(self.unmerged_datasets) < min_points:
+            min_points = len(self.unmerged_datasets)
+            logger.info(
+                "WARNING: less than 5 samples present, OPTICS not optimised for very small datasets."
+            )
+
+        logger.info(f"Setting Minimum Samples to {min_points}")
+
+        # Fit OPTICS model and determine number of clusters
+
+        optics_model = OPTICS(
+            min_samples=min_points, xi=self.params.significant_clusters.xi
+        )
+
+        optics_model.fit(self.cosym_analysis.coords)
+
+        self.cluster_labels = optics_model.labels_
+
+        # Reachability plot data
+
+        self.optics_reachability = optics_model.reachability_[optics_model.ordering_]
+        self.optics_reachability_labels = optics_model.labels_[optics_model.ordering_]
+
+        # Match each dataset to an OPTICS cluster and make them Cluster Objects
+
+        unique_labels = sorted(dict.fromkeys(self.cluster_labels))
+
+        if -1 in unique_labels:
+            unique_labels.remove(-1)
+
+        outliers = 0
+        for i in self.cluster_labels:
+            if i == -1:
+                outliers += 1
+
+        logger.info(
+            f"OPTICS identified {len(unique_labels)} clusters and {outliers} outlier datasets."
+        )
+
+        sig_cluster_dict = OrderedDict()
+
+        # Seems complex to deal with cases where datasets have been filtered
+        # and fit into how other code already set up
+
+        for_cluster_ids = list(range(1, len(self.labels) + 1))
+
+        # Set up number of clusters
+        for i in unique_labels:
+            ids = []
+            # Iterate through cluster labels from OPTICS to match to IDS
+            for main_idx, clust in enumerate(self.cluster_labels):
+                if i == clust:
+                    # Pre-existing code requieres +1 to everything
+                    for idx1, val1 in enumerate(for_cluster_ids):
+                        # Real labels start at 0
+                        for idx2, val2 in enumerate(self.labels):
+                            # Need to match index due to some datasets possibly being filtered out
+                            if idx1 == idx2 and idx1 == main_idx:
+                                ids.append(val1)
+            cluster_dict = {"datasets": ids}
+            sig_cluster_dict[i] = cluster_dict
+
+        self.significant_clusters = self.cluster_info(sig_cluster_dict)
+
+        for i in self.significant_clusters:
+            logger.info(i)
 
     def cluster_info(self, cluster_dict: dict) -> list:
         """
@@ -356,9 +514,87 @@ class CorrelationMatrix:
             plot_rij_histogram(self.correlation_matrix, key="cosym_rij_histogram_sg")
         )
 
+        if self._dimension_optimisation_data:
+            self.rij_graphs.update(
+                plot_dims(
+                    self._dimension_optimisation_data["dimensions"],
+                    self._dimension_optimisation_data["functional"],
+                )
+            )
+
         self.rij_graphs.update(
-            plot_coords(self.cosym_analysis.coords, key="cosym_coordinates_sg")
+            plot_reachability(
+                np.arange(len(self.optics_reachability)),
+                self.optics_reachability,
+                self.optics_reachability_labels,
+            )
         )
+
+        cluster_labels = self.cluster_labels
+        axes_labels = {
+            str(i): f"PC {i + 1} ({var:.1f}%)"
+            for i, var in enumerate(self.cosym_analysis.explained_variance_ratio * 100)
+        }
+
+        # Cosym coordinates are aligned with the principal components
+        # Note that the reduced coordinates are NOT used because want to retain information
+        # about length/angles from the original cosym procedure
+        # Instead, simply rotate the data to align with the eigenvectors
+
+        cob_mat = np.linalg.inv(np.transpose(self.cosym_analysis.pca_components))
+
+        coords = np.array([])
+        for data in self.cosym_analysis.coords:
+            rot_coord = np.matmul(cob_mat, data)
+            if coords.size == 0:
+                coords = rot_coord
+            else:
+                coords = np.vstack([coords, rot_coord])
+
+        if coords.shape[1] > 6:
+            coords = coords[:, 0:6]
+            dim_list = list(range(0, 6))
+        else:
+            dim_list = list(range(0, self.cosym_analysis.target.dim))
+
+        self.pca_plot = plot_pca_coords(
+            coords,
+            axes_labels,
+            cluster_labels,
+            dim_list,
+        )
+
+        # Separately also plot the two most significant principal components for ease of visualisation
+
+        self.rij_graphs.update(
+            plot_coords(
+                coords[:, 0:2],
+                self.cluster_labels,
+                key="cosym_coordinates_principal_components",
+            )
+        )
+
+        updated_help = """\
+The outcome of the cosym multi-dimensional analysis rotated by the components identified using
+Principal Component Analysis and projected in 2D. Each point corresponds to an individual data set.
+The lengths of the vectors are inversely related to the amount of random error in each dataset;
+however, because the plot is a projection in 2D, the coordinates in this graph are not directly
+representative of the length of the vector in multi-dimensional space (unless the analysis
+is 2-dimensional). The angular separation between any pair, or groups, of vectors is a measure of the
+systematic differences between the data sets (could be the presence of non-isomorphism). This projection
+summarises the effect of the first two principal components.
+        """
+
+        self.rij_graphs["cosym_coordinates_principal_components"]["help"] = updated_help
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["title"] = (
+            "Cosym Coordinates Rotated by Principal Components"
+        )
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["xaxis"][
+            "title"
+        ] = axes_labels["0"]
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["yaxis"][
+            "title"
+        ] = axes_labels["1"]
 
         # Generate the table for the html that lists all datasets and image paths present in the analysis
 
@@ -401,3 +637,22 @@ class CorrelationMatrix:
 
         with open(self.params.output.json, "w") as f:
             json.dump(combined_json_dict, f)
+
+    def output_clusters(self):
+        """
+        Output dials .expt/.refl files for each significant cluster identified in the OPTICS analysis of the cosine angle clustering.
+        """
+
+        from dials.array_family import flex
+
+        for i in self.significant_clusters:
+            expts = ExperimentList()
+            refls = []
+            for idx in i.labels:
+                expts.append(self._experiments[idx])
+                refls.append(self._reflections[idx])
+            joint_refl = flex.reflection_table.concat(refls)
+            expts.as_file(f"cluster_{i.cluster_id}.expt")
+            joint_refl.as_file(f"cluster_{i.cluster_id}.refl")
+
+        logger.info("Identified clusters output as .expt/.refl files.")

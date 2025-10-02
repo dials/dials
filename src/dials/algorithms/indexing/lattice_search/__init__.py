@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+import importlib.metadata
 import itertools
 import logging
 import math
 from io import StringIO
-
-import pkg_resources
 
 import libtbx.phil
 import scitbx.matrix
@@ -15,11 +14,12 @@ from scitbx.array_family import flex
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 
+from .ffb_indexer import FfbIndexer
 from .low_res_spot_match import LowResSpotMatch
 from .pinkindexer import PinkIndexer
 from .strategy import Strategy
 
-__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer"]
+__all__ = ["Strategy", "LowResSpotMatch", "PinkIndexer", "FfbIndexer"]
 
 
 logger = logging.getLogger(__name__)
@@ -81,17 +81,16 @@ basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)
 
 methods = []
 for entry_point in itertools.chain(
-    pkg_resources.iter_entry_points("dials.index.basis_vector_search"),
-    pkg_resources.iter_entry_points("dials.index.lattice_search"),
+    importlib.metadata.entry_points(group="dials.index.basis_vector_search"),
+    importlib.metadata.entry_points(group="dials.index.lattice_search"),
 ):
     ext_master_scope = libtbx.phil.parse(
-        """
-%s
+        f"""
+{entry_point.name}
 .expert_level=1
-.help=%s
-{}
+.help={entry_point.load().phil_help}
+{{}}
         """
-        % (entry_point.name, entry_point.load().phil_help)
     )
     ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
     assert len(ext_phil_scope) == 1
@@ -113,8 +112,8 @@ class LatticeSearch(indexer.Indexer):
         super().__init__(reflections, experiments, params)
 
         self._lattice_search_strategy = None
-        for entry_point in pkg_resources.iter_entry_points(
-            "dials.index.lattice_search"
+        for entry_point in importlib.metadata.entry_points(
+            group="dials.index.lattice_search"
         ):
             if entry_point.name == self.params.method:
                 strategy_class = entry_point.load()
@@ -296,8 +295,8 @@ class BasisVectorSearch(LatticeSearch):
         super().__init__(reflections, experiments, params)
 
         strategy_class = None
-        for entry_point in pkg_resources.iter_entry_points(
-            "dials.index.basis_vector_search"
+        for entry_point in importlib.metadata.entry_points(
+            group="dials.index.basis_vector_search"
         ):
             if entry_point.name == params.indexing.method:
                 strategy_class = entry_point.load()

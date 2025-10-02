@@ -154,7 +154,7 @@ class RefinedSettingsList(list):
                     min_max_cc_str,
                     "%d" % item.Nmatches,
                     f"{item['bravais']}",
-                    "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f" % P,
+                    "{:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}".format(*P),
                     f"{uc.volume():.0f}",
                     f"{str(item['cb_op_inp_best'] * self.cb_op_to_primitive)}",
                 ]

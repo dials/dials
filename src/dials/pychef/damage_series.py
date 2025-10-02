@@ -72,7 +72,7 @@ def _generate_blank_plots_template(label):
     return d
 
 
-class DamageSeriesPlots(object):
+class DamageSeriesPlots:
     def __init__(self, d_max=None, d_min=None):
         self._d_star_sq_tickvals = None
         self._d_star_sq_ticktext = None
@@ -368,9 +368,9 @@ def generate_damage_series(params, experiments, reflection_table):
             upper_dose_boundary,
         )
 
-        assert len(new_expts) == len(
-            refl.experiment_identifiers().keys()
-        ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        assert len(new_expts) == len(refl.experiment_identifiers().keys()), (
+            f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        )
         if params.output.damage_series:
             logger.info(
                 f"Saving experimental data for range {lower_dose_boundary} <= dose < {upper_dose_boundary}"
@@ -400,9 +400,9 @@ def generate_damage_series(params, experiments, reflection_table):
             upper_dose_boundary,
         )
 
-        assert len(new_expts) == len(
-            refl.experiment_identifiers().keys()
-        ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        assert len(new_expts) == len(refl.experiment_identifiers().keys()), (
+            f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        )
         if params.output.accumulation_series:
             if n == 0 and params.output.damage_series:
                 continue

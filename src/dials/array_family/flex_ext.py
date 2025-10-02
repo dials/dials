@@ -13,7 +13,6 @@ import logging
 import operator
 import os
 import pickle
-from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -32,6 +31,7 @@ import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
+from dials.util.table_as_hdf5_file import HDF5TableFile
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -210,6 +210,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Writing compressed reflections to {filename}")
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             self.as_msgpack_to_file(dials.util.ext.streambuf(python_file_obj=outfile))
 
@@ -220,6 +223,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Reading compressed reflections from {filename}")
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
             return dials_array_family_flex_ext.reflection_table.from_msgpack(
                 infile.read()
@@ -231,6 +237,8 @@ class _:
         """
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
+        elif os.getenv("DIALS_USE_H5"):
+            self.as_hdf5(filename)
         else:
             self.as_msgpack_file(filename)
 
@@ -244,7 +252,12 @@ class _:
                 filename
             )
         except RuntimeError:
-            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
+            try:
+                return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
+            except OSError:
+                return dials_array_family_flex_ext.reflection_table.from_pickle(
+                    filename
+                )
 
     @staticmethod
     def empty_standard(nrows):
@@ -362,19 +375,19 @@ class _:
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def as_h5(self, filename):
-        """
-        Write the reflection table as a HDF5 file.
+    def as_hdf5(self, filename):
+        """Write the reflection table as a hdf5 file."""
 
-        :param filename: The output filename
-        """
-        from dials.util.nexus_old import NexusFile
+        with HDF5TableFile(filename, "w") as handle:
+            handle.add_tables([self])
 
-        handle = NexusFile(filename, "w")
-        # Clean up any removed experiments from the identifiers map
-        self.clean_experiment_identifiers_map()
-        handle.set_reflections(self)
-        handle.close()
+    @classmethod
+    def from_hdf5(cls, filename):
+        with HDF5TableFile(filename, "r") as handle:
+            tables = handle.get_tables()
+        if len(tables) > 1:
+            return cls.concat(tables)
+        return tables[0]
 
     def as_miller_array(self, experiment, intensity="sum"):
         """Return a miller array with the chosen intensities.
@@ -402,8 +415,7 @@ class _:
         except KeyError as e:
             logger.error(e, exc_info=True)
             raise KeyError(
-                "Unable to find %s, %s in reflection table"
-                % (
+                "Unable to find {}, {} in reflection table".format(
                     "intensity." + intensity + ".value",
                     "intensity." + intensity + ".variance",
                 )
@@ -486,7 +498,7 @@ class _:
 
     def match_by_hkle(
         self, other: dials_array_family_flex_ext.reflection_table
-    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
+    ) -> tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
         """
         Match reflections with another set of reflections by the h, k, l
         and entering values. Uses pandas dataframe merge method to match
@@ -521,7 +533,7 @@ class _:
 
     @staticmethod
     def concat(
-        tables: List[dials_array_family_flex_ext.reflection_table],
+        tables: list[dials_array_family_flex_ext.reflection_table],
     ) -> dials_array_family_flex_ext.reflection_table:
         """
         Concatenate a list of reflection tables, taking care to correctly handle
@@ -664,8 +676,8 @@ class _:
         *,
         max_separation: int = 2,
         key: str = "xyzobs.px.value",
-        scale: Tuple[float, float, float] = (1, 1, 1),
-    ) -> Tuple[
+        scale: tuple[float, float, float] = (1, 1, 1),
+    ) -> tuple[
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.double,
@@ -1125,9 +1137,9 @@ class _:
                 )
                 assert len(identifiers) == len(set(experiments.identifiers()))
                 for experiment in experiments:
-                    assert (
-                        experiment.identifier in identifiers.values()
-                    ), experiment.identifier
+                    assert experiment.identifier in identifiers.values(), (
+                        experiment.identifier
+                    )
 
     def are_experiment_identifiers_consistent(self, experiments=None):
         """
@@ -1177,11 +1189,10 @@ class _:
                 id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
             logger.warning(
-                """Not all requested identifiers
+                f"""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested %s:
-Found %s"""
-                % (list_of_identifiers, id_values)
+Requested {list_of_identifiers}:
+Found {id_values}"""
             )
         # Build up a selection and use this
         sel = cctbx.array_family.flex.bool(self.size(), False)
@@ -1211,11 +1222,10 @@ Found %s"""
                 id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
             logger.warning(
-                """Not all requested identifiers
+                f"""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested %s:
-Found %s"""
-                % (list_of_identifiers, id_values)
+Requested {list_of_identifiers}:
+Found {id_values}"""
             )
         # Now delete the selections, also removing the entry from the map
         for id_val in id_values:

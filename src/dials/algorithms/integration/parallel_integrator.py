@@ -332,12 +332,12 @@ class IntegrationJob:
             params = phil_scope.extract()
 
         assert len(reflections) > 0, "Zero reflections given"
-        assert (
-            params.integration.block.max_memory_usage > 0.0
-        ), "Max memory % must be > 0"
-        assert (
-            params.integration.block.max_memory_usage <= 1.0
-        ), "Max memory % must be < 1"
+        assert params.integration.block.max_memory_usage > 0.0, (
+            "Max memory % must be > 0"
+        )
+        assert params.integration.block.max_memory_usage <= 1.0, (
+            "Max memory % must be < 1"
+        )
         self.index = index
         self.job = job
         self.experiments = experiments
@@ -684,12 +684,11 @@ class IntegrationManager:
                 raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
-                    """
-          The requested block size (%s) is larger than the maximum allowable block
-          size (%s). Either decrease the requested block size or increase the
+                    f"""
+          The requested block size ({block_size}) is larger than the maximum allowable block
+          size ({max_block_size}). Either decrease the requested block size or increase the
           amount of available memory.
         """
-                    % (block_size, max_block_size)
                 )
         block.size = block_size
         block.units = "frames"
@@ -783,12 +782,12 @@ class ReferenceCalculatorJob:
             params = phil_scope.extract()
 
         assert len(reflections) > 0, "Zero reflections given"
-        assert (
-            params.integration.block.max_memory_usage > 0.0
-        ), "Max memory % must be > 0"
-        assert (
-            params.integration.block.max_memory_usage <= 1.0
-        ), "Max memory % must be < 1"
+        assert params.integration.block.max_memory_usage > 0.0, (
+            "Max memory % must be > 0"
+        )
+        assert params.integration.block.max_memory_usage <= 1.0, (
+            "Max memory % must be < 1"
+        )
         self.index = index
         self.job = job
         self.experiments = experiments
@@ -1154,12 +1153,11 @@ class ReferenceCalculatorManager:
                 raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
-                    """
-          The requested block size (%s) is larger than the maximum allowable block
-          size (%s). Either decrease the requested block size or increase the
+                    f"""
+          The requested block size ({block_size}) is larger than the maximum allowable block
+          size ({max_block_size}). Either decrease the requested block size or increase the
           amount of available memory.
         """
-                    % (block_size, max_block_size)
                 )
         block.size = block_size
         block.units = "frames"

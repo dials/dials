@@ -352,7 +352,9 @@ def main(nproc, port):
     print(time.asctime(), "Serving %d processes on port %d" % (nproc, port))
 
     for j in range(nproc - 1):
-        proc = multiprocessing.Process(target=serve, args=(httpd,))
+        proc = multiprocessing.get_context(method="fork").Process(
+            target=serve, args=(httpd,)
+        )
         proc.daemon = True
         proc.start()
     serve(httpd)
@@ -364,9 +366,8 @@ def main(nproc, port):
 def run(args=None):
     usage = "dials.find_spots_server [options]"
 
-    # Python 3.8 on macOS... needs fork
-    if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
-        multiprocessing.set_start_method("fork")
+    if sys.platform.startswith("win"):
+        sys.exit(f"{sys.platform()} unsupported for {sys.argv[0]}")
 
     parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
     params, options = parser.parse_args(args, show_diff_phil=True)

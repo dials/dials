@@ -14,10 +14,10 @@ from dxtbx.serialize import load
 from dials.command_line import refine_bravais_settings
 
 
-def test_refine_bravais_settings_i04_weak_data(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_i04_weak_data(dials_data, tmp_path):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "indexed.pickle"
+    experiments_path = data_dir / "experiments.json"
     result = subprocess.run(
         [
             shutil.which("dials.refine_bravais_settings"),
@@ -63,10 +63,10 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression: Path, tmp_path)
     assert bravais_summary["9"]["rmsd"] == pytest.approx(0.047, abs=1e-2)
 
 
-def test_refine_bravais_settings_multi_sweep(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_multi_sweep(dials_data, tmp_path):
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = data_dir / "multi_sweep-indexed.pickle"
+    experiments_path = data_dir / "multi_sweep-experiments.json"
     result = subprocess.run(
         [shutil.which("dials.refine_bravais_settings"), pickle_path, experiments_path],
         cwd=tmp_path,
@@ -97,14 +97,14 @@ def test_refine_bravais_settings_multi_sweep(dials_regression: Path, tmp_path):
         [7.31, 7.31, 6.82, 90.00, 90.00, 90.00], abs=1e-1
     )
     assert bravais_summary["9"]["bravais"] == "tI"
-    assert bravais_summary["9"]["rmsd"] == pytest.approx(0.103, abs=1e-2)
+    assert bravais_summary["9"]["rmsd"] == pytest.approx(0.089, abs=1e-2)
     assert bravais_summary["9"]["recommended"] is True
 
 
-def test_refine_bravais_settings_trypsin(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_trypsin(dials_data: Path, tmp_path):
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = os.path.join(data_dir, "trypsin-indexed.pickle")
+    experiments_path = os.path.join(data_dir, "trypsin-experiments.json")
     result = subprocess.run(
         [
             shutil.which("dials.refine_bravais_settings"),
@@ -141,17 +141,21 @@ def test_refine_bravais_settings_trypsin(dials_regression: Path, tmp_path):
         [54.37, 58.29, 66.51, 90.00, 90.00, 90.00], abs=1e-1
     )
     assert bravais_summary["5"]["bravais"] == "oP"
-    assert bravais_summary["5"]["rmsd"] == pytest.approx(0.1200, abs=1e-2)
+    assert bravais_summary["5"]["rmsd"] == pytest.approx(0.103, abs=1e-2)
     assert bravais_summary["5"]["recommended"] is True
     assert bravais_summary["9"]["recommended"] is False
 
 
-def test_refine_bravais_settings_554(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "dials-554")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_refine_bravais_settings_554(dials_data, tmp_path):
+    data_dir = dials_data("misc_regression", pathlib=True)
+    reflections_path = str(data_dir / "dials-554_indexed.refl")
+    experiments_path = str(data_dir / "dials-554_indexed.expt")
     result = subprocess.run(
-        ["dials.refine_bravais_settings", pickle_path, experiments_path],
+        [
+            shutil.which("dials.refine_bravais_settings"),
+            reflections_path,
+            experiments_path,
+        ],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -294,7 +298,7 @@ def test_refine_bravais_settings_non_primitive_input(dials_data, tmp_path):
     input_cs = input_expts[0].crystal.get_crystal_symmetry()
     for i in range(22):
         uc_input_to_ref = input_cs.unit_cell().change_basis(
-            sgtbx.change_of_basis_op(bravais_summary[f"{i+1}"]["cb_op"])
+            sgtbx.change_of_basis_op(bravais_summary[f"{i + 1}"]["cb_op"])
         )
-        uc_ref = uctbx.unit_cell(bravais_summary[f"{i+1}"]["unit_cell"])
+        uc_ref = uctbx.unit_cell(bravais_summary[f"{i + 1}"]["unit_cell"])
         assert uc_input_to_ref.is_similar_to(uc_ref)

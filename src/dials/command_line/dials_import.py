@@ -7,7 +7,7 @@ import pickle
 import sys
 from collections import defaultdict, namedtuple
 
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 
 import dxtbx.model.compare as compare
 import libtbx.phil
@@ -114,6 +114,10 @@ phil_scope = libtbx.phil.parse(
       .type = str
       .help = "A directory with images"
       .multiple = True
+
+    split = None
+      .type = ints
+      .help = "Scan split: either frames_per_block or 1-indexed start,end,frames_per_block"
 
     reference_geometry = None
       .type = path
@@ -527,7 +531,7 @@ class MetaDataUpdater:
             ].count(None) == 1:
                 raise Sorry(
                     """
-          Only 1 offset map is set. Need to set both dx and d
+          Only 1 offset map is set. Need to set both dx and dy
         """
                 )
 
@@ -884,6 +888,41 @@ def do_import(
 
     metadata_updater = MetaDataUpdater(params)
     experiments = metadata_updater(imagesets)
+
+    # If the user has requested splitting, split - these are in human numbers
+    # so need to subtract 1 from start
+    if params.input.split:
+        if len(params.input.split) == 3:
+            split_start, split_end, step = params.input.split
+            split_start -= 1
+        elif len(params.input.split) == 1:
+            split_start = 0
+            split_end = 0
+            step = params.input.split[0]
+        else:
+            sys.exit("split=frames_per_block or split=start,end,frames_per_block")
+
+        new_experiments = ExperimentList()
+        for experiment in experiments:
+            if split_start == 0 and split_end == 0:
+                _split_start, _split_end = experiment.scan.get_image_range()
+                _split_start -= 1
+            else:
+                _split_start = split_start
+                _split_end = split_end
+
+            for chunk_start in range(_split_start, _split_end, step):
+                end = chunk_start + step
+                if end > _split_end:
+                    end = _split_end
+
+                tmp = ExperimentListFactory.from_imageset_and_crystal(
+                    experiment.imageset, crystal=None
+                )[0]
+                tmp.scan = experiment.scan[chunk_start:end]
+                tmp.imageset = experiment.imageset[chunk_start:end]
+                new_experiments.append(tmp)
+        experiments = new_experiments
 
     # Compute some numbers
     num_sweeps = 0

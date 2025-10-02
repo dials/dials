@@ -164,7 +164,7 @@ class StillsIndexer(Indexer):
                 )
 
             # discard nearly overlapping lattices on the same shot
-            if self._check_have_similar_crystal_models(experiments):
+            if self._remove_similar_crystal_models(experiments):
                 break
 
             self.indexed_reflections = self.reflections["id"] > -1
@@ -581,9 +581,9 @@ class StillsIndexer(Indexer):
                         graph_verbose=False,
                     )
                     crystal_model = nv()
-                    assert (
-                        len(crystal_model) == 1
-                    ), "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
+                    assert len(crystal_model) == 1, (
+                        "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
+                    )
                     crystal_model = crystal_model[0]
 
                     # Drop candidates that after refinement can no longer be converted to the known target space group

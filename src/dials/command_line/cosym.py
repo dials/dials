@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 import random
 import sys
@@ -71,13 +72,6 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
-min_reflections = 10
-  .type = int(value_min=1)
-  .help = "The minimum number of reflections per experiment."
-
-seed = 230
-  .type = int(value_min=0)
-
 output {
   suffix = "_reindexed"
     .type = str
@@ -86,6 +80,10 @@ output {
   experiments = "symmetrized.expt"
     .type = path
   reflections = "symmetrized.refl"
+    .type = path
+  excluded = False
+    .type = bool
+  excluded_prefix = "excluded"
     .type = path
   json = dials.cosym.json
     .type = path
@@ -103,6 +101,10 @@ class cosym(Subject):
         if params is None:
             params = phil_scope.extract()
         self.params = params
+
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in experiments.scaling_models())
 
         reference_intensities = None
         if self.params.reference:
@@ -164,10 +166,38 @@ class cosym(Subject):
         if len(exclude):
             exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
             logger.info(
-                f"Rejecting {len(exclude)} datasets from cosym analysis "
+                f"Excluding {len(exclude)} datasets from cosym analysis "
                 f"(couldn't determine consistent cb_op to minimum cell):\n"
                 f"dataset indices: {exclude_indices}",
             )
+
+            if self.params.output.excluded:
+                excluded_experiments = copy.deepcopy(self._experiments)
+                excluded_reflections = copy.deepcopy(self._reflections)
+                excluded_experiments, excluded_reflections = (
+                    select_datasets_on_identifiers(
+                        excluded_experiments, excluded_reflections, use_datasets=exclude
+                    )
+                )
+                logger.info(
+                    "Saving excluded experiments to %s",
+                    self.params.output.excluded_prefix + ".expt",
+                )
+                excluded_experiments.as_file(
+                    self.params.output.excluded_prefix + ".expt"
+                )
+                logger.info(
+                    "Saving excluded reflections to %s",
+                    self.params.output.excluded_prefix + ".refl",
+                )
+                joined = flex.reflection_table()
+                excluded_reflections = update_imageset_ids(
+                    excluded_experiments, excluded_reflections
+                )
+                for refl in excluded_reflections:
+                    joined.extend(refl)
+                joined.as_file(self.params.output.excluded_prefix + ".refl")
+
             self._experiments, self._reflections = select_datasets_on_identifiers(
                 self._experiments, self._reflections, exclude_datasets=exclude
             )
@@ -189,19 +219,24 @@ class cosym(Subject):
             outlier_rejection_after_filter=False,
             partiality_threshold=params.partiality_threshold,
         )
-
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
+
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.
             # The purpose of the reference is to help the clustering, not guarantee the indexing solution.
             datasets.append(reference_intensities)
             self.cosym_analysis = CosymAnalysis(
-                datasets, self.params, seed_dataset=len(datasets) - 1
+                datasets,
+                self.params,
+                seed_dataset=len(datasets) - 1,
+                apply_sigma_correction=apply_sigma_correction,
             )
         else:
-            self.cosym_analysis = CosymAnalysis(datasets, self.params)
+            self.cosym_analysis = CosymAnalysis(
+                datasets, self.params, apply_sigma_correction=apply_sigma_correction
+            )
 
     @property
     def experiments(self):
@@ -451,8 +486,7 @@ def run(args=None):
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         raise Sorry(
-            "Mismatched number of experiments and reflection tables found: %s & %s."
-            % (len(experiments), len(reflections))
+            f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
         )
     if len(experiments) == 1:
         raise Sorry(
@@ -468,8 +502,13 @@ def run(args=None):
 
     if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
-    cosym_instance.run()
-    cosym_instance.export()
+    try:
+        cosym_instance.run()
+    except RuntimeError as e:
+        logger.info(e)
+        sys.exit(0)
+    else:
+        cosym_instance.export()
 
 
 if __name__ == "__main__":
