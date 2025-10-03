@@ -434,7 +434,7 @@ namespace dials { namespace algorithms {
       }
 
       if (var_sum < 1e-7) {
-        return true;
+        return false;
       }
 
       double i_sigma_sum = I_sum / std::sqrt(var_sum);

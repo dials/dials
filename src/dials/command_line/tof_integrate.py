@@ -25,10 +25,10 @@ from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
     TOFAbsorptionParams,
+    TOFIncidentSpectrumParams,
     TOFProfile1DParams,
     extract_shoeboxes_to_reflection_table,
     integrate_reflection_table,
-    integrate_reflection_table_profile1d,
     tof_calculate_ellipse_shoebox_mask,
     tof_calculate_seed_skewness_shoebox_mask,
 )
@@ -37,14 +37,6 @@ logger = logging.getLogger("dials.command_line.simple_integrate")
 
 phil_scope = parse(
     """
-input{
-    incident_run = None
-        .type = str
-        .help = "Path to incident run to normalize intensities (e.g. Vanadium)."
-    empty_run = None
-        .type = str
-        .help = "Path to empty run to correct empty counts."
-}
 output {
 experiments = 'integrated.expt'
     .type = str
@@ -80,50 +72,83 @@ calculated{
     .help = "The resolution spots are integrated to when using integration_type.calculated"
 
 }
-method = *summation seed_skewness profile1d profile3d
+method = *summation profile1d profile3d
     .type = choice
     .help = "Integration method: "
             "summation: shoebox summation"
-            "seed_skewness: https://doi.org/10.1107/S0021889803021939"
             "profile1d: https://doi.org/10.1038/srep36628 "
             "profile3d: https://doi.org/10.1016/j.nima.2016.12.026"
 
+mask = *ellipse seed_skewness
+    .type = choice
+    .help = "Foreground/background mask method: "
+            "seed_skewness: https://doi.org/10.1107/S0021889803021939"
+
+
 corrections{
+    incident_run = None
+        .type = str
+        .help = "Path to incident run to normalize intensities (e.g. Vanadium)."
+    empty_run = None
+        .type = str
+        .help = "Path to empty run to correct empty counts."
     lorentz = False
         .type = bool
         .help = "Apply the Lorentz correction to target spectrum."
+    absorption{
+        incident_spectrum{
+            sample_number_density = 0.0722
+                .type = float
+                .help = "Sample number density for incident run."
+                        "Default is Vanadium used at SXD"
+            sample_radius = 0.03
+                .type = float
+                .help = "Sample radius incident run."
+                        "Default is Vanadium used at SXD"
+            scattering_x_section = 5.158
+                .type = float
+                .help = "Sample scattering cross section used for incident run."
+                        "Default is Vanadium used at SXD"
+            absorption_x_section = 4.4883
+                .type = float
+                .help = "Sample absorption cross section for incident run."
+                        "Default is Vanadium used at SXD"
+        }
+        target_spectrum{
+            sample_number_density = None
+                .type = float
+                .help = "Sample number density for target run."
+            sample_radius = None
+                .type = float
+                .help = "Sample radius target run."
+            scattering_x_section = None
+                .type = float
+                .help = "Sample scattering cross section used for target run."
+            absorption_x_section = None
+                .type = float
+                .help = "Sample absorption cross section for target run."
+        }
+    }
 }
-incident_spectrum{
-    sample_number_density = 0.0722
+profile1d{
+    init_alpha = 0.03
         .type = float
-        .help = "Sample number density for incident run."
-                "Default is Vanadium used at SXD"
-    sample_radius = 0.03
+        .help = "Initial alpha value before optimization"
+    init_beta = 0.03
         .type = float
-        .help = "Sample radius incident run."
-                "Default is Vanadium used at SXD"
-    scattering_x_section = 5.158
+        .help = "Initial beta value before optimization"
+    min_alpha = 0.02
         .type = float
-        .help = "Sample scattering cross section used for incident run."
-                "Default is Vanadium used at SXD"
-    absorption_x_section = 4.4883
+        .help = "Min alpha value for optimization"
+    max_alpha = 1.0
         .type = float
-        .help = "Sample absorption cross section for incident run."
-                "Default is Vanadium used at SXD"
-}
-target_spectrum{
-    sample_number_density = None
+        .help = "Max alpha value for optimization"
+    min_beta = 0.0
         .type = float
-        .help = "Sample number density for target run."
-    sample_radius = None
+        .help = "Min beta value for optimization"
+    max_beta = 1.0
         .type = float
-        .help = "Sample radius target run."
-    scattering_x_section = None
-        .type = float
-        .help = "Sample scattering cross section used for target run."
-    absorption_x_section = None
-        .type = float
-        .help = "Sample absorption cross section for target run."
+        .help = "Max beta value for optimization"
 }
 mp{
     nproc = Auto
@@ -162,17 +187,19 @@ def get_corrections_data(experiments, params):
     empty_proton_charge = None
 
     if applying_incident_and_empty_runs(params):
-        incident_fmt_class = experiment_cls.get_instance(params.input.incident_run)
-        incident_data = experiment_cls(params.input.incident_run).get_imageset(
-            params.input.incident_run
+        incident_fmt_class = experiment_cls.get_instance(
+            params.corrections.incident_run
+        )
+        incident_data = experiment_cls(params.corrections.incident_run).get_imageset(
+            params.corrections.incident_run
         )
         corrections["incident_data"] = incident_data
 
-        empty_data = experiment_cls(params.input.empty_run).get_imageset(
-            params.input.empty_run
+        empty_data = experiment_cls(params.corrections.empty_run).get_imageset(
+            params.corrections.empty_run
         )
         corrections["empty_data"] = empty_data
-        empty_fmt_class = experiment_cls.get_instance(params.input.empty_run)
+        empty_fmt_class = experiment_cls.get_instance(params.corrections.empty_run)
         incident_proton_charge = incident_fmt_class.get_proton_charge()
         empty_proton_charge = empty_fmt_class.get_proton_charge()
 
@@ -181,14 +208,14 @@ def get_corrections_data(experiments, params):
 
         if applying_spherical_absorption_correction(params):
             corrections["absorption_params"] = TOFAbsorptionParams(
-                params.target_spectrum.sample_radius,
-                params.target_spectrum.scattering_x_section,
-                params.target_spectrum.absorption_x_section,
-                params.target_spectrum.sample_number_density,
-                params.incident_spectrum.sample_radius,
-                params.incident_spectrum.scattering_x_section,
-                params.incident_spectrum.absorption_x_section,
-                params.incident_spectrum.sample_number_density,
+                params.corrections.absorption.target_spectrum.sample_radius,
+                params.corrections.absorption.target_spectrum.scattering_x_section,
+                params.corrections.absorption.target_spectrum.absorption_x_section,
+                params.corrections.absorption.target_spectrum.sample_number_density,
+                params.corrections.absorption.incident_spectrum.sample_radius,
+                params.corrections.absorption.incident_spectrum.scattering_x_section,
+                params.corrections.absorption.incident_spectrum.absorption_x_section,
+                params.corrections.absorption.incident_spectrum.sample_number_density,
             )
 
     return corrections
@@ -205,135 +232,56 @@ def calculate_shoebox_masks(experiment, reflections, method):
     return reflections
 
 
-def integrate_reflection_table_for_experiment_profile1d(
-    expt, expt_reflections, expt_data, apply_lorentz, **kwargs
+def integrate_reflection_table_for_experiment(
+    expt, expt_reflections, expt_data, params, **kwargs
 ):
-    alpha = 0.03
-    beta = 0.03
-    sigma = 1.0
-    A = 1.0
-    alpha_min = 0.029
-    alpha_max = 1.0
-    beta_min = 0.0
-    beta_max = 1.0
-    profile_params = TOFProfile1DParams(
-        A, alpha, alpha_min, alpha_max, beta, beta_min, beta_max
+    apply_lorentz = params.corrections.lorentz
+    profile1d_params = None
+    incident_params = None
+    absorption_params = None
+
+    logger.info(f"    Integrating using {params.method}")
+
+    if params.method == "profile1d":
+        alpha = params.profile1d.init_alpha
+        beta = params.profile1d.init_beta
+        A = 1.0
+        min_alpha = params.profile1d.min_alpha
+        max_alpha = params.profile1d.max_alpha
+        min_beta = params.profile1d.min_beta
+        max_beta = params.profile1d.max_beta
+        profile1d_params = TOFProfile1DParams(
+            A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta
+        )
+
+    if apply_lorentz:
+        logger.info("    Adding Lorentz correction")
+
+    if "incident_data" in kwargs:
+        incident_params = TOFIncidentSpectrumParams(
+            kwargs["incident_data"],
+            kwargs["empty_data"],
+            kwargs["expt_proton_charge"],
+            kwargs["incident_proton_charge"],
+            kwargs["empty_proton_charge"],
+        )
+        logger.info("    Adding incident spectrum correction")
+
+        if "absorption_params" in kwargs:
+            logger.info("    Adding absorption correction")
+            absorption_params = kwargs["absorption_params"]
+
+    integrate_reflection_table(
+        expt_reflections,
+        expt,
+        expt_data,
+        incident_params,
+        absorption_params,
+        apply_lorentz,
+        profile1d_params,
     )
 
-    if len(kwargs) == 0:
-        if apply_lorentz:
-            logger.info("    Integrating reflections with Lorentz correction")
-        else:
-            logger.info("    Integrating reflections")
-        integrate_reflection_table_profile1d(
-            expt_reflections, expt, expt_data, apply_lorentz, profile_params
-        )
-
-        return expt_reflections
-
-    if "incident_data" in kwargs:
-        if "absorption_params" in kwargs:
-            if apply_lorentz:
-                logger.info(
-                    "    Integrating reflections with incident spectrum, Lorentz, and spherical absorption corrections"
-                )
-            else:
-                logger.info(
-                    "    Integrating reflections with incident spectrum and spherical absorption corrections"
-                )
-            integrate_reflection_table_profile1d(
-                expt_reflections,
-                expt,
-                expt_data,
-                kwargs["incident_data"],
-                kwargs["empty_data"],
-                kwargs["expt_proton_charge"],
-                kwargs["incident_proton_charge"],
-                kwargs["empty_proton_charge"],
-                kwargs["absorption_params"],
-                apply_lorentz,
-                A,
-                alpha,
-                beta,
-                sigma,
-            )
-            return expt_reflections
-
-        if apply_lorentz:
-            logger.info(
-                "    Integrating reflections with incident spectrum and Lorentz corrections"
-            )
-        else:
-            logger.info("    Integrating reflections with incident spectrum correction")
-        integrate_reflection_table_profile1d(
-            expt_reflections,
-            expt,
-            expt_data,
-            kwargs["incident_data"],
-            kwargs["empty_data"],
-            kwargs["expt_proton_charge"],
-            kwargs["incident_proton_charge"],
-            kwargs["empty_proton_charge"],
-            apply_lorentz,
-            profile_params,
-        )
-        return expt_reflections
-
-
-def integrate_reflection_table_for_experiment(
-    expt, expt_reflections, expt_data, apply_lorentz, **kwargs
-):
-    if len(kwargs) == 0:
-        if apply_lorentz:
-            logger.info("    Integrating reflections with Lorentz correction")
-        else:
-            logger.info("    Integrating reflections")
-        integrate_reflection_table(expt_reflections, expt, expt_data, apply_lorentz)
-
-        return expt_reflections
-
-    if "incident_data" in kwargs:
-        if "absorption_params" in kwargs:
-            if apply_lorentz:
-                logger.info(
-                    "    Integrating reflections with incident spectrum, Lorentz, and spherical absorption corrections"
-                )
-            else:
-                logger.info(
-                    "    Integrating reflections with incident spectrum and spherical absorption corrections"
-                )
-            integrate_reflection_table(
-                expt_reflections,
-                expt,
-                expt_data,
-                kwargs["incident_data"],
-                kwargs["empty_data"],
-                kwargs["expt_proton_charge"],
-                kwargs["incident_proton_charge"],
-                kwargs["empty_proton_charge"],
-                kwargs["absorption_params"],
-                apply_lorentz,
-            )
-            return expt_reflections
-
-        if apply_lorentz:
-            logger.info(
-                "    Integrating reflections with incident spectrum and Lorentz corrections"
-            )
-        else:
-            logger.info("    Integrating reflections with incident spectrum correction")
-        integrate_reflection_table(
-            expt_reflections,
-            expt,
-            expt_data,
-            kwargs["incident_data"],
-            kwargs["empty_data"],
-            kwargs["expt_proton_charge"],
-            kwargs["incident_proton_charge"],
-            kwargs["empty_proton_charge"],
-            apply_lorentz,
-        )
-        return expt_reflections
+    return expt_reflections
 
 
 def remove_overlapping_reflections(reflections):
@@ -425,7 +373,7 @@ def get_predicted_observed_reflections(params, experiments, reflections):
         if dmin is None or expt_dmin < dmin:
             dmin = expt_dmin
 
-    logger.info(f"dmin {dmin}")
+    logger.info(f"Calculated dmin from observed reflections: {round(dmin, 3)}")
     predicted_reflections = None
     miller_indices = reflections["miller_index"]
     for idx, experiment in enumerate(experiments):
@@ -659,10 +607,10 @@ def run():
 def applying_spherical_absorption_correction(params):
     all_params_present = True
     some_params_present = False
-    for i in dir(params.target_spectrum):
+    for i in dir(params.corrections.absorption.target_spectrum):
         if i.startswith("__"):
             continue
-        if getattr(params.target_spectrum, i) is not None:
+        if getattr(params.corrections.absorption.target_spectrum, i) is not None:
             some_params_present = True
         else:
             all_params_present = False
@@ -674,13 +622,13 @@ def applying_spherical_absorption_correction(params):
 
 
 def applying_incident_and_empty_runs(params):
-    if params.input.incident_run is not None:
-        assert params.input.empty_run is not None, (
+    if params.corrections.incident_run is not None:
+        assert params.corrections.empty_run is not None, (
             "Incident run given without empty run."
         )
         return True
-    elif params.input.empty_run is not None:
-        assert params.input.incident_run is not None, (
+    elif params.corrections.empty_run is not None:
+        assert params.corrections.incident_run is not None, (
             "Empty run given without incident run."
         )
         return True
@@ -733,9 +681,7 @@ def run_integrate(params, experiments, reflections):
             expt_data,
         )
 
-        expt_reflections = calculate_shoebox_masks(
-            expt, expt_reflections, params.method
-        )
+        expt_reflections = calculate_shoebox_masks(expt, expt_reflections, params.mask)
         expt_reflections.is_overloaded(experiments)
         expt_reflections.contains_invalid_pixels()
 
@@ -767,23 +713,13 @@ def run_integrate(params, experiments, reflections):
             ~success, expt_reflections.flags.failed_during_background_modelling
         )
 
-        logger.info(f"    Integrating using {params.method}")
-        if params.method == "profile1d":
-            expt_reflections = integrate_reflection_table_for_experiment_profile1d(
-                expt,
-                expt_reflections,
-                expt_data,
-                params.corrections.lorentz,
-                **corrections_data,
-            )
-        else:
-            expt_reflections = integrate_reflection_table_for_experiment(
-                expt,
-                expt_reflections,
-                expt_data,
-                params.corrections.lorentz,
-                **corrections_data,
-            )
+        expt_reflections = integrate_reflection_table_for_experiment(
+            expt,
+            expt_reflections,
+            expt_data,
+            params,
+            **corrections_data,
+        )
 
         predicted_reflections.set_selected(sel_expt, expt_reflections)
 

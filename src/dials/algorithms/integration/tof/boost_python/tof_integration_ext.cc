@@ -7,12 +7,72 @@
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
+
+  void integrate_reflection_table_wrapper(dials::af::reflection_table &reflection_table,
+                                          dxtbx::model::Experiment &experiment,
+                                          dxtbx::ImageSequence &data,
+                                          object incident_params_obj,
+                                          object absorption_params_obj,
+                                          const bool &apply_lorentz,
+                                          object profile1d_params_obj) {
+    boost::optional<TOFProfile1DParams> profile1d_params;
+    if (!profile1d_params_obj.is_none()) {
+      profile1d_params = extract<TOFProfile1DParams>(profile1d_params_obj);
+    }
+
+    if (absorption_params_obj.is_none() && incident_params_obj.is_none()) {
+      integrate_reflection_table(
+        reflection_table, experiment, data, apply_lorentz, profile1d_params);
+
+      return;
+    }
+
+    if (!incident_params_obj.is_none()) {
+      TOFIncidentSpectrumParams incident_params =
+        extract<TOFIncidentSpectrumParams>(incident_params_obj);
+
+      if (!absorption_params_obj.is_none()) {
+        TOFAbsorptionParams absorption_params =
+          extract<TOFAbsorptionParams>(absorption_params_obj);
+
+        integrate_reflection_table(reflection_table,
+                                   experiment,
+                                   data,
+                                   incident_params,
+                                   absorption_params,
+                                   apply_lorentz,
+                                   profile1d_params);
+      }
+
+      else {
+        integrate_reflection_table(reflection_table,
+                                   experiment,
+                                   data,
+                                   incident_params,
+                                   apply_lorentz,
+                                   profile1d_params);
+      }
+    }
+  }
+
   BOOST_PYTHON_MODULE(dials_algorithms_tof_integration_ext) {
     class_<TOFAbsorptionParams>("TOFAbsorptionParams", no_init)
       .def(init<double, double, double, double, double, double, double, double>());
 
     class_<TOFIncidentSpectrumParams>("TOFIncidentSpectrumParams", no_init)
-      .def(init<ImageSequence &, ImageSequence &, double, double, double>());
+      .def(init<std::shared_ptr<ImageSequence>,
+                std::shared_ptr<ImageSequence>,
+                double,
+                double,
+                double>())
+      .def_readwrite("incident_data", &TOFIncidentSpectrumParams::incident_data)
+      .def_readwrite("empty_data", &TOFIncidentSpectrumParams::empty_data)
+      .def_readwrite("sample_proton_charge",
+                     &TOFIncidentSpectrumParams::sample_proton_charge)
+      .def_readwrite("incident_proton_charge",
+                     &TOFIncidentSpectrumParams::incident_proton_charge)
+      .def_readwrite("empty_proton_charge",
+                     &TOFIncidentSpectrumParams::empty_proton_charge);
 
     class_<TOFProfile1DParams>("TOFProfile1DParams", no_init)
       .def(init<double, double, double, double, double, double, double>());
@@ -33,51 +93,14 @@ namespace dials { namespace algorithms { namespace boost_python {
         (arg("reflection_table"), arg("experiment"), arg("data")));
 
     def("integrate_reflection_table",
-        static_cast<void (*)(dials::af::reflection_table &,
-                             dxtbx::model::Experiment &,
-                             dxtbx::ImageSequence &,
-                             const bool &)>(&integrate_reflection_table));
-
-    def("integrate_reflection_table",
-        static_cast<void (*)(dials::af::reflection_table &,
-                             dxtbx::model::Experiment &,
-                             dxtbx::ImageSequence &,
-                             const TOFIncidentSpectrumParams &,
-                             const bool &)>(&integrate_reflection_table));
-
-    def("integrate_reflection_table",
-        static_cast<void (*)(dials::af::reflection_table &,
-                             dxtbx::model::Experiment &,
-                             dxtbx::ImageSequence &,
-                             const TOFIncidentSpectrumParams &,
-                             const TOFAbsorptionParams &,
-                             const bool &)>(&integrate_reflection_table));
-
-    def("integrate_reflection_table_profile1d",
-        static_cast<void (*)(dials::af::reflection_table &,
-                             dxtbx::model::Experiment &,
-                             dxtbx::ImageSequence &,
-                             const bool &,
-                             const TOFProfile1DParams &)>(
-          &integrate_reflection_table_profile1d));
-    def("integrate_reflection_table_profile1d",
-        static_cast<void (*)(dials::af::reflection_table &,
-                             dxtbx::model::Experiment &,
-                             dxtbx::ImageSequence &,
-                             const TOFIncidentSpectrumParams &,
-                             const bool &,
-                             const TOFProfile1DParams &)>(
-          &integrate_reflection_table_profile1d));
-
-    def("integrate_reflection_table_profile1d",
-        static_cast<void (*)(dials::af::reflection_table &,
-                             dxtbx::model::Experiment &,
-                             dxtbx::ImageSequence &,
-                             const TOFIncidentSpectrumParams &,
-                             const TOFAbsorptionParams &,
-                             const bool &,
-                             const TOFProfile1DParams &)>(
-          &integrate_reflection_table_profile1d));
+        &integrate_reflection_table_wrapper,
+        (arg("reflection_table"),
+         arg("experiment"),
+         arg("data"),
+         arg("incident_params"),
+         arg("absorption_params"),
+         arg("apply_lorentz_correction"),
+         arg("profile1d_params") = object()));
 
     def("calculate_line_profile_for_reflection",
         static_cast<boost::python::tuple (*)(dials::af::reflection_table &,
