@@ -1242,7 +1242,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         if not indexing_succeeded:
             if self.params.indexing.stills.reflection_subsampling.enable:
-                flex.set_random_seed(self.params.indexing.stills.reflection_subsampling.seed)
+                flex.set_random_seed(
+                    self.params.indexing.stills.reflection_subsampling.seed
+                )
                 subsets = range(
                     self.params.indexing.stills.reflection_subsampling.step_start,
                     self.params.indexing.stills.reflection_subsampling.step_stop
