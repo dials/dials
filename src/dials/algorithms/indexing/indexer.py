@@ -299,6 +299,11 @@ indexing {
     set_mosaic_half_deg_value = None
       .type=float
       .help=If specified, will set the mosaic half degree value and override the value determined from nave refinement
+    outlier_filter_after_second_refine = False
+      .type=bool
+      .expert_level = 2
+      .help=The stills indexer does two rounds of outlier rejection, refinement, and computing mosaic parameters. If \
+            False, remove outliers after only the first round. If True, also remove outliers after the second round.
   }
 }
 """

@@ -52,6 +52,7 @@ indexing {
   method = fft1d
   stills {
     indexer = stills
+    outlier_filter_after_second_refine = True
   }
 }
 output.log = dials.ssx_index.log
