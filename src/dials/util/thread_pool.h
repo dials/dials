@@ -42,7 +42,7 @@ namespace dials { namespace util {
       io_context_.stop();
       try {
         threads_.join_all();
-      } catch (const std::exception &) {
+      } catch (const std::exception&) {
         // pass
       }
     }
@@ -77,7 +77,7 @@ namespace dials { namespace util {
        * @param function The function to call
        * @param counter The counter to increment
        */
-      FunctionRunner(Function function, std::atomic<std::size_t> &counter)
+      FunctionRunner(Function function, std::atomic<std::size_t>& counter)
           : function_(function), counter_(counter) {}
 
       /**
@@ -90,7 +90,7 @@ namespace dials { namespace util {
 
     protected:
       Function function_;
-      std::atomic<std::size_t> &counter_;
+      std::atomic<std::size_t>& counter_;
     };
 
     boost::asio::io_context io_context_;

@@ -18,7 +18,7 @@ namespace dials { namespace nexus {
   template <>
   struct serialize<NXinstrument> {
     template <typename Handle>
-    static NXinstrument load(const Handle &handle) {
+    static NXinstrument load(const Handle& handle) {
       NXinstrument result;
 
       // Process the objects in the group
@@ -46,7 +46,7 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const NXinstrument &obj, Handle &handle) {}
+    static void dump(const NXinstrument& obj, Handle& handle) {}
   };
 
 }}  // namespace dials::nexus

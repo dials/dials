@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
      * Initialise the algorithm
      * @param image The image pixels
      */
-    CentroidImage2d(const af::const_ref<FloatType, af::c_grid<2> > &image)
+    CentroidImage2d(const af::const_ref<FloatType, af::c_grid<2> >& image)
         : centroid_algorithm_type(image.as_1d(),
                                   generate_coords(image.accessor()).const_ref()) {}
 
@@ -85,7 +85,7 @@ namespace dials { namespace algorithms {
      * Initialise the algorithm
      * @param image The image pixels
      */
-    CentroidImage3d(const af::const_ref<FloatType, af::c_grid<3> > &image)
+    CentroidImage3d(const af::const_ref<FloatType, af::c_grid<3> >& image)
         : centroid_algorithm_type(image.as_1d(),
                                   generate_coords(image.accessor()).const_ref()) {}
 

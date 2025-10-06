@@ -26,7 +26,7 @@ namespace dials { namespace algorithms { namespace boost_python {
    * @returns The data
    */
   af::versa<double, af::c_grid<3> > ReferenceProfileData_data(
-    const ReferenceProfileData &data,
+    const ReferenceProfileData& data,
     std::size_t index) {
     af::versa<double, af::c_grid<3> > result(data.data(index).accessor());
     std::copy(data.data(index).begin(), data.data(index).end(), result.begin());
@@ -40,7 +40,7 @@ namespace dials { namespace algorithms { namespace boost_python {
    * @returns The mask
    */
   af::versa<bool, af::c_grid<3> > ReferenceProfileData_mask(
-    const ReferenceProfileData &data,
+    const ReferenceProfileData& data,
     std::size_t index) {
     af::versa<bool, af::c_grid<3> > result(data.mask(index).accessor());
     std::copy(data.mask(index).begin(), data.mask(index).end(), result.begin());
@@ -51,7 +51,7 @@ namespace dials { namespace algorithms { namespace boost_python {
    * A class to pickle the reference profile data
    */
   struct ReferenceProfileDataPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getstate(const ReferenceProfileData &obj) {
+    static boost::python::tuple getstate(const ReferenceProfileData& obj) {
       std::size_t version = 1;
       return boost::python::make_tuple(
         version,
@@ -59,7 +59,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         ReferenceProfileDataPickleSuite::get_mask_list(obj));
     }
 
-    static void setstate(ReferenceProfileData &obj, boost::python::tuple state) {
+    static void setstate(ReferenceProfileData& obj, boost::python::tuple state) {
       typedef af::const_ref<double, af::c_grid<3> > data_type;
       typedef af::const_ref<bool, af::c_grid<3> > mask_type;
       DIALS_ASSERT(boost::python::len(state) == 3);
@@ -73,7 +73,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       }
     }
 
-    static boost::python::list get_data_list(const ReferenceProfileData &obj) {
+    static boost::python::list get_data_list(const ReferenceProfileData& obj) {
       boost::python::list result;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         result.append(ReferenceProfileData_data(obj, i));
@@ -81,7 +81,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       return result;
     }
 
-    static boost::python::list get_mask_list(const ReferenceProfileData &obj) {
+    static boost::python::list get_mask_list(const ReferenceProfileData& obj) {
       boost::python::list result;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         result.append(ReferenceProfileData_mask(obj, i));
@@ -94,7 +94,7 @@ namespace dials { namespace algorithms { namespace boost_python {
    * A class to pickle the reference profile data
    */
   struct GaussianRSReferenceProfileDataPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const GaussianRSReferenceProfileData &obj) {
+    static boost::python::tuple getinitargs(const GaussianRSReferenceProfileData& obj) {
       return boost::python::make_tuple(obj.reference(), obj.sampler(), obj.spec());
     }
   };
@@ -105,14 +105,14 @@ namespace dials { namespace algorithms { namespace boost_python {
   struct GaussianRSMultiCrystalReferenceProfileDataPickleSuite
       : boost::python::pickle_suite {
     static boost::python::tuple getstate(
-      const GaussianRSMultiCrystalReferenceProfileData &obj) {
+      const GaussianRSMultiCrystalReferenceProfileData& obj) {
       std::size_t version = 1;
       return boost::python::make_tuple(
         version,
         GaussianRSMultiCrystalReferenceProfileDataPickleSuite::get_data_list(obj));
     }
 
-    static void setstate(GaussianRSMultiCrystalReferenceProfileData &obj,
+    static void setstate(GaussianRSMultiCrystalReferenceProfileData& obj,
                          boost::python::tuple state) {
       typedef GaussianRSReferenceProfileData data_type;
       DIALS_ASSERT(boost::python::len(state) == 2);
@@ -125,7 +125,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     }
 
     static boost::python::list get_data_list(
-      const GaussianRSMultiCrystalReferenceProfileData &obj) {
+      const GaussianRSMultiCrystalReferenceProfileData& obj) {
       boost::python::list result;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         result.append(obj[i]);
@@ -136,11 +136,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   struct ThreadSafeEmpiricalProfileModellerPickleSuite : boost::python::pickle_suite {
     static boost::python::tuple getinitargs(
-      const ThreadSafeEmpiricalProfileModeller &obj) {
+      const ThreadSafeEmpiricalProfileModeller& obj) {
       return boost::python::make_tuple(obj.size(), obj.datasize(), obj.threshold());
     }
     static boost::python::tuple getstate(
-      const ThreadSafeEmpiricalProfileModeller &obj) {
+      const ThreadSafeEmpiricalProfileModeller& obj) {
       typedef ThreadSafeEmpiricalProfileModeller::data_type data_type;
       typedef ThreadSafeEmpiricalProfileModeller::mask_type mask_type;
       boost::python::list data_list;
@@ -151,7 +151,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         try {
           data_list.append(obj.data(i));
           mask_list.append(obj.mask(i));
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           data_list.append(data_type());
           mask_list.append(mask_type());
         }
@@ -160,7 +160,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         data_list, mask_list, nref_list, obj.finalized());
     }
 
-    static void setstate(ThreadSafeEmpiricalProfileModeller &obj,
+    static void setstate(ThreadSafeEmpiricalProfileModeller& obj,
                          boost::python::tuple state) {
       typedef ThreadSafeEmpiricalProfileModeller::data_type data_type;
       typedef ThreadSafeEmpiricalProfileModeller::mask_type mask_type;
@@ -186,7 +186,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   };
 
   struct GaussianRSReferenceCalculatorPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const GaussianRSReferenceCalculator &obj) {
+    static boost::python::tuple getinitargs(const GaussianRSReferenceCalculator& obj) {
       boost::python::list spec_list;
       boost::python::list modeller_list;
       for (std::size_t i = 0; i < obj.spec().size(); ++i) {
@@ -203,8 +203,8 @@ namespace dials { namespace algorithms { namespace boost_python {
    * @param reflection The reflection to integrate
    * @param adjacent_reflections The reflections to integrator
    */
-  void IntensityCalculatorIface_call(const IntensityCalculatorIface &self,
-                                     af::Reflection &reflection,
+  void IntensityCalculatorIface_call(const IntensityCalculatorIface& self,
+                                     af::Reflection& reflection,
                                      boost::python::object adjacent_reflections) {
     std::vector<af::Reflection> ar;
     for (std::size_t i = 0; i < boost::python::len(adjacent_reflections); ++i) {
@@ -219,7 +219,7 @@ namespace dials { namespace algorithms { namespace boost_python {
    * @param spec The spec list
    * @returns The reference calculator
    */
-  GaussianRSReferenceCalculator *GaussianRSReferenceCalculator_init(
+  GaussianRSReferenceCalculator* GaussianRSReferenceCalculator_init(
     std::shared_ptr<SamplerIface> sampler,
     boost::python::list spec) {
     af::shared<TransformSpec> spec_list;
@@ -229,7 +229,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     return new GaussianRSReferenceCalculator(sampler, spec_list.const_ref());
   }
 
-  GaussianRSReferenceCalculator *GaussianRSReferenceCalculator_init2(
+  GaussianRSReferenceCalculator* GaussianRSReferenceCalculator_init2(
     std::shared_ptr<SamplerIface> sampler,
     boost::python::list spec,
     boost::python::list modeller) {
@@ -272,10 +272,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Export GausianRSMaskCalculator
     class_<GaussianRSMaskCalculator, bases<MaskCalculatorIface> >(
       "GaussianRSMaskCalculator", no_init)
-      .def(init<const BeamBase &,
-                const Detector &,
-                const Goniometer &,
-                const Scan &,
+      .def(init<const BeamBase&,
+                const Detector&,
+                const Goniometer&,
+                const Scan&,
                 double,
                 double>());
 
@@ -313,9 +313,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     // Export GaussianRSReferenceProfileData
     class_<GaussianRSReferenceProfileData>("GaussianRSReferenceProfileData", no_init)
-      .def(init<const ReferenceProfileData &,
+      .def(init<const ReferenceProfileData&,
                 std::shared_ptr<SamplerIface>,
-                const TransformSpec &>())
+                const TransformSpec&>())
       .def("reference",
            &GaussianRSReferenceProfileData::reference,
            return_internal_reference<>())
@@ -340,7 +340,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Export GaussianRSIntensityCalculator
     class_<GaussianRSIntensityCalculator, bases<IntensityCalculatorIface> >(
       "GaussianRSIntensityCalculator", no_init)
-      .def(init<const GaussianRSMultiCrystalReferenceProfileData &, bool, bool>());
+      .def(init<const GaussianRSMultiCrystalReferenceProfileData&, bool, bool>());
 
     // Export ThreadSafeEmpiricalProfileModeller
     class_<ThreadSafeEmpiricalProfileModeller, bases<EmpiricalProfileModeller> >(
@@ -352,10 +352,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Export GaussianRSReferenceCalculator
     class_<GaussianRSReferenceCalculator, bases<ReferenceCalculatorIface> >(
       "GaussianRSReferenceCalculator", no_init)
-      .def(init<std::shared_ptr<SamplerIface>, const af::const_ref<TransformSpec> &>())
+      .def(init<std::shared_ptr<SamplerIface>, const af::const_ref<TransformSpec>&>())
       .def(init<std::shared_ptr<SamplerIface>,
-                const af::const_ref<TransformSpec> &,
-                const af::const_ref<ThreadSafeEmpiricalProfileModeller> &>())
+                const af::const_ref<TransformSpec>&,
+                const af::const_ref<ThreadSafeEmpiricalProfileModeller>&>())
       .def("__init__", make_constructor(&GaussianRSReferenceCalculator_init))
       .def("__init__", make_constructor(&GaussianRSReferenceCalculator_init2))
       .def("accumulate", &GaussianRSReferenceCalculator::accumulate)
@@ -368,12 +368,12 @@ namespace dials { namespace algorithms { namespace boost_python {
    */
   void export_integrator() {
     class_<ParallelIntegrator>("MultiThreadedIntegrator", no_init)
-      .def(init<const af::reflection_table &,
+      .def(init<const af::reflection_table&,
                 ImageSequence,
-                const MaskCalculatorIface &,
-                const BackgroundCalculatorIface &,
-                const IntensityCalculatorIface &,
-                const Logger &,
+                const MaskCalculatorIface&,
+                const BackgroundCalculatorIface&,
+                const IntensityCalculatorIface&,
+                const Logger&,
                 std::size_t,
                 std::size_t,
                 bool,
@@ -398,12 +398,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       .staticmethod("compute_max_block_size");
 
     class_<ParallelReferenceProfiler>("MultiThreadedReferenceProfiler", no_init)
-      .def(init<const af::reflection_table &,
+      .def(init<const af::reflection_table&,
                 ImageSequence,
-                const MaskCalculatorIface &,
-                const BackgroundCalculatorIface &,
-                ReferenceCalculatorIface &,
-                const Logger &,
+                const MaskCalculatorIface&,
+                const BackgroundCalculatorIface&,
+                ReferenceCalculatorIface&,
+                const Logger&,
                 std::size_t,
                 std::size_t,
                 bool,
@@ -431,13 +431,13 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<SimpleBlockList>("SimpleBlockList", no_init)
       .def(init<tiny<int, 2>, int>())
-      .def(init<const af::const_ref<tiny<int, 2> > &>())
+      .def(init<const af::const_ref<tiny<int, 2> >&>())
       .def("__getitem__", &SimpleBlockList::operator[])
       .def("__len__", &SimpleBlockList::size)
       .def("block_index", &SimpleBlockList::block_index);
 
     class_<SimpleReflectionManager>("SimpleReflectionManager", no_init)
-      .def(init<const SimpleBlockList &, af::reflection_table, std::size_t>())
+      .def(init<const SimpleBlockList&, af::reflection_table, std::size_t>())
       .def("data", &SimpleReflectionManager::data)
       .def("finished", &SimpleReflectionManager::finished)
       .def("block", &SimpleReflectionManager::block)

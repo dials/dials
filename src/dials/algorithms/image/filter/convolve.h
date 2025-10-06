@@ -32,8 +32,8 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   af::versa<FloatType, af::c_grid<2> > convolve(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
-    const af::const_ref<FloatType, af::c_grid<2> > &kernel) {
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
+    const af::const_ref<FloatType, af::c_grid<2> >& kernel) {
     // Only allow odd-sized kernel sizes
     DIALS_ASSERT(kernel.accessor()[0] & 1);
     DIALS_ASSERT(kernel.accessor()[1] & 1);
@@ -81,8 +81,8 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   af::versa<FloatType, af::c_grid<2> > convolve_row(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
-    const af::const_ref<FloatType> &kernel) {
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
+    const af::const_ref<FloatType>& kernel) {
     // Only allow odd-sized kernel sizes
     DIALS_ASSERT(kernel.size() & 1);
 
@@ -122,8 +122,8 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   af::versa<FloatType, af::c_grid<2> > convolve_col(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
-    const af::const_ref<FloatType> &kernel) {
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
+    const af::const_ref<FloatType>& kernel) {
     // Only allow odd-sized kernel sizes
     DIALS_ASSERT(kernel.size() & 1);
 

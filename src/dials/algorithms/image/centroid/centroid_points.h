@@ -50,8 +50,8 @@ namespace dials { namespace algorithms {
      * @param coord The list of coordinates.
      * @param value The list of values
      */
-    CentroidPoints(const af::const_ref<FloatType> &pixels,
-                   const af::const_ref<coord_type> &coords)
+    CentroidPoints(const af::const_ref<FloatType>& pixels,
+                   const af::const_ref<coord_type>& coords)
         : sum_pixels_((value_type)sum(pixels)),
           sum_pixels_sq_((value_type)sum_sq(pixels)),
           sum_pixels_coords_(0.0),
@@ -189,7 +189,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    coord_type pow2c(const coord_type &x) const {
+    coord_type pow2c(const coord_type& x) const {
       coord_type r;
       for (std::size_t i = 0; i < DIM; ++i) {
         r[i] = x[i] * x[i];

@@ -40,7 +40,7 @@ namespace dials { namespace nexus {
   template <>
   struct serialize<NXdetector> {
     template <typename Handle>
-    static NXdetector load(const Handle &handle) {
+    static NXdetector load(const Handle& handle) {
       NXdetector result;
 
       // Process the objects in the group
@@ -122,7 +122,7 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const NXdetector &obj, Handle &handle) {}
+    static void dump(const NXdetector& obj, Handle& handle) {}
   };
 
 }}  // namespace dials::nexus

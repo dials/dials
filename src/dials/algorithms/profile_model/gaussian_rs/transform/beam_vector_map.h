@@ -38,8 +38,8 @@ namespace dials { namespace algorithms { namespace profile_model {
      * @param corner Calculate coordinates at corners or centre
      * @returns An array of beam vectors
      */
-    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel &panel,
-                                                                   const BeamBase &beam,
+    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel& panel,
+                                                                   const BeamBase& beam,
                                                                    std::size_t n_div,
                                                                    bool corner) {
       // check the input
@@ -90,8 +90,8 @@ namespace dials { namespace algorithms { namespace profile_model {
      * @param corner Calculate coordinates at corners or centre
      * @returns An array of beam vectors
      */
-    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel &panel,
-                                                                   const BeamBase &beam,
+    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel& panel,
+                                                                   const BeamBase& beam,
                                                                    bool corner) {
       return beam_vector_map(panel, beam, 1, corner);
     }
@@ -103,8 +103,8 @@ namespace dials { namespace algorithms { namespace profile_model {
      * @returns An array of beam vectors
      */
     inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Panel &panel,
-      const BeamBase &beam) {
+      const Panel& panel,
+      const BeamBase& beam) {
       return beam_vector_map(panel, beam, 1, false);
     }
 
