@@ -14,20 +14,37 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
+# cows + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - two clear clusters
 data_1 = np.loadtxt("test_coords/data_1.txt")
 expected_1 = np.loadtxt("test_coords/labels_1.txt")
 
+# cryo cows + pigs + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - three clear clusters
 data_2 = np.loadtxt("test_coords/data_2.txt")
 expected_2 = np.loadtxt("test_coords/labels_2.txt")
 
+# 4 x CPVs from VMXm - four clear clusters
 data_3 = np.loadtxt("test_coords/data_3.txt")
 expected_3 = np.loadtxt("test_coords/labels_3.txt")
 
+# room temp cows + pigs + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - three clusters + noise
 data_4 = np.loadtxt("test_coords/data_4.txt")
 expected_4 = np.loadtxt("test_coords/labels_4.txt")
 
+# example made up coordinates - one clear cluster + noise
 data_5 = np.loadtxt("test_coords/data_5.txt")
 expected_5 = np.loadtxt("test_coords/labels_5.txt")
+
+# single cluster + noise, high dimension
+data_6 = np.loadtxt("test_coords/data_6.txt")
+expected_6 = np.loadtxt("test_coords/labels_6.txt")
+
+# One large cluster + one small cluster
+data_7 = np.loadtxt("test_coords/data_7.txt")
+expected_7 = np.loadtxt("test_coords/labels_7.txt")
+
+# Two tight clusters with one obvious outlier
+data_8 = np.loadtxt("test_coords/data_8.txt")
+expected_8 = np.loadtxt("test_coords/labels_8.txt")
 
 
 @pytest.fixture()
@@ -111,16 +128,20 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
 # Test for very clearcut cases
 # initial guesses taken from heuristic (Thompson, A.J. et al 2025) for known datasets
 @pytest.mark.parametrize(
-    "coordinates,expected_labels,initial_guess",
+    "coordinates,expected_labels,initial_min_samples",
     [
         (data_1, expected_1, 5),
         (data_2, expected_2, 6),
         (data_3, expected_3, 8),
+        (data_5, expected_5, 10),
+        (data_8, expected_8, 5),
     ],
 )
-def test_optics_classification_definitive(coordinates, expected_labels, initial_guess):
+def test_optics_classification_definitive(
+    coordinates, expected_labels, initial_min_samples
+):
     _, _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
-        coordinates, initial_guess=initial_guess
+        coordinates, initial_min_samples=initial_min_samples
     )
 
     assert np.array_equal(actual_labels, expected_labels)
@@ -128,15 +149,18 @@ def test_optics_classification_definitive(coordinates, expected_labels, initial_
 
 # Test for more ambiguous datasets - set up to add more in future if needed
 @pytest.mark.parametrize(
-    "coordinates,expected_labels,initial_guess",
+    "coordinates,expected_labels,initial_min_samples",
     [
         (data_4, expected_4, 27),
-        (data_5, expected_5, 10),
+        (data_6, expected_6, 5),
+        (data_7, expected_7, 40),
     ],
 )
-def test_optics_classification_variable(coordinates, expected_labels, initial_guess):
+def test_optics_classification_variable(
+    coordinates, expected_labels, initial_min_samples
+):
     _, _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
-        coordinates, initial_guess=initial_guess
+        coordinates, initial_min_samples=initial_min_samples
     )
 
     differences = actual_labels != expected_labels
@@ -162,4 +186,6 @@ def test_optics_classification_variable(coordinates, expected_labels, initial_gu
     print(expected_labels)
 
     assert noise_change_count < 0.03 * len(coordinates)  # 3% error in noise permitted
-    assert len(changed_classification) == 0
+    assert (
+        len(changed_classification) == 0
+    )  # do not want any clusters to change identity
