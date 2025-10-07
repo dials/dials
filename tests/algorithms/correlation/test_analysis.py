@@ -144,9 +144,6 @@ def test_optics_classification_definitive(
         coordinates, initial_min_samples=initial_min_samples
     )
 
-    print(actual_labels)
-    print(expected_labels)
-
     assert np.array_equal(actual_labels, expected_labels)
 
 
