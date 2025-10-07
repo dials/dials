@@ -792,15 +792,12 @@ class StillsIndexer(Indexer):
             graph_verbose=False,
         )
         nv()
-        rmsd, _ = calc_2D_rmsd_and_displacements(
-            R.predict_for_reflection_table(reflections)
-        )
 
-        matches = R.get_matches()
+        predicted = R.predict_for_indexed()
         xyzcal_mm = flex.vec3_double(len(reflections))
-        xyzcal_mm.set_selected(matches["iobs"], matches["xyzcal.mm"])
+        xyzcal_mm.set_selected(predicted["iobs"], predicted["xyzcal.mm"])
         reflections["xyzcal.mm"] = xyzcal_mm
-        reflections.set_flags(matches["iobs"], reflections.flags.used_in_refinement)
+        reflections.set_flags(predicted["iobs"], reflections.flags.used_in_refinement)
         reflections["entering"] = flex.bool(len(reflections), False)
 
         if self.all_params.indexing.stills.set_domain_size_ang_value is not None:
