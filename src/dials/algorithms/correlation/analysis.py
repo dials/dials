@@ -384,7 +384,9 @@ class CorrelationMatrix:
             cosym_coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
             initial_min_samples(int): initial guess for the minimum number of datasets in a cluster
             xi(float): parameter to determine min steepness to define cluster boundary
-            noise_tolerance: penalty applied to overall score being minimised for presence of noise
+            noise_tolerance (float): penalty applied to overall score being minimised for presence of noise
+            max_val (float): largest score accepted for a multi-cluster solution to be accepted
+            max_eps (float): furthest distance away from a core point another dataset can be considered in the cluster
 
         Returns:
             study.best_params["min_samples"](int): min_samples value that minimises the noise-weighted db-score
@@ -394,7 +396,7 @@ class CorrelationMatrix:
             study.best_trial.usser_attrs["model"](OPTICS): The OPTICS model from the best trial
         """
 
-        # optuna.logging.set_verbosity(logging.WARNING)
+        optuna.logging.set_verbosity(logging.WARNING)
 
         sampler = optuna.samplers.RandomSampler(seed=42)
 
@@ -439,32 +441,48 @@ class CorrelationMatrix:
 
             return score
 
-        def single_cluster_optics(post_process=False):
+        def single_cluster_optics():
+            """
+            After optimisation, if it is determined that a multi-cluster solution is not likely, this method is used instead.
+            Calculate gradients of the reachability points, and find the first instance where a gradient larger than xi exists.
+            As this is only evaluating for a single cluster, this simplification can be applied.
+            """
             optics_model = OPTICS(min_samples=initial_min_samples, max_eps=max_eps)
             optics_model.fit(cosym_coords)
 
-            labels = optics_model.labels_
+            initial_labels = optics_model.labels_
             model = optics_model
 
-            if post_process:
-                gradients = np.gradient(
-                    optics_model.reachability_[optics_model.ordering_]
-                )
-                small_gradients = np.where(~(gradients < xi))[0]
+            finite_mask = np.isfinite(
+                optics_model.reachability_[optics_model.ordering_]
+            )
+            gradients = np.zeros_like(
+                optics_model.reachability_[optics_model.ordering_]
+            )
+            gradients[finite_mask] = np.gradient(
+                optics_model.reachability_[optics_model.ordering_][finite_mask]
+            )
+            small_gradients = np.where(~(gradients[finite_mask] < xi))[
+                0
+            ]  # only evaluate within finite values
+            if small_gradients.size > 0:
                 first_false = small_gradients[0]
-
-                new_labels = copy.deepcopy(labels[optics_model.ordering_])
-                new_labels[0:first_false] = 0
-                new_labels[first_false:] = -1
+                original_first_false = np.flatnonzero(finite_mask)[
+                    first_false
+                ]  # map back to full list of values
+                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
+                new_labels[0:original_first_false] = 0
+                new_labels[original_first_false:] = -1
 
                 new_labels_dataset_order = np.empty_like(new_labels)
                 new_labels_dataset_order[optics_model.ordering_] = new_labels[
                     np.arange(len(optics_model.ordering_))
                 ]
+            else:
+                # This means that the gradient never gets steep - so everything is one cluster
+                new_labels_dataset_order = [0 for i in cosym_coords]
 
-                labels = new_labels_dataset_order
-
-            return labels, model
+            return new_labels_dataset_order, model
 
         # Test a series of min_samples to find best clusters
         # Optuna uses a Bayesian Optimization approach to "intelligently" select which parameters to test
@@ -472,12 +490,13 @@ class CorrelationMatrix:
         study = optuna.create_study(direction="minimize", sampler=sampler)
 
         # Use heuristic relating dimensions to systematic differences as an initial starting point
+        # Some testing found that this was still important
 
         study.enqueue_trial({"min_samples": initial_min_samples})
         study.optimize(objective, n_trials=50)
 
         if study.best_trial.user_attrs["score"] >= max_val:
-            labels, model = single_cluster_optics(post_process=True)
+            labels, model = single_cluster_optics()
             return (
                 initial_min_samples,
                 "N/A as only one cluster",
@@ -539,10 +558,12 @@ class CorrelationMatrix:
                 ),
             )
 
-            with (
-                warnings.catch_warnings()
-            ):  # catches where the trial is pruned - CHECK LATER
-                warnings.simplefilter("ignore")
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="All reachability values are inf. Set a larger max_eps or all data will be considered outliers.",
+                    category=UserWarning,
+                )
                 (
                     min_points,
                     density_score,
@@ -560,7 +581,25 @@ class CorrelationMatrix:
 
         logger.info(f"Set Minimum Samples to {min_points}")
 
-        self.optics_reachability = optics_model.reachability_[optics_model.ordering_]
+        # needed max_eps to deal with edge cases where datasets far away were mistakenly included in cluster
+        # but, if such datasets are cut off by max_eps, OPTICS does not calculate a reachability value for them (set to inf)
+        # to keep them in plot (which is nice and visual), need to rerun OPTICS without any max_eps
+        # note that the first dataset is always inf (as can't have reachability for starting point), so look for cases with > 1 inf values
+
+        if np.sum(np.isinf(optics_model.reachability_)) > 1:
+            tmp_model = OPTICS(
+                min_samples=min_points,
+                xi=self.params.significant_clusters.xi,
+            )
+            tmp_model.fit(self.cosym_analysis.coords)
+            self.optics_reachability = tmp_model.reachability_[tmp_model.ordering_]
+        else:
+            self.optics_reachability = optics_model.reachability_[
+                optics_model.ordering_
+            ]
+
+        # still make sure to use cluster labels from previous optimisation
+
         self.optics_reachability_labels = optics_model.labels_[optics_model.ordering_]
 
         # Match each dataset to an OPTICS cluster and make them Cluster Objects

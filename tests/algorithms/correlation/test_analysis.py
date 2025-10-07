@@ -144,6 +144,9 @@ def test_optics_classification_definitive(
         coordinates, initial_min_samples=initial_min_samples
     )
 
+    print(actual_labels)
+    print(expected_labels)
+
     assert np.array_equal(actual_labels, expected_labels)
 
 
@@ -181,9 +184,6 @@ def test_optics_classification_variable(
             noise_change_count += 1
         else:
             changed_classification.append(i)
-
-    print(actual_labels)
-    print(expected_labels)
 
     assert noise_change_count < 0.03 * len(coordinates)  # 3% error in noise permitted
     assert (
