@@ -1,0 +1,1 @@
+``dials.index``: return best pinkIndexer orientation matrices when `min_lattices` > `max_refine`.
