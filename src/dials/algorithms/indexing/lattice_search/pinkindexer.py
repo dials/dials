@@ -313,8 +313,11 @@ class Indexer:
             voxels = fftconvolve(voxels, kernel, mode="same")
 
         # Possible solutions are voxels with the highest density
-        cutoff = np.sort(voxels.flatten())[-min_lattices]
-        peaks = np.column_stack(np.where(voxels >= cutoff))
+        idx = np.indices(voxels.shape).reshape((3, -1))
+        asort = np.argsort(voxels, axis=None)
+        peaks = idx[:, asort][..., -min_lattices:]
+        peaks = peaks[..., ::-1].T
+
         for peak in peaks:
             v = bin_centers[peak]
             l = norm2(v)
