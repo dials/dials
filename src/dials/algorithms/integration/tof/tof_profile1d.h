@@ -9,6 +9,7 @@
 #include <array>
 #include <cassert>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <random>
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/unsupported/Eigen/NonLinearOptimization>
@@ -286,14 +287,18 @@ namespace dials { namespace algorithms {
        */
 
       // Not enough data
-      DIALS_ASSERT(tof.size() >= 3);
+      if (tof.size() >= 3) {
+        return 1.0;
+      }
 
       // locate peak
       size_t imax = std::distance(y.begin(), std::max_element(y.begin(), y.end()));
       double ymax = y[imax];
 
       // Negative peak
-      DIALS_ASSERT(ymax > 0.0);
+      if (ymax <= 0.0) {
+        return 1.0;
+      }
 
       double half_max = 0.5 * ymax;
 
@@ -354,6 +359,9 @@ namespace dials { namespace algorithms {
       // Variance of amplitude A
       double denom = 0.0;
       for (size_t i = 0; i < p.size(); ++i) {
+        if (p[i] <= 1e-7) {
+          continue;
+        }
         double var = projected_variance[i];
         if (var <= 1e-7) continue;
         denom += (p[i] * p[i]) / var;
@@ -368,79 +376,134 @@ namespace dials { namespace algorithms {
       return varA * (integral_p * integral_p);
     }
 
-    bool fit(int maxfev = 2000, double xtol = 1e-8, double ftol = 1e-8) {
+    std::size_t get_max_profile_index() {
+      auto profile_result = this->result();
+      auto max_profile_it =
+        std::max_element(profile_result.begin(), profile_result.end());
+      std::size_t max_profile_index =
+        std::distance(profile_result.begin(), max_profile_it);
+      return max_profile_index;
+    }
+
+    bool fit(double I_sum,
+             double var_sum,
+             std::size_t max_sum_index,
+             int maxfev = 2000,
+             double xtol = 1e-8,
+             double ftol = 1e-8,
+             int n_restarts = 8) {
       /*
-       * Does least-squares minimization and updates A, alpha, beta, sigma, T_ph
-       * Returns success of fitting
+       * Least-squares minimization with optional multiple restarts if untrusted.
+       * Updates A, alpha, beta, sigma, T_ph.
        */
 
       const int ndata = static_cast<int>(tof.size());
-
-      if (ndata < 5) {
-        // Not enough data
-        return false;
-      }
+      if (ndata < 5) return false;
 
       TOFProfileFunctor functor(tof, y_norm.const_ref(), min_bounds, max_bounds);
-
       typedef Eigen::LevenbergMarquardt<TOFProfileFunctor, double> LM;
-      LM lm(functor);
 
-      // Initial parameter vector
-      Eigen::VectorXd x(5);
-      x[0] = A;
-      x[1] = alpha;
-      x[2] = beta;
-      x[3] = sigma;
-      x[4] = T_ph;
+      auto run_single_fit = [&](const Eigen::VectorXd& x_init,
+                                double& final_error) -> bool {
+        LM lm(functor);
+        lm.parameters.maxfev = maxfev;
+        lm.parameters.xtol = xtol;
+        lm.parameters.ftol = ftol;
 
-      lm.parameters.maxfev = maxfev;
-      lm.parameters.xtol = xtol;
-      lm.parameters.ftol = ftol;
+        Eigen::VectorXd x = x_init;
+        int result = lm.minimize(x);
+        if (result < 0) return false;
 
-      int result = lm.minimize(x);
+        // Clamp final params to bounds
+        for (int i = 0; i < 5; ++i)
+          x[i] = std::min(std::max(x[i], min_bounds[i]), max_bounds[i]);
 
-      // Clamp final params to bounds
-      for (int i = 0; i < 5; ++i) {
-        x[i] = std::min(std::max(x[i], min_bounds[i]), max_bounds[i]);
+        // Compute residual norm
+        Eigen::VectorXd fvec(functor.values());
+        final_error = fvec.squaredNorm();
+
+        // Update fitted parameters
+        A = x[0];
+        alpha = x[1];
+        beta = x[2];
+        sigma = x[3];
+        T_ph = x[4];
+
+        return true;
+      };
+
+      // === 1. Primary fit ===
+      Eigen::VectorXd x0(5);
+      x0 << A, alpha, beta, sigma, T_ph;
+      double best_error = std::numeric_limits<double>::infinity();
+      bool success = false;
+
+      success = run_single_fit(x0, best_error);
+      std::size_t max_profile_index = this->get_max_profile_index();
+
+      if (success
+          && this->trust_result(
+            A, sigma, I_sum, var_sum, max_sum_index, max_profile_index))
+        return true;
+
+      // === 2. Retry with random initializations if not trusted ===
+      std::mt19937 rng(std::random_device{}());
+      std::uniform_real_distribution<double> unit_dist(0.0, 1.0);
+
+      for (int i = 0; i < n_restarts; ++i) {
+        Eigen::VectorXd x_try(5);
+        for (int j = 0; j < 5; ++j) {
+          double span = max_bounds[j] - min_bounds[j];
+          double rand_frac = (unit_dist(rng) - 0.5) * 0.4;  // ±20% perturbation
+          double perturbed = x0[j] + rand_frac * span;
+          x_try[j] = std::max(min_bounds[j], std::min(perturbed, max_bounds[j]));
+        }
+
+        double err;
+        bool ok = run_single_fit(x_try, err);
+        if (!ok) continue;
+
+        if (err < best_error) {
+          best_error = err;
+          success = true;
+        }
+
+        max_profile_index = this->get_max_profile_index();
+
+        if (success
+            && this->trust_result(
+              A, sigma, I_sum, var_sum, max_sum_index, max_profile_index))
+          return true;  // early exit once a trusted result is found
       }
 
-      // Update params
-      A = x[0];
-      alpha = x[1];
-      beta = x[2];
-      sigma = x[3];
-      T_ph = x[4];
+      return success;
+    }
 
-      // check convergence
-      if (result == Eigen::LevenbergMarquardtSpace::ImproperInputParameters) {
-        std::cerr << "LM improper input parameters\n";
+    bool trust_result(double I_prf,
+                      double var_prf,
+                      double I_sum,
+                      double var_sum,
+                      std::size_t max_sum_index,
+                      std::size_t max_profile_index) {
+      /*
+       * Check for reasonable values and if peaks are in similar position
+       */
+
+      if (var_prf < 1e-7 || I_prf < 1e-7) {
         return false;
       }
-      if (result < 0) {
-        std::cerr << "LM failed with code " << result << "\n";
+
+      if (var_sum < 1e-7 || I_sum < 1e-7) {
+        return false;
+      }
+
+      if (std::abs(static_cast<int>(max_sum_index)
+                   - static_cast<int>(max_profile_index))
+          > 5) {
+        return false;
       }
 
       return true;
-    }
-
-    bool trust_result(double I_prf, double var_prf, double I_sum, double var_sum) {
-      /*
-       * Check for reasonable variance and if I/sigma is not too far from summation
-       */
-
-      if (var_prf < 1e-7) {
-        return false;
-      }
-
-      if (var_sum < 1e-7) {
-        return false;
-      }
-
-      double i_sigma_sum = I_sum / std::sqrt(var_sum);
-      double i_sigma_prf = I_prf / std::sqrt(var_prf);
-      double z_score = (i_sigma_sum - i_sigma_prf) / std::sqrt(var_sum + var_prf);
-      return std::abs(z_score) < 0.25;
     }
   };
 

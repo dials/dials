@@ -322,68 +322,16 @@ namespace dials { namespace algorithms {
           beta_max(beta_max) {}
   };
 
-  bool fit_profile1d(scitbx::af::const_ref<double> projected_intensity,
-                     scitbx::af::const_ref<double> tof_z,
-                     scitbx::af::const_ref<double> projected_variance,
-                     const TOFProfile1DParams &profile_params,
-                     const double &I_sum,
-                     const double &var_sum,
-                     double &I_prf_out,
-                     double &var_prf_out) {
-    // Get T_ph (peak position)
-    auto max_it =
-      std::max_element(projected_intensity.begin(), projected_intensity.end());
-    size_t max_index = std::distance(projected_intensity.begin(), max_it);
-    double T_ph = tof_z[max_index];
-
-    // Fit profile
-    const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
-                                                profile_params.alpha_max};
-    const std::array<double, 2> beta_bounds = {profile_params.beta_min,
-                                               profile_params.beta_max};
-
-    // Peak negative or all zeros
-    double intensity_max =
-      *std::max_element(projected_intensity.begin(), projected_intensity.end());
-    if (intensity_max < 1e-7) {
-      return false;
-    }
-
-    TOFProfile1D profile(tof_z,
-                         projected_intensity,
-                         profile_params.A,
-                         profile_params.alpha,
-                         profile_params.beta,
-                         T_ph,
-                         alpha_bounds,
-                         beta_bounds);
-
-    bool profile_success = profile.fit();
-
-    if (profile_success) {
-      double I_prf = profile.calc_intensity();
-      double var_prf = profile.calc_variance(projected_variance);
-
-      if (profile.trust_result(I_prf, var_prf, I_sum, var_sum)) {
-        I_prf_out = I_prf;
-        var_prf_out = var_prf;
-        return profile_success;
-      } else {
-        return false;
-      }
-    }
-    return false;
-  }
-
-  bool fit_profile1d(scitbx::af::const_ref<double> projected_intensity,
-                     scitbx::af::const_ref<double> tof_z,
-                     scitbx::af::const_ref<double> projected_variance,
-                     const TOFProfile1DParams &profile_params,
-                     const double &I_sum,
-                     const double &var_sum,
-                     double &I_prf_out,
-                     double &var_prf_out,
-                     scitbx::af::shared<double> line_profile_out) {
+  bool fit_profile1d(
+    scitbx::af::const_ref<double> projected_intensity,
+    scitbx::af::const_ref<double> tof_z,
+    scitbx::af::const_ref<double> projected_variance,
+    const TOFProfile1DParams &profile_params,
+    const double &I_sum,
+    const double &var_sum,
+    double &I_prf_out,
+    double &var_prf_out,
+    boost::optional<scitbx::af::shared<double>> line_profile_out = boost::none) {
     // Get T_ph (peak position)
     auto max_it =
       std::max_element(projected_intensity.begin(), projected_intensity.end());
@@ -405,24 +353,27 @@ namespace dials { namespace algorithms {
                          alpha_bounds,
                          beta_bounds);
 
-    bool profile_success = profile.fit();
+    bool profile_success = profile.fit(I_sum, var_sum, max_index);
 
     if (profile_success) {
       double I_prf = profile.calc_intensity();
       double var_prf = profile.calc_variance(projected_variance);
+      auto profile_result = profile.result();
+      DIALS_ASSERT(projected_intensity.size() == profile_result.size());
 
-      if (profile.trust_result(I_prf, var_prf, I_sum, var_sum)) {
-        I_prf_out = I_prf;
-        var_prf_out = var_prf;
-        auto profile_result = profile.result();
-        DIALS_ASSERT(line_profile_out.size() == profile_result.size());
-        for (std::size_t i = 0; i < profile_result.size(); ++i) {
-          line_profile_out[i] = profile_result[i];
-        }
+      I_prf_out = I_prf;
+      var_prf_out = var_prf;
+
+      if (!line_profile_out) {
         return profile_success;
-      } else {
-        return false;
       }
+
+      scitbx::af::shared<double> line_profile = *line_profile_out;
+      DIALS_ASSERT(line_profile.size() == profile_result.size());
+      for (std::size_t i = 0; i < profile_result.size(); ++i) {
+        line_profile[i] = profile_result[i];
+      }
+      return profile_success;
     }
     return false;
   }
@@ -731,6 +682,7 @@ namespace dials { namespace algorithms {
 
             intensity_z += I;
             variance_z += var_I;
+
             // Accumulate if pixel in foreground & valid
             if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
                 && (mask & Overlapped) == 0) {
@@ -1661,13 +1613,13 @@ namespace dials { namespace algorithms {
           intensity_z += I;
           intensity_raw_z += I_raw;
           background_z += B_raw;
+          variance_z += var_I;
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
               && (mask & Overlapped) == 0) {
             intensity += I;
             variance += var_I;
-            variance_z += var_I;
           } else if ((mask & Foreground) == Foreground) {
             success = false;
             break;
@@ -1986,13 +1938,13 @@ namespace dials { namespace algorithms {
           intensity_z += I;
           intensity_raw_z += I_raw;
           background_z += B_raw;
+          variance_z += var_I;
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
               && (mask & Overlapped) == 0) {
             intensity += I;
             variance += var_I;
-            variance_z += var_I;
           } else if ((mask & Foreground) == Foreground) {
             success = false;
             break;
@@ -2349,13 +2301,13 @@ namespace dials { namespace algorithms {
           intensity_z += I;
           intensity_raw_z += I_raw;
           background_z += B_raw;
+          variance_z += var_I;
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
               && (mask & Overlapped) == 0) {
             intensity += I;
             variance += var_I;
-            variance_z += var_I;
           } else if ((mask & Foreground) == Foreground) {
             success = false;
             break;
