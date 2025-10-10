@@ -463,7 +463,7 @@ def get_subset_for_symmetry(experiments, reflection_tables, exclude_images=None)
     else:
         for expt, refl in zip(experiments, reflection_tables):
             sel = get_selection_for_valid_image_ranges(refl, expt)
-            if expt.scan and not sel.count(False):
+            if expt.scan and not sel.count(False) and not expt.is_still():
                 # Use first 360 degrees if <360 deg i.e. first measured data,
                 # but only if no reflections have been explicitly excluded
                 # already
