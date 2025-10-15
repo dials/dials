@@ -18,6 +18,7 @@
 #include <iostream>
 #include <vector>
 #include <dials/algorithms/integration/tof/tof_profile1d.h>
+#include <dials/algorithms/integration/tof/tof_profile3d.h>
 
 namespace dials { namespace algorithms {
 
@@ -322,6 +323,28 @@ namespace dials { namespace algorithms {
           beta_max(beta_max) {}
   };
 
+  struct TOFProfile3DParams {
+    double alpha;
+    double alpha_min;
+    double alpha_max;
+    double beta;
+    double beta_min;
+    double beta_max;
+
+    TOFProfile3DParams(double alpha,
+                       double alpha_min,
+                       double alpha_max,
+                       double beta,
+                       double beta_min,
+                       double beta_max)
+        : alpha(alpha),
+          alpha_min(alpha_min),
+          alpha_max(alpha_max),
+          beta(beta),
+          beta_min(beta_min),
+          beta_max(beta_max) {}
+  };
+
   bool fit_profile1d(
     scitbx::af::const_ref<double> projected_intensity,
     scitbx::af::const_ref<double> tof_z,
@@ -372,6 +395,56 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(line_profile.size() == profile_result.size());
       for (std::size_t i = 0; i < profile_result.size(); ++i) {
         line_profile[i] = profile_result[i];
+      }
+      return profile_success;
+    }
+    return false;
+  }
+
+  bool fit_profile3d(const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords,
+                     const scitbx::af::versa<double, af::c_grid<3>> intensities,
+                     const scitbx::af::versa<double, af::c_grid<3>> variances,
+                     const TOFProfile3DParams &profile_params,
+                     double &I_prf_out,
+                     double &var_prf_out,
+                     boost::optional<scitbx::af::versa<double, af::c_grid<3>>>
+                       profile_3d_out = boost::none) {
+    // Fit profile
+    const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
+                                                profile_params.alpha_max};
+    const std::array<double, 2> beta_bounds = {profile_params.beta_min,
+                                               profile_params.beta_max};
+
+    GutmannProfile3D profile(coords,
+                             intensities,
+                             profile_params.alpha,
+                             profile_params.beta,
+                             alpha_bounds,
+                             beta_bounds);
+
+    bool profile_success = profile.fit();
+
+    if (profile_success) {
+      double I_prf = profile.calc_intensity();
+      double var_prf = profile.calc_variance(variances);
+
+      I_prf_out = I_prf;
+      var_prf_out = var_prf;
+
+      if (!profile_3d_out) {
+        return profile_success;
+      }
+
+      scitbx::af::versa<double, af::c_grid<3>> pred = profile.scaled_result();
+      scitbx::af::versa<double, af::c_grid<3>> profile_3d = *profile_3d_out;
+
+      DIALS_ASSERT(pred.accessor().all_eq(profile_3d.accessor()));
+      for (std::size_t x = 0; x < pred.accessor()[0]; ++x) {
+        for (std::size_t y = 0; y < pred.accessor()[1]; ++y) {
+          for (std::size_t z = 0; z < pred.accessor()[2]; ++z) {
+            profile_3d(x, y, z) = pred(x, y, z);
+          }
+        }
       }
       return profile_success;
     }
@@ -525,15 +598,19 @@ namespace dials { namespace algorithms {
     return result;
   }
 
-  void integrate_reflection_table(dials::af::reflection_table &reflection_table,
-                                  Experiment &experiment,
-                                  ImageSequence &data,
-                                  const bool &apply_lorentz_correction,
-                                  boost::optional<TOFProfile1DParams> profile_params) {
+  void integrate_reflection_table(
+    dials::af::reflection_table &reflection_table,
+    Experiment &experiment,
+    ImageSequence &data,
+    const bool &apply_lorentz_correction,
+    boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
+    boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
     /*
      * Updates reflection_table with intensities and variances with
      * optional Lorentz correction
      */
+
+    DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -565,7 +642,7 @@ namespace dials { namespace algorithms {
     dials::af::shared<double> intensities_prf;
     dials::af::shared<double> variances_prf;
 
-    if (profile_params) {
+    if (profile_params_1d || profile_params_3d) {
       succeeded_prf.resize(reflection_table.size());
       intensities_prf.resize(reflection_table.size());
       variances_prf.resize(reflection_table.size());
@@ -618,6 +695,14 @@ namespace dials { namespace algorithms {
       scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
+
+      // 3D profile fitting done in xyz
+      auto acc = shoebox.data.accessor();
+      af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
+      scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
+      scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+      scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
@@ -683,6 +768,15 @@ namespace dials { namespace algorithms {
             intensity_z += I;
             variance_z += var_I;
 
+            if (profile_params_3d) {
+              intensity_3d(x, y, z) = I;
+              variance_3d(x, y, z) = var_I;
+              double x_c = x + shoebox.xoffset() + 0.5;
+              double y_c = y + shoebox.yoffset() + 0.5;
+              double z_c = z + shoebox.zoffset() + 0.5;
+              coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+            }
+
             // Accumulate if pixel in foreground & valid
             if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
                 && (mask & Overlapped) == 0) {
@@ -701,7 +795,7 @@ namespace dials { namespace algorithms {
       intensities[i] = intensity;
       variances[i] = variance;
 
-      if (profile_params) {
+      if (profile_params_1d) {
         bool profile_success = false;
         double I_sum = 0.;
         double var_sum = 0.;
@@ -715,11 +809,22 @@ namespace dials { namespace algorithms {
         profile_success = fit_profile1d(projected_intensity.const_ref(),
                                         tof_z.const_ref(),
                                         projected_variance.const_ref(),
-                                        *profile_params,
+                                        *profile_params_1d,
                                         I_sum,
                                         var_sum,
                                         I_prf,
                                         var_prf);
+        if (profile_success) {
+          intensities_prf[i] = I_prf;
+          variances_prf[i] = var_prf;
+        }
+        succeeded_prf[i] = profile_success;
+      } else if (profile_params_3d) {
+        bool profile_success = false;
+
+        double I_prf, var_prf;
+        profile_success = fit_profile3d(
+          coords_3d, intensity_3d, variance_3d, *profile_params_3d, I_prf, var_prf);
         if (profile_success) {
           intensities_prf[i] = I_prf;
           variances_prf[i] = var_prf;
@@ -731,7 +836,7 @@ namespace dials { namespace algorithms {
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
 
-    if (profile_params) {
+    if (profile_params_1d || profile_params_3d) {
       reflection_table["intensity.prf.value"] = intensities_prf;
       reflection_table["intensity.prf.variance"] = variances_prf;
     }
@@ -747,7 +852,7 @@ namespace dials { namespace algorithms {
         flags[i] &= ~dials::af::IntegratedSum;
         flags[i] |= dials::af::FailedDuringSummation;
       }
-      if (profile_params) {
+      if (profile_params_1d || profile_params_3d) {
         if (succeeded_prf[i]) {
           flags[i] &= ~dials::af::FailedDuringProfileFitting;
           flags[i] |= dials::af::IntegratedPrf;
@@ -759,16 +864,20 @@ namespace dials { namespace algorithms {
     }
   }
 
-  void integrate_reflection_table(dials::af::reflection_table &reflection_table,
-                                  Experiment &experiment,
-                                  ImageSequence &data,
-                                  const TOFIncidentSpectrumParams &incident_params,
-                                  const bool &apply_lorentz_correction,
-                                  boost::optional<TOFProfile1DParams> profile_params) {
+  void integrate_reflection_table(
+    dials::af::reflection_table &reflection_table,
+    Experiment &experiment,
+    ImageSequence &data,
+    const TOFIncidentSpectrumParams &incident_params,
+    const bool &apply_lorentz_correction,
+    boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
+    boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, and an optional Lorentz correction
      */
+
+    DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -859,7 +968,7 @@ namespace dials { namespace algorithms {
     dials::af::shared<double> intensities_prf;
     dials::af::shared<double> variances_prf;
 
-    if (profile_params) {
+    if (profile_params_1d || profile_params_3d) {
       succeeded_prf.resize(reflection_table.size());
       intensities_prf.resize(reflection_table.size());
       variances_prf.resize(reflection_table.size());
@@ -927,6 +1036,14 @@ namespace dials { namespace algorithms {
       scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
+
+      // 3D profile fitting done in xyz
+      auto acc = shoebox.data.accessor();
+      af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
+      scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
+      scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+      scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
@@ -1008,6 +1125,15 @@ namespace dials { namespace algorithms {
             intensity_z += I;
             variance_z += var_I;
 
+            if (profile_params_3d) {
+              intensity_3d(x, y, z) = I;
+              variance_3d(x, y, z) = var_I;
+              double x_c = x + shoebox.xoffset() + 0.5;
+              double y_c = y + shoebox.yoffset() + 0.5;
+              double z_c = z + shoebox.zoffset() + 0.5;
+              coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+            }
+
             // Accumulate if pixel in foreground & valid
             if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
                 && (mask & Overlapped) == 0) {
@@ -1026,7 +1152,7 @@ namespace dials { namespace algorithms {
       intensities[i] = intensity;
       variances[i] = variance;
 
-      if (profile_params) {
+      if (profile_params_1d) {
         bool profile_success = false;
         double I_sum = 0.;
         double var_sum = 0.;
@@ -1040,11 +1166,22 @@ namespace dials { namespace algorithms {
         profile_success = fit_profile1d(projected_intensity.const_ref(),
                                         tof_z.const_ref(),
                                         projected_variance.const_ref(),
-                                        *profile_params,
+                                        *profile_params_1d,
                                         I_sum,
                                         var_sum,
                                         I_prf,
                                         var_prf);
+        if (profile_success) {
+          intensities_prf[i] = I_prf;
+          variances_prf[i] = var_prf;
+        }
+        succeeded_prf[i] = profile_success;
+      } else if (profile_params_3d) {
+        bool profile_success = false;
+
+        double I_prf, var_prf;
+        profile_success = fit_profile3d(
+          coords_3d, intensity_3d, variance_3d, *profile_params_3d, I_prf, var_prf);
         if (profile_success) {
           intensities_prf[i] = I_prf;
           variances_prf[i] = var_prf;
@@ -1055,7 +1192,8 @@ namespace dials { namespace algorithms {
 
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
-    if (profile_params) {
+
+    if (profile_params_1d || profile_params_3d) {
       reflection_table["intensity.prf.value"] = intensities_prf;
       reflection_table["intensity.prf.variance"] = variances_prf;
     }
@@ -1071,7 +1209,7 @@ namespace dials { namespace algorithms {
         flags[i] &= ~dials::af::IntegratedSum;
         flags[i] |= dials::af::FailedDuringSummation;
       }
-      if (profile_params) {
+      if (profile_params_1d || profile_params_3d) {
         if (succeeded_prf[i]) {
           flags[i] &= ~dials::af::FailedDuringProfileFitting;
           flags[i] |= dials::af::IntegratedPrf;
@@ -1083,18 +1221,22 @@ namespace dials { namespace algorithms {
     }
   }
 
-  void integrate_reflection_table(dials::af::reflection_table &reflection_table,
-                                  Experiment &experiment,
-                                  ImageSequence &data,
-                                  const TOFIncidentSpectrumParams &incident_params,
-                                  const TOFAbsorptionParams &corrections_data,
-                                  const bool &apply_lorentz_correction,
-                                  boost::optional<TOFProfile1DParams> profile_params) {
+  void integrate_reflection_table(
+    dials::af::reflection_table &reflection_table,
+    Experiment &experiment,
+    ImageSequence &data,
+    const TOFIncidentSpectrumParams &incident_params,
+    const TOFAbsorptionParams &corrections_data,
+    const bool &apply_lorentz_correction,
+    boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
+    boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, a spherical absorptin correction,
      * and an optional Lorentz correction
      */
+
+    DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -1185,7 +1327,7 @@ namespace dials { namespace algorithms {
     dials::af::shared<double> intensities_prf;
     dials::af::shared<double> variances_prf;
 
-    if (profile_params) {
+    if (profile_params_1d || profile_params_3d) {
       succeeded_prf.resize(reflection_table.size());
       intensities_prf.resize(reflection_table.size());
       variances_prf.resize(reflection_table.size());
@@ -1253,6 +1395,14 @@ namespace dials { namespace algorithms {
       scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
+
+      // 3D profile fitting done in xyz
+      auto acc = shoebox.data.accessor();
+      af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
+      scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
+      scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+      scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
@@ -1374,6 +1524,15 @@ namespace dials { namespace algorithms {
             intensity_z += I;
             variance_z += var_I;
 
+            if (profile_params_3d) {
+              intensity_3d(x, y, z) = I;
+              variance_3d(x, y, z) = var_I;
+              double x_c = x + shoebox.xoffset() + 0.5;
+              double y_c = y + shoebox.yoffset() + 0.5;
+              double z_c = z + shoebox.zoffset() + 0.5;
+              coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+            }
+
             // Accumulate if pixel in foreground & valid
             if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
                 && (mask & Overlapped) == 0) {
@@ -1392,7 +1551,7 @@ namespace dials { namespace algorithms {
       intensities[i] = intensity;
       variances[i] = variance;
 
-      if (profile_params) {
+      if (profile_params_1d) {
         bool profile_success = false;
         double I_sum = 0.;
         double var_sum = 0.;
@@ -1406,11 +1565,22 @@ namespace dials { namespace algorithms {
         profile_success = fit_profile1d(projected_intensity.const_ref(),
                                         tof_z.const_ref(),
                                         projected_variance.const_ref(),
-                                        *profile_params,
+                                        *profile_params_1d,
                                         I_sum,
                                         var_sum,
                                         I_prf,
                                         var_prf);
+        if (profile_success) {
+          intensities_prf[i] = I_prf;
+          variances_prf[i] = var_prf;
+        }
+        succeeded_prf[i] = profile_success;
+      } else if (profile_params_3d) {
+        bool profile_success = false;
+
+        double I_prf, var_prf;
+        profile_success = fit_profile3d(
+          coords_3d, intensity_3d, variance_3d, *profile_params_3d, I_prf, var_prf);
         if (profile_success) {
           intensities_prf[i] = I_prf;
           variances_prf[i] = var_prf;
@@ -1422,7 +1592,7 @@ namespace dials { namespace algorithms {
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
 
-    if (profile_params) {
+    if (profile_params_1d || profile_params_3d) {
       reflection_table["intensity.prf.value"] = intensities_prf;
       reflection_table["intensity.prf.variance"] = variances_prf;
     }
@@ -1438,7 +1608,7 @@ namespace dials { namespace algorithms {
         flags[i] &= ~dials::af::IntegratedSum;
         flags[i] |= dials::af::FailedDuringSummation;
       }
-      if (profile_params) {
+      if (profile_params_1d || profile_params_3d) {
         if (succeeded_prf[i]) {
           flags[i] &= ~dials::af::FailedDuringProfileFitting;
           flags[i] |= dials::af::IntegratedPrf;
@@ -1635,6 +1805,220 @@ namespace dials { namespace algorithms {
     return boost::python::make_tuple(intensity, variance, success);
   }
 
+  boost::python::tuple calculate_line_profile_for_reflection_3d(
+    dials::af::reflection_table &reflection,
+    Experiment &experiment,
+    ImageSequence &data,
+    scitbx::af::shared<double> raw_projected_intensity_out,
+    scitbx::af::shared<double> projected_intensity_out,
+    scitbx::af::shared<double> projected_background_out,
+    scitbx::af::shared<double> tof_z_out,
+    const bool &apply_lorentz_correction,
+    const TOFProfile3DParams &profile_params_3d) {
+    /*
+     * Calculates raw_projected_intensity, projected_intensity,
+     * projected_background, sum_intensity, sum_variance
+     */
+
+    // This is a slight hack to make using current interfaces eaiser
+    // E.g. the shoebox processor
+    DIALS_ASSERT(reflection.size() == 1);
+
+    Detector detector = *experiment.get_detector();
+    Scan scan = *experiment.get_scan();
+
+    // Required beam params
+    std::shared_ptr<dxtbx::model::BeamBase> beam_ptr = experiment.get_beam();
+    std::shared_ptr<PolychromaticBeam> beam =
+      std::dynamic_pointer_cast<PolychromaticBeam>(beam_ptr);
+    DIALS_ASSERT(beam != nullptr);
+    vec3<double> unit_s0 = beam->get_unit_s0();
+    double sample_to_source_distance = beam->get_sample_to_source_distance();
+
+    // Required scan params
+    scitbx::af::shared<double> img_tof = scan.get_property<double>("time_of_flight");
+
+    // Required detector params
+    int num_images = data.size();
+    vec2<std::size_t> image_size = detector[0].get_image_size();
+    DIALS_ASSERT(num_images == img_tof.size());
+
+    // Mask codes
+    int bg_code = Valid | Background | BackgroundUsed;
+
+    dials::af::shared<Shoebox<>> shoeboxes = reflection["shoebox"];
+    dials::model::Shoebox<> shoebox = shoeboxes[0];
+
+    DIALS_ASSERT(raw_projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_background_out.size() == shoebox.zsize());
+    DIALS_ASSERT(tof_z_out.size() == shoebox.zsize());
+
+    int6 bbox = shoebox.bbox;
+    int panel = shoebox.panel;
+
+    bool sum_success = true;
+    int n_background = 0;
+    int n_signal = 0;
+    double I_sum = 0.0;
+    double var_sum = 0.0;
+
+    // First pass to get, n_signal, n_background
+    // Shoebox data are ordered (z, y, x)
+    for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+      if (!sum_success) {
+        break;
+      }
+      for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+        int panel_y = bbox[2] + y;
+        if (panel_y > image_size[1] || panel_y < 0) {
+          continue;
+        }
+        for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+          int panel_x = bbox[0] + x;
+          if (panel_x > image_size[0] || panel_x < 0) {
+            continue;
+          }
+
+          int mask = shoebox.mask(z, y, x);
+          if ((mask & Foreground) == Foreground) {
+            if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
+              n_signal++;
+            } else {
+              sum_success = false;
+            }
+          } else if ((mask & bg_code) == bg_code) {
+            n_background++;
+          }
+        }
+      }
+    }
+    // 3D profile fitting done in xyz
+    auto acc = shoebox.data.accessor();
+    af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
+    scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
+    scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+    scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+
+    // Second pass to perform actual integration
+    for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+      double intensity_z = 0;
+      double intensity_raw_z = 0;
+      double background_z = 0;
+      double variance_z = 0;
+
+      if (!sum_success) {
+        break;
+      }
+
+      int frame_z = bbox[4] + z;
+      double tof = img_tof[frame_z];
+      tof_z_out[z] = tof;
+      tof *= std::pow(10, -6);  // (s)
+
+      for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+        int panel_y = bbox[2] + y;
+        if (panel_y > image_size[1] || panel_y < 0) {
+          continue;
+        }
+        for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+          int panel_x = bbox[0] + x;
+          if (panel_x > image_size[0] || panel_x < 0) {
+            continue;
+          }
+
+          // Raw counts
+          double raw_S = shoebox.data(z, y, x);
+          double raw_B = shoebox.background(z, y, x);
+
+          int mask = shoebox.mask(z, y, x);
+
+          // Variances
+          double var_S = std::abs(raw_S);
+          double var_B =
+            std::abs(raw_B) * (1.0 + double(n_signal) / double(n_background));
+
+          // Lorentz correction
+          scitbx::vec3<double> s1 =
+            detector[panel].get_pixel_lab_coord(scitbx::vec2<double>(panel_x, panel_y));
+          double distance = s1.length() + sample_to_source_distance;
+          distance *= std::pow(10, -3);  // (m)
+          double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
+          double two_theta = detector[panel].get_two_theta_at_pixel(
+            unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+          double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+          double L = sin_two_theta_sq / std::pow(wl, 4);
+
+          // Acount for some data having different sized bin widths
+          double bin_width_correction = img_tof[frame_z] - img_tof[frame_z - 1];
+
+          // Net signal
+          double I0 = raw_S - raw_B;
+          double var_I0 = var_S + var_B;
+          double I_raw = raw_S;
+          double B_raw = raw_B;
+
+          double I = I0 / bin_width_correction;
+          I_raw /= bin_width_correction;
+          double var_I = var_I0 / (bin_width_correction * bin_width_correction);
+          B_raw /= bin_width_correction;
+
+          if (apply_lorentz_correction) {
+            I *= L;
+            var_I *= (L * L);
+            I_raw *= L;
+            B_raw *= L;
+          }
+
+          intensity_z += I;
+          intensity_raw_z += I_raw;
+          background_z += B_raw;
+          variance_z += var_I;
+
+          intensity_3d(x, y, z) = I;
+          variance_3d(x, y, z) = var_I;
+          double x_c = x + shoebox.xoffset() + 0.5;
+          double y_c = y + shoebox.yoffset() + 0.5;
+          double z_c = z + shoebox.zoffset() + 0.5;
+          coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+
+          // Accumulate if pixel in foreground & valid
+          if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
+              && (mask & Overlapped) == 0) {
+            I_sum += I;
+            var_sum += var_I;
+          } else if ((mask & Foreground) == Foreground) {
+            sum_success = false;
+            break;
+          }
+        }
+        raw_projected_intensity_out[z] = intensity_raw_z;
+        projected_intensity_out[z] = intensity_z;
+        projected_background_out[z] = background_z;
+      }
+    }
+
+    double I_prf = 0;
+    double var_prf = 0;
+    bool profile_success = false;
+    scitbx::af::versa<double, scitbx::af::c_grid<3>> profile_3d_out(
+      intensity_3d.accessor());
+
+    if (sum_success) {
+      profile_success = fit_profile3d(coords_3d,
+                                      intensity_3d,
+                                      variance_3d,
+                                      profile_params_3d,
+                                      I_prf,
+                                      var_prf,
+                                      profile_3d_out);
+    } else {
+      profile_success = false;
+    }
+    return boost::python::make_tuple(
+      I_prf, var_prf, I_sum, var_sum, profile_success, profile_3d_out);
+  }
+
   boost::python::tuple calculate_line_profile_for_reflection(
     dials::af::reflection_table &reflection,
     Experiment &experiment,
@@ -1646,7 +2030,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool &apply_lorentz_correction,
-    const TOFProfile1DParams &profile_params) {
+    const TOFProfile1DParams &profile_params_1d) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -1675,7 +2059,7 @@ namespace dials { namespace algorithms {
       profile_success = fit_profile1d(projected_intensity_out.const_ref(),
                                       tof_z_out.const_ref(),
                                       projected_variance_out.const_ref(),
-                                      profile_params,
+                                      profile_params_1d,
                                       I_sum,
                                       var_sum,
                                       I_prf,
@@ -1972,7 +2356,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool &apply_lorentz_correction,
-    const TOFProfile1DParams &profile_params) {
+    const TOFProfile1DParams &profile_params_1d) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -2001,7 +2385,7 @@ namespace dials { namespace algorithms {
       profile_success = fit_profile1d(projected_intensity_out.const_ref(),
                                       tof_z_out.const_ref(),
                                       projected_variance_out.const_ref(),
-                                      profile_params,
+                                      profile_params_1d,
                                       I_sum,
                                       var_sum,
                                       I_prf,
@@ -2336,7 +2720,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool &apply_lorentz_correction,
-    const TOFProfile1DParams &profile_params) {
+    const TOFProfile1DParams &profile_params_1d) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -2366,7 +2750,7 @@ namespace dials { namespace algorithms {
       profile_success = fit_profile1d(projected_intensity_out.const_ref(),
                                       tof_z_out.const_ref(),
                                       projected_variance_out.const_ref(),
-                                      profile_params,
+                                      profile_params_1d,
                                       I_sum,
                                       var_sum,
                                       I_prf,

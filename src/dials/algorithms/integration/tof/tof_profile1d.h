@@ -10,6 +10,7 @@
 #include <cassert>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <random>
+#include "tof_utils.h"
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/unsupported/Eigen/NonLinearOptimization>
@@ -22,67 +23,6 @@ single crystal diffraction data collected at the iBIX. Sci Rep 6,
 36628 (2016). https://doi.org/10.1038/srep36628
 */
 namespace dials { namespace algorithms {
-
-  inline double exp_safe(double x) {
-    if (x > 700.0) return std::exp(700.0);
-    if (x < -700.0) return std::exp(-700.0);
-    return std::exp(x);
-  }
-  inline double erfc_safe(double x) {
-    if (x > 10.0) return std::erfc(10.0);
-    if (x < -10.0) return std::erfc(-10.0);
-    return std::erfc(x);
-  }
-
-  inline double erfcx_safe(double x) {
-    if (x > 25.0) {
-      return 1.0 / (x * std::sqrt(M_PI));
-    }
-    return std::exp(x * x) * std::erfc(x);
-  }
-
-  inline bool is_finite_double(double x) {
-    return std::isfinite(x);
-  }
-
-  inline double simpson_integrate(scitbx::af::const_ref<double> y,
-                                  scitbx::af::const_ref<double> x) {
-    /*
-     * Composite 1/3 implementation
-     * based on https://en.wikipedia.org/wiki/Simpson%27s_rule
-     */
-
-    const size_t n = y.size();
-    // Min amount of data required
-    if (n < 2) return 0.0;
-
-    // Points must be odd for even number of intervals
-    // If even use trapezoid on final point
-    if (n % 2 == 0) {
-      double res = 0.0;
-      size_t m = n - 1;
-
-      // Main loop
-      for (size_t i = 0; i + 2 < m; i += 2) {
-        double h0 = x[i + 1] - x[i];
-        double h1 = x[i + 2] - x[i + 1];
-        res += (x[i + 2] - x[i]) / 6.0 * (y[i] + 4.0 * y[i + 1] + y[i + 2]);
-      }
-
-      // Trapezoid for last interval (m-1,m)
-      res += 0.5 * (x[n - 1] - x[n - 2]) * (y[n - 2] + y[n - 1]);
-      return res;
-    } else {
-      // No need for Trapezoid on last point
-      double res = 0.0;
-
-      // Main loop
-      for (size_t i = 0; i + 2 < n; i += 2) {
-        res += (x[i + 2] - x[i]) / 6.0 * (y[i] + 4.0 * y[i + 1] + y[i + 2]);
-      }
-      return res;
-    }
-  }
 
   static scitbx::af::shared<double> profile1d_func(scitbx::af::const_ref<double> tof,
                                                    double A,
@@ -432,7 +372,7 @@ namespace dials { namespace algorithms {
         return true;
       };
 
-      // === 1. Primary fit ===
+      // First fit attempt
       Eigen::VectorXd x0(5);
       x0 << A, alpha, beta, sigma, T_ph;
       double best_error = std::numeric_limits<double>::infinity();
@@ -446,7 +386,7 @@ namespace dials { namespace algorithms {
             A, sigma, I_sum, var_sum, max_sum_index, max_profile_index))
         return true;
 
-      // === 2. Retry with random initializations if not trusted ===
+      // Perturb initial params
       std::mt19937 rng(std::random_device{}());
       std::uniform_real_distribution<double> unit_dist(0.0, 1.0);
 
@@ -473,7 +413,7 @@ namespace dials { namespace algorithms {
         if (success
             && this->trust_result(
               A, sigma, I_sum, var_sum, max_sum_index, max_profile_index))
-          return true;  // early exit once a trusted result is found
+          return true;
       }
 
       return success;

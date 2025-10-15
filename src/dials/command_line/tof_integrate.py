@@ -27,6 +27,7 @@ from dials_algorithms_tof_integration_ext import (
     TOFAbsorptionParams,
     TOFIncidentSpectrumParams,
     TOFProfile1DParams,
+    TOFProfile3DParams,
     extract_shoeboxes_to_reflection_table,
     integrate_reflection_table,
     tof_calculate_ellipse_shoebox_mask,
@@ -150,6 +151,27 @@ profile1d{
         .type = float
         .help = "Max beta value for optimization"
 }
+profile3d{
+    init_alpha = 0.03
+        .type = float
+        .help = "Initial alpha value before optimization"
+    init_beta = 0.03
+        .type = float
+        .help = "Initial beta value before optimization"
+    min_alpha = 0.02
+        .type = float
+        .help = "Min alpha value for optimization"
+    max_alpha = 1.0
+        .type = float
+        .help = "Max alpha value for optimization"
+    min_beta = 0.0
+        .type = float
+        .help = "Min beta value for optimization"
+    max_beta = 1.0
+        .type = float
+        .help = "Max beta value for optimization"
+}
+
 mp{
     nproc = Auto
         .type = int(value_min=1)
@@ -237,6 +259,7 @@ def integrate_reflection_table_for_experiment(
 ):
     apply_lorentz = params.corrections.lorentz
     profile1d_params = None
+    profile3d_params = None
     incident_params = None
     absorption_params = None
 
@@ -252,6 +275,16 @@ def integrate_reflection_table_for_experiment(
         max_beta = params.profile1d.max_beta
         profile1d_params = TOFProfile1DParams(
             A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta
+        )
+    elif params.method == "profile3d":
+        alpha = params.profile3d.init_alpha
+        beta = params.profile3d.init_beta
+        min_alpha = params.profile3d.min_alpha
+        max_alpha = params.profile3d.max_alpha
+        min_beta = params.profile3d.min_beta
+        max_beta = params.profile3d.max_beta
+        profile3d_params = TOFProfile3DParams(
+            alpha, min_alpha, max_alpha, beta, min_beta, max_beta
         )
 
     if apply_lorentz:
@@ -279,6 +312,7 @@ def integrate_reflection_table_for_experiment(
         absorption_params,
         apply_lorentz,
         profile1d_params,
+        profile3d_params,
     )
 
     return expt_reflections

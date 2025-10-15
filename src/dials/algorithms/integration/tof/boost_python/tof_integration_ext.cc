@@ -14,15 +14,26 @@ namespace dials { namespace algorithms { namespace boost_python {
                                           object incident_params_obj,
                                           object absorption_params_obj,
                                           const bool &apply_lorentz,
-                                          object profile1d_params_obj) {
+                                          object profile1d_params_obj,
+                                          object profile3d_params_obj) {
     boost::optional<TOFProfile1DParams> profile1d_params;
+    boost::optional<TOFProfile3DParams> profile3d_params;
+
     if (!profile1d_params_obj.is_none()) {
       profile1d_params = extract<TOFProfile1DParams>(profile1d_params_obj);
     }
 
+    if (!profile3d_params_obj.is_none()) {
+      profile3d_params = extract<TOFProfile3DParams>(profile3d_params_obj);
+    }
+
     if (absorption_params_obj.is_none() && incident_params_obj.is_none()) {
-      integrate_reflection_table(
-        reflection_table, experiment, data, apply_lorentz, profile1d_params);
+      integrate_reflection_table(reflection_table,
+                                 experiment,
+                                 data,
+                                 apply_lorentz,
+                                 profile1d_params,
+                                 profile3d_params);
 
       return;
     }
@@ -41,7 +52,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                                    incident_params,
                                    absorption_params,
                                    apply_lorentz,
-                                   profile1d_params);
+                                   profile1d_params,
+                                   profile3d_params);
       }
 
       else {
@@ -50,10 +62,12 @@ namespace dials { namespace algorithms { namespace boost_python {
                                    data,
                                    incident_params,
                                    apply_lorentz,
-                                   profile1d_params);
+                                   profile1d_params,
+                                   profile3d_params);
       }
     }
   }
+  void test(scitbx::af::versa<double, scitbx::af::c_grid<3> > ye) {}
 
   BOOST_PYTHON_MODULE(dials_algorithms_tof_integration_ext) {
     class_<TOFAbsorptionParams>("TOFAbsorptionParams", no_init)
@@ -76,6 +90,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<TOFProfile1DParams>("TOFProfile1DParams", no_init)
       .def(init<double, double, double, double, double, double, double>());
+
+    class_<TOFProfile3DParams>("TOFProfile3DParams", no_init)
+      .def(init<double, double, double, double, double, double>());
 
     def("tof_calculate_ellipse_shoebox_mask",
         &tof_calculate_ellipse_shoebox_mask,
@@ -113,6 +130,18 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              scitbx::af::shared<double>,
                                              const bool &)>(
           &calculate_line_profile_for_reflection));
+
+    def("calculate_line_profile_for_reflection_3d",
+        static_cast<boost::python::tuple (*)(dials::af::reflection_table &,
+                                             dxtbx::model::Experiment &,
+                                             dxtbx::ImageSequence &,
+                                             scitbx::af::shared<double>,
+                                             scitbx::af::shared<double>,
+                                             scitbx::af::shared<double>,
+                                             scitbx::af::shared<double>,
+                                             const bool &,
+                                             const TOFProfile3DParams &)>(
+          &calculate_line_profile_for_reflection_3d));
 
     def("calculate_line_profile_for_reflection",
         static_cast<boost::python::tuple (*)(dials::af::reflection_table &,
