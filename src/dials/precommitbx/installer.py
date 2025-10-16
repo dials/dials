@@ -7,15 +7,11 @@ import operator
 import os
 import pathlib
 import stat
+import subprocess
 import sys
 from distutils.version import LooseVersion as parse_version
 
 import libtbx.load_env
-
-try:
-    import conda.cli.python_api
-except ModuleNotFoundError:
-    conda = None
 
 try:
     import pre_commit.constants
@@ -97,30 +93,34 @@ def check_precommitbx_hook(path):
 
 @functools.lru_cache
 def _conda_info():
-    conda_info, error, return_code = conda.cli.python_api.run_command(
-        conda.cli.python_api.Commands.INFO,
-        "--json",
-        use_exception_handler=True,
-    )
-    if return_code:
-        if conda_info and conda_info.get("message"):
-            print(conda_info["message"])
-        raise RuntimeError(error)
-    return json.loads(conda_info)
+    try:
+        result = subprocess.run(
+            ["conda", "info", "--json"], capture_output=True, text=True, check=True
+        )
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        # Try to parse error message from stdout if available
+        if e.stdout:
+            try:
+                conda_info = json.loads(e.stdout)
+                if conda_info.get("message"):
+                    print(conda_info["message"])
+            except json.JSONDecodeError:
+                pass
+        raise RuntimeError(e.stderr)
 
 
 def _install_precommit():
-    conda_info, error, return_code = conda.cli.python_api.run_command(
-        conda.cli.python_api.Commands.INSTALL,
-        "--json",
-        "--quiet",
-        "--yes",
-        "pre-commit",
-        use_exception_handler=True,
-    )
-    if return_code:
-        raise RuntimeError(error)
-    information = json.loads(conda_info)
+    try:
+        result = subprocess.run(
+            ["conda", "install", "--json", "--quiet", "--yes", "pre-commit"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        information = json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(e.stderr)
     if not information.get("success"):
         print(information)
         raise RuntimeError("Could not install precommit into conda environment")
