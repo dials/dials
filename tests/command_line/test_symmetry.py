@@ -9,7 +9,7 @@ import pytest
 
 import scitbx.matrix
 from cctbx import crystal, sgtbx, uctbx
-from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
+from dxtbx.model import Crystal, Experiment, ExperimentList, GoniometerFactory, Scan
 from dxtbx.serialize import load
 from dxtbx.util import ersatz_uuid4
 
@@ -274,6 +274,10 @@ def _make_input_for_exclude_tests(exclude_images=True):
         exclude_images = [["0:360:720"], ["1:360:720"]]
     expt1 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, 1.0)))
     expt2 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, -1.0)))
+    # Need to set a goniometer otherwise is_still() is True
+    goniometer = GoniometerFactory.known_axis((1, 0, 0))
+    expt1.goniometer = goniometer
+    expt2.goniometer = goniometer
     refls1 = flex.reflection_table()
     refls2 = flex.reflection_table()
     refls1["xyzobs.mm.value"] = flex.vec3_double(
