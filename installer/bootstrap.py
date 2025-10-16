@@ -1193,7 +1193,7 @@ def make_build_cmake():
         parallel = []
         if "CMAKE_GENERATOR" not in os.environ:
             if hasattr(os, "sched_getaffinity"):
-                cpu = os.sched_getaffinity(0)
+                cpu = len(os.sched_getaffinity(0))
             else:
                 cpu = multiprocessing.cpu_count()
             if isinstance(cpu, int):
