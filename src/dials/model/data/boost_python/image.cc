@@ -64,7 +64,7 @@ namespace dials { namespace model { namespace boost_python {
   }
 
   template <typename T>
-  void wrap_image(const char *name) {
+  void wrap_image(const char* name) {
     class_<Image<T>, std::shared_ptr<Image<T> > >(name, no_init)
       .def("__init__", make_constructor(make_from_single<T>))
       .def("__init__", make_constructor(make_from_tuple<T>))

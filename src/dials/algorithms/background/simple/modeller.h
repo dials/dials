@@ -48,8 +48,8 @@ namespace dials { namespace algorithms { namespace background {
     virtual ~Modeller() {}
 
     virtual std::shared_ptr<Model> create(
-      const af::const_ref<double, af::c_grid<3> > &data,
-      const af::const_ref<bool, af::c_grid<3> > &mask) const = 0;
+      const af::const_ref<double, af::c_grid<3> >& data,
+      const af::const_ref<bool, af::c_grid<3> >& mask) const = 0;
   };
 
   /**
@@ -86,8 +86,8 @@ namespace dials { namespace algorithms { namespace background {
   class Constant2dModeller : public Modeller {
   public:
     virtual std::shared_ptr<Model> create(
-      const af::const_ref<double, af::c_grid<3> > &data,
-      const af::const_ref<bool, af::c_grid<3> > &mask) const {
+      const af::const_ref<double, af::c_grid<3> >& data,
+      const af::const_ref<bool, af::c_grid<3> >& mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       af::shared<double> mean(data.accessor()[0], 0.0);
       af::shared<double> sq_sem(data.accessor()[0], 0.0);
@@ -147,8 +147,8 @@ namespace dials { namespace algorithms { namespace background {
   class Constant3dModeller : public Modeller {
   public:
     virtual std::shared_ptr<Model> create(
-      const af::const_ref<double, af::c_grid<3> > &data,
-      const af::const_ref<bool, af::c_grid<3> > &mask) const {
+      const af::const_ref<double, af::c_grid<3> >& data,
+      const af::const_ref<bool, af::c_grid<3> >& mask) const {
       DIALS_ASSERT(data.size() == mask.size());
 
       // Welford's one-pass mean and variance calculation
@@ -226,8 +226,8 @@ namespace dials { namespace algorithms { namespace background {
   class Linear2dModeller : public Modeller {
   public:
     virtual std::shared_ptr<Model> create(
-      const af::const_ref<double, af::c_grid<3> > &data,
-      const af::const_ref<bool, af::c_grid<3> > &mask) const {
+      const af::const_ref<double, af::c_grid<3> >& data,
+      const af::const_ref<bool, af::c_grid<3> >& mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       af::shared<double> a(mask.accessor()[0], 0);
       af::shared<double> b(mask.accessor()[0], 0);
@@ -334,8 +334,8 @@ namespace dials { namespace algorithms { namespace background {
   class Linear3dModeller : public Modeller {
   public:
     virtual std::shared_ptr<Model> create(
-      const af::const_ref<double, af::c_grid<3> > &data,
-      const af::const_ref<bool, af::c_grid<3> > &mask) const {
+      const af::const_ref<double, af::c_grid<3> >& data,
+      const af::const_ref<bool, af::c_grid<3> >& mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       af::shared<double> A(4 * 4, 0);
       af::shared<double> B(4, 0);

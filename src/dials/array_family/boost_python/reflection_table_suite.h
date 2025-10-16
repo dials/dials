@@ -20,8 +20,8 @@ namespace dials { namespace af { namespace boost_python {
      * @returns The new table with the requested rows
      */
     template <typename T>
-    T select_rows_index(const T &self,
-                        const scitbx::af::const_ref<std::size_t> &index) {
+    T select_rows_index(const T& self,
+                        const scitbx::af::const_ref<std::size_t>& index) {
       T new_table = flex_table_suite::select_rows_index(self, index);
 
       // Get the id column (if it exists) and make a set of unique values
@@ -48,7 +48,7 @@ namespace dials { namespace af { namespace boost_python {
      * @returns The new table with the requested rows
      */
     template <typename T>
-    T select_rows_flags(const T &self, const af::const_ref<bool> &flags) {
+    T select_rows_flags(const T& self, const af::const_ref<bool>& flags) {
       DIALS_ASSERT(self.nrows() == flags.size());
       af::shared<std::size_t> index;
       for (std::size_t i = 0; i < flags.size(); ++i) {
@@ -63,7 +63,7 @@ namespace dials { namespace af { namespace boost_python {
      * @param other The table to add experiment identifiers from
      */
     template <typename T>
-    void extend_identifiers(T &self, const T &other) {
+    void extend_identifiers(T& self, const T& other) {
       typedef typename T::experiment_map_type::const_iterator const_iterator;
       typedef typename T::experiment_map_type::iterator iterator;
       for (const_iterator it = other.experiment_identifiers()->begin();
@@ -86,7 +86,7 @@ namespace dials { namespace af { namespace boost_python {
      * @param other The other table
      */
     template <typename T>
-    void extend(T &self, const T &other) {
+    void extend(T& self, const T& other) {
       flex_table_suite::extend(self, other);
       extend_identifiers(self, other);
     }
@@ -98,7 +98,7 @@ namespace dials { namespace af { namespace boost_python {
      * @returns A new table containing rows that match the experiment identifier
      */
     template <typename T>
-    T select_using_experiment(T &self, dxtbx::model::Experiment expt) {
+    T select_using_experiment(T& self, dxtbx::model::Experiment expt) {
       typedef typename T::experiment_map_type::const_iterator const_iterator;
 
       std::string identifier = expt.get_identifier();
@@ -136,7 +136,7 @@ namespace dials { namespace af { namespace boost_python {
      * @returns A new table containing rows that match the experiment identifiers
      */
     template <typename T>
-    T select_using_experiments(T &self, dxtbx::model::ExperimentList expts) {
+    T select_using_experiments(T& self, dxtbx::model::ExperimentList expts) {
       typedef typename T::experiment_map_type::const_iterator const_iterator;
       typedef dxtbx::model::ExperimentList::shared_type::const_iterator
         expt_const_iterator;
@@ -180,13 +180,13 @@ namespace dials { namespace af { namespace boost_python {
      * @param other The other table
      */
     template <typename T>
-    void update(T &self, const T &other) {
+    void update(T& self, const T& other) {
       extend_identifiers(self, other);
       flex_table_suite::update(self, other);
     }
 
     template <typename T>
-    T deepcopy(const T &self, boost::python::dict obj) {
+    T deepcopy(const T& self, boost::python::dict obj) {
       T new_table = flex_table_suite::deepcopy(self, obj);
 
       typedef typename T::experiment_map_type::const_iterator const_iterator;
@@ -205,7 +205,7 @@ namespace dials { namespace af { namespace boost_python {
      * @returns The new table with the requested columns
      */
     template <typename T>
-    T select_cols_keys(const T &self, const af::const_ref<std::string> &keys) {
+    T select_cols_keys(const T& self, const af::const_ref<std::string>& keys) {
       T result = flex_table_suite::select_cols_keys<T>(self, keys);
       extend_identifiers(result, self);
       return result;
@@ -218,7 +218,7 @@ namespace dials { namespace af { namespace boost_python {
      * @returns The new table with the requested columns
      */
     template <typename T>
-    T select_cols_tuple(const T &self, boost::python::tuple keys) {
+    T select_cols_tuple(const T& self, boost::python::tuple keys) {
       T result = flex_table_suite::select_cols_tuple<T>(self, keys);
       extend_identifiers(result, self);
       return result;
@@ -231,7 +231,7 @@ namespace dials { namespace af { namespace boost_python {
      * @returns A new table with the chosen elements
      */
     template <typename T>
-    T getitem_slice(const T &self, boost::python::slice s) {
+    T getitem_slice(const T& self, boost::python::slice s) {
       typedef typename T::const_iterator iterator;
       scitbx::boost_python::adapted_slice as(s, self.nrows());
       T result(as.size);

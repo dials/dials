@@ -41,18 +41,18 @@ namespace dials { namespace algorithms {
    * space.
    */
   int simulate_reciprocal_space_gaussian(
-    const BeamBase &beam,
-    const Detector &detector,
-    const Goniometer &goniometer,
-    const Scan &scan,
+    const BeamBase& beam,
+    const Detector& detector,
+    const Goniometer& goniometer,
+    const Scan& scan,
     double sigma_b,
     double sigma_m,
     const vec3<double> s1,
     double phi,
-    const int6 &bbox,
+    const int6& bbox,
     std::size_t I,
     af::ref<double, af::c_grid<3> > shoebox,
-    const af::const_ref<int, af::c_grid<3> > &mask) {
+    const af::const_ref<int, af::c_grid<3> >& mask) {
     vec3<double> s0 = beam.get_s0();
     vec3<double> m2 = goniometer.get_rotation_axis();
 
@@ -108,17 +108,17 @@ namespace dials { namespace algorithms {
    * space. Estimate the expected intensity within the masked region.
    */
   int integrate_reciprocal_space_gaussian(
-    const BeamBase &beam,
-    const Detector &detector,
-    const Goniometer &goniometer,
-    const Scan &scan,
+    const BeamBase& beam,
+    const Detector& detector,
+    const Goniometer& goniometer,
+    const Scan& scan,
     double sigma_b,
     double sigma_m,
     const vec3<double> s1,
     double phi,
-    const int6 &bbox,
+    const int6& bbox,
     std::size_t I,
-    const af::const_ref<int, af::c_grid<3> > &mask) {
+    const af::const_ref<int, af::c_grid<3> >& mask) {
     vec3<double> s0 = beam.get_s0();
     vec3<double> m2 = goniometer.get_rotation_axis();
 

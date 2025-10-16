@@ -43,11 +43,11 @@ namespace dials { namespace algorithms {
      * @param beam The beam model
      * @param detector The detector model
      */
-    PixelLabeller(BeamBase &beam, Detector detector) {
+    PixelLabeller(BeamBase& beam, Detector detector) {
       p_star_.resize(detector.size());
       vec3<double> s0 = beam.get_s0();
       for (std::size_t p = 0; p < detector.size(); ++p) {
-        const Panel &panel = detector[p];
+        const Panel& panel = detector[p];
         vec2<std::size_t> image_size = panel.get_image_size();
         p_star_[p].resize(af::c_grid<2>(image_size[1], image_size[0]));
         pstar_array_type ps = p_star_[p];

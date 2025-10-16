@@ -43,15 +43,15 @@ namespace dials { namespace model {
    * can return as the centroid
    */
   template <typename AlgorithmType>
-  Centroid extract_centroid_object(const AlgorithmType &algorithm,
-                                   const vec3<double> &ioffset) {
+  Centroid extract_centroid_object(const AlgorithmType& algorithm,
+                                   const vec3<double>& ioffset) {
     // Try to get the variance and add 0.5 to the standard error
     Centroid result;
     result.px.position = algorithm.mean() + ioffset;
     try {
       result.px.variance = algorithm.unbiased_variance();
       result.px.std_err_sq = algorithm.mean_sq_error();
-    } catch (dials::error const &) {
+    } catch (dials::error const&) {
       result.px.variance = vec3<double>(0.0, 0.0, 0.0);
       result.px.std_err_sq = vec3<double>(1.0 / 12.0, 1.0 / 12.0, 1.0 / 12.0);
     }
@@ -87,7 +87,7 @@ namespace dials { namespace model {
      * Initialise the shoebox
      * @param bbox_ The bounding box to initialise with
      */
-    Shoebox(const int6 &bbox_)
+    Shoebox(const int6& bbox_)
         : panel(0),
           bbox(bbox_),
           flat(false),
@@ -100,7 +100,7 @@ namespace dials { namespace model {
      * @param panel_ The panel number
      * @param bbox_ The bounding box to initialise with
      */
-    Shoebox(std::size_t panel_, const int6 &bbox_)
+    Shoebox(std::size_t panel_, const int6& bbox_)
         : panel(panel_),
           bbox(bbox_),
           flat(false),
@@ -114,7 +114,7 @@ namespace dials { namespace model {
      * @param bbox_ The bounding box to initialise with
      * @param flat_ The shoebix is flat
      */
-    Shoebox(std::size_t panel_, const int6 &bbox_, bool flat_)
+    Shoebox(std::size_t panel_, const int6& bbox_, bool flat_)
         : panel(panel_),
           bbox(bbox_),
           flat(flat_),
@@ -247,7 +247,7 @@ namespace dials { namespace model {
      * @returns True/False
      */
     bool does_bbox_contain_bad_pixels(
-      const af::const_ref<bool, af::c_grid<2> > &mask) const {
+      const af::const_ref<bool, af::c_grid<2> >& mask) const {
       std::size_t ysize = mask.accessor()[0];
       std::size_t xsize = mask.accessor()[1];
       int j0 = bbox[2] > 0 ? bbox[2] : 0;
@@ -328,7 +328,7 @@ namespace dials { namespace model {
         if (bbox[5] == bbox[4] + 1) {
           result.px.position[2] = bbox[4] + 0.5;
         }
-      } catch (dials::error const &) {
+      } catch (dials::error const&) {
         double xmid = (bbox[1] + bbox[0]) / 2.0;
         double ymid = (bbox[3] + bbox[2]) / 2.0;
         double zmid = (bbox[5] + bbox[4]) / 2.0;
@@ -412,7 +412,7 @@ namespace dials { namespace model {
       try {
         Centroider centroid(foreground_data, foreground_mask);
         result = extract_centroid_object(centroid, offset);
-      } catch (dials::error const &) {
+      } catch (dials::error const&) {
         double xmid = (bbox[1] + bbox[0]) / 2.0;
         double ymid = (bbox[3] + bbox[2]) / 2.0;
         double zmid = (bbox[5] + bbox[4]) / 2.0;
@@ -490,7 +490,7 @@ namespace dials { namespace model {
      * @param rhs The other shoebox
      * @returns True/False. They are the same
      */
-    bool operator==(const Shoebox &rhs) const {
+    bool operator==(const Shoebox& rhs) const {
       return ((bbox.all_eq(rhs.bbox)) && (data.all_eq(rhs.data))
               && (mask.all_eq(rhs.mask)) && (background.all_eq(rhs.background)));
     }
@@ -500,7 +500,7 @@ namespace dials { namespace model {
      * @param rhs The other shoebox
      * @returns True/False. They are not the same
      */
-    bool operator!=(const Shoebox &rhs) const {
+    bool operator!=(const Shoebox& rhs) const {
       return !(*this == rhs);
     }
 

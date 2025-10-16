@@ -32,9 +32,9 @@ namespace dials { namespace algorithms {
    */
   class ReflectionLookup2 {
   public:
-    ReflectionLookup2(const af::const_ref<int> &id,
-                      const af::const_ref<int6> &bbox,
-                      const int2 &frames) {
+    ReflectionLookup2(const af::const_ref<int>& id,
+                      const af::const_ref<int6>& bbox,
+                      const int2& frames) {
       DIALS_ASSERT(frames[1] > frames[0]);
 
       // Make a list of the frames

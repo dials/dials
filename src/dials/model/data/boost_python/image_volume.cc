@@ -135,7 +135,7 @@ namespace dials { namespace model { namespace boost_python {
   }
 
   template <typename FloatType>
-  void image_volume_wrapper(const char *name) {
+  void image_volume_wrapper(const char* name) {
     typedef ImageVolume<FloatType> Class;
 
     class_<Class>(name, no_init)
@@ -155,7 +155,7 @@ namespace dials { namespace model { namespace boost_python {
   }
 
   template <typename FloatType>
-  void multi_panel_image_volume_wrapper(const char *name) {
+  void multi_panel_image_volume_wrapper(const char* name) {
     typedef MultiPanelImageVolume<FloatType> Class;
 
     class_<Class>(name)

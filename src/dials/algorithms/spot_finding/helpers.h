@@ -26,7 +26,7 @@ namespace dials { namespace algorithms {
   public:
     Labeller() {}
 
-    void add(const Shoebox<> &shoebox) {
+    void add(const Shoebox<>& shoebox) {
       // Add to the list of shoeboxes
       shoeboxes_.push_back(shoebox);
     }

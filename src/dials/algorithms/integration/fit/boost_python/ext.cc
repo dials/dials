@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   template <typename FloatType>
-  void profile_fitter_wrapper(const char *name) {
+  void profile_fitter_wrapper(const char* name) {
     typedef ProfileFitter<FloatType> ProfileFitterType;
 
     class_<ProfileFitterType>(name, no_init)
@@ -32,10 +32,10 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   template <typename FloatType>
-  ProfileFitter<FloatType> make_profile_fitter_1d_1(const af::const_ref<FloatType> &d,
-                                                    const af::const_ref<FloatType> &b,
-                                                    const af::const_ref<bool> &m,
-                                                    const af::const_ref<FloatType> &p,
+  ProfileFitter<FloatType> make_profile_fitter_1d_1(const af::const_ref<FloatType>& d,
+                                                    const af::const_ref<FloatType>& b,
+                                                    const af::const_ref<bool>& m,
+                                                    const af::const_ref<FloatType>& p,
                                                     double eps,
                                                     std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
@@ -43,10 +43,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_2d_1(
-    const af::const_ref<FloatType, af::c_grid<2> > &d,
-    const af::const_ref<FloatType, af::c_grid<2> > &b,
-    const af::const_ref<bool, af::c_grid<2> > &m,
-    const af::const_ref<FloatType, af::c_grid<2> > &p,
+    const af::const_ref<FloatType, af::c_grid<2> >& d,
+    const af::const_ref<FloatType, af::c_grid<2> >& b,
+    const af::const_ref<bool, af::c_grid<2> >& m,
+    const af::const_ref<FloatType, af::c_grid<2> >& p,
     double eps,
     std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
@@ -54,10 +54,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_3d_1(
-    const af::const_ref<FloatType, af::c_grid<3> > &d,
-    const af::const_ref<FloatType, af::c_grid<3> > &b,
-    const af::const_ref<bool, af::c_grid<3> > &m,
-    const af::const_ref<FloatType, af::c_grid<3> > &p,
+    const af::const_ref<FloatType, af::c_grid<3> >& d,
+    const af::const_ref<FloatType, af::c_grid<3> >& b,
+    const af::const_ref<bool, af::c_grid<3> >& m,
+    const af::const_ref<FloatType, af::c_grid<3> >& p,
     double eps,
     std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
@@ -65,10 +65,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_1d_n(
-    const af::const_ref<FloatType> &d,
-    const af::const_ref<FloatType> &b,
-    const af::const_ref<bool> &m,
-    const af::const_ref<FloatType, af::c_grid<2> > &p,
+    const af::const_ref<FloatType>& d,
+    const af::const_ref<FloatType>& b,
+    const af::const_ref<bool>& m,
+    const af::const_ref<FloatType, af::c_grid<2> >& p,
     double eps,
     std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
@@ -76,10 +76,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_2d_n(
-    const af::const_ref<FloatType, af::c_grid<2> > &d,
-    const af::const_ref<FloatType, af::c_grid<2> > &b,
-    const af::const_ref<bool, af::c_grid<2> > &m,
-    const af::const_ref<FloatType, af::c_grid<3> > &p,
+    const af::const_ref<FloatType, af::c_grid<2> >& d,
+    const af::const_ref<FloatType, af::c_grid<2> >& b,
+    const af::const_ref<bool, af::c_grid<2> >& m,
+    const af::const_ref<FloatType, af::c_grid<3> >& p,
     double eps,
     std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
@@ -87,10 +87,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_3d_n(
-    const af::const_ref<FloatType, af::c_grid<3> > &d,
-    const af::const_ref<FloatType, af::c_grid<3> > &b,
-    const af::const_ref<bool, af::c_grid<3> > &m,
-    const af::const_ref<FloatType, af::c_grid<4> > &p,
+    const af::const_ref<FloatType, af::c_grid<3> >& d,
+    const af::const_ref<FloatType, af::c_grid<3> >& b,
+    const af::const_ref<bool, af::c_grid<3> >& m,
+    const af::const_ref<FloatType, af::c_grid<4> >& p,
     double eps,
     std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
