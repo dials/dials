@@ -1,0 +1,1 @@
+Fix installation of pre-commit tools when using new versions of conda.
