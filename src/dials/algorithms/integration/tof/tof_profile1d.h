@@ -150,8 +150,9 @@ namespace dials { namespace algorithms {
   class TOFProfile1D {
   public:
     scitbx::af::const_ref<double> tof;
-    scitbx::af::const_ref<double> intensities;  // raw intensities
-    scitbx::af::shared<double> y_norm;          // normalized intensities
+    scitbx::af::const_ref<double> intensities;     // raw intensities
+    scitbx::af::const_ref<double> background_var;  // raw intensities
+    scitbx::af::shared<double> y_norm;             // normalized intensities
     double intensity_max;
 
     // params
@@ -161,6 +162,7 @@ namespace dials { namespace algorithms {
 
     TOFProfile1D(scitbx::af::const_ref<double> tof_,
                  scitbx::af::const_ref<double> intensities_,
+                 scitbx::af::const_ref<double> background_var_,
                  double A_,
                  double alpha_,
                  double beta_,
@@ -169,6 +171,7 @@ namespace dials { namespace algorithms {
                  const std::array<double, 2> beta_bounds)
         : tof(tof_),
           intensities(intensities_),
+          background_var(background_var_),
           A(A_),
           alpha(alpha_),
           beta(beta_),
@@ -284,36 +287,36 @@ namespace dials { namespace algorithms {
       return simpson_integrate(r.const_ref(), tof);
     }
 
-    double calc_variance(scitbx::af::const_ref<double> projected_variance) const {
+    double calc_variance() const {
       scitbx::af::shared<double> profile =
         profile1d_func(tof, A, alpha, beta, sigma, T_ph);
-      DIALS_ASSERT(profile.size() == projected_variance.size());
+      DIALS_ASSERT(profile.size() == background_var.size());
 
-      // Normalized profile divided by amplitude (A)
-      scitbx::af::shared<double> p(profile.size());
-      DIALS_ASSERT(A > 0.0);
-      for (size_t i = 0; i < p.size(); ++i) {
-        p[i] = profile[i] / A;
-      }
+      double intensity = calc_intensity();
+      int n_background = 0;
+      int n_signal = 0;
 
-      // Variance of amplitude A
-      double denom = 0.0;
-      for (size_t i = 0; i < p.size(); ++i) {
-        if (p[i] <= 1e-7) {
-          continue;
+      double bg_var_sum = 0;
+      double eps = 1e-7;
+      for (std::size_t i = 0; i < profile.size(); ++i) {
+        double val = profile[i];
+        double bg_val = background_var[i];
+        if (std::isfinite(val) && std::isfinite(bg_val)) {
+          if (val > eps) {
+            bg_var_sum += bg_val;
+            n_signal++;
+          } else {  // Anywhere the profile is flat is classed as background
+            n_background++;
+          }
         }
-        double var = projected_variance[i];
-        if (var <= 1e-7) continue;
-        denom += (p[i] * p[i]) / var;
       }
-      if (denom <= 0.0) return 0.0;
-      double varA = 1.0 / denom;
 
-      // Integral of profile shape
-      double integral_p = simpson_integrate(p.const_ref(), tof);
+      double bg_var = std::abs(bg_var_sum);
+      if (n_background > 0) {
+        bg_var *= (1.0 + n_signal / n_background);
+      }
 
-      // Propagate to integrated intensity
-      return varA * (integral_p * integral_p);
+      return std::abs(intensity) + bg_var;
     }
 
     std::size_t get_max_profile_index() {
@@ -331,7 +334,7 @@ namespace dials { namespace algorithms {
              int maxfev = 2000,
              double xtol = 1e-8,
              double ftol = 1e-8,
-             int n_restarts = 8) {
+             int n_restarts = 20) {
       /*
        * Least-squares minimization with optional multiple restarts if untrusted.
        * Updates A, alpha, beta, sigma, T_ph.
@@ -375,16 +378,24 @@ namespace dials { namespace algorithms {
       // First fit attempt
       Eigen::VectorXd x0(5);
       x0 << A, alpha, beta, sigma, T_ph;
-      double best_error = std::numeric_limits<double>::infinity();
-      bool success = false;
+      double fit_resid = std::numeric_limits<double>::infinity();
+      bool success = run_single_fit(x0, fit_resid);
+      std::size_t max_profile_index;
+      double I_prf, I_var, error;
 
-      success = run_single_fit(x0, best_error);
-      std::size_t max_profile_index = this->get_max_profile_index();
-
-      if (success
-          && this->trust_result(
-            A, sigma, I_sum, var_sum, max_sum_index, max_profile_index))
-        return true;
+      if (success) {
+        I_prf = this->calc_intensity();
+        I_var = this->calc_variance();
+        if (this->trust_result(fit_resid,
+                               I_prf,
+                               I_var,
+                               I_sum,
+                               var_sum,
+                               max_sum_index,
+                               max_profile_index)) {
+          return true;
+        }
+      }
 
       // Perturb initial params
       std::mt19937 rng(std::random_device{}());
@@ -394,55 +405,107 @@ namespace dials { namespace algorithms {
         Eigen::VectorXd x_try(5);
         for (int j = 0; j < 5; ++j) {
           double span = max_bounds[j] - min_bounds[j];
-          double rand_frac = (unit_dist(rng) - 0.5) * 0.4;  // ±20% perturbation
+          double rand_frac = (unit_dist(rng) - 0.5) * 0.4;
           double perturbed = x0[j] + rand_frac * span;
           x_try[j] = std::max(min_bounds[j], std::min(perturbed, max_bounds[j]));
         }
 
-        double err;
-        bool ok = run_single_fit(x_try, err);
-        if (!ok) continue;
-
-        if (err < best_error) {
-          best_error = err;
-          success = true;
-        }
-
+        success = run_single_fit(x_try, fit_resid);
+        if (!success) continue;
+        I_prf = this->calc_intensity();
+        I_var = this->calc_variance();
         max_profile_index = this->get_max_profile_index();
-
-        if (success
-            && this->trust_result(
-              A, sigma, I_sum, var_sum, max_sum_index, max_profile_index))
+        if (this->trust_result(fit_resid,
+                               I_prf,
+                               I_var,
+                               I_sum,
+                               var_sum,
+                               max_sum_index,
+                               max_profile_index)) {
           return true;
+        }
       }
 
-      return success;
+      std::cout << "TEST fail success\n";
+      return false;
     }
 
-    bool trust_result(double I_prf,
+    bool trust_result(double error,
+                      double I_prf,
                       double var_prf,
                       double I_sum,
                       double var_sum,
                       std::size_t max_sum_index,
                       std::size_t max_profile_index) {
-      /*
-       * Check for reasonable values and if peaks are in similar position
-       */
-
       if (var_prf < 1e-7 || I_prf < 1e-7) {
+        std::cout << "TEST Fail prf values " << var_prf << ", " << I_prf << std::endl;
         return false;
       }
-
       if (var_sum < 1e-7 || I_sum < 1e-7) {
+        std::cout << "TEST Fail sum values " << var_sum << ", " << I_sum << std::endl;
         return false;
       }
 
       if (std::abs(static_cast<int>(max_sum_index)
                    - static_cast<int>(max_profile_index))
-          > 5) {
+          > 3) {
+        std::cout << "TEST fail max index " << max_sum_index << ", "
+                  << max_profile_index << std::endl;
         return false;
       }
 
+      double sum_I_sigma = I_sum / std::sqrt(var_sum);
+      double prf_I_sigma = I_prf / std::sqrt(var_prf);
+      if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.1)) {
+        std::cout << "TEST Fail I_sigma " << sum_I_sigma << ", " << prf_I_sigma
+                  << std::endl;
+        return false;
+      }
+
+      // Shape-based checks
+      auto m = result();
+      double max_val = *std::max_element(m.begin(), m.end());
+      double mean_val = std::accumulate(m.begin(), m.end(), 0.0) / m.size();
+      double contrast = (max_val - mean_val) / (max_val + 1e-12);
+      if (contrast < 0.1) {
+        std::cout << "TEST Fail contrast " << contrast << std::endl;
+        return false;
+      }
+
+      // Correlation and peak check
+      double profile_peak, data_peak;
+      double num = 0, denom_y = 0, denom_m = 0;
+      for (std::size_t i = 0; i < tof.size(); ++i) {
+        double y = y_norm[i];
+        double p = m[i] / intensity_max;
+        if (i == 0 || y_norm[i] > data_peak) {
+          data_peak = y_norm[i];
+        }
+        if (i == 0 || p > profile_peak) {
+          profile_peak = p;
+        }
+        num += y * p;
+        denom_y += y * y;
+        denom_m += p * p;
+      }
+      double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
+      if (corr < 0.9) {
+        std::cout << "TEST fail corr " << corr << std::endl;
+        return false;
+      }
+
+      if (std::abs(profile_peak - data_peak) > data_peak * 0.1) {
+        std::cout << "TEST fail profile peak " << profile_peak << ", " << data_peak
+                  << std::endl;
+        return false;
+      }
+
+      std::cout << "TEST PASS error " << error << " corr " << corr << " contrast "
+                << contrast << " peak " << std::abs(profile_peak - data_peak)
+                << " peak threshold " << data_peak * 0.1 << " idx "
+                << std::abs(static_cast<int>(max_profile_index)
+                            - static_cast<int>(max_sum_index))
+                << std::endl;
       return true;
     }
   };

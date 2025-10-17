@@ -127,7 +127,7 @@ namespace dials { namespace algorithms {
 
     // Numerical Jacobian (finite differences)
     int df(const Eigen::VectorXd& x, Eigen::MatrixXd& fjac) const {
-      const double eps = 1e-6;
+      const double eps = 1e-4;
       Eigen::VectorXd f0(m);
       operator()(x, f0);
 
@@ -158,7 +158,7 @@ namespace dials { namespace algorithms {
                      double beta,
                      const std::array<double, 2> alpha_bounds,
                      const std::array<double, 2> beta_bounds)
-        : coords(coords_), intensities(intensities_) {
+        : coords(get_rel_coords(coords_, intensities_)), intensities(intensities_) {
       DIALS_ASSERT(coords.size() == intensities.size());
 
       const std::size_t n = intensities.size();
@@ -171,34 +171,44 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < n; ++i) {
         double v = intensities[i];
         if (!std::isfinite(v) || v < 0.0) v = 0.0;
-        y_norm[i] = v / sumI;
+        y_norm[i] = std::isfinite(v) && v > 0.0 ? v / sumI : 0.0;
       }
 
-      // initial covariance
-      Eigen::Matrix3d C = Eigen::Matrix3d::Zero();
+      // Compute weighted mean
       Eigen::Vector3d mean = Eigen::Vector3d::Zero();
+      double weight_sum = 0.0;
+
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
         for (std::size_t c_y = 0; c_y < coords.accessor()[1]; ++c_y) {
           for (std::size_t c_z = 0; c_z < coords.accessor()[2]; ++c_z) {
+            std::size_t idx =
+              (c_x * coords.accessor()[1] + c_y) * coords.accessor()[2] + c_z;
+            double w = y_norm[idx];
             vec3<double> coord = coords(c_x, c_y, c_z);
-            mean += Eigen::Vector3d(coord[0], coord[1], coord[2]);
+            mean += w * Eigen::Vector3d(coord[0], coord[1], coord[2]);
+            weight_sum += w;
           }
         }
       }
-      mean /= static_cast<double>(coords.size());
+      if (weight_sum <= 0.0) weight_sum = 1.0;
+      mean /= weight_sum;
 
+      // Compute weighted covariance
+      Eigen::Matrix3d C = Eigen::Matrix3d::Zero();
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
         for (std::size_t c_y = 0; c_y < coords.accessor()[1]; ++c_y) {
           for (std::size_t c_z = 0; c_z < coords.accessor()[2]; ++c_z) {
+            std::size_t idx =
+              (c_x * coords.accessor()[1] + c_y) * coords.accessor()[2] + c_z;
+            double w = y_norm[idx];
             vec3<double> coord = coords(c_x, c_y, c_z);
             Eigen::Vector3d v(coord[0], coord[1], coord[2]);
             Eigen::Vector3d d = v - mean;
-            C += d * d.transpose();
+            C += w * (d * d.transpose());
           }
         }
       }
-
-      C /= static_cast<double>(coords.size() - 1);
+      C /= weight_sum;
       C += Eigen::Matrix3d::Identity() * 1e-6;
 
       Eigen::Matrix3d Linv = C.inverse().llt().matrixL();
@@ -211,14 +221,49 @@ namespace dials { namespace algorithms {
 
       params.resize(8);
       params << l11, l21, l31, l22, l32, l33, alpha, beta;
+      std::cout << "TEST params l11: " << l11 << ", l21: " << l21 << ", l31: " << l31
+                << ", l22: " << l22 << ", l32: " << l32 << ", l33: " << l33
+                << ", alpha: " << alpha << " , beta: " << beta << std::endl;
 
       min_bounds = {
         1e-4, -1e-3, -1e-3, 1e-4, -1e-3, -1e-3, alpha_bounds[0], beta_bounds[0]};
-      max_bounds = {1e3, 1e3, 1e3, 1e3, 1e3, 1e3, alpha_bounds[1], beta_bounds[1]};
+      max_bounds = {1e5, 1e5, 1e5, 1e5, 1e5, 1e5, alpha_bounds[1], beta_bounds[1]};
 
       // Sanity check
       DIALS_ASSERT(alpha >= min_bounds[6] && alpha <= max_bounds[6]);
       DIALS_ASSERT(beta >= min_bounds[7] && beta <= max_bounds[7]);
+    }
+
+    scitbx::af::versa<vec3<double>, af::c_grid<3>> get_rel_coords(
+      const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_,
+      const scitbx::af::versa<double, af::c_grid<3>> intensities_) {
+      // Find approximate centroid (weighted by intensity)
+      double sumI = 0.0;
+      Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
+
+      std::cout << "TEST intensities size " << intensities_.size() << std::endl;
+      for (std::size_t i = 0; i < intensities_.size(); ++i) {
+        double w = intensities_[i];
+        if (!std::isfinite(w) || w <= 0.0) continue;
+        centroid += w * Eigen::Vector3d(coords_[i][0], coords_[i][1], coords_[i][2]);
+        sumI += w;
+      }
+      if (sumI > 0.0)
+        centroid /= sumI;
+      else
+        centroid.setZero();
+
+      // Shift coordinates relative to centroid
+      scitbx::af::versa<vec3<double>, af::c_grid<3>> rel_coords(coords_.accessor());
+      std::cout << "TEST centroid " << centroid[0] << ", " << centroid[1] << ", "
+                << centroid[2] << std::endl;
+      for (std::size_t i = 0; i < coords_.size(); ++i) {
+        rel_coords[i] = vec3<double>(coords_[i][0] - centroid[0],
+                                     coords_[i][1] - centroid[1],
+                                     coords_[i][2] - centroid[2]);
+      }
+
+      return rel_coords;
     }
 
     scitbx::af::versa<double, af::c_grid<3>> result() const {
@@ -226,6 +271,10 @@ namespace dials { namespace algorithms {
       Eigen::Matrix3d H = functor.build_H_from_L(params);
       double alpha = params[6];
       double beta = params[7];
+
+      for (std::size_t i = 0; i < params.size(); ++i) {
+        std::cout << "TEST result params " << params[i] << std::endl;
+      }
 
       const std::size_t n = coords.size();
       scitbx::af::versa<double, af::c_grid<3>> out(coords.accessor());
@@ -310,38 +359,45 @@ namespace dials { namespace algorithms {
       return sum_pred * sum_raw;
     }
 
-    double calc_variance(scitbx::af::versa<double, af::c_grid<3>> variances,
-                         double var_floor = 1e-7) {
+    double calc_variance(scitbx::af::versa<double, af::c_grid<3>> background_variance) {
       scitbx::af::versa<double, af::c_grid<3>> pred = result();
       const auto& acc = pred.accessor();
+      DIALS_ASSERT(pred.accessor().all_eq(background_variance.accessor()));
 
       std::size_t nx = acc[0];
       std::size_t ny = acc[1];
       std::size_t nz = acc[2];
 
-      double denom = 0.0;
-      double integral_p = 0.0;
+      double intensity = calc_intensity();
+      int n_background = 0;
+      int n_signal = 0;
+
+      double bg_var_sum = 0;
+      double eps = 1e-4;
 
       for (std::size_t ix = 0; ix < nx; ++ix) {
         for (std::size_t iy = 0; iy < ny; ++iy) {
           for (std::size_t iz = 0; iz < nz; ++iz) {
-            double pij = pred(ix, iy, iz);
-            double var_ijk = variances(ix, iy, iz);
-            if (!std::isfinite(var_ijk) || var_ijk <= var_floor) var_ijk = var_floor;
-            denom += (pij * pij) / var_ijk;
-            integral_p += pij;
+            double val = pred(ix, iy, iz);
+            double bg_val = background_variance(ix, iy, iz);
+            if (std::isfinite(val) && std::isfinite(bg_val)) {
+              if (val > eps) {
+                bg_var_sum += bg_val;
+                n_signal++;
+              } else {  // Anywhere the profile is flat is classed as background
+                n_background++;
+              }
+            }
           }
         }
       }
 
-      if (denom <= 0.0) return 0.0;
+      double bg_var = std::abs(bg_var_sum);
+      if (n_background > 0) {
+        bg_var *= (1.0 + n_signal / n_background);
+      }
 
-      double varA = 1.0 / denom;
-      double varI = varA * (integral_p * integral_p);
-
-      if (!std::isfinite(varI) || varI <= 0.0) varI = 1e-6;
-
-      return varI;
+      return std::abs(intensity) + bg_var;
     }
 
     bool fit(int maxfev = 2000,

@@ -348,7 +348,7 @@ namespace dials { namespace algorithms {
   bool fit_profile1d(
     scitbx::af::const_ref<double> projected_intensity,
     scitbx::af::const_ref<double> tof_z,
-    scitbx::af::const_ref<double> projected_variance,
+    scitbx::af::const_ref<double> projected_background_var,
     const TOFProfile1DParams &profile_params,
     const double &I_sum,
     const double &var_sum,
@@ -369,6 +369,7 @@ namespace dials { namespace algorithms {
 
     TOFProfile1D profile(tof_z,
                          projected_intensity,
+                         projected_background_var,
                          profile_params.A,
                          profile_params.alpha,
                          profile_params.beta,
@@ -380,7 +381,7 @@ namespace dials { namespace algorithms {
 
     if (profile_success) {
       double I_prf = profile.calc_intensity();
-      double var_prf = profile.calc_variance(projected_variance);
+      double var_prf = profile.calc_variance();
       auto profile_result = profile.result();
       DIALS_ASSERT(projected_intensity.size() == profile_result.size());
 
@@ -401,14 +402,15 @@ namespace dials { namespace algorithms {
     return false;
   }
 
-  bool fit_profile3d(const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords,
-                     const scitbx::af::versa<double, af::c_grid<3>> intensities,
-                     const scitbx::af::versa<double, af::c_grid<3>> variances,
-                     const TOFProfile3DParams &profile_params,
-                     double &I_prf_out,
-                     double &var_prf_out,
-                     boost::optional<scitbx::af::versa<double, af::c_grid<3>>>
-                       profile_3d_out = boost::none) {
+  bool fit_profile3d(
+    const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords,
+    const scitbx::af::versa<double, af::c_grid<3>> intensities,
+    const scitbx::af::versa<double, af::c_grid<3>> background_variances,
+    const TOFProfile3DParams &profile_params,
+    double &I_prf_out,
+    double &var_prf_out,
+    boost::optional<scitbx::af::versa<double, af::c_grid<3>>> profile_3d_out =
+      boost::none) {
     // Fit profile
     const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
                                                 profile_params.alpha_max};
@@ -426,7 +428,7 @@ namespace dials { namespace algorithms {
 
     if (profile_success) {
       double I_prf = profile.calc_intensity();
-      double var_prf = profile.calc_variance(variances);
+      double var_prf = profile.calc_variance(background_variances);
 
       I_prf_out = I_prf;
       var_prf_out = var_prf;
@@ -692,21 +694,22 @@ namespace dials { namespace algorithms {
         }
       }
 
+      // 1D profile fitting params
       scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
 
-      // 3D profile fitting done in xyz
+      // 3D profile fitting params done in xyz
       auto acc = shoebox.data.accessor();
       af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
       scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
-      scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+      scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
       scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
 
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
-        double variance_z = 0;
+        double background_var_z = 0;
 
         if (!success) {
           break;
@@ -736,8 +739,11 @@ namespace dials { namespace algorithms {
 
             // Variances
             double var_S = std::abs(raw_S);
-            double var_B =
-              std::abs(raw_B) * (1.0 + double(n_signal) / double(n_background));
+            double raw_var_B = std::abs(raw_B);
+            double var_B = raw_var_B;
+            if (n_background > 0) {
+              var_B *= (1.0 + double(n_signal) / double(n_background));
+            }
 
             // Lorentz correction
             scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
@@ -758,19 +764,21 @@ namespace dials { namespace algorithms {
             double var_I0 = var_S + var_B;
 
             double I = I0 / bin_width_correction;
+            raw_var_B /= (bin_width_correction * bin_width_correction);
             double var_I = var_I0 / (bin_width_correction * bin_width_correction);
 
             if (apply_lorentz_correction) {
               I *= L;
               var_I *= (L * L);
+              raw_var_B *= (L * L);
             }
 
             intensity_z += I;
-            variance_z += var_I;
+            background_var_z += raw_var_B;
 
             if (profile_params_3d) {
               intensity_3d(x, y, z) = I;
-              variance_3d(x, y, z) = var_I;
+              background_var_3d(x, y, z) = raw_var_B;
               double x_c = x + shoebox.xoffset() + 0.5;
               double y_c = y + shoebox.yoffset() + 0.5;
               double z_c = z + shoebox.zoffset() + 0.5;
@@ -787,10 +795,13 @@ namespace dials { namespace algorithms {
               break;
             }
           }
+        }
+        if (profile_params_1d) {
           projected_intensity[z] = intensity_z;
-          projected_variance[z] = variance_z;
+          projected_background_var[z] = background_var_z;
         }
       }
+
       succeeded[i] = success;
       intensities[i] = intensity;
       variances[i] = variance;
@@ -808,7 +819,7 @@ namespace dials { namespace algorithms {
         double I_prf, var_prf;
         profile_success = fit_profile1d(projected_intensity.const_ref(),
                                         tof_z.const_ref(),
-                                        projected_variance.const_ref(),
+                                        projected_background_var.const_ref(),
                                         *profile_params_1d,
                                         I_sum,
                                         var_sum,
@@ -823,8 +834,12 @@ namespace dials { namespace algorithms {
         bool profile_success = false;
 
         double I_prf, var_prf;
-        profile_success = fit_profile3d(
-          coords_3d, intensity_3d, variance_3d, *profile_params_3d, I_prf, var_prf);
+        profile_success = fit_profile3d(coords_3d,
+                                        intensity_3d,
+                                        background_var_3d,
+                                        *profile_params_3d,
+                                        I_prf,
+                                        var_prf);
         if (profile_success) {
           intensities_prf[i] = I_prf;
           variances_prf[i] = var_prf;
@@ -1033,21 +1048,22 @@ namespace dials { namespace algorithms {
       scitbx::af::shared<double> smoothed_incident =
         savitzky_golay(incident_spectrum, 7, 2);
 
+      // 1D profile fitting params
       scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
 
-      // 3D profile fitting done in xyz
+      // 3D profile fitting params done in xyz
       auto acc = shoebox.data.accessor();
       af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
       scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
-      scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+      scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
       scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
 
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
-        double variance_z = 0;
+        double background_var_z = 0;
 
         if (!success) {
           break;
@@ -1089,8 +1105,11 @@ namespace dials { namespace algorithms {
 
             // Variances
             double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
-            double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
-                           * (1.0 + double(n_signal) / double(n_background));
+            double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
+            double var_B = raw_var_B;
+            if (n_background > 0) {
+              var_B *= (1.0 + double(n_signal) / double(n_background));
+            }
             double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
             double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
@@ -1116,18 +1135,21 @@ namespace dials { namespace algorithms {
               // Var( L*I0/J ) = (L/J)^2 Var(I0) + (L*I0/J^2)^2 Var(J)
               var_I = (L * L / (J * J)) * var_I0
                       + (L * L * I0 * I0 / (J * J * J * J)) * var_J;
+              raw_var_B = (L * L / (J * J)) * raw_var_B
+                          + (L * L * B * B / (J * J * J * J)) * var_J;
             } else {
               I = I0 / J;
               // Var( I0/J ) = (1/J)^2 Var(I0) + (I0/J^2)^2 Var(J)
               var_I = (1 / (J * J)) * var_I0 + (I0 * I0 / (J * J * J * J)) * var_J;
+              raw_var_B = (1 / (J * J)) * raw_var_B + (B * B / (J * J * J * J)) * var_J;
             }
 
             intensity_z += I;
-            variance_z += var_I;
+            background_var_z += raw_var_B;
 
             if (profile_params_3d) {
               intensity_3d(x, y, z) = I;
-              variance_3d(x, y, z) = var_I;
+              background_var_3d(x, y, z) = raw_var_B;
               double x_c = x + shoebox.xoffset() + 0.5;
               double y_c = y + shoebox.yoffset() + 0.5;
               double z_c = z + shoebox.zoffset() + 0.5;
@@ -1144,8 +1166,10 @@ namespace dials { namespace algorithms {
               break;
             }
           }
+        }
+        if (profile_params_1d) {
           projected_intensity[z] = intensity_z;
-          projected_variance[z] = variance_z;
+          projected_background_var[z] = background_var_z;
         }
       }
       succeeded[i] = success;
@@ -1165,7 +1189,7 @@ namespace dials { namespace algorithms {
         double I_prf, var_prf;
         profile_success = fit_profile1d(projected_intensity.const_ref(),
                                         tof_z.const_ref(),
-                                        projected_variance.const_ref(),
+                                        projected_background_var.const_ref(),
                                         *profile_params_1d,
                                         I_sum,
                                         var_sum,
@@ -1180,8 +1204,12 @@ namespace dials { namespace algorithms {
         bool profile_success = false;
 
         double I_prf, var_prf;
-        profile_success = fit_profile3d(
-          coords_3d, intensity_3d, variance_3d, *profile_params_3d, I_prf, var_prf);
+        profile_success = fit_profile3d(coords_3d,
+                                        intensity_3d,
+                                        background_var_3d,
+                                        *profile_params_3d,
+                                        I_prf,
+                                        var_prf);
         if (profile_success) {
           intensities_prf[i] = I_prf;
           variances_prf[i] = var_prf;
@@ -1392,21 +1420,22 @@ namespace dials { namespace algorithms {
       scitbx::af::shared<double> smoothed_incident =
         savitzky_golay(incident_spectrum, 7, 2);
 
+      // 1D profile fitting params
       scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
       scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_variance(shoebox.zsize(), 0.0);
+      scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
 
-      // 3D profile fitting done in xyz
+      // 3D profile fitting params done in xyz
       auto acc = shoebox.data.accessor();
       af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
       scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
-      scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+      scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
       scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
 
       // Second pass to perform actual integration
       for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
         double intensity_z = 0;
-        double variance_z = 0;
+        double background_var_z = 0;
 
         if (!success) {
           break;
@@ -1453,8 +1482,11 @@ namespace dials { namespace algorithms {
 
             // Variances
             double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
-            double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
-                           * (1.0 + double(n_signal) / double(n_background));
+            double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
+            double var_B = raw_var_B;
+            if (n_background > 0) {
+              var_B *= (1.0 + double(n_signal) / double(n_background));
+            }
             double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
             double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
@@ -1515,18 +1547,22 @@ namespace dials { namespace algorithms {
 
               var_I = (L * L / (J * J * T * T)) * var_I0
                       + (L * L * I0 * I0 / (J * J * J * J * T * T)) * var_J;
+              raw_var_B = (L * L / (J * J * T * T)) * raw_var_B
+                          + (L * L * B * B / (J * J * J * J * T * T)) * var_J;
             } else {
               I = I0 / (J * T);
               var_I = (1 / (J * J * T * T)) * var_I0
                       + (I0 * I0 / (J * J * J * J * T * T)) * var_J;
+              raw_var_B = (1 / (J * J * T * T)) * raw_var_B
+                          + (B * B / (J * J * J * J * T * T)) * var_J;
             }
 
             intensity_z += I;
-            variance_z += var_I;
+            background_var_z += raw_var_B;
 
             if (profile_params_3d) {
               intensity_3d(x, y, z) = I;
-              variance_3d(x, y, z) = var_I;
+              background_var_3d(x, y, z) = raw_var_B;
               double x_c = x + shoebox.xoffset() + 0.5;
               double y_c = y + shoebox.yoffset() + 0.5;
               double z_c = z + shoebox.zoffset() + 0.5;
@@ -1543,8 +1579,10 @@ namespace dials { namespace algorithms {
               break;
             }
           }
+        }
+        if (profile_params_1d) {
           projected_intensity[z] = intensity_z;
-          projected_variance[z] = variance_z;
+          projected_background_var[z] = background_var_z;
         }
       }
       succeeded[i] = success;
@@ -1564,7 +1602,7 @@ namespace dials { namespace algorithms {
         double I_prf, var_prf;
         profile_success = fit_profile1d(projected_intensity.const_ref(),
                                         tof_z.const_ref(),
-                                        projected_variance.const_ref(),
+                                        projected_background_var.const_ref(),
                                         *profile_params_1d,
                                         I_sum,
                                         var_sum,
@@ -1579,8 +1617,12 @@ namespace dials { namespace algorithms {
         bool profile_success = false;
 
         double I_prf, var_prf;
-        profile_success = fit_profile3d(
-          coords_3d, intensity_3d, variance_3d, *profile_params_3d, I_prf, var_prf);
+        profile_success = fit_profile3d(coords_3d,
+                                        intensity_3d,
+                                        background_var_3d,
+                                        *profile_params_3d,
+                                        I_prf,
+                                        var_prf);
         if (profile_success) {
           intensities_prf[i] = I_prf;
           variances_prf[i] = var_prf;
@@ -1627,7 +1669,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
-    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> projected_background_var_out,
     scitbx::af::shared<double> tof_z_out,
     const bool &apply_lorentz_correction) {
     /*
@@ -1667,7 +1709,7 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(raw_projected_intensity_out.size() == shoebox.zsize());
     DIALS_ASSERT(projected_intensity_out.size() == shoebox.zsize());
     DIALS_ASSERT(projected_background_out.size() == shoebox.zsize());
-    DIALS_ASSERT(projected_variance_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_background_var_out.size() == shoebox.zsize());
     DIALS_ASSERT(tof_z_out.size() == shoebox.zsize());
 
     int6 bbox = shoebox.bbox;
@@ -1715,7 +1757,7 @@ namespace dials { namespace algorithms {
       double intensity_z = 0;
       double intensity_raw_z = 0;
       double background_z = 0;
-      double variance_z = 0;
+      double background_var_z = 0;
 
       if (!success) {
         break;
@@ -1745,8 +1787,11 @@ namespace dials { namespace algorithms {
 
           // Variances
           double var_S = std::abs(raw_S);
-          double var_B =
-            std::abs(raw_B) * (1.0 + double(n_signal) / double(n_background));
+          double raw_var_B = std::abs(raw_B);
+          double var_B = raw_var_B;
+          if (n_background > 0) {
+            var_B *= (1.0 + double(n_signal) / double(n_background));
+          }
 
           // Lorentz correction
           scitbx::vec3<double> s1 =
@@ -1766,24 +1811,27 @@ namespace dials { namespace algorithms {
           double I0 = raw_S - raw_B;
           double var_I0 = var_S + var_B;
           double I_raw = raw_S;
-          double B_raw = raw_B;
+          double B = raw_B;
 
           double I = I0 / bin_width_correction;
           I_raw /= bin_width_correction;
           double var_I = var_I0 / (bin_width_correction * bin_width_correction);
-          B_raw /= bin_width_correction;
+
+          B /= bin_width_correction;
+          raw_var_B /= (bin_width_correction * bin_width_correction);
 
           if (apply_lorentz_correction) {
             I *= L;
             var_I *= (L * L);
+            raw_var_B *= (L * L);
             I_raw *= L;
-            B_raw *= L;
+            B *= L;
           }
 
           intensity_z += I;
           intensity_raw_z += I_raw;
-          background_z += B_raw;
-          variance_z += var_I;
+          background_z += B;
+          background_var_z += raw_var_B;
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
@@ -1795,11 +1843,11 @@ namespace dials { namespace algorithms {
             break;
           }
         }
-        raw_projected_intensity_out[z] = intensity_raw_z;
-        projected_intensity_out[z] = intensity_z;
-        projected_variance_out[z] = variance_z;
-        projected_background_out[z] = background_z;
       }
+      raw_projected_intensity_out[z] = intensity_raw_z;
+      projected_intensity_out[z] = intensity_z;
+      projected_background_var_out[z] = background_var_z;
+      projected_background_out[z] = background_z;
     }
 
     return boost::python::make_tuple(intensity, variance, success);
@@ -1893,11 +1941,11 @@ namespace dials { namespace algorithms {
         }
       }
     }
-    // 3D profile fitting done in xyz
+    // 3D profile fitting params done in xyz
     auto acc = shoebox.data.accessor();
     af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
     scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
-    scitbx::af::versa<double, af::c_grid<3>> variance_3d(transposed_acc);
+    scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
     scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
 
     // Second pass to perform actual integration
@@ -1905,7 +1953,7 @@ namespace dials { namespace algorithms {
       double intensity_z = 0;
       double intensity_raw_z = 0;
       double background_z = 0;
-      double variance_z = 0;
+      double background_var_z = 0;
 
       if (!sum_success) {
         break;
@@ -1935,8 +1983,11 @@ namespace dials { namespace algorithms {
 
           // Variances
           double var_S = std::abs(raw_S);
-          double var_B =
-            std::abs(raw_B) * (1.0 + double(n_signal) / double(n_background));
+          double raw_var_B = std::abs(raw_B);
+          double var_B = raw_var_B;
+          if (n_background > 0) {
+            var_B *= (1.0 + double(n_signal) / double(n_background));
+          }
 
           // Lorentz correction
           scitbx::vec3<double> s1 =
@@ -1956,27 +2007,28 @@ namespace dials { namespace algorithms {
           double I0 = raw_S - raw_B;
           double var_I0 = var_S + var_B;
           double I_raw = raw_S;
-          double B_raw = raw_B;
+          double B = raw_B;
 
           double I = I0 / bin_width_correction;
           I_raw /= bin_width_correction;
           double var_I = var_I0 / (bin_width_correction * bin_width_correction);
-          B_raw /= bin_width_correction;
+          B /= bin_width_correction;
+          raw_var_B /= (bin_width_correction * bin_width_correction);
 
           if (apply_lorentz_correction) {
             I *= L;
             var_I *= (L * L);
+            raw_var_B *= (L * L);
             I_raw *= L;
-            B_raw *= L;
+            B *= L;
           }
 
           intensity_z += I;
           intensity_raw_z += I_raw;
-          background_z += B_raw;
-          variance_z += var_I;
+          background_z += B;
 
           intensity_3d(x, y, z) = I;
-          variance_3d(x, y, z) = var_I;
+          background_var_3d(x, y, z) = raw_var_B;
           double x_c = x + shoebox.xoffset() + 0.5;
           double y_c = y + shoebox.yoffset() + 0.5;
           double z_c = z + shoebox.zoffset() + 0.5;
@@ -1992,10 +2044,10 @@ namespace dials { namespace algorithms {
             break;
           }
         }
-        raw_projected_intensity_out[z] = intensity_raw_z;
-        projected_intensity_out[z] = intensity_z;
-        projected_background_out[z] = background_z;
       }
+      raw_projected_intensity_out[z] = intensity_raw_z;
+      projected_intensity_out[z] = intensity_z;
+      projected_background_out[z] = background_z;
     }
 
     double I_prf = 0;
@@ -2007,7 +2059,7 @@ namespace dials { namespace algorithms {
     if (sum_success) {
       profile_success = fit_profile3d(coords_3d,
                                       intensity_3d,
-                                      variance_3d,
+                                      background_var_3d,
                                       profile_params_3d,
                                       I_prf,
                                       var_prf,
@@ -2026,7 +2078,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
-    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> projected_background_var_out,
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool &apply_lorentz_correction,
@@ -2043,7 +2095,7 @@ namespace dials { namespace algorithms {
                                             raw_projected_intensity_out,
                                             projected_intensity_out,
                                             projected_background_out,
-                                            projected_variance_out,
+                                            projected_background_var_out,
                                             tof_z_out,
                                             apply_lorentz_correction);
 
@@ -2058,7 +2110,7 @@ namespace dials { namespace algorithms {
     if (success) {
       profile_success = fit_profile1d(projected_intensity_out.const_ref(),
                                       tof_z_out.const_ref(),
-                                      projected_variance_out.const_ref(),
+                                      projected_background_var_out.const_ref(),
                                       profile_params_1d,
                                       I_sum,
                                       var_sum,
@@ -2080,7 +2132,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
-    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> projected_background_var_out,
     scitbx::af::shared<double> tof_z_out,
     const bool &apply_lorentz_correction) {
     /*
@@ -2230,8 +2282,8 @@ namespace dials { namespace algorithms {
 
     DIALS_ASSERT(raw_projected_intensity_out.size() == shoebox.zsize());
     DIALS_ASSERT(projected_intensity_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_background_var_out.size() == shoebox.zsize());
     DIALS_ASSERT(projected_background_out.size() == shoebox.zsize());
-    DIALS_ASSERT(projected_variance_out.size() == shoebox.zsize());
     DIALS_ASSERT(tof_z_out.size() == shoebox.zsize());
 
     // Second pass to perform actual integration
@@ -2239,7 +2291,7 @@ namespace dials { namespace algorithms {
       double intensity_z = 0;
       double intensity_raw_z = 0;
       double background_z = 0;
-      double variance_z = 0;
+      double background_var_z = 0;
 
       if (!success) {
         break;
@@ -2280,8 +2332,11 @@ namespace dials { namespace algorithms {
 
           // Variances
           double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
-          double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
-                         * (1.0 + double(n_signal) / double(n_background));
+          double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
+          double var_B = raw_var_B;
+          if (n_background > 0) {
+            var_B *= (1.0 + double(n_signal) / double(n_background));
+          }
           double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
           double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
@@ -2300,29 +2355,31 @@ namespace dials { namespace algorithms {
           double I0 = S - B - E;
           double var_I0 = var_S + var_B + var_E;
           double I_raw = S;
-          double B_raw = B;
 
           // Apply Lorentz correction and normalise by incident spectrum
           double I, var_I;
           if (apply_lorentz_correction) {
             I = L * I0 / J;
             I_raw *= L / J;
-            B_raw *= L / J;
+            B *= L / J;
             // Var( L*I0/J ) = (L/J)^2 Var(I0) + (L*I0/J^2)^2 Var(J)
             var_I =
               (L * L / (J * J)) * var_I0 + (L * L * I0 * I0 / (J * J * J * J)) * var_J;
+            raw_var_B =
+              (L * L / (J * J)) * raw_var_B + (L * L * B * B / (J * J * J * J)) * var_J;
           } else {
             I = I0 / J;
             I_raw /= J;
-            B_raw /= J;
+            B /= J;
             // Var( I0/J ) = (1/J)^2 Var(I0) + (I0/J^2)^2 Var(J)
             var_I = (1 / (J * J)) * var_I0 + (I0 * I0 / (J * J * J * J)) * var_J;
+            raw_var_B = (1 / (J * J)) * raw_var_B + (B * B / (J * J * J * J)) * var_J;
           }
 
           intensity_z += I;
           intensity_raw_z += I_raw;
-          background_z += B_raw;
-          variance_z += var_I;
+          background_z += B;
+          background_var_z += raw_var_B;
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
@@ -2334,11 +2391,11 @@ namespace dials { namespace algorithms {
             break;
           }
         }
-        raw_projected_intensity_out[z] = intensity_raw_z;
-        projected_intensity_out[z] = intensity_z;
-        projected_variance_out[z] = variance_z;
-        projected_background_out[z] = background_z;
       }
+      raw_projected_intensity_out[z] = intensity_raw_z;
+      projected_intensity_out[z] = intensity_z;
+      projected_background_var_out[z] = background_var_z;
+      projected_background_out[z] = background_z;
     }
 
     return boost::python::make_tuple(intensity, variance, success);
@@ -2352,7 +2409,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
-    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> projected_background_var_out,
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool &apply_lorentz_correction,
@@ -2370,7 +2427,7 @@ namespace dials { namespace algorithms {
                                             raw_projected_intensity_out,
                                             projected_intensity_out,
                                             projected_background_out,
-                                            projected_variance_out,
+                                            projected_background_var_out,
                                             tof_z_out,
                                             apply_lorentz_correction);
 
@@ -2384,7 +2441,7 @@ namespace dials { namespace algorithms {
     if (success) {
       profile_success = fit_profile1d(projected_intensity_out.const_ref(),
                                       tof_z_out.const_ref(),
-                                      projected_variance_out.const_ref(),
+                                      projected_background_var_out.const_ref(),
                                       profile_params_1d,
                                       I_sum,
                                       var_sum,
@@ -2407,7 +2464,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
-    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> projected_background_var_out,
     scitbx::af::shared<double> tof_z_out,
     const bool &apply_lorentz_correction) {
     /*
@@ -2554,7 +2611,7 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(raw_projected_intensity_out.size() == shoebox.zsize());
     DIALS_ASSERT(projected_intensity_out.size() == shoebox.zsize());
     DIALS_ASSERT(projected_background_out.size() == shoebox.zsize());
-    DIALS_ASSERT(projected_variance_out.size() == shoebox.zsize());
+    DIALS_ASSERT(projected_background_var_out.size() == shoebox.zsize());
     DIALS_ASSERT(tof_z_out.size() == shoebox.zsize());
 
     // Smooth incident and empty to avoid dividing by a noisy signal
@@ -2567,7 +2624,7 @@ namespace dials { namespace algorithms {
       double intensity_z = 0;
       double intensity_raw_z = 0;
       double background_z = 0;
-      double variance_z = 0;
+      double background_var_z = 0;
 
       if (!success) {
         break;
@@ -2608,8 +2665,11 @@ namespace dials { namespace algorithms {
 
           // Variances
           double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
-          double var_B = (std::abs(raw_B) / (sample_pc * sample_pc))
-                         * (1.0 + double(n_signal) / double(n_background));
+          double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
+          double var_B = raw_var_B;
+          if (n_background > 0) {
+            var_B *= (1.0 + double(n_signal) / double(n_background));
+          }
           double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
           double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
@@ -2655,7 +2715,6 @@ namespace dials { namespace algorithms {
           double I0 = S - B - E;
           double var_I0 = var_S + var_B + var_E;
           double I_raw = raw_S;
-          double B_raw = raw_B;
 
           J /= J_T;
 
@@ -2670,22 +2729,26 @@ namespace dials { namespace algorithms {
           if (apply_lorentz_correction) {
             I = L * I0 / (J * T);
             I_raw *= (L / (J * T));
-            B_raw *= (L / (J * T));
+            B *= (L / (J * T));
 
             var_I = (L * L / (J * J * T * T)) * var_I0
                     + (L * L * I0 * I0 / (J * J * J * J * T * T)) * var_J;
+            raw_var_B = (L * L / (J * J * T * T)) * raw_var_B
+                        + (L * L * B * B / (J * J * J * J * T * T)) * var_J;
           } else {
             I = I0 / (J * T);
             var_I = (1 / (J * J * T * T)) * var_I0
                     + (I0 * I0 / (J * J * J * J * T * T)) * var_J;
             I_raw /= (J * T);
-            B_raw /= (J * T);
+            B /= (J * T);
+            raw_var_B = (1 / (J * J * T * T)) * raw_var_B
+                        + (B * B / (J * J * J * J * T * T)) * var_J;
           }
 
           intensity_z += I;
           intensity_raw_z += I_raw;
-          background_z += B_raw;
-          variance_z += var_I;
+          background_z += B;
+          background_var_z += raw_var_B;
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
@@ -2697,11 +2760,11 @@ namespace dials { namespace algorithms {
             break;
           }
         }
-        raw_projected_intensity_out[z] = intensity_raw_z;
-        projected_intensity_out[z] = intensity_z;
-        projected_variance_out[z] = variance_z;
-        projected_background_out[z] = background_z;
       }
+      raw_projected_intensity_out[z] = intensity_raw_z;
+      projected_intensity_out[z] = intensity_z;
+      projected_background_out[z] = background_z;
+      projected_background_var_out[z] = background_var_z;
     }
 
     return boost::python::make_tuple(intensity, variance, success);
@@ -2716,7 +2779,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
-    scitbx::af::shared<double> projected_variance_out,
+    scitbx::af::shared<double> projected_background_var_out,
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool &apply_lorentz_correction,
@@ -2735,7 +2798,7 @@ namespace dials { namespace algorithms {
                                             raw_projected_intensity_out,
                                             projected_intensity_out,
                                             projected_background_out,
-                                            projected_variance_out,
+                                            projected_background_var_out,
                                             tof_z_out,
                                             apply_lorentz_correction);
 
@@ -2749,7 +2812,7 @@ namespace dials { namespace algorithms {
     if (success) {
       profile_success = fit_profile1d(projected_intensity_out.const_ref(),
                                       tof_z_out.const_ref(),
-                                      projected_variance_out.const_ref(),
+                                      projected_background_var_out.const_ref(),
                                       profile_params_1d,
                                       I_sum,
                                       var_sum,
