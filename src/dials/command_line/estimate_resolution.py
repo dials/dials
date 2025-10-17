@@ -149,8 +149,6 @@ def run(args=None):
         with open(params.output.json, "w") as fh:
             json.dump(plots, fh)
 
-    return plots
-
 
 def output_html_report(plots, filename):
     loader = ChoiceLoader(
