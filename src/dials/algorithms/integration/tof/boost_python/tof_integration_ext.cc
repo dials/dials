@@ -96,7 +96,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<double, double, double, double, double, double, double, int>());
 
     class_<TOFProfile3DParams>("TOFProfile3DParams", no_init)
-      .def(init<double, double, double, double, double, double>());
+      .def(init<double, double, double, double, double, double, int>());
 
     def("tof_calculate_ellipse_shoebox_mask",
         &tof_calculate_ellipse_shoebox_mask,

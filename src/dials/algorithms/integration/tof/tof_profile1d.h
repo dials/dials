@@ -383,7 +383,7 @@ namespace dials { namespace algorithms {
       double fit_resid = std::numeric_limits<double>::infinity();
       bool success = run_single_fit(x0, fit_resid);
       std::size_t max_profile_index;
-      double I_prf, I_var, error;
+      double I_prf, I_var;
 
       if (success) {
         I_prf = this->calc_intensity();
@@ -438,26 +438,28 @@ namespace dials { namespace algorithms {
                       double var_sum,
                       std::size_t max_sum_index,
                       std::size_t max_profile_index) {
+      // Check reasonable values
       if (var_prf < 1e-7 || I_prf < 1e-7) {
         return false;
       }
-      if (var_sum < 1e-7 || I_sum < 1e-7) {
-        return false;
-      }
 
+      // Check peak position close to data peak
       if (std::abs(static_cast<int>(max_sum_index)
                    - static_cast<int>(max_profile_index))
           > 3) {
         return false;
       }
 
-      double sum_I_sigma = I_sum / std::sqrt(var_sum);
-      double prf_I_sigma = I_prf / std::sqrt(var_prf);
-      if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.1)) {
-        return false;
+      // Check profile I_sigma is within 10% or better than summation
+      if (var_sum > 1e-7) {
+        double sum_I_sigma = I_sum / std::sqrt(var_sum);
+        double prf_I_sigma = I_prf / std::sqrt(var_prf);
+        if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.1)) {
+          return false;
+        }
       }
 
-      // Shape-based checks
+      // Check peak isn't very flat
       auto m = result();
       double max_val = *std::max_element(m.begin(), m.end());
       double mean_val = std::accumulate(m.begin(), m.end(), 0.0) / m.size();
@@ -466,14 +468,14 @@ namespace dials { namespace algorithms {
         return false;
       }
 
-      // Correlation and peak check
+      // Correlation with data
       double profile_peak, data_peak;
       double num = 0, denom_y = 0, denom_m = 0;
       for (std::size_t i = 0; i < tof.size(); ++i) {
         double y = y_norm[i];
         double p = m[i] / intensity_max;
-        if (i == 0 || y_norm[i] > data_peak) {
-          data_peak = y_norm[i];
+        if (i == 0 || y > data_peak) {
+          data_peak = y;
         }
         if (i == 0 || p > profile_peak) {
           profile_peak = p;
@@ -487,6 +489,7 @@ namespace dials { namespace algorithms {
         return false;
       }
 
+      // Check peak height is within 10% of data peak
       if (std::abs(profile_peak - data_peak) > data_peak * 0.1) {
         return false;
       }

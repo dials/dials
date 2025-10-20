@@ -174,6 +174,9 @@ profile3d{
     max_beta = 1.0
         .type = float
         .help = "Max beta value for optimization"
+    n_restarts = 8
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
 }
 
 mp{
@@ -288,8 +291,9 @@ def integrate_reflection_table_for_experiment(
         max_alpha = params.profile3d.max_alpha
         min_beta = params.profile3d.min_beta
         max_beta = params.profile3d.max_beta
+        n_restarts = params.profile3d.n_restarts
         profile3d_params = TOFProfile3DParams(
-            alpha, min_alpha, max_alpha, beta, min_beta, max_beta
+            alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts
         )
 
     if apply_lorentz:

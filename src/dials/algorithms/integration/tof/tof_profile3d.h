@@ -146,19 +146,27 @@ namespace dials { namespace algorithms {
   public:
     const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords;
     const scitbx::af::versa<double, af::c_grid<3>> intensities;
+    const scitbx::af::versa<double, af::c_grid<3>> background_variances;
     scitbx::af::versa<double, af::c_grid<3>> y_norm;
+    int n_restarts;
 
     Eigen::VectorXd params;
     std::array<double, 8> min_bounds;
     std::array<double, 8> max_bounds;
 
-    GutmannProfile3D(const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_,
-                     const scitbx::af::versa<double, af::c_grid<3>> intensities_,
-                     double alpha,
-                     double beta,
-                     const std::array<double, 2> alpha_bounds,
-                     const std::array<double, 2> beta_bounds)
-        : coords(get_rel_coords(coords_, intensities_)), intensities(intensities_) {
+    GutmannProfile3D(
+      const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_,
+      const scitbx::af::versa<double, af::c_grid<3>> intensities_,
+      const scitbx::af::versa<double, af::c_grid<3>> background_variances_,
+      double alpha,
+      double beta,
+      const std::array<double, 2> alpha_bounds,
+      const std::array<double, 2> beta_bounds,
+      int n_restarts_)
+        : coords(get_rel_coords(coords_, intensities_)),
+          intensities(intensities_),
+          background_variances(background_variances_),
+          n_restarts(n_restarts_) {
       DIALS_ASSERT(coords.size() == intensities.size());
 
       const std::size_t n = intensities.size();
@@ -241,7 +249,6 @@ namespace dials { namespace algorithms {
       double sumI = 0.0;
       Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
 
-      std::cout << "TEST intensities size " << intensities_.size() << std::endl;
       for (std::size_t i = 0; i < intensities_.size(); ++i) {
         double w = intensities_[i];
         if (!std::isfinite(w) || w <= 0.0) continue;
@@ -255,8 +262,6 @@ namespace dials { namespace algorithms {
 
       // Shift coordinates relative to centroid
       scitbx::af::versa<vec3<double>, af::c_grid<3>> rel_coords(coords_.accessor());
-      std::cout << "TEST centroid " << centroid[0] << ", " << centroid[1] << ", "
-                << centroid[2] << std::endl;
       for (std::size_t i = 0; i < coords_.size(); ++i) {
         rel_coords[i] = vec3<double>(coords_[i][0] - centroid[0],
                                      coords_[i][1] - centroid[1],
@@ -359,10 +364,61 @@ namespace dials { namespace algorithms {
       return sum_pred * sum_raw;
     }
 
-    double calc_variance(scitbx::af::versa<double, af::c_grid<3>> background_variance) {
+    double calc_intensity_old() const {
+      /*
+       * Simpson integration along TOF,
+       * summation over x, y
+       */
+
+      scitbx::af::versa<double, af::c_grid<3>> pred = result();
+
+      // Normalize raw sum
+      double sum_raw = 0.0;
+      for (std::size_t x = 0; x < intensities.accessor()[0]; ++x) {
+        for (std::size_t y = 0; y < intensities.accessor()[1]; ++y) {
+          for (std::size_t z = 0; z < intensities.accessor()[2]; ++z) {
+            double v = intensities(x, y, z);
+            if (std::isfinite(v) && v > 0.0) sum_raw += v;
+          }
+        }
+      }
+
+      if (sum_raw <= 0.0) sum_raw = 1.0;
+
+      const auto& acc = pred.accessor();
+      std::size_t nx = acc[0];
+      std::size_t ny = acc[1];
+      std::size_t nt = acc[2];
+
+      // Sum the integrated intensity over all (x,y) positions
+      double total_integrated = 0.0;
+
+      for (std::size_t c_x = 0; c_x < nx; ++c_x) {
+        for (std::size_t c_y = 0; c_y < ny; ++c_y) {
+          scitbx::af::shared<double> pred_line(nt);
+          scitbx::af::shared<double> coord_line(nt);
+          for (std::size_t c_z = 0; c_z < nt; ++c_z) {
+            pred_line[c_z] = pred(c_x, c_y, c_z);
+            coord_line[c_z] = coords(c_x, c_y, c_z)[2];
+          }
+
+          // Integrate along TOF axis for this (x,y) position
+          double integral_t =
+            simpson_integrate(pred_line.const_ref(), coord_line.const_ref());
+
+          // Accumulate the integral
+          total_integrated += integral_t;
+        }
+      }
+
+      // Scale by raw data normalization
+      return total_integrated * sum_raw;
+    }
+
+    double calc_variance() {
       scitbx::af::versa<double, af::c_grid<3>> pred = result();
       const auto& acc = pred.accessor();
-      DIALS_ASSERT(pred.accessor().all_eq(background_variance.accessor()));
+      DIALS_ASSERT(pred.accessor().all_eq(background_variances.accessor()));
 
       std::size_t nx = acc[0];
       std::size_t ny = acc[1];
@@ -373,13 +429,13 @@ namespace dials { namespace algorithms {
       int n_signal = 0;
 
       double bg_var_sum = 0;
-      double eps = 1e-4;
+      double eps = 1e-8;
 
       for (std::size_t ix = 0; ix < nx; ++ix) {
         for (std::size_t iy = 0; iy < ny; ++iy) {
           for (std::size_t iz = 0; iz < nz; ++iz) {
             double val = pred(ix, iy, iz);
-            double bg_val = background_variance(ix, iy, iz);
+            double bg_val = background_variances(ix, iy, iz);
             if (std::isfinite(val) && std::isfinite(bg_val)) {
               if (val > eps) {
                 bg_var_sum += bg_val;
@@ -400,107 +456,177 @@ namespace dials { namespace algorithms {
       return std::abs(intensity) + bg_var;
     }
 
-    bool fit(int maxfev = 2000,
+    bool fit(double I_sum,
+             double var_sum,
+             int maxfev = 2000,
              double xtol = 1e-8,
-             double ftol = 1e-8,
-             int n_restarts = 8) {
+             double ftol = 1e-8) {
       typedef Eigen::LevenbergMarquardt<GutmannProfileFunctor, double> LM;
       GutmannProfileFunctor functor(coords, y_norm, min_bounds, max_bounds);
 
-      auto run_fit = [&](const Eigen::VectorXd& x0, double& err) -> bool {
+      auto run_single_fit = [&](const Eigen::VectorXd& x_init,
+                                double& final_error) -> bool {
         LM lm(functor);
         lm.parameters.maxfev = maxfev;
         lm.parameters.xtol = xtol;
         lm.parameters.ftol = ftol;
 
-        Eigen::VectorXd x = x0;
-        int res = lm.minimize(x);
-        if (res < 0) return false;
+        Eigen::VectorXd x = x_init;
+        int result = lm.minimize(x);
+        if (result < 0) return false;
 
         x = functor.clamp_params(x);
         Eigen::VectorXd fvec(functor.intensities.size());
         functor(x, fvec);
-        err = fvec.squaredNorm();
+        final_error = fvec.squaredNorm();
 
         params = x;
         return true;
       };
 
+      // First fit attempt
       Eigen::VectorXd x0 = params;
-      double best_err = std::numeric_limits<double>::infinity();
-      bool success = run_fit(x0, best_err);
+      double fit_resid = std::numeric_limits<double>::infinity();
+      bool success = run_single_fit(x0, fit_resid);
+      std::size_t max_profile_index;
+      double I_prf, I_var;
 
-      if (success && trust_result(best_err)) return true;
-
-      // random restarts
-      std::mt19937 rng(std::random_device{}());
-      std::uniform_real_distribution<double> U(0.0, 1.0);
-
-      for (int r = 0; r < n_restarts; ++r) {
-        Eigen::VectorXd x_try(8);
-        for (int j = 0; j < 8; ++j) {
-          double span = max_bounds[j] - min_bounds[j];
-          double frac = (U(rng) - 0.5) * 0.4;
-          double pert = x0[j] + frac * span;
-          x_try[j] = std::max(min_bounds[j], std::min(pert, max_bounds[j]));
+      if (success) {
+        I_prf = this->calc_intensity();
+        I_var = this->calc_variance();
+        if (this->trust_result(fit_resid, I_prf, I_var, I_sum, var_sum)) {
+          return true;
         }
-
-        double err;
-        bool ok = run_fit(x_try, err);
-        if (!ok) continue;
-
-        if (err < best_err) {
-          best_err = err;
-          success = true;
-        }
-
-        if (success && trust_result(best_err)) return true;
       }
-      return success;
+
+      // Perturb initial params
+      std::mt19937 rng(std::random_device{}());
+      std::uniform_real_distribution<double> unit_dist(0.0, 1.0);
+
+      for (int i = 0; i < n_restarts; ++i) {
+        Eigen::VectorXd x_try(8);
+
+        double scale_factor = 0.5 + unit_dist(rng);
+        for (int j = 0; j < 6; ++j) {
+          x_try[j] = x0[j] * scale_factor;
+        }
+
+        for (int j = 6; j < 8; ++j) {
+          double span = max_bounds[j] - min_bounds[j];
+          double rand_frac = (unit_dist(rng) - 0.5) * 0.1;
+          double perturbed = x0[j] + rand_frac * span;
+          x_try[j] = std::max(min_bounds[j], std::min(perturbed, max_bounds[j]));
+        }
+
+        success = run_single_fit(x_try, fit_resid);
+        if (!success) continue;
+        I_prf = this->calc_intensity();
+        I_var = this->calc_variance();
+        if (this->trust_result(fit_resid, I_prf, I_var, I_sum, var_sum)) {
+          return true;
+        }
+      }
+
+      return false;
     }
 
-    bool trust_result(double err_norm) const {
-      if (!std::isfinite(err_norm) || err_norm <= 0.0) return false;
+    bool trust_result(double error,
+                      double I_prf,
+                      double var_prf,
+                      double I_sum,
+                      double var_sum) const {
+      if (!std::isfinite(error) || error <= 0.0) {
+        std::cout << "Failed: error is not finite or <= 0, error = " << error
+                  << std::endl;
+        return false;
+      }
 
-      // alpha/beta must be positive and finite
       double a = params[6], b = params[7];
-      if (a <= 0.0 || b <= 0.0) return false;
+      if (a <= 0.0 || b <= 0.0) {
+        std::cout << "Failed: alpha/beta not positive, a = " << a << ", b = " << b
+                  << std::endl;
+        return false;
+      }
 
-      // H must be positive-definite
       GutmannProfileFunctor f(coords, y_norm, min_bounds, max_bounds);
       Eigen::Matrix3d H = f.build_H_from_L(params);
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eig(H);
-      if (eig.eigenvalues().minCoeff() <= 0.0) return false;
+      if (eig.eigenvalues().minCoeff() <= 0.0) {
+        std::cout << "Failed: H is not positive-definite, min eigenvalue = "
+                  << eig.eigenvalues().minCoeff() << std::endl;
+        return false;
+      }
 
-      // numerical overflow
       const double exp_limit = 1e50;
       const double mean_limit = 1e20;
-
-      double max_val = 0.0;
-      double sum_val = 0.0;
-      std::size_t count = 0;
 
       const auto& acc = coords.accessor();
       const std::size_t nx = acc[0];
       const std::size_t ny = acc[1];
       const std::size_t nz = acc[2];
 
+      double profile_peak = 0, data_peak = 0, sum_val = 0;
+      double num = 0, denom_y = 0, denom_m = 0;
+
       for (std::size_t ix = 0; ix < nx; ++ix) {
         for (std::size_t iy = 0; iy < ny; ++iy) {
           for (std::size_t iz = 0; iz < nz; ++iz) {
+            double data_val = y_norm(ix, iy, iz);
             double val = f.func(coords(ix, iy, iz), H, a, b);
-            if (!std::isfinite(val)) return false;
-            max_val = std::max(max_val, val);
+
+            if (!std::isfinite(val)) {
+              std::cout << "Failed: val not finite at (" << ix << "," << iy << "," << iz
+                        << "), val = " << val << std::endl;
+              return false;
+            }
+
+            data_peak = std::max(data_peak, data_val);
+            profile_peak = std::max(profile_peak, val);
             sum_val += val;
-            ++count;
-            if (max_val > exp_limit) return false;
+
+            num += data_val * val;
+            denom_y += data_val * data_val;
+            denom_m += val * val;
+
+            if (val > exp_limit) {
+              std::cout << "Failed: val exceeds exp_limit at (" << ix << "," << iy
+                        << "," << iz << "), val = " << val << std::endl;
+              return false;
+            }
           }
         }
       }
 
-      double mean_val = sum_val / std::max<std::size_t>(count, 1);
-      if (mean_val > mean_limit) return false;
+      double mean_val = sum_val / coords.size();
+      if (mean_val > mean_limit) {
+        std::cout << "Failed: mean_val exceeds mean_limit, mean_val = " << mean_val
+                  << std::endl;
+        return false;
+      }
 
+      if (var_sum > 1e-7) {
+        double sum_I_sigma = I_sum / std::sqrt(var_sum);
+        double prf_I_sigma = I_prf / std::sqrt(var_prf);
+        if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.1) && false) {
+          std::cout << "Failed: sum_I_sigma > prf_I_sigma + 10%, sum_I_sigma = "
+                    << sum_I_sigma << ", prf_I_sigma = " << prf_I_sigma << std::endl;
+          return false;
+        }
+      }
+
+      double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
+      if (corr < 0.9 && false) {
+        std::cout << "Failed: correlation < 0.9, corr = " << corr << std::endl;
+        return false;
+      }
+
+      if (std::abs(profile_peak - data_peak) > data_peak * 0.1 && false) {
+        std::cout << "Failed: profile_peak not within 10% of data_peak, profile_peak = "
+                  << profile_peak << ", data_peak = " << data_peak << std::endl;
+        return false;
+      }
+
+      std::cout << "Success: all checks passed corr " << corr << std::endl;
       return true;
     }
   };

@@ -334,19 +334,22 @@ namespace dials { namespace algorithms {
     double beta;
     double beta_min;
     double beta_max;
+    int n_restarts;
 
     TOFProfile3DParams(double alpha,
                        double alpha_min,
                        double alpha_max,
                        double beta,
                        double beta_min,
-                       double beta_max)
+                       double beta_max,
+                       int n_restarts)
         : alpha(alpha),
           alpha_min(alpha_min),
           alpha_max(alpha_max),
           beta(beta),
           beta_min(beta_min),
-          beta_max(beta_max) {}
+          beta_max(beta_max),
+          n_restarts(n_restarts) {}
   };
 
   bool fit_profile1d(
@@ -412,6 +415,8 @@ namespace dials { namespace algorithms {
     const scitbx::af::versa<double, af::c_grid<3>> intensities,
     const scitbx::af::versa<double, af::c_grid<3>> background_variances,
     const TOFProfile3DParams &profile_params,
+    double I_sum,
+    double var_sum,
     double &I_prf_out,
     double &var_prf_out,
     boost::optional<scitbx::af::versa<double, af::c_grid<3>>> profile_3d_out =
@@ -424,16 +429,18 @@ namespace dials { namespace algorithms {
 
     GutmannProfile3D profile(coords,
                              intensities,
+                             background_variances,
                              profile_params.alpha,
                              profile_params.beta,
                              alpha_bounds,
-                             beta_bounds);
+                             beta_bounds,
+                             profile_params.n_restarts);
 
-    bool profile_success = profile.fit();
+    bool profile_success = profile.fit(I_sum, var_sum);
 
     if (profile_success) {
       double I_prf = profile.calc_intensity();
-      double var_prf = profile.calc_variance(background_variances);
+      double var_prf = profile.calc_variance();
 
       I_prf_out = I_prf;
       var_prf_out = var_prf;
@@ -817,16 +824,16 @@ namespace dials { namespace algorithms {
         intensities[i] = intensity;
         variances[i] = variance;
 
+        double I_sum = 0.;
+        double var_sum = 0.;
+
+        if (success) {
+          I_sum = intensity;
+          var_sum = variance;
+        }
+
         if (profile_params_1d) {
           bool profile_success = false;
-          double I_sum = 0.;
-          double var_sum = 0.;
-
-          if (success) {
-            I_sum = intensity;
-            var_sum = variance;
-          }
-
           double I_prf, var_prf;
           profile_success = fit_profile1d(projected_intensity.const_ref(),
                                           tof_z.const_ref(),
@@ -849,6 +856,8 @@ namespace dials { namespace algorithms {
                                           intensity_3d,
                                           background_var_3d,
                                           *profile_params_3d,
+                                          I_sum,
+                                          var_sum,
                                           I_prf,
                                           var_prf);
           if (profile_success) {
@@ -1210,15 +1219,16 @@ namespace dials { namespace algorithms {
         intensities[i] = intensity;
         variances[i] = variance;
 
+        double I_sum = 0.;
+        double var_sum = 0.;
+
+        if (success) {
+          I_sum = intensity;
+          var_sum = variance;
+        }
+
         if (profile_params_1d) {
           bool profile_success = false;
-          double I_sum = 0.;
-          double var_sum = 0.;
-
-          if (success) {
-            I_sum = intensity;
-            var_sum = variance;
-          }
 
           double I_prf, var_prf;
           profile_success = fit_profile1d(projected_intensity.const_ref(),
@@ -1242,6 +1252,8 @@ namespace dials { namespace algorithms {
                                           intensity_3d,
                                           background_var_3d,
                                           *profile_params_3d,
+                                          I_sum,
+                                          var_sum,
                                           I_prf,
                                           var_prf);
           if (profile_success) {
@@ -1645,15 +1657,16 @@ namespace dials { namespace algorithms {
         intensities[i] = intensity;
         variances[i] = variance;
 
+        double I_sum = 0.;
+        double var_sum = 0.;
+
+        if (success) {
+          I_sum = intensity;
+          var_sum = variance;
+        }
+
         if (profile_params_1d) {
           bool profile_success = false;
-          double I_sum = 0.;
-          double var_sum = 0.;
-
-          if (success) {
-            I_sum = intensity;
-            var_sum = variance;
-          }
 
           double I_prf, var_prf;
           profile_success = fit_profile1d(projected_intensity.const_ref(),
@@ -1677,6 +1690,8 @@ namespace dials { namespace algorithms {
                                           intensity_3d,
                                           background_var_3d,
                                           *profile_params_3d,
+                                          I_sum,
+                                          var_sum,
                                           I_prf,
                                           var_prf);
           if (profile_success) {
@@ -2131,6 +2146,8 @@ namespace dials { namespace algorithms {
                                       intensity_3d,
                                       background_var_3d,
                                       profile_params_3d,
+                                      I_sum,
+                                      var_sum,
                                       I_prf,
                                       var_prf,
                                       profile_3d_out);
