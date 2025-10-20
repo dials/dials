@@ -60,35 +60,6 @@ def pytest_configure(config):
     os.environ["PYTHONWARNINGS"] = _build_filterwarnings_string()
 
 
-@pytest.fixture(scope="session")
-def dials_regression() -> Path:
-    """Return the absolute path to the dials_regression module as a string.
-    Skip the test if dials_regression is not installed."""
-
-    if "DIALS_REGRESSION" in os.environ:
-        return Path(os.environ["DIALS_REGRESSION"].rstrip("/"))
-
-    try:
-        import dials_regression as dr
-
-        return Path(dr.__file__).parent
-    except ImportError:
-        pass  # dials_regression not configured
-    try:
-        import socket
-
-        reference_copy = "/dls/science/groups/scisoft/DIALS/repositories/git-reference/dials_regression"
-        if (
-            os.name == "posix"
-            and socket.gethostname().endswith(".diamond.ac.uk")
-            and os.path.exists(reference_copy)
-        ):
-            return Path(reference_copy)
-    except ImportError:
-        pass  # Cannot tell whether in DLS network or not
-    pytest.skip("dials_regression required for this test")
-
-
 @pytest.fixture
 def run_in_tmp_path(tmp_path) -> Path:
     """

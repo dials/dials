@@ -6,12 +6,13 @@ on:
     types:
       - synchronize
       - opened
+  workflow_dispatch:
 
 env:
   # Python minimum version is used for testing full libtbx-bootstrap
-  PYTHON_MINIMUM_VERSION: "3.10"
+  PYTHON_MINIMUM_VERSION: "3.11"
   # Testing version is used for everything else
-  PYTHON_TESTING_VERSION: "3.12"
+  PYTHON_TESTING_VERSION: "3.13"
 
 jobs:
   build_test:
@@ -36,7 +37,6 @@ jobs:
         run: |
           OS="$(python -c "print('${{ runner.os }}'.lower())")"
           echo "ninja
-          flexparser<0.4
           pytest-md
           dials-data
           pytest-cov
@@ -95,7 +95,6 @@ jobs:
         run: |
           echo "pytest-md
           dials-data
-          flexparser<0.4
           pytest-cov
           pytest-timeout" >> modules/dials/.conda-envs/linux.txt
           python modules/dials/installer/bootstrap.py update base \

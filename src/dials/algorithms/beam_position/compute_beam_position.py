@@ -8,7 +8,7 @@ from dials.algorithms.beam_position import (
 from dials.algorithms.beam_position.plot import Figure
 
 
-def compute_beam_position(image, params, image_index=None, imageset_index=None):
+def compute_beam_position(image, params, image_index=None, detector_index=None):
     method_x, method_y = resolve_projection_methods(params)
 
     if method_x == "midpoint":
@@ -33,19 +33,22 @@ def compute_beam_position(image, params, image_index=None, imageset_index=None):
     else:
         image_str = ""
 
-    if imageset_index is not None:
-        imageset_str = "_imageset_%05d" % imageset_index
+    if detector_index is not None:
+        detector_str = "_detector_%d" % detector_index
     else:
-        imageset_str = ""
+        detector_str = ""
 
-    fig = Figure(f"beam_position{imageset_str}{image_str}.png")
+    if params.projection.plot:
+        fig = Figure(f"beam_position{detector_str}{image_str}.png")
 
-    fig.plot_main(image, params, beam_position=(x, y))
-    solver_x.plot(fig)
-    solver_y.plot(fig)
+        fig.plot_main(image, params, beam_position=(x, y))
+        solver_x.plot(fig)
+        solver_y.plot(fig)
 
-    fig.save_and_close()
+        fig.save_and_close()
 
+    if not params.projection.per_image:
+        print(f"{x:.2f}, {y:.2f}")
     return x, y
 
 
