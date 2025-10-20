@@ -413,11 +413,8 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     integrated_reflections = flex.reflection_table()
     integrated_experiments = []
 
-    use_beam = None
     use_gonio = None
     use_detector = None
-    if len(sub_expts.beams()) == 1:
-        use_beam = sub_expts.beams()[0]
     if len(sub_expts.goniometers()) == 1:
         use_gonio = sub_expts.goniometers()[0]
     if len(sub_expts.detectors()) == 1:
@@ -434,8 +431,6 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
                 result.table["imageset_id"] = flex.int(
                     result.table.size(), result.imageset_index
                 )
-                if use_beam:
-                    result.experiment.beam = use_beam
                 if use_gonio:
                     result.experiment.goniometer = use_gonio
                 if use_detector:
@@ -550,10 +545,8 @@ def run(args: list[str] = None, phil=working_phil) -> None:
         run_integration(reflections, experiments, params)
     ):
         # combine beam and detector models if not already
-        if len(int_expt.detectors()) > 1 or len(int_expt.beams()) > 1:
-            combine = CombineWithReference(
-                detector=int_expt[0].detector, beam=int_expt[0].beam
-            )
+        if len(int_expt.detectors()) > 1:
+            combine = CombineWithReference(detector=int_expt[0].detector)
             elist = ExperimentList()
             for expt in int_expt:
                 elist.append(combine(expt))

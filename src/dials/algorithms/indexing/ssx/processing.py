@@ -311,10 +311,7 @@ def _join_indexing_results(
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
 
-    use_beam = None
     use_gonio = None
-    if len(experiments.beams()) == 1:
-        use_beam = experiments.beams()[0]
     if len(experiments.goniometers()):  # need a placeholder gonio
         use_gonio = experiments.goniometers()[0]
 
@@ -329,8 +326,6 @@ def _join_indexing_results(
                 res.reflection_table["imageset_id"] = flex.int(
                     res.reflection_table.size(), res.imageset_no
                 )
-                if use_beam:
-                    expt.beam = use_beam
                 if use_gonio:
                     expt.goniometer = use_gonio
 
