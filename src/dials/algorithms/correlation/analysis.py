@@ -462,34 +462,37 @@ class CorrelationMatrix:
             gradients[finite_mask] = np.gradient(
                 optics_model.reachability_[optics_model.ordering_][finite_mask]
             )
-            logger.info(gradients)
-            logger.info(optics_model.reachability_[optics_model.ordering_])
-            logger.info(initial_labels[optics_model.ordering_])
-            logger.info(optics_model.reachability_[optics_model.ordering_])
-            logger.info("kkkkkkk")
-            small_gradients = np.where(~(gradients[finite_mask] < xi))[
+            large_gradients = np.where(~(gradients[finite_mask] < xi))[
                 0
             ]  # only evaluate within finite values
-            if small_gradients.size > 0:
-                first_false = small_gradients[0]
+            first_finite = np.where(finite_mask)[
+                0
+            ]  # find first idx where finite vals occur
+            if large_gradients.size > 0:
+                first_false = large_gradients[0]
                 original_first_false = np.flatnonzero(finite_mask)[
                     first_false
                 ]  # map back to full list of values
-                first_finite = np.where(finite_mask)[0]
+
                 new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
-                new_labels[first_finite[0] : original_first_false + 1] = 0
-                new_labels[original_first_false + 1 :] = -1
+                new_labels[first_finite[0] : original_first_false] = 0
+                new_labels[original_first_false:] = -1
                 # can sometimes have a large value at the start that was cut off by max_eps
                 # need to account for this and also label it noise, but the first dataset is always inf due to optics and does not mean it is noise
-                new_labels[1 : first_finite[0]] = -1
-
-                new_labels_dataset_order = np.empty_like(new_labels)
-                new_labels_dataset_order[optics_model.ordering_] = new_labels[
-                    np.arange(len(optics_model.ordering_))
-                ]
+                # minus 1 because still need core point from OPTICS
+                new_labels[: first_finite[0] - 1] = -1
             else:
                 # This means that the gradient never gets steep - so everything is one cluster
-                new_labels_dataset_order = [0 for i in cosym_coords]
+                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
+                new_labels[: first_finite[0] - 1] = -1
+                new_labels[first_finite[0] :] = 0
+
+            # put back in dataset order rather than OPTICS order
+
+            new_labels_dataset_order = np.empty_like(new_labels)
+            new_labels_dataset_order[optics_model.ordering_] = new_labels[
+                np.arange(len(optics_model.ordering_))
+            ]
 
             return new_labels_dataset_order, model
 
@@ -610,11 +613,6 @@ class CorrelationMatrix:
         # still make sure to use cluster labels from previous optimisation
 
         self.optics_reachability_labels = self.cluster_labels[optics_model.ordering_]
-
-        logger.info(self.optics_reachability_labels)
-        logger.info(self.cosym_analysis.coords)
-        logger.info(self.optics_reachability)
-        logger.info(optics_model.ordering_)
 
         # Match each dataset to an OPTICS cluster and make them Cluster Objects
 
@@ -778,7 +776,6 @@ class CorrelationMatrix:
                 coords = rot_coord
             else:
                 coords = np.vstack([coords, rot_coord])
-
         if coords.shape[1] > 6:
             coords = coords[:, 0:6]
             dim_list = list(range(0, 6))
