@@ -19,6 +19,7 @@
 #include <vector>
 #include <dials/algorithms/integration/tof/tof_profile1d.h>
 #include <dials/algorithms/integration/tof/tof_profile3d.h>
+#include <dials/util/thread_pool.h>
 
 namespace dials { namespace algorithms {
 
@@ -306,6 +307,7 @@ namespace dials { namespace algorithms {
     double beta;
     double beta_min;
     double beta_max;
+    int n_restarts;
 
     TOFProfile1DParams(double A,
                        double alpha,
@@ -313,14 +315,16 @@ namespace dials { namespace algorithms {
                        double alpha_max,
                        double beta,
                        double beta_min,
-                       double beta_max)
+                       double beta_max,
+                       int n_restarts)
         : A(A),
           alpha(alpha),
           alpha_min(alpha_min),
           alpha_max(alpha_max),
           beta(beta),
           beta_min(beta_min),
-          beta_max(beta_max) {}
+          beta_max(beta_max),
+          n_restarts(n_restarts) {}
   };
 
   struct TOFProfile3DParams {
@@ -375,7 +379,8 @@ namespace dials { namespace algorithms {
                          profile_params.beta,
                          T_ph,
                          alpha_bounds,
-                         beta_bounds);
+                         beta_bounds,
+                         profile_params.n_restarts);
 
     bool profile_success = profile.fit(I_sum, var_sum, max_index);
 
@@ -605,6 +610,7 @@ namespace dials { namespace algorithms {
     Experiment &experiment,
     ImageSequence &data,
     const bool &apply_lorentz_correction,
+    int n_threads,
     boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
     boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
     /*
@@ -613,6 +619,10 @@ namespace dials { namespace algorithms {
      */
 
     DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
+
+    std::size_t n_reflections = reflection_table.size();
+    std::vector<std::size_t> indices(n_reflections);
+    std::iota(indices.begin(), indices.end(), 0);
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -652,201 +662,216 @@ namespace dials { namespace algorithms {
 
     int bg_code = Valid | Background | BackgroundUsed;
 
-    for (std::size_t i = 0; i < reflection_table.size(); ++i) {
-      Shoebox<> shoebox = shoeboxes[i];
-      int6 bbox = bboxes[i];
-      int panel = shoebox.panel;
+    auto worker = [&](std::size_t start, std::size_t end) {
+      for (std::size_t i = start; i < end; ++i) {
+        Shoebox<> shoebox = shoeboxes[i];
+        int6 bbox = bboxes[i];
+        int panel = shoebox.panel;
 
-      bool success = true;
-      int n_background = 0;
-      int n_signal = 0;
-      double intensity = 0.0;
-      double variance = 0.0;
+        bool success = true;
+        int n_background = 0;
+        int n_signal = 0;
+        double intensity = 0.0;
+        double variance = 0.0;
 
-      // First pass to get, n_signal, n_background
-      // Shoebox data are ordered (z, y, x)
-      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
-        if (!success) {
-          break;
-        }
-        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
-          int panel_y = bbox[2] + y;
-          if (panel_y > image_size[1] || panel_y < 0) {
-            continue;
+        // First pass to get, n_signal, n_background
+        // Shoebox data are ordered (z, y, x)
+        for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+          if (!success) {
+            break;
           }
-          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-            int panel_x = bbox[0] + x;
-            if (panel_x > image_size[0] || panel_x < 0) {
+          for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+            int panel_y = bbox[2] + y;
+            if (panel_y > image_size[1] || panel_y < 0) {
               continue;
             }
-
-            int mask = shoebox.mask(z, y, x);
-            if ((mask & Foreground) == Foreground) {
-              if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
-                n_signal++;
-              } else {
-                success = false;
+            for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+              int panel_x = bbox[0] + x;
+              if (panel_x > image_size[0] || panel_x < 0) {
+                continue;
               }
-            } else if ((mask & bg_code) == bg_code) {
-              n_background++;
+
+              int mask = shoebox.mask(z, y, x);
+              if ((mask & Foreground) == Foreground) {
+                if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
+                  n_signal++;
+                } else {
+                  success = false;
+                }
+              } else if ((mask & bg_code) == bg_code) {
+                n_background++;
+              }
             }
           }
         }
-      }
 
-      // 1D profile fitting params
-      scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
+        // 1D profile fitting params
+        scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
 
-      // 3D profile fitting params done in xyz
-      auto acc = shoebox.data.accessor();
-      af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
-      scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
-      scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
-      scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+        // 3D profile fitting params done in xyz
+        auto acc = shoebox.data.accessor();
+        af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
+        scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
+        scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
+        scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
 
-      // Second pass to perform actual integration
-      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
-        double intensity_z = 0;
-        double background_var_z = 0;
+        // Second pass to perform actual integration
+        for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+          double intensity_z = 0;
+          double background_var_z = 0;
 
-        if (!success) {
-          break;
-        }
-
-        int frame_z = bbox[4] + z;
-        double tof = img_tof[frame_z];
-        tof_z[z] = tof;
-        tof *= std::pow(10, -6);  // (s)
-
-        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
-          int panel_y = bbox[2] + y;
-          if (panel_y > image_size[1] || panel_y < 0) {
-            continue;
+          if (!success) {
+            break;
           }
-          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-            int panel_x = bbox[0] + x;
-            if (panel_x > image_size[0] || panel_x < 0) {
+
+          int frame_z = bbox[4] + z;
+          double tof = img_tof[frame_z];
+          tof_z[z] = tof;
+          tof *= std::pow(10, -6);  // (s)
+
+          for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+            int panel_y = bbox[2] + y;
+            if (panel_y > image_size[1] || panel_y < 0) {
               continue;
             }
+            for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+              int panel_x = bbox[0] + x;
+              if (panel_x > image_size[0] || panel_x < 0) {
+                continue;
+              }
 
-            // Raw counts
-            double raw_S = shoebox.data(z, y, x);
-            double raw_B = shoebox.background(z, y, x);
+              // Raw counts
+              double raw_S = shoebox.data(z, y, x);
+              double raw_B = shoebox.background(z, y, x);
 
-            int mask = shoebox.mask(z, y, x);
+              int mask = shoebox.mask(z, y, x);
 
-            // Variances
-            double var_S = std::abs(raw_S);
-            double raw_var_B = std::abs(raw_B);
-            double var_B = raw_var_B;
-            if (n_background > 0) {
-              var_B *= (1.0 + double(n_signal) / double(n_background));
-            }
+              // Variances
+              double var_S = std::abs(raw_S);
+              double raw_var_B = std::abs(raw_B);
+              double var_B = raw_var_B;
+              if (n_background > 0) {
+                var_B *= (1.0 + double(n_signal) / double(n_background));
+              }
 
-            // Lorentz correction
-            scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
-              scitbx::vec2<double>(panel_x, panel_y));
-            double distance = s1.length() + sample_to_source_distance;
-            distance *= std::pow(10, -3);  // (m)
-            double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
-            double two_theta = detector[panel].get_two_theta_at_pixel(
-              unit_s0, scitbx::vec2<double>(panel_x, panel_y));
-            double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
-            double L = sin_two_theta_sq / std::pow(wl, 4);
+              // Lorentz correction
+              scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
+                scitbx::vec2<double>(panel_x, panel_y));
+              double distance = s1.length() + sample_to_source_distance;
+              distance *= std::pow(10, -3);  // (m)
+              double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
+              double two_theta = detector[panel].get_two_theta_at_pixel(
+                unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+              double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+              double L = sin_two_theta_sq / std::pow(wl, 4);
 
-            // Acount for some data having different sized bin widths
-            double bin_width_correction = img_tof[frame_z] - img_tof[frame_z - 1];
+              // Acount for some data having different sized bin widths
+              double bin_width_correction = img_tof[frame_z] - img_tof[frame_z - 1];
 
-            // Net signal
-            double I0 = raw_S - raw_B;
-            double var_I0 = var_S + var_B;
+              // Net signal
+              double I0 = raw_S - raw_B;
+              double var_I0 = var_S + var_B;
 
-            double I = I0 / bin_width_correction;
-            raw_var_B /= (bin_width_correction * bin_width_correction);
-            double var_I = var_I0 / (bin_width_correction * bin_width_correction);
+              double I = I0 / bin_width_correction;
+              raw_var_B /= (bin_width_correction * bin_width_correction);
+              double var_I = var_I0 / (bin_width_correction * bin_width_correction);
 
-            if (apply_lorentz_correction) {
-              I *= L;
-              var_I *= (L * L);
-              raw_var_B *= (L * L);
-            }
+              if (apply_lorentz_correction) {
+                I *= L;
+                var_I *= (L * L);
+                raw_var_B *= (L * L);
+              }
 
-            intensity_z += I;
-            background_var_z += raw_var_B;
+              intensity_z += I;
+              background_var_z += raw_var_B;
 
-            if (profile_params_3d) {
-              intensity_3d(x, y, z) = I;
-              background_var_3d(x, y, z) = raw_var_B;
-              double x_c = x + shoebox.xoffset() + 0.5;
-              double y_c = y + shoebox.yoffset() + 0.5;
-              double z_c = z + shoebox.zoffset() + 0.5;
-              coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
-            }
+              if (profile_params_3d) {
+                intensity_3d(x, y, z) = I;
+                background_var_3d(x, y, z) = raw_var_B;
+                double x_c = x + shoebox.xoffset() + 0.5;
+                double y_c = y + shoebox.yoffset() + 0.5;
+                double z_c = z + shoebox.zoffset() + 0.5;
+                coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+              }
 
-            // Accumulate if pixel in foreground & valid
-            if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
-                && (mask & Overlapped) == 0) {
-              intensity += I;
-              variance += var_I;
-            } else if ((mask & Foreground) == Foreground) {
-              success = false;
-              break;
+              // Accumulate if pixel in foreground & valid
+              if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
+                  && (mask & Overlapped) == 0) {
+                intensity += I;
+                variance += var_I;
+              } else if ((mask & Foreground) == Foreground) {
+                success = false;
+                break;
+              }
             }
           }
+          if (profile_params_1d) {
+            projected_intensity[z] = intensity_z;
+            projected_background_var[z] = background_var_z;
+          }
         }
+
+        succeeded[i] = success;
+        intensities[i] = intensity;
+        variances[i] = variance;
+
         if (profile_params_1d) {
-          projected_intensity[z] = intensity_z;
-          projected_background_var[z] = background_var_z;
+          bool profile_success = false;
+          double I_sum = 0.;
+          double var_sum = 0.;
+
+          if (success) {
+            I_sum = intensity;
+            var_sum = variance;
+          }
+
+          double I_prf, var_prf;
+          profile_success = fit_profile1d(projected_intensity.const_ref(),
+                                          tof_z.const_ref(),
+                                          projected_background_var.const_ref(),
+                                          *profile_params_1d,
+                                          I_sum,
+                                          var_sum,
+                                          I_prf,
+                                          var_prf);
+          if (profile_success) {
+            intensities_prf[i] = I_prf;
+            variances_prf[i] = var_prf;
+          }
+          succeeded_prf[i] = profile_success;
+        } else if (profile_params_3d) {
+          bool profile_success = false;
+
+          double I_prf, var_prf;
+          profile_success = fit_profile3d(coords_3d,
+                                          intensity_3d,
+                                          background_var_3d,
+                                          *profile_params_3d,
+                                          I_prf,
+                                          var_prf);
+          if (profile_success) {
+            intensities_prf[i] = I_prf;
+            variances_prf[i] = var_prf;
+          }
+          succeeded_prf[i] = profile_success;
         }
       }
+    };
 
-      succeeded[i] = success;
-      intensities[i] = intensity;
-      variances[i] = variance;
+    dials::util::ThreadPool pool(n_threads);
+    std::size_t chunk_size = (n_reflections + n_threads - 1) / n_threads;
 
-      if (profile_params_1d) {
-        bool profile_success = false;
-        double I_sum = 0.;
-        double var_sum = 0.;
+    for (int t = 0; t < n_threads; ++t) {
+      std::size_t start = t * chunk_size;
+      std::size_t end = std::min(start + chunk_size, n_reflections);
+      if (start >= end) break;
 
-        if (success) {
-          I_sum = intensity;
-          var_sum = variance;
-        }
-
-        double I_prf, var_prf;
-        profile_success = fit_profile1d(projected_intensity.const_ref(),
-                                        tof_z.const_ref(),
-                                        projected_background_var.const_ref(),
-                                        *profile_params_1d,
-                                        I_sum,
-                                        var_sum,
-                                        I_prf,
-                                        var_prf);
-        if (profile_success) {
-          intensities_prf[i] = I_prf;
-          variances_prf[i] = var_prf;
-        }
-        succeeded_prf[i] = profile_success;
-      } else if (profile_params_3d) {
-        bool profile_success = false;
-
-        double I_prf, var_prf;
-        profile_success = fit_profile3d(coords_3d,
-                                        intensity_3d,
-                                        background_var_3d,
-                                        *profile_params_3d,
-                                        I_prf,
-                                        var_prf);
-        if (profile_success) {
-          intensities_prf[i] = I_prf;
-          variances_prf[i] = var_prf;
-        }
-        succeeded_prf[i] = profile_success;
-      }
+      pool.post([=]() { worker(start, end); });
     }
+
+    pool.wait();
 
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
@@ -885,6 +910,7 @@ namespace dials { namespace algorithms {
     ImageSequence &data,
     const TOFIncidentSpectrumParams &incident_params,
     const bool &apply_lorentz_correction,
+    int n_threads,
     boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
     boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
     /*
@@ -893,6 +919,10 @@ namespace dials { namespace algorithms {
      */
 
     DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
+
+    std::size_t n_reflections = reflection_table.size();
+    std::vector<std::size_t> indices(n_reflections);
+    std::iota(indices.begin(), indices.end(), 0);
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -991,232 +1021,250 @@ namespace dials { namespace algorithms {
 
     int bg_code = Valid | Background | BackgroundUsed;
 
-    for (std::size_t i = 0; i < reflection_table.size(); ++i) {
-      Shoebox<> shoebox = shoeboxes[i];
-      Shoebox<> i_shoebox = i_shoeboxes[i];
-      Shoebox<> e_shoebox = e_shoeboxes[i];
-      int6 bbox = bboxes[i];
-      int panel = shoebox.panel;
+    auto worker = [&](std::size_t start, std::size_t end) {
+      for (std::size_t i = start; i < end; ++i) {
+        Shoebox<> shoebox = shoeboxes[i];
+        Shoebox<> i_shoebox = i_shoeboxes[i];
+        Shoebox<> e_shoebox = e_shoeboxes[i];
+        int6 bbox = bboxes[i];
+        int panel = shoebox.panel;
 
-      bool success = true;
-      int n_background = 0;
-      int n_signal = 0;
-      double intensity = 0.0;
-      double variance = 0.0;
+        bool success = true;
+        int n_background = 0;
+        int n_signal = 0;
+        double intensity = 0.0;
+        double variance = 0.0;
 
-      // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
-      // Shoebox data are ordered (z, y, x)
-      scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
-      std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+        // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
+        // Shoebox data are ordered (z, y, x)
+        scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
+        std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
 
-      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
-        if (!success) {
-          break;
-        }
-        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
-          int panel_y = bbox[2] + y;
-          if (panel_y > image_size[1] || panel_y < 0) {
-            continue;
+        for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+          if (!success) {
+            break;
           }
-          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-            int panel_x = bbox[0] + x;
-            if (panel_x > image_size[0] || panel_x < 0) {
+          for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+            int panel_y = bbox[2] + y;
+            if (panel_y > image_size[1] || panel_y < 0) {
               continue;
             }
-
-            incident_spectrum[z] += i_shoebox.data(z, y, x);
-            empty_spectrum[z] += e_shoebox.data(z, y, x);
-            n_contrib[z]++;
-
-            int mask = shoebox.mask(z, y, x);
-            if ((mask & Foreground) == Foreground) {
-              if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
-                n_signal++;
-              } else {
-                success = false;
+            for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+              int panel_x = bbox[0] + x;
+              if (panel_x > image_size[0] || panel_x < 0) {
+                continue;
               }
-            } else if ((mask & bg_code) == bg_code) {
-              n_background++;
+
+              incident_spectrum[z] += i_shoebox.data(z, y, x);
+              empty_spectrum[z] += e_shoebox.data(z, y, x);
+              n_contrib[z]++;
+
+              int mask = shoebox.mask(z, y, x);
+              if ((mask & Foreground) == Foreground) {
+                if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
+                  n_signal++;
+                } else {
+                  success = false;
+                }
+              } else if ((mask & bg_code) == bg_code) {
+                n_background++;
+              }
             }
           }
         }
-      }
 
-      // Smooth incident and empty to avoid dividing by a noisy signal
-      scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
-      scitbx::af::shared<double> smoothed_incident =
-        savitzky_golay(incident_spectrum, 7, 2);
+        // Smooth incident and empty to avoid dividing by a noisy signal
+        scitbx::af::shared<double> smoothed_empty =
+          savitzky_golay(empty_spectrum, 7, 2);
+        scitbx::af::shared<double> smoothed_incident =
+          savitzky_golay(incident_spectrum, 7, 2);
 
-      // 1D profile fitting params
-      scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
+        // 1D profile fitting params
+        scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
 
-      // 3D profile fitting params done in xyz
-      auto acc = shoebox.data.accessor();
-      af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
-      scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
-      scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
-      scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+        // 3D profile fitting params done in xyz
+        auto acc = shoebox.data.accessor();
+        af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
+        scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
+        scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
+        scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
 
-      // Second pass to perform actual integration
-      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
-        double intensity_z = 0;
-        double background_var_z = 0;
+        // Second pass to perform actual integration
+        for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+          double intensity_z = 0;
+          double background_var_z = 0;
 
-        if (!success) {
-          break;
-        }
-
-        int frame_z = bbox[4] + z;
-        double tof = img_tof[frame_z];
-        tof_z[z] = tof;
-        tof *= std::pow(10, -6);  // (s)
-
-        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
-          int panel_y = bbox[2] + y;
-          if (panel_y > image_size[1] || panel_y < 0) {
-            continue;
+          if (!success) {
+            break;
           }
-          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-            int panel_x = bbox[0] + x;
-            if (panel_x > image_size[0] || panel_x < 0) {
+
+          int frame_z = bbox[4] + z;
+          double tof = img_tof[frame_z];
+          tof_z[z] = tof;
+          tof *= std::pow(10, -6);  // (s)
+
+          for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+            int panel_y = bbox[2] + y;
+            if (panel_y > image_size[1] || panel_y < 0) {
               continue;
             }
+            for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+              int panel_x = bbox[0] + x;
+              if (panel_x > image_size[0] || panel_x < 0) {
+                continue;
+              }
 
-            // Raw counts
-            double raw_S = shoebox.data(z, y, x);
-            double raw_B = shoebox.background(z, y, x);
-            double n = n_contrib[z];
-            double raw_J = smoothed_incident[z] / n;
-            double raw_E = smoothed_empty[z] / n;
+              // Raw counts
+              double raw_S = shoebox.data(z, y, x);
+              double raw_B = shoebox.background(z, y, x);
+              double n = n_contrib[z];
+              double raw_J = smoothed_incident[z] / n;
+              double raw_E = smoothed_empty[z] / n;
 
-            int mask = shoebox.mask(z, y, x);
+              int mask = shoebox.mask(z, y, x);
 
-            // Normalise by proton charge
-            double sample_pc = incident_params.sample_proton_charge;
-            double incident_pc = incident_params.incident_proton_charge;
-            double empty_pc = incident_params.empty_proton_charge;
-            double S = raw_S / sample_pc;
-            double B = raw_B / sample_pc;
-            double J = raw_J / incident_pc;
-            double E = raw_E / empty_pc;
+              // Normalise by proton charge
+              double sample_pc = incident_params.sample_proton_charge;
+              double incident_pc = incident_params.incident_proton_charge;
+              double empty_pc = incident_params.empty_proton_charge;
+              double S = raw_S / sample_pc;
+              double B = raw_B / sample_pc;
+              double J = raw_J / incident_pc;
+              double E = raw_E / empty_pc;
 
-            // Variances
-            double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
-            double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
-            double var_B = raw_var_B;
-            if (n_background > 0) {
-              var_B *= (1.0 + double(n_signal) / double(n_background));
-            }
-            double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
-            double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
+              // Variances
+              double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+              double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
+              double var_B = raw_var_B;
+              if (n_background > 0) {
+                var_B *= (1.0 + double(n_signal) / double(n_background));
+              }
+              double var_J =
+                (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+              double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
-            // Lorentz correction
-            scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
-              scitbx::vec2<double>(panel_x, panel_y));
-            double distance = s1.length() + sample_to_source_distance;
-            distance *= std::pow(10, -3);  // (m)
-            double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
-            double two_theta = detector[panel].get_two_theta_at_pixel(
-              unit_s0, scitbx::vec2<double>(panel_x, panel_y));
-            double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
-            double L = sin_two_theta_sq / std::pow(wl, 4);
+              // Lorentz correction
+              scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
+                scitbx::vec2<double>(panel_x, panel_y));
+              double distance = s1.length() + sample_to_source_distance;
+              distance *= std::pow(10, -3);  // (m)
+              double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
+              double two_theta = detector[panel].get_two_theta_at_pixel(
+                unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+              double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+              double L = sin_two_theta_sq / std::pow(wl, 4);
 
-            // Net signal
-            double I0 = S - B - E;
-            double var_I0 = var_S + var_B + var_E;
+              // Net signal
+              double I0 = S - B - E;
+              double var_I0 = var_S + var_B + var_E;
 
-            // Apply Lorentz correction and normalise by incident spectrum
-            double I, var_I;
-            if (apply_lorentz_correction) {
-              I = L * I0 / J;
-              // Var( L*I0/J ) = (L/J)^2 Var(I0) + (L*I0/J^2)^2 Var(J)
-              var_I = (L * L / (J * J)) * var_I0
-                      + (L * L * I0 * I0 / (J * J * J * J)) * var_J;
-              raw_var_B = (L * L / (J * J)) * raw_var_B
-                          + (L * L * B * B / (J * J * J * J)) * var_J;
-            } else {
-              I = I0 / J;
-              // Var( I0/J ) = (1/J)^2 Var(I0) + (I0/J^2)^2 Var(J)
-              var_I = (1 / (J * J)) * var_I0 + (I0 * I0 / (J * J * J * J)) * var_J;
-              raw_var_B = (1 / (J * J)) * raw_var_B + (B * B / (J * J * J * J)) * var_J;
-            }
+              // Apply Lorentz correction and normalise by incident spectrum
+              double I, var_I;
+              if (apply_lorentz_correction) {
+                I = L * I0 / J;
+                // Var( L*I0/J ) = (L/J)^2 Var(I0) + (L*I0/J^2)^2 Var(J)
+                var_I = (L * L / (J * J)) * var_I0
+                        + (L * L * I0 * I0 / (J * J * J * J)) * var_J;
+                raw_var_B = (L * L / (J * J)) * raw_var_B
+                            + (L * L * B * B / (J * J * J * J)) * var_J;
+              } else {
+                I = I0 / J;
+                // Var( I0/J ) = (1/J)^2 Var(I0) + (I0/J^2)^2 Var(J)
+                var_I = (1 / (J * J)) * var_I0 + (I0 * I0 / (J * J * J * J)) * var_J;
+                raw_var_B =
+                  (1 / (J * J)) * raw_var_B + (B * B / (J * J * J * J)) * var_J;
+              }
 
-            intensity_z += I;
-            background_var_z += raw_var_B;
+              intensity_z += I;
+              background_var_z += raw_var_B;
 
-            if (profile_params_3d) {
-              intensity_3d(x, y, z) = I;
-              background_var_3d(x, y, z) = raw_var_B;
-              double x_c = x + shoebox.xoffset() + 0.5;
-              double y_c = y + shoebox.yoffset() + 0.5;
-              double z_c = z + shoebox.zoffset() + 0.5;
-              coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
-            }
+              if (profile_params_3d) {
+                intensity_3d(x, y, z) = I;
+                background_var_3d(x, y, z) = raw_var_B;
+                double x_c = x + shoebox.xoffset() + 0.5;
+                double y_c = y + shoebox.yoffset() + 0.5;
+                double z_c = z + shoebox.zoffset() + 0.5;
+                coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+              }
 
-            // Accumulate if pixel in foreground & valid
-            if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
-                && (mask & Overlapped) == 0) {
-              intensity += I;
-              variance += var_I;
-            } else if ((mask & Foreground) == Foreground) {
-              success = false;
-              break;
+              // Accumulate if pixel in foreground & valid
+              if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
+                  && (mask & Overlapped) == 0) {
+                intensity += I;
+                variance += var_I;
+              } else if ((mask & Foreground) == Foreground) {
+                success = false;
+                break;
+              }
             }
           }
+          if (profile_params_1d) {
+            projected_intensity[z] = intensity_z;
+            projected_background_var[z] = background_var_z;
+          }
         }
+        succeeded[i] = success;
+        intensities[i] = intensity;
+        variances[i] = variance;
+
         if (profile_params_1d) {
-          projected_intensity[z] = intensity_z;
-          projected_background_var[z] = background_var_z;
+          bool profile_success = false;
+          double I_sum = 0.;
+          double var_sum = 0.;
+
+          if (success) {
+            I_sum = intensity;
+            var_sum = variance;
+          }
+
+          double I_prf, var_prf;
+          profile_success = fit_profile1d(projected_intensity.const_ref(),
+                                          tof_z.const_ref(),
+                                          projected_background_var.const_ref(),
+                                          *profile_params_1d,
+                                          I_sum,
+                                          var_sum,
+                                          I_prf,
+                                          var_prf);
+          if (profile_success) {
+            intensities_prf[i] = I_prf;
+            variances_prf[i] = var_prf;
+          }
+          succeeded_prf[i] = profile_success;
+        } else if (profile_params_3d) {
+          bool profile_success = false;
+
+          double I_prf, var_prf;
+          profile_success = fit_profile3d(coords_3d,
+                                          intensity_3d,
+                                          background_var_3d,
+                                          *profile_params_3d,
+                                          I_prf,
+                                          var_prf);
+          if (profile_success) {
+            intensities_prf[i] = I_prf;
+            variances_prf[i] = var_prf;
+          }
+          succeeded_prf[i] = profile_success;
         }
       }
-      succeeded[i] = success;
-      intensities[i] = intensity;
-      variances[i] = variance;
+    };
 
-      if (profile_params_1d) {
-        bool profile_success = false;
-        double I_sum = 0.;
-        double var_sum = 0.;
+    dials::util::ThreadPool pool(n_threads);
+    std::size_t chunk_size = (n_reflections + n_threads - 1) / n_threads;
 
-        if (success) {
-          I_sum = intensity;
-          var_sum = variance;
-        }
+    for (int t = 0; t < n_threads; ++t) {
+      std::size_t start = t * chunk_size;
+      std::size_t end = std::min(start + chunk_size, n_reflections);
+      if (start >= end) break;
 
-        double I_prf, var_prf;
-        profile_success = fit_profile1d(projected_intensity.const_ref(),
-                                        tof_z.const_ref(),
-                                        projected_background_var.const_ref(),
-                                        *profile_params_1d,
-                                        I_sum,
-                                        var_sum,
-                                        I_prf,
-                                        var_prf);
-        if (profile_success) {
-          intensities_prf[i] = I_prf;
-          variances_prf[i] = var_prf;
-        }
-        succeeded_prf[i] = profile_success;
-      } else if (profile_params_3d) {
-        bool profile_success = false;
-
-        double I_prf, var_prf;
-        profile_success = fit_profile3d(coords_3d,
-                                        intensity_3d,
-                                        background_var_3d,
-                                        *profile_params_3d,
-                                        I_prf,
-                                        var_prf);
-        if (profile_success) {
-          intensities_prf[i] = I_prf;
-          variances_prf[i] = var_prf;
-        }
-        succeeded_prf[i] = profile_success;
-      }
+      pool.post([=]() { worker(start, end); });
     }
+
+    pool.wait();
 
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
@@ -1256,6 +1304,7 @@ namespace dials { namespace algorithms {
     const TOFIncidentSpectrumParams &incident_params,
     const TOFAbsorptionParams &corrections_data,
     const bool &apply_lorentz_correction,
+    int n_threads,
     boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
     boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
     /*
@@ -1265,6 +1314,10 @@ namespace dials { namespace algorithms {
      */
 
     DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
+
+    std::size_t n_reflections = reflection_table.size();
+    std::vector<std::size_t> indices(n_reflections);
+    std::iota(indices.begin(), indices.end(), 0);
 
     Detector detector = *experiment.get_detector();
     Scan scan = *experiment.get_scan();
@@ -1363,273 +1416,290 @@ namespace dials { namespace algorithms {
 
     int bg_code = Valid | Background | BackgroundUsed;
 
-    for (std::size_t i = 0; i < reflection_table.size(); ++i) {
-      Shoebox<> shoebox = shoeboxes[i];
-      Shoebox<> i_shoebox = i_shoeboxes[i];
-      Shoebox<> e_shoebox = e_shoeboxes[i];
-      int6 bbox = bboxes[i];
-      int panel = shoebox.panel;
+    auto worker = [&](std::size_t start, std::size_t end) {
+      for (std::size_t i = start; i < end; ++i) {
+        Shoebox<> shoebox = shoeboxes[i];
+        Shoebox<> i_shoebox = i_shoeboxes[i];
+        Shoebox<> e_shoebox = e_shoeboxes[i];
+        int6 bbox = bboxes[i];
+        int panel = shoebox.panel;
 
-      bool success = true;
-      int n_background = 0;
-      int n_signal = 0;
-      double intensity = 0.0;
-      double variance = 0.0;
+        bool success = true;
+        int n_background = 0;
+        int n_signal = 0;
+        double intensity = 0.0;
+        double variance = 0.0;
 
-      // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
-      // Shoebox data are ordered (z, y, x)
-      scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
-      std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+        // First pass to get, n_signal, n_background, incident spectrum, empty spectrum
+        // Shoebox data are ordered (z, y, x)
+        scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
+        std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
 
-      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
-        if (!success) {
-          break;
-        }
-        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
-          int panel_y = bbox[2] + y;
-          if (panel_y > image_size[1] || panel_y < 0) {
-            continue;
+        for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+          if (!success) {
+            break;
           }
-          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-            int panel_x = bbox[0] + x;
-            if (panel_x > image_size[0] || panel_x < 0) {
+          for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+            int panel_y = bbox[2] + y;
+            if (panel_y > image_size[1] || panel_y < 0) {
               continue;
             }
-
-            incident_spectrum[z] += i_shoebox.data(z, y, x);
-            empty_spectrum[z] += e_shoebox.data(z, y, x);
-            n_contrib[z]++;
-
-            int mask = shoebox.mask(z, y, x);
-            if ((mask & Foreground) == Foreground) {
-              if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
-                n_signal++;
-              } else {
-                success = false;
+            for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+              int panel_x = bbox[0] + x;
+              if (panel_x > image_size[0] || panel_x < 0) {
+                continue;
               }
-            } else if ((mask & bg_code) == bg_code) {
-              n_background++;
+
+              incident_spectrum[z] += i_shoebox.data(z, y, x);
+              empty_spectrum[z] += e_shoebox.data(z, y, x);
+              n_contrib[z]++;
+
+              int mask = shoebox.mask(z, y, x);
+              if ((mask & Foreground) == Foreground) {
+                if ((mask & Valid) == Valid && (mask & Overlapped) == 0) {
+                  n_signal++;
+                } else {
+                  success = false;
+                }
+              } else if ((mask & bg_code) == bg_code) {
+                n_background++;
+              }
             }
           }
         }
-      }
 
-      // Smooth incident and empty to avoid dividing by a noisy signal
-      scitbx::af::shared<double> smoothed_empty = savitzky_golay(empty_spectrum, 7, 2);
-      scitbx::af::shared<double> smoothed_incident =
-        savitzky_golay(incident_spectrum, 7, 2);
+        // Smooth incident and empty to avoid dividing by a noisy signal
+        scitbx::af::shared<double> smoothed_empty =
+          savitzky_golay(empty_spectrum, 7, 2);
+        scitbx::af::shared<double> smoothed_incident =
+          savitzky_golay(incident_spectrum, 7, 2);
 
-      // 1D profile fitting params
-      scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
-      scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
+        // 1D profile fitting params
+        scitbx::af::shared<double> tof_z(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> projected_intensity(shoebox.zsize(), 0.0);
+        scitbx::af::shared<double> projected_background_var(shoebox.zsize(), 0.0);
 
-      // 3D profile fitting params done in xyz
-      auto acc = shoebox.data.accessor();
-      af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
-      scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
-      scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
-      scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+        // 3D profile fitting params done in xyz
+        auto acc = shoebox.data.accessor();
+        af::c_grid<3> transposed_acc(acc[2], acc[1], acc[0]);
+        scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
+        scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
+        scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
 
-      // Second pass to perform actual integration
-      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
-        double intensity_z = 0;
-        double background_var_z = 0;
+        // Second pass to perform actual integration
+        for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+          double intensity_z = 0;
+          double background_var_z = 0;
 
-        if (!success) {
-          break;
-        }
-
-        int frame_z = bbox[4] + z;
-        double tof = img_tof[frame_z];
-        tof_z[z] = tof;
-        tof *= std::pow(10, -6);  // (s)
-
-        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
-          int panel_y = bbox[2] + y;
-          if (panel_y > image_size[1] || panel_y < 0) {
-            continue;
+          if (!success) {
+            break;
           }
-          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-            int panel_x = bbox[0] + x;
-            if (panel_x > image_size[0] || panel_x < 0) {
+
+          int frame_z = bbox[4] + z;
+          double tof = img_tof[frame_z];
+          tof_z[z] = tof;
+          tof *= std::pow(10, -6);  // (s)
+
+          for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+            int panel_y = bbox[2] + y;
+            if (panel_y > image_size[1] || panel_y < 0) {
               continue;
             }
+            for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+              int panel_x = bbox[0] + x;
+              if (panel_x > image_size[0] || panel_x < 0) {
+                continue;
+              }
 
-            // Raw counts
-            double raw_S = shoebox.data(z, y, x);
-            double raw_B = shoebox.background(z, y, x);
-            double n = n_contrib[z];
-            double raw_J = smoothed_incident[z] / n;
-            double raw_E = smoothed_empty[z] / n;
+              // Raw counts
+              double raw_S = shoebox.data(z, y, x);
+              double raw_B = shoebox.background(z, y, x);
+              double n = n_contrib[z];
+              double raw_J = smoothed_incident[z] / n;
+              double raw_E = smoothed_empty[z] / n;
 
-            // Pixel data will be divided by incident spectrum
-            if (raw_J < 1e-7) {
-              continue;
-            }
+              // Pixel data will be divided by incident spectrum
+              if (raw_J < 1e-7) {
+                continue;
+              }
 
-            int mask = shoebox.mask(z, y, x);
+              int mask = shoebox.mask(z, y, x);
 
-            // Normalise by proton charge
-            double sample_pc = incident_params.sample_proton_charge;
-            double incident_pc = incident_params.incident_proton_charge;
-            double empty_pc = incident_params.empty_proton_charge;
-            double S = raw_S / sample_pc;
-            double B = raw_B / sample_pc;
-            double J = raw_J / incident_pc;
-            double E = raw_E / empty_pc;
+              // Normalise by proton charge
+              double sample_pc = incident_params.sample_proton_charge;
+              double incident_pc = incident_params.incident_proton_charge;
+              double empty_pc = incident_params.empty_proton_charge;
+              double S = raw_S / sample_pc;
+              double B = raw_B / sample_pc;
+              double J = raw_J / incident_pc;
+              double E = raw_E / empty_pc;
 
-            // Variances
-            double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
-            double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
-            double var_B = raw_var_B;
-            if (n_background > 0) {
-              var_B *= (1.0 + double(n_signal) / double(n_background));
-            }
-            double var_J = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
-            double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
+              // Variances
+              double var_S = std::abs(raw_S) / (sample_pc * sample_pc);
+              double raw_var_B = std::abs(raw_B) / (sample_pc * sample_pc);
+              double var_B = raw_var_B;
+              if (n_background > 0) {
+                var_B *= (1.0 + double(n_signal) / double(n_background));
+              }
+              double var_J =
+                (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+              double var_E = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
-            // Lorentz correction
-            scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
-              scitbx::vec2<double>(panel_x, panel_y));
-            double distance = s1.length() + sample_to_source_distance;
-            distance *= std::pow(10, -3);  // (m)
-            double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
-            double two_theta = detector[panel].get_two_theta_at_pixel(
-              unit_s0, scitbx::vec2<double>(panel_x, panel_y));
-            double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
-            double L = sin_two_theta_sq / std::pow(wl, 4);
+              // Lorentz correction
+              scitbx::vec3<double> s1 = detector[panel].get_pixel_lab_coord(
+                scitbx::vec2<double>(panel_x, panel_y));
+              double distance = s1.length() + sample_to_source_distance;
+              distance *= std::pow(10, -3);  // (m)
+              double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
+              double two_theta = detector[panel].get_two_theta_at_pixel(
+                unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+              double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+              double L = sin_two_theta_sq / std::pow(wl, 4);
 
-            // Spherical absorption correction
-            // for image data and incident data
-            double two_theta_deg = two_theta * (180 / pi);
-            int two_theta_idx = static_cast<int>(two_theta_deg / 10);
-            double sample_muR =
-              (corrections_data.sample_linear_scattering_c
-               + (corrections_data.sample_linear_absorption_c / 1.8) * wl)
-              * corrections_data.sample_radius;
-            double T = tof_pixel_spherical_absorption_correction(
-              sample_muR, two_theta, two_theta_idx);
+              // Spherical absorption correction
+              // for image data and incident data
+              double two_theta_deg = two_theta * (180 / pi);
+              int two_theta_idx = static_cast<int>(two_theta_deg / 10);
+              double sample_muR =
+                (corrections_data.sample_linear_scattering_c
+                 + (corrections_data.sample_linear_absorption_c / 1.8) * wl)
+                * corrections_data.sample_radius;
+              double T = tof_pixel_spherical_absorption_correction(
+                sample_muR, two_theta, two_theta_idx);
 
-            // Pixel data will be divided by the absorption correction
-            if (T < 1e-7) {
-              continue;
-            }
-            double incident_muR =
-              (corrections_data.incident_linear_scattering_c
-               + (corrections_data.incident_linear_absorption_c / 1.8) * wl)
-              * corrections_data.incident_radius;
-            double J_T = tof_pixel_spherical_absorption_correction(
-              incident_muR, two_theta, two_theta_idx);
+              // Pixel data will be divided by the absorption correction
+              if (T < 1e-7) {
+                continue;
+              }
+              double incident_muR =
+                (corrections_data.incident_linear_scattering_c
+                 + (corrections_data.incident_linear_absorption_c / 1.8) * wl)
+                * corrections_data.incident_radius;
+              double J_T = tof_pixel_spherical_absorption_correction(
+                incident_muR, two_theta, two_theta_idx);
 
-            // Pixel data will be divided by absorption correction
-            if (J_T < 1e-7) {
-              continue;
-            }
+              // Pixel data will be divided by absorption correction
+              if (J_T < 1e-7) {
+                continue;
+              }
 
-            // Net signal
-            double I0 = (S - B - E);
-            double var_I0 = var_S + var_B + var_E;
+              // Net signal
+              double I0 = (S - B - E);
+              double var_I0 = var_S + var_B + var_E;
 
-            J /= J_T;
+              J /= J_T;
 
-            if (J < 1e-7) {
-              continue;
-            }
+              if (J < 1e-7) {
+                continue;
+              }
 
-            var_J /= (J_T * J_T);
+              var_J /= (J_T * J_T);
 
-            // Apply Lorentz correction and normalise by incident spectrum
-            double I, var_I;
-            if (apply_lorentz_correction) {
-              I = L * I0 / (J * T);
+              // Apply Lorentz correction and normalise by incident spectrum
+              double I, var_I;
+              if (apply_lorentz_correction) {
+                I = L * I0 / (J * T);
 
-              var_I = (L * L / (J * J * T * T)) * var_I0
-                      + (L * L * I0 * I0 / (J * J * J * J * T * T)) * var_J;
-              raw_var_B = (L * L / (J * J * T * T)) * raw_var_B
-                          + (L * L * B * B / (J * J * J * J * T * T)) * var_J;
-            } else {
-              I = I0 / (J * T);
-              var_I = (1 / (J * J * T * T)) * var_I0
-                      + (I0 * I0 / (J * J * J * J * T * T)) * var_J;
-              raw_var_B = (1 / (J * J * T * T)) * raw_var_B
-                          + (B * B / (J * J * J * J * T * T)) * var_J;
-            }
+                var_I = (L * L / (J * J * T * T)) * var_I0
+                        + (L * L * I0 * I0 / (J * J * J * J * T * T)) * var_J;
+                raw_var_B = (L * L / (J * J * T * T)) * raw_var_B
+                            + (L * L * B * B / (J * J * J * J * T * T)) * var_J;
+              } else {
+                I = I0 / (J * T);
+                var_I = (1 / (J * J * T * T)) * var_I0
+                        + (I0 * I0 / (J * J * J * J * T * T)) * var_J;
+                raw_var_B = (1 / (J * J * T * T)) * raw_var_B
+                            + (B * B / (J * J * J * J * T * T)) * var_J;
+              }
 
-            intensity_z += I;
-            background_var_z += raw_var_B;
+              intensity_z += I;
+              background_var_z += raw_var_B;
 
-            if (profile_params_3d) {
-              intensity_3d(x, y, z) = I;
-              background_var_3d(x, y, z) = raw_var_B;
-              double x_c = x + shoebox.xoffset() + 0.5;
-              double y_c = y + shoebox.yoffset() + 0.5;
-              double z_c = z + shoebox.zoffset() + 0.5;
-              coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
-            }
+              if (profile_params_3d) {
+                intensity_3d(x, y, z) = I;
+                background_var_3d(x, y, z) = raw_var_B;
+                double x_c = x + shoebox.xoffset() + 0.5;
+                double y_c = y + shoebox.yoffset() + 0.5;
+                double z_c = z + shoebox.zoffset() + 0.5;
+                coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+              }
 
-            // Accumulate if pixel in foreground & valid
-            if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
-                && (mask & Overlapped) == 0) {
-              intensity += I;
-              variance += var_I;
-            } else if ((mask & Foreground) == Foreground) {
-              success = false;
-              break;
+              // Accumulate if pixel in foreground & valid
+              if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
+                  && (mask & Overlapped) == 0) {
+                intensity += I;
+                variance += var_I;
+              } else if ((mask & Foreground) == Foreground) {
+                success = false;
+                break;
+              }
             }
           }
+          if (profile_params_1d) {
+            projected_intensity[z] = intensity_z;
+            projected_background_var[z] = background_var_z;
+          }
         }
+        succeeded[i] = success;
+        intensities[i] = intensity;
+        variances[i] = variance;
+
         if (profile_params_1d) {
-          projected_intensity[z] = intensity_z;
-          projected_background_var[z] = background_var_z;
+          bool profile_success = false;
+          double I_sum = 0.;
+          double var_sum = 0.;
+
+          if (success) {
+            I_sum = intensity;
+            var_sum = variance;
+          }
+
+          double I_prf, var_prf;
+          profile_success = fit_profile1d(projected_intensity.const_ref(),
+                                          tof_z.const_ref(),
+                                          projected_background_var.const_ref(),
+                                          *profile_params_1d,
+                                          I_sum,
+                                          var_sum,
+                                          I_prf,
+                                          var_prf);
+          if (profile_success) {
+            intensities_prf[i] = I_prf;
+            variances_prf[i] = var_prf;
+          }
+          succeeded_prf[i] = profile_success;
+        } else if (profile_params_3d) {
+          bool profile_success = false;
+
+          double I_prf, var_prf;
+          profile_success = fit_profile3d(coords_3d,
+                                          intensity_3d,
+                                          background_var_3d,
+                                          *profile_params_3d,
+                                          I_prf,
+                                          var_prf);
+          if (profile_success) {
+            intensities_prf[i] = I_prf;
+            variances_prf[i] = var_prf;
+          }
+          succeeded_prf[i] = profile_success;
         }
       }
-      succeeded[i] = success;
-      intensities[i] = intensity;
-      variances[i] = variance;
+    };
 
-      if (profile_params_1d) {
-        bool profile_success = false;
-        double I_sum = 0.;
-        double var_sum = 0.;
+    dials::util::ThreadPool pool(n_threads);
+    std::size_t chunk_size = (n_reflections + n_threads - 1) / n_threads;
 
-        if (success) {
-          I_sum = intensity;
-          var_sum = variance;
-        }
+    for (int t = 0; t < n_threads; ++t) {
+      std::size_t start = t * chunk_size;
+      std::size_t end = std::min(start + chunk_size, n_reflections);
+      if (start >= end) break;
 
-        double I_prf, var_prf;
-        profile_success = fit_profile1d(projected_intensity.const_ref(),
-                                        tof_z.const_ref(),
-                                        projected_background_var.const_ref(),
-                                        *profile_params_1d,
-                                        I_sum,
-                                        var_sum,
-                                        I_prf,
-                                        var_prf);
-        if (profile_success) {
-          intensities_prf[i] = I_prf;
-          variances_prf[i] = var_prf;
-        }
-        succeeded_prf[i] = profile_success;
-      } else if (profile_params_3d) {
-        bool profile_success = false;
-
-        double I_prf, var_prf;
-        profile_success = fit_profile3d(coords_3d,
-                                        intensity_3d,
-                                        background_var_3d,
-                                        *profile_params_3d,
-                                        I_prf,
-                                        var_prf);
-        if (profile_success) {
-          intensities_prf[i] = I_prf;
-          variances_prf[i] = var_prf;
-        }
-        succeeded_prf[i] = profile_success;
-      }
+      pool.post([=]() { worker(start, end); });
     }
+
+    pool.wait();
 
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;

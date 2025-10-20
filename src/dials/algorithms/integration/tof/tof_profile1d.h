@@ -154,6 +154,7 @@ namespace dials { namespace algorithms {
     scitbx::af::const_ref<double> background_var;  // raw intensities
     scitbx::af::shared<double> y_norm;             // normalized intensities
     double intensity_max;
+    int n_restarts;
 
     // params
     double A, alpha, beta, sigma, T_ph;
@@ -168,7 +169,8 @@ namespace dials { namespace algorithms {
                  double beta_,
                  double T_ph_,
                  const std::array<double, 2> alpha_bounds,
-                 const std::array<double, 2> beta_bounds)
+                 const std::array<double, 2> beta_bounds,
+                 int n_restarts_)
         : tof(tof_),
           intensities(intensities_),
           background_var(background_var_),
@@ -176,7 +178,8 @@ namespace dials { namespace algorithms {
           alpha(alpha_),
           beta(beta_),
           sigma(1.0),
-          T_ph(T_ph_) {
+          T_ph(T_ph_),
+          n_restarts(n_restarts_) {
       DIALS_ASSERT(tof.size() > 0);
       DIALS_ASSERT(tof.size() == intensities.size());
 
@@ -333,8 +336,7 @@ namespace dials { namespace algorithms {
              std::size_t max_sum_index,
              int maxfev = 2000,
              double xtol = 1e-8,
-             double ftol = 1e-8,
-             int n_restarts = 20) {
+             double ftol = 1e-8) {
       /*
        * Least-squares minimization with optional multiple restarts if untrusted.
        * Updates A, alpha, beta, sigma, T_ph.
@@ -426,7 +428,6 @@ namespace dials { namespace algorithms {
         }
       }
 
-      std::cout << "TEST fail success\n";
       return false;
     }
 
@@ -438,27 +439,21 @@ namespace dials { namespace algorithms {
                       std::size_t max_sum_index,
                       std::size_t max_profile_index) {
       if (var_prf < 1e-7 || I_prf < 1e-7) {
-        std::cout << "TEST Fail prf values " << var_prf << ", " << I_prf << std::endl;
         return false;
       }
       if (var_sum < 1e-7 || I_sum < 1e-7) {
-        std::cout << "TEST Fail sum values " << var_sum << ", " << I_sum << std::endl;
         return false;
       }
 
       if (std::abs(static_cast<int>(max_sum_index)
                    - static_cast<int>(max_profile_index))
           > 3) {
-        std::cout << "TEST fail max index " << max_sum_index << ", "
-                  << max_profile_index << std::endl;
         return false;
       }
 
       double sum_I_sigma = I_sum / std::sqrt(var_sum);
       double prf_I_sigma = I_prf / std::sqrt(var_prf);
       if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.1)) {
-        std::cout << "TEST Fail I_sigma " << sum_I_sigma << ", " << prf_I_sigma
-                  << std::endl;
         return false;
       }
 
@@ -468,7 +463,6 @@ namespace dials { namespace algorithms {
       double mean_val = std::accumulate(m.begin(), m.end(), 0.0) / m.size();
       double contrast = (max_val - mean_val) / (max_val + 1e-12);
       if (contrast < 0.1) {
-        std::cout << "TEST Fail contrast " << contrast << std::endl;
         return false;
       }
 
@@ -490,22 +484,13 @@ namespace dials { namespace algorithms {
       }
       double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
       if (corr < 0.9) {
-        std::cout << "TEST fail corr " << corr << std::endl;
         return false;
       }
 
       if (std::abs(profile_peak - data_peak) > data_peak * 0.1) {
-        std::cout << "TEST fail profile peak " << profile_peak << ", " << data_peak
-                  << std::endl;
         return false;
       }
 
-      std::cout << "TEST PASS error " << error << " corr " << corr << " contrast "
-                << contrast << " peak " << std::abs(profile_peak - data_peak)
-                << " peak threshold " << data_peak * 0.1 << " idx "
-                << std::abs(static_cast<int>(max_profile_index)
-                            - static_cast<int>(max_sum_index))
-                << std::endl;
       return true;
     }
   };

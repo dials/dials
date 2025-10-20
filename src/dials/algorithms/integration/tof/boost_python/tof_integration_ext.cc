@@ -14,6 +14,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                                           object incident_params_obj,
                                           object absorption_params_obj,
                                           const bool &apply_lorentz,
+                                          int n_threads,
                                           object profile1d_params_obj,
                                           object profile3d_params_obj) {
     boost::optional<TOFProfile1DParams> profile1d_params;
@@ -32,6 +33,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                                  experiment,
                                  data,
                                  apply_lorentz,
+                                 n_threads,
                                  profile1d_params,
                                  profile3d_params);
 
@@ -52,6 +54,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                                    incident_params,
                                    absorption_params,
                                    apply_lorentz,
+                                   n_threads,
                                    profile1d_params,
                                    profile3d_params);
       }
@@ -62,6 +65,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                                    data,
                                    incident_params,
                                    apply_lorentz,
+                                   n_threads,
                                    profile1d_params,
                                    profile3d_params);
       }
@@ -89,7 +93,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                      &TOFIncidentSpectrumParams::empty_proton_charge);
 
     class_<TOFProfile1DParams>("TOFProfile1DParams", no_init)
-      .def(init<double, double, double, double, double, double, double>());
+      .def(init<double, double, double, double, double, double, double, int>());
 
     class_<TOFProfile3DParams>("TOFProfile3DParams", no_init)
       .def(init<double, double, double, double, double, double>());
@@ -117,6 +121,7 @@ namespace dials { namespace algorithms { namespace boost_python {
          arg("incident_params"),
          arg("absorption_params"),
          arg("apply_lorentz_correction"),
+         arg("n_threads"),
          arg("profile1d_params") = object()));
 
     def("calculate_line_profile_for_reflection",

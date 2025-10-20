@@ -150,6 +150,10 @@ profile1d{
     max_beta = 1.0
         .type = float
         .help = "Max beta value for optimization"
+    n_restarts = 8
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
+
 }
 profile3d{
     init_alpha = 0.03
@@ -173,7 +177,7 @@ profile3d{
 }
 
 mp{
-    nproc = Auto
+    nproc = auto
         .type = int(value_min=1)
         .help = "Number of processors to use during parallelized steps."
         "If set to Auto DIALS will choose automatically."
@@ -273,8 +277,9 @@ def integrate_reflection_table_for_experiment(
         max_alpha = params.profile1d.max_alpha
         min_beta = params.profile1d.min_beta
         max_beta = params.profile1d.max_beta
+        n_restarts = params.profile1d.n_restarts
         profile1d_params = TOFProfile1DParams(
-            A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta
+            A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts
         )
     elif params.method == "profile3d":
         alpha = params.profile3d.init_alpha
@@ -311,6 +316,7 @@ def integrate_reflection_table_for_experiment(
         incident_params,
         absorption_params,
         apply_lorentz,
+        params.mp.nproc,
         profile1d_params,
         profile3d_params,
     )
@@ -670,9 +676,8 @@ def applying_incident_and_empty_runs(params):
 
 
 def run_integrate(params, experiments, reflections):
-    nproc = params.mp.nproc
-    if nproc is libtbx.Auto:
-        nproc = multiprocessing.cpu_count()
+    if params.mp.nproc is libtbx.Auto:
+        params.mp.nproc = multiprocessing.cpu_count()
 
     reflections, _ = process_reference(reflections)
 
