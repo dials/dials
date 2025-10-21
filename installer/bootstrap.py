@@ -839,30 +839,40 @@ def update_sources(options):
 
     if not options.cmake:
         repositories = {
-            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            source.split("/")[1]: {
+                "base-repository": source,
+                "branch-local": "dials-3.26",
+            }
             for source, branch in (
-                ("cctbx/annlib_adaptbx", "master"),
-                ("cctbx/cctbx_project", "master"),
-                ("cctbx/dxtbx", "main"),
+                ("dials/annlib_adaptbx", "master"),
                 ("dials/annlib", "master"),
                 ("dials/cbflib", "CBFlib-0.9.8"),
                 ("dials/ccp4io", "master"),
                 ("dials/ccp4io_adaptbx", "master"),
+                ("dials/ccp4io", "master"),
+                ("dials/cctbx_project", "master"),
                 ("dials/dials", "main"),
+                ("cctbx/dxtbx", "main"),
                 ("dials/gui_resources", "master"),
                 ("xia2/xia2", "main"),
             )
         }
-        repositories["cctbx_project"] = {
-            "base-repository": "cctbx/cctbx_project",
-            "effective-repository": "dials/cctbx",
-            "branch-remote": "master",
-            "branch-local": "stable",
-        }
+        if options.prebuilt_cctbx:
+            repositories["cctbx_project"]["branch-local"] = (
+                "releases/" + _prebuilt_cctbx_base
+            )
+        else:
+            repositories["cctbx_project"] = {
+                "base-repository": "dials/cctbx_project",
+                "branch-local": "dials-3.26",
+            }
     else:
         # Only what we need for CMake
         repositories = {
-            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            source.split("/")[1]: {
+                "base-repository": source,
+                "branch-local": "dials-3.26",
+            }
             for source, branch in (
                 ("cctbx/dxtbx", "main"),
                 ("dials/dials", "main"),
