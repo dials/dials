@@ -630,15 +630,13 @@ class CorrelationMatrix:
             f"OPTICS identified {len(unique_labels)} clusters and {outliers} outlier datasets."
         )
         if len(unique_labels) > 1:
-            logger.info(f"Davies-Bouldin Score of OPTICS result is {density_score}.")
-        else:
             logger.info(
-                f"Median reachability of the identified cluster is {density_score}."
+                f"Davies-Bouldin Score of OPTICS result is {density_score:.4f}."
             )
 
-        logger.info(
-            f"Overall score including noise penalty (using tolerance of {self.params.significant_clusters.noise_tolerance}) is {overall_score}."
-        )
+            logger.info(
+                f"Overall score including noise penalty (using tolerance of {self.params.significant_clusters.noise_tolerance}) is {overall_score:.4f}."
+            )
 
         sig_cluster_dict = OrderedDict()
 

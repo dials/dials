@@ -14,37 +14,39 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
+parent_path = pathlib.Path(__file__).parent.resolve()
+
 # cows + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - two clear clusters
-data_1 = np.loadtxt("test_coords/data_1.txt")
-expected_1 = np.loadtxt("test_coords/labels_1.txt")
+data_1 = np.loadtxt(parent_path / "test_coords/data_1.txt")
+expected_1 = np.loadtxt(parent_path / "test_coords/labels_1.txt")
 
 # cryo cows + pigs + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - three clear clusters
-data_2 = np.loadtxt("test_coords/data_2.txt")
-expected_2 = np.loadtxt("test_coords/labels_2.txt")
+data_2 = np.loadtxt(parent_path / "test_coords/data_2.txt")
+expected_2 = np.loadtxt(parent_path / "test_coords/labels_2.txt")
 
 # 4 x CPVs from VMXm - four clear clusters
-data_3 = np.loadtxt("test_coords/data_3.txt")
-expected_3 = np.loadtxt("test_coords/labels_3.txt")
+data_3 = np.loadtxt(parent_path / "test_coords/data_3.txt")
+expected_3 = np.loadtxt(parent_path / "test_coords/labels_3.txt")
 
 # room temp cows + pigs + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - three clusters + noise
-data_4 = np.loadtxt("test_coords/data_4.txt")
-expected_4 = np.loadtxt("test_coords/labels_4.txt")
+data_4 = np.loadtxt(parent_path / "test_coords/data_4.txt")
+expected_4 = np.loadtxt(parent_path / "test_coords/labels_4.txt")
 
 # example made up coordinates - one clear cluster + noise
-data_5 = np.loadtxt("test_coords/data_5.txt")
-expected_5 = np.loadtxt("test_coords/labels_5.txt")
+data_5 = np.loadtxt(parent_path / "test_coords/data_5.txt")
+expected_5 = np.loadtxt(parent_path / "test_coords/labels_5.txt")
 
 # single cluster + noise, high dimension
-data_6 = np.loadtxt("test_coords/data_6.txt")
-expected_6 = np.loadtxt("test_coords/labels_6.txt")
+data_6 = np.loadtxt(parent_path / "test_coords/data_6.txt")
+expected_6 = np.loadtxt(parent_path / "test_coords/labels_6.txt")
 
 # One large cluster + one small cluster
-data_7 = np.loadtxt("test_coords/data_7.txt")
-expected_7 = np.loadtxt("test_coords/labels_7.txt")
+data_7 = np.loadtxt(parent_path / "test_coords/data_7.txt")
+expected_7 = np.loadtxt(parent_path / "test_coords/labels_7.txt")
 
 # Two tight clusters with one obvious outlier
-data_8 = np.loadtxt("test_coords/data_8.txt")
-expected_8 = np.loadtxt("test_coords/labels_8.txt")
+data_8 = np.loadtxt(parent_path / "test_coords/data_8.txt")
+expected_8 = np.loadtxt(parent_path / "test_coords/labels_8.txt")
 
 
 @pytest.fixture()
