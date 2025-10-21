@@ -1,1 +1,0 @@
-Fix mismatch between calculated time-of-flight values for reflections generated from indexing and those from integration.

@@ -1,1 +1,0 @@
-Bugfix to enable parallel building in bootstrap.py install on Unix machines.

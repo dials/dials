@@ -1,1 +1,0 @@
-Fix a build error when building under SCons with non-Conda compilers.
