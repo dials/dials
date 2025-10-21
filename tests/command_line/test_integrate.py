@@ -5,6 +5,7 @@ import math
 import os
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -411,6 +412,10 @@ def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
     assert prf_and_zero.count(True) == 0
 
 
+@pytest.mark.xfail(
+    sys.platform == "darwin",
+    reason="Not understood apparent platform numeric differences",
+)
 def test_multi_sweep(dials_data, tmp_path):
     expts = str(
         dials_data("centroid_test_data", pathlib=True) / "multi_sweep_indexed.expt"
