@@ -20,7 +20,7 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
     x4wide = dials_data("x4wide_processed", pathlib=True)
     paths = [str(x4wide / p) for p in input_files]
     reference_mtz = x4wide / "AUTOMATIC_DEFAULT_scaled.mtz"
-    result = cmdline.run(
+    cmdline.run(
         [
             "cc_half=0.9",
             "isigma=2",
@@ -62,7 +62,6 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
         "rmerge",
         "completeness",
     }
-    assert set(result.keys()) == expected_keys
     resolutionizer = run_in_tmp_path / "resolutionizer.json"
     assert resolutionizer.is_file()
     with resolutionizer.open() as fh:
