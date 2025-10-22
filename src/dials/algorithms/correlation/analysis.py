@@ -496,6 +496,19 @@ class CorrelationMatrix:
 
             return new_labels_dataset_order, model
 
+        def default_optics():
+            """
+            Generally seems that the above optimisations are not as well suited for very low completeness serial data.
+            This applies a very simple model to any cases where no trials are able to successfully complete.
+            """
+            optics_model = OPTICS(min_samples=initial_min_samples)
+            optics_model.fit(cosym_coords)
+
+            labels = optics_model.labels_
+            model = optics_model
+
+            return labels, model
+
         # Test a series of min_samples to find best clusters
         # Optuna uses a Bayesian Optimization approach to "intelligently" select which parameters to test
 
@@ -507,8 +520,13 @@ class CorrelationMatrix:
         study.enqueue_trial({"min_samples": initial_min_samples})
         study.optimize(objective, n_trials=50)
 
-        if study.best_trial.user_attrs["score"] >= max_val:
-            labels, model = single_cluster_optics()
+        try:
+            study.best_trial
+        except ValueError:
+            logger.info(
+                "No trials successfully completed. Using default OPTICS analysis."
+            )
+            labels, model = default_optics()
             return (
                 initial_min_samples,
                 "N/A as only one cluster",
@@ -517,13 +535,23 @@ class CorrelationMatrix:
                 model,
             )
         else:
-            return (
-                study.best_params["min_samples"],
-                study.best_trial.user_attrs["db_score"],
-                study.best_trial.user_attrs["score"],
-                study.best_trial.user_attrs["labels"],
-                study.best_trial.user_attrs["model"],
-            )
+            if study.best_trial.user_attrs["score"] >= max_val:
+                labels, model = single_cluster_optics()
+                return (
+                    initial_min_samples,
+                    "N/A as only one cluster",
+                    "N/A as only one cluster",
+                    labels,
+                    model,
+                )
+            else:
+                return (
+                    study.best_params["min_samples"],
+                    study.best_trial.user_attrs["db_score"],
+                    study.best_trial.user_attrs["score"],
+                    study.best_trial.user_attrs["labels"],
+                    study.best_trial.user_attrs["model"],
+                )
 
     def cluster_cosine_coords(self):
         """
