@@ -56,9 +56,7 @@ class MTZWriterBase:
         )
         mtz_file = mtz.object()
         mtz_file.set_title(f"From {env.dispatcher_name}")
-        date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
-        if time.strftime("%Z") != "GMT":
-            date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+        date_str = time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
         mtz_file.add_history(f"From {dials_version()}, run on {date_str}")
         mtz_file.set_space_group_info(space_group.info())
         self.mtz_file = mtz_file
