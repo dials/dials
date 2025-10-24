@@ -679,7 +679,7 @@ def export_mtz(
     mtz.history += [
         f"From {dials_version()}, run on {date_str}",
     ]
-    
+
     # If the experiments have history lines, log the integrated and scaled
     # entries from these for for future use in e.g. the MTZ Appendix
     filtered_lines = {}
@@ -691,7 +691,9 @@ def export_mtz(
                 program = items[1] + " " + items[2]
                 filtered_lines[program] = dateutil.parser.isoparse(items[0])
         for program, date in filtered_lines.items():
-            logger.info(f"From {program}, run on {date.strftime('%Y-%m-%d at %H:%M:%S %Z')}")
+            logger.info(
+                f"From {program}, run on {date.strftime('%Y-%m-%d at %H:%M:%S %Z')}"
+            )
 
     # Create the right gemmi spacegroup from the crystal's cctbx space_group
     # via a Hall symbol
