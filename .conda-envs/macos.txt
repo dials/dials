@@ -14,7 +14,6 @@ h5py>=3.1.0
 hatchling
 hdf5
 hdf5plugin
-iota
 jinja2
 libboost-devel
 libboost-python-devel
