@@ -156,19 +156,19 @@ profile1d{
 
 }
 profile3d{
-    init_alpha = 0.03
+    init_alpha = 1.0
         .type = float
         .help = "Initial alpha value before optimization"
-    init_beta = 0.03
+    init_beta = 0.1
         .type = float
         .help = "Initial beta value before optimization"
-    min_alpha = 0.02
+    min_alpha = 1.0
         .type = float
         .help = "Min alpha value for optimization"
-    max_alpha = 1.0
+    max_alpha = 1.5
         .type = float
         .help = "Max alpha value for optimization"
-    min_beta = 0.0
+    min_beta = 0.0001
         .type = float
         .help = "Min beta value for optimization"
     max_beta = 1.0
