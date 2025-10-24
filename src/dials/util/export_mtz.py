@@ -675,8 +675,13 @@ def export_mtz(
     # Create the mtz file
     mtz = gemmi.Mtz(with_base=True)
     mtz.title = f"From {env.dispatcher_name}"
-    # If the experiments have history lines, use the integrated and scaled
-    # entries from these for MTZ history
+    date_str = time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+    mtz.history += [
+        f"From {dials_version()}, run on {date_str}",
+    ]
+    
+    # If the experiments have history lines, log the integrated and scaled
+    # entries from these for for future use in e.g. the MTZ Appendix
     filtered_lines = {}
     if experiment_list[0].history:
         history_lines = experiment_list[0].history.get_history()
@@ -686,17 +691,7 @@ def export_mtz(
                 program = items[1] + " " + items[2]
                 filtered_lines[program] = dateutil.parser.isoparse(items[0])
         for program, date in filtered_lines.items():
-            mtz.history += [
-                f"From {program}, run on {date.strftime('%Y-%m-%d at %H:%M:%S %Z')}",
-            ]
-    if not filtered_lines:
-        # Retain the old approach when experiments don't have history
-        date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
-        if time.strftime("%Z") != "GMT":
-            date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
-        mtz.history += [
-            f"From {dials_version()}, run on {date_str}",
-        ]
+            logger.info(f"From {program}, run on {date.strftime('%Y-%m-%d at %H:%M:%S %Z')}")
 
     # Create the right gemmi spacegroup from the crystal's cctbx space_group
     # via a Hall symbol
