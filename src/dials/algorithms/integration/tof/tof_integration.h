@@ -411,7 +411,7 @@ namespace dials { namespace algorithms {
   }
 
   bool fit_profile3d(
-    const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords,
+    scitbx::af::const_ref<vec3<double>, af::c_grid<3>> coords,
     const scitbx::af::versa<double, af::c_grid<3>> intensities,
     const scitbx::af::versa<double, af::c_grid<3>> background_variances,
     const TOFProfile3DParams &profile_params,
@@ -449,7 +449,7 @@ namespace dials { namespace algorithms {
         return profile_success;
       }
 
-      scitbx::af::versa<double, af::c_grid<3>> pred = profile.scaled_result();
+      scitbx::af::versa<double, af::c_grid<3>> pred = profile.result();
       scitbx::af::versa<double, af::c_grid<3>> profile_3d = *profile_3d_out;
 
       DIALS_ASSERT(pred.accessor().all_eq(profile_3d.accessor()));
@@ -852,7 +852,7 @@ namespace dials { namespace algorithms {
           bool profile_success = false;
 
           double I_prf, var_prf;
-          profile_success = fit_profile3d(coords_3d,
+          profile_success = fit_profile3d(coords_3d.const_ref(),
                                           intensity_3d,
                                           background_var_3d,
                                           *profile_params_3d,
@@ -1248,7 +1248,7 @@ namespace dials { namespace algorithms {
           bool profile_success = false;
 
           double I_prf, var_prf;
-          profile_success = fit_profile3d(coords_3d,
+          profile_success = fit_profile3d(coords_3d.const_ref(),
                                           intensity_3d,
                                           background_var_3d,
                                           *profile_params_3d,
@@ -1686,7 +1686,7 @@ namespace dials { namespace algorithms {
           bool profile_success = false;
 
           double I_prf, var_prf;
-          profile_success = fit_profile3d(coords_3d,
+          profile_success = fit_profile3d(coords_3d.const_ref(),
                                           intensity_3d,
                                           background_var_3d,
                                           *profile_params_3d,
@@ -1942,6 +1942,7 @@ namespace dials { namespace algorithms {
     dials::af::reflection_table &reflection,
     Experiment &experiment,
     ImageSequence &data,
+    scitbx::af::shared<vec3<double>> coords,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
@@ -2032,6 +2033,7 @@ namespace dials { namespace algorithms {
     scitbx::af::versa<double, af::c_grid<3>> intensity_3d(transposed_acc);
     scitbx::af::versa<double, af::c_grid<3>> background_var_3d(transposed_acc);
     scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_3d(transposed_acc);
+    int coord_count = 0;
 
     // Second pass to perform actual integration
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
@@ -2114,10 +2116,8 @@ namespace dials { namespace algorithms {
 
           intensity_3d(x, y, z) = I;
           background_var_3d(x, y, z) = raw_var_B;
-          double x_c = x + shoebox.xoffset() + 0.5;
-          double y_c = y + shoebox.yoffset() + 0.5;
-          double z_c = z + shoebox.zoffset() + 0.5;
-          coords_3d(x, y, z) = vec3<double>(x_c, y_c, z_c);
+          coords_3d(x, y, z) = coords[coord_count];
+          coord_count++;
 
           // Accumulate if pixel in foreground & valid
           if ((mask & Foreground) == Foreground && (mask & Valid) == Valid
@@ -2142,7 +2142,7 @@ namespace dials { namespace algorithms {
       intensity_3d.accessor());
 
     if (sum_success) {
-      profile_success = fit_profile3d(coords_3d,
+      profile_success = fit_profile3d(coords_3d.const_ref(),
                                       intensity_3d,
                                       background_var_3d,
                                       profile_params_3d,

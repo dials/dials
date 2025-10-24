@@ -140,6 +140,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         static_cast<boost::python::tuple (*)(dials::af::reflection_table &,
                                              dxtbx::model::Experiment &,
                                              dxtbx::ImageSequence &,
+                                             scitbx::af::shared<vec3<double> >,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
