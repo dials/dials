@@ -307,8 +307,8 @@ class Strategy:
 
 
 class ModelEvaluation(Strategy):
-    def __init__(self, refinement_params):
-        self._params = copy.deepcopy(refinement_params)
+    def __init__(self, params):
+        self._params = copy.deepcopy(params)
         # override several parameters, mainly for speed
         self._params.refinement.parameterisation.auto_reduction.action = "fix"
         self._params.refinement.parameterisation.scan_varying = False
@@ -331,6 +331,11 @@ class ModelEvaluation(Strategy):
     def evaluate(self, experiments, reflections):
         with LoggingContext("dials.algorithms.refinement", level=logging.ERROR):
             indexed_reflections = reflections.select(reflections["id"] > -1)
+            if (
+                len(indexed_reflections)
+                < self._params.indexing.basis_vector_combinations.n_indexed_threshold
+            ):
+                return
             try:
                 refiner = RefinerFactory.from_parameters_data_experiments(
                     self._params, indexed_reflections, experiments
@@ -341,6 +346,11 @@ class ModelEvaluation(Strategy):
             else:
                 rmsds = refiner.rmsds()
                 xy_rmsds = math.sqrt(rmsds[0] ** 2 + rmsds[1] ** 2)
+                if (
+                    xy_rmsds
+                    > self._params.indexing.basis_vector_combinations.xy_rmsd_threshold
+                ):
+                    return
                 model_likelihood = 1.0 - xy_rmsds
                 result = Result(
                     model_likelihood=model_likelihood,
