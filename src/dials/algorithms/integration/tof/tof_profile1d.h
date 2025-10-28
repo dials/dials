@@ -150,9 +150,9 @@ namespace dials { namespace algorithms {
   class TOFProfile1D {
   public:
     scitbx::af::const_ref<double> tof;
-    scitbx::af::const_ref<double> intensities;     // raw intensities
-    scitbx::af::const_ref<double> background_var;  // raw intensities
-    scitbx::af::shared<double> y_norm;             // normalized intensities
+    scitbx::af::const_ref<double> intensities;  // raw intensities
+    scitbx::af::const_ref<double> background;   // raw background
+    scitbx::af::shared<double> y_norm;          // normalized intensities
     double intensity_max;
     int n_restarts;
 
@@ -163,7 +163,7 @@ namespace dials { namespace algorithms {
 
     TOFProfile1D(scitbx::af::const_ref<double> tof_,
                  scitbx::af::const_ref<double> intensities_,
-                 scitbx::af::const_ref<double> background_var_,
+                 scitbx::af::const_ref<double> background_,
                  double A_,
                  double alpha_,
                  double beta_,
@@ -173,7 +173,7 @@ namespace dials { namespace algorithms {
                  int n_restarts_)
         : tof(tof_),
           intensities(intensities_),
-          background_var(background_var_),
+          background(background_),
           A(A_),
           alpha(alpha_),
           beta(beta_),
@@ -293,20 +293,20 @@ namespace dials { namespace algorithms {
     double calc_variance() const {
       scitbx::af::shared<double> profile =
         profile1d_func(tof, A, alpha, beta, sigma, T_ph);
-      DIALS_ASSERT(profile.size() == background_var.size());
+      DIALS_ASSERT(profile.size() == background.size());
 
       double intensity = calc_intensity();
       int n_background = 0;
       int n_signal = 0;
 
-      double bg_var_sum = 0;
+      double bg_sum = 0;
       double eps = 1e-7;
       for (std::size_t i = 0; i < profile.size(); ++i) {
         double val = profile[i];
-        double bg_val = background_var[i];
+        double bg_val = background[i];
         if (std::isfinite(val) && std::isfinite(bg_val)) {
           if (val > eps) {
-            bg_var_sum += bg_val;
+            bg_sum += bg_val;
             n_signal++;
           } else {  // Anywhere the profile is flat is classed as background
             n_background++;
@@ -314,12 +314,11 @@ namespace dials { namespace algorithms {
         }
       }
 
-      double bg_var = std::abs(bg_var_sum);
       if (n_background > 0) {
-        bg_var *= (1.0 + n_signal / n_background);
+        bg_sum *= (1.0 + n_signal / n_background);
       }
 
-      return std::abs(intensity) + bg_var;
+      return std::abs(intensity) + std::abs(bg_sum);
     }
 
     std::size_t get_max_profile_index() {

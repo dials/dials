@@ -93,10 +93,19 @@ namespace dials { namespace algorithms { namespace boost_python {
                      &TOFIncidentSpectrumParams::empty_proton_charge);
 
     class_<TOFProfile1DParams>("TOFProfile1DParams", no_init)
-      .def(init<double, double, double, double, double, double, double, int>());
+      .def(init<double, double, double, double, double, double, double, int, bool>())
+      .def_readwrite("A", &TOFProfile1DParams::A)
+      .def_readwrite("alpha", &TOFProfile1DParams::alpha)
+      .def_readwrite("alpha_min", &TOFProfile1DParams::alpha_min)
+      .def_readwrite("alpha_max", &TOFProfile1DParams::alpha_max)
+      .def_readwrite("beta", &TOFProfile1DParams::beta)
+      .def_readwrite("beta_min", &TOFProfile1DParams::beta_min)
+      .def_readwrite("beta_max", &TOFProfile1DParams::beta_max)
+      .def_readwrite("n_restarts", &TOFProfile1DParams::n_restarts)
+      .def_readwrite("optimize_profile", &TOFProfile1DParams::optimize_profile);
 
     class_<TOFProfile3DParams>("TOFProfile3DParams", no_init)
-      .def(init<double, double, double, double, double, double, int>());
+      .def(init<double, double, double, double, double, double, int, bool>());
 
     def("tof_calculate_ellipse_shoebox_mask",
         &tof_calculate_ellipse_shoebox_mask,
@@ -132,7 +141,6 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
-                                             scitbx::af::shared<double>,
                                              const bool &)>(
           &calculate_line_profile_for_reflection));
 
@@ -146,7 +154,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              const bool &,
-                                             const TOFProfile3DParams &)>(
+                                             TOFProfile3DParams &)>(
           &calculate_line_profile_for_reflection_3d));
 
     def("calculate_line_profile_for_reflection",
@@ -158,9 +166,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
-                                             scitbx::af::shared<double>,
                                              const bool &,
-                                             const TOFProfile1DParams &)>(
+                                             TOFProfile1DParams &)>(
           &calculate_line_profile_for_reflection));
 
     def("calculate_line_profile_for_reflection",
@@ -168,7 +175,6 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              dxtbx::model::Experiment &,
                                              dxtbx::ImageSequence &,
                                              const TOFIncidentSpectrumParams &,
-                                             scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
@@ -186,9 +192,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
-                                             scitbx::af::shared<double>,
                                              const bool &,
-                                             const TOFProfile1DParams &)>(
+                                             TOFProfile1DParams &)>(
           &calculate_line_profile_for_reflection));
 
     def("calculate_line_profile_for_reflection",
@@ -197,7 +202,6 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              dxtbx::ImageSequence &,
                                              const TOFIncidentSpectrumParams &,
                                              const TOFAbsorptionParams &,
-                                             scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
@@ -216,9 +220,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
                                              scitbx::af::shared<double>,
-                                             scitbx::af::shared<double>,
                                              const bool &,
-                                             const TOFProfile1DParams &)>(
+                                             TOFProfile1DParams &)>(
           &calculate_line_profile_for_reflection));
   }
 

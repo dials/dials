@@ -183,7 +183,7 @@ mp{
     nproc = auto
         .type = int(value_min=1)
         .help = "Number of processors to use during parallelized steps."
-        "If set to Auto DIALS will choose automatically."
+        "If set to auto DIALS will choose automatically."
 }
 bbox_tof_padding = 2
     .type = int

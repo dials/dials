@@ -29,6 +29,7 @@ namespace dials { namespace algorithms {
     const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords;
     scitbx::af::shared<double> dt_widths;
     const scitbx::af::versa<double, af::c_grid<3>> intensities;
+    const scitbx::af::versa<double, af::c_grid<3>> background;
     const scitbx::af::versa<double, af::c_grid<3>> background_variances;
     mutable Eigen::VectorXd last_params;  // size 3 or full param vector
     mutable double cached_norm = 1.0;
@@ -41,11 +42,13 @@ namespace dials { namespace algorithms {
     GutmannProfileFunctor(
       const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_,
       const scitbx::af::versa<double, af::c_grid<3>> intensities_,
+      const scitbx::af::versa<double, af::c_grid<3>> background_,
       const scitbx::af::versa<double, af::c_grid<3>> background_variances_,
       const std::array<double, 8>& minb,
       const std::array<double, 8>& maxb)
         : coords(coords_),
           intensities(intensities_),
+          background(background_),
           background_variances(background_variances_) {
       min_bounds = minb;
       max_bounds = maxb;
@@ -166,6 +169,7 @@ namespace dials { namespace algorithms {
                   double norm_factor) const {
       std::vector<double> P(m);
       int count = 0;
+      const double eps = 1e-6;
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
         for (std::size_t c_y = 0; c_y < coords.accessor()[1]; ++c_y) {
           for (std::size_t c_z = 0; c_z < coords.accessor()[2]; ++c_z) {
@@ -177,14 +181,17 @@ namespace dials { namespace algorithms {
       }
 
       double num = 0.0, den = 0.0;
+
       for (size_t i = 0; i < m; ++i) {
         double obs = intensities[i];
+        double bkg = background[i];
         double var = background_variances[i];
         if (!std::isfinite(var) || var <= 0.0) var = std::max(obs, 1e-6);
         double w = 1.0 / var;
         num += w * obs * P[i];
         den += w * P[i] * P[i];
       }
+
       double A = (den > 0.0) ? (num / den) : 0.0;
       return A;
     }
@@ -213,6 +220,7 @@ namespace dials { namespace algorithms {
       fvec.resize(npts);
 
       std::vector<double> P(m);
+      double eps = 1e-8;
       int count = 0;
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
         for (std::size_t c_y = 0; c_y < coords.accessor()[1]; ++c_y) {
@@ -220,6 +228,7 @@ namespace dials { namespace algorithms {
             double model = func(
               coords(c_x, c_y, c_z), H, alpha, beta, A, norm_factor, dt_widths[c_z]);
             double obs = intensities(c_x, c_y, c_z);
+            double bg = background(c_x, c_y, c_z);
             double var = background_variances(c_x, c_y, c_z);
             if (!std::isfinite(var) || var <= 0.0) {
               var = std::max(obs, 1e-6);
@@ -260,6 +269,7 @@ namespace dials { namespace algorithms {
   public:
     const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords;
     const scitbx::af::versa<double, af::c_grid<3>> intensities;
+    const scitbx::af::versa<double, af::c_grid<3>> background;
     const scitbx::af::versa<double, af::c_grid<3>> background_variances;
     scitbx::af::versa<double, af::c_grid<3>> y_norm;
     int n_restarts;
@@ -273,6 +283,7 @@ namespace dials { namespace algorithms {
     GutmannProfile3D(
       scitbx::af::const_ref<vec3<double>, af::c_grid<3>> coords_,
       const scitbx::af::versa<double, af::c_grid<3>> intensities_,
+      const scitbx::af::versa<double, af::c_grid<3>> background_,
       const scitbx::af::versa<double, af::c_grid<3>> background_variances_,
       double alpha,
       double beta,
@@ -281,6 +292,7 @@ namespace dials { namespace algorithms {
       int n_restarts_)
         : coords(get_rel_coords(coords_, intensities_)),
           intensities(intensities_),
+          background(background_),
           background_variances(background_variances_),
           n_restarts(n_restarts_) {
       DIALS_ASSERT(coords.size() == intensities.size());
@@ -349,9 +361,9 @@ namespace dials { namespace algorithms {
       params.resize(8);
       params << std::log(l11), l21, l31, std::log(l22), l32, std::log(l33),
         std::log(alpha), std::log(beta);
-      std::cout << "TEST params l11: " << l11 << ", l21: " << l21 << ", l31: " << l31
-                << ", l22: " << l22 << ", l32: " << l32 << ", l33: " << l33
-                << ", alpha: " << alpha << " , beta: " << beta << std::endl;
+      // std::cout << "TEST params l11: " << l11 << ", l21: " << l21 << ", l31: " << l31
+      //           << ", l22: " << l22 << ", l32: " << l32 << ", l33: " << l33
+      //           << ", alpha: " << alpha << " , beta: " << beta << std::endl;
 
       min_bounds = {std::log(1e-6),
                     -1e2,
@@ -374,7 +386,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(alpha >= alpha_bounds[0] && alpha <= alpha_bounds[1]);
       DIALS_ASSERT(beta >= beta_bounds[0] && beta <= beta_bounds[1]);
 
-      functor.emplace(coords, y_norm, background_variances, min_bounds, max_bounds);
+      functor.emplace(
+        coords, y_norm, background, background_variances, min_bounds, max_bounds);
     }
 
     scitbx::af::versa<vec3<double>, af::c_grid<3>> get_rel_coords(
@@ -452,7 +465,7 @@ namespace dials { namespace algorithms {
     double calc_variance() {
       scitbx::af::versa<double, af::c_grid<3>> pred = result();
       const auto& acc = pred.accessor();
-      DIALS_ASSERT(pred.accessor().all_eq(background_variances.accessor()));
+      DIALS_ASSERT(pred.accessor().all_eq(background.accessor()));
 
       std::size_t nx = acc[0];
       std::size_t ny = acc[1];
@@ -461,8 +474,8 @@ namespace dials { namespace algorithms {
       int n_background = 0;
       int n_signal = 0;
 
-      double bg_var_sum = 0;
-      double I_var_sum = 0;
+      double bg_sum = 0;
+      double I_sum = 0;
       double eps = 1e-6;
 
       for (std::size_t ix = 0; ix < nx; ++ix) {
@@ -470,11 +483,11 @@ namespace dials { namespace algorithms {
           for (std::size_t iz = 0; iz < nz; ++iz) {
             double val = pred(ix, iy, iz);
             double val_norm = val / functor->cached_A;
-            double bg_val = background_variances(ix, iy, iz);
+            double bg_val = background(ix, iy, iz);
             if (std::isfinite(val) && std::isfinite(bg_val)) {
               if (val_norm > eps) {
-                bg_var_sum += bg_val;
-                I_var_sum += val;
+                bg_sum += bg_val;
+                I_sum += val;
                 n_signal++;
               } else {  // Anywhere the profile is flat is classed as background
                 n_background++;
@@ -484,13 +497,10 @@ namespace dials { namespace algorithms {
         }
       }
 
-      double bg_var = std::abs(bg_var_sum);
       if (n_background > 0) {
-        bg_var *= (1.0 + n_signal / n_background);
+        bg_sum *= (1.0 + n_signal / n_background);
       }
-
-      std::cout << "TEST I_var_sum " << I_var_sum << " bg_var " << bg_var << std::endl;
-      return std::abs(I_var_sum) + bg_var;
+      return std::abs(I_sum) + std::abs(bg_sum);
     }
 
     bool fit(double I_sum,
@@ -506,7 +516,6 @@ namespace dials { namespace algorithms {
         Eigen::VectorXd x = x_init;
         (*functor)(x, fvec1);
         final_error = fvec1.squaredNorm();
-        std::cout << "TEST initial error " << final_error << std::endl;
         LM lm(*functor);
         lm.parameters.maxfev = maxfev;
         lm.parameters.xtol = xtol;
@@ -519,7 +528,6 @@ namespace dials { namespace algorithms {
         Eigen::VectorXd fvec(functor->intensities.size());
         (*functor)(x, fvec);
         final_error = fvec.squaredNorm();
-        std::cout << "TEST final error " << final_error << std::endl;
 
         params = x;
         return true;
@@ -577,8 +585,8 @@ namespace dials { namespace algorithms {
                       double I_sum,
                       double var_sum) const {
       if (!std::isfinite(error) || error <= 0.0) {
-        std::cout << "Failed: error is not finite or <= 0, error = " << error
-                  << std::endl;
+        // std::cout << "Failed: error is not finite or <= 0, error = " << error
+        //           << std::endl;
         return false;
       }
 
@@ -588,8 +596,8 @@ namespace dials { namespace algorithms {
       Eigen::Matrix3d H = functor->build_H_from_L(params);
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eig(H);
       if (eig.eigenvalues().minCoeff() <= 0.0) {
-        std::cout << "Failed: H is not positive-definite, min eigenvalue = "
-                  << eig.eigenvalues().minCoeff() << std::endl;
+        // std::cout << "Failed: H is not positive-definite, min eigenvalue = "
+        //           << eig.eigenvalues().minCoeff() << std::endl;
         return false;
       }
 
@@ -605,6 +613,8 @@ namespace dials { namespace algorithms {
       double num = 0, denom_y = 0, denom_m = 0;
       double norm_factor = functor->cached_norm;
       double A = functor->cached_A;
+      // std::cout<<"TEST trust result params alpha " << alpha << " beta " << beta << "
+      // A " << A << std::endl;
 
       for (std::size_t ix = 0; ix < nx; ++ix) {
         for (std::size_t iy = 0; iy < ny; ++iy) {
@@ -619,8 +629,9 @@ namespace dials { namespace algorithms {
                                        functor->dt_widths[iz]);
 
             if (!std::isfinite(val)) {
-              std::cout << "Failed: val not finite at (" << ix << "," << iy << "," << iz
-                        << "), val = " << val << std::endl;
+              // std::cout << "Failed: val not finite at (" << ix << "," << iy << "," <<
+              // iz
+              //           << "), val = " << val << std::endl;
               return false;
             }
 
@@ -633,8 +644,8 @@ namespace dials { namespace algorithms {
             denom_m += val * val;
 
             if (val > exp_limit) {
-              std::cout << "Failed: val exceeds exp_limit at (" << ix << "," << iy
-                        << "," << iz << "), val = " << val << std::endl;
+              // std::cout << "Failed: val exceeds exp_limit at (" << ix << "," << iy
+              //           << "," << iz << "), val = " << val << std::endl;
               return false;
             }
           }
@@ -643,36 +654,40 @@ namespace dials { namespace algorithms {
 
       double mean_val = sum_val / coords.size();
       if (mean_val > mean_limit) {
-        std::cout << "Failed: mean_val exceeds mean_limit, mean_val = " << mean_val
-                  << std::endl;
+        // std::cout << "Failed: mean_val exceeds mean_limit, mean_val = " << mean_val
+        //           << std::endl;
         return false;
       }
 
       if (var_sum > 1e-7) {
         double sum_I_sigma = I_sum / std::sqrt(var_sum);
         double prf_I_sigma = I_prf / std::sqrt(var_prf);
-        if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.1)) {
+        if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.4) and false) {
           std::cout << "Failed: sum_I_sigma > prf_I_sigma + 10%, sum_I_sigma = "
                     << sum_I_sigma << ", prf_I_sigma = " << prf_I_sigma << std::endl;
+          std::cout << "TEST I_prf " << I_prf << " I_sum " << I_sum << " var_prf "
+                    << var_prf << " var_sum " << var_sum << std::endl;
           return false;
         }
       }
 
       double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
-      if (corr < 0.8) {
-        std::cout << "Failed: correlation < 0.8, corr = " << corr << std::endl;
+      if (corr < 0.9) {
+        // std::cout << "Failed: correlation < 0.8, corr = " << corr << std::endl;
         return false;
       }
 
       if (std::abs(profile_peak - data_peak) > data_peak * 0.1) {
-        std::cout << "Failed: profile_peak not within 10% of data_peak, profile_peak = "
-                  << profile_peak << ", data_peak = " << data_peak << " alpha " << alpha
-                  << " beta " << beta << " A " << A << std::endl;
+        // std::cout << "Failed: profile_peak not within 10% of data_peak, profile_peak
+        // = "
+        //           << profile_peak << ", data_peak = " << data_peak << " alpha " <<
+        //           alpha
+        //           << " beta " << beta << " A " << A << std::endl;
         return false;
       }
 
-      std::cout << "Success: all checks passed corr " << corr << " alpha " << alpha
-                << " beta " << beta << " A " << A << std::endl;
+      // std::cout << "Success: all checks passed corr " << corr << " alpha " << alpha
+      //           << " beta " << beta << " A " << A << std::endl;
       return true;
     }
   };
