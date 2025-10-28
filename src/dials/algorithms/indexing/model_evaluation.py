@@ -333,7 +333,7 @@ class ModelEvaluation(Strategy):
             indexed_reflections = reflections.select(reflections["id"] > -1)
             if (
                 len(indexed_reflections)
-                <= self._params.indexing.basis_vector_combinations.n_indexed_threshold
+                < self._params.indexing.basis_vector_combinations.n_indexed_threshold
             ):
                 return
             try:
@@ -349,7 +349,7 @@ class ModelEvaluation(Strategy):
                 px_size = experiments[0].detector[0].get_pixel_size()[0]
                 if (
                     xy_rmsds / px_size
-                    >= self._params.indexing.basis_vector_combinations.xy_rmsd_threshold
+                    > self._params.indexing.basis_vector_combinations.xy_rmsd_threshold
                 ):
                     return
                 model_likelihood = 1.0 - xy_rmsds
