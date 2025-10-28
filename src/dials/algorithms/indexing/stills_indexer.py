@@ -64,24 +64,22 @@ def plot_displacements(reflections, predictions, experiments):
 
 
 def e_refine(params, experiments, reflections, graph_verbose=False):
-    # Stills-specific parameters we always want
-    assert params.refinement.reflections.outlier.algorithm in (
-        None,
-        "null",
-    ), (
-        "Cannot index, set refinement.reflections.outlier.algorithm=null"
-    )  # we do our own outlier rejection
-
     from dials.algorithms.refinement.refiner import RefinerFactory
 
-    refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments
-    )
+    outlier_algorithm = params.refinement.reflections.outlier.algorithm
+    if outlier_algorithm == "sauter_poon":
+        params.refinement.reflections.outlier.algorithm = "null"
 
-    refiner.run()
+    try:
+        refiner = RefinerFactory.from_parameters_data_experiments(
+            params, reflections, experiments
+        )
+        refiner.run()
+    except ValueError:
+        params.refinement.reflections.outlier.algorithm = outlier_algorithm
+        raise
 
-    ref_sel = refiner.selection_used_for_refinement()
-    assert ref_sel.count(True) == len(reflections)
+    params.refinement.reflections.outlier.algorithm = outlier_algorithm
 
     if not graph_verbose:
         return refiner
@@ -97,8 +95,7 @@ class StillsIndexer(Indexer):
 
     def __init__(self, reflections, experiments, params=None):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
-            # The stills_indexer provides its own outlier rejection
-            params.refinement.reflections.outlier.algorithm = "null"
+            params.refinement.reflections.outlier.algorithm = "sauter_poon"
         super().__init__(reflections, experiments, params)
         self.warn_if_setting_unused_refinement_protocol_params()
 
@@ -200,7 +197,6 @@ class StillsIndexer(Indexer):
                 isoform_experiments = ExperimentList()
                 isoform_reflections = flex.reflection_table()
                 # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
-                self.all_params.refinement.reflections.outlier.algorithm = "null"
                 self.all_params.refinement.parameterisation.crystal.fix = "cell"
                 self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
 
@@ -699,6 +695,9 @@ class StillsIndexer(Indexer):
 
         RR = refiner.predict_for_reflection_table(indexed)
 
+        if params.refinement.reflections.outlier.algorithm != "sauter_poon":
+            return refiner.selection_used_for_refinement()
+
         px_sz = experiments[0].detector[0].get_pixel_size()
 
         class Match:
@@ -793,15 +792,12 @@ class StillsIndexer(Indexer):
             graph_verbose=False,
         )
         nv()
-        rmsd, _ = calc_2D_rmsd_and_displacements(
-            R.predict_for_reflection_table(reflections)
-        )
 
-        matches = R.get_matches()
+        predicted = R.predict_for_indexed()
         xyzcal_mm = flex.vec3_double(len(reflections))
-        xyzcal_mm.set_selected(matches["iobs"], matches["xyzcal.mm"])
+        xyzcal_mm.set_selected(predicted["iobs"], predicted["xyzcal.mm"])
         reflections["xyzcal.mm"] = xyzcal_mm
-        reflections.set_flags(matches["iobs"], reflections.flags.used_in_refinement)
+        reflections.set_flags(predicted["iobs"], reflections.flags.used_in_refinement)
         reflections["entering"] = flex.bool(len(reflections), False)
 
         if self.all_params.indexing.stills.set_domain_size_ang_value is not None:
