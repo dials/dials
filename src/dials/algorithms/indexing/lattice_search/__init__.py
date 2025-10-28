@@ -43,7 +43,7 @@ basis_vector_combinations
     solution_scorer = filter *weighted
         .type = choice
         .expert_level = 1
-    xy_rmsd_threshold = 3.0
+    xy_rmsd_threshold = 4.0
         .type = float(value_min=0.0)
         .help = "Discard solutions with an xy RMSD (in pixels) greater than this value"
         .expert_level = 1
@@ -295,6 +295,7 @@ class LatticeSearch(indexer.Indexer):
             self.hkl_offset = best_model.hkl_offset
             return best_model.crystal, best_model.n_indexed
         else:
+            logger.info("No candidate solutions found within thresholds")
             return None, None
 
 
