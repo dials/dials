@@ -43,7 +43,7 @@ basis_vector_combinations
     solution_scorer = filter *weighted
         .type = choice
         .expert_level = 1
-    xy_rmsd_threshold = 4.0
+    xy_rmsd_threshold = 6.0
         .type = float(value_min=0.0)
         .help = "Discard solutions with an xy RMSD (in pixels) greater than this value"
         .expert_level = 1

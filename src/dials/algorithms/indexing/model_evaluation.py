@@ -351,6 +351,9 @@ class ModelEvaluation(Strategy):
                     xy_rmsds / px_size
                     > self._params.indexing.basis_vector_combinations.xy_rmsd_threshold
                 ):
+                    # The default threshold of 6.0 pixels was chosen to allow indexing
+                    # tests to pass, but filter out poor solutions from a representative
+                    # bad case of MX data (https://github.com/xia2/xia2/issues/889)
                     return
                 model_likelihood = 1.0 - xy_rmsds
                 result = Result(
