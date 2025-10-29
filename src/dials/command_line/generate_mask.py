@@ -143,7 +143,7 @@ def generate_mask(
             for m1, m2 in zip(mask, imageset_mask):
                 m1 &= m2
         if existing_masks:
-            for m1, m2 in zip(mask, existing_masks):
+            for m1, m2 in zip(mask, existing_mask):
                 m1 &= m2
 
         mask = tuple(mask)
