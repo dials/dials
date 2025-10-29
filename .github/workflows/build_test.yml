@@ -101,6 +101,11 @@ jobs:
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
             --libtbx
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
+      - name: checkout cctbx branch
+        run: |
+          pushd modules/cctbx_project
+          git checkout for-dials-3013
+          popd
       - name: Build
         run: python modules/dials/installer/bootstrap.py build --libtbx
       - name: Create Installer
