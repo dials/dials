@@ -336,18 +336,22 @@ def _save_experiments_and_reflections(
                 logger.info(f"Saving combined reflections to {ref_filename}")
                 batch_refls.as_file(ref_filename)
 
+
 def _sort_experiments_and_reflections(expts, refls):
-    print("Sorting %d experiments by imageset path and image index"%(len(expts)))
+    print("Sorting %d experiments by imageset path and image index" % (len(expts)))
     assert {len(iset) for iset in expts.imagesets()} == {1}
     keys = [(expt.imageset.paths()[0], expt.imageset.indices()[0]) for expt in expts]
-    indices = [i[0] for i in sorted(enumerate(keys), key=lambda x:x[1])]
+    indices = [i[0] for i in sorted(enumerate(keys), key=lambda x: x[1])]
 
     expts = ExperimentList([expts[indices[i]] for i in range(len(expts))])
-    if(refls):
-        refls = flex.reflection_table.concat([refls.select(refls['id'] == indices[i]) for i in range(len(expts))])
+    if refls:
+        refls = flex.reflection_table.concat(
+            [refls.select(refls["id"] == indices[i]) for i in range(len(expts))]
+        )
     print("Sorted")
 
     return expts, refls
+
 
 @dials.util.show_mail_handle_errors()
 def run(args=None) -> None:
