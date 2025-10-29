@@ -59,6 +59,11 @@ phil_scope = phil.parse(
             .help = "The log filename."
     }
 
+    merge_imageset_mask = False
+        .type = bool
+        .help = "If True, merge pixel masks defined in the imageset, such as one specified "
+                "during dials.import and one provided by the dxtbx class."
+
     include scope dials.util.masking.phil_scope
     """,
     process_includes=True,
@@ -131,11 +136,17 @@ def generate_mask(
 
     for imageset, filename in zip(imagesets, filenames):
         mask = dials.util.masking.generate_mask(imageset, params)
+        mask = list(mask)
+
+        if params.merge_imageset_mask:
+            imageset_mask = imageset.get_mask(0)
+            for m1, m2 in zip(mask, imageset_mask):
+                m1 &= m2
         if existing_masks:
-            mask = list(mask)
-            for panel_idx in range(len(existing_mask)):
-                mask[panel_idx] &= existing_mask[panel_idx]
-            mask = tuple(mask)
+            for m1, m2 in zip(mask, existing_masks):
+                m1 &= m2
+
+        mask = tuple(mask)
         masks.append(mask)
 
         # Save the mask to file
