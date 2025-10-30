@@ -464,6 +464,7 @@ def test_combine_imagesets(dials_data, tmp_path):
     assert len(expts2) == 4
     assert expts2.identifiers() == expts.identifiers()
 
+
 def test_sort_by_imageset_path_and_image_index(dials_data, tmp_path):
     data_dir = dials_data("lysozyme_JF16M_4img", pathlib=True)
     input_phil = (
@@ -499,10 +500,14 @@ def test_sort_by_imageset_path_and_image_index(dials_data, tmp_path):
     )
     indices = [iset.indices()[0] for iset in exp.imagesets()]
 
-    assert indices == [0,2,3,1]
+    assert indices == [0, 2, 3, 1]
 
     result = subprocess.run(
-        [shutil.which("dials.combine_experiments"), "combine.phil", "sort_by_imageset_path_and_image_index=True"],
+        [
+            shutil.which("dials.combine_experiments"),
+            "combine.phil",
+            "sort_by_imageset_path_and_image_index=True",
+        ],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -514,5 +519,4 @@ def test_sort_by_imageset_path_and_image_index(dials_data, tmp_path):
     )
     indices = [iset.indices()[0] for iset in exp.imagesets()]
 
-    assert indices == [0,1,2,3]
-
+    assert indices == [0, 1, 2, 3]
