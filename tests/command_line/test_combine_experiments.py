@@ -463,3 +463,56 @@ def test_combine_imagesets(dials_data, tmp_path):
     expts2 = combine_experiments_no_reflections(params, list_of_elists)
     assert len(expts2) == 4
     assert expts2.identifiers() == expts.identifiers()
+
+def test_sort_by_imageset_path_and_image_index(dials_data, tmp_path):
+    data_dir = dials_data("lysozyme_JF16M_4img", pathlib=True)
+    input_phil = (
+        f" input.experiments={data_dir}/lyso009a_0087.JF07T32V01_master_4img_imported.expt\n"
+    ).format(data_dir)
+    tmp_path.joinpath("split.phil").write_text(input_phil)
+
+    result = subprocess.run(
+        [shutil.which("dials.split_experiments"), "split.phil"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    combine_phil = (
+        f" input.experiments={tmp_path}/split_0.expt\n"
+        f" input.experiments={tmp_path}/split_2.expt\n"
+        f" input.experiments={tmp_path}/split_3.expt\n"
+        f" input.experiments={tmp_path}/split_1.expt\n"
+    ).format(data_dir)
+    tmp_path.joinpath("combine.phil").write_text(combine_phil)
+
+    result = subprocess.run(
+        [shutil.which("dials.combine_experiments"), "combine.phil"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    # load results
+    exp = ExperimentListFactory.from_json_file(
+        tmp_path / "combined.expt", check_format=False
+    )
+    indices = [iset.indices()[0] for iset in exp.imagesets()]
+
+    assert indices == [0,2,3,1]
+
+    result = subprocess.run(
+        [shutil.which("dials.combine_experiments"), "combine.phil", "sort_by_imageset_path_and_image_index=True"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    # load results
+    exp = ExperimentListFactory.from_json_file(
+        tmp_path / "combined.expt", check_format=False
+    )
+    indices = [iset.indices()[0] for iset in exp.imagesets()]
+
+    assert indices == [0,1,2,3]
+
