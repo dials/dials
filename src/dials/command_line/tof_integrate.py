@@ -167,13 +167,13 @@ profile3d{
     min_alpha = 1.0
         .type = float
         .help = "Min alpha value for optimization"
-    max_alpha = 1.5
+    max_alpha = 10.
         .type = float
         .help = "Max alpha value for optimization"
     min_beta = 0.0001
         .type = float
         .help = "Min beta value for optimization"
-    max_beta = 1.0
+    max_beta = 2.0
         .type = float
         .help = "Max beta value for optimization"
     n_restarts = 8
@@ -284,7 +284,7 @@ def integrate_reflection_table_for_experiment(
         max_beta = params.profile1d.max_beta
         n_restarts = params.profile1d.n_restarts
         profile1d_params = TOFProfile1DParams(
-            A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts
+            A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts, True
         )
     elif params.method == "profile3d":
         alpha = params.profile3d.init_alpha
@@ -295,7 +295,7 @@ def integrate_reflection_table_for_experiment(
         max_beta = params.profile3d.max_beta
         n_restarts = params.profile3d.n_restarts
         profile3d_params = TOFProfile3DParams(
-            alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts
+            alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts, True
         )
 
     if apply_lorentz:
