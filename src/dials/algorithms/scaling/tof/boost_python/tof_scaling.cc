@@ -23,18 +23,6 @@ namespace dials_scaling { namespace boost_python {
                      &TOFIncidentSpectrumParams::incident_proton_charge)
       .def_readwrite("empty_proton_charge",
                      &TOFIncidentSpectrumParams::empty_proton_charge);
-    class_<TOFCorrectionsData>("TOFCorrectionsData", no_init)
-      .def(init<double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double>());
 
     void (*extract_shoeboxes1)(dials::af::reflection_table &,
                                dxtbx::model::Experiment &,
@@ -43,18 +31,13 @@ namespace dials_scaling { namespace boost_python {
     void (*extract_shoeboxes2)(dials::af::reflection_table &,
                                dxtbx::model::Experiment &,
                                dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               TOFCorrectionsData &,
+                               TOFIncidentSpectrumParams &,
                                bool) = &tof_extract_shoeboxes_to_reflection_table;
     void (*extract_shoeboxes3)(dials::af::reflection_table &,
                                dxtbx::model::Experiment &,
                                dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               double,
-                               double,
-                               double,
+                               TOFIncidentSpectrumParams &,
+                               TOFAbsorptionParams &,
                                bool) = &tof_extract_shoeboxes_to_reflection_table;
 
     def("tof_extract_shoeboxes_to_reflection_table", extract_shoeboxes1);

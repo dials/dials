@@ -281,57 +281,6 @@ struct TOFAbsorptionParams {
   }
 };
 
-/*
- * Holds constants required for correcting time-of-flight data
- */
-struct TOFCorrectionsData {
-  double sample_proton_charge;
-  double incident_proton_charge;
-  double empty_proton_charge;
-  double sample_radius;
-  double sample_scattering_x_section;
-  double sample_absorption_x_section;
-  double sample_number_density;
-  double incident_radius;
-  double incident_scattering_x_section;
-  double incident_absorption_x_section;
-  double incident_number_density;
-  double sample_linear_scattering_c;
-  double incident_linear_scattering_c;
-  double sample_linear_absorption_c;
-  double incident_linear_absorption_c;
-
-  TOFCorrectionsData(double sample_proton_charge,
-                     double incident_proton_charge,
-                     double empty_proton_charge,
-                     double sample_radius,
-                     double sample_scattering_x_section,
-                     double sample_absorption_x_section,
-                     double sample_number_density,
-                     double incident_radius,
-                     double incident_scattering_x_section,
-                     double incident_absorption_x_section,
-                     double incident_number_density)
-      : sample_proton_charge(sample_proton_charge),
-        incident_proton_charge(incident_proton_charge),
-        empty_proton_charge(empty_proton_charge),
-        sample_radius(sample_radius * .1),  // Given in mm but calculated in cm
-        sample_scattering_x_section(sample_scattering_x_section),
-        sample_absorption_x_section(sample_absorption_x_section),
-        sample_number_density(sample_number_density),
-        incident_radius(incident_radius * .1),  // Given in mm but calculated in cm
-        incident_scattering_x_section(incident_scattering_x_section),
-        incident_absorption_x_section(incident_absorption_x_section),
-        incident_number_density(incident_number_density) {
-    sample_linear_scattering_c = sample_number_density * sample_scattering_x_section;
-    incident_linear_scattering_c =
-      incident_number_density * incident_scattering_x_section;
-    sample_linear_absorption_c = sample_number_density * sample_absorption_x_section;
-    incident_linear_absorption_c =
-      incident_number_density * incident_absorption_x_section;
-  }
-};
-
 scitbx::af::shared<double> savitzky_golay(scitbx::af::shared<double> signal,
                                           int window_size,
                                           int poly_order) {
@@ -545,11 +494,7 @@ void tof_extract_shoeboxes_to_reflection_table(
   dials::af::reflection_table &reflection_table,
   Experiment &experiment,
   ImageSequence &data,
-  ImageSequence &incident_data,
-  ImageSequence &empty_data,
-  double sample_proton_charge,
-  double incident_proton_charge,
-  double empty_proton_charge,
+  TOFIncidentSpectrumParams &incident_params,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();
@@ -607,8 +552,9 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for incident data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = incident_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = incident_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.incident_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.incident_data->get_mask(img_num);
 
     dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
@@ -625,8 +571,9 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for empty data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = empty_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = empty_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.empty_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
     dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
@@ -675,9 +622,9 @@ void tof_extract_shoeboxes_to_reflection_table(
           double pixel_data = shoebox.data(z, y, x);
 
           // Normalise w.r.t proton charge
-          pixel_data /= sample_proton_charge;
-          incident_pixel_data /= incident_proton_charge;
-          empty_pixel_data /= empty_proton_charge;
+          pixel_data /= incident_params.sample_proton_charge;
+          incident_pixel_data /= incident_params.incident_proton_charge;
+          empty_pixel_data /= incident_params.empty_proton_charge;
 
           // Subtract empty from incident and sample
           pixel_data -= empty_pixel_data;
@@ -723,9 +670,8 @@ void tof_extract_shoeboxes_to_reflection_table(
   dials::af::reflection_table &reflection_table,
   Experiment &experiment,
   ImageSequence &data,
-  ImageSequence &incident_data,
-  ImageSequence &empty_data,
-  TOFCorrectionsData &corrections_data,
+  TOFIncidentSpectrumParams &incident_params,
+  TOFAbsorptionParams &absorption_params,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();
@@ -783,8 +729,9 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for incident data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = incident_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = incident_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.incident_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.incident_data->get_mask(img_num);
 
     dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
@@ -801,8 +748,9 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for empty data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = empty_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = empty_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.empty_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
     dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
@@ -851,9 +799,9 @@ void tof_extract_shoeboxes_to_reflection_table(
           double pixel_data = shoebox.data(z, y, x);
 
           // Normalise w.r.t proton charge
-          pixel_data /= corrections_data.sample_proton_charge;
-          incident_pixel_data /= corrections_data.incident_proton_charge;
-          empty_pixel_data /= corrections_data.empty_proton_charge;
+          pixel_data /= incident_params.sample_proton_charge;
+          incident_pixel_data /= incident_params.incident_proton_charge;
+          empty_pixel_data /= incident_params.empty_proton_charge;
 
           // Subtract empty from incident and sample
           pixel_data -= empty_pixel_data;
@@ -873,9 +821,9 @@ void tof_extract_shoeboxes_to_reflection_table(
           // Spherical absorption correction
           // for image data and incident data
           double sample_muR =
-            (corrections_data.sample_linear_scattering_c
-             + (corrections_data.sample_linear_absorption_c / 1.8) * wl)
-            * corrections_data.sample_radius;
+            (absorption_params.sample_linear_scattering_c
+             + (absorption_params.sample_linear_absorption_c / 1.8) * wl)
+            * absorption_params.sample_radius;
           double sample_absorption_correction =
             tof_pixel_spherical_absorption_correction(
               sample_muR, two_theta, two_theta_idx);
@@ -888,9 +836,9 @@ void tof_extract_shoeboxes_to_reflection_table(
           }
 
           double incident_muR =
-            (corrections_data.incident_linear_scattering_c
-             + (corrections_data.incident_linear_absorption_c / 1.8) * wl)
-            * corrections_data.incident_radius;
+            (absorption_params.incident_linear_scattering_c
+             + (absorption_params.incident_linear_absorption_c / 1.8) * wl)
+            * absorption_params.incident_radius;
           double incident_absorption_correction =
             tof_pixel_spherical_absorption_correction(
               incident_muR, two_theta, two_theta_idx);
