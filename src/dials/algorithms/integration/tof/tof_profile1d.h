@@ -1,5 +1,5 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_TOF_TOF_PROFILE1D_H
-#define DIALS_ALGORITHMS_INTEGRATION_TOF_TOFPROFILE1D_H
+#define DIALS_ALGORITHMS_INTEGRATION_TOF_TOF_PROFILE1D_H
 
 #include <vector>
 #include <algorithm>
@@ -24,16 +24,54 @@ single crystal diffraction data collected at the iBIX. Sci Rep 6,
 */
 namespace dials { namespace algorithms {
 
+  /*
+   * Holds params required for profile1d
+   */
+  struct TOFProfile1DParams {
+    double A;
+    double alpha;
+    double alpha_min;
+    double alpha_max;
+    double beta;
+    double beta_min;
+    double beta_max;
+    int n_restarts;         // number of attempts when fitting
+    bool optimize_profile;  // If true the profile is generated with input params
+
+    TOFProfile1DParams(double A,
+                       double alpha,
+                       double alpha_min,
+                       double alpha_max,
+                       double beta,
+                       double beta_min,
+                       double beta_max,
+                       int n_restarts,
+                       bool optimize_profile)
+
+        : A(A),
+          alpha(alpha),
+          alpha_min(alpha_min),
+          alpha_max(alpha_max),
+          beta(beta),
+          beta_min(beta_min),
+          beta_max(beta_max),
+          n_restarts(n_restarts),
+          optimize_profile(optimize_profile) {}
+  };
+
   static scitbx::af::shared<double> profile1d_func(scitbx::af::const_ref<double> tof,
                                                    double A,
                                                    double alpha,
                                                    double beta,
                                                    double sigma,
                                                    double T_ph) {
+    /*
+     * func used to generate the actual profile
+     * (Numbers) refer to equations in https://doi.org/10.1038/srep36628
+     */
+
     const size_t m = tof.size();
     scitbx::af::shared<double> out(m, 0.0);
-
-    // (Numbers) refer to equations in https://doi.org/10.1038/srep36628
 
     double sigma2 = sigma * sigma;
     double sigma_sqrt = std::sqrt(2.0 * sigma2);
@@ -81,8 +119,8 @@ namespace dials { namespace algorithms {
   struct TOFProfileFunctor : Functor<double> {
     scitbx::af::const_ref<double> tof;
     scitbx::af::const_ref<double> y_norm;  // Assumed normalized
-    std::array<double, 5> min_bounds;
-    std::array<double, 5> max_bounds;
+    std::array<double, 5> min_bounds;      // parameter bounds
+    std::array<double, 5> max_bounds;      // parameter bounds
 
     TOFProfileFunctor(scitbx::af::const_ref<double> tof_,
                       scitbx::af::const_ref<double> y_norm_,
@@ -120,9 +158,10 @@ namespace dials { namespace algorithms {
       return 0;
     }
 
-    // Numerical Jacobian (central differences)
     int df(const Eigen::VectorXd& x, Eigen::MatrixXd& J) const {
-      const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+      // Gradients calculated using finite (central) difference
+
+      const double eps = 1e-5;
       Eigen::VectorXd xc = clamp_params(x);
       int p = inputs();
       int m = values();
@@ -151,7 +190,6 @@ namespace dials { namespace algorithms {
   public:
     scitbx::af::const_ref<double> tof;
     scitbx::af::const_ref<double> intensities;  // raw intensities
-    scitbx::af::const_ref<double> background;   // raw background
     scitbx::af::shared<double> y_norm;          // normalized intensities
     double intensity_max;
     int n_restarts;
@@ -163,7 +201,6 @@ namespace dials { namespace algorithms {
 
     TOFProfile1D(scitbx::af::const_ref<double> tof_,
                  scitbx::af::const_ref<double> intensities_,
-                 scitbx::af::const_ref<double> background_,
                  double A_,
                  double alpha_,
                  double beta_,
@@ -173,7 +210,6 @@ namespace dials { namespace algorithms {
                  int n_restarts_)
         : tof(tof_),
           intensities(intensities_),
-          background(background_),
           A(A_),
           alpha(alpha_),
           beta(beta_),
@@ -183,14 +219,14 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(tof.size() > 0);
       DIALS_ASSERT(tof.size() == intensities.size());
 
-      // Ensure no negative values
+      // Get max intensity
       intensity_max = 1.0;
       if (!(intensities.size() == 0)) {
         intensity_max = *std::max_element(intensities.begin(), intensities.end());
         if (intensity_max <= 0.0) intensity_max = 1.0;
       }
 
-      // build normalized y vector
+      // Get normalized y vector
       const size_t n = intensities.size();
       y_norm.resize(n);
       for (size_t i = 0; i < n; ++i) {
@@ -204,14 +240,15 @@ namespace dials { namespace algorithms {
       sigma = estimate_sigma_from_fwhm(tof, y_norm.const_ref());
 
       // Param bounds (A, alpha, beta, sigma, T_ph)
-      min_bounds = {1.0, alpha_bounds[0], beta_bounds[0], sigma / 4.0, tof.front()};
-      max_bounds = {1000.0 * intensity_max,
+      min_bounds = {1., alpha_bounds[0], beta_bounds[0], sigma / 4.0, tof.front()};
+
+      max_bounds = {1e4 * intensity_max,
                     alpha_bounds[1],
                     beta_bounds[1],
                     std::max(100., sigma * 4.0),
                     tof.back()};
 
-      // Sanity check
+      // Sanity check params
       DIALS_ASSERT(A >= min_bounds[0] && A <= max_bounds[0]);
       DIALS_ASSERT(alpha >= min_bounds[1] && alpha <= max_bounds[1]);
       DIALS_ASSERT(beta >= min_bounds[2] && beta <= max_bounds[2]);
@@ -220,6 +257,10 @@ namespace dials { namespace algorithms {
     }
 
     scitbx::af::shared<double> result() const {
+      /*
+       * Generates (unnormalized) profile for all positions in tof
+       */
+
       scitbx::af::shared<double> m = profile1d_func(tof, A, alpha, beta, sigma, T_ph);
       for (auto& v : m)
         v *= intensity_max;
@@ -229,7 +270,7 @@ namespace dials { namespace algorithms {
     double estimate_sigma_from_fwhm(scitbx::af::const_ref<double> tof,
                                     scitbx::af::const_ref<double> y) {
       /*
-       * Estimate sigma using full width at half maximum of peak in y
+       * Estimates sigma param using full width at half maximum of peak in y
        */
 
       // Not enough data
@@ -279,7 +320,7 @@ namespace dials { namespace algorithms {
       // 2.354520045 = approx(sqrt(2ln2))
       double sigma0 = fwhm / 2.354820045;
 
-      // Unphysical sigma (large as at least one sample spacing)
+      // Unphysical sigma (check large as at least one sample spacing)
       double mean_dt = (tof.back() - tof.front()) / std::max<size_t>(tof.size() - 1, 1);
       sigma0 = std::max(sigma0, mean_dt);
       return sigma0;
@@ -290,38 +331,11 @@ namespace dials { namespace algorithms {
       return simpson_integrate(r.const_ref(), tof);
     }
 
-    double calc_variance() const {
-      scitbx::af::shared<double> profile =
-        profile1d_func(tof, A, alpha, beta, sigma, T_ph);
-      DIALS_ASSERT(profile.size() == background.size());
-
-      double intensity = calc_intensity();
-      int n_background = 0;
-      int n_signal = 0;
-
-      double bg_sum = 0;
-      double eps = 1e-7;
-      for (std::size_t i = 0; i < profile.size(); ++i) {
-        double val = profile[i];
-        double bg_val = background[i];
-        if (std::isfinite(val) && std::isfinite(bg_val)) {
-          if (val > eps) {
-            bg_sum += bg_val;
-            n_signal++;
-          } else {  // Anywhere the profile is flat is classed as background
-            n_background++;
-          }
-        }
-      }
-
-      if (n_background > 0) {
-        bg_sum *= (1.0 + n_signal / n_background);
-      }
-
-      return std::abs(intensity) + std::abs(bg_sum);
-    }
-
     std::size_t get_max_profile_index() {
+      /*
+       * Returns the index of the max of the profile
+       */
+
       auto profile_result = this->result();
       auto max_profile_it =
         std::max_element(profile_result.begin(), profile_result.end());
@@ -330,17 +344,17 @@ namespace dials { namespace algorithms {
       return max_profile_index;
     }
 
-    bool fit(double I_sum,
-             double var_sum,
-             std::size_t max_sum_index,
-             int maxfev = 2000,
+    bool fit(std::size_t max_sum_index,  // Peak index of the projected intensity
+             int maxfev = 200,
              double xtol = 1e-8,
              double ftol = 1e-8) {
       /*
-       * Least-squares minimization with optional multiple restarts if untrusted.
-       * Updates A, alpha, beta, sigma, T_ph.
+       * Least-squares minimization
+       * Updates A, alpha, beta, sigma, T_ph
+       * If fitting fails, params are perturbed n_restarts to find a solution
        */
 
+      // Check enough data for fitting
       const int ndata = static_cast<int>(tof.size());
       if (ndata < 5) return false;
 
@@ -386,19 +400,12 @@ namespace dials { namespace algorithms {
 
       if (success) {
         I_prf = this->calc_intensity();
-        I_var = this->calc_variance();
-        if (this->trust_result(fit_resid,
-                               I_prf,
-                               I_var,
-                               I_sum,
-                               var_sum,
-                               max_sum_index,
-                               max_profile_index)) {
+        if (this->trust_result(fit_resid, I_prf, max_sum_index, max_profile_index)) {
           return true;
         }
       }
 
-      // Perturb initial params
+      // Initial fit failed, perturb initial params
       std::mt19937 rng(std::random_device{}());
       std::uniform_real_distribution<double> unit_dist(0.0, 1.0);
 
@@ -411,18 +418,13 @@ namespace dials { namespace algorithms {
           x_try[j] = std::max(min_bounds[j], std::min(perturbed, max_bounds[j]));
         }
 
+        // Attempt fit
         success = run_single_fit(x_try, fit_resid);
         if (!success) continue;
+
         I_prf = this->calc_intensity();
-        I_var = this->calc_variance();
         max_profile_index = this->get_max_profile_index();
-        if (this->trust_result(fit_resid,
-                               I_prf,
-                               I_var,
-                               I_sum,
-                               var_sum,
-                               max_sum_index,
-                               max_profile_index)) {
+        if (this->trust_result(fit_resid, I_prf, max_sum_index, max_profile_index)) {
           return true;
         }
       }
@@ -432,13 +434,18 @@ namespace dials { namespace algorithms {
 
     bool trust_result(double error,
                       double I_prf,
-                      double var_prf,
-                      double I_sum,
-                      double var_sum,
                       std::size_t max_sum_index,
                       std::size_t max_profile_index) {
+      /*
+       * Tests to check the fit is reasonable
+       */
+
+      if (!std::isfinite(error) || error <= 0.0) {
+        return false;
+      }
+
       // Check reasonable values
-      if (var_prf < 1e-7 || I_prf < 1e-7) {
+      if (I_prf < 1e-7) {
         return false;
       }
 
@@ -447,15 +454,6 @@ namespace dials { namespace algorithms {
                    - static_cast<int>(max_profile_index))
           > 3) {
         return false;
-      }
-
-      // Check profile I_sigma is within 10% or better than summation
-      if (var_sum > 1e-7) {
-        double sum_I_sigma = I_sum / std::sqrt(var_sum);
-        double prf_I_sigma = I_prf / std::sqrt(var_prf);
-        if (sum_I_sigma > (prf_I_sigma + sum_I_sigma * 0.1)) {
-          return false;
-        }
       }
 
       // Check peak isn't very flat
@@ -467,7 +465,7 @@ namespace dials { namespace algorithms {
         return false;
       }
 
-      // Correlation with data
+      // Check correlation with data
       double profile_peak, data_peak;
       double num = 0, denom_y = 0, denom_m = 0;
       for (std::size_t i = 0; i < tof.size(); ++i) {
@@ -496,6 +494,63 @@ namespace dials { namespace algorithms {
       return true;
     }
   };
+
+  bool fit_profile1d(
+    scitbx::af::const_ref<double> projected_intensity,
+    scitbx::af::const_ref<double> tof_z,
+    TOFProfile1DParams& profile_params,
+    double& I_prf_out,
+    boost::optional<scitbx::af::shared<double>> line_profile_out = boost::none) {
+    // Get T_ph (peak position)
+    auto max_it =
+      std::max_element(projected_intensity.begin(), projected_intensity.end());
+    size_t max_index = std::distance(projected_intensity.begin(), max_it);
+    double T_ph = tof_z[max_index];
+
+    // Fit profile
+    const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
+                                                profile_params.alpha_max};
+    const std::array<double, 2> beta_bounds = {profile_params.beta_min,
+                                               profile_params.beta_max};
+
+    TOFProfile1D profile(tof_z,
+                         projected_intensity,
+                         profile_params.A,
+                         profile_params.alpha,
+                         profile_params.beta,
+                         T_ph,
+                         alpha_bounds,
+                         beta_bounds,
+                         profile_params.n_restarts);
+
+    bool profile_success = true;
+    if (profile_params.optimize_profile) {
+      profile_success = profile.fit(max_index);
+    }
+
+    if (profile_success) {
+      profile_params.alpha = profile.alpha;
+      profile_params.beta = profile.beta;
+      profile_params.A = profile.A;
+      double I_prf = profile.calc_intensity();
+      auto profile_result = profile.result();
+      DIALS_ASSERT(projected_intensity.size() == profile_result.size());
+
+      I_prf_out = I_prf;
+
+      if (!line_profile_out) {
+        return profile_success;
+      }
+
+      scitbx::af::shared<double> line_profile = *line_profile_out;
+      DIALS_ASSERT(line_profile.size() == profile_result.size());
+      for (std::size_t i = 0; i < profile_result.size(); ++i) {
+        line_profile[i] = profile_result[i];
+      }
+      return profile_success;
+    }
+    return false;
+  }
 
 }}  // namespace dials::algorithms
 #endif /* DIALS_ALGORITHMS_INTEGRATION_TOF_TOF_PROFILE1D */

@@ -6,6 +6,23 @@ namespace dials_scaling { namespace boost_python {
 
   using namespace boost::python;
   BOOST_PYTHON_MODULE(dials_tof_scaling_ext) {
+    class_<TOFAbsorptionParams>("TOFAbsorptionParams", no_init)
+      .def(init<double, double, double, double, double, double, double, double>());
+
+    class_<TOFIncidentSpectrumParams>("TOFIncidentSpectrumParams", no_init)
+      .def(init<std::shared_ptr<ImageSequence>,
+                std::shared_ptr<ImageSequence>,
+                double,
+                double,
+                double>())
+      .def_readwrite("incident_data", &TOFIncidentSpectrumParams::incident_data)
+      .def_readwrite("empty_data", &TOFIncidentSpectrumParams::empty_data)
+      .def_readwrite("sample_proton_charge",
+                     &TOFIncidentSpectrumParams::sample_proton_charge)
+      .def_readwrite("incident_proton_charge",
+                     &TOFIncidentSpectrumParams::incident_proton_charge)
+      .def_readwrite("empty_proton_charge",
+                     &TOFIncidentSpectrumParams::empty_proton_charge);
     class_<TOFCorrectionsData>("TOFCorrectionsData", no_init)
       .def(init<double,
                 double,

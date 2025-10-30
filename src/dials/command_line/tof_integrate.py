@@ -24,14 +24,16 @@ from dials.util.options import ArgumentParser, reflections_and_experiments_from_
 from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
-    TOFAbsorptionParams,
-    TOFIncidentSpectrumParams,
     TOFProfile1DParams,
     TOFProfile3DParams,
-    extract_shoeboxes_to_reflection_table,
     integrate_reflection_table,
     tof_calculate_ellipse_shoebox_mask,
     tof_calculate_seed_skewness_shoebox_mask,
+)
+from dials_tof_scaling_ext import (
+    TOFAbsorptionParams,
+    TOFIncidentSpectrumParams,
+    tof_extract_shoeboxes_to_reflection_table,
 )
 
 logger = logging.getLogger("dials.command_line.simple_integrate")
@@ -718,10 +720,8 @@ def run_integrate(params, experiments, reflections):
         expt_reflections = predicted_reflections.select(sel_expt)
 
         logger.info("    Extracting shoeboxes")
-        extract_shoeboxes_to_reflection_table(
-            expt_reflections,
-            expt,
-            expt_data,
+        tof_extract_shoeboxes_to_reflection_table(
+            expt_reflections, expt, expt_data, False
         )
 
         expt_reflections = calculate_shoebox_masks(expt, expt_reflections, params.mask)
