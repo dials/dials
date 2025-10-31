@@ -351,14 +351,10 @@ def do_import(filename, load_models=True):
     logger.info("Loading %s", os.path.basename(filename))
     experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
     if len(experiments) == 0:
-        return experiments # horrible kludge
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
-            raise Abort(f"Could not load {filename}")
-
-    if len(experiments) == 0:
-        raise Abort(f"Could not load {filename}")
+            pass
 
     from dxtbx.imageset import ImageSetFactory
 
