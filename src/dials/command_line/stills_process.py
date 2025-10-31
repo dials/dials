@@ -786,7 +786,16 @@ class Script:
                     copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
                 )
 
-                if rank == 2:
+                if any(os.path.splitext(p)[1].lower() == '.loc' for p in all_paths):
+                    import psana
+                    if getattr(psana, 'xtc_version', None) == 2:
+                        root = 2 # psana2 uses ranks 0 and 1
+                    else:
+                        root = 0
+                else:
+                    root = 0
+
+                if rank == root:
                     # server process
                     num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
@@ -798,33 +807,25 @@ class Script:
                             continue
 
                         print("Getting next available process")
-                        while True:
-                            rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                            if rankreq > 2: # horrible
-                                print(f"Process {rankreq} is ready, sending {item[0]}\n")
-                                comm.send(item, dest=rankreq)
-                                break
-                            #else:
-                            #    print("Sending stop to %d\n" % rankreq)
-                            #    comm.send("endrun", dest=rankreq)
+                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                        print(f"Process {rankreq} is ready, sending {item[0]}\n")
+                        comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
-                    #for rankreq in range(size - 1):
-                    for rankreq in range(3, size): # horrible
+                    for rankreq in range(root+1, size):
                         rank = comm.recv(source=rankreq)
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                elif rank > 2:
-                #else:
+                elif rank > root:
                     # client process
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
-                        comm.send(rank, dest=2) #horrible
+                        comm.send(rank, dest=root)
                         print("Rank %d waiting for response" % rank)
-                        item = comm.recv(source=2) #horrible
+                        item = comm.recv(source=root)
                         print(f'receiving item: {rank=} {item=}')
                         if item == "endrun":
                             print("Rank %d received endrun" % rank)
@@ -838,9 +839,6 @@ class Script:
                                 str(e),
                             )
                         print("Rank %d event processed" % rank)
-                else:
-                    pass
-                print(f'about to finalize with {rank=}')
                 processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
