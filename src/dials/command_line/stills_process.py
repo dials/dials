@@ -253,6 +253,9 @@ def _dials_phil_str():
         n_attempts_per_step = 1
           .type = int
           .help = How many attempts to make at each step
+        seed = 42
+          .type = int
+          .help = Random seed for sub-sampling
       }
       known_orientations = None
         .type = path
@@ -318,7 +321,6 @@ refinement {
   }
   reflections {
     weighting_strategy.override = stills
-    outlier.algorithm = null
   }
 }
 integration {
@@ -1254,6 +1256,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         if not indexing_succeeded:
             if self.params.indexing.stills.reflection_subsampling.enable:
+                flex.set_random_seed(
+                    self.params.indexing.stills.reflection_subsampling.seed
+                )
                 subsets = range(
                     self.params.indexing.stills.reflection_subsampling.step_start,
                     self.params.indexing.stills.reflection_subsampling.step_stop
@@ -1920,6 +1925,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()
         print(f'end of finalize for {rank=}')
+        if self.debug_file_handle:
+            self.debug_file_handle
+            del self.debug_file_handle
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):

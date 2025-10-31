@@ -334,7 +334,11 @@ class Indexer:
             "auto",
             libtbx.Auto,
         ):
-            if self.experiments[0].goniometer is None:
+            if (
+                self.experiments[0].goniometer is None
+                or self.experiments[0].scan is None
+                or self.experiments[0].scan.is_still()
+            ):
                 self.all_params.refinement.reflections.outlier.algorithm = "sauter_poon"
             else:
                 # different default to dials.refine
@@ -420,7 +424,7 @@ class Indexer:
 
             if use_stills_indexer:
                 # Ensure the indexer and downstream applications treat this as set of stills
-                from dxtbx.imageset import ImageSet  # , MemImageSet
+                from dxtbx.imageset import ImageSet
 
                 for experiment in experiments:
                     # Elsewhere, checks are made for ImageSequence when picking between algorithms
@@ -431,11 +435,6 @@ class Indexer:
                         experiment.imageset = ImageSet(
                             experiment.imageset.data(), experiment.imageset.indices()
                         )
-                    # if isinstance(imageset, MemImageSet):
-                    #   imageset = MemImageSet(imagesequence._images, imagesequence.indices())
-                    # else:
-                    #   imageset = ImageSet(imagesequence.reader(), imagesequence.indices())
-                    #   imageset._models = imagesequence._models
                     experiment.imageset.set_scan(None)
                     experiment.imageset.set_goniometer(None)
                     experiment.scan = None
@@ -890,8 +889,10 @@ class Indexer:
                     z.set_selected(z < min(tof), min(tof))
                     z.set_selected(z > max(tof), max(tof))
                     z_px = flex.double(tof_to_frame(z))
-                else:
+                elif expt.scan.has_property("oscillation"):
                     z_px = expt.scan.get_array_index_from_angle(z, deg=False)
+                else:
+                    z_px = z
             else:
                 # must be a still image, z centroid not meaningful
                 z_px = z

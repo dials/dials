@@ -913,6 +913,7 @@ class CentroidAnalyser:
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
         mask = I_over_S > threshold
+        mask &= ~rlist.get_flags(rlist.flags.not_suitable_for_refinement)
         if mask.count(True) == 0:
             return {}
         rlist = rlist.select(mask)

@@ -90,3 +90,43 @@ def test_from_xds_files(dials_data, tmp_path):
 
     assert (tmp_path / "xds_models.expt").is_file()
     assert (tmp_path / "integrate_hkl.refl").is_file()
+
+
+def test_from_xds_files_new(dials_data, tmp_path):
+    # Import from more recent processed data.
+    result = subprocess.run(
+        [
+            shutil.which("dials.import_xds"),
+            dials_data("insulin_processed_xds_1", pathlib=True),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    assert (tmp_path / "xds_models.expt").is_file()
+    assert (tmp_path / "integrate_hkl.refl").is_file()
+
+    # also use this as an opportunity to test mmcif export
+    # of this data ends with the correct citation.
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            tmp_path / "xds_models.expt",
+            tmp_path / "integrate_hkl.refl",
+            "format=mmcif",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "integrated.cif").is_file()
+
+    expected_phrase = "Data integration with the XDS package"
+    with open(tmp_path / "integrated.cif", "r") as f:
+        for line in f.readlines():
+            if expected_phrase in line:
+                return
+        # reached end and wasn't found
+        assert False, "Expected phrase not in integrated.cif"
