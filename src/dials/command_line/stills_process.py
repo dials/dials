@@ -786,10 +786,11 @@ class Script:
                     copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
                 )
 
-                if any(os.path.splitext(p)[1].lower() == '.loc' for p in all_paths):
+                if any(os.path.splitext(p)[1].lower() == ".loc" for p in all_paths):
                     import psana
-                    if getattr(psana, 'xtc_version', None) == 2:
-                        root = 2 # psana2 uses ranks 0 and 1
+
+                    if getattr(psana, "xtc_version", None) == 2:
+                        root = 2  # psana2 uses ranks 0 and 1
                     else:
                         root = 0
                 else:
@@ -812,7 +813,7 @@ class Script:
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
-                    for rankreq in range(root+1, size):
+                    for rankreq in range(root + 1, size):
                         rank = comm.recv(source=rankreq)
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
@@ -826,7 +827,7 @@ class Script:
                         comm.send(rank, dest=root)
                         print("Rank %d waiting for response" % rank)
                         item = comm.recv(source=root)
-                        print(f'receiving item: {rank=} {item=}')
+                        print(f"receiving item: {rank=} {item=}")
                         if item == "endrun":
                             print("Rank %d received endrun" % rank)
                             break
