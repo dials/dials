@@ -1534,7 +1534,8 @@ namespace dials { namespace algorithms {
                                       background_var_3d,
                                       profile_params_3d,
                                       I_prf,
-                                      profile_3d_out);
+                                      profile_3d_out,
+                                      true);
     } else {
       profile_success = false;
     }
@@ -1581,7 +1582,8 @@ namespace dials { namespace algorithms {
                                       tof_z_out.const_ref(),
                                       profile_params_1d,
                                       I_prf,
-                                      line_profile_out);
+                                      line_profile_out,
+                                      true);
 
     } else {
       profile_success = false;
@@ -1898,7 +1900,8 @@ namespace dials { namespace algorithms {
                                       tof_z_out.const_ref(),
                                       profile_params_1d,
                                       I_prf,
-                                      line_profile_out);
+                                      line_profile_out,
+                                      true);
 
     } else {
       profile_success = false;
@@ -2254,7 +2257,8 @@ namespace dials { namespace algorithms {
                                       tof_z_out.const_ref(),
                                       profile_params_1d,
                                       I_prf,
-                                      line_profile_out);
+                                      line_profile_out,
+                                      true);
 
     } else {
       profile_success = false;

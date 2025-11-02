@@ -90,7 +90,16 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def_readwrite("optimize_profile", &TOFProfile1DParams::optimize_profile);
 
     class_<TOFProfile3DParams>("TOFProfile3DParams", no_init)
-      .def(init<double, double, double, double, double, double, int, bool>());
+      .def(init<double, double, double, double, double, double, int, bool, bool>())
+      .def_readwrite("alpha", &TOFProfile3DParams::alpha)
+      .def_readwrite("alpha_min", &TOFProfile3DParams::alpha_min)
+      .def_readwrite("alpha_max", &TOFProfile3DParams::alpha_max)
+      .def_readwrite("beta", &TOFProfile3DParams::beta)
+      .def_readwrite("beta_min", &TOFProfile3DParams::beta_min)
+      .def_readwrite("beta_max", &TOFProfile3DParams::beta_max)
+      .def_readwrite("n_restarts", &TOFProfile3DParams::n_restarts)
+      .def_readwrite("optimize_profile", &TOFProfile3DParams::optimize_profile)
+      .def_readwrite("use_central_diff", &TOFProfile3DParams::use_central_diff);
 
     def("tof_calculate_ellipse_shoebox_mask",
         &tof_calculate_ellipse_shoebox_mask,

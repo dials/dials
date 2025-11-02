@@ -95,42 +95,30 @@ namespace dials { namespace algorithms {
     return out;
   }
 
-  // Eigen Functor wrapper
-  template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
-  struct Functor {
-    typedef _Scalar Scalar;
-    enum { InputsAtCompileTime = NX, ValuesAtCompileTime = NY };
-    typedef Eigen::Matrix<Scalar, InputsAtCompileTime, 1> InputType;
-    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
-    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime>
-      JacobianType;
-
-    int m_inputs, m_values;
-    Functor() : m_inputs(InputsAtCompileTime), m_values(ValuesAtCompileTime) {}
-    Functor(int inputs, int values) : m_inputs(inputs), m_values(values) {}
-    int inputs() const {
-      return m_inputs;
-    }
-    int values() const {
-      return m_values;
-    }
-  };
-
-  struct TOFProfileFunctor : Functor<double> {
+  struct TOFProfileFunctor {
     scitbx::af::const_ref<double> tof;
     scitbx::af::const_ref<double> y_norm;  // Assumed normalized
     std::array<double, 5> min_bounds;      // parameter bounds
     std::array<double, 5> max_bounds;      // parameter bounds
+    int num_data_points, num_params;
 
     TOFProfileFunctor(scitbx::af::const_ref<double> tof_,
                       scitbx::af::const_ref<double> y_norm_,
                       const std::array<double, 5>& minb,
                       const std::array<double, 5>& maxb)
-        : Functor<double>(5, static_cast<int>(tof_.size())),
-          tof(tof_),
-          y_norm(y_norm_) {
+        : tof(tof_), y_norm(y_norm_) {
       min_bounds = minb;
       max_bounds = maxb;
+      num_data_points = tof.size();
+      num_params = 5;
+    }
+
+    int values() const {
+      return num_data_points;
+    }
+
+    int inputs() const {
+      return num_params;
     }
 
     inline Eigen::VectorXd clamp_params(const Eigen::VectorXd& x) const {
@@ -151,37 +139,42 @@ namespace dials { namespace algorithms {
 
       scitbx::af::shared<double> model =
         profile1d_func(tof, A, alpha, beta, sigma, T_ph);
-      assert(model.size() == static_cast<size_t>(values()));
-      for (int i = 0; i < values(); ++i) {
+      assert(model.size() == num_data_points);
+      for (int i = 0; i < num_data_points; ++i) {
         fvec[i] = y_norm[i] - model[i];
       }
       return 0;
     }
 
     int df(const Eigen::VectorXd& x, Eigen::MatrixXd& J) const {
-      // Gradients calculated using finite (central) difference
-
       const double eps = 1e-5;
       Eigen::VectorXd xc = clamp_params(x);
-      int p = inputs();
-      int m = values();
+      J.resize(num_data_points, num_params);
 
-      Eigen::VectorXd f0(m);
-      operator()(xc, f0);
+      for (int j = 0; j < num_params; ++j) {
+        // Perturb param
+        double delta = eps * std::max(1.0, std::abs(xc[j]));
+        Eigen::VectorXd xp = xc, xm = xc;
+        xp[j] += delta;
+        xm[j] -= delta;
 
-      for (int j = 0; j < p; ++j) {
-        Eigen::VectorXd xp = xc;
-        Eigen::VectorXd xm = xc;
-        double step = (std::abs(xc[j]) + 1.0) * eps;
-        xp[j] += step;
-        xm[j] -= step;
-        Eigen::VectorXd fp(m), fm(m);
-        operator()(xp, fp);
-        operator()(xm, fm);
-        for (int i = 0; i < m; ++i) {
-          J(i, j) = (fp[i] - fm[i]) / (2.0 * step);
+        Eigen::VectorXd xpc = clamp_params(xp);
+        Eigen::VectorXd xmc = clamp_params(xm);
+
+        double step = xpc[j] - xmc[j];
+        if (std::abs(step) < 1e-14) {
+          J.col(j).setZero();
+          continue;
         }
+
+        Eigen::VectorXd fp(num_data_points), fm(num_data_points);
+        operator()(xpc, fp);
+        operator()(xmc, fm);
+
+        // Central difference
+        J.col(j) = (fp - fm) / step;
       }
+
       return 0;
     }
   };
@@ -327,8 +320,14 @@ namespace dials { namespace algorithms {
     }
 
     double calc_intensity() const {
+      /**
+       * Get overall intensity with Simpsons rule then divide by mean_dt to
+       * approximate summation scale
+       */
+
       scitbx::af::shared<double> r = result();
-      return simpson_integrate(r.const_ref(), tof);
+      double mean_dt = (tof[tof.size() - 1] - tof[0]) / (tof.size() - 1);
+      return simpson_integrate(r.const_ref(), tof) / mean_dt;
     }
 
     std::size_t get_max_profile_index() {
@@ -372,12 +371,10 @@ namespace dials { namespace algorithms {
         int result = lm.minimize(x);
         if (result < 0) return false;
 
-        // Clamp final params to bounds
-        for (int i = 0; i < 5; ++i)
-          x[i] = std::min(std::max(x[i], min_bounds[i]), max_bounds[i]);
+        x = functor.clamp_params(x);
 
         // Compute residual norm
-        Eigen::VectorXd fvec(functor.values());
+        Eigen::VectorXd fvec(functor.num_data_points);
         final_error = fvec.squaredNorm();
 
         // Update fitted parameters
@@ -439,23 +436,19 @@ namespace dials { namespace algorithms {
       /*
        * Tests to check the fit is reasonable
        */
-
       if (!std::isfinite(error) || error <= 0.0) {
         return false;
       }
-
-      // Check reasonable values
+      // Check reasonable intensity
       if (I_prf < 1e-7) {
         return false;
       }
-
       // Check peak position close to data peak
       if (std::abs(static_cast<int>(max_sum_index)
                    - static_cast<int>(max_profile_index))
           > 3) {
         return false;
       }
-
       // Check peak isn't very flat
       auto m = result();
       double max_val = *std::max_element(m.begin(), m.end());
@@ -464,7 +457,6 @@ namespace dials { namespace algorithms {
       if (contrast < 0.1) {
         return false;
       }
-
       // Check correlation with data
       double profile_peak, data_peak;
       double num = 0, denom_y = 0, denom_m = 0;
@@ -481,6 +473,7 @@ namespace dials { namespace algorithms {
         denom_y += y * y;
         denom_m += p * p;
       }
+
       double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
       if (corr < 0.9) {
         return false;
@@ -490,7 +483,6 @@ namespace dials { namespace algorithms {
       if (std::abs(profile_peak - data_peak) > data_peak * 0.1) {
         return false;
       }
-
       return true;
     }
   };
@@ -500,7 +492,14 @@ namespace dials { namespace algorithms {
     scitbx::af::const_ref<double> tof_z,
     TOFProfile1DParams& profile_params,
     double& I_prf_out,
-    boost::optional<scitbx::af::shared<double>> line_profile_out = boost::none) {
+    boost::optional<scitbx::af::shared<double>> line_profile_out = boost::none,
+    bool update_params = false) {
+    /**
+     * Wrapper for fitting a given reflection
+     * If lin_profile_out is provided the profile is returned at every
+     * position in tof_z
+     */
+
     // Get T_ph (peak position)
     auto max_it =
       std::max_element(projected_intensity.begin(), projected_intensity.end());
@@ -529,9 +528,11 @@ namespace dials { namespace algorithms {
     }
 
     if (profile_success) {
-      profile_params.alpha = profile.alpha;
-      profile_params.beta = profile.beta;
-      profile_params.A = profile.A;
+      if (update_params) {
+        profile_params.alpha = profile.alpha;
+        profile_params.beta = profile.beta;
+        profile_params.A = profile.A;
+      }
       double I_prf = profile.calc_intensity();
       auto profile_result = profile.result();
       DIALS_ASSERT(projected_intensity.size() == profile_result.size());

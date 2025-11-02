@@ -164,21 +164,24 @@ profile3d{
     init_beta = 0.1
         .type = float
         .help = "Initial beta value before optimization"
-    min_alpha = 1.0
+    min_alpha = 0.5
         .type = float
         .help = "Min alpha value for optimization"
-    max_alpha = 10.
+    max_alpha = 20.
         .type = float
         .help = "Max alpha value for optimization"
-    min_beta = 0.0001
+    min_beta = 1e-7
         .type = float
         .help = "Min beta value for optimization"
-    max_beta = 2.0
+    max_beta = 5.0
         .type = float
         .help = "Max beta value for optimization"
     n_restarts = 8
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
+    gradient_method = *forward_difference central_difference
+        .type = choice
+        .help = "Method used to calculate gradients"
 }
 
 mp{
@@ -294,8 +297,17 @@ def integrate_reflection_table_for_experiment(
         min_beta = params.profile3d.min_beta
         max_beta = params.profile3d.max_beta
         n_restarts = params.profile3d.n_restarts
+        use_central_diff = params.profile3d.gradient_method == "central_difference"
         profile3d_params = TOFProfile3DParams(
-            alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts, True
+            alpha,
+            min_alpha,
+            max_alpha,
+            beta,
+            min_beta,
+            max_beta,
+            n_restarts,
+            True,
+            use_central_diff,
         )
 
     if apply_lorentz:

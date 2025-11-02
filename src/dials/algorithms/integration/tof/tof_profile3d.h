@@ -38,6 +38,7 @@ namespace dials { namespace algorithms {
     double beta_max;
     int n_restarts;         // number of attempts when fitting
     bool optimize_profile;  // If true the profile is generated with input params
+    bool use_central_diff;  // Use more expensive central differences for gradients
 
     TOFProfile3DParams(double alpha,
                        double alpha_min,
@@ -46,7 +47,8 @@ namespace dials { namespace algorithms {
                        double beta_min,
                        double beta_max,
                        int n_restarts,
-                       bool optimize_profile)
+                       bool optimize_profile,
+                       bool use_central_diff)
         : alpha(alpha),
           alpha_min(alpha_min),
           alpha_max(alpha_max),
@@ -54,35 +56,41 @@ namespace dials { namespace algorithms {
           beta_min(beta_min),
           beta_max(beta_max),
           n_restarts(n_restarts),
-          optimize_profile(optimize_profile) {}
+          optimize_profile(optimize_profile),
+          use_central_diff(use_central_diff) {}
   };
 
   struct GutmannProfileFunctor {
-    const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords;
-    scitbx::af::shared<double> dt_widths;
+    const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords;  // (x,y,z)
+    scitbx::af::shared<double> dt_widths;                         //(μs)
     const scitbx::af::versa<double, af::c_grid<3>> intensities;
     const scitbx::af::versa<double, af::c_grid<3>> background_variances;
-    mutable Eigen::VectorXd last_params;  // size 3 or full param vector
+    mutable Eigen::VectorXd last_params;
     mutable double cached_norm = 1.0;
     mutable double cached_A = 1.0;
     mutable bool cache_valid = false;
     std::array<double, 8> min_bounds;
     std::array<double, 8> max_bounds;
-    int m, n;
+    int num_data_points, num_params;
+    bool use_central_diff;
 
     GutmannProfileFunctor(
       const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords_,
       const scitbx::af::versa<double, af::c_grid<3>> intensities_,
       const scitbx::af::versa<double, af::c_grid<3>> background_variances_,
       const std::array<double, 8>& minb,
-      const std::array<double, 8>& maxb)
+      const std::array<double, 8>& maxb,
+      bool use_central_diff_)
         : coords(coords_),
           intensities(intensities_),
-          background_variances(background_variances_) {
+          background_variances(background_variances_),
+          use_central_diff(use_central_diff_) {
       min_bounds = minb;
       max_bounds = maxb;
-      m = coords.size();  // Num data points
-      n = 8;              // Num params
+      num_data_points = coords.size();
+      num_params = 8;
+      last_params =
+        Eigen::VectorXd::Constant(8, std::numeric_limits<double>::quiet_NaN());
 
       dt_widths.resize(coords_.accessor()[2]);
       dt_widths[0] = 1.;
@@ -91,11 +99,12 @@ namespace dials { namespace algorithms {
       }
     }
 
-    int inputs() const {
-      return n;
-    }
     int values() const {
-      return m;
+      return num_data_points;
+    }
+
+    int inputs() const {
+      return num_params;
     }
 
     inline Eigen::VectorXd clamp_params(const Eigen::VectorXd& x) const {
@@ -126,6 +135,12 @@ namespace dials { namespace algorithms {
                 double A_,
                 double norm_factor,
                 double dt_width) const {
+      /**
+       * func used to generate the actual profile
+       * (Numbers) refer to equations in
+       * https://doi.org/10.1016/j.nima.2016.12.026
+       */
+
       double dx = c[0], dy = c[1], dt = c[2];
 
       double H1 = H(0, 0), H2 = H(0, 1), H3 = H(0, 2);
@@ -134,9 +149,9 @@ namespace dials { namespace algorithms {
       double a = alpha;
       double b = beta;
 
-      double N = (a * b) / (2.0 * (a + b));
+      double N = (a * b) / (2.0 * (a + b));  // (5)
       double detH = std::max(H.determinant(), 1e-12);
-      double Ng = std::sqrt(detH) / std::pow(2.0 * M_PI, 1.5);
+      double Ng = std::sqrt(detH) / std::pow(2.0 * M_PI, 1.5);  // (3)
       double f1 = N * Ng * std::sqrt(M_PI / (2.0 * H6));
 
       double u = 0.5 * a * (a + 2.0 * H6 * dt + 2.0 * H3 * dx + 2.0 * H5 * dy);
@@ -172,13 +187,16 @@ namespace dials { namespace algorithms {
 
       double f3 = F_tof(dt_hi) - F_tof(dt_lo);
 
-      double result = A_ * (f1 * f2 * f3 / norm_factor);
+      double result = A_ * (f1 * f2 * f3 / norm_factor);  // (6)
       if (!std::isfinite(result)) result = 0.0;
       return result;
     }
 
     double get_norm_factor(Eigen::Matrix3d H, double alpha, double beta) const {
-      const std::size_t n = coords.size();
+      /**
+       * Numerical normalisation constant to ensure integration sums to 1
+       */
+
       double sum = 0;
       scitbx::af::versa<double, af::c_grid<3>> out(coords.accessor());
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
@@ -196,7 +214,13 @@ namespace dials { namespace algorithms {
                   double alpha,
                   double beta,
                   double norm_factor) const {
-      std::vector<double> P(m);
+      /**
+       * Obtain A directly with least squares
+       * rather than optimize with other params.
+       * Background variance is used as a weighting term
+       */
+
+      std::vector<double> P(num_data_points);
       int count = 0;
       const double eps = 1e-6;
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
@@ -211,13 +235,14 @@ namespace dials { namespace algorithms {
 
       double num = 0.0, den = 0.0;
 
-      for (size_t i = 0; i < m; ++i) {
+      for (size_t i = 0; i < num_data_points; ++i) {
         double obs = intensities[i];
         double var = background_variances[i];
         if (!std::isfinite(var) || var <= 0.0) var = std::max(obs, 1e-6);
         double w = 1.0 / var;
-        num += w * obs * P[i];
-        den += w * P[i] * P[i];
+        double p_i = P[i];
+        num += w * obs * p_i;
+        den += w * p_i * p_i;
       }
 
       double A = (den > 0.0) ? (num / den) : 0.0;
@@ -231,8 +256,9 @@ namespace dials { namespace algorithms {
       double alpha = std::exp(xc[6]);
       double beta = std::exp(xc[7]);
 
-      Eigen::VectorXd current_params(3);
-      current_params << H(0, 0), alpha, beta;
+      Eigen::VectorXd current_params(8);
+      current_params << H(0, 0), H(0, 1), H(0, 2), H(1, 1), H(1, 2), H(2, 2), alpha,
+        beta;
 
       // Update A and norm factors if params have changed
       if (!cache_valid || (current_params - last_params).cwiseAbs().maxCoeff() > 1e-6) {
@@ -244,10 +270,10 @@ namespace dials { namespace algorithms {
       double norm_factor = cached_norm;
       double A = cached_A;
 
-      const std::size_t npts = coords.size();
-      fvec.resize(npts);
+      fvec.resize(num_data_points);
 
-      std::vector<double> P(m);
+      // Calculate residuals
+      std::vector<double> P(num_data_points);
       double eps = 1e-8;
       int count = 0;
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
@@ -271,33 +297,72 @@ namespace dials { namespace algorithms {
       return 0;
     }
 
-    int df(const Eigen::VectorXd& x, Eigen::MatrixXd& fjac) const {
-      int m = coords.size();
-      int n = x.size();
-      fjac.resize(m, n);
+    int df(const Eigen::VectorXd& x, Eigen::MatrixXd& J) const {
+      /**
+       * Finite difference using forward or central difference
+       */
 
-      Eigen::VectorXd f0(m);
-      operator()(x, f0);
+      J.resize(num_data_points, num_params);
 
       double eps = 1e-5;
-      for (int j = 0; j < n; ++j) {
-        double delta = eps * std::max(1.0, std::abs(x[j]));
-        Eigen::VectorXd xh = x;
-        xh[j] += delta;
-        Eigen::VectorXd fh(m);
-        operator()(xh, fh);
-        fjac.col(j) = (fh - f0) / delta;
+      Eigen::VectorXd xc = clamp_params(x);  // init clamped params
+      Eigen::VectorXd f0(num_data_points);
+      operator()(xc, f0);
+
+      for (int j = 0; j < num_params; ++j) {
+        // Perturb param
+        Eigen::VectorXd xp = xc;  // params + delta
+        Eigen::VectorXd xm = xc;  // params - delta
+        double delta = eps * std::abs(1.0 + std::abs(xc[j]));
+        xp[j] += delta;
+        xm[j] -= delta;
+
+        Eigen::VectorXd xpc = clamp_params(xp);  // params + delta clamped
+        Eigen::VectorXd xmc = clamp_params(xm);  // params - delta clamped
+
+        // Handle parameters at boundaries
+        bool at_upper_bound = std::abs(xpc[j] - xc[j]) < 1e-14;
+        bool at_lower_bound = std::abs(xmc[j] - xc[j]) < 1e-14;
+
+        if (use_central_diff && !at_upper_bound && !at_lower_bound) {
+          // Central difference
+          Eigen::VectorXd fp(num_data_points), fm(num_data_points);
+          operator()(xpc, fp);
+          operator()(xmc, fm);
+          double step = xpc[j] - xmc[j];
+          if (std::abs(step) < 1e-14) {
+            J.col(j).setZero();
+            continue;
+          }
+          J.col(j) = (fp - fm) / step;
+        } else {
+          // Forward difference
+          Eigen::VectorXd fp(num_data_points);
+          operator()(xpc, fp);
+          double step = xpc[j] - xc[j];
+          if (std::abs(step) < 1e-14) {
+            J.col(j).setZero();
+            continue;
+          }
+          J.col(j) = (fp - f0) / step;
+        }
       }
+
       return 0;
     }
   };
 
   class GutmannProfile3D {
   public:
+    // Coords in ToF
     const scitbx::af::versa<vec3<double>, af::c_grid<3>> coords;
+    // Raw intensities
     const scitbx::af::versa<double, af::c_grid<3>> intensities;
+    // Background variances used for weights during optimization
     const scitbx::af::versa<double, af::c_grid<3>> background_variances;
+    // Intensities with no negative values
     scitbx::af::versa<double, af::c_grid<3>> y_norm;
+    // Number of attempts at fitting
     int n_restarts;
     double intensity_max;
     boost::optional<GutmannProfileFunctor> functor;
@@ -314,7 +379,8 @@ namespace dials { namespace algorithms {
       double beta,
       const std::array<double, 2> alpha_bounds,
       const std::array<double, 2> beta_bounds,
-      int n_restarts_)
+      int n_restarts_,
+      bool use_central_diff)
         : coords(get_rel_coords(coords_, intensities_)),
           intensities(intensities_),
           background_variances(background_variances_),
@@ -382,12 +448,10 @@ namespace dials { namespace algorithms {
       double l32 = Linv(2, 1);
       double l33 = Linv(2, 2);
 
+      // Params are stored in log space for smoother optimization
       params.resize(8);
       params << std::log(l11), l21, l31, std::log(l22), l32, std::log(l33),
         std::log(alpha), std::log(beta);
-      // std::cout << "TEST params l11: " << l11 << ", l21: " << l21 << ", l31: " << l31
-      //           << ", l22: " << l22 << ", l32: " << l32 << ", l33: " << l33
-      //           << ", alpha: " << alpha << " , beta: " << beta << std::endl;
 
       min_bounds = {std::log(1e-6),
                     -1e2,
@@ -410,14 +474,18 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(alpha >= alpha_bounds[0] && alpha <= alpha_bounds[1]);
       DIALS_ASSERT(beta >= beta_bounds[0] && beta <= beta_bounds[1]);
 
-      functor.emplace(coords, y_norm, background_variances, min_bounds, max_bounds);
+      functor.emplace(
+        coords, y_norm, background_variances, min_bounds, max_bounds, use_central_diff);
     }
 
     scitbx::af::versa<vec3<double>, af::c_grid<3>> get_rel_coords(
       scitbx::af::const_ref<vec3<double>, af::c_grid<3>> coords_,
       const scitbx::af::versa<double, af::c_grid<3>> intensities_) {
-      double sumI = 0.0;
+      /**
+       * Calculates coords relative to the coordinate of the peak intensity
+       */
 
+      // Get max intensity
       double max_intensity = -1.;
       std::size_t coord_idx = 0;
       for (std::size_t i = 0; i < intensities_.size(); ++i) {
@@ -427,10 +495,10 @@ namespace dials { namespace algorithms {
           max_intensity = w;
           coord_idx = i;
         }
-        sumI += w;
       }
-      vec3<double> peak = coords_[coord_idx];
+
       // Shift coordinates relative to peak
+      vec3<double> peak = coords_[coord_idx];
       scitbx::af::versa<vec3<double>, af::c_grid<3>> rel_coords(coords_.accessor());
       for (std::size_t i = 0; i < coords_.size(); ++i) {
         rel_coords[i] = vec3<double>(
@@ -440,10 +508,22 @@ namespace dials { namespace algorithms {
       return rel_coords;
     }
 
+    // Alpha and beta are optimized in log-space
+    double get_alpha() const {
+      return std::exp(params[6]);
+    }
+    double get_beta() const {
+      return std::exp(params[7]);
+    }
+
     scitbx::af::versa<double, af::c_grid<3>> result() const {
+      /**
+       * Returns the profile for all coords
+       */
+
       Eigen::Matrix3d H = functor->build_H_from_L(params);
-      double alpha = std::exp(params[6]);
-      double beta = std::exp(params[7]);
+      double alpha = get_alpha();
+      double beta = get_beta();
 
       double norm_factor = functor->cached_norm;
       double A = functor->cached_A;
@@ -468,6 +548,11 @@ namespace dials { namespace algorithms {
     }
 
     double calc_intensity() const {
+      /**
+       * Intensity calculated as a sum as the functional form
+       * is integrable analytically
+       */
+
       scitbx::af::versa<double, af::c_grid<3>> r = result();
 
       const auto& acc = r.accessor();
@@ -486,6 +571,12 @@ namespace dials { namespace algorithms {
     }
 
     bool fit(int maxfev = 200, double xtol = 1e-8, double ftol = 1e-8) {
+      /*
+       * Least-squares minimization
+       * Updates alpha, beta, H
+       * If fitting fails, params are perturbed n_restarts to find a solution
+       */
+
       typedef Eigen::LevenbergMarquardt<GutmannProfileFunctor, double> LM;
 
       auto run_single_fit = [&](const Eigen::VectorXd& x_init,
@@ -503,6 +594,8 @@ namespace dials { namespace algorithms {
         if (result < 0) return false;
 
         x = functor->clamp_params(x);
+
+        // Compuate residual norm
         Eigen::VectorXd fvec(functor->intensities.size());
         (*functor)(x, fvec);
         final_error = fvec.squaredNorm();
@@ -525,24 +618,40 @@ namespace dials { namespace algorithms {
         }
       }
 
+      // Initial fit failed
       // Perturb initial params
+
       std::mt19937 rng(std::random_device{}());
       std::uniform_real_distribution<double> unit_dist(0.0, 1.0);
+      std::normal_distribution<double> norm_dist(0.0, 0.5);
 
       for (int i = 0; i < n_restarts; ++i) {
-        Eigen::VectorXd x_try(8);
+        Eigen::VectorXd x_try = x0;
 
-        double scale_factor = 0.5 + unit_dist(rng);
-        for (int j = 0; j < 6; ++j) {
-          x_try[j] = x0[j] * scale_factor;
+        // H values should be correlated, so try scaling first
+        if (i < n_restarts / 3) {
+          // Small H scale perturbations
+          for (int j = 0; j < 6; ++j) {
+            double perturb = 0.8 + 0.4 * unit_dist(rng);
+            x_try[j] += std::log(perturb);
+          }
+        } else if (i < 2 * n_restarts / 3) {
+          // Larger H scale perturbations
+          double scale = 0.5 + 1.5 * unit_dist(rng);
+          for (int j = 0; j < 6; ++j)
+            x_try[j] += std::log(scale);
+        } else {
+          // Random perturbations of H
+          for (int j = 0; j < 6; ++j)
+            x_try[j] = min_bounds[j] + unit_dist(rng) * (max_bounds[j] - min_bounds[j]);
         }
 
+        // alpa, beta perturbations
         for (int j = 6; j < 8; ++j) {
-          double span = max_bounds[j] - min_bounds[j];
-          double rand_frac = (unit_dist(rng) - 0.5) * 0.1;
-          double perturbed = x0[j] + rand_frac * span;
-          x_try[j] = std::max(min_bounds[j], std::min(perturbed, max_bounds[j]));
+          x_try[j] = x0[j] + norm_dist(rng);
         }
+
+        x_try = functor->clamp_params(x_try);
 
         success = run_single_fit(x_try, fit_resid);
         if (!success) continue;
@@ -556,21 +665,22 @@ namespace dials { namespace algorithms {
     }
 
     bool trust_result(double error, double I_prf) const {
-      /*
+      /**
        * Tests to check the fit is reasonable
        */
 
+      // Check reasonable error
       if (!std::isfinite(error) || error <= 0.0) {
         return false;
       }
 
-      // Check reasonable values
+      // Check reasonable intensity
       if (I_prf < 1e-7) {
         return false;
       }
 
-      double alpha = std::exp(params[6]);
-      double beta = std::exp(params[7]);
+      double alpha = get_alpha();
+      double beta = get_beta();
 
       // Check positive H
       Eigen::Matrix3d H = functor->build_H_from_L(params);
@@ -579,20 +689,17 @@ namespace dials { namespace algorithms {
         return false;
       }
 
-      const double exp_limit = 1e50;
-      const double mean_limit = 1e20;
-
+      // Check all values sensible
+      const double exp_limit = 1e12;
+      const double mean_limit = 1e12;
       const auto& acc = coords.accessor();
       const std::size_t nx = acc[0];
       const std::size_t ny = acc[1];
       const std::size_t nz = acc[2];
-
       double profile_peak = 0, data_peak = 0, sum_val = 0;
       double num = 0, denom_y = 0, denom_m = 0;
       double norm_factor = functor->cached_norm;
       double A = functor->cached_A;
-
-      // Check all values sensible
       for (std::size_t ix = 0; ix < nx; ++ix) {
         for (std::size_t iy = 0; iy < ny; ++iy) {
           for (std::size_t iz = 0; iz < nz; ++iz) {
@@ -604,26 +711,21 @@ namespace dials { namespace algorithms {
                                        A,
                                        norm_factor,
                                        functor->dt_widths[iz]);
-
             if (!std::isfinite(val)) {
               return false;
             }
-
             data_peak = std::max(data_peak, data_val);
             profile_peak = std::max(profile_peak, val);
             sum_val += val;
-
             num += data_val * val;
             denom_y += data_val * data_val;
             denom_m += val * val;
-
             if (val > exp_limit) {
               return false;
             }
           }
         }
       }
-
       double mean_val = sum_val / coords.size();
       if (mean_val > mean_limit) {
         return false;
@@ -631,15 +733,14 @@ namespace dials { namespace algorithms {
 
       // Check correlation with data
       double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
-      if (corr < 0.9) {
+      if (corr < 0.75) {
         return false;
       }
 
-      // Check peak height is within 10% of data peak
-      if (std::abs(profile_peak - data_peak) > data_peak * 0.1) {
+      // Check peak height is within 25% of data peak
+      if (std::abs(profile_peak - data_peak) > data_peak * 0.25) {
         return false;
       }
-
       return true;
     }
   };
@@ -651,7 +752,14 @@ namespace dials { namespace algorithms {
     TOFProfile3DParams& profile_params,
     double& I_prf_out,
     boost::optional<scitbx::af::versa<double, af::c_grid<3>>> profile_3d_out =
-      boost::none) {
+      boost::none,
+    bool update_params = false) {
+    /**
+     * Wrapper for fitting a given reflection
+     * If profile_3d_out is provided the profile is returned at every
+     * position in coords
+     */
+
     // Fit profile
     const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
                                                 profile_params.alpha_max};
@@ -665,7 +773,8 @@ namespace dials { namespace algorithms {
                              profile_params.beta,
                              alpha_bounds,
                              beta_bounds,
-                             profile_params.n_restarts);
+                             profile_params.n_restarts,
+                             profile_params.use_central_diff);
 
     bool profile_success = true;
     if (profile_params.optimize_profile) {
@@ -675,6 +784,11 @@ namespace dials { namespace algorithms {
     if (profile_success) {
       double I_prf = profile.calc_intensity();
       I_prf_out = I_prf;
+
+      if (update_params) {
+        profile_params.alpha = profile.get_alpha();
+        profile_params.beta = profile.get_beta();
+      }
       if (!profile_3d_out) {
         return profile_success;
       }
