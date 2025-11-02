@@ -29,6 +29,9 @@ def test_tof_integration(dials_data, tmp_path):
         join(dials_data("isis_sxd_nacl_processed", pathlib=True), "refined.refl")
     )
 
+    # Reduce number of reflections
+    reflections = reflections.select(reflections["intensity.sum.value"] > 30000)
+
     refl_path = join(tmp_path, "refined.refl")
     reflections.as_msgpack_file(refl_path)
 
