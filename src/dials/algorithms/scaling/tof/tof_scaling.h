@@ -333,7 +333,7 @@ scitbx::af::shared<double> savitzky_golay(scitbx::af::shared<double> signal,
   std::vector<double> b(poly_order + 1, 0.0);
   b[0] = 1.0;
 
-  // Solve ATA * c = b using simple Gaussian elimination with pivoting
+  // Solve ATA * c = b using Gaussian elimination with pivoting
   int m = poly_order + 1;
   for (int i = 0; i < m; i++) {
     // Partial pivot

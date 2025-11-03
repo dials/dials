@@ -37,7 +37,7 @@ namespace dials { namespace algorithms {
     double beta_min;
     double beta_max;
     int n_restarts;         // number of attempts when fitting
-    bool optimize_profile;  // If true the profile is generated with input params
+    bool optimize_profile;  // If false the profile is generated with input params
     bool use_central_diff;  // Use more expensive central differences for gradients
 
     TOFProfile3DParams(double alpha,

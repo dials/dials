@@ -36,7 +36,7 @@ namespace dials { namespace algorithms {
     double beta_min;
     double beta_max;
     int n_restarts;         // number of attempts when fitting
-    bool optimize_profile;  // If true the profile is generated with input params
+    bool optimize_profile;  // If false the profile is generated with input params
 
     TOFProfile1DParams(double A,
                        double alpha,
@@ -496,7 +496,7 @@ namespace dials { namespace algorithms {
     bool update_params = false) {
     /**
      * Wrapper for fitting a given reflection
-     * If lin_profile_out is provided the profile is returned at every
+     * If line_profile_out is provided the profile is returned at every
      * position in tof_z
      */
 
