@@ -10,9 +10,9 @@ from collections import OrderedDict
 import numpy as np
 import optuna
 import scipy.spatial.distance as ssd
+from kDBCV import DBCV_score
 from scipy.cluster import hierarchy
 from sklearn.cluster import OPTICS
-from sklearn.metrics import davies_bouldin_score
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
@@ -59,18 +59,18 @@ significant_clusters {
   min_points_buffer = 0.5
     .type = float(value_min=0, value_max=1)
     .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer - INITIAL GUESS ONLY"
+  min_points = 5
+    .type = int
+    .help = "Set minimum number of points required for a cluster in OPTICS for custom clustering."
   xi = 0.05
     .type = float(value_min=0, value_max=1)
     .help = "xi parameter to determine min steepness to define cluster boundary"
-  noise_tolerance = 1.0
-    .type = float
-    .help = "multiplier to down-weight clustering results which contain lots of noise"
   max_distance = 0.5
     .type = float
     .help = "maximum distance away from cluster centre for a data point to be considered (max_eps)"
-  max_score = 2.0
-    .type = float
-    .help = "maximum allowed score for multiple clusters to be a valid solution (Davies-Bouldin + noise_tolerance * noise_ratio)"
+  optimise_input = True
+    .type = bool
+    .help = "Turn to false to use custom clustering parameters."
 }
 
 hierarchical_clustering {
@@ -374,8 +374,6 @@ class CorrelationMatrix:
         cosym_coords: np.ndarray,
         initial_min_samples: int = 5,
         xi: float = 0.05,
-        noise_tolerance: float = 1.0,
-        max_val: float = 2.0,
         max_eps: float = 0.5,
     ) -> tuple[int, np.float64, np.float64, np.ndarray, OPTICS]:
         """
@@ -384,27 +382,28 @@ class CorrelationMatrix:
             cosym_coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
             initial_min_samples(int): initial guess for the minimum number of datasets in a cluster
             xi(float): parameter to determine min steepness to define cluster boundary
-            noise_tolerance (float): penalty applied to overall score being minimised for presence of noise
-            max_val (float): largest score accepted for a multi-cluster solution to be accepted
             max_eps (float): furthest distance away from a core point another dataset can be considered in the cluster
 
         Returns:
             study.best_params["min_samples"](int): min_samples value that minimises the noise-weighted db-score
-            study.best_trial.user_attrs["db_score"](np.float64): db-score of the best trial or study.best_trial.user_attrs["reachability"](np.float64): median reachability if only one cluster present
-            study.best_trial.user_attrs["score"](np.float64): overall score including noise penalty
+            study.best_trial.user_attrs["dbcv_score"](np.float64): db-score of the best trial or study.best_trial.user_attrs["reachability"](np.float64): median reachability if only one cluster present
             study.best_trial.user_attrs["labels"](np.ndarray): OPTICS classification of cosym_coordinates from best trial
             study.best_trial.usser_attrs["model"](OPTICS): The OPTICS model from the best trial
         """
 
+        logger.info("Optimising Minimum Samples using OPTUNA.....")
+
         optuna.logging.set_verbosity(logging.WARNING)
 
-        sampler = optuna.samplers.RandomSampler(seed=42)
-
         def objective(trial: optuna.Trial) -> float:
-            # the min_samples parameter can really be anywhere from 5 to the total number of datasets
+            # the min_samples parameter can really be anywhere from 5 to the total number of datasets (though 50 is a sensible stopping point)
             # 5 as a base value recommended for OPTICS algorithm
 
-            min_samples = trial.suggest_int("min_samples", 5, len(cosym_coords))
+            logger.info(f"---Trial {trial.number}---")
+
+            min_samples = trial.suggest_int(
+                "min_samples", 5, min(len(cosym_coords), 50)
+            )
 
             # Calculate OPTICS clusters
 
@@ -416,30 +415,24 @@ class CorrelationMatrix:
             trial.set_user_attr("labels", optics_model.labels_)
             trial.set_user_attr("model", optics_model)
 
-            # Mask noise datasets for DB-Score calculation as doesn't accept
-
-            mask = optics_model.labels_ != -1
-
-            # Include penalty for noise as don't want to bias for only tiny dense groups if majority a bit less dense
-
-            noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
-
-            if len(set(optics_model.labels_[mask])) <= 1:
-                trial.set_user_attr("db_score", "N/A as only one cluster")
-                trial.set_user_attr("score", max_val)
-                return max_val
-
             # Lower DB-Score means cluster are better defined
 
-            db_score = davies_bouldin_score(
-                cosym_coords[mask], optics_model.labels_[mask]
+            dbcv_score, ind_score_array = DBCV_score(
+                cosym_coords, optics_model.labels_, ind_clust_scores=True
             )
-            score = db_score + (noise_tolerance * noise_ratio)
+            # dbcv_score = DBCV_score(cosym_coords, optics_model.labels_)[0]
 
-            trial.set_user_attr("db_score", db_score)
-            trial.set_user_attr("score", score)
+            logger.info(
+                f"Trial {trial.number} finished with value: {dbcv_score} using 'min_samples': {min_samples}."
+            )
+            logger.info("Cluster labels for solution:")
+            logger.info(optics_model.labels_)
+            logger.info("Individual scores for identified clusters:")
+            logger.info(ind_score_array)
 
-            return score
+            trial.set_user_attr("dbcv_score", dbcv_score)
+
+            return dbcv_score
 
         def single_cluster_optics():
             """
@@ -510,15 +503,22 @@ class CorrelationMatrix:
             return labels, model
 
         # Test a series of min_samples to find best clusters
-        # Optuna uses a Bayesian Optimization approach to "intelligently" select which parameters to test
 
-        study = optuna.create_study(direction="minimize", sampler=sampler)
+        # Want RandomSampler as it better handles noisier surfaces and avoids bias from previous trials
+        # Use to identify an initial good region
+
+        sampler = optuna.samplers.RandomSampler(seed=42)
+        study = optuna.create_study(direction="maximize", sampler=sampler)
 
         # Use heuristic relating dimensions to systematic differences as an initial starting point
         # Some testing found that this was still important
 
         study.enqueue_trial({"min_samples": initial_min_samples})
-        study.optimize(objective, n_trials=50)
+        study.optimize(objective, n_trials=20)
+
+        # Once have a good region, switch to a Bayesian Optimization approach to "intelligently" select which parameters to test
+        study.sampler = optuna.samplers.TPESampler(n_startup_trials=0)
+        study.optimize(objective, n_trials=30)
 
         try:
             study.best_trial
@@ -530,16 +530,20 @@ class CorrelationMatrix:
             return (
                 initial_min_samples,
                 "N/A as only one cluster",
-                "N/A as only one cluster",
                 labels,
                 model,
             )
         else:
-            if study.best_trial.user_attrs["score"] >= max_val:
+            logger.info(
+                f"Best trial was {study.best_trial.number} with dbcv score of {study.best_trial.user_attrs['dbcv_score']}"
+            )
+            if study.best_trial.user_attrs["dbcv_score"] <= 0:
+                logger.info(
+                    "Likely only a single cluster present, switching to single cluster optimisation."
+                )
                 labels, model = single_cluster_optics()
                 return (
                     initial_min_samples,
-                    "N/A as only one cluster",
                     "N/A as only one cluster",
                     labels,
                     model,
@@ -547,8 +551,7 @@ class CorrelationMatrix:
             else:
                 return (
                     study.best_params["min_samples"],
-                    study.best_trial.user_attrs["db_score"],
-                    study.best_trial.user_attrs["score"],
+                    study.best_trial.user_attrs["dbcv_score"],
                     study.best_trial.user_attrs["labels"],
                     study.best_trial.user_attrs["model"],
                 )
@@ -575,16 +578,12 @@ class CorrelationMatrix:
             self.cluster_labels = optics_model.labels_
             mask = optics_model.labels_ != -1
             if len(set(optics_model.labels_[mask])) > 1:
-                density_score = davies_bouldin_score(
+                dbcv_score = DBCV_score(
                     self.cosym_analysis.coords[mask], optics_model.labels_[mask]
-                )
-                noise_ratio = 1 - np.sum(mask) / len(optics_model.labels_)
-                overall_score = density_score + (
-                    self.params.significant_clusters.noise_tolerance * noise_ratio
-                )
+                )[0]
+
             else:
-                density_score = "N/A as only one cluster"
-                overall_score = "N/A as only one cluster"
+                dbcv_score = "N/A as only one cluster"
 
         else:
             # Heuristic using number of dimensions as a proxy for number of systematic differences
@@ -598,45 +597,61 @@ class CorrelationMatrix:
                 ),
             )
 
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    message="All reachability values are inf. Set a larger max_eps or all data will be considered outliers.",
-                    category=UserWarning,
+            if self.params.significant_clusters.optimise_input:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message="All reachability values are inf. Set a larger max_eps or all data will be considered outliers.",
+                        category=UserWarning,
+                    )
+                    (
+                        min_points,
+                        dbcv_score,
+                        self.cluster_labels,
+                        optics_model,
+                    ) = self.optimise_clustering(
+                        self.cosym_analysis.coords,
+                        initial_min_samples,
+                        self.params.significant_clusters.xi,
+                        self.params.significant_clusters.max_distance,
+                    )
+
+                logger.info(f"Set Minimum Samples to {min_points}")
+
+                # needed max_eps to deal with edge cases where datasets far away were mistakenly included in cluster
+                # but, if such datasets are cut off by max_eps, OPTICS does not calculate a reachability value for them (set to inf)
+                # to keep them in plot (which is nice and visual), need to rerun OPTICS without any max_eps
+                # note that the first dataset is always inf (as can't have reachability for starting point), so look for cases with > 1 inf values
+
+                if np.sum(np.isinf(optics_model.reachability_)) > 1:
+                    tmp_model = OPTICS(
+                        min_samples=min_points,
+                        xi=self.params.significant_clusters.xi,
+                    )
+                    tmp_model.fit(self.cosym_analysis.coords)
+                    self.optics_reachability = tmp_model.reachability_[
+                        tmp_model.ordering_
+                    ]
+                else:
+                    self.optics_reachability = optics_model.reachability_[
+                        optics_model.ordering_
+                    ]
+            else:
+                optics_model = OPTICS(
+                    min_samples=self.params.significant_clusters.min_points,
+                    xi=self.params.significant_clusters.xi,
+                    max_eps=self.params.significant_clusters.max_distance,
                 )
-                (
-                    min_points,
-                    density_score,
-                    overall_score,
-                    self.cluster_labels,
-                    optics_model,
-                ) = self.optimise_clustering(
-                    self.cosym_analysis.coords,
-                    initial_min_samples,
-                    self.params.significant_clusters.xi,
-                    self.params.significant_clusters.noise_tolerance,
-                    self.params.significant_clusters.max_score,
-                    self.params.significant_clusters.max_distance,
-                )
-
-        logger.info(f"Set Minimum Samples to {min_points}")
-
-        # needed max_eps to deal with edge cases where datasets far away were mistakenly included in cluster
-        # but, if such datasets are cut off by max_eps, OPTICS does not calculate a reachability value for them (set to inf)
-        # to keep them in plot (which is nice and visual), need to rerun OPTICS without any max_eps
-        # note that the first dataset is always inf (as can't have reachability for starting point), so look for cases with > 1 inf values
-
-        if np.sum(np.isinf(optics_model.reachability_)) > 1:
-            tmp_model = OPTICS(
-                min_samples=min_points,
-                xi=self.params.significant_clusters.xi,
-            )
-            tmp_model.fit(self.cosym_analysis.coords)
-            self.optics_reachability = tmp_model.reachability_[tmp_model.ordering_]
-        else:
-            self.optics_reachability = optics_model.reachability_[
-                optics_model.ordering_
-            ]
+                optics_model.fit(self.cosym_analysis.coords)
+                self.cluster_labels = optics_model.labels_
+                mask = optics_model.labels_ != -1
+                if len(set(optics_model.labels_[mask])) > 1:
+                    dbcv_score = DBCV_score(
+                        self.cosym_analysis.coords[mask], optics_model.labels_[mask]
+                    )[0]
+                self.optics_reachability = optics_model.reachability_[
+                    optics_model.ordering_
+                ]
 
         # still make sure to use cluster labels from previous optimisation
 
@@ -657,14 +672,12 @@ class CorrelationMatrix:
         logger.info(
             f"OPTICS identified {len(unique_labels)} clusters and {outliers} outlier datasets."
         )
-        if len(unique_labels) > 1:
-            logger.info(
-                f"Davies-Bouldin Score of OPTICS result is {density_score:.4f}."
-            )
 
-            logger.info(
-                f"Overall score including noise penalty (using tolerance of {self.params.significant_clusters.noise_tolerance}) is {overall_score:.4f}."
-            )
+        # DBCV score better for density based clustering (ie DBSCAN, HDBSCAN, OPTICS)
+        # Hammer, J.L., Devanny, A.J. & Kaufman, L.J. Commun Biol 8, 902 (2025). https://doi.org/10.1038/s42003-025-08332-0
+
+        if len(unique_labels) > 1:
+            logger.info(f"DBCV score of OPTICS result is {dbcv_score:.4f}.")
 
         sig_cluster_dict = OrderedDict()
 
