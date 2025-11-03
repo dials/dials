@@ -74,7 +74,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       }
     }
   }
-  void test(scitbx::af::versa<double, scitbx::af::c_grid<3> > ye) {}
 
   BOOST_PYTHON_MODULE(dials_algorithms_tof_integration_ext) {
     class_<TOFProfile1DParams>("TOFProfile1DParams", no_init)
