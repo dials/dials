@@ -327,6 +327,14 @@ class ModelEvaluation(Strategy):
             self._params.refinement.reflections.outlier.tukey.iqr_multiplier = (
                 2 * self._params.refinement.reflections.outlier.tukey.iqr_multiplier
             )
+        if (
+            self._params.indexing.basis_vector_combinations.xy_rmsd_threshold
+            is libtbx.Auto
+        ):
+            # The default threshold of 6.0 pixels was chosen to allow indexing
+            # tests to pass, but filter out poor solutions from a representative
+            # bad case of MX data (https://github.com/xia2/xia2/issues/889)
+            self._params.indexing.basis_vector_combinations.xy_rmsd_threshold = 6.0
 
     def evaluate(self, experiments, reflections):
         with LoggingContext("dials.algorithms.refinement", level=logging.ERROR):
@@ -351,9 +359,6 @@ class ModelEvaluation(Strategy):
                     xy_rmsds / px_size
                     > self._params.indexing.basis_vector_combinations.xy_rmsd_threshold
                 ):
-                    # The default threshold of 6.0 pixels was chosen to allow indexing
-                    # tests to pass, but filter out poor solutions from a representative
-                    # bad case of MX data (https://github.com/xia2/xia2/issues/889)
                     return
                 model_likelihood = 1.0 - xy_rmsds
                 result = Result(
