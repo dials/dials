@@ -153,6 +153,6 @@ namespace cctbx { namespace sgtbx { namespace refstat { namespace boost_python {
 
 }}}}  // namespace cctbx::sgtbx::refstat::boost_python
 
-BOOST_PYTHON_MODULE(cctbx_sgtbx_refstat_ext) {
+BOOST_PYTHON_MODULE(dials_algorithms_symmetry_refstat_ext) {
   cctbx::sgtbx::refstat::boost_python::init_module();
 }
