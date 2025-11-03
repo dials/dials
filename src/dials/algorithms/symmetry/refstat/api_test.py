@@ -72,4 +72,4 @@ try:
   print("Matches: %s" %(", ".join(
     [sg.name for sg in sa. get_filtered_matching_space_groups(matches=matches)])))
 except Exception as e:
-  print("Failed to run olx test")
+  print("Failed to run olx test: " %e)
