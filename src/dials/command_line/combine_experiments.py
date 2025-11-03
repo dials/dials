@@ -182,6 +182,12 @@ phil_scope = parse(
       .help = "If not None, throw out any experiment with more than this"
               "many reflections"
 
+    sort_by_imageset_path_and_image_index = False
+      .type = bool
+      .expert_level = 2
+      .help = "If True, sort the experiments and reflections first by path"
+              "then by image number (for composite files like HDF5)"
+
     include scope dials.algorithms.integration.stills_significance_filter.phil_scope
   }
 """,
@@ -331,6 +337,22 @@ def _save_experiments_and_reflections(
                 batch_refls.as_file(ref_filename)
 
 
+def _sort_experiments_and_reflections(expts, refls):
+    print("Sorting %d experiments by imageset path and image index" % (len(expts)))
+    assert {len(iset) for iset in expts.imagesets()} == {1}
+    keys = [(expt.imageset.paths()[0], expt.imageset.indices()[0]) for expt in expts]
+    indices = [i[0] for i in sorted(enumerate(keys), key=lambda x: x[1])]
+
+    expts = ExperimentList([expts[indices[i]] for i in range(len(expts))])
+    if refls:
+        refls = flex.reflection_table.concat(
+            [refls.select(refls["id"] == indices[i]) for i in range(len(expts))]
+        )
+    print("Sorted")
+
+    return expts, refls
+
+
 @dials.util.show_mail_handle_errors()
 def run(args=None) -> None:
     usage = (
@@ -388,6 +410,8 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
     else:
         expts = combine_experiments_no_reflections(params, experiment_lists)
         refls = None
+    if params.output.sort_by_imageset_path_and_image_index:
+        expts, refls = _sort_experiments_and_reflections(expts, refls)
     save_combined_experiments(
         expts,
         params.clustering,
