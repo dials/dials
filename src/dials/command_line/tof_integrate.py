@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import logging
 import multiprocessing
+from copy import deepcopy
+from math import ceil, floor
+from typing import Dict, Tuple
 
 import numpy as np
 
 import cctbx.array_family.flex
 import libtbx
 from dxtbx import flumpy
+from dxtbx.model import Experiment, ExperimentList, ImageSequence
 
 import dials.util.log
 from dials.algorithms.integration.integrator import (
@@ -36,7 +40,7 @@ from dials_tof_scaling_ext import (
     tof_extract_shoeboxes_to_reflection_table,
 )
 
-logger = logging.getLogger("dials.command_line.simple_integrate")
+logger = logging.getLogger("dials.command_line.tof_integrate")
 
 phil_scope = parse(
     """
@@ -197,17 +201,22 @@ keep_shoeboxes = False
 )
 
 """
-Kabsch 2010 refers to
-Kabsch W., Integration, scaling, space-group assignment and
-post-refinment, Acta Crystallographica Section D, 2010, D66, 133-144
 Usage:
 $ dials.tof_integrate.py refined.expt refined.refl
+$ dials.tof_integrate refined.expt refined.refl corrections.incident_run=vanadium_run.nxs corrections.empty_run=empty_run.nxs corrections.lorentz=True bbox_tof_padding=15 bbox_xy_padding=5 mask=ellipse method=profile3d mp.nproc=16 background_model=linear3d
 """
 
 phil_scope.adopt_scope(integrator_phil_scope())
 
 
-def get_corrections_data(experiments, params):
+def get_corrections_data(
+    experiments: ExperimentList, params: libtbx.phil.scope_extract
+) -> Dict:
+    """
+    Extracts all the corrections in params related to incident
+    and absorption corrections
+    """
+
     corrections = {}
 
     experiment_cls = experiments[0].imageset.get_format_class()
@@ -249,7 +258,9 @@ def get_corrections_data(experiments, params):
     return corrections
 
 
-def calculate_shoebox_masks(experiment, reflections, method):
+def calculate_shoebox_masks(
+    experiment: Experiment, reflections: flex.reflection_table, method: str
+) -> flex.reflection_table:
     if method == "seed_skewness":
         logger.info("    Calculating seed skewness foreground/background mask")
         tof_calculate_seed_skewness_shoebox_mask(reflections, experiment, 1e-7, 10)
@@ -261,8 +272,12 @@ def calculate_shoebox_masks(experiment, reflections, method):
 
 
 def integrate_reflection_table_for_experiment(
-    expt, expt_reflections, expt_data, params, **kwargs
-):
+    expt: Experiment,
+    expt_reflections: flex.reflection_table,
+    expt_data: ImageSequence,
+    params: libtbx.phil.scope_extract,
+    **kwargs: Dict,
+) -> flex.reflection_table:
     apply_lorentz = params.corrections.lorentz
     profile1d_params = None
     profile3d_params = None
@@ -336,7 +351,9 @@ def integrate_reflection_table_for_experiment(
     return expt_reflections
 
 
-def remove_overlapping_reflections(reflections):
+def remove_overlapping_reflections(
+    reflections: flex.reflection_table,
+) -> flex.reflection_table:
     overlaps = reflections.find_overlaps()
     overlap_sel = flex.bool(len(reflections), False)
     for item in overlaps.edges():
@@ -349,7 +366,11 @@ def remove_overlapping_reflections(reflections):
     return reflections
 
 
-def compute_partiality(bbox, image_size):
+def compute_partiality(bbox: Tuple, image_size: Tuple) -> float:
+    """
+    Approximate partiality by looking at overlap of bounding box with panel
+    """
+
     intersect_x0 = max(image_size[0], bbox[0])
     intersect_y0 = max(image_size[2], bbox[2])
     intersect_x1 = min(image_size[1], bbox[1])
@@ -364,9 +385,18 @@ def compute_partiality(bbox, image_size):
     return intersection_area / square_area
 
 
-def update_bounding_box(bbox, centroid, new_centroid, padding, image_size):
-    from copy import deepcopy
-    from math import ceil, floor
+def update_bounding_box(
+    bbox: Tuple,
+    centroid: Tuple,
+    new_centroid: Tuple,
+    padding: Tuple,  # x,y,z
+    image_size: Tuple,
+) -> Tuple[Tuple, float]:
+    """
+    Calculates a new bounding box originally at centroid at position
+    new_centroid with padding.
+    Returns the bounding box and its partiality
+    """
 
     diff_centroid = (
         new_centroid[0] - centroid[0],
@@ -395,26 +425,16 @@ def update_bounding_box(bbox, centroid, new_centroid, padding, image_size):
     return tuple(updated_bbox), partiality
 
 
-def split_reflections(reflections, n, by_panel=False):
-    if by_panel:
-        for i in range(max(reflections["panel"]) + 1):
-            sel = reflections["panel"] == i
-            yield reflections.select(sel)
-    else:
-        d, r = divmod(len(reflections), n)
-        for i in range(n):
-            si = (d + 1) * (i if i < r else r) + d * (0 if i < r else i - r)
-            yield reflections[si : si + (d + 1 if i < r else d)]
+def get_predicted_observed_reflections(
+    params: libtbx.phil.scope_extract,
+    experiments: ExperimentList,
+    reflections: flex.reflection_table,
+) -> flex.reflection_table:
+    """
+    Returns predicted reflections matched to reflections
+    """
 
-
-def join_reflections(list_of_reflections):
-    reflections = list_of_reflections[0]
-    for i in range(1, len(list_of_reflections)):
-        reflections.extend(list_of_reflections[i])
-    return reflections
-
-
-def get_predicted_observed_reflections(params, experiments, reflections):
+    # Calculate dmin
     min_s0_idx = min(
         range(len(reflections["wavelength"])), key=reflections["wavelength"].__getitem__
     )
@@ -426,8 +446,11 @@ def get_predicted_observed_reflections(params, experiments, reflections):
             dmin = expt_dmin
 
     logger.info(f"Calculated dmin from observed reflections: {round(dmin, 3)}")
+
     predicted_reflections = None
     miller_indices = reflections["miller_index"]
+
+    # Get predicted reflections for observed miller indices
     for idx, experiment in enumerate(experiments):
         predictor = TOFReflectionPredictor(experiment, dmin)
         if predicted_reflections is None:
@@ -443,6 +466,8 @@ def get_predicted_observed_reflections(params, experiments, reflections):
             r["id"] = cctbx.array_family.flex.int(len(r), idx)
             r["imageset_id"] = cctbx.array_family.flex.int(len(r), idx)
             predicted_reflections.extend(r)
+
+    # Update params
     predicted_reflections["s0"] = predicted_reflections["s0_cal"]
     predicted_reflections.calculate_entering_flags(experiments)
 
@@ -450,16 +475,15 @@ def get_predicted_observed_reflections(params, experiments, reflections):
         predicted_reflections.experiment_identifiers()[i] = experiments[i].identifier
 
     # Updates flags to set which reflections to use in generating reference profiles
-    matched, reflections, unmatched = predicted_reflections.match_with_reference(
-        reflections
-    )
-    # sel = predicted_reflections.get_flags(predicted_reflections.flags.reference_spot)
+    matched, reflections, _ = predicted_reflections.match_with_reference(reflections)
+
     predicted_reflections = predicted_reflections.select(matched)
     if "idx" in reflections:
         predicted_reflections["idx"] = reflections["idx"]
 
     predicted_reflections["xyzobs.px.value"] = reflections["xyzobs.px.value"]
 
+    # Calculate predicted bounding boxes and partiality
     tof_padding = params.bbox_tof_padding
     xy_padding = params.bbox_xy_padding
     image_size = experiments[0].detector[0].get_image_size()
@@ -491,12 +515,21 @@ def get_predicted_observed_reflections(params, experiments, reflections):
     return predicted_reflections
 
 
-def get_predicted_calculated_reflections(params, experiments, reflections):
+def get_predicted_calculated_reflections(
+    params: libtbx.phil.scope_extract,
+    experiments: ExperimentList,
+    reflections: flex.reflection_table,
+) -> flex.reflection_table:
+    """
+    Returns predicted reflections out to params.calculated.dmin
+    """
+
     dmin = params.calculated.dmin
     assert dmin is not None, (
         "Integrating calculated reflections but calculated.dmin has not been set"
     )
 
+    # Get predicted reflections
     predicted_reflections = None
     for idx, experiment in enumerate(experiments):
         predictor = TOFReflectionPredictor(experiment, dmin)
@@ -656,7 +689,12 @@ def run():
     experiments.as_file(params.output.experiments)
 
 
-def applying_spherical_absorption_correction(params):
+def applying_spherical_absorption_correction(params: libtbx.phil.scope_extract) -> bool:
+    """
+    Returns True if all params are present for absorption correction.
+    Raises error if only some are present
+    """
+
     all_params_present = True
     some_params_present = False
     for i in dir(params.corrections.absorption.target_spectrum):
@@ -673,7 +711,12 @@ def applying_spherical_absorption_correction(params):
     return all_params_present
 
 
-def applying_incident_and_empty_runs(params):
+def applying_incident_and_empty_runs(params: libtbx.phil.scope_extract) -> bool:
+    """
+    Returns True if all params are present for incident correction.
+    Raises error if only some are present
+    """
+
     if params.corrections.incident_run is not None:
         assert params.corrections.empty_run is not None, (
             "Incident run given without empty run."
@@ -687,7 +730,11 @@ def applying_incident_and_empty_runs(params):
     return False
 
 
-def run_integrate(params, experiments, reflections):
+def run_integrate(
+    params: libtbx.phil.scope_extract,
+    experiments: ExperimentList,
+    reflections: flex.reflection_table,
+) -> flex.reflection_table:
     if params.mp.nproc is libtbx.Auto:
         params.mp.nproc = multiprocessing.cpu_count()
 
