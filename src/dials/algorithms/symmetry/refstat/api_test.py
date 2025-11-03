@@ -98,5 +98,5 @@ try:
             )
         )
     )
-except Exception as e:
+except Exception:
     print("Failed to run olx test")
