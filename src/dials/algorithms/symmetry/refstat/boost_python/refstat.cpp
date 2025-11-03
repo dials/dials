@@ -6,8 +6,8 @@
 #include <boost/python/copy_const_reference.hpp>
 #include <boost/python/make_function.hpp>
 #include <scitbx/array_family/boost_python/shared_wrapper.h>
-#include <cctbx/sgtbx/refstat/refstat.h>
-#include <cctbx/sgtbx/refstat/merge_test.h>
+#include <dials/algorithms/symmetry/refstat/refstat.h>
+#include <dials/algorithms/symmetry/refstat/merge_test.h>
 
 namespace cctbx { namespace sgtbx { namespace refstat { namespace boost_python {
 
