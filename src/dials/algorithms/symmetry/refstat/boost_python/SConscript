@@ -1,0 +1,6 @@
+Import("dials_algorithms_symmetry_refstat_ext")
+env = dials_algorithms_symmetry_refstat_ext.Clone()
+env.Prepend(LIBS=["cctbx"])
+env.SharedLibrary(target="#lib/dials_algorithms_symmetry_refstat_ext", source=[
+  "refstat.cpp"
+])
