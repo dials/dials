@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import List, Optional, Type
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
@@ -15,9 +14,11 @@ from dials.algorithms.clustering import plots as cluster_plotter
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.array_family import flex
-from dials.command_line.stereographic_projection import calculate_projections
+from dials.command_line.stereographic_projection import (
+    calculate_projections,
+    projections_as_dict,
+)
 from dials.command_line.stereographic_projection import phil_scope as stereo_phil_scope
-from dials.command_line.stereographic_projection import projections_as_dict
 from dials.report.analysis import (
     format_statistics,
     make_merging_statistics_summary,
@@ -30,8 +31,7 @@ from dials.util import tabulate
 logger = logging.getLogger("dials")
 
 
-class MergeJSONCollector(object):
-
+class MergeJSONCollector:
     initiated = False
     data = {}
 
@@ -52,15 +52,15 @@ class MergeJSONCollector(object):
 class MergingStatisticsData:
     experiments: ExperimentList
     scaled_miller_array: miller.array
-    reflections: Optional[
-        List[flex.reflection_table]
-    ] = None  # only needed if using this class like a script when making batch plots
-    merging_statistics_result: Optional[Type[dataset_statistics]] = None
-    anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
-    cut_merging_statistics_result: Optional[Type[dataset_statistics]] = None
-    cut_anom_merging_statistics_result: Optional[Type[dataset_statistics]] = None
-    anomalous_amplitudes: Optional[miller.array] = None
-    Wilson_B_iso: Optional[float] = None
+    reflections: list[flex.reflection_table] | None = (
+        None  # only needed if using this class like a script when making batch plots
+    )
+    merging_statistics_result: type[dataset_statistics] | None = None
+    anom_merging_statistics_result: type[dataset_statistics] | None = None
+    cut_merging_statistics_result: type[dataset_statistics] | None = None
+    cut_anom_merging_statistics_result: type[dataset_statistics] | None = None
+    anomalous_amplitudes: miller.array | None = None
+    Wilson_B_iso: float | None = None
 
     def __str__(self):
         if not self.merging_statistics_result:
@@ -71,9 +71,9 @@ class MergingStatisticsData:
             stats_summary += (
                 "\n"
                 "Resolution limit suggested from CC"
-                + "\u00BD"
+                + "\u00bd"
                 + " fit (limit CC"
-                + "\u00BD"
+                + "\u00bd"
                 + f"=0.3): {d_min:.2f}\n"
             )
         stats_summary += table_1_summary(
@@ -101,7 +101,6 @@ class MergingStatisticsData:
 
 
 def make_stereo_plots(experiments):
-
     orientation_graphs = OrderedDict()
     # now make stereo projections
     params = stereo_phil_scope.extract()
@@ -121,7 +120,7 @@ any systematic grouping of points may suggest a preferential crystal orientation
 """
             % hkl
         )
-        key = "stereo_%s%s%s" % hkl
+        key = "stereo_{}{}{}".format(*hkl)
         orientation_graphs[key] = d
     return orientation_graphs
 
@@ -151,14 +150,14 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
                 make_dano_plots({wl: stats.anomalous_amplitudes})["dF"]
             )
         if stats.merging_statistics_result:
-            json_data[wl_key][
-                "merging_stats"
-            ] = stats.merging_statistics_result.as_dict()
+            json_data[wl_key]["merging_stats"] = (
+                stats.merging_statistics_result.as_dict()
+            )
             json_data[wl_key]["table_1_stats"] = stats.table_1_stats()
             if stats.anom_merging_statistics_result:
-                json_data[wl_key][
-                    "merging_stats_anom"
-                ] = stats.anom_merging_statistics_result.as_dict()
+                json_data[wl_key]["merging_stats_anom"] = (
+                    stats.anom_merging_statistics_result.as_dict()
+                )
     if len(json_data) > 1:
         # create an overall summary table
         headers = [""] + ["Wavelength " + f"{wl:.5f}" + " Å" for wl in data.keys()]
@@ -219,7 +218,7 @@ def make_dano_table(anomalous_amplitudes):
         rows.append(
             [
                 f"{resolution_bin_edges[i]:6.2f}",
-                f"{resolution_bin_edges[i+1]:6.2f}",
+                f"{resolution_bin_edges[i + 1]:6.2f}",
                 f"{dF:6.3f}",
             ]
         )
@@ -273,7 +272,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
                 "x": d_star_sq_bins,
                 "y": list(dFsdF),
                 "type": "scatter",
-                "name": "\u03BB" + f"={wave:.4f}",
+                "name": "\u03bb" + f"={wave:.4f}",
             }
         )
     if not data["dF"]["dano"]["data"]:

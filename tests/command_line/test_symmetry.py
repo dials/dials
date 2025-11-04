@@ -8,22 +8,24 @@ import subprocess
 import pytest
 
 import scitbx.matrix
-from cctbx import sgtbx, uctbx
-from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
+from cctbx import crystal, sgtbx, uctbx
+from dxtbx.model import Crystal, Experiment, ExperimentList, GoniometerFactory, Scan
 from dxtbx.serialize import load
+from dxtbx.util import ersatz_uuid4
 
-from dials.algorithms.symmetry.cosym._generate_test_data import (
-    generate_experiments_reflections,
-)
-from dials.array_family import flex
-from dials.command_line import symmetry
-from dials.command_line.symmetry import (
+from dials.algorithms import symmetry  # import module for mocker
+from dials.algorithms.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
     get_subset_for_symmetry,
     median_unit_cell,
 )
+from dials.algorithms.symmetry.cosym._generate_test_data import (
+    generate_experiments_reflections,
+)
+from dials.array_family import flex
+from dials.command_line import symmetry as dials_symmetry
 from dials.util.exclude_images import exclude_image_ranges_from_scans
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.phil import parse
@@ -77,6 +79,8 @@ def test_symmetry_basis_changes_for_C2(tmp_path):
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
+    for id in set(joint_table["id"]):
+        joint_table.experiment_identifiers()[id] = ersatz_uuid4()
     joint_table.as_file(tmp_path / "tmp.refl")
 
     result = subprocess.run(
@@ -270,6 +274,10 @@ def _make_input_for_exclude_tests(exclude_images=True):
         exclude_images = [["0:360:720"], ["1:360:720"]]
     expt1 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, 1.0)))
     expt2 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, -1.0)))
+    # Need to set a goniometer otherwise is_still() is True
+    goniometer = GoniometerFactory.known_axis((1, 0, 0))
+    expt1.goniometer = goniometer
+    expt2.goniometer = goniometer
     refls1 = flex.reflection_table()
     refls2 = flex.reflection_table()
     refls1["xyzobs.mm.value"] = flex.vec3_double(
@@ -416,9 +424,6 @@ def test_change_of_basis_ops_to_minimum_cell_mpro():
     )
 
 
-from cctbx import crystal
-
-
 def test_change_of_basis_ops_to_minimum_cell_with_outlier():
     symmetries = [
         crystal.symmetry(unit_cell=uc, space_group="P1")
@@ -516,7 +521,7 @@ def test_few_reflections(dials_data, run_in_tmp_path):
                          directory.
     """
     # Get and use the default parameters for dials.symmetry.
-    params = symmetry.phil_scope.fetch(source=parse("")).extract()
+    params = dials_symmetry.phil_scope.fetch(source=parse("")).extract()
 
     # Use the integrated data from the first ten images of the first sweep.
     data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
@@ -524,7 +529,7 @@ def test_few_reflections(dials_data, run_in_tmp_path):
     reflections = [flex.reflection_table.from_file(data_dir / "11_integrated.refl")]
 
     # Run dials.symmetry on the above data files.
-    symmetry.symmetry(experiments, reflections, params)
+    dials_symmetry.symmetry(experiments, reflections, params)
 
 
 def test_x4wide(dials_data, tmp_path):

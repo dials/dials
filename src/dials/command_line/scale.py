@@ -40,19 +40,14 @@ from __future__ import annotations
 
 import logging
 import sys
-from io import StringIO
 
 from libtbx import phil
 
 from dials.algorithms.scaling.algorithm import ScaleAndFilterAlgorithm, ScalingAlgorithm
 from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.export_mtz import log_summary
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-
-try:
-    from typing import List
-except ImportError:
-    pass
 
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
@@ -135,10 +130,8 @@ def _export_merged_mtz(params, experiments, joint_table):
     mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
     logger.disabled = False
     logger.info("\nWriting merged data to %s", (params.output.merged_mtz))
-    out = StringIO()
-    mtz_file.show_summary(out=out)
-    logger.info(out.getvalue())
-    mtz_file.write(params.output.merged_mtz)
+    log_summary(mtz_file)
+    mtz_file.write_to_file(params.output.merged_mtz)
 
 
 def _export_unmerged_mtz(params, experiments, reflection_table):
@@ -205,7 +198,7 @@ def run_scaling(params, experiments, reflections):
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.scale integrated.refl integrated.expt
 [integrated.refl(2) integrated.expt(2) ....] [options]"""

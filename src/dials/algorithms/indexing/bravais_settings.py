@@ -22,7 +22,7 @@ from dials.command_line.check_indexing_symmetry import (
     get_symop_correlation_coefficients,
 )
 from dials.util.log import LoggingContext
-from dials.util.mp import available_cores
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +154,7 @@ class RefinedSettingsList(list):
                     min_max_cc_str,
                     "%d" % item.Nmatches,
                     f"{item['bravais']}",
-                    "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f" % P,
+                    "{:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}".format(*P),
                     f"{uc.volume():.0f}",
                     f"{str(item['cb_op_inp_best'] * self.cb_op_to_primitive)}",
                 ]
@@ -212,7 +212,7 @@ def refined_settings_from_refined_triclinic(
     """
 
     if params.nproc is libtbx.Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
 
     if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
         if experiments[0].goniometer is None:

@@ -362,7 +362,7 @@ class UCSettingsPanel(wx.Panel):
             pass
         dc.SetPen(wx.Pen(colour))
         dc.SetBrush(wx.Brush(colour, wx.TRANSPARENT))
-        for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+        for lon, lat, place, radius, colour, x_off, y_off, pdata in data:
             (x, y) = self._pyslip.ConvertGeo2View((lon, lat))
             dc.DrawCircle(int(x), int(y), int(radius * scale))
 
@@ -453,4 +453,4 @@ class UCSettingsPanel(wx.Panel):
         y = -panel.pixel_to_millimeter(self._center)[1]
         z = -(panel.get_distance() - distance)
         origin = (fast * x + slow * y + norm * z) + col(panel.get_origin())
-        self.origin.SetLabel("Panel 0 origin: %f, %f, %f" % origin.elems)
+        self.origin.SetLabel("Panel 0 origin: {:f}, {:f}, {:f}".format(*origin.elems))

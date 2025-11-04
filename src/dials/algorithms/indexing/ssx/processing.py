@@ -8,10 +8,11 @@ import pathlib
 import sys
 from dataclasses import dataclass, field
 from multiprocessing import Pool
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 
+from dxtbx.format.FormatMultiImage import FormatMultiImage
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from libtbx import Auto, phil
 
@@ -33,9 +34,10 @@ class InputToIndex:
     parameters: Any = None
     image_identifier: str = ""
     image_no: int = 0
-    method_list: List[str] = field(default_factory=list)
-    known_crystal_models: Optional[List[Crystal]] = None
+    method_list: list[str] = field(default_factory=list)
+    known_crystal_models: list[Crystal] | None = None
     imageset_no: int = 0
+    imageset_index: int = 0
 
 
 @dataclass
@@ -45,12 +47,13 @@ class IndexingResult:
     reflection_table: flex.reflection_table = None
     experiments: ExperimentList = None
     n_strong: int = 0
-    n_indexed: List[int] = field(default_factory=list)
-    identifiers: List[str] = field(default_factory=list)
-    rmsd_x: List[float] = field(default_factory=list)
-    rmsd_y: List[float] = field(default_factory=list)
-    rmsd_dpsi: List[float] = field(default_factory=list)
+    n_indexed: list[int] = field(default_factory=list)
+    identifiers: list[str] = field(default_factory=list)
+    rmsd_x: list[float] = field(default_factory=list)
+    rmsd_y: list[float] = field(default_factory=list)
+    rmsd_dpsi: list[float] = field(default_factory=list)
     imageset_no: int = 0
+    imageset_index: int = 0
     unindexed_experiment: Experiment = None
 
 
@@ -58,11 +61,15 @@ loggers_to_disable = [
     "dials.algorithms.refinement.reflection_processor",
     "dials.algorithms.refinement.refiner",
     "dials.algorithms.refinement.reflection_manager",
+    "dials.algorithms.refinement.outlier_detection.outlier_base",
     "dials.algorithms.indexing.stills_indexer",
     "dials.algorithms.indexing.nave_parameters",
     "dials.algorithms.indexing.basis_vector_search.real_space_grid_search",
     "dials.algorithms.indexing.basis_vector_search.combinations",
     "dials.algorithms.indexing.indexer",
+    "dials.algorithms.indexing.lattice_search",
+    "dials.algorithms.indexing.lattice_search.low_res_spot_match",
+    "dials.algorithms.indexing.lattice_search.ffb_indexer",
 ]
 debug_loggers_to_disable = [
     "dials.algorithms.indexing.symmetry",
@@ -71,8 +78,7 @@ debug_loggers_to_disable = [
 ]
 
 
-class manage_loggers(object):
-
+class manage_loggers:
     """
     A contextmanager for reducing logging levels for the underlying code of
     parallel ssx programs.
@@ -119,12 +125,12 @@ def index_one(
     experiment: Experiment,
     reflection_table: flex.reflection_table,
     params: phil.scope_extract,
-    method_list: List[str],
+    method_list: list[str],
     image_no: int,
-    known_crystal_models: List[Crystal] = None,
-) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
-
+    known_crystal_models: list[Crystal] = None,
+) -> tuple[ExperimentList, flex.reflection_table] | tuple[bool, bool]:
     elist = ExperimentList([experiment])
+    params.indexing.nproc = 1  # make sure none of the processes try to spawn multiprocessing within existing multiprocessing.
     for method in method_list:
         params.indexing.method = method
         idxr = Indexer.from_parameters(
@@ -137,13 +143,13 @@ def index_one(
             idxr.index()
         except (DialsIndexError, AssertionError) as e:
             logger.info(
-                f"Image {image_no+1}: Failed to index with {method} method, error: {e}"
+                f"Image {image_no + 1}: Failed to index with {method} method, error: {e}"
             )
             if method == method_list[-1]:
                 return None, None
         else:
             logger.info(
-                f"Image {image_no+1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
+                f"Image {image_no + 1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
             )
             return idxr.refined_experiments, idxr.refined_reflections
 
@@ -172,15 +178,19 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
             unindexed_experiment=input_to_index.experiment,
+            imageset_index=input_to_index.imageset_index,
         )
         for id_, identifier in table.experiment_identifiers():
             selr = table.select(table["id"] == id_)
             calx, caly, _ = selr["xyzcal.px"].parts()
             obsx, obsy, _ = selr["xyzobs.px.value"].parts()
-            delpsi = selr["delpsical.rad"]
+            if "delpsical.rad" in selr:
+                delpsi = selr["delpsical.rad"]
+                rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
+            else:
+                rmsd_z = 0.0
             rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
             rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
-            rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
             n_id_ = calx.size()
             result.n_indexed.append(n_id_)
             result.rmsd_x.append(rmsd_x)
@@ -194,6 +204,7 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
             unindexed_experiment=input_to_index.experiment,
+            imageset_index=input_to_index.imageset_index,
         )
 
     # If chosen, output a message to json to show live progress
@@ -217,11 +228,10 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
 
 def index_all_concurrent(
     experiments: ExperimentList,
-    reflections: List[flex.reflection_table],
+    reflections: list[flex.reflection_table],
     params: phil.scope_extract,
-    method_list: List[str],
-) -> Tuple[ExperimentList, flex.reflection_table, dict]:
-
+    method_list: list[str],
+) -> tuple[ExperimentList, flex.reflection_table, dict]:
     input_iterable = []
     results_summary = {
         i: [] for i in range(len(experiments))
@@ -247,12 +257,17 @@ def index_all_concurrent(
                         image_no=refl_index,
                         method_list=method_list,
                         imageset_no=n_iset,
+                        imageset_index=i,
                     )
                 )
             else:  # experiments that have already been filtered
+                image = pathlib.Path(iset.get_image_identifier(i)).name
+                if issubclass(iset.get_format_class(), FormatMultiImage):
+                    index = iset.indices()[i] + 1
+                    image += f"-{index}"
                 results_summary[refl_index].append(
                     {
-                        "Image": pathlib.Path(iset.get_image_identifier(i)).name,
+                        "Image": image,
                         "n_indexed": 0,
                         "n_strong": 0,
                     }
@@ -268,11 +283,11 @@ def index_all_concurrent(
         ):
             if params.indexing.nproc > 1:
                 with Pool(params.indexing.nproc) as pool:
-                    results: List[IndexingResult] = pool.map(
+                    results: list[IndexingResult] = pool.map(
                         wrap_index_one, input_iterable
                     )
             else:
-                results: List[IndexingResult] = [
+                results: list[IndexingResult] = [
                     wrap_index_one(i) for i in input_iterable
                 ]
 
@@ -288,18 +303,15 @@ def index_all_concurrent(
 
 
 def _join_indexing_results(
-    results: List[IndexingResult],
+    results: list[IndexingResult],
     experiments,
     original_isets,
     identifiers_to_scans,
-) -> Tuple[ExperimentList, flex.reflection_table]:
+) -> tuple[ExperimentList, flex.reflection_table]:
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
 
-    use_beam = None
     use_gonio = None
-    if len(experiments.beams()) == 1:
-        use_beam = experiments.beams()[0]
     if len(experiments.goniometers()):  # need a placeholder gonio
         use_gonio = experiments.goniometers()[0]
 
@@ -314,8 +326,6 @@ def _join_indexing_results(
                 res.reflection_table["imageset_id"] = flex.int(
                     res.reflection_table.size(), res.imageset_no
                 )
-                if use_beam:
-                    expt.beam = use_beam
                 if use_gonio:
                     expt.goniometer = use_gonio
 
@@ -337,15 +347,28 @@ def _join_indexing_results(
 
 
 def _add_results_to_summary_dict(
-    results_summary: dict, results: List[IndexingResult]
+    results_summary: dict, results: list[IndexingResult]
 ) -> dict:
     # convert to results_summary dict current format
     for res in results:
         if res.n_indexed:
+            # for things like nexus files, we want image to be expressed like
+            # experiment_001.nxs-50, experiment_001.nxs-62, etc.
+            # for things like cbfs, we want image to be expressed like
+            # experiment_0050.cbf, experiment_0062.cbf, etc.
+            # these will be displayed in the summary table.
+            image = pathlib.Path(
+                res.experiments[0].imageset.paths()[res.imageset_index]
+            ).name
+            if issubclass(
+                res.experiments[0].imageset.get_format_class(), FormatMultiImage
+            ):
+                index = res.experiments[0].imageset.indices()[res.imageset_index] + 1
+                image += f"-{index}"
             for j in range(len(res.n_indexed)):
                 results_summary[res.image_no].append(
                     {
-                        "Image": res.image,
+                        "Image": image,
                         "identifier": res.identifiers[j],
                         "n_indexed": res.n_indexed[j],
                         "n_strong": res.n_strong,
@@ -355,6 +378,8 @@ def _add_results_to_summary_dict(
                     }
                 )
         else:
+            # Note we can't currently get the true image string here, but this is
+            # not used.
             results_summary[res.image_no].append(
                 {
                     "Image": res.image,
@@ -369,7 +394,7 @@ def preprocess(
     experiments: ExperimentList,
     observed: flex.reflection_table,
     params: phil.scope_extract,
-) -> Tuple[List[flex.reflection_table], phil.scope_extract, List[str]]:
+) -> tuple[list[flex.reflection_table], phil.scope_extract, list[str]]:
     reflections = observed.split_by_experiment_id()
 
     if len(reflections) != len(experiments):
@@ -445,11 +470,11 @@ def preprocess(
         if n_cells > 20:
             centile_95_pos = int(math.floor(0.95 * n_cells))
             limit = sorted_cells[centile_95_pos]
-            logger.info(f"Setting max cell to {limit:.1f} " + "\u212B")
+            logger.info(f"Setting max cell to {limit:.1f} " + "\u212b")
             params.indexing.max_cell = limit
         else:
             params.indexing.max_cell = sorted_cells[-1]
-            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212B")
+            logger.info(f"Setting max cell to {sorted_cells[-1]:.1f} " + "\u212b")
 
     # Determine which methods to try
     method_list = params.method
@@ -468,8 +493,7 @@ def index(
     experiments: ExperimentList,
     observed: flex.reflection_table,
     params: phil.scope_extract,
-) -> Tuple[ExperimentList, flex.reflection_table, dict]:
-
+) -> tuple[ExperimentList, flex.reflection_table, dict]:
     if params.output.nuggets:
         params.output.nuggets = pathlib.Path(
             params.output.nuggets
@@ -479,6 +503,11 @@ def index(
                 "output.nuggets not recognised as a valid directory path, no nuggets will be output"
             )
             params.output.nuggets = None
+
+    if any(s and not s.is_still() for s in experiments.scans()):
+        raise DialsIndexError(
+            "Not all experiments are stills. For rotation data, use the dials.index program."
+        )
 
     reflection_tables, params, method_list = preprocess(experiments, observed, params)
 
@@ -490,9 +519,13 @@ def index(
         method_list,
     )
 
-    # combine detector models if not already
-    if (len(indexed_experiments.detectors())) > 1:
-        combine = CombineWithReference(detector=indexed_experiments[0].detector)
+    # combine detector models if all the same (i.e. haven't been refined in indexing),
+    # to enable use case of joint refinement.
+    detector_0 = indexed_experiments[0].detector if indexed_experiments else None
+    if (len(indexed_experiments.detectors()) > 1) and all(
+        d == detector_0 for d in indexed_experiments.detectors()[1:]
+    ):
+        combine = CombineWithReference(detector=detector_0)
         elist = ExperimentList()
         for expt in indexed_experiments:
             elist.append(combine(expt))

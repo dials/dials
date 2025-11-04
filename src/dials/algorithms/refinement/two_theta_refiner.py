@@ -1,6 +1,5 @@
 """Versions of refinement classes for two theta refinement of the unit cell"""
 
-
 from __future__ import annotations
 
 import logging
@@ -29,7 +28,6 @@ DEG2RAD = pi / 180.0
 
 class ConstantTwoThetaWeightingStrategy:
     def calculate_weights(self, reflections):
-
         reflections["2theta.weights"] = flex.double(len(reflections), 1)
         return reflections
 
@@ -59,7 +57,6 @@ class TwoThetaReflectionManager(ReflectionManager):
     _weighting_strategy = ConstantTwoThetaWeightingStrategy()
 
     def __init__(self, *args, **kwargs):
-
         # call base __init__
         super().__init__(*args, **kwargs)
 
@@ -74,7 +71,6 @@ class TwoThetaReflectionManager(ReflectionManager):
         return
 
     def print_stats_on_matches(self):
-
         l = self.get_matches()
         nref = len(l)
         if nref == 0:
@@ -96,14 +92,13 @@ class TwoThetaReflectionManager(ReflectionManager):
             ["2theta_c - 2theta_o (deg)"] + [f"{e * RAD2DEG:.4g}" for e in row_data]
         )
         row_data = five_number_summary(w_2theta)
-        rows.append(["2theta weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data])
+        rows.append(["2theta weights"] + [f"{e * DEG2RAD**2:.4g}" for e in row_data])
         logger.info(msg)
         logger.info(tabulate(rows, header) + "\n")
 
 
 class TwoThetaExperimentsPredictor(ExperimentsPredictor):
     def _predict_one_experiment(self, experiment, reflections):
-
         B = flex.mat3_double(len(reflections), experiment.crystal.get_B())
         r0 = B * reflections["miller_index"].as_vec3_double()
         r0len = r0.norms()
@@ -172,7 +167,6 @@ class TwoThetaTarget(Target):
 
     @staticmethod
     def _extract_residuals_and_weights(matches):
-
         # return residuals and weights as 1d flex.double vectors
         residuals = matches["2theta_resid"]
 
@@ -182,7 +176,6 @@ class TwoThetaTarget(Target):
 
     @staticmethod
     def _extract_squared_residuals(matches):
-
         residuals2 = matches["2theta_resid2"]
 
         return residuals2
@@ -221,14 +214,12 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
         return
 
     def _local_setup(self, reflections):
-
         # we want the wavelength
         self._wavelength = 1.0 / self._s0.norms()
 
         return
 
     def _xl_unit_cell_derivatives(self, isel, parameterisation=None, reflections=None):
-
         # Get required data
         h = self._h.select(isel)
         B = self._B.select(isel)
@@ -244,7 +235,6 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
 
         # loop through the parameters
         for der in dB_dxluc_p:
-
             if der is None:
                 d2theta_dp.append(None)
                 continue
@@ -269,7 +259,6 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
 
         # loop over the crystal unit cell parameterisations
         for xlucp in self._xl_unit_cell_parameterisations:
-
             # Determine (sub)set of reflections affected by this parameterisation
             isel = flex.size_t()
             for exp_id in xlucp.get_experiment_ids():

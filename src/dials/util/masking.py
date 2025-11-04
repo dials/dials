@@ -3,9 +3,9 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import sys
 import time
 from collections import namedtuple
-from typing import Tuple
 
 import libtbx.phil
 from cctbx import crystal
@@ -159,7 +159,6 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
     Generate a set of resolution ranges from the ice ring parameters
     """
     if params.filter is True:
-
         # Get the crystal symmetry
         crystal_symmetry = crystal.symmetry(
             unit_cell=params.unit_cell, space_group=params.space_group.group()
@@ -203,7 +202,7 @@ def _apply_resolution_mask(mask, beam, panel, *args):
 
 def generate_mask(
     imageset: ImageSet, params: libtbx.phil.scope_extract
-) -> Tuple[flex.bool]:
+) -> tuple[flex.bool]:
     """Generate a mask based on the input parameters.
 
     Args:
@@ -215,10 +214,16 @@ def generate_mask(
     detector = imageset.get_detector()
     beam = imageset.get_beam()
 
+    # validate that the input parameters are sensible
+    if params.d_min is not None and params.d_max is not None:
+        if params.d_min > params.d_max:
+            sys.exit(
+                f"d_min = {params.d_min} > d_max = {params.d_max}: no spots will be found"
+            )
+
     # Create the mask for each panel
     masks = []
     for index, panel in enumerate(detector):
-
         mask = flex.bool(flex.grid(reversed(panel.get_image_size())), True)
 
         # Add a border around the image
@@ -266,9 +271,9 @@ def generate_mask(
                     )
                     mask_untrusted_rectangle(mask, x0, x1, y0, y1)
                 if region.polygon is not None:
-                    assert (
-                        len(region.polygon) % 2 == 0
-                    ), "Polygon must contain 2D coords"
+                    assert len(region.polygon) % 2 == 0, (
+                        "Polygon must contain 2D coords"
+                    )
                     vertices = []
                     for i in range(int(len(region.polygon) / 2)):
                         x = region.polygon[2 * i]

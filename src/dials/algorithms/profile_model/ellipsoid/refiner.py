@@ -4,7 +4,6 @@ import logging
 import random
 import textwrap
 from math import log, pi, sqrt
-from typing import List
 
 import numpy as np
 from numpy.linalg import det, inv, norm
@@ -76,7 +75,7 @@ def compute_dmbar(S: np.array, dS: np.array, dmu: np.array, epsilon: float) -> n
     return A + B + C + D
 
 
-class ConditionalDistribution(object):
+class ConditionalDistribution:
     """
     A class to compute useful stuff about the conditional distribution
 
@@ -131,7 +130,7 @@ class ConditionalDistribution(object):
         """
         return self._Sbar
 
-    def first_derivatives_of_sigma(self) -> List[np.array]:
+    def first_derivatives_of_sigma(self) -> list[np.array]:
         """
         Return the marginal first derivatives (as a list of 2x2 arrays)
 
@@ -144,7 +143,7 @@ class ConditionalDistribution(object):
 
         return self.dSbar
 
-    def first_derivatives_of_mean(self) -> List[np.array]:
+    def first_derivatives_of_mean(self) -> list[np.array]:
         """
         Return the marginal first derivatives (a list of 2x1 arrays)
 
@@ -174,9 +173,8 @@ def rotate_mat3_double(R, A):
     return np.einsum("ij,jkv,kl->ilv", R, A, R.T)
 
 
-class ReflectionLikelihood(object):
+class ReflectionLikelihood:
     def __init__(self, model, s0, sp, h, ctot, mobs, sobs, panel_id=0):
-
         # Save stuff
         modelstate = ReflectionModelState(model, s0, h)
         self.modelstate = modelstate
@@ -210,7 +208,6 @@ class ReflectionLikelihood(object):
         )
 
     def update(self):
-
         # The s2 vector
         s2 = self.s0 + self.modelstate.get_r()
         # Rotate the mean vector
@@ -391,11 +388,10 @@ class ReflectionLikelihood(object):
         return I
 
 
-class MaximumLikelihoodTarget(object):
+class MaximumLikelihoodTarget:
     def __init__(
         self, model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list, panel_ids
     ):
-
         # Check input
         assert len(h_list) == sp_list.shape[-1]
         assert len(h_list) == ctot_list.shape[-1]
@@ -542,7 +538,7 @@ def gradient_descent(f, df, x0, max_iter=1000, tolerance=1e-10):
     return x
 
 
-class FisherScoringMaximumLikelihoodBase(object):
+class FisherScoringMaximumLikelihoodBase:
     """
     A class to solve maximum likelihood equations using fisher scoring
 
@@ -689,7 +685,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
 
         """
         # Initialise the super class
-        super(FisherScoringMaximumLikelihood, self).__init__(
+        super().__init__(
             model.active_parameters,
             max_iter=max_iter,
             tolerance=tolerance,
@@ -879,7 +875,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
                     "",
                     "  R.M.S.D (local) = %.5g" % sqrt(mse),
                     "",
-                    "  R.M.S.D (pixel): X = %.3f, Y = %.3f" % tuple(rmsd),
+                    "  R.M.S.D (pixel): X = {:.3f}, Y = {:.3f}".format(*tuple(rmsd)),
                 ]
             )
         )
@@ -897,7 +893,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         )
 
 
-class Refiner(object):
+class Refiner:
     """
     High level profile refiner class that handles book keeping etc
 
@@ -1014,7 +1010,7 @@ class Refiner(object):
         return self.state.parameter_labels
 
 
-class RefinerData(object):
+class RefinerData:
     """
     A class for holding the data needed for the profile refinement
 
@@ -1087,9 +1083,7 @@ class RefinerData(object):
 
         # Print some information
         logger.info("")
-        logger.info(
-            "I_min = %.2f, I_max = %.2f" % (np.min(ctot_list), np.max(ctot_list))
-        )
+        logger.info(f"I_min = {np.min(ctot_list):.2f}, I_max = {np.max(ctot_list):.2f}")
 
         # Sometimes a single reflection might have an enormouse intensity for
         # whatever reason and since we weight by intensity, this can cause the
@@ -1183,9 +1177,9 @@ def print_eigen_values_and_vectors_static(A):
     logger.info(
         f"""
  Invariant crystal mosaicity:
- M1 : {eigen_values[0]**0.5:.5f} Å⁻¹
- M2 : {eigen_values[1]**0.5:.5f} Å⁻¹
- M3 : {eigen_values[2]**0.5:.5f} Å⁻¹
+ M1 : {eigen_values[0] ** 0.5:.5f} Å⁻¹
+ M2 : {eigen_values[1] ** 0.5:.5f} Å⁻¹
+ M3 : {eigen_values[2] ** 0.5:.5f} Å⁻¹
 """
     )
 
@@ -1212,7 +1206,7 @@ def print_eigen_values_and_vectors_angular(A):
     logger.info(
         """
  Angular mosaicity in degrees equivalent units:\n"""
-        + "\n".join(f" M{i+1} : {m:.5f} degrees" for i, m in enumerate(mosaicity))
+        + "\n".join(f" M{i + 1} : {m:.5f} degrees" for i, m in enumerate(mosaicity))
     )
 
 
@@ -1231,7 +1225,7 @@ def print_matrix_np(A, fmt="%.3g", indent=0):
         line = ""
         for i in range(A.shape[1]):
             line += fmt % t[i + j * A.shape[1]]
-        lines.append("%s|%s|" % (prefix, line))
+        lines.append(f"{prefix}|{line}|")
     return "\n".join(lines)
 
 
@@ -1250,5 +1244,5 @@ def print_matrix(A, fmt="%.3g", indent=0):
         line = ""
         for i in range(A.n[1]):
             line += fmt % t[i + j * A.n[1]]
-        lines.append("%s|%s|" % (prefix, line))
+        lines.append(f"{prefix}|{line}|")
     return "\n".join(lines)

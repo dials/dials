@@ -4,7 +4,6 @@ import os
 import pathlib
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -376,13 +375,11 @@ def test_import_beam_centre(dials_data, tmp_path):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
-    # test slow_fast_beam_centre with a multi-panel CS-PAD image
-    impath = os.path.join(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858401.cbf",
+def test_fast_slow_beam_centre(dials_data: pathlib.Path, tmp_path):
+    # test fast_slow_beam_centre with a multi-panel CS-PAD image
+    impath = (
+        dials_data("image_examples", pathlib=True)
+        / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     )
     result = subprocess.run(
         [
@@ -432,6 +429,57 @@ def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
     assert offsets == pytest.approx(ref_offsets)
 
 
+def test_distance_multi_panel(dials_data: pathlib.Path, tmp_path):
+    # test setting the distance with a multi-panel CS-PAD image
+    impath = str(
+        dials_data("image_examples", pathlib=True)
+        / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
+    )
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "distance=100",
+            "output.experiments=distance.expt",
+            impath,
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "distance.expt").is_file()
+
+    experiments = load.experiment_list(tmp_path / "distance.expt")
+    detector = experiments[0].detector
+    # all distances should be 100
+    assert all(p.get_distance() == pytest.approx(100) for p in detector)
+
+    # check relative panel positions have not changed
+    from scitbx import matrix
+
+    o = matrix.col(detector[0].get_origin())
+    offsets = []
+    for p in detector:
+        intra_pnl = o - matrix.col(p.get_origin())
+        offsets.append(intra_pnl.length())
+
+    result = subprocess.run(
+        [shutil.which("dials.import"), "output.experiments=reference.expt", impath],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "reference.expt").is_file()
+
+    ref_exp = load.experiment_list(tmp_path / "reference.expt")
+    ref_detector = ref_exp[0].detector
+    o = matrix.col(ref_detector[0].get_origin())
+    ref_offsets = []
+    for p in ref_detector:
+        intra_pnl = o - matrix.col(p.get_origin())
+        ref_offsets.append(intra_pnl.length())
+    assert offsets == pytest.approx(ref_offsets)
+
+
 def test_from_image_files(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
@@ -449,6 +497,74 @@ def test_from_image_files(dials_data, tmp_path):
     # check that an experiment identifier is assigned
     exp = load.experiment_list(tmp_path / "imported.expt")
     assert exp[0].identifier != ""
+
+
+def test_from_image_files_in_chunks(dials_data, tmp_path):
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+
+    # Import from the image files
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=imported.expt",
+            "split=1,9,3",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert (tmp_path / "imported.expt").is_file()
+    exp = load.experiment_list(tmp_path / "imported.expt")
+    assert len(exp) == 3
+
+
+def test_from_image_files_uneven_chunks(dials_data, tmp_path):
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+
+    # Import from the image files
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=imported.expt",
+            "split=1,8,3",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert (tmp_path / "imported.expt").is_file()
+    exp = load.experiment_list(tmp_path / "imported.expt")
+    assert len(exp) == 3
+    lens = tuple(len(e.imageset) for e in exp)
+    assert lens == (3, 3, 2)
+
+
+def test_from_image_files_implicit_chunks(dials_data, tmp_path):
+    image_files = sorted(
+        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    )
+
+    # Import from the image files
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            "output.experiments=imported.expt",
+            "split=3",
+        ]
+        + image_files,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert (tmp_path / "imported.expt").is_file()
+    exp = load.experiment_list(tmp_path / "imported.expt")
+    assert len(exp) == 3
 
 
 def test_from_template(dials_data, tmp_path):
@@ -770,9 +886,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     # also add in something that is sequences, for completess
     centroid_image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )[
-        :3
-    ]  # just three images
+    )[:3]  # just three images
     result = subprocess.run(
         [
             shutil.which("dials.import"),
@@ -795,14 +909,11 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     assert len(experiments3.scans()) == 5  # four for sacla stills, 1 for centroid data
 
 
-def test_convert_stills_to_sequences_nonh5(dials_regression: pathlib.Path, tmp_path):
-    image_path = Path(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858801.cbf",
+def test_convert_stills_to_sequences_nonh5(dials_data: pathlib.Path, tmp_path):
+    image_path = str(
+        dials_data("image_examples", pathlib=True)
+        / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     )
-    assert image_path.is_file()
     result = subprocess.run(
         [
             shutil.which("dials.import"),

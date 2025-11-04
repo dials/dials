@@ -2,7 +2,6 @@
 Tests for dials.command_line.anvil_correction.
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -73,7 +72,7 @@ def test_correct_correction(dials_data):
         assert pytest.approx(reflections[case].select(~flagged)) == old_reflections[
             case
         ].select(~flagged), (
-            "Un-integrated reflections have been erroneously " "'corrected'."
+            "Un-integrated reflections have been erroneously 'corrected'."
         )
 
         # Check that the applied corrections are correct.

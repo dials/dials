@@ -100,7 +100,6 @@ def do_spotfinding(
     experiments: ExperimentList,
     params: libtbx.phil.scope_extract,
 ) -> tuple[ExperimentList, flex.reflection_table]:
-
     # did input have identifier?
     had_identifiers = False
     if all(i != "" for i in experiments.identifiers()):
@@ -161,11 +160,13 @@ def do_spotfinding(
             for k in reflections.experiment_identifiers().keys():
                 del reflections.experiment_identifiers()[k]
 
-    reflections.as_file(params.output.reflections)
-
-    logger.info(
-        "Saved %s reflections to %s", len(reflections), params.output.reflections
-    )
+    if len(reflections):
+        reflections.as_file(params.output.reflections)
+        logger.info(
+            "Saved %s reflections to %s", len(reflections), params.output.reflections
+        )
+    else:
+        logger.warning("No reflections found")
 
     # Reset the trusted ranges
     if params.maximum_trusted_value is not None:
@@ -176,7 +177,6 @@ def do_spotfinding(
 
     # Save the experiments
     if params.output.experiments:
-
         logger.info(f"Saving experiments to {params.output.experiments}")
         experiments.as_file(params.output.experiments)
 

@@ -21,7 +21,6 @@ class ScanVaryingGoniometerParameterisation(
     def __init__(
         self, goniometer, t_range, num_intervals, beam=None, experiment_ids=None
     ):
-
         if experiment_ids is None:
             experiment_ids = [0]
 
@@ -92,10 +91,10 @@ class ScanVaryingGoniometerParameterisation(
 
         # calculate derivatives of state wrt underlying smoother parameters
         dS_dp1 = [None] * dgamma1_dp.size
-        for (i, v) in dgamma1_dp:
+        for i, v in dgamma1_dp:
             dS_dp1[i] = dS_dval[0] * v
         dS_dp2 = [None] * dgamma2_dp.size
-        for (i, v) in dgamma2_dp:
+        for i, v in dgamma2_dp:
             dS_dp2[i] = dS_dval[1] * v
 
         # store derivatives as list-of-lists

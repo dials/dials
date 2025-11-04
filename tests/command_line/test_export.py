@@ -115,7 +115,9 @@ def test_mtz_best_unit_cell(dials_data, tmp_path):
             scaled_expt,
             scaled_refl,
             f"d_min={d_min:f}",
-            "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
+            "best_unit_cell={:g},{:g},{:g},{:g},{:g},{:g}".format(
+                *best_unit_cell.parameters()
+            ),
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -294,6 +296,9 @@ def test_mmcif(compress, hklout, dials_data, tmp_path):
     assert (tmp_path / hklin).is_file()
 
 
+@pytest.mark.skipif(
+    shutil.which("gemmi") is None, reason="Could not find gemmi executable"
+)
 @pytest.mark.parametrize("pdb_version", ["v5", "v5_next"])
 def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     """Call dials.export format=mmcif after scaling"""
@@ -319,6 +324,17 @@ def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
     if pdb_version == "v5":
         assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
+        # check that gemmi can understand the output
+        cmd = [
+            shutil.which("gemmi"),
+            "cif2mtz",
+            tmp_path / "scaled.mmcif",
+            tmp_path / "test.mtz",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
+        assert not result.returncode and not result.stderr
+        assert (tmp_path / "test.mtz").is_file()
+
     elif pdb_version == "v5_next":
         assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()
 
@@ -538,8 +554,8 @@ def test_shelx_ins(dials_data, tmp_path):
     assert (tmp_path / "dials.ins").is_file()
 
     cell_esds = {
-        "CELL": (5.4815, 8.2158, 12.1457, 90.000, 90.000, 90.000),
-        "ZERR": (0.0005, 0.0007, 0.0011, 0.003, 0.004, 0.004),
+        "CELL": (5.48154, 8.21578, 12.14570, 90.0000, 90.0000, 90.0000),
+        "ZERR": (0.00050, 0.00073, 0.00109, 0.0034, 0.0037, 0.0037),
     }
 
     with (tmp_path / "dials.ins").open() as fh:
@@ -548,7 +564,7 @@ def test_shelx_ins(dials_data, tmp_path):
             instruction = tokens[0]
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
-                assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+                assert result == pytest.approx(cell_esds[instruction], abs=0.0001)
 
 
 def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
@@ -582,6 +598,39 @@ def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
                 assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+
+
+def test_shelx_ins_composition(dials_data, tmp_path):
+    # Call dials.export
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "intensity=scale",
+            "format=shelx",
+            "composition=C3H7NO2S",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    sfac_unit = {
+        "SFAC": "C H N O S",
+        "UNIT": "12 28 4 8 4",
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            if instruction in sfac_unit:
+                result = " ".join(tokens[1:6])
+                assert result == sfac_unit[instruction]
 
 
 def test_export_sum_or_profile_only(dials_data, tmp_path):

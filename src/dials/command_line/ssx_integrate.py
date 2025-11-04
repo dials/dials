@@ -35,7 +35,7 @@ import logging
 import pathlib
 from dataclasses import dataclass
 from multiprocessing import Pool
-from typing import Any
+from typing import Any, List
 
 import iotbx.phil
 from cctbx import crystal
@@ -56,16 +56,11 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
 )
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
-from dials.util import log, show_mail_handle_errors
+from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.combine_experiments import CombineWithReference
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
+from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
-
-try:
-    from typing import List, Type
-except ImportError:
-    pass
 
 logger = logging.getLogger("dials.ssx_integrate")
 
@@ -170,14 +165,14 @@ loggers_to_disable_for_stills = loggers_to_disable + [
 ]
 
 
-def process_one_image(experiment, table, params, integrator_class):
+def process_one_image(experiment, table, params, integrator_class, crystalno=1):
     collect_data = params.output.html or params.output.json
     integrator = integrator_class(params, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
-        logger.info(f"Processing failed due to error: {e}")
-        return (None, None, None)
+        logger.info(f"Processing crystal {crystalno} failed due to error: {e}")
+        return (experiment, None, integrator.collector)
     else:
         return experiment, table, collector
 
@@ -206,7 +201,7 @@ def setup(reflections, params):
 
     # Note, memory processing logic can go here
     if params.nproc is Auto:
-        params.nproc = available_cores()
+        params.nproc = CPU_COUNT
     logger.info(f"Using {params.nproc} processes for integration")
 
     # aggregate some output for json, html etc
@@ -235,7 +230,7 @@ def setup(reflections, params):
 
 @dataclass
 class InputToIntegrate:
-    integrator_class: Type[SimpleIntegrator]
+    integrator_class: type[SimpleIntegrator]
     experiment: Experiment
     table: flex.reflection_table
     params: Any
@@ -258,6 +253,7 @@ def wrap_integrate_one(input_to_integrate: InputToIntegrate):
         input_to_integrate.table,
         input_to_integrate.params,
         input_to_integrate.integrator_class,
+        input_to_integrate.crystalno,
     )
 
     result = IntegrationResult(
@@ -296,10 +292,68 @@ def wrap_integrate_one(input_to_integrate: InputToIntegrate):
     return result
 
 
-def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
+def pretty_ellipsoid_mosaicity(mosaicity: dict[str, float]) -> tuple[str, str]:
+    mosaicity_array = []
+    names_and_units = []
+    for k, v in mosaicity.items():
+        if not k.startswith("angular"):
+            mosaicity_array.append(f"{v * 1e6:.2f}")  # Invariant components to 2.d.p.
+            names_and_units.append(f"{k}(µÅ⁻¹)")
+        else:
+            mosaicity_array.append(f"{v:.3g}")  # Angular to 3.s.f.
+            names_and_units.append(f"{k}(°)")
+    return ",".join(mosaicity_array), ",".join(names_and_units)
 
+
+def make_summary_table(results: List[IntegrationResult], algorithm: str = "stills"):
+    overall_summary_header = [
+        "Image",
+        "crystal",
+        "n-indexed",
+        "n-integrated",
+        "mean I/sigma",
+    ]
+    added_names = False  # we will add the component names in the ellipsoid case.
+    if algorithm != "stills":
+        overall_summary_header.append(f"mosaicity parameters: \n  {algorithm}")
+    else:
+        overall_summary_header.append(
+            "mosaicity parameters: \n  half mosaicity (°)\n  block size (Å)"
+        )
+    rows = []
+    for r in results:
+        data = r.collector.data
+        if "n_integrated" not in data:
+            row = [data["image"], r.crystalno, data["initial_n_refl"], "-", "-", "-"]
+        else:
+            if algorithm != "stills":
+                m_str, names = pretty_ellipsoid_mosaicity(
+                    r.experiment.profile.mosaicity()
+                )
+                if not added_names:  # only do this once!
+                    overall_summary_header[-1] += f"\n  {names}"
+                    added_names = True
+            else:
+                hw = f"{r.experiment.crystal.get_half_mosaicity_deg():.4f}"
+                block_size = f"{r.experiment.crystal.get_domain_size_ang():.2f}"
+                m_str = f"{hw}, {block_size}"
+            row = [
+                data["image"],
+                r.crystalno,
+                data["initial_n_refl"],
+                data["n_integrated"],
+                f"{data['i_over_sigma_overall']:.3f}",
+                m_str,
+            ]
+        rows.append(row)
+    rows = sorted(rows, key=lambda x: x[0])
+    summary_table = tabulate(rows, overall_summary_header)
+    return summary_table
+
+
+def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     # create iterable
-    input_iterable: List[InputToIntegrate] = []
+    input_iterable: list[InputToIntegrate] = []
     from dxtbx.imageset import ImageSequence, ImageSet
 
     original_isets = list(sub_expts.imagesets())
@@ -339,23 +393,28 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     ):
         if configuration["params"].nproc > 1:
             with Pool(configuration["params"].nproc) as pool:
-                results: List[IntegrationResult] = pool.map(
+                results: list[IntegrationResult] = pool.map(
                     wrap_integrate_one, input_iterable
                 )
         else:
-            results: List[IntegrationResult] = [
+            results: list[IntegrationResult] = [
                 wrap_integrate_one(i) for i in input_iterable
             ]
+
+    algorithm = configuration["params"].algorithm
+    if algorithm == "ellipsoid":
+        algorithm += (
+            " (" + configuration["params"].profile.ellipsoid.rlp_mosaicity.model + ")"
+        )
+    summary = make_summary_table(results, algorithm)
+    logger.info("\nSummary of integration\n" + summary)
 
     # then join
     integrated_reflections = flex.reflection_table()
     integrated_experiments = []
 
-    use_beam = None
     use_gonio = None
     use_detector = None
-    if len(sub_expts.beams()) == 1:
-        use_beam = sub_expts.beams()[0]
     if len(sub_expts.goniometers()) == 1:
         use_gonio = sub_expts.goniometers()[0]
     if len(sub_expts.detectors()) == 1:
@@ -372,8 +431,6 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
                 result.table["imageset_id"] = flex.int(
                     result.table.size(), result.imageset_index
                 )
-                if use_beam:
-                    result.experiment.beam = use_beam
                 if use_gonio:
                     result.experiment.goniometer = use_gonio
                 if use_detector:
@@ -410,20 +467,22 @@ def run_integration(reflections, experiments, params):
     # now process each batch, and do parallel processing within a batch
     for i, b in enumerate(batches[:-1]):
         end_ = batches[i + 1]
-        logger.info(f"Processing images {b+1} to {end_}")
+        logger.info(f"Processing images {b + 1} to {end_}")
         sub_tables = reflections[b:end_]
         sub_expts = experiments[b:end_]
 
         integrated_experiments, integrated_reflections = process_batch(
             sub_tables, sub_expts, configuration, batch_offset=b
         )
-        yield integrated_experiments, integrated_reflections, configuration[
-            "aggregator"
-        ]
+        yield (
+            integrated_experiments,
+            integrated_reflections,
+            configuration["aggregator"],
+        )
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil=working_phil) -> None:
+def run(args: list[str] = None, phil=working_phil) -> None:
     """
     Run dials.ssx_integrate from the command-line.
 
@@ -486,20 +545,23 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         run_integration(reflections, experiments, params)
     ):
         # combine beam and detector models if not already
-        if len(int_expt.detectors()) > 1 or len(int_expt.beams()) > 1:
-            combine = CombineWithReference(
-                detector=int_expt[0].detector, beam=int_expt[0].beam
-            )
+        if len(int_expt.detectors()) > 1:
+            combine = CombineWithReference(detector=int_expt[0].detector)
             elist = ExperimentList()
             for expt in int_expt:
                 elist.append(combine(expt))
             int_expt = elist
-        reflections_filename = f"integrated_{i+1}.refl"
-        experiments_filename = f"integrated_{i+1}.expt"
-        logger.info(f"Saving {int_refl.size()} reflections to {reflections_filename}")
-        int_refl.as_file(reflections_filename)
-        logger.info(f"Saving the experiments to {experiments_filename}")
-        int_expt.as_file(experiments_filename)
+        reflections_filename = f"integrated_{i + 1}.refl"
+        experiments_filename = f"integrated_{i + 1}.expt"
+        if int_refl.size() > 0:
+            logger.info(
+                f"Saving {int_refl.size()} reflections to {reflections_filename}"
+            )
+            int_refl.as_file(reflections_filename)
+            logger.info(f"Saving the experiments to {experiments_filename}")
+            int_expt.as_file(experiments_filename)
+        else:
+            logger.info("No reflections integrated")
 
         integrated_crystal_symmetries.extend(
             [

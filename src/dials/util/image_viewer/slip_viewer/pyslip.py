@@ -93,7 +93,7 @@ def point_inside_polygon(x, y, poly):
 
     (p1x, p1y) = new_poly[0]
 
-    for (p2x, p2y) in new_poly:
+    for p2x, p2y in new_poly:
         if y > min(p1y, p2y):
             if y <= max(p1y, p2y):
                 if x <= max(p1x, p2x):
@@ -161,7 +161,11 @@ class _BufferedCanvas(wx.Panel):
     def Update(self):
         """Causes the canvas to be updated."""
 
-        dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
+        try:
+            dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
+        except RuntimeError:
+            # If the application is closing, the PySlip object has been deleted and this fails
+            return None
         dc.Clear()
         self.Draw(dc)
 
@@ -1107,12 +1111,11 @@ class PySlip(_BufferedCanvas):
             y_off,
             pdata,
         ) in data:
-
             # Gather ellipse center, major and minor axes in view
             # coordinates.
-            (ellipse_center, semimajor_axis, semiminor_axis) = [
+            (ellipse_center, semimajor_axis, semiminor_axis) = (
                 self.ConvertGeo2View(lonlat) for lonlat in p
-            ]
+            )
 
             major = col(semimajor_axis) - col(ellipse_center)
             minor = col(semiminor_axis) - col(ellipse_center)
@@ -1639,7 +1642,7 @@ class PySlip(_BufferedCanvas):
             rectangles = []
             if radius:
                 diameter = 2 * radius
-            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+            for lon, lat, place, radius, colour, x_off, y_off, pdata in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1681,7 +1684,7 @@ class PySlip(_BufferedCanvas):
             # dc = wx.GCDC(dc)            # allow transparent colours
             dc.SetPen(wx.Pen(colour))
             dc.SetBrush(wx.Brush(colour))
-            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+            for lon, lat, place, radius, colour, x_off, y_off, pdata in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1700,7 +1703,7 @@ class PySlip(_BufferedCanvas):
         # draw points on map/view
         if map_rel:
             dc = wx.GCDC(dc)  # allow transparent colours
-            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
+            for lon, lat, place, radius, colour, x_off, y_off, pdata in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     dc.SetPen(wx.Pen(colour))
@@ -1710,12 +1713,12 @@ class PySlip(_BufferedCanvas):
                         dc.DrawCircle(int(x + x_off), int(y + y_off), radius)
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
             dc_h -= 1
             dc_w -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
-            for (x, y, place, radius, colour, x_off, y_off, pdata) in data:
+            for x, y, place, radius, colour, x_off, y_off, pdata in data:
                 dc.SetPen(wx.Pen(colour))
                 dc.SetBrush(wx.Brush(colour))
                 exec(self.point_view_placement[place])
@@ -1778,8 +1781,8 @@ class PySlip(_BufferedCanvas):
                     lines.append([int(x) for x in p_lonlat])
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
             dc_w -= 1
             dc_h -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1798,7 +1801,7 @@ class PySlip(_BufferedCanvas):
                 # fetch the exec code, don't refetch for each point in polygon
                 place_exec = self.poly_view_placement[place]
                 pp = []
-                for (x, y) in p:
+                for x, y in p:
                     exec(place_exec)
                     if closed:
                         pp.append((x, y))
@@ -1831,9 +1834,9 @@ class PySlip(_BufferedCanvas):
 
         # draw images on map/view
         if map_rel:
-            for (lon, lat, bmap, w, h, place, x_off, y_off, idata) in images:
-                w2 = w / 2  # noqa; lgtm; self-modifying code
-                h2 = h / 2  # noqa; lgtm; self-modifying code
+            for lon, lat, bmap, w, h, place, x_off, y_off, idata in images:
+                w2 = w / 2  # noqa
+                h2 = h / 2  # noqa
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1841,11 +1844,11 @@ class PySlip(_BufferedCanvas):
                     dc.DrawBitmap(bmap, x, y, False)
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
-            for (x, y, bmap, w, h, place, x_off, y_off, idata) in images:
-                w2 = w / 2  # noqa; lgtm; self-modifying code
-                h2 = h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
+            for x, y, bmap, w, h, place, x_off, y_off, idata in images:
+                w2 = w / 2  # noqa
+                h2 = h / 2  # noqa
                 exec(self.image_view_placement[place])
                 dc.DrawBitmap(bmap, x, y, False)
 
@@ -1901,16 +1904,16 @@ class PySlip(_BufferedCanvas):
 
                     # place the text relative to hotpoint
                     (w, h, _, _) = dc.GetFullTextExtent(tdata)
-                    w2 = w / 2  # noqa; lgtm; self-modifying code
-                    h2 = h / 2  # noqa; lgtm; self-modifying code
+                    w2 = w / 2  # noqa
+                    h2 = h / 2  # noqa
                     exec(self.text_map_placement[place])
                     dc.SetTextForeground(textcolour)
                     dc.DrawText(tdata, int(x), int(y))
         else:
             # we need the size of the DC
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-            dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+            dc_w2 = dc_w / 2  # noqa
+            dc_h2 = dc_h / 2  # noqa
             dc_w -= 1
             dc_h -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1950,8 +1953,8 @@ class PySlip(_BufferedCanvas):
 
                 # place the text relative to hotpoint
                 (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text
-                w2 = w / 2  # noqa; lgtm; self-modifying code
-                h2 = h / 2  # noqa; lgtm; self-modifying code
+                w2 = w / 2  # noqa
+                h2 = h / 2  # noqa
                 exec(self.text_view_placement[place])
                 dc.SetTextForeground(textcolour)
                 dc.DrawText(tdata, int(x), int(y))
@@ -2582,8 +2585,8 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 dc = wx.BufferedPaintDC(self, self.buffer)
                 (dc_w, dc_h) = dc.GetSize()
-                dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-                dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+                dc_w2 = dc_w / 2  # noqa
+                dc_h2 = dc_h / 2  # noqa
                 dc_h -= 1
                 dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, pdata) = p
@@ -2633,8 +2636,8 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 dc = wx.BufferedPaintDC(self, self.buffer)
                 (dc_w, dc_h) = dc.GetSize()
-                dc_w2 = dc_w / 2  # noqa; lgtm; self-modifying code
-                dc_h2 = dc_h / 2  # noqa; lgtm; self-modifying code
+                dc_w2 = dc_w / 2  # noqa
+                dc_h2 = dc_h / 2  # noqa
                 dc_h -= 1
                 dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, pdata) = p

@@ -6,7 +6,7 @@ import setuptools
 
 from build import build
 
-__version_tag__ = "3.18.dev"
+__version_tag__ = "3.25.dev"
 
 setup_kwargs = {
     "name": "dials",
@@ -15,11 +15,12 @@ setup_kwargs = {
     "description": "Diffraction Integration for Advanced Light Sources",
     "author": "Diamond Light Source",
     "license": "BSD-3-Clause",
-    "author_email": "dials-support@lists.sourceforge.net",
+    "author_email": "dials-user-group@jiscmail.net",
     "project_urls": {
         "homepage": "https://dials.github.io",
         "repository": "https://github.com/dials/dials",
     },
+    "python_requires": ">=3.11",
     "packages": setuptools.find_packages(where="src"),
     "package_dir": {"": "src"},
     "package_data": {
@@ -51,7 +52,6 @@ setup_kwargs = {
     ],
     "entry_points": {
         "libtbx.precommit": ["dials=dials"],
-        "libtbx.dispatcher.script": ["pytest=pytest"],
         "dxtbx.profile_model": [
             "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt",
             "ellipsoid = dials.extensions.ellipsoid_profile_model_ext:EllipsoidProfileModelExt",
@@ -70,6 +70,8 @@ setup_kwargs = {
         "dials.index.lattice_search": [
             "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch",
             "small_cell = dials.algorithms.indexing.lattice_search:SmallCell",
+            "pink_indexer = dials.algorithms.indexing.lattice_search:PinkIndexer",
+            "ffbidx = dials.algorithms.indexing.lattice_search:FfbIndexer",
         ],
         "dials.integration.background": [
             "Auto = dials.extensions.auto_background_ext:AutoBackgroundExt",

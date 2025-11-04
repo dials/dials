@@ -15,8 +15,8 @@ import dials.algorithms.rs_mapper as recviewer
 import dials.util
 import dials.util.log
 from dials.util import Sorry
-from dials.util.mp import available_cores
 from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.system import CPU_COUNT
 
 help_message = """
 This program reconstructs reciprocal space from diffraction images. The orientation matrix is not necessary; only diffraction geometry is required.
@@ -150,8 +150,8 @@ class Script:
 
         self.nproc = params.rs_mapper.nproc
         if self.nproc is libtbx.Auto:
-            self.nproc = available_cores()
-            logger.info("Setting nproc={}".format(self.nproc))
+            self.nproc = CPU_COUNT
+            logger.info(f"Setting nproc={self.nproc}")
 
         for i_expt, experiment in enumerate(self.experiments):
             logger.info(f"Calculation for experiment {i_expt}")
@@ -209,7 +209,7 @@ class Script:
         scan = imageset.get_scan()
         rows = [
             [
-                f"{i+1}",
+                f"{i + 1}",
                 f"{scan.get_angle_from_array_index(block[0]):.2f} - {scan.get_angle_from_array_index(block[-1] + 1):.2f}",
             ]
             for i, block in enumerate(blocks)
@@ -252,7 +252,7 @@ class Script:
             results = [e.result() for e in results]
 
         grid, counts = results[0]
-        for (g, c) in results[1:]:
+        for g, c in results[1:]:
             grid += g
             counts += c
 

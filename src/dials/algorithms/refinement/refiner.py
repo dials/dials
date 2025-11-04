@@ -1,14 +1,11 @@
 """Refiner is the refinement module public interface. RefinerFactory is
 what should usually be used to construct a Refiner."""
 
-
 from __future__ import annotations
 
 import copy
 import logging
 import math
-
-import psutil
 
 import libtbx
 from dxtbx.model.experiment_list import ExperimentList
@@ -31,7 +28,11 @@ from dials.algorithms.refinement.parameterisation.parameter_report import (
 from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictorFactory,
 )
-from dials.algorithms.refinement.refinement_helpers import ordinal_number, string_sel
+from dials.algorithms.refinement.refinement_helpers import (
+    compute_radial_and_transverse_residuals,
+    ordinal_number,
+    string_sel,
+)
 from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
 from dials.algorithms.refinement.reflection_manager import (
     phil_str as reflections_phil_str,
@@ -40,6 +41,7 @@ from dials.algorithms.refinement.restraints import RestraintsParameterisation
 from dials.algorithms.refinement.target import TargetFactory
 from dials.algorithms.refinement.target import phil_str as target_phil_str
 from dials.array_family import flex
+from dials.util.system import MEMORY_LIMIT
 
 logger = logging.getLogger(__name__)
 
@@ -62,43 +64,42 @@ phil_scope = parse(
     """
 refinement
   .help = "Parameters to configure the refinement"
-{
+{{
 
   mp
     .expert_level = 2
-  {
+  {{
     nproc = 1
       .type = int(value_min=1)
       .help = "The number of processes to use. Not all choices of refinement"
               "engine support nproc > 1. Where multiprocessing is possible,"
               "it is helpful only in certain circumstances, so this is not"
               "recommended for typical use."
-  }
+  }}
 
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"
-  {
-    %(parameterisation_phil)s
-  }
+  {{
+    {parameterisation_phil}
+  }}
 
-  %(refinery_phil)s
+  {refinery_phil}
 
   target
     .help = "Parameters to configure the target function"
     .expert_level = 1
-  {
-    %(target_phil)s
-  }
+  {{
+    {target_phil}
+  }}
 
   reflections
     .help = "Parameters used by the reflection manager"
-  {
-    %(reflections_phil)s
-  }
+  {{
+    {reflections_phil}
+  }}
 
-}
-"""
-    % format_data,
+}}
+""".format(**format_data),
     process_includes=True,
 )
 
@@ -173,7 +174,6 @@ def _trim_scans_to_observations(experiments, reflections):
         shoebox = None
 
     for iexp, exp in enumerate(experiments):
-
         sel = reflections["id"] == iexp
         isel = sel.iselection()
         if obs_z is not None:
@@ -207,10 +207,8 @@ def _trim_scans_to_observations(experiments, reflections):
             im_stop = min(obs_stop, stop)
 
             logger.warning(
-                "The reflections for experiment {0} do not fill the scan range. The scan will be trimmed "
-                "to images {{{1},{2}}} to match the range of observed data".format(
-                    iexp, im_start, im_stop
-                )
+                f"The reflections for experiment {iexp} do not fill the scan range. The scan will be trimmed "
+                f"to images {{{im_start},{im_stop}}} to match the range of observed data"
             )
 
             # Ensure the scan is unique to this experiment and set trimmed limits
@@ -245,6 +243,9 @@ class RefinerFactory:
             "flags",
             "shoebox",
             "delpsical.weights",
+            "wavelength",
+            "wavelength_cal",
+            "s0",
         ]
         # NB xyzobs.px.value & xyzcal.px required by SauterPoon outlier rejector
         # NB delpsical.weights is used by ExternalDelPsiWeightingStrategy
@@ -261,7 +262,6 @@ class RefinerFactory:
 
     @classmethod
     def from_parameters_data_experiments(cls, params, reflections, experiments):
-
         # copy the experiments
         experiments = _copy_experiments_for_refining(experiments)
 
@@ -281,7 +281,6 @@ class RefinerFactory:
 
     @classmethod
     def reflections_after_outlier_rejection(cls, params, reflections, experiments):
-
         # copy the experiments
         experiments = _copy_experiments_for_refining(experiments)
 
@@ -296,7 +295,6 @@ class RefinerFactory:
 
     @classmethod
     def _build_reflection_manager_and_predictor(cls, params, reflections, experiments):
-
         # Currently a refinement job can only have one parameterisation of the
         # prediction equation. This can either be of the XYDelPsi (stills) type, the
         # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
@@ -384,6 +382,21 @@ class RefinerFactory:
         obs["x_resid"] = x_calc - x_obs
         obs["y_resid"] = y_calc - y_obs
         obs["phi_resid"] = phi_calc - phi_obs
+        refman.update_residuals()
+
+        if (
+            params.refinement.reflections.outlier.algorithm == "mcd"
+            and params.refinement.reflections.outlier.mcd.positional_coordinates
+            in ("radial_transverse", "deltatt_transverse")
+        ):
+            compute_radial_and_transverse_residuals(
+                experiments,
+                obs,
+                two_theta=params.refinement.reflections.outlier.mcd.positional_coordinates
+                == "deltatt_transverse"
+                or params.refinement.reflections.outlier.mcd.positional_coordinates
+                == "delpsidstar",
+            )
 
         # determine whether to do basic centroid analysis to automatically
         # determine outlier rejection block
@@ -483,7 +496,7 @@ class RefinerFactory:
             dense_jacobian_gigabytes = (
                 nparam * nref * ndim * flex.double.element_size()
             ) / 1e9
-            avail_memory_gigabytes = psutil.virtual_memory().available / 1e9
+            avail_memory_gigabytes = MEMORY_LIMIT / 1e9
             # Report if the Jacobian requires a large amount of storage
             if (
                 dense_jacobian_gigabytes > 0.2 * avail_memory_gigabytes
@@ -678,7 +691,6 @@ class RefinerFactory:
         do_stills,
         do_sparse,
     ):
-
         target = TargetFactory.from_parameters_and_experiments(
             params,
             experiments,
@@ -803,14 +815,13 @@ class Refiner:
             return None, None
 
         for k, corrmat in corrmats.items():
-
             assert corrmat.is_square_matrix()
 
             idx = flex.bool(sel).iselection()
             sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
 
-            for (i, x) in enumerate(idx):
-                for (j, y) in enumerate(idx):
+            for i, x in enumerate(idx):
+                for j, y in enumerate(idx):
                     sub_corrmat[i, j] = corrmat[x, y]
 
             corrmats[k] = sub_corrmat
@@ -829,9 +840,12 @@ class Refiner:
 
         rmsd_multipliers = []
         header = ["Step", "Nref"]
-        for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+        for name, units in zip(self._target.rmsd_names, self._target.rmsd_units):
             if units == "mm":
                 header.append(name + "\n(mm)")
+                rmsd_multipliers.append(1.0)
+            elif units == "A":
+                header.append(name + "\n(A)")
                 rmsd_multipliers.append(1.0)
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
@@ -869,7 +883,7 @@ class Refiner:
 
         rmsd_multipliers = []
         header = ["Step", "Nref"]
-        for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+        for name, units in zip(self._target.rmsd_names, self._target.rmsd_units):
             if units == "mm":
                 header.append(name + "\n(mm)")
                 rmsd_multipliers.append(1.0)
@@ -898,7 +912,7 @@ class Refiner:
             return self._exp_rmsd_table_data
 
         header = ["Exp\nid", "Nref"]
-        for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+        for name, units in zip(self._target.rmsd_names, self._target.rmsd_units):
             if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
                 header.append(name + "\n(px)")
             elif name == "RMSD_Phi" and units == "rad":
@@ -908,6 +922,8 @@ class Refiner:
                 # will convert other angles in radians to degrees (e.g. for
                 # RMSD_DeltaPsi and RMSD_2theta)
                 header.append(name + "\n(deg)")
+            elif name == "RMSD_wavelength" and units == "frame":
+                header.append(name + "\n(frame)")
             else:  # skip other/unknown RMSDs
                 pass
 
@@ -929,7 +945,7 @@ class Refiner:
             scan = exp.scan
             try:
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
-            except (AttributeError, ZeroDivisionError):
+            except (AttributeError, ZeroDivisionError, RuntimeError):
                 images_per_rad = None
 
             raw_rmsds = self._target.rmsds_for_experiment(iexp)
@@ -937,7 +953,7 @@ class Refiner:
                 continue  # skip experiments where rmsd cannot be calculated
             num = self._target.get_num_matches_for_experiment(iexp)
             rmsds = []
-            for (name, units, rmsd) in zip(
+            for name, units, rmsd in zip(
                 self._target.rmsd_names, self._target.rmsd_units, raw_rmsds
             ):
                 if name == "RMSD_X" and units == "mm":
@@ -946,6 +962,8 @@ class Refiner:
                     rmsds.append(rmsd * px_per_mm[1])
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
+                elif name == "RMSD_wavelength" and units == "frame":
+                    rmsds.append(rmsd)
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)
             rows.append([str(iexp), str(num)] + [f"{r:.5g}" for r in rmsds])
@@ -968,14 +986,14 @@ class Refiner:
     def print_panel_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""
 
-        if len(self._experiments.scans()) > 1:
+        if len(self._experiments.scans()) > 1 and not self._experiments.all_tof():
             logger.warning(
                 "Multiple scans present. Only the first scan will be used "
                 "to determine the image width for reporting RMSDs"
             )
         scan = self._experiments.scans()[0]
         images_per_rad = None
-        if scan:
+        if scan and scan.has_property("oscillation"):
             if scan.get_oscillation(deg=False)[1] != 0.0:
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
 
@@ -985,7 +1003,7 @@ class Refiner:
             logger.info("\nDetector %s RMSDs by panel:", idetector + 1)
 
             header = ["Panel\nid", "Nref"]
-            for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
+            for name, units in zip(self._target.rmsd_names, self._target.rmsd_units):
                 if name == "RMSD_X" or name == "RMSD_Y" and units == "mm":
                     header.append(name + "\n(px)")
                 elif (
@@ -996,12 +1014,13 @@ class Refiner:
                     name == "RMSD_DeltaPsi" and units == "rad"
                 ):  # convert radians to degrees for reporting of stills
                     header.append(name + "\n(deg)")
+                elif name == "RMSD_wavelength" and units == "frame":
+                    header.append(name + "\n(frame)")
                 else:  # skip RMSDs that cannot be expressed in image/scan space
                     pass
 
             rows = []
             for ipanel, panel in enumerate(detector):
-
                 px_size = panel.get_pixel_size()
                 px_per_mm = [1.0 / e for e in px_size]
                 num = self._target.get_num_matches_for_panel(ipanel)
@@ -1011,7 +1030,7 @@ class Refiner:
                 if raw_rmsds is None:
                     continue  # skip panels where rmsd cannot be calculated
                 rmsds = []
-                for (name, units, rmsd) in zip(
+                for name, units, rmsd in zip(
                     self._target.rmsd_names, self._target.rmsd_units, raw_rmsds
                 ):
                     if name == "RMSD_X" and units == "mm":
@@ -1022,6 +1041,8 @@ class Refiner:
                         rmsds.append(rmsd * images_per_rad)
                     elif name == "RMSD_DeltaPsi" and units == "rad":
                         rmsds.append(rmsd * RAD2DEG)
+                    elif name == "RMSD_wavelength" and units == "frame":
+                        rmsds.append(rmsd)
                 rows.append([str(ipanel), str(num)] + [f"{r:.5g}" for r in rmsds])
 
             if len(rows) > 0:
@@ -1160,7 +1181,6 @@ class ScanVaryingRefiner(Refiner):
 
             # Calculate scan-varying errors if requested
             if self._pred_param.set_scan_varying_errors:
-
                 # get state covariance matrices the whole range of images. We select
                 # the first element of this at each image because crystal scan-varying
                 # parameterisations are not multi-state

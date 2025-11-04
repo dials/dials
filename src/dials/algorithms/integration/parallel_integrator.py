@@ -4,8 +4,6 @@ import logging
 import math
 import pickle
 
-import psutil
-
 from libtbx import Auto
 
 import dials.algorithms.integration
@@ -13,10 +11,15 @@ from dials.algorithms.integration.processor import NullTask, execute_parallel_ta
 from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.mp import multi_node_parallel_map
+from dials.util.system import MEMORY_LIMIT
+
+# isort: split
 
 # Need this import first because loads extension that parallel_integrator_ext
 # relies on - it assumes the binding for EmpiricalProfileModeller exists
-import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
+import dials.algorithms.profile_model.modeller
+
+# isort: split
 
 from dials.constants import EPS, FULL_PARTIALITY
 from dials_algorithms_integration_parallel_integrator_ext import (
@@ -126,7 +129,6 @@ class BackgroundCalculatorFactory:
         # Select the factory function
         selection = params.integration.background.algorithm
         if selection == "simple":
-
             # Get parameters
             params = params.integration.background.simple
 
@@ -159,7 +161,6 @@ class BackgroundCalculatorFactory:
             algorithm = SimpleBackgroundCalculatorFactory.create(experiments, **kwargs)
 
         elif selection == "glm":
-
             # Get the parameters
             params = params.integration.background.glm
 
@@ -172,7 +173,6 @@ class BackgroundCalculatorFactory:
             )
 
         elif selection == "gmodel":
-
             # Get the parameters
             params = params.integration.background.gmodel
 
@@ -214,7 +214,6 @@ class IntensityCalculatorFactory:
         # Select the factory function
         selection = params.profile.algorithm
         if selection == "gaussian_rs":
-
             # Get the parameters
             params = params.profile.gaussian_rs.fitting
 
@@ -263,7 +262,6 @@ class ReferenceCalculatorFactory:
         # Select the factory function
         selection = params.profile.algorithm
         if selection == "gaussian_rs":
-
             # Get the parameters
             params = params.profile.gaussian_rs.fitting
 
@@ -289,7 +287,7 @@ def _assert_enough_memory(required_memory, max_memory_usage):
     :param required_memory: The required number of bytes
     :param max_memory_usage: The maximum memory usage allowed
     """
-    total_memory = psutil.virtual_memory().total
+    total_memory = MEMORY_LIMIT
     assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
     assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
     limit_memory = total_memory * max_memory_usage
@@ -300,9 +298,9 @@ def _assert_enough_memory(required_memory, max_memory_usage):
     include increasing the percentage of memory allowed for shoeboxes or
     decreasing the block size. This could also be caused by a highly mosaic
     crystal model - is your crystal really this mosaic?
-      Total system memory: {total_memory / 1000000000.0:.1f} GB
-      Limit image memory: {limit_memory / 1000000000.0:.1f} GB
-      Required image memory: {required_memory / 1000000000.0:.1f} GB
+      Total system memory: {total_memory / 1e9:.1f} GB
+      Limit image memory: {limit_memory / 1e9:.1f} GB
+      Required image memory: {required_memory / 1e9:.1f} GB
     """
         )
     else:
@@ -334,12 +332,12 @@ class IntegrationJob:
             params = phil_scope.extract()
 
         assert len(reflections) > 0, "Zero reflections given"
-        assert (
-            params.integration.block.max_memory_usage > 0.0
-        ), "Max memory % must be > 0"
-        assert (
-            params.integration.block.max_memory_usage <= 1.0
-        ), "Max memory % must be < 1"
+        assert params.integration.block.max_memory_usage > 0.0, (
+            "Max memory % must be > 0"
+        )
+        assert params.integration.block.max_memory_usage <= 1.0, (
+            "Max memory % must be < 1"
+        )
         self.index = index
         self.job = job
         self.experiments = experiments
@@ -641,7 +639,7 @@ class IntegrationManager:
         """
         Compute the required memory
         """
-        total_memory = psutil.virtual_memory().available
+        total_memory = MEMORY_LIMIT
         max_memory_usage = self.params.integration.block.max_memory_usage
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
@@ -686,12 +684,11 @@ class IntegrationManager:
                 raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
-                    """
-          The requested block size (%s) is larger than the maximum allowable block
-          size (%s). Either decrease the requested block size or increase the
+                    f"""
+          The requested block size ({block_size}) is larger than the maximum allowable block
+          size ({max_block_size}). Either decrease the requested block size or increase the
           amount of available memory.
         """
-                    % (block_size, max_block_size)
                 )
         block.size = block_size
         block.units = "frames"
@@ -785,12 +782,12 @@ class ReferenceCalculatorJob:
             params = phil_scope.extract()
 
         assert len(reflections) > 0, "Zero reflections given"
-        assert (
-            params.integration.block.max_memory_usage > 0.0
-        ), "Max memory % must be > 0"
-        assert (
-            params.integration.block.max_memory_usage <= 1.0
-        ), "Max memory % must be < 1"
+        assert params.integration.block.max_memory_usage > 0.0, (
+            "Max memory % must be > 0"
+        )
+        assert params.integration.block.max_memory_usage <= 1.0, (
+            "Max memory % must be < 1"
+        )
         self.index = index
         self.job = job
         self.experiments = experiments
@@ -1111,7 +1108,7 @@ class ReferenceCalculatorManager:
         """
         Compute the required memory
         """
-        total_memory = psutil.virtual_memory().available
+        total_memory = MEMORY_LIMIT
         max_memory_usage = self.params.integration.block.max_memory_usage
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
@@ -1156,12 +1153,11 @@ class ReferenceCalculatorManager:
                 raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
-                    """
-          The requested block size (%s) is larger than the maximum allowable block
-          size (%s). Either decrease the requested block size or increase the
+                    f"""
+          The requested block size ({block_size}) is larger than the maximum allowable block
+          size ({max_block_size}). Either decrease the requested block size or increase the
           amount of available memory.
         """
-                    % (block_size, max_block_size)
                 )
         block.size = block_size
         block.units = "frames"
@@ -1247,7 +1243,6 @@ class ReferenceCalculatorProcessor:
 
         # Execute each task
         if params.integration.mp.njobs > 1:
-
             if params.integration.mp.method == "multiprocessing":
                 _assert_enough_memory(
                     params.integration.mp.njobs
@@ -1311,7 +1306,6 @@ class ReferenceCalculatorProcessor:
 
 class IntegratorProcessor:
     def __init__(self, experiments, reflections, reference=None, params=None):
-
         # Create the reference manager
         integration_manager = IntegrationManager(
             experiments, reflections, reference, params
@@ -1322,7 +1316,6 @@ class IntegratorProcessor:
 
         # Execute each task
         if params.integration.mp.njobs > 1:
-
             if params.integration.mp.method == "multiprocessing":
                 _assert_enough_memory(
                     params.integration.mp.njobs
@@ -1374,7 +1367,6 @@ def split_partials_over_boundaries(reflections, block_size):
     # See if any reflections need to be split
     refl_to_split_sel = n_frames_of_bboxes > block_size
     if refl_to_split_sel.count(True) > 0:
-
         # Get the subset of reflections to be split
         subset = reflections.select(refl_to_split_sel)
         newset = flex.reflection_table()

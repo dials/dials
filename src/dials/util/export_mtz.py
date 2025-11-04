@@ -2,20 +2,15 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
 from math import isclose
-from typing import List, Optional
 
+import gemmi
 import numpy as np
 import pandas as pd
-
-try:
-    import gemmi
-except ModuleNotFoundError as e:
-    gemmi = None
-    gemmi_import_error = e
 
 from cctbx import uctbx
 from dxtbx import flumpy
@@ -53,6 +48,11 @@ class MTZWriterBase:
     def __init__(self, space_group, unit_cell=None):
         """If a unit cell is provided, will be used as default unless specified
         for each crystal."""
+        warnings.warn(
+            "MTZWriterBase classes (MergedMTZWriter and MADMergedMTZWriter) are deprecated. Use MergedMTZCreator instead.\n",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         mtz_file = mtz.object()
         mtz_file.set_title(f"From {env.dispatcher_name}")
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
@@ -105,7 +105,7 @@ class MergedMTZWriter(MTZWriterBase):
         multiplicities=None,
         anom_multiplicities=None,
         suffix=None,
-        half_datasets: Optional[MergedHalfDatasets] = None,
+        half_datasets: MergedHalfDatasets | None = None,
         r_free_array=None,
     ):
         """Add merged data to the most recent dataset.
@@ -170,7 +170,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         multiplicities=None,
         anom_multiplicities=None,
         suffix=None,
-        half_datasets: Optional[MergedHalfDatasets] = None,
+        half_datasets: MergedHalfDatasets | None = None,
         r_free_array=None,
     ):
         if not suffix:
@@ -221,7 +221,7 @@ def add_batch_list(
 
     i0 = image_range[0]
     for i in range(n_batches):
-        if experiment.scan:
+        if experiment.scan and experiment.scan.get_oscillation()[1] != 0.0:
             phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
 
         # Unit cell and UB matrix for the centre of the image for scan-varying model
@@ -230,7 +230,6 @@ def add_batch_list(
             and experiment.crystal.num_scan_points > 0
             and experiment.goniometer
         ):
-
             # Get the index of the image in the sequence e.g. first => 0, second => 1
             image_index = i + i0 - experiment.scan.get_image_range()[0]
 
@@ -315,8 +314,6 @@ def add_batch_list(
     if max_batch_number > batch_offset:
         batch_offset = max_batch_number
 
-    if gemmi is None:
-        raise gemmi_import_error
     batch = gemmi.Mtz.Batch()
 
     # Setting fields that are the same for all batches
@@ -365,9 +362,9 @@ def write_columns(mtz, reflection_table):
 
     nref = len(reflection_table["miller_index"])
     assert nref
-    xdet, ydet, _ = [
+    xdet, ydet, _ = (
         flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
-    ]
+    )
 
     type_table = {
         "H": "H",
@@ -536,7 +533,7 @@ def write_columns(mtz, reflection_table):
         mtz_data.insert(len(mtz_data.columns), "QE", np.ones(nref).astype("float32"))
 
     mtz.switch_to_original_hkl()
-    mtz.set_data(mtz_data)
+    mtz.set_data(mtz_data.to_numpy())
 
 
 def export_mtz(
@@ -619,8 +616,7 @@ def export_mtz(
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavelength: %.5f, experiment numbers: %s "
-                % (
+                "  Wavelength: {:.5f}, experiment numbers: {} ".format(
                     v.weighted_mean,
                     ",".join(
                         map(str, [identifiers_list.index(i) for i in v.identifiers])
@@ -668,7 +664,6 @@ def export_mtz(
         logger.debug("Keeping existing batches")
     image_ranges = get_image_ranges(experiment_list)
     if len(unique_offsets) != len(batch_offsets):
-
         raise ValueError(
             "Duplicate batch offsets detected: %s"
             % ", ".join(
@@ -677,8 +672,6 @@ def export_mtz(
         )
 
     # Create the mtz file
-    if gemmi is None:
-        raise gemmi_import_error
     mtz = gemmi.Mtz(with_base=True)
     mtz.title = f"From {env.dispatcher_name}"
     date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
@@ -727,7 +720,7 @@ def export_mtz(
         experiment.data = dict(reflections)
 
         s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
-        logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
+        logger.debug("Beam vector: {:.4f} {:.4f} {:.4f}".format(*s0n))
 
         add_batch_list(
             mtz,
@@ -770,9 +763,9 @@ def export_mtz(
             combined_data[k].extend(v)
     # ALL columns must be the same length
     assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
-    assert len(combined_data["id"]) == len(
-        reflection_table["id"]
-    ), "Lost rows in split/combine"
+    assert len(combined_data["id"]) == len(reflection_table["id"]), (
+        "Lost rows in split/combine"
+    )
 
     # Write all the data and columns to the mtz file
     write_columns(mtz, combined_data)
@@ -828,7 +821,7 @@ def log_summary(mtz):
     for col in mtz.columns:
         # col.min_value and col.max_value are not set, so we have to calculate them here
         logger.info(
-            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {col.array.min():12.6g} {col.array.max():10.6g}"
+            f"{col.label:<12s} {col.type} {col.dataset_id:2d} {np.nanmin(col.array):12.6g} {np.nanmax(col.array):10.6g}"
         )
     logger.info(f"History ({len(mtz.history)} lines):")
     for line in mtz.history:
@@ -850,7 +843,7 @@ class WavelengthGroup:
         self.wavelengths.append(wl)
 
     def calculate_weighted_mean(
-        self, reflection_tables: List[flex.reflection_table]
+        self, reflection_tables: list[flex.reflection_table]
     ) -> None:
         n, nw = (0, 0)
         for i, w in zip(self.identifiers, self.wavelengths):
@@ -935,7 +928,6 @@ def convert_to_cambridge(experiments):
 
 
 def rotate_crystal(crystal, Rmat, axis, angle):
-
     Amats = []
     if crystal.num_scan_points > 0:
         scan_pts = list(range(crystal.num_scan_points))

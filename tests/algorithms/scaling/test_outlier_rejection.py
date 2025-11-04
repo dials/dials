@@ -204,7 +204,6 @@ expected_target_output = [
 
 
 def test_outlier_rejection_with_small_outliers():
-
     rt = flex.reflection_table()
     rt["intensity"] = flex.double(
         [3560.84231, 3433.66407, 3830.64235, 0.20552, 3786.59537]
@@ -228,7 +227,6 @@ def test_outlier_rejection_with_small_outliers():
 
 
 def test_limit_outlier_weights():
-
     rt = flex.reflection_table()
     rt["intensity"] = flex.double([100.0, 101.0, 109.0, 105.0, 1.0])
     rt["variance"] = flex.double([100.0, 101.0, 109.0, 105.0, 1.0])

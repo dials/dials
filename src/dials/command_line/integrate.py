@@ -19,15 +19,12 @@ Examples::
   dials.integrate models.expt refined.refl background.algorithm=glm
 """
 
-
 from __future__ import annotations
 
 import logging
 import math
 import sys
 import warnings
-
-from orderedset import OrderedSet
 
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
@@ -268,7 +265,6 @@ def sample_predictions(experiments, predicted, params):
 
     working_isel = flex.size_t()
     for iexp, exp in enumerate(experiments):
-
         sel = predicted["id"] == iexp
         isel = sel.iselection()
         nrefs = sample_size = len(isel)
@@ -315,7 +311,6 @@ def split_for_scan_range(experiments, reference, scan_range):
 
     # Only do anything is the scan range is set
     if scan_range is not None and len(scan_range) > 0:
-
         # Ensure that all experiments have the same imageset and scan
         iset = [e.imageset for e in experiments]
         scan = [e.scan for e in experiments]
@@ -347,17 +342,13 @@ def split_for_scan_range(experiments, reference, scan_range):
             # Validate the requested scan range
             if scan_end == scan_start:
                 raise ValueError(
-                    "Scan range end must be higher than start; pass {},{} for single image".format(
-                        scan_start, scan_start + 1
-                    )
+                    f"Scan range end must be higher than start; pass {scan_start},{scan_start + 1} for single image"
                 )
             if scan_end < scan_start:
                 raise ValueError("Scan range must be in ascending order")
             elif scan_start < frames_start or scan_end > frames_end:
                 raise ValueError(
-                    "Scan range must be within image range {}..{}".format(
-                        frames_start, frames_end
-                    )
+                    f"Scan range must be within image range {frames_start}..{frames_end}"
                 )
 
             assert scan_end > scan_start
@@ -519,11 +510,11 @@ def run_integration(params, experiments, reference=None):
         force_static=params.prediction.force_static,
         padding=params.prediction.padding,
     )
-    isets = OrderedSet(e.imageset for e in experiments)
+    isets = {e.imageset: i for i, e in enumerate(experiments)}
     predicted["imageset_id"] = flex.int(predicted.size(), 0)
     if len(isets) > 1:
         for e in experiments:
-            iset_id = isets.index(e.imageset)
+            iset_id = isets[e.imageset]
             for id_ in predicted.experiment_identifiers().keys():
                 identifier = predicted.experiment_identifiers()[id_]
                 if identifier == e.identifier:

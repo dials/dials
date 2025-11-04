@@ -172,7 +172,7 @@ class XrayFrame(wx.Frame):
         """
 
         key = self.get_key(file_name_or_data)
-        if type(file_name_or_data) is dict:
+        if isinstance(file_name_or_data, dict):
             self._img = rstbx.viewer.image(file_name_or_data)
         else:
             try:
@@ -230,7 +230,7 @@ class XrayFrame(wx.Frame):
         if self.image_chooser.GetCount() >= self.CHOOSER_SIZE:
             self.image_chooser.Delete(0)
         i = self.image_chooser.GetCount()
-        if type(file_name_or_data) is dict:
+        if isinstance(file_name_or_data, dict):
             self.image_chooser.Insert(key, i, None)
         else:
             self.image_chooser.Insert(os.path.basename(key), i, key)
@@ -467,8 +467,7 @@ class LinePlot(wxtbx.plots.plot_container):
         ax.set_ylabel("Intensity")
         if line.lattice_length is not None:
             ax.set_title(
-                "Line distance = %.2fmm; avg. lattice length = %.2f Angstrom"
-                % (line.distance, line.lattice_length)
+                f"Line distance = {line.distance:.2f}mm; avg. lattice length = {line.lattice_length:.2f} Angstrom"
             )
         else:
             ax.set_title(f"Line distance: {line.distance:.2f}mm")

@@ -19,16 +19,16 @@ The output formats currently supported are:
 
 MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
-but unscaled data, the required input is a models.expt file and an
+but unscaled data, the required input is an integrated.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
-models.expt file and a scaled.refl file, also passing the option
-intensity=scale.
+scaled.expt file and a scaled.refl file, in which case the intensity=scale
+flag will be set implicitly.
 
-NXS format exports the files as an NXmx file. The required input is a
-models.expt file and an integrated.refl file.
+NXS format exports the files as an NXmx file. The required input is an
+integrated.expt file and an integrated.refl file.
 
-MMCIF format exports the files as an mmcif file. The required input is a
-models.expt file and an integrated.refl file.
+MMCIF format exports the files as an mmcif file. The required input is an
+integrated.expt file and an integrated.refl file.
 
 XDS_ASCII format exports intensity data and the experiment metadata in the
 same format as used by the output of XDS in the CORRECT step - output can
@@ -42,8 +42,13 @@ MOSFLM format exports the files as an index.mat mosflm-format matrix file and a
 mosflm.in file containing basic instructions for input to mosflm. The required
 input is an models.expt file.
 
-XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
+XDS format exports experiment files as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
+
+SHELX format exports intensity data in HKLF 4 format for use in the SHELX suite
+of programs. As this file format does not contain unit cell parameters or
+symmetry information a minimal instruction file is also written. Optionally the
+expected contents of the asymmetric unit can be added to this instruciton file.
 
 PETS format exports intensity data and diffraction data in the CIF format
 used by PETS. This is primarily intended to produce files suitable for
@@ -52,26 +57,28 @@ dynamic diffraction refinement using Jana2020, which requires this format.
 Examples::
 
   # Export to mtz
-  dials.export models.expt integrated.refl
-  dials.export models.expt integrated.refl mtz.hklout=integrated.mtz
-  dials.export models.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
+  dials.export integrated.expt integrated.refl
+  dials.export integrated.expt integrated.refl mtz.hklout=integrated.mtz
+  dials.export scaled.expt scaled.refl
+  dials.export scaled.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
-  dials.export models.expt integrated.refl format=nxs
-  dials.export models.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
+  dials.export integrated.expt integrated.refl format=nxs
+  dials.export integrated.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
 
   # Export to mmcif
-  dials.export models.expt integrated.refl format=mmcif
-  dials.export models.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
-
-  # Export to mosflm
-  dials.export models.expt integrated.refl format=mosflm
+  dials.export integrated.expt integrated.refl format=mmcif
+  dials.export integrated.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
 
   # Export to xds
   dials.export strong.refl format=xds
   dials.export indexed.refl format=xds
-  dials.export models.expt format=xds
-  dials.export models.expt indexed.refl format=xds
+  dials.export indexed.expt indexed.refl format=xds
+
+  # Export to shelx
+  dials.export scaled.expt scaled.refl format=shelx
+  dials.export scaled.expt scaled.refl format=shelx shelx.hklout=dials.hkl
+  dials.export scaled.expt scaled.refl format=shelx composition=C3H7NO2S
 """
 
 phil_scope = parse(
@@ -210,6 +217,14 @@ phil_scope = parse(
               "mmcif file should comply with. v5_next adds support for"
               "recording unmerged data as well as additional scan metadata"
               "and statistics, however writing can be slow for large datasets."
+    scale = True
+      .type = bool
+      .help = "If True, apply a scale such that the minimum intensity is greater"
+              "than (less negative than) the mmcif.min_scale value below."
+    min_scale = -999999.0
+      .type = float
+      .help = "If mmcif.scale is True, scale all negative intensities such that"
+              "they are less negative than this value."
   }
 
   mosflm {
@@ -249,6 +264,9 @@ phil_scope = parse(
     ins = dials.ins
       .type = path
       .help = "The output ins file"
+    composition = CH
+      .type = str
+      .help = "The chemical composition of the asymmetric unit"
     scale = True
       .type = bool
       .help = "Scale reflections to maximise output precision in SHELX 8.2f format"
@@ -615,8 +633,7 @@ def run(args=None):
 
     try:
         template_list = {
-            str(e.imageset.get_template())
-            + ":{0}:{1}".format(*e.scan.get_image_range())
+            str(e.imageset.get_template()) + ":{}:{}".format(*e.scan.get_image_range())
             for e in experiments
         }
     except AttributeError:
@@ -666,11 +683,7 @@ def run(args=None):
         sys.exit(f"Unknown format: {params.format}")
 
     # Export the data
-    try:
-        exporter(params, experiments, reflections)
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        sys.exit(1)
+    exporter(params, experiments, reflections)
 
 
 if __name__ == "__main__":

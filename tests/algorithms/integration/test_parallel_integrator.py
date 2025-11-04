@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import bz2
 import collections
 import math
 import os
 import pickle
+import shutil
+import tempfile
 
 import pytest
 
@@ -13,17 +16,25 @@ from dials.array_family import flex
 
 
 @pytest.fixture(scope="module")
-def data(dials_regression):  # read experiments and reflections
-    directory = os.path.join(dials_regression, "integration_test_data", "shoeboxes")
-    experiments_filename = os.path.join(directory, "integrated_experiments.json")
-    reflections_filename = os.path.join(directory, "shoeboxes_0_0.pickle")
-    reference_filename = os.path.join(directory, "reference_profiles.pickle")
+def data(dials_data):  # read experiments and reflections
+    directory = dials_data("integration_test_data", pathlib=True)
+    experiments_path = directory / "thaumatin_i04-integrated.expt"
+    reflections_path = directory / "thaumatin_i04-shoeboxes.refl.bz2"
+    reference_path = directory / "thaumatin_i04-reference_profiles.pickle.bz2"
+
+    tmpdir = tempfile.mkdtemp()
+    for f in [reflections_path, reference_path]:
+        with bz2.BZ2File(f) as compr:
+            with open(os.path.join(tmpdir, f.name[:-4]), "wb") as decompr:
+                shutil.copyfileobj(compr, decompr)
 
     experiments = ExperimentListFactory.from_json_file(
-        experiments_filename, check_format=False
+        experiments_path, check_format=False
     )
-    reflections = flex.reflection_table.from_file(reflections_filename)
-    with open(reference_filename, "rb") as fh:
+    reflections = flex.reflection_table.from_file(
+        os.path.join(tmpdir, reflections_path.name[:-4])
+    )
+    with open(os.path.join(tmpdir, reference_path.name[:-4]), "rb") as fh:
         reference = pickle.load(fh, encoding="bytes")
 
     Data = collections.namedtuple("Data", ["experiments", "reflections", "reference"])
@@ -96,7 +107,6 @@ class IntensityCalculatorFactory:
 
         data_spec = GaussianRSMultiCrystalReferenceProfileData()
         for e in experiments:
-
             sampler = CircleSampler(
                 e.detector[0].get_image_size(),
                 e.scan.get_array_range(),
@@ -176,7 +186,6 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
 
 
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data):
-
     algorithm = IntensityCalculatorFactory.create(
         data, detector_space=True, deconvolution=True
     )
@@ -312,7 +321,6 @@ def test_gaussianrs_profile_data_pickling(data):
 
     data_spec = GaussianRSMultiCrystalReferenceProfileData()
     for e in experiments:
-
         sampler = CircleSampler(
             e.detector[0].get_image_size(), e.scan.get_array_range(), num_scan_points
         )

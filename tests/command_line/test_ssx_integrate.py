@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import pathlib
 import shutil
 import subprocess
@@ -47,8 +48,6 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     for i in range(1, 6):
         assert tmp_path.joinpath(f"nuggets/nugget_integrated_{i}.json").is_file()
 
-
-import json
 
 expected_simple1 = {
     "likelihood": 171374.174649,
@@ -103,7 +102,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
             "algorithm=ellipsoid",
             f"ellipsoid.rlp_mosaicity={model}",
             "n_macro_cycles=2",
-            f"output.history={tmp_path /'history.json'}",
+            f"output.history={tmp_path / 'history.json'}",
             "max_iter=100",
             "LL_tolerance=1e-3",
         ],

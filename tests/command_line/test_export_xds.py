@@ -8,7 +8,7 @@ from dials.array_family import flex
 
 def test_spots_xds(tmp_path):
     xds_input = "SPOT.XDS"
-    output_pickle = "spot.refl"
+    output_filepath = "spot.refl"
 
     tmp_path.joinpath(xds_input).write_text(
         """\
@@ -29,17 +29,16 @@ def test_spots_xds(tmp_path):
         [
             shutil.which("dials.import_xds"),
             xds_input,  # xparm_file,
-            "input.method=reflections",
-            "output.filename=" + output_pickle,
+            "output.reflections=" + output_filepath,
             "remove_invalid=True",
         ],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmp_path.joinpath(output_pickle).is_file()
+    assert tmp_path.joinpath(output_filepath).is_file()
 
-    reflections = flex.reflection_table.from_file(tmp_path / output_pickle)
+    reflections = flex.reflection_table.from_file(tmp_path / output_filepath)
     assert len(reflections) == 5
 
     tmp_path.joinpath(xds_input).unlink()
@@ -47,7 +46,7 @@ def test_spots_xds(tmp_path):
 
     # now test we can export it again
     result = subprocess.run(
-        [shutil.which("dials.export"), "format=xds", output_pickle],
+        [shutil.which("dials.export"), "format=xds", output_filepath],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -63,9 +62,7 @@ def test_spots_xds(tmp_path):
  1317.52 1171.59 19.28 120.00  6 -4 6
  1260.25 1300.55 13.67 116.00  -4 2 6
  1090.27 1199.47 41.49 114.00  -2 3 -13
-""".split(
-            "\n"
-        )
+""".split("\n")
     ]
 
 

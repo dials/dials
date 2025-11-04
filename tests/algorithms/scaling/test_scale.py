@@ -714,7 +714,9 @@ def test_scale_best_unit_cell_d_min(dials_data, tmp_path):
     d_min = 2
     command = [
         shutil.which("dials.scale"),
-        "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
+        "best_unit_cell={:g},{:g},{:g},{:g},{:g},{:g}".format(
+            *best_unit_cell.parameters()
+        ),
         f"d_min={d_min:g}",
         "unmerged_mtz=unmerged.mtz",
         "merged_mtz=merged.mtz",
@@ -982,7 +984,7 @@ def test_target_scale_handle_bad_dataset(dials_data, tmp_path):
     command = [
         shutil.which("dials.scale"),
         "reflection_selection.method=intensity_ranges",
-        "Isigma_range=20.0,0.0",
+        "Isigma_range=18.0,0.0",
         "full_matrix=None",
         os.fspath(location / "integrated.refl"),
         os.fspath(location / "integrated.expt"),

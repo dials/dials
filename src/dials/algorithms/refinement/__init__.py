@@ -9,7 +9,7 @@ class DialsRefineRuntimeError(RuntimeError):
     pass
 
 
-from dials.algorithms.refinement.refiner import Refiner, RefinerFactory
+from dials.algorithms.refinement.refiner import Refiner, RefinerFactory  # noqa: E402
 
 __all__ = [
     "DialsRefineConfigError",

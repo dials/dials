@@ -1,12 +1,10 @@
 """Testing functions for multivariate outlier rejection by the FAST-MCD
 algorithm"""
 
-
 from __future__ import annotations
 
 
 def test_maha():
-
     # Want implementation of Mahalanobis distance to match this R session:
 
     # > x1 <- round(rnorm(10,3), 3)
@@ -157,7 +155,7 @@ def test_fast_mcd_small():
 
     # unpack the data into vectors
     rows = [[float(e) for e in row.split()] for row in hbk.splitlines()]
-    x1, x2, x3 = [flex.double(e) for e in zip(*rows)]
+    x1, x2, x3 = (flex.double(e) for e in zip(*rows))
 
     # Fast MCD raw estimates
     fast_mcd = FastMCD([x1, x2, x3])

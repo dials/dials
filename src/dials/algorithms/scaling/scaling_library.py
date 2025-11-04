@@ -11,6 +11,7 @@ ExperimentLists.
 
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import math
 from copy import deepcopy
@@ -18,7 +19,6 @@ from dataclasses import dataclass
 from unittest.mock import Mock
 
 import numpy as np
-import pkg_resources
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
@@ -104,11 +104,11 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
                 "intensity.sum.variance"
             ] * flex.pow2(conv * inverse_partiality)
             if "partiality.inv.variance" in reflection_table:
+                # see e.g. https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+                # section "Example formulae", f=AB.
                 reflection_table["variance"] += (
-                    reflection_table["intensity.sum.value"]
-                    * conv
-                    * reflection_table["partiality.inv.variance"]
-                )
+                    flex.pow2(reflection_table["intensity.sum.value"] * conv)
+                ) * reflection_table["partiality.inv.variance"]
         else:
             reflection_table["intensity"] = (
                 reflection_table["intensity.sum.value"] * conv
@@ -215,7 +215,9 @@ def create_scaling_model(params, experiments, reflections):
     # Determine non-auto model to use outside the loop over datasets.
     if not use_auto_model:
         model_class = None
-        for entry_point in pkg_resources.iter_entry_points("dxtbx.scaling_model_ext"):
+        for entry_point in importlib.metadata.entry_points(
+            group="dxtbx.scaling_model_ext"
+        ):
             if entry_point.name == params.model:
                 model_class = entry_point.load()
                 break
@@ -252,15 +254,11 @@ def create_Ih_table(
     Allow an unequal number of experiments and reflections, as only need to
     extract one space group value (can optionally check all same if many)."""
     if selections:
-        assert len(selections) == len(
-            reflections
-        ), """Must have an equal number of
+        assert len(selections) == len(reflections), """Must have an equal number of
     reflection tables and selections in the input lists."""
     space_group_0 = experiments[0].crystal.get_space_group()
     for experiment in experiments:
-        assert (
-            experiment.crystal.get_space_group() == space_group_0
-        ), """The space
+        assert experiment.crystal.get_space_group() == space_group_0, """The space
     groups of all experiments must be equal."""
     input_tables = []
     indices_lists = []
@@ -384,7 +382,6 @@ class MergedHalfDatasets:
 
 
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
-
     """A class to extend iotbx merging statistics."""
 
     def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
@@ -486,6 +483,62 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             )
         return results
 
+    @classmethod
+    def weighted_cchalf(
+        cls, this, other, assume_index_matching=False, use_binning=False
+    ) -> list[tuple]:
+        if not use_binning:
+            assert other.indices().size() == this.indices().size()
+            if this.data().size() == 0:
+                return [(None, 0)]
+
+            if assume_index_matching:
+                (o, c) = (this, other)
+            else:
+                (o, c) = this.common_sets(other=other, assert_no_singles=True)
+
+            # The case where the denominator is less or equal to zero is
+            # pathological and should never arise in practice.
+            assert len(o.sigmas())
+            assert len(c.sigmas())
+            n = len(o.data())
+            if n == 1:
+                return [(None, 1)]
+            v_o = flex.pow2(o.sigmas())
+            v_c = flex.pow2(c.sigmas())
+            joint_w = 1.0 / (v_o + v_c)
+            sumjw = flex.sum(joint_w)
+            norm_jw = joint_w / sumjw
+            xbar = flex.sum(o.data() * norm_jw)
+            ybar = flex.sum(c.data() * norm_jw)
+            dx = o.data() - xbar
+            dy = c.data() - ybar
+            sxy = flex.sum(dx * dy * norm_jw)
+
+            sx = flex.sum(flex.pow2(dx) * norm_jw)
+            sy = flex.sum(flex.pow2(dy) * norm_jw)
+            if sx == 0.0 or sy == 0.0:
+                return [(None, 1)]
+            # effective sample size of weighted sample
+            # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
+            # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
+            neff = 1 / flex.sum(flex.pow2(norm_jw))
+            return [(sxy / ((sx * sy) ** 0.5), neff)]
+
+        assert this.binner is not None
+        results = []
+        for i_bin in this.binner().range_all():
+            sel = this.binner().selection(i_bin)
+            results.append(
+                cls.weighted_cchalf(
+                    this.select(sel),
+                    other.select(sel),
+                    assume_index_matching=assume_index_matching,
+                    use_binning=False,
+                )[0]
+            )
+        return results
+
 
 def merging_stats_from_scaled_array(
     scaled_miller_array,
@@ -493,6 +546,7 @@ def merging_stats_from_scaled_array(
     use_internal_variance=False,
     anomalous=True,
     additional_stats=False,
+    cc_one_half_significance_level=0.01,
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -509,7 +563,7 @@ def merging_stats_from_scaled_array(
             sigma_filtering=None,
             eliminate_sys_absent=False,
             use_internal_variance=use_internal_variance,
-            cc_one_half_significance_level=0.01,
+            cc_one_half_significance_level=cc_one_half_significance_level,
             additional_stats=additional_stats,
         )
     except (RuntimeError, Sorry) as e:
@@ -536,7 +590,7 @@ def merging_stats_from_scaled_array(
                     n_bins=n_bins,
                     anomalous=True,
                     sigma_filtering=None,
-                    cc_one_half_significance_level=0.01,
+                    cc_one_half_significance_level=cc_one_half_significance_level,
                     eliminate_sys_absent=False,
                     use_internal_variance=use_internal_variance,
                     additional_stats=additional_stats,
@@ -552,7 +606,7 @@ def merging_stats_from_scaled_array(
 
 
 def create_datastructures_for_reference_file(
-    experiments, reference_file, anomalous=True, d_min=2.0, k_sol=0.35, b_sol=46
+    experiments, reference_file, anomalous=True, d_min=1.0, k_sol=0.35, b_sol=46
 ):
     # If the file is a model file, then d_min is used to determine the highest
     # resolution calculated intensities.

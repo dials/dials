@@ -9,7 +9,7 @@ from libtbx import phil
 
 from dials.command_line.dials_import import do_import
 from dials.command_line.dials_import import phil_scope as import_phil_scope
-from dials.command_line.generate_mask import generate_mask, phil_scope
+from dials.command_line.generate_mask import generate_mask, phil_scope, run
 
 
 @pytest.fixture(
@@ -252,3 +252,21 @@ untrusted {
     with (tmp_path / masks[0]).open("rb") as fh:
         mask = pickle.load(fh)
     assert mask[0].count(False) == len(mask[0])
+
+
+def test_combine_masks(dials_data, run_in_tmp_path):
+    path = dials_data("centroid_test_data", pathlib=True)
+    experiments_path = path / "imported_experiments.json"
+    mask_path = path / "mask.pickle"
+    experiments = ExperimentList.from_file(experiments_path)
+    with (mask_path).open("rb") as fh:
+        masks = [pickle.loads(fh.read(), encoding="bytes")]
+    params = phil_scope.fetch().extract()
+
+    # Combine with existing mask
+    generate_mask(experiments, params, existing_masks=masks)
+    assert run_in_tmp_path.joinpath("pixels.mask").is_file()
+
+    # Combine only existing masks
+    run(args=[str(mask_path), str(mask_path), "output.mask=pixels2.mask"])
+    assert run_in_tmp_path.joinpath("pixels2.mask").is_file()
