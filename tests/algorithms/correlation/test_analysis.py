@@ -142,7 +142,7 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
 def test_optics_classification_definitive(
     coordinates, expected_labels, initial_min_samples
 ):
-    _, _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
+    _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
         coordinates, initial_min_samples=initial_min_samples
     )
 
@@ -161,7 +161,7 @@ def test_optics_classification_definitive(
 def test_optics_classification_variable(
     coordinates, expected_labels, initial_min_samples
 ):
-    _, _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
+    _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
         coordinates, initial_min_samples=initial_min_samples
     )
 
