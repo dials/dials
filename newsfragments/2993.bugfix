@@ -1,1 +1,1 @@
-Projection methods in ``dials.search_beam_position`` now work for each detector separately.
+``dials.search_beam_position``: Projection methods now work for each detector separately.

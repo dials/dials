@@ -1,1 +1,1 @@
-dials.import: allow per-shot wavelength variations in convert_stills_to_sequence
+``dials.import``: Allow per-shot wavelength variations in ``convert_stills_to_sequence=true``.

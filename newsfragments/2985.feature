@@ -1,1 +1,1 @@
-Enable `PinkIndexer` to be used with joint indexing and with polychromatic experiments.
+``dials.index``: Enable ``PinkIndexer`` to be used with joint indexing and with polychromatic experiments.

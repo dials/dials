@@ -1,1 +1,1 @@
-Bugfix for dials.stills_process in multiprocessing mode
+``dials.stills_process``: Bugfix for multiprocessing mode.

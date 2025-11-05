@@ -1,1 +1,1 @@
-``dials.refine_bravais_settings``: only refine the crystal model by default, not the detector and beam too.
+``dials.refine_bravais_settings``: Only refine the crystal model by default, not the detector and beam too.

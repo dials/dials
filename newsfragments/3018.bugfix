@@ -1,1 +1,1 @@
-``dials.estimate_resolution``: Don't output a large plot dict to the end of stdout
+``dials.estimate_resolution``: Don't output a large plot dict to the end of stdout.

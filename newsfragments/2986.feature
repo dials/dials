@@ -1,1 +1,1 @@
-Add spot finding filter of time-of-flight data to filter out spots within close proximity in reciprocal space.
+``dials.find_spots``: Add filter for time-of-flight data, to filter out spots within close proximity in reciprocal space.

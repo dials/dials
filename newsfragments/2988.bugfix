@@ -1,1 +1,1 @@
-``dials.export format=xds``: Ensure only ``strong`` reflections are exported in ``SPOT.XDS`` and reverse-sort by intensity
+``dials.export format=xds``: Ensure only ``strong`` reflections are exported in ``SPOT.XDS`` and reverse-sort by intensity.

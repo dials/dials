@@ -1,1 +1,1 @@
-Enable `low_res_spot_match` indexing algorithm for polychromatic data.
+``dials.index``: Enable ``indexing.method=low_res_spot_match`` for polychromatic data.

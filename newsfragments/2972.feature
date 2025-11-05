@@ -1,1 +1,1 @@
-Add spot finder wrapper for Laue data that adds initial wavelengths to reflections.
+Laue spot finding: Add wrapper that adds initial wavelengths to reflections.
