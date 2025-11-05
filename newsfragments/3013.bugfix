@@ -1,1 +1,0 @@
-``dials.symmetry`` & ``dials.cosym``: reduce code duplication by using a shared function for data preparation.

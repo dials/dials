@@ -1,1 +1,1 @@
-Add pathname/image index sorting to dials.combine_experiments
+``dials.combine_experiments``: Add pathname/image index sorting.
