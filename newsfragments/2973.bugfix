@@ -1,1 +1,0 @@
-Add extra checks for Scans having oscillation values in `centroid_px_to_mm_panel` and `Indexer._xyzcal_mm_to_px`

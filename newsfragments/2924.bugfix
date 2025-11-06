@@ -1,2 +1,0 @@
-``dials.index``: Do not lose the experiment history
-``dials.export``: Always write timestamps in UTC. Also capture processing history lines for ``dials.integrate`` and ``dials.scale`` for later addition to the MTZ Appendix, or similar.
