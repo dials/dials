@@ -1,3 +1,62 @@
+DIALS 3.26.0 (2025-11-06)
+=========================
+
+Features
+--------
+
+- Add mcd outlier rejection for stills, and add new options for mcd coordinates (xy vs. radial and transverse) (`#2676 <https://github.com/dials/dials/issues/2676>`_)
+- ``dials.modify_experiments``: new command that replaces ``dials.modify_geometry`` and allows changes to crystal models. (`#2936 <https://github.com/dials/dials/issues/2936>`_)
+- ``dials.import``: Expand recursive wildcards (``./some/**/*.h5``). (`#2957 <https://github.com/dials/dials/issues/2957>`_)
+- Time-of-flight data: Ellipse and Seed Skewness foreground/background masking algorithms added. (`#2964 <https://github.com/dials/dials/issues/2964>`_)
+- Laue spot finding: Add wrapper that adds initial wavelengths to reflections. (`#2972 <https://github.com/dials/dials/issues/2972>`_)
+- ``dials.index``: Enable ``indexing.method=low_res_spot_match`` for polychromatic data. (`#2984 <https://github.com/dials/dials/issues/2984>`_)
+- ``dials.index``: Enable ``PinkIndexer`` to be used with joint indexing and with polychromatic experiments. (`#2985 <https://github.com/dials/dials/issues/2985>`_)
+- ``dials.find_spots``: Add filter for time-of-flight data, to filter out spots within close proximity in reciprocal space. (`#2986 <https://github.com/dials/dials/issues/2986>`_)
+- Automatically use gzip-compressed reflection tables by setting the environment variable ``DIALS_USE_GZIP_REFL``. (`#2987 <https://github.com/dials/dials/issues/2987>`_)
+- ``dials.correlation_matrix``: Optimise the input parameters to OPTICS, for better detection of clusters. (`#2999 <https://github.com/dials/dials/issues/2999>`_)
+- ``dials.generate_mask``: Added a new option, ``merge_imageset_mask``, to merge pixel mask(s) defined in the ImageSet, such as a mask from the dxtbx class and a mask specified during import. (`#3034 <https://github.com/dials/dials/issues/3034>`_)
+- ``dials.combine_experiments``: Add pathname/image index sorting. (`#3036 <https://github.com/dials/dials/issues/3036>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.import``: Allow per-shot wavelength variations in ``convert_stills_to_sequence=true``. (`#2865 <https://github.com/dials/dials/issues/2865>`_)
+- ``dials.index``: Do not lose the experiment history
+  ``dials.export``: Always write timestamps in UTC. Also capture processing history lines for ``dials.integrate`` and ``dials.scale`` for later addition to the MTZ Appendix, or similar. (`#2924 <https://github.com/dials/dials/issues/2924>`_)
+- Time-of-flight: Fix mismatch between calculated values for reflections generated from indexing, and those from integration. (`#2968 <https://github.com/dials/dials/issues/2968>`_)
+- ``dials.find_spots``: No longer write out an empty ``strong.refl`` if no reflections are found. (`#2969 <https://github.com/dials/dials/issues/2969>`_)
+- Add extra checks for Scans having oscillation values in ``centroid_px_to_mm_panel`` and ``Indexer._xyzcal_mm_to_px``. (`#2973 <https://github.com/dials/dials/issues/2973>`_)
+- Remove ``beam.get_s0()`` calls from geometry_viewer and reciprocal lattice viewer, to allow these to be used with experiments containing PolychromaticBeams. (`#2981 <https://github.com/dials/dials/issues/2981>`_)
+- ``dials.refine_bravais_settings``: Only refine the crystal model by default, not the detector and beam too. (`#2983 <https://github.com/dials/dials/issues/2983>`_)
+- ``dials.export format=xds``: Ensure only ``strong`` reflections are exported in ``SPOT.XDS`` and reverse-sort by intensity. (`#2988 <https://github.com/dials/dials/issues/2988>`_)
+- ``dials.search_beam_position``: Projection methods now work for each detector separately. (`#2993 <https://github.com/dials/dials/issues/2993>`_)
+- ``dials.stills_process``: Bugfix for multiprocessing mode. (`#2995 <https://github.com/dials/dials/issues/2995>`_)
+- ``dials.split_experiments``: Report number of reflections in each output file. (`#3015 <https://github.com/dials/dials/issues/3015>`_)
+- ``dials.estimate_resolution``: Don't output a large plot dict to the end of stdout. (`#3018 <https://github.com/dials/dials/issues/3018>`_)
+- Enable parallel building in ``bootstrap.py`` installs on Unix machines. (`#3027 <https://github.com/dials/dials/issues/3027>`_)
+- Fix all `search_beam_position` projection methods to work with the average diffraction image (`#3045 <https://github.com/dials/dials/issues/3045>`_)
+
+
+Improved Documentation
+----------------------
+
+- Update the instructions in the DPF3 Part 2: A question of centring tutorial. (`#3006 <https://github.com/dials/dials/issues/3006>`_)
+- Remove an outdated multi-lattice tutorial that uses BLEND. (`#3031 <https://github.com/dials/dials/issues/3031>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- ``dials.modify_geometry`` is deprecated (use ``dials.modify_experiments`` instead). (`#2936 <https://github.com/dials/dials/issues/2936>`_)
+
+
+Misc
+----
+
+- `#2949 <https://github.com/dials/dials/issues/2949>`_, `#2989 <https://github.com/dials/dials/issues/2989>`_, `#2991 <https://github.com/dials/dials/issues/2991>`_, `#2997 <https://github.com/dials/dials/issues/2997>`_, `#3000 <https://github.com/dials/dials/issues/3000>`_, `#3002 <https://github.com/dials/dials/issues/3002>`_, `#3003 <https://github.com/dials/dials/issues/3003>`_, `#3004 <https://github.com/dials/dials/issues/3004>`_, `#3007 <https://github.com/dials/dials/issues/3007>`_, `#3013 <https://github.com/dials/dials/issues/3013>`_, `#3026 <https://github.com/dials/dials/issues/3026>`_
+
+
 DIALS 3.25.0 (2025-06-20)
 =========================
 
