@@ -1,11 +1,9 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_TOF_TOF_PROFILE1D_H
 #define DIALS_ALGORITHMS_INTEGRATION_TOF_TOF_PROFILE1D_H
 
-#include <vector>
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <iostream>
 #include <array>
 #include <cassert>
 #include <dials/array_family/scitbx_shared_and_versa.h>

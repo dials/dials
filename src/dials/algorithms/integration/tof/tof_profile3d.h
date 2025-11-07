@@ -1,15 +1,12 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_TOF_GUTMANNPROFILE3D_H
 #define DIALS_ALGORITHMS_INTEGRATION_TOF_GUTMANNPROFILE3D_H
 
-#include <vector>
 #include <array>
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <iostream>
-#include <random>
-#include <cassert>
 #include "tof_utils.h"
+#include <scitbx/constants.h>
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/unsupported/Eigen/NonLinearOptimization>
@@ -148,11 +145,12 @@ namespace dials { namespace algorithms {
 
       double a = alpha;
       double b = beta;
+      double PI = scitbx::constants::pi;
 
       double N = (a * b) / (2.0 * (a + b));  // (5)
       double detH = std::max(H.determinant(), 1e-12);
-      double Ng = std::sqrt(detH) / std::pow(2.0 * M_PI, 1.5);  // (3)
-      double f1 = N * Ng * std::sqrt(M_PI / (2.0 * H6));
+      double Ng = std::sqrt(detH) / std::pow(2.0 * PI, 1.5);  // (3)
+      double f1 = N * Ng * std::sqrt(PI / (2.0 * H6));
 
       double u = 0.5 * a * (a + 2.0 * H6 * dt + 2.0 * H3 * dx + 2.0 * H5 * dy);
       double v = 0.5 * b * (b - 2.0 * H6 * dt - 2.0 * H3 * dx - 2.0 * H5 * dy);
@@ -179,7 +177,7 @@ namespace dials { namespace algorithms {
         double term1 = exp_safe(u) * erfc_safe(y) / alpha;
         double term2 = exp_safe(v) * erfc_safe(w) / beta;
 
-        return std::sqrt(M_PI / (2.0 * H6)) * (term1 + term2);
+        return std::sqrt(PI / (2.0 * H6)) * (term1 + term2);
       };
 
       double dt_lo = dt - 0.5 * dt_width;
@@ -220,7 +218,7 @@ namespace dials { namespace algorithms {
        * Background variance is used as a weighting term
        */
 
-      std::vector<double> P(num_data_points);
+      scitbx::af::shared<double> P(num_data_points);
       int count = 0;
       const double eps = 1e-6;
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {
@@ -273,7 +271,7 @@ namespace dials { namespace algorithms {
       fvec.resize(num_data_points);
 
       // Calculate residuals
-      std::vector<double> P(num_data_points);
+      scitbx::af::shared<double> P(num_data_points);
       double eps = 1e-8;
       int count = 0;
       for (std::size_t c_x = 0; c_x < coords.accessor()[0]; ++c_x) {

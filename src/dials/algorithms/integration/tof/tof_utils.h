@@ -1,6 +1,7 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_TOF_UTILS_H
 #define DIALS_ALGORITHMS_INTEGRATION_TOF_UTILS_H
 #include <cmath>
+#include <scitbx/constants.h>
 
 namespace dials { namespace algorithms {
 
@@ -17,7 +18,7 @@ namespace dials { namespace algorithms {
 
   inline double erfcx_safe(double x) {
     if (x > 25.0) {
-      return 1.0 / (x * std::sqrt(M_PI));
+      return 1.0 / (x * std::sqrt(scitbx::constants::pi));
     }
     return std::exp(x * x) * std::erfc(x);
   }
