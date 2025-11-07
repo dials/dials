@@ -299,38 +299,38 @@ scitbx::af::shared<double> savitzky_golay(scitbx::af::shared<double> signal,
   scitbx::af::shared<double> result(n, 0.0);
 
   // Build Vandermonde matrix A
-  std::vector<std::vector<double>> A(window_size,
-                                     std::vector<double>(poly_order + 1, 0.0));
+  scitbx::af::c_grid<2> A_grid(window_size, poly_order + 1);
+  scitbx::af::versa<double, scitbx::af::c_grid<2>> A(A_grid, 0);
   for (int i = -half_window; i <= half_window; ++i) {
     for (int j = 0; j <= poly_order; ++j) {
-      A[i + half_window][j] = std::pow(i, j);
+      A(i + half_window, j) = std::pow(i, j);
     }
   }
 
   // Build (A^T A)
-  std::vector<std::vector<double>> ATA(poly_order + 1,
-                                       std::vector<double>(poly_order + 1, 0.0));
+  scitbx::af::c_grid<2> ATA_grid(poly_order + 1, poly_order + 1);
+  scitbx::af::versa<double, scitbx::af::c_grid<2>> ATA(ATA_grid, 0);
   for (int i = 0; i <= poly_order; ++i) {
     for (int j = 0; j <= poly_order; ++j) {
       for (int k = 0; k < window_size; ++k) {
-        ATA[i][j] += A[k][i] * A[k][j];
+        ATA(i, j) += A(k, i) * A(k, j);
       }
     }
   }
 
   // Build (A^T)
-  std::vector<std::vector<double>> AT(poly_order + 1,
-                                      std::vector<double>(window_size, 0.0));
+  scitbx::af::c_grid<2> AT_grid(poly_order + 1, window_size);
+  scitbx::af::versa<double, scitbx::af::c_grid<2>> AT(AT_grid, 0);
   for (int i = 0; i <= poly_order; ++i) {
     for (int k = 0; k < window_size; ++k) {
-      AT[i][k] = A[k][i];
+      AT(i, k) = A(k, i);
     }
   }
 
-  std::vector<double> coeffs(window_size, 0.0);
+  scitbx::af::shared<double> coeffs(window_size, 0.0);
 
   // Right-hand side vector: evaluate polynomial at x=0
-  std::vector<double> b(poly_order + 1, 0.0);
+  scitbx::af::shared<double> b(poly_order + 1, 0.0);
   b[0] = 1.0;
 
   // Solve ATA * c = b using Gaussian elimination with pivoting
@@ -339,25 +339,25 @@ scitbx::af::shared<double> savitzky_golay(scitbx::af::shared<double> signal,
     // Partial pivot
     int maxRow = i;
     for (int k = i + 1; k < m; k++) {
-      if (std::fabs(ATA[k][i]) > std::fabs(ATA[maxRow][i])) {
+      if (std::fabs(ATA(k, i) > std::fabs(ATA(maxRow, i)))) {
         maxRow = k;
       }
     }
     std::swap(ATA[i], ATA[maxRow]);
     std::swap(b[i], b[maxRow]);
 
-    double pivot = ATA[i][i];
+    double pivot = ATA(i, i);
     assert(std::fabs(pivot) > 1e-12);
     for (int j = i; j < m; j++) {
-      ATA[i][j] /= pivot;
+      ATA(i, j) /= pivot;
     }
     b[i] /= pivot;
 
     for (int k = 0; k < m; k++) {
       if (k != i) {
-        double factor = ATA[k][i];
+        double factor = ATA(k, i);
         for (int j = i; j < m; j++) {
-          ATA[k][j] -= factor * ATA[i][j];
+          ATA(k, j) -= factor * ATA(i, j);
         }
         b[k] -= factor * b[i];
       }

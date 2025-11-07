@@ -15,8 +15,6 @@
 #include <scitbx/vec3.h>
 #include <scitbx/constants.h>
 #include <dials/model/data/mask_code.h>
-#include <iostream>
-#include <vector>
 #include <dials/algorithms/integration/tof/tof_profile1d.h>
 #include <dials/algorithms/integration/tof/tof_profile3d.h>
 #include <dials/algorithms/scaling/tof/tof_scaling.h>
@@ -476,7 +474,7 @@ namespace dials { namespace algorithms {
         // Shoebox data are ordered (z, y, x)
         scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
         scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
-        std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+        scitbx::af::shared<std::size_t> n_contrib(shoebox.zsize(), 0);
 
         for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
           if (!success) {
@@ -862,7 +860,7 @@ namespace dials { namespace algorithms {
         // Shoebox data are ordered (z, y, x)
         scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
         scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
-        std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+        scitbx::af::shared<std::size_t> n_contrib(shoebox.zsize(), 0);
 
         for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
           if (!success) {
@@ -1703,7 +1701,7 @@ namespace dials { namespace algorithms {
 
     scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
     scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
-    std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+    scitbx::af::shared<std::size_t> n_contrib(shoebox.zsize(), 0);
     Shoebox<> i_shoebox = i_shoeboxes[0];
     Shoebox<> e_shoebox = e_shoeboxes[0];
 
@@ -2022,7 +2020,7 @@ namespace dials { namespace algorithms {
 
     scitbx::af::shared<double> incident_spectrum(shoebox.zsize(), 0.0);
     scitbx::af::shared<double> empty_spectrum(shoebox.zsize(), 0.0);
-    std::vector<std::size_t> n_contrib(shoebox.zsize(), 0);
+    scitbx::af::shared<std::size_t> n_contrib(shoebox.zsize(), 0);
     dials::model::Shoebox<> i_shoebox = i_shoeboxes[0];
     dials::model::Shoebox<> e_shoebox = e_shoeboxes[0];
 
