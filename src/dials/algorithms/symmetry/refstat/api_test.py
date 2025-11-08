@@ -1,12 +1,13 @@
 from __future__ import annotations
-
+import os
 import time
 from importlib import reload
 
+import cctbx
 from cctbx import crystal
 
 # import cctbx.sgtbx.refstat as refstat
-from cctbx.sgtbx import refstat
+from dials.algorithms.symmetry import refstat
 from iotbx import reflection_file_reader, reflection_file_utils
 
 reload(refstat)
@@ -17,57 +18,71 @@ xr.describe()
 assert xr.elements["-21-"].is_shadowed_by([xr.elements["--n"]])
 assert not xr.elements["-21-"].is_shadowed_by([xr.elements["-n-"]])
 
-# sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
-sgs = ["P 43 3 2", "P a -3"]
+sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
 for sgn in sgs:
-  xr.show_extinctions_for(sgn)
+    xr.show_extinctions_for(sgn)
 
-try:
-  import olx
+def test_reflections(file_base):
+    ins_file = file_base + ".ins"
+    if not os.path.exists(ins_file):
+        ins_file = file_base + ".res"
+    assert(os.path.exists(ins_file))
+    hkl_file = file_base + ".hkl"
+    assert(os.path.exists(hkl_file))
+    # this seems not to work??
+    #xs = cctbx.xray.structure.from_shelx(ins_file, strictly_shelxl=False)
+    #test_reflections_(xs.unit_cell(), hkl_file)
+    cell = None
+    for l in open(ins_file).readlines():
+        if l.startswith("CELL"):
+            cell = [float(x) for x in l.split()[2:]]
+            break
+    assert(cell is not None and len(cell) == 6)
+    test_reflections_(cell, hkl_file)
 
-  cell = [float(x) for x in olx.xf.au.GetCell().split(",")]
-  cs = crystal.symmetry(cell, "P1")
-  reflections_server = reflection_file_utils.reflection_file_server(
+def test_reflections_(cell, hkl_file):
+    cs = crystal.symmetry(cell, "P1")
+    reflections_server = reflection_file_utils.reflection_file_server(
         crystal_symmetry=cs,
         reflection_files=[
-      reflection_file_reader.any_reflection_file(
-                "hklf4=%s" % (olx.HKLSrc()), strict=False
-  )
+            reflection_file_reader.any_reflection_file(
+                "hklf4=%s" % (hkl_file), strict=False
+            )
         ],
     )
-  miller_array = reflections_server.get_miller_arrays(None)[0]
+    miller_array = reflections_server.get_miller_arrays(None)[0]
     print("Read in %s reflections" % (len(miller_array.indices())))
-  miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
-  data = miller_array.data()
-  sigmas = miller_array.sigmas()
+    miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
+    data = miller_array.data()
+    sigmas = miller_array.sigmas()
     print("Uniq in P1: %s" % (len(data)))
-  timex = 10
-  t = time.time()
-  for r in range(timex):
-    xr.process(miller_array.indices(), data, sigmas)
+    timex = 10
+    t = time.time()
+    for r in range(timex):
+        xr.process(miller_array.indices(), data, sigmas)
     print("CPP processing time: %.3f" % (time.time() - t))
-  t = time.time()
-  for r in range(timex):
-    xr.process_omp(miller_array.indices(), data, sigmas, -1)
+    t = time.time()
+    for r in range(timex):
+        xr.process_omp(miller_array.indices(), data, sigmas, -1)
     print("CPP_omp processing time: %.3f" % (time.time() - t))
 
-  for x in xr:
-    x.reset()
+    for x in xr:
+        x.reset()
 
-  sa = refstat.extinctions(miller_array)
-  sa.analyse(scale_I_to=10000)
-  sa.print_stats()
+    sa = refstat.extinctions(miller_array)
+    sa.analyse(scale_I_to=10000)
+    sa.print_stats()
     print("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
-  matches = sa.get_all_matching_space_groups()
+    matches = sa.get_all_matching_space_groups()
 
-  for sg, mp in matches:
-    t = refstat.merge_test(miller_array.indices(), data, sigmas)
-    weak_stats = t.sysabs_test(sg, sa.scale)
+    for sg, mp in matches:
+        t = refstat.merge_test(miller_array.indices(), data, sigmas)
+        weak_stats = t.sysabs_test(sg, sa.scale)
         wI = weak_stats.weak_I_sum / weak_stats.weak_count
         wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
-    if wI > 5 * wIs:
-      continue
-    merge_stats = t.merge_test(sg)
+        if wI > 5 * wIs:
+            continue
+        merge_stats = t.merge_test(sg)
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
         print(
@@ -98,5 +113,24 @@ try:
             )
         )
     )
-except Exception as e:
-  print("Failed to run olx test: " %e)
+
+def test_olx():
+    try:
+        import olx
+        cell = [float(x) for x in olx.xf.au.GetCell().split(",")]
+        test_reflections(cell, olx.HKLSrc())
+    except Exception as e:
+        print("Failed to run olx test: %s" %str(e))
+
+test_list = [
+    "C:/Program Files/Olex2-1.5-alpha/sample_data/THPP/thpp",
+    "C:/Program Files/Olex2-1.5-alpha/sample_data/ZP2/ZP2",
+]
+for file_base in test_list:
+    try:
+        print("Testing :%s" %file_base)
+        test_reflections(file_base)
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        print("Failed to test %s: %s " %(file_base, str(e)))

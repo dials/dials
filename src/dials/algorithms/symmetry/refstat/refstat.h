@@ -5,8 +5,9 @@
 #include <cctbx/sgtbx/symbols.h>
 #include <cctbx/sgtbx/space_group.h>
 namespace dials { namespace algorithms { namespace symmetry { namespace refstat {
+  using namespace cctbx;
+  using namespace scitbx;
   using namespace cctbx::sgtbx;
-  namespace fn = cctbx::scitbx::fn;
   // ! the actual number is 19 at, this is used to intersect lists efficiently
   const size_t max_extinction_elements = 19;
 

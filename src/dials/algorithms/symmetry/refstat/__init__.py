@@ -5,7 +5,7 @@ from dials_algorithms_symmetry_refstat_ext import extinctions_registry, merge_te
 
 
 class registry(extinctions_registry):
-    """Useful for testing"""
+  """Useful for testing"""
 
   def __init__(self):
     extinctions_registry.__init__(self)
@@ -14,7 +14,7 @@ class registry(extinctions_registry):
       self.elements[e.name] = e
 
   def describe(self):
-        """Prints information about the extinction elements and their relationship"""
+    """Prints information about the extinction elements and their relationship"""
     for k, e in self.elements.items():
       print(k)
       for rtm in e.rmx():
@@ -27,20 +27,20 @@ class registry(extinctions_registry):
 
   def show_extinctions_for(self, sg_name):
     sg = self.find_sg(sg_name)
-        print(
-            "Extinction elements for %s: %s"
-            % (
-                sg_name,
-                " ".join([self.__getitem__(i).name for i in self.get_extinctions(sg)]),
-            )
+    print(
+        "Extinction elements for %s: %s"
+        % (
+            sg_name,
+            " ".join([self.__getitem__(i).name for i in self.get_extinctions(sg)]),
         )
+    )
 
 
 class extinctions(extinctions_registry):
   def __init__(self, miller_array, sigma_level=5):
-        """Sigma_level is used to identify systematic absences, some datasets may require
+    """Sigma_level is used to identify systematic absences, some datasets may require
       lower values
-        """
+    """
     extinctions_registry.__init__(self)
     self.all_elements = list([e for e in self])
     self.present, self.unique = [], []
@@ -48,66 +48,66 @@ class extinctions(extinctions_registry):
     self.sigma_level = sigma_level
 
   def analyse(self, scale_I_to=None):
-        """Analyses the given miller array and collects statistics on present and
+    """Analyses the given miller array and collects statistics on present and
     unique extinction elements. Unique elements exclude 'shadowed' elements.
     Use scake_I_to to 'normalise' view between different datasets.
-        """
+    """
     if scale_I_to is None:
       scale_I_to = 0.0
     if self.has_omp:
-            self.process_omp(
-                self.miller_array.indices(),
-                self.miller_array.data(),
-                self.miller_array.sigmas(),
-                scale=scale_I_to,
-            )
+      self.process_omp(
+          self.miller_array.indices(),
+          self.miller_array.data(),
+          self.miller_array.sigmas(),
+          scale=scale_I_to,
+      )
     else:
-            self.process(
-                self.miller_array.indices(),
-                self.miller_array.data(),
-                self.miller_array.sigmas(),
-                scale=scale_I_to,
-            )
+      self.process(
+          self.miller_array.indices(),
+          self.miller_array.data(),
+          self.miller_array.sigmas(),
+          scale=scale_I_to,
+      )
     self.meanI = self.sumI / self.ref_count
-        self.mean_sig = (self.sum_sig_sq / self.ref_count) ** 0.5
+    self.mean_sig = (self.sum_sig_sq / self.ref_count) ** 0.5
 
     present, unique = [], []
     for x in self.all_elements:
-            if not x.count:
-                continue
-            x.meanI, x.sig = x.sumI / x.count, (x.sumS_sq**0.5) / x.count
-            if x.meanI < self.sigma_level * x.sig:
+      if not x.count:
+        continue
+      x.meanI, x.sig = x.sumI / x.count, (x.sumS_sq**0.5) / x.count
+      if x.meanI < self.sigma_level * x.sig:
         present.append(x)
     self.present = present
     unique = []
     for x in self.all_elements:
-            if not x.count:
-                continue
+      if not x.count:
+          continue
       if x in present and not x.is_shadowed_by(present):
         unique.append(x)
     self.unique = unique
 
   def print_stats(self):
-        """Prints extinction elements statistics, must be called after 'analyse'"""
+    """Prints extinction elements statistics, must be called after 'analyse'"""
     for x in self.all_elements:
-            if not x.count:
-                continue
+      if not x.count:
+          continue
       if x in self.present:
-                flag = "+"
+        flag = "+"
         if x not in self.unique:
-                    flag += "-"
+          flag += "-"
       else:
-                flag = "-"
+        flag = "-"
 
-            print(
-                "%-4s (%5s): %16.2f(%6.2f) %s" % (x.name, x.count, x.meanI, x.sig, flag)
-            )
+      print(
+          "%-4s (%5s): %16.2f(%6.2f) %s" % (x.name, x.count, x.meanI, x.sig, flag)
+      )
 
-    def get_all_matching_space_groups(self, centering="P"):
-        """Returns a tuple(space_group, fraction_of_matching_elements). The list
+  def get_all_matching_space_groups(self, centering="P"):
+    """Returns a tuple(space_group, fraction_of_matching_elements). The list
     contains all of the space groups that match the given centring and unique
     extinctions elements, must be called after 'analyse'
-        """
+    """
     sgs = []
     if not self.unique:
       return sgs
@@ -118,11 +118,11 @@ class extinctions(extinctions_registry):
       if not sg.name.startswith(centering):
         continue
       sge = set(self.get_extinctions(i))
-            if len(sge & u_s) == len(u_s):
-                sgs.append((sg, len(sge & p_s) / len(p_s)))
+      if len(sge & u_s) == len(u_s):
+          sgs.append((sg, len(sge & p_s) / len(p_s)))
     return sgs
 
-    def get_filtered_matching_space_groups(
+  def get_filtered_matching_space_groups(
         self, matches=None, cell_compatible_only=True
     ):
     if matches is None:
@@ -133,18 +133,18 @@ class extinctions(extinctions_registry):
     for sg, mp in matches:
       if cell_compatible_only and not sg.is_compatible_unit_cell(uc):
         continue
-            mt = merge_test(
-                self.miller_array.indices(),
-                self.miller_array.data(),
-                self.miller_array.sigmas(),
-            )
+      mt = merge_test(
+          self.miller_array.indices(),
+          self.miller_array.data(),
+          self.miller_array.sigmas(),
+      )
       weak_stats = mt.sysabs_test(sg, self.scale)
-            wI = weak_stats.weak_I_sum / weak_stats.weak_count
-            wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
+      wI = weak_stats.weak_I_sum / weak_stats.weak_count
+      wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
       if wI > self.sigma_level * wIs:
         continue
       merge_stats = mt.merge_test(sg)
-            sgs.append((merge_stats.r_int + wI / wIs / 10, sg))
+      sgs.append((merge_stats.r_int + wI / wIs / 10, sg))
 
     if len(sgs) == 0:
       return sgs

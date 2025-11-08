@@ -4,8 +4,9 @@
 #include <scitbx/array_family/selections.h>
 #include <scitbx/array_family/sort.h>
 namespace dials { namespace algorithms { namespace symmetry { namespace refstat {
+  using namespace cctbx;
+  using namespace scitbx;
   using namespace cctbx::sgtbx;
-  namespace fn = cscitbx::scitbx::fn;
 
   template <typename FloatType>
   class merge_test_class {
