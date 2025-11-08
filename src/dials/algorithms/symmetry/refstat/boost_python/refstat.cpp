@@ -9,7 +9,8 @@
 #include <dials/algorithms/symmetry/refstat/refstat.h>
 #include <dials/algorithms/symmetry/refstat/merge_test.h>
 
-namespace dials { namespace algorithms {  namespace symmetry { namespace refstat { namespace boost_python {
+namespace dials {
+namespace algorithms { namespace symmetry { namespace refstat { namespace boost_python {
 
   namespace {
     struct nsp_wrapper {

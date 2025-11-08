@@ -1,14 +1,14 @@
 from __future__ import annotations
+
 import os
 import time
 from importlib import reload
 
-import cctbx
 from cctbx import crystal
+from iotbx import reflection_file_reader, reflection_file_utils
 
 # import cctbx.sgtbx.refstat as refstat
 from dials.algorithms.symmetry import refstat
-from iotbx import reflection_file_reader, reflection_file_utils
 
 reload(refstat)
 
@@ -22,23 +22,25 @@ sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
 for sgn in sgs:
     xr.show_extinctions_for(sgn)
 
+
 def test_reflections(file_base):
     ins_file = file_base + ".ins"
     if not os.path.exists(ins_file):
         ins_file = file_base + ".res"
-    assert(os.path.exists(ins_file))
+    assert os.path.exists(ins_file)
     hkl_file = file_base + ".hkl"
-    assert(os.path.exists(hkl_file))
+    assert os.path.exists(hkl_file)
     # this seems not to work??
-    #xs = cctbx.xray.structure.from_shelx(ins_file, strictly_shelxl=False)
-    #test_reflections_(xs.unit_cell(), hkl_file)
+    # xs = cctbx.xray.structure.from_shelx(ins_file, strictly_shelxl=False)
+    # test_reflections_(xs.unit_cell(), hkl_file)
     cell = None
     for l in open(ins_file).readlines():
         if l.startswith("CELL"):
             cell = [float(x) for x in l.split()[2:]]
             break
-    assert(cell is not None and len(cell) == 6)
+    assert cell is not None and len(cell) == 6
     test_reflections_(cell, hkl_file)
+
 
 def test_reflections_(cell, hkl_file):
     cs = crystal.symmetry(cell, "P1")
@@ -114,13 +116,16 @@ def test_reflections_(cell, hkl_file):
         )
     )
 
+
 def test_olx():
     try:
         import olx
+
         cell = [float(x) for x in olx.xf.au.GetCell().split(",")]
         test_reflections(cell, olx.HKLSrc())
     except Exception as e:
-        print("Failed to run olx test: %s" %str(e))
+        print("Failed to run olx test: %s" % str(e))
+
 
 test_list = [
     "C:/Program Files/Olex2-1.5-alpha/sample_data/THPP/thpp",
@@ -128,9 +133,10 @@ test_list = [
 ]
 for file_base in test_list:
     try:
-        print("Testing :%s" %file_base)
+        print("Testing :%s" % file_base)
         test_reflections(file_base)
     except Exception as e:
         import traceback
+
         print(traceback.format_exc())
-        print("Failed to test %s: %s " %(file_base, str(e)))
+        print("Failed to test %s: %s " % (file_base, str(e)))
