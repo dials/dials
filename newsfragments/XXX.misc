@@ -1,0 +1,1 @@
+Enable time-of-flight mask generation to be split over multiple threads.

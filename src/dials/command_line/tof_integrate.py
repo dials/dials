@@ -259,14 +259,16 @@ def get_corrections_data(
 
 
 def calculate_shoebox_masks(
-    experiment: Experiment, reflections: flex.reflection_table, method: str
+    experiment: Experiment, reflections: flex.reflection_table, method: str, nproc: int
 ) -> flex.reflection_table:
     if method == "seed_skewness":
         logger.info("    Calculating seed skewness foreground/background mask")
-        tof_calculate_seed_skewness_shoebox_mask(reflections, experiment, 1e-7, 10)
+        tof_calculate_seed_skewness_shoebox_mask(
+            reflections, experiment, 1e-7, 10, nproc
+        )
     else:
         logger.info("    Calculating ellipse foreground/background mask")
-        tof_calculate_ellipse_shoebox_mask(reflections, experiment)
+        tof_calculate_ellipse_shoebox_mask(reflections, experiment, nproc)
 
     return reflections
 
@@ -777,7 +779,9 @@ def run_integrate(
             expt_reflections, expt, expt_data, False
         )
 
-        expt_reflections = calculate_shoebox_masks(expt, expt_reflections, params.mask)
+        expt_reflections = calculate_shoebox_masks(
+            expt, expt_reflections, params.mask, params.mp.nproc
+        )
         expt_reflections.is_overloaded(experiments)
         expt_reflections.contains_invalid_pixels()
 
