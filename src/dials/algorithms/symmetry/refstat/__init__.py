@@ -42,7 +42,7 @@ class extinctions(extinctions_registry):
         lower values
         """
         extinctions_registry.__init__(self)
-        self.all_elements = list([e for e in self])
+        self.all_elements = list(self)
         self.present, self.unique = [], []
         self.miller_array = miller_array
         self.sigma_level = sigma_level
@@ -111,8 +111,8 @@ class extinctions(extinctions_registry):
         sgs = []
         if not self.unique:
             return sgs
-        u_s = set(x.id for x in self.unique)
-        p_s = set(x.id for x in self.present)
+        u_s = {x.id for x in self.unique}
+        p_s = {x.id for x in self.present}
         for i in range(self.sg_count()):
             sg = self.get_space_group(i)
             if not sg.name.startswith(centering):
