@@ -102,14 +102,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     def("tof_calculate_ellipse_shoebox_mask",
         &tof_calculate_ellipse_shoebox_mask,
-        (arg("reflection_table"), arg("experiment")));
+        (arg("reflection_table"), arg("experiment"), arg("n_threads") = 1));
 
     def("tof_calculate_seed_skewness_shoebox_mask",
         &tof_calculate_seed_skewness_shoebox_mask,
         (arg("reflection_table"),
          arg("experiment"),
          arg("d_skewness_threshold"),
-         arg("min_iterations")));
+         arg("min_iterations"),
+         arg("n_threads") = 1));
 
     def("integrate_reflection_table",
         &integrate_reflection_table_wrapper,
