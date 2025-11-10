@@ -42,4 +42,4 @@ Python_add_library(
     MODULE
     tof/boost_python/tof_integration_ext.cc
 )
-target_link_libraries( dials_algorithms_tof_integration_ext PUBLIC CCTBX::cctbx Boost::python )
+target_link_libraries( dials_algorithms_tof_integration_ext PUBLIC CCTBX::cctbx Boost::thread Boost::python )

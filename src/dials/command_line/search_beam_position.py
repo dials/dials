@@ -435,7 +435,9 @@ def run(args=None):
                 logger.info(msg)
             else:
                 average_image = average_image / image_counter
-                x, y = compute_beam_position(image, params, detector_index=det_index)
+                x, y = compute_beam_position(
+                    average_image, params, detector_index=det_index
+                )
                 msg = f"[Detector {det_index}] "
                 msg += "Beam position from the average image: \n "
                 msg += f" {x:.2f} {y:.2f}"
