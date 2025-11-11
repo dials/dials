@@ -3,4 +3,4 @@ Python_add_library(
     MODULE
     boost_python/refstat.cpp
 )
-target_link_libraries( dials_algorithms_symmetry_refstat_ext PUBLIC CCTBX::cctbx CCTBX::scitbx Boost::python Boost::thread )
+target_link_libraries( dials_algorithms_symmetry_refstat_ext PUBLIC CCTBX::cctbx CCTBX::scitbx::boost_python Boost::python Boost::thread )
