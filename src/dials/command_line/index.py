@@ -182,10 +182,10 @@ def index(experiments, reflections, params):
         if all(e.is_still() for e in experiments):
             params.indexing.joint_indexing = False
             logger.info("Disabling joint_indexing for still data")
-        elif all(not e.is_still() for e in experiments):
-            params.indexing.joint_indexing = True
-            if len(experiments) > 1:
-                logger.info("Enabling joint_indexing for rotation data")
+        elif all(not e.is_still() for e in experiments) and len(experiments) > 1:
+            raise ValueError(
+                "Unable to set joint_indexing automatically: set to True for multi-axis data from a single crystal or False for data from multiple samples"
+            )
         else:
             raise ValueError(
                 "Unable to set joint_indexing automatically for a mixture of still and rotation data"
