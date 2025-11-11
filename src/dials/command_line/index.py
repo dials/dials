@@ -178,11 +178,11 @@ def index(experiments, reflections, params):
     if params.indexing.image_range:
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
-    if params.indexing.joint_indexing is Auto:
+    if params.indexing.joint_indexing is Auto and len(experiments) > 1:
         if all(e.is_still() for e in experiments):
             params.indexing.joint_indexing = False
             logger.info("Disabling joint_indexing for still data")
-        elif all(not e.is_still() for e in experiments) and len(experiments) > 1:
+        elif all(not e.is_still() for e in experiments):
             raise ValueError(
                 "Unable to set joint_indexing automatically: set to True for multi-axis data from a single crystal or False for data from multiple samples"
             )
