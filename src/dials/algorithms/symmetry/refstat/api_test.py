@@ -6,8 +6,8 @@ from importlib import reload
 
 from cctbx import crystal
 from iotbx import reflection_file_reader, reflection_file_utils
+from smtbx.regression.test_data import fnames
 
-# import cctbx.sgtbx.refstat as refstat
 from dials.algorithms.symmetry import refstat
 
 reload(refstat)
@@ -23,7 +23,11 @@ for sgn in sgs:
     xr.show_extinctions_for(sgn)
 
 
-def test_reflections(file_base):
+def test_reflections():
+    # Currently limited to just THPP data from Olex2 sample data. Other datasets
+    # can be added as a filebase fixture
+    file_base = fnames.thpp_ins[:-4]
+
     ins_file = file_base + ".ins"
     if not os.path.exists(ins_file):
         ins_file = file_base + ".res"
@@ -39,10 +43,7 @@ def test_reflections(file_base):
             cell = [float(x) for x in l.split()[2:]]
             break
     assert cell is not None and len(cell) == 6
-    test_reflections_(cell, hkl_file)
 
-
-def test_reflections_(cell, hkl_file):
     cs = crystal.symmetry(cell, "P1")
     reflections_server = reflection_file_utils.reflection_file_server(
         crystal_symmetry=cs,
@@ -115,28 +116,3 @@ def test_reflections_(cell, hkl_file):
             )
         )
     )
-
-
-def test_olx():
-    try:
-        import olx
-
-        cell = [float(x) for x in olx.xf.au.GetCell().split(",")]
-        test_reflections(cell, olx.HKLSrc())
-    except Exception as e:
-        print("Failed to run olx test: %s" % str(e))
-
-
-test_list = [
-    "C:/Program Files/Olex2-1.5-alpha/sample_data/THPP/thpp",
-    "C:/Program Files/Olex2-1.5-alpha/sample_data/ZP2/ZP2",
-]
-for file_base in test_list:
-    try:
-        print("Testing :%s" % file_base)
-        test_reflections(file_base)
-    except Exception as e:
-        import traceback
-
-        print(traceback.format_exc())
-        print("Failed to test %s: %s " % (file_base, str(e)))
