@@ -330,6 +330,7 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
             shutil.which("dials.index"),
             tmp_path / "imported.expt",
             tmp_path / "strong.refl",
+            "joint_indexing=True",
         ],
         cwd=tmp_path,
         capture_output=True,

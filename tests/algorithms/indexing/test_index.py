@@ -345,6 +345,7 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmp_path, method):
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
         "treat_single_image_as_still=False",
+        "joint_indexing=True",
     ]
     run_indexing(
         reflections,
