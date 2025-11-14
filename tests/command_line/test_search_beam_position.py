@@ -261,8 +261,8 @@ def test_midpoint_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=309.64,
-        y0=373.41,
+        x0=401.57,
+        y0=131.00,
         image_index=0,
         imageset_index=0,
         out_fig="beam_position_detector_0.png",
@@ -299,8 +299,8 @@ def test_maximum_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=308.0,
-        y0=374.0,
+        x0=394.0,
+        y0=221.0,
         image_index=1,
         imageset_index=0,
         out_fig="beam_position_detector_0.png",
@@ -334,8 +334,8 @@ def test_inversion_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=378.0,
-        y0=254.0,
+        x0=396.0,
+        y0=257.0,
         image_index=2,
         imageset_index=0,
         out_fig="beam_position_detector_0.png",

@@ -238,7 +238,9 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
             logger.info(
                 "Saving the scaled experiments to %s", params.output.experiments
             )
-            scaled_experiments.as_file(params.output.experiments)
+            scaled_experiments.as_file(
+                params.output.experiments, history_as_scaled=True
+            )
             logger.info(
                 "Saving the scaled reflections to %s", params.output.reflections
             )

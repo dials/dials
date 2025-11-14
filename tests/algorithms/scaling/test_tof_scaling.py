@@ -6,7 +6,8 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 
 from dials.array_family import flex
 from dials_tof_scaling_ext import (
-    TOFCorrectionsData,
+    TOFAbsorptionParams,
+    TOFIncidentSpectrumParams,
     tof_extract_shoeboxes_to_reflection_table,
 )
 
@@ -79,15 +80,19 @@ def test_tof_extract_shoeboxes(dials_data):
         **experiments[0].imageset.data().get_params(),
     ).get_proton_charge()
 
-    tof_extract_shoeboxes_to_reflection_table(
-        reflections,
-        experiments[0],
-        expt_data,
+    incident_params = TOFIncidentSpectrumParams(
         incident_data,
         empty_data,
         expt_proton_charge,
         incident_proton_charge,
         empty_proton_charge,
+    )
+
+    tof_extract_shoeboxes_to_reflection_table(
+        reflections,
+        experiments[0],
+        expt_data,
+        incident_params,
         False,
     )
 
@@ -103,11 +108,7 @@ def test_tof_extract_shoeboxes(dials_data):
         reflections,
         experiments[0],
         expt_data,
-        incident_data,
-        empty_data,
-        expt_proton_charge,
-        incident_proton_charge,
-        empty_proton_charge,
+        incident_params,
         True,
     )
 
@@ -128,10 +129,7 @@ def test_tof_extract_shoeboxes(dials_data):
     incident_spectrum_scattering_x_section = 5.158
     incident_spectrum_absorption_x_section = 4.4883
 
-    corrections_data = TOFCorrectionsData(
-        expt_proton_charge,
-        incident_proton_charge,
-        empty_proton_charge,
+    absorption_params = TOFAbsorptionParams(
         target_spectrum_sample_radius,
         target_spectrum_scattering_x_section,
         target_spectrum_absorption_x_section,
@@ -146,9 +144,8 @@ def test_tof_extract_shoeboxes(dials_data):
         reflections,
         experiments[0],
         expt_data,
-        incident_data,
-        empty_data,
-        corrections_data,
+        incident_params,
+        absorption_params,
         False,
     )
 
@@ -164,8 +161,7 @@ def test_tof_extract_shoeboxes(dials_data):
         reflections,
         experiments[0],
         expt_data,
-        incident_data,
-        empty_data,
-        corrections_data,
+        incident_params,
+        absorption_params,
         True,
     )
