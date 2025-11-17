@@ -932,6 +932,7 @@ class Processor:
         self.spot_finder_factory = None
         self.idxr_known_crystal_models = None
         self.idxr = None
+        self.idxr_method_list = dict.fromkeys(self.params.indexing.stills.method_list)
 
     def setup_filenames(self, tag):
         # before processing, set output paths according to the templates
@@ -1349,13 +1350,20 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         ml_indexing_error = None
                         for method in self.params.indexing.stills.method_list:
                             self.params.indexing.method = method
-                            try:
-                                idxr = Indexer.from_parameters(
+                            if self.idxr_method_list[method] is None:
+                                self.idxr_method_list[method] = Indexer.from_parameters(
                                     reflections,
                                     experiments,
                                     params=self.params,
                                 )
-                                idxr.index()
+                            else:
+                                self.idxr_method_list[method] = update_indexer(
+                                    self.idxr_method_list[method],
+                                    experiments,
+                                    reflections,
+                                )
+                            try:
+                                self.idxr_method_list[method].index()
                             except Exception as e_ml:
                                 logger.info("Couldn't index using method %s", method)
                                 ml_indexing_error = e_ml
@@ -1380,8 +1388,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             indexed = self.idxr.refined_reflections
             experiments = self.idxr.refined_experiments
         else:
-            indexed = idxr.refined_reflections
-            experiments = idxr.refined_experiments
+            # "method" is retained from the subsampling for loop.
+            indexed = self.idxr_method_list[method].refined_reflections
+            experiments = self.idxr_method_list[method].refined_experiments
 
         if known_crystal_models is not None:
             filtered_sel = flex.bool(len(indexed), True)
