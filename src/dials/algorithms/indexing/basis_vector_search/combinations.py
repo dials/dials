@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import math
+import gemmi
+from cctbx import sgtbx
 
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.uctbx.reduction_base import iteration_limit_exceeded
@@ -67,13 +69,18 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
             a = -a
             b = -b
             c = -c
+
         model = Crystal(a, b, c, space_group_symbol="P 1")
-        uc = model.get_unit_cell()
-        try:
-            cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
-        except iteration_limit_exceeded as e:
-            raise DialsIndexError(e)
-        model = model.change_basis(cb_op_to_niggli)
+        unit_cell = model.get_unit_cell()
+        cell = gemmi.UnitCell(*unit_cell.parameters())
+        sg = gemmi.SpaceGroup('P1')
+        gv = gemmi.GruberVector(cell, sg, track_change_of_basis=True)
+        gv.niggli_reduce(
+            epsilon=unit_cell.volume()**(1/3.) * 1.e-5,
+            iteration_limit=1000
+        )
+        cb_op_to_niggli_gemmi = sgtbx.change_of_basis_op(gv.change_of_basis.inverse().triplet())
+        model = model.change_basis(cb_op_to_niggli_gemmi)
 
         uc = model.get_unit_cell()
         params = uc.parameters()
