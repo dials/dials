@@ -57,7 +57,10 @@ class FFT1D(Strategy):
         super().__init__(max_cell, params=params, *args, **kwargs)
         import iotbx.phil
         from rstbx.phil.phil_preferences import indexing_api_defs
-        self._hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
+
+        self._hardcoded_phil = iotbx.phil.parse(
+            input_string=indexing_api_defs
+        ).extract()
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
