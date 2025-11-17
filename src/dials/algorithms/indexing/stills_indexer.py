@@ -62,6 +62,7 @@ def plot_displacements(reflections, predictions, experiments):
     plt.show()
     plt.close()
 
+
 def e_refine(params, experiments, reflections, graph_verbose=False):
     from dials.algorithms.refinement.refiner import RefinerFactory
 
