@@ -253,7 +253,7 @@ relatively isomorphous.
         env = Environment(loader=loader)
         template = env.get_template("cluster_unit_cell.html")
         html = template.render(
-            page_title="DIALS Unit cell clustering report",
+            page_title="DIALS unit cell clustering report",
             panel_title="Dendrogram",
             dendrogram_json=dendrogram_json,
         )
