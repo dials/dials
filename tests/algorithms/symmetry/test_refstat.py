@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import time
-from importlib import reload
 
 from cctbx import crystal
 from iotbx import reflection_file_reader, reflection_file_utils
@@ -10,17 +9,17 @@ from smtbx.regression.test_data import fnames
 
 from dials.algorithms.symmetry import refstat
 
-reload(refstat)
 
-xr = refstat.registry()
-xr.describe()
+def test_registry():
+    xr = refstat.registry()
+    xr.describe()
 
-assert xr.elements["-21-"].is_shadowed_by([xr.elements["--n"]])
-assert not xr.elements["-21-"].is_shadowed_by([xr.elements["-n-"]])
+    assert xr.elements["-21-"].is_shadowed_by([xr.elements["--n"]])
+    assert not xr.elements["-21-"].is_shadowed_by([xr.elements["-n-"]])
 
-sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
-for sgn in sgs:
-    xr.show_extinctions_for(sgn)
+    sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
+    for sgn in sgs:
+        xr.show_extinctions_for(sgn)
 
 
 def test_reflections():
@@ -59,6 +58,7 @@ def test_reflections():
     data = miller_array.data()
     sigmas = miller_array.sigmas()
     print("Uniq in P1: %s" % (len(data)))
+    xr = refstat.registry()
     timex = 10
     t = time.time()
     for r in range(timex):
@@ -89,7 +89,7 @@ def test_reflections():
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
         print(
-            "Inonsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
+            "Inconsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
             % (
                 merge_stats.inconsistent_count,
                 merge_stats.r_int * 100,
