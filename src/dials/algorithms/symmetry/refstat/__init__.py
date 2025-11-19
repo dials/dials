@@ -1,4 +1,7 @@
-# Python interface to refstat, (c) OVD, OlexSys, 2025
+"""Python interface to refstat, a tool to check space group symmetry based on
+systematic absences in all space groups. This code is based on functionality
+in Olex2 from OlexSys Ltd."""
+
 from __future__ import annotations
 
 from dials_algorithms_symmetry_refstat_ext import extinctions_registry, merge_test
