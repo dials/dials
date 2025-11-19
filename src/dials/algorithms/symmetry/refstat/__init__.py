@@ -17,25 +17,25 @@ class registry(extinctions_registry):
             self.elements[e.name] = e
 
     def describe(self):
-        """Prints information about the extinction elements and their relationship"""
+        """Returns a string giving information about the extinction elements and their relationship"""
+        lines = []
         for k, e in self.elements.items():
-            print(k)
+            lines.append(str(k))
             for rtm in e.rmx():
-                print(f"\t{rtm}")
+                lines.append(f"\t{rtm}")
             sl = []
             for i in range(e.shadowed_by_size()):
                 sl.append(e.get_shadowed_by(i).name)
             if len(sl) > 0:
-                print("  Shadowed by: %s" % (" ".join(sl)))
+                lines.append("  Shadowed by: %s" % (" ".join(sl)))
+        return "\n".join(lines)
 
     def show_extinctions_for(self, sg_name):
+        """Returns a string giving the extinction elements for the given space group name"""
         sg = self.find_sg(sg_name)
-        print(
-            "Extinction elements for %s: %s"
-            % (
-                sg_name,
-                " ".join([self.__getitem__(i).name for i in self.get_extinctions(sg)]),
-            )
+        return "Extinction elements for %s: %s" % (
+            sg_name,
+            " ".join([self.__getitem__(i).name for i in self.get_extinctions(sg)]),
         )
 
 
@@ -90,8 +90,9 @@ class extinctions(extinctions_registry):
                 unique.append(x)
         self.unique = unique
 
-    def print_stats(self):
-        """Prints extinction elements statistics, must be called after 'analyse'"""
+    def show_stats(self):
+        """Return a string giving extinction elements statistics, must be called after 'analyse'"""
+        lines = []
         for x in self.all_elements:
             if not x.count:
                 continue
@@ -102,9 +103,10 @@ class extinctions(extinctions_registry):
             else:
                 flag = "-"
 
-            print(
+            lines.append(
                 "%-4s (%5s): %16.2f(%6.2f) %s" % (x.name, x.count, x.meanI, x.sig, flag)
             )
+        return "\n".join(lines)
 
     def get_all_matching_space_groups(self, centering="P"):
         """Returns a tuple(space_group, fraction_of_matching_elements). The list
