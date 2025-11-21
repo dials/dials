@@ -80,7 +80,10 @@ class extinctions(extinctions_registry):
                 continue
             x.meanI, x.sig = x.sumI / x.count, (x.sumS_sq**0.5) / x.count
             # check the overall intensity as well
-            if x.meanI < self.sigma_level * x.sig or x.meanI * self.sigma_level * 2 < self.meanI:
+            if (
+                x.meanI < self.sigma_level * x.sig
+                or x.meanI * self.sigma_level * 2 < self.meanI
+            ):
                 present.append(x)
         self.present = present
         unique = []
