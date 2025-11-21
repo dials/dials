@@ -1,0 +1,1 @@
+Removed unnecessary, redundant operations in dials.stills_process that are called repetitively on subsequent frames. Removed several unnecessary instances of copy.deepcopy() that used significant execution time.
