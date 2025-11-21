@@ -420,7 +420,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
                      const af::shared<FloatType>& sigs,
                      FloatType scale_ = 0,
                      int th_num = -1) {
-      CCTBX_NOT_IMPLEMENTED();
+      throw CCTBX_NOT_IMPLEMENTED();
     }
 
     bool has_openmp() const {
