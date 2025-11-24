@@ -367,8 +367,8 @@ def test_mmcif_p1_narrow_wedge(dials_data, tmp_path):
     assert (tmp_path / "scaled.mmcif").is_file()
 
     model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
-    assert model["dials"]["_reflns.pdbx_redundancy"] == "1.0"
-    assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0"
+    assert model["dials"]["_reflns.pdbx_redundancy"] == "1.000"
+    assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0000"
 
 
 def test_xds_ascii(dials_data, tmp_path):
