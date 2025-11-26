@@ -932,7 +932,10 @@ class Processor:
         self.spot_finder_factory = None
         self.idxr_known_crystal_models = None
         self.idxr = None
-        self.idxr_method_list = dict.fromkeys(self.params.indexing.stills.method_list)
+        if self.params.indexing.stills.method_list:
+            self.idxr_method_list = dict.fromkeys(self.params.indexing.stills.method_list)
+        else:
+            self.idxr_method_list = None
 
     def setup_filenames(self, tag):
         # before processing, set output paths according to the templates
