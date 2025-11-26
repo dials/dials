@@ -933,7 +933,9 @@ class Processor:
         self.idxr_known_crystal_models = None
         self.idxr = None
         if self.params.indexing.stills.method_list:
-            self.idxr_method_list = dict.fromkeys(self.params.indexing.stills.method_list)
+            self.idxr_method_list = dict.fromkeys(
+                self.params.indexing.stills.method_list
+            )
         else:
             self.idxr_method_list = None
 
