@@ -119,9 +119,14 @@ def check_reflections_(cell, hkl_file):
         xr.process(miller_array.indices(), data, sigmas)
     logger.info("CPP processing time: %.3f" % (time.time() - t))
     t = time.time()
-    for r in range(timex):
-        xr.process_omp(miller_array.indices(), data, sigmas, -1)
-    logger.info("CPP_omp processing time: %.3f" % (time.time() - t))
+    try:
+        for r in range(timex):
+            xr.process_omp(miller_array.indices(), data, sigmas, -1)
+        logger.info("CPP_omp processing time: %.3f" % (time.time() - t))
+    except RuntimeError as e:
+        if "Not implemented" in str(e):
+            logger.info("CPP_omp processing not available.")
+            pass
 
     xr.reset()
 
