@@ -1,53 +1,96 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.refstat_symmetry_analysis
 from __future__ import annotations
 
+import logging
 import os
 import time
+from pathlib import Path
 
 import iotbx
+import libtbx.phil
 from cctbx import crystal
 from iotbx import reflection_file_reader, reflection_file_utils
 
-# import cctbx.sgtbx.refstat as refstat
+import dials.util.log
 from dials.algorithms.symmetry import refstat
-
-# this is needed only if reloading module from within Olex2
-# reload(refstat)
+from dials.util.options import ArgumentParser
+from dials.util.version import dials_version
 
 xr = refstat.registry()
 
+logger = logging.getLogger("dials.command_line.refstat_symmetry_analysis")
+
+phil_scope = libtbx.phil.parse(
+    """
+    sample_dir = None
+        .type = path
+        .help = "Path to the directory containing Olex2 sample data"
+                "(e.g. Olex2/sample_data/)"
+
+    check_dir = None
+        .type = path
+        .help = "Path to a parent directory from which statistics will be"
+                "computed containing for all .res and .ins file pairs found"
+                "in this and subdirectories."
+
+    check_file = None
+        .type = path
+        .help="Path to an .ins or .res file to calculate statistics for a"
+              "particular example"
+
+    output {
+        log = dials.refstat_symmetry_analysis.log
+            .type = str
+            .help = "The log filename"
+    }
+"""
+)
+
+help_message = """
+Run refstat symmetry analysis on reflection data from SHELX files.
+
+Examples::
+
+  dev.dials.refstat_symmetry_analysis sample_dir=/path/to/Olex2-1.5/sample_data/
+
+  dev.dials.refstat_symmetry_analysis check_dir=/path/to/check_dir/
+
+  dev.dials.refstat_symmetry_analysis check_file=/path/to/dials.ins
+"""
+
 
 def basics():
-    xr.describe()
+    val = xr.describe()
 
     assert xr.elements["-21-"].is_shadowed_by([xr.elements["--n"]])
     assert not xr.elements["-21-"].is_shadowed_by([xr.elements["-n-"]])
 
     sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
-    for sgn in sgs:
-        xr.show_extinctions_for(sgn)
+    extinctions = [xr.show_extinctions_for(sgn) for sgn in sgs]
+    return val + "\n".join(extinctions)
 
 
 def get_cs_hkl(file_base):
-    ins_file = file_base + ".ins"
+    ins_file = str(file_base) + ".ins"
     if not os.path.exists(ins_file):
-        ins_file = file_base + ".res"
+        ins_file = str(file_base) + ".res"
     if not os.path.exists(ins_file):
         return None, None
-    hkl_file = file_base + ".hkl"
+    hkl_file = str(file_base) + ".hkl"
     if not os.path.exists(hkl_file):
         return None, None
     cs = iotbx.shelx.crystal_symmetry_from_ins.extract_from(file_name=ins_file)
     return cs, hkl_file
 
 
-def test_reflections(file_base):
+def check_reflections(file_base):
     cs, hkl_file = get_cs_hkl(file_base)
-    assert cs != None
-    print(
+    assert cs is not None
+    logger.info(
         "Original space group: %s"
         % (cs.space_group().match_tabulated_settings().hermann_mauguin())
     )
-    test_reflections_(cs.unit_cell(), hkl_file)
+    check_reflections_(cs.unit_cell(), hkl_file)
 
 
 def get_miller_array(cell, hkl_file):
@@ -63,29 +106,29 @@ def get_miller_array(cell, hkl_file):
     return reflections_server.get_miller_arrays(None)[0]
 
 
-def test_reflections_(cell, hkl_file):
+def check_reflections_(cell, hkl_file):
     miller_array = get_miller_array(cell, hkl_file)
-    print("Read in %s reflections" % (len(miller_array.indices())))
+    logger.info("Read in %s reflections" % (len(miller_array.indices())))
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
-    print("Uniq in P1: %s" % (len(data)))
+    logger.info("Uniq in P1: %s" % (len(data)))
     timex = 10
     t = time.time()
     for r in range(timex):
         xr.process(miller_array.indices(), data, sigmas)
-    print("CPP processing time: %.3f" % (time.time() - t))
+    logger.info("CPP processing time: %.3f" % (time.time() - t))
     t = time.time()
     for r in range(timex):
         xr.process_omp(miller_array.indices(), data, sigmas, -1)
-    print("CPP_omp processing time: %.3f" % (time.time() - t))
+    logger.info("CPP_omp processing time: %.3f" % (time.time() - t))
 
     xr.reset()
 
     sa = refstat.extinctions(miller_array)
     sa.analyse(scale_I_to=10000)
-    sa.print_stats()
-    print("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
+    sa.show_stats()
+    logger.info("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
     matches = sa.get_all_matching_space_groups()
 
     for sg, mp in matches:
@@ -98,7 +141,7 @@ def test_reflections_(cell, hkl_file):
         merge_stats = t.merge_test(sg)
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
-        print(
+        logger.info(
             "Inonsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
             % (
                 merge_stats.inconsistent_count,
@@ -113,9 +156,9 @@ def test_reflections_(cell, hkl_file):
                 sI / sIs,
             )
         )
-        print("%s: %s" % (sg.name, int(mp * 100)))
+        logger.info("%s: %s" % (sg.name, int(mp * 100)))
 
-    print(
+    logger.info(
         "Matches: %s"
         % (
             ", ".join(
@@ -128,44 +171,30 @@ def test_reflections_(cell, hkl_file):
     )
 
 
-def test_olx():
-    """This can be run from within Olex2 on currently loaded structure"""
-    try:
-        import olx
-
-        cell = [float(x) for x in olx.xf.au.GetCell().split(",")]
-        test_reflections(cell, olx.HKLSrc())
-    except Exception as e:
-        print("Failed to run olx test: %s" % str(e))
-
-
-def test_samples(samples_dir):
+def check_samples(samples_dir):
+    samples_dir = Path(samples_dir)
     test_list = [
-        "C:/Program Files/Olex2-1.5-alpha/sample_data/THPP/thpp",
-        "C:/Program Files/Olex2-1.5-alpha/sample_data/ZP2/ZP2",
+        samples_dir / "THPP" / "thpp",
+        samples_dir / "ZP2" / "ZP2",
     ]
-    for file_base in test_list:
-        sample_base = os.path.join(samples_dir, file_base)
+    for sample_base in test_list:
         try:
-            print("Testing: %s" % sample_base)
-            test_reflections(sample_base)
+            logger.info("Testing: %s" % sample_base)
+            check_reflections(sample_base)
         except Exception as e:
             import traceback
 
-            print(traceback.format_exc())
-            print("Failed to test %s: %s " % (sample_base, str(e)))
+            logger.info(traceback.format_exc())
+            logger.info("Failed to test %s: %s " % (sample_base, str(e)))
 
 
-def test_dir(root_):
+def check_dir(root_):
     def get_matches(cs, hkl_file, centering):
         miller_array = get_miller_array(cs.unit_cell(), hkl_file)
-        # print("Read in %s reflections" % (len(miller_array.indices())))
         miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
         xr.reset()
         sa = refstat.extinctions(miller_array)
         sa.analyse(scale_I_to=10000)
-        # sa.print_stats()
-        # print("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
         matches = sa.get_all_matching_space_groups(centering=centering)
         if not matches:
             return (None, None)
@@ -184,7 +213,7 @@ def test_dir(root_):
                 continue
             file_full = os.path.join(root, f)
             file_base = os.path.splitext(file_full)[0]
-            print(os.path.join(root, f))
+            logger.info(os.path.join(root, f))
             try:
                 cs, hkl_path = get_cs_hkl(file_base)
                 if cs is None:
@@ -194,7 +223,7 @@ def test_dir(root_):
                 )
                 if not original_sg_name:
                     continue
-                print("Original space group: %s" % (original_sg_name))
+                logger.info("Original space group: %s" % (original_sg_name))
                 matches, filtred_matches = get_matches(
                     cs, hkl_path, original_sg_name[0]
                 )
@@ -210,59 +239,59 @@ def test_dir(root_):
                     stats["100"] += 1
                 else:
                     stats["+"] += 1
-                print("Matches: %s" % (", ".join(filtred_matches_names)))
+                logger.info("Matches: %s" % (", ".join(filtred_matches_names)))
 
             except Exception as e:
                 import traceback
 
-                print(traceback.format_exc())
-                print("Failed on: %s, %s" % (file_full, str(e)))
+                logger.info(traceback.format_exc())
+                logger.info("Failed on: %s, %s" % (file_full, str(e)))
     return stats
 
 
+@dials.util.show_mail_on_error()
+def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+    usage = "dev.dials.refstat_symmetry_analysis [options]"
+
+    parser = ArgumentParser(
+        usage=usage,
+        phil=phil,
+        read_reflections=False,
+        read_experiments=False,
+        check_format=False,
+        epilog=help_message,
+    )
+
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
+
+    # Configure the logging.
+    dials.util.log.config(options.verbose, logfile=params.output.log)
+
+    # Log the dials version
+    logger.info(dials_version())
+
+    # Log the difference between the PHIL scope definition and the active PHIL scope,
+    # which will include the parsed user inputs.
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil:
+        logger.info("The following parameters have been modified:\n%s", diff_phil)
+
+    if [params.sample_dir, params.check_dir, params.check_file].count(None) == 3:
+        logger.info("No test paths provided. Only performing a basic test.")
+        logger.info(basics())
+
+    if params.check_file and os.path.exists(params.check_file):
+        check_base = os.path.splitext(params.check_file)[0]
+        logger.info("Testing: %s" % check_base)
+        check_reflections(check_base)
+
+    if params.sample_dir and os.path.exists(params.sample_dir):
+        check_samples(params.sample_dir)
+
+    if params.check_dir and os.path.exists(params.check_dir):
+        stats = check_dir(params.check_dir)
+        logger.info(stats)
+
+
 if __name__ == "__main__":
-    from optparse import OptionParser
-
-    parser = OptionParser(usage="unleash_olex2.py [options]")
-    parser.add_option(
-        "--sample_dir",
-        dest="sample_dir",
-        default="C:/Program Files/Olex2-1.5-alpha/sample_data/",
-        help="Path to the directory contains date for test_samles",
-    )
-    parser.add_option(
-        "--test_dir",
-        dest="test_dir",
-        default="d:/devel/data/",
-        help="Path to the directory contains date for test_dir."
-        " Runs stats on all structure in the directory.",
-    )
-    parser.add_option(
-        "--test_file",
-        dest="test_file",
-        default="",
-        help="Path to a file to test for chasing particular examples",
-    )
-    options = parser.parse_args()[0]
-
-    if options.test_file:
-        if os.path.exists(options.test_file):
-            test_base = os.path.splitext(options.test_file)[0]
-            print("Testing: %s" % test_base)
-            test_reflections(test_base)
-        else:
-            print("Specified test_file doe snot exist: " % options.test_file)
-        exit(0)
-
-    basics()
-
-    if os.path.exists(options.sample_dir):
-        test_samples(options.sample_dir)
-    else:
-        print("Skipping test_samples -  dir does not exist")
-
-    if os.path.exists(options.test_dir):
-        stats = test_dir(options.test_dir)
-        print(stats)
-    else:
-        print("Skipping test_dir -  dir does not exist")
+    run()
