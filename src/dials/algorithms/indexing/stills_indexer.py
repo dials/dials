@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import warnings
 
 import libtbx
 from dxtbx.model.experiment_list import Experiment, ExperimentList
@@ -669,8 +670,20 @@ class StillsIndexer(Indexer):
         best = candidates[flex.min_index(results)]
         logger.info(best)
 
+        if params.indexing.basis_vector_combinations.xy_rmsd_threshold is libtbx.Auto:
+            # Set default to the same as the old parameter params.indexing.stills.rmsd_min_px
+            params.indexing.basis_vector_combinations.xy_rmsd_threshold = 2.0
+        if params.indexing.stills.rmsd_min_px != 2.0:
+            warnings.warn(
+                "The parameter indexing.stills.rmsd_min_px is deprecated. Please use indexing.basis_vector_combinations.xy_rmsd_threshold instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            params.indexing.basis_vector_combinations.xy_rmsd_threshold = (
+                params.indexing.stills.rmsd_min_px
+            )
         if params.indexing.stills.refine_all_candidates:
-            if best.rmsd > params.indexing.stills.rmsd_min_px:
+            if best.rmsd > params.indexing.basis_vector_combinations.xy_rmsd_threshold:
                 raise DialsIndexError(f"RMSD too high, {best.rmsd:f}")
 
             if len(candidates) > 1:
