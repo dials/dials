@@ -84,7 +84,7 @@ def get_cs_hkl(file_base):
 
 
 def check_reflections(file_base):
-    cs, hkl_file = get_cs_hkl(file_base)
+    cs, hkl_file = get_cs_hkl(str(file_base))
     assert cs is not None
     logger.info(
         "Original space group: %s"
