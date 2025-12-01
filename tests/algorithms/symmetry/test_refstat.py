@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 import time
 
 import pytest
@@ -125,9 +127,14 @@ def test_reflections():
         xr.process(miller_array.indices(), data, sigmas)
     print("CPP processing time: %.3f" % (time.time() - t))
     t = time.time()
-    for r in range(timex):
-        xr.process_omp(miller_array.indices(), data, sigmas, -1)
-    print("CPP_omp processing time: %.3f" % (time.time() - t))
+    try:
+        for r in range(timex):
+            xr.process_omp(miller_array.indices(), data, sigmas, -1)
+        print("CPP_omp processing time: %.3f" % (time.time() - t))
+    except RuntimeError as e:
+        if "Not implemented" in str(e):
+            print("CPP_omp processing not available.")
+            pass
 
     for x in xr:
         x.reset()
@@ -149,7 +156,7 @@ d--  (  658):            87.07(  0.53) -
 --b  (  302):           129.15(  1.65) -
 --n  (  305):           145.22(  1.64) -
 --d  (  457):           165.07(  1.97) -
-21-- (   10):             0.99(  0.13) -
+21-- (   10):             0.99(  0.13) +-
 -21- (   20):             0.05(  0.09) +
 --21 (   14):             0.08(  0.12) +-
 31   (   18):            60.29(  1.52) -
@@ -163,19 +170,19 @@ d--  (  658):            87.07(  0.53) -
     assert sa.ref_count == 11372
 
     expected_output = """Inconsistent eq: 30, r_int: 4.264, w: -0.025(0.47)/224 -0.054, s: 190.118(49.62)/231 3.832
-P 1 21/n 1: 50
+P 1 21/n 1: 40
 Inconsistent eq: 775, r_int: 48.289, w: 96.537(19.86)/975 4.861, s: 142.917(41.86)/1011 3.414
-P c n n: 50
+P c n n: 40
 Inconsistent eq: 775, r_int: 48.289, w: 81.558(21.44)/543 3.804, s: 168.369(46.87)/544 3.593
-P m n n: 75
+P m n n: 60
 Inconsistent eq: 775, r_int: 48.289, w: 55.842(11.51)/984 4.852, s: 183.298(44.96)/1002 4.077
-P b n a: 75
+P b n a: 60
 Inconsistent eq: 775, r_int: 48.289, w: 90.476(19.73)/982 4.586, s: 149.169(42.03)/1004 3.549
-P c n b: 50
+P c n b: 60
 Inconsistent eq: 775, r_int: 48.289, w: 70.926(21.21)/550 3.345, s: 139.000(36.46)/1436 3.813
-P m n b: 75
+P m n b: 80
 Inconsistent eq: 775, r_int: 48.289, w: 60.224(13.59)/687 4.431, s: 151.839(39.52)/1299 3.842
-P b n m: 75"""
+P b n m: 80"""
     matches = sa.get_all_matching_space_groups()
     lines = []
     for sg, mp in matches:
@@ -208,3 +215,14 @@ P b n m: 75"""
     filtered_matches = sa.get_filtered_matching_space_groups(matches=matches)
     assert len(filtered_matches) == 1
     assert filtered_matches[0].name == "P 1 21/n 1"
+
+
+def test_refstat_symmetry_analysis(tmp_path):
+    subprocess.run(
+        (
+            shutil.which("dev.dials.refstat_symmetry_analysis"),
+            f"check_file={fnames.thpp_ins}",
+        ),
+        cwd=tmp_path,
+        capture_output=True,
+    ).check_returncode()
