@@ -87,8 +87,7 @@ d--
 
 
 def test_reflections():
-    # Currently limited to just THPP data from Olex2 sample data. Other datasets
-    # can be added as a filebase fixture
+    # Currently limited to just THPP data from Olex2 sample data.
     file_base = fnames.thpp_ins[:-4]
 
     ins_file = file_base + ".ins"
@@ -97,9 +96,6 @@ def test_reflections():
     assert os.path.exists(ins_file)
     hkl_file = file_base + ".hkl"
     assert os.path.exists(hkl_file)
-    # this seems not to work??
-    # xs = cctbx.xray.structure.from_shelx(ins_file, strictly_shelxl=False)
-    # test_reflections_(xs.unit_cell(), hkl_file)
     cell = None
     for l in open(ins_file).readlines():
         if l.startswith("CELL"):
