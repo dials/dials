@@ -19,6 +19,7 @@
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/image_volume.h>
 #include <dials/error.h>
+#include <unordered_map>
 
 namespace dials { namespace algorithms {
 
@@ -75,15 +76,26 @@ namespace dials { namespace algorithms {
      * @param sbox The shoeboxes
      * @returns Success True/False
      */
-    af::shared<bool> shoebox(af::ref<Shoebox<> > sbox) const {
+    af::shared<bool> shoebox(af::ref<Shoebox<> > sbox) {
       af::shared<bool> success(sbox.size(), true);
       for (std::size_t i = 0; i < sbox.size(); ++i) {
-        try {
-          single(sbox[i]);
-        } catch (scitbx::error const &) {
-          success[i] = false;
-        } catch (dials::error const &) {
-          success[i] = false;
+        if (sbox[i].n_valid_bg > 0) {
+          try {
+            compute_from_hist(sbox[i]);
+            // single_hist(sbox[i]);
+          } catch (scitbx::error const &) {
+            success[i] = false;
+          } catch (dials::error const &) {
+            success[i] = false;
+          }
+        } else {
+          try {
+            single(sbox[i]);
+          } catch (scitbx::error const &) {
+            success[i] = false;
+          } catch (dials::error const &) {
+            success[i] = false;
+          }
         }
       }
       return success;
@@ -168,6 +180,17 @@ namespace dials { namespace algorithms {
       };
     }
 
+    void compute_from_hist(Shoebox<> &sbox) {
+      switch (model_) {
+      case Constant3d:
+        compute_constant_3d_from_hist(sbox);
+        break;
+      default:
+        throw DIALS_ERROR(
+          "Unable to compute background from histogram if not constant3d model");
+      };
+    }
+
     /**
      * Compute the background values for a single shoebox
      * @param sbox The shoebox
@@ -230,6 +253,28 @@ namespace dials { namespace algorithms {
           }
         }
       }
+    }
+
+    void compute_constant_3d_from_hist(Shoebox<> &sbox) {
+      std::unordered_map<int, int> background_hist = sbox.background_hist;
+      af::shared<double> unrolled_background{};
+      for (const std::pair<int, int> pair : background_hist) {
+        for (int i = 0; i < pair.second; ++i) {
+          unrolled_background.push_back((double)pair.first);
+        }
+      }
+      double median = detail::median(unrolled_background.const_ref());
+      if (median == 0) {
+        median = 1.0;
+      }
+      // Compute the result
+      RobustPoissonMean result(
+        unrolled_background.const_ref(), median, tuning_constant_, 1e-3, max_iter_);
+      DIALS_ASSERT(result.converged());
+
+      // Compute the background
+      double mean_background = result.mean();
+      sbox.mean_background = mean_background;
     }
 
     /**

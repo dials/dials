@@ -346,6 +346,31 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("extract_time", &ShoeboxProcessor::extract_time)
       .def("process_time", &ShoeboxProcessor::process_time);
 
+    class_<ShoeboxProcessorV2>("ShoeboxProcessorV2", no_init)
+      .def(init<af::reflection_table,
+                std::size_t,
+                int,
+                int,
+                bool,
+                const dxtbx::model::Scan &,
+                const dxtbx::model::BeamBase &,
+                const dxtbx::model::Goniometer &,
+                const dxtbx::model::Detector &,
+                double,
+                double>())
+      .def("next_data_only", &ShoeboxProcessorV2::next_data_only<double>)
+      .def("next_data_only", &ShoeboxProcessorV2::next_data_only<int>)
+      .def("frame0", &ShoeboxProcessorV2::frame0)
+      .def("frame1", &ShoeboxProcessorV2::frame1)
+      .def("frame", &ShoeboxProcessorV2::frame)
+      .def("nframes", &ShoeboxProcessorV2::nframes)
+      .def("npanels", &ShoeboxProcessorV2::npanels)
+      .def("finished", &ShoeboxProcessorV2::finished)
+      .def("finalise", &ShoeboxProcessorV2::finalise<double>)
+      .def("finalise", &ShoeboxProcessorV2::finalise<int>)
+      .def("extract_time", &ShoeboxProcessorV2::extract_time)
+      .def("process_time", &ShoeboxProcessorV2::process_time);
+
     def("max_memory_needed",
         &max_memory_needed,
         (arg("reflection table"), arg("frame0"), arg("frame1"), arg("flatten")));

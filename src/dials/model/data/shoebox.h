@@ -22,6 +22,7 @@
 #include <dials/model/data/mask_code.h>
 #include <dials/config.h>
 #include <dials/error.h>
+#include <unordered_map>
 
 namespace dials { namespace model {
 
@@ -71,7 +72,15 @@ namespace dials { namespace model {
     af::versa<FloatType, af::c_grid<3> > data;        ///< The shoebox data
     af::versa<int, af::c_grid<3> > mask;              ///< The shoebox mask
     af::versa<FloatType, af::c_grid<3> > background;  ///< The shoebox background
-
+    int total_intensity{0};
+    int n_valid_fg{0};
+    int n_invalid_fg{0};
+    int n_valid_bg{0};
+    int n_invalid_bg{0};
+    vec3<double> sum_pixel_coords_intensity{{0, 0, 0}};  // coord times intensity
+    double mean_background{0};
+    bool masked_image_pixel{false};
+    std::unordered_map<int, int> background_hist;
     /**
      * Initialise the shoebox
      */

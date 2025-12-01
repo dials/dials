@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections
+import concurrent.futures
 import functools
 import logging
 import math
@@ -35,6 +36,7 @@ from dials.array_family import flex
 
 # constants
 from dials.constants import EPS, FULL_PARTIALITY
+from dials.model.data import make_image
 from dials.util import Sorry, phil, pprint, tabulate
 from dials.util.command_line import heading
 from dials.util.report import Report
@@ -43,6 +45,7 @@ from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
     ReflectionManager,
+    ShoeboxProcessorV2,
     max_memory_needed,
 )
 
@@ -178,7 +181,7 @@ def generate_phil_scope():
 
       }
 
-      integrator = *auto 3d flat3d 2d single2d stills 3d_threaded
+      integrator = *auto 3d flat3d 2d single2d stills 3d_threaded inflight
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
@@ -1375,6 +1378,265 @@ Splitting reflection table into %s subsets for processing
         return tabulate(rows, headers="firstrow")
 
 
+def run_parallel_job(task, delta_b, delta_m):
+    experiment = task.experiments[0]
+    imageset = experiment.imageset
+    frame0, frame1 = task.job
+
+    try:
+        allowed_range = imageset.get_array_range()
+    except Exception:
+        allowed_range = 0, len(imageset)
+
+    try:
+        # range increasing
+        assert frame0 < frame1
+
+        # within an increasing range
+        assert allowed_range[1] > allowed_range[0]
+
+        # we are processing data which is within range
+        assert frame0 >= allowed_range[0]
+        assert frame1 <= allowed_range[1]
+
+        # I am 99% sure this is implied by all the code above
+        assert (frame1 - frame0) <= len(imageset)
+        if len(imageset) > 1:
+            # Slice imageset as a 0-based array
+            index0 = frame0 - allowed_range[0]
+            index1 = frame1 - allowed_range[0]
+            imageset = imageset[index0:index1]
+    except Exception as e:
+        raise RuntimeError(f"Programmer Error: bad array range: {e}")
+
+    try:
+        frame0, frame1 = imageset.get_array_range()
+    except Exception:
+        frame0, frame1 = (0, len(imageset))
+
+    sel_refls = task.reflections
+    sel_refls["shoebox"] = flex.shoebox(
+        sel_refls["panel"],
+        sel_refls["bbox"],
+        allocate=False,
+        flatten=False,
+    )
+    full_value = FULL_PARTIALITY - EPS
+    fully_recorded = sel_refls["partiality"] > full_value
+    npart = fully_recorded.count(False)
+    nfull = fully_recorded.count(True)
+    nice = sel_refls.get_flags(sel_refls.flags.in_powder_ring).count(True)
+    nint = sel_refls.get_flags(sel_refls.flags.dont_integrate).count(False)
+    ntot = len(sel_refls)
+
+    # Write some output
+    logger.info("")
+    logger.info(f" Frames: {frame0 + 1} -> {frame1}")
+    logger.info("")
+    logger.info(" Number of reflections")
+    logger.info(f"  Partial:     {npart}")
+    logger.info(f"  Full:        {nfull}")
+    logger.info(f"  In ice ring: {nice}")
+    logger.info(f"  Integrate:   {nint}")
+    logger.info(f"  Total:       {ntot}")
+    logger.info("")
+
+    shoebox_processor = ShoeboxProcessorV2(
+        sel_refls,
+        len(experiment.detector),
+        frame0,
+        frame1,
+        False,
+        experiment.scan,
+        experiment.beam,
+        experiment.goniometer,
+        experiment.detector,
+        delta_b,
+        delta_m,
+    )
+
+    for i in range(len(imageset)):
+        image = imageset.get_corrected_data(i)
+        if imageset.is_marked_for_rejection(i):
+            mask = tuple(flex.bool(im.accessor(), False) for im in image)
+        else:
+            mask = imageset.get_mask(i)
+        shoebox_processor.next_data_only(make_image(image, mask))
+    sel_refls.compute_background(task.experiments)
+    sel_refls["summation_success"] = flex.bool(sel_refls.size(), True)
+    """sel_refls.is_overloaded(self.experiments)
+    sel_refls.compute_mask(self.experiments)
+    sel_refls.contains_invalid_pixels()
+    centroid_algorithm = SimpleCentroidExt(
+        params=None, experiments=self.experiments
+    )
+    centroid_algorithm.compute_centroid(sel_refls)"""
+
+    valid_foreground_threshold = 0.75  # DIALS default
+    sbox = sel_refls["shoebox"]
+    nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
+    nforeg = sbox.count_mask_values(MaskCode.Foreground)
+    fraction_valid = nvalfg.as_double() / nforeg.as_double()
+    selection = fraction_valid < valid_foreground_threshold
+    sel_refls.set_flags(selection, sel_refls.flags.dont_integrate)
+
+    ##NEW METHODS
+    sel_refls["num_pixels.foreground"] = flex.int(sel_refls.size(), 0)
+    sel_refls["num_pixels.background"] = flex.int(sel_refls.size(), 0)
+    sel_refls["num_pixels.background_used"] = flex.int(sel_refls.size(), 0)
+    sel_refls["num_pixels.valid"] = flex.int(sel_refls.size(), 0)
+    sel_refls["background.sum.value"] = flex.double(sel_refls.size(), 0)
+    sel_refls["background.sum.variance"] = flex.double(sel_refls.size(), 0)
+    sel_refls["intensity.sum.variance"] = flex.double(sel_refls.size(), 0)
+    sel_refls["xyzobs.px.value"] = flex.vec3_double(sel_refls.size())
+    sel_refls["xyzobs.mm.value"] = flex.vec3_double(sel_refls.size())
+    intensity = shoebox_processor.finalise(
+        sel_refls
+    )  # similar to 'processer/executor' of standard integrator
+    sel_refls["intensity.sum.value"] = intensity  # .as_double()
+    n_failed = sel_refls["summation_success"].count(False)
+    logger.debug(f"{n_failed} reflections failed in summation integration")
+    sel_refls.set_flags(
+        sel_refls["summation_success"],
+        sel_refls.flags.integrated_sum,
+    )
+    sel_refls.set_flags(
+        ~sel_refls["summation_success"],
+        sel_refls.flags.foreground_includes_bad_pixels,
+    )
+    return sel_refls
+
+
+class InFlightIntegrator:
+    """Process images in-flight"""
+
+    def __init__(self, experiments, reflections, params):
+        # require Pixel array detector with no gain or pedestal for background algorithm
+        detector = experiments[0].imageset.get_detector()
+        assert detector[0].get_type() == "SENSOR_PAD"
+        assert all(p.get_gain() == 1.0 for p in detector.iter_panels())
+        assert all(p.get_pedestal() == 0.0 for p in detector.iter_panels())
+        from dials.extensions.auto_background_ext import AutoBackgroundExt
+        from dials.extensions.glm_background_ext import GLMBackgroundExt
+
+        assert params.integration.background.glm.model.algorithm == "constant3d"
+        assert (
+            reflections.background_algorithm.func == AutoBackgroundExt
+            or reflections.background_algorithm.func == GLMBackgroundExt
+        )
+
+        self.experiments = experiments
+        self.reflections = reflections
+        self.params = Parameters.from_phil(params.integration)
+        self.profile_model_report = None
+        self.integration_report = None
+
+    def integrate(self):
+        # Ensure we get the same random sample each time
+        random.seed(0)
+
+        # Init the report
+        self.profile_model_report = None
+        self.integration_report = None
+
+        # Heading
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info(heading("Processing reflections"))
+        logger.info("")
+
+        # Print the summary
+        logger.info(
+            " Processing the following experiments:\n"
+            "\n"
+            " Experiments: %d\n"
+            " Beams:       %d\n"
+            " Detectors:   %d\n"
+            " Goniometers: %d\n"
+            " Scans:       %d\n"
+            " Crystals:    %d\n"
+            " Imagesets:   %d\n",
+            len(self.experiments),
+            len(self.experiments.beams()),
+            len(self.experiments.detectors()),
+            len(self.experiments.goniometers()),
+            len(self.experiments.scans()),
+            len(self.experiments.crystals()),
+            len(self.experiments.imagesets()),
+        )
+
+        ## initialise rotation - as in standard - makes bboxes
+        _initialize_rotation(self.experiments, self.params, self.reflections)
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info(heading("Integrating reflections"))
+        logger.info("")
+
+        ## would call Processor3D, which calls the manager...
+        self.reflections.compute_partiality(self.experiments)
+        time_info = TimingInfo()
+
+        experiment = self.experiments[0]
+        sigma_b = experiment.profile.sigma_b(deg=False)
+        sigma_m = experiment.profile.sigma_m(deg=False)
+        n_sigma = 3  # self.params.profile.gaussian_rs.parameters.n_sigma
+
+        selection_to_integrate = ~self.reflections.get_flags(
+            self.reflections.flags.dont_integrate
+        )  # Remove low zeta refls, as we don't have access to 'DontIntegrate' filter in
+        # integrator.h via the processor's indices function.
+        this_refls = self.reflections.select(selection_to_integrate)
+
+        processor = build_processor(
+            Processor3D,
+            self.experiments,
+            this_refls,
+            self.params.integration,
+        )
+        processor.executor = "1"  # We are not going to use this, but it must be not None to get the tasks.
+        processor.manager.initialize()
+        logger.info(processor.manager.summary())
+        final_refls = flex.reflection_table([])
+        futures = {}
+        delta_b = sigma_b * n_sigma
+        delta_m = sigma_m * n_sigma
+        nproc = processor.manager.params.mp.nproc
+
+        results = [None] * nproc
+        logger.info(
+            f" Using multiprocessing with {min(len(processor.manager), nproc)} parallel job(s)\n"
+        )
+        with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
+            for i, task in enumerate(processor.manager.tasks()):
+                futures[pool.submit(run_parallel_job, task, delta_b, delta_m)] = i
+            for future in concurrent.futures.as_completed(futures):
+                idx = futures[future]
+                sel_refls = future.result()
+                results[idx] = sel_refls
+        if all(results):
+            for r in results:
+                final_refls.extend(r)
+
+        self.reflections = final_refls
+
+        # ignore overlaps filter
+        self.reflections.compute_corrections(self.experiments)
+
+        # Create the integration report
+        self.integration_report = IntegrationReport(self.experiments, self.reflections)
+        logger.info("")
+        logger.info(self.integration_report.as_str(prefix=" "))
+
+        # Print the time info
+        logger.info("Timing information for integration")
+        logger.info(str(time_info))
+        logger.info("")
+
+        # Return the reflections
+        del self.reflections["shoebox"]
+        return self.reflections
+
+
 class Integrator3D(Integrator):
     """
     Integrator for 3D algorithms
@@ -1660,6 +1922,7 @@ def create_integrator(params, experiments, reflections):
         "single2d": IntegratorSingle2D,
         "stills": IntegratorStills,
         "3d_threaded": Integrator3DThreaded,
+        "inflight": InFlightIntegrator,
     }.get(params.integration.integrator)
     if not IntegratorClass:
         raise ValueError(f"Unknown integration type {params.integration.integrator}")

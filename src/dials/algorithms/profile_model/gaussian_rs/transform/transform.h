@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_TRANSFORM_H
 
 #include <memory>
+#include <iostream>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
@@ -175,6 +176,15 @@ namespace dials { namespace algorithms { namespace profile_model {
       double3 grid_centre_;
     };
 
+    template <typename FloatType = double>
+    struct ii_jj_frac {
+      int ii;
+      int jj;
+      FloatType fraction;
+      ii_jj_frac(int ii_, int jj_, FloatType frac_)
+          : ii(ii_), jj(jj_), fraction(frac_) {};
+    };
+
     /**
      * A class to perform the local coordinate transform for a single reflection.
      * The class has a number of different constructors to allow the transform
@@ -188,6 +198,288 @@ namespace dials { namespace algorithms { namespace profile_model {
      *  print forward.background()
      */
     template <typename FloatType = double>
+    class TransformForwardInFlight {
+    public:
+      typedef FloatType float_type;
+      typedef TransformSpec transform_spec_type;
+
+      TransformForwardInFlight() {}
+
+      TransformForwardInFlight(const TransformSpec &spec,
+                               const CoordinateSystem &cs,
+                               int6 bbox,
+                               std::size_t panel_id)
+          : panel(spec.detector()[panel_id]) {
+        init(spec, cs, bbox, panel_id);
+      }
+
+      void add_single(FloatType intensity,
+                      FloatType bkgrd,
+                      bool mask,
+                      int x,
+                      int y,
+                      int z) {
+        // std::cout << "Adding " << intensity << " " << bkgrd << " " << mask<< " " << x
+        // << "," << y << "," << z << std::endl;
+        call_single(intensity, bkgrd, mask, x, y, z);
+      }
+
+      void add_single(FloatType intensity, bool mask, int x, int y, int z) {
+        call_single(intensity, mask, x, y, z);
+      }
+
+      /** @returns The transformed profile */
+      af::versa<FloatType, af::c_grid<3>> profile() const {
+        return profile_;
+      }
+
+      /** @returns The transformed background (if set) */
+      af::versa<FloatType, af::c_grid<3>> background() const {
+        return background_;
+      }
+
+      af::versa<bool, af::c_grid<3>> mask() const {
+        return mask_;
+      }
+
+    private:
+      /** Initialise using a coordinate system struct */
+      void init(const TransformSpec &spec,
+                const CoordinateSystem &cs,
+                int6 bbox,
+                std::size_t panel_id) {
+        // Initialise some stuff
+        x0_ = bbox[0];
+        y0_ = bbox[2];
+        shoebox_size_ = int3(bbox[5] - bbox[4], bbox[3] - bbox[2], bbox[1] - bbox[0]);
+        DIALS_ASSERT(shoebox_size_.all_gt(0));
+        step_size_ = spec.step_size();
+        grid_size_ = spec.grid_size();
+        grid_cent_ = spec.grid_centre();
+        s1_ = cs.s1();
+        DIALS_ASSERT(s1_.length() > 0);
+        e1_ = cs.e1_axis() / s1_.length();
+        e2_ = cs.e2_axis() / s1_.length();
+
+        // Calculate the fraction of intensity contributed from each data
+        // frame to each grid coordinate
+        vec2<int> zrange(bbox[4], bbox[5]);
+
+        // Create the frame mapper
+        MapFramesForward<FloatType> map_frames_forward(spec.scan().get_array_range()[0],
+                                                       spec.scan().get_oscillation()[0],
+                                                       spec.scan().get_oscillation()[1],
+                                                       spec.sigma_m(),
+                                                       spec.n_sigma(),
+                                                       spec.grid_size()[2] / 2);
+        zfraction_arr_ = map_frames_forward(zrange, cs.phi(), cs.zeta());
+
+        MapFramesReverse<FloatType> map_frames_backward(
+          spec.scan().get_array_range()[0],
+          spec.scan().get_oscillation()[0],
+          spec.scan().get_oscillation()[1],
+          spec.sigma_m(),
+          spec.n_sigma(),
+          spec.grid_size()[2] / 2);
+        efraction_arr_ = map_frames_backward(zrange, cs.phi(), cs.zeta());
+
+        af::const_ref<FloatType, af::c_grid<2>> efraction = efraction_arr_.const_ref();
+
+        // Initialise the profile arrays
+        af::c_grid<3> accessor(grid_size_);
+        profile_ = af::versa<FloatType, af::c_grid<3>>(accessor, 0.0);
+        background_ = af::versa<FloatType, af::c_grid<3>>(accessor, 0.0);
+        mask_ = af::versa<bool, af::c_grid<3>>(accessor, 0.0);
+        // Compute the mask
+        for (std::size_t kk = 0; kk < grid_size_[0]; ++kk) {
+          double sumk = 0;
+          for (std::size_t k = 0; k < shoebox_size_[0]; ++k) {
+            sumk += efraction(kk, k);
+          }
+          if (sumk > 0.99) {
+            for (std::size_t j = 0; j < grid_size_[1]; ++j) {
+              for (std::size_t i = 0; i < grid_size_[2]; ++i) {
+                mask_(kk, j, i) = true;
+              }
+            }
+          }
+        }
+        vec2<double> shoebox_centroid_px = panel.get_ray_intersection_px(s1_);
+        double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
+
+        af::versa<vec2<double>, af::c_grid<2>> gc_array(
+          af::c_grid<2>(shoebox_size_[1] + 1, shoebox_size_[2] + 1));
+        for (int j = 0; j <= shoebox_size_[1]; ++j) {
+          for (int i = 0; i <= shoebox_size_[2]; ++i) {
+            gc_array(j, i) = gc(panel, j, i, attenuation_length);
+          }
+        }
+        af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
+
+        for (int j = 0; j < shoebox_size_[1]; ++j) {
+          for (int i = 0; i < shoebox_size_[2]; ++i) {
+            vert4 input(gc_array(j, i),
+                        gc_array(j, i + 1),
+                        gc_array(j + 1, i + 1),
+                        gc_array(j + 1, i));
+            af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
+            std::vector<ii_jj_frac<FloatType>> precalc_data_;
+            for (int m = 0; m < matches.size(); ++m) {
+              FloatType fraction = matches[m].fraction;
+              int index = matches[m].out;
+              int ii = index % grid_size_[2];
+              int jj = index / grid_size_[2];
+              precalc_data_.push_back(ii_jj_frac<FloatType>(ii, jj, fraction));
+            }
+            precalc_data_all.push_back(precalc_data_);
+          }
+        }
+      }
+
+      void call_single(const FloatType &image,
+                       const bool &mask,
+                       const int x,
+                       const int y,
+                       const int z) {
+        if (!mask) {
+          return;
+        }
+
+        if (y0_ + y<0 | y0_ + y> panel.get_image_size()[1]) {
+          return;
+        }
+        if (x0_ + x<0 | x0_ + x> panel.get_image_size()[0]) {
+          return;
+        }
+        // af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
+        af::const_ref<FloatType, af::c_grid<2>> zfraction = zfraction_arr_.const_ref();
+
+        /*vert4 input(gc_array(y, x),
+                    gc_array(y, x + 1),
+                    gc_array(y + 1, x + 1),
+                    gc_array(y + 1, x));
+        af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);*/
+
+        int index = x + (y * shoebox_size_[2]);
+        std::vector<ii_jj_frac<FloatType>> precalc_list = precalc_data_all[index];
+        for (ii_jj_frac<FloatType> &pre : precalc_list) {
+          FloatType value = image * pre.fraction;
+          for (int kk = 0; kk < grid_size_[0]; ++kk) {
+            profile_(kk, pre.jj, pre.ii) += value * zfraction(z, kk);
+          }
+        }
+        /*for (int m = 0; m < matches.size(); ++m) {
+          FloatType fraction = matches[m].fraction;
+          int index = matches[m].out;
+          int ii = index % grid_size_[2];
+          int jj = index / grid_size_[2];
+          FloatType value = image * fraction;
+          for (int kk = 0; kk < grid_size_[0]; ++kk) {
+            profile_(kk, jj, ii) += value * zfraction(z, kk);
+          }
+        }*/
+      }
+
+      void call_single(const FloatType &image,
+                       const FloatType &bkgrd,
+                       const bool &mask,
+                       const int x,
+                       const int y,
+                       const int z) {
+        if (!mask) {
+          return;
+        }
+        if (y0_ + y<0 | y0_ + y> panel.get_image_size()[1]) {
+          return;
+        }
+        if (x0_ + x<0 | x0_ + x> panel.get_image_size()[0]) {
+          return;
+        }
+        // af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
+        // af::const_ref<FloatType, af::c_grid<2> > zfraction =
+        // zfraction_arr_.const_ref(); std::cout << "here" << std::endl;
+
+        int index = x + (y * shoebox_size_[2]);
+        std::vector<ii_jj_frac<FloatType>> &precalc_list = precalc_data_all[index];
+        for (ii_jj_frac<FloatType> &pre : precalc_list) {
+          FloatType value = image * pre.fraction;
+          FloatType bvalue = bkgrd * pre.fraction;
+          int &ii = pre.ii;
+          int &jj = pre.jj;
+          for (int kk = 0; kk < grid_size_[0]; ++kk) {
+            FloatType &zf = zfraction_arr_(z, kk);
+            profile_(kk, jj, ii) += value * zf;
+            background_(kk, jj, ii) += bvalue * zf;
+          }
+        }
+
+        /*vert4 input(gc_array(y, x),
+                    gc_array(y, x + 1),
+                    gc_array(y + 1, x + 1),
+                    gc_array(y + 1, x));
+        af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
+        //std::cout << "here2" << std::endl;
+        for (int m = 0; m < matches.size(); ++m) {
+          FloatType fraction = matches[m].fraction;
+          int index = matches[m].out;
+          int ii = index % grid_size_[2];
+          int jj = index / grid_size_[2];
+          FloatType ivalue = image * fraction;
+          FloatType bvalue = bkgrd * fraction;
+          //std::cout << "here3" << std::endl;
+          for (int kk = 0; kk < grid_size_[0]; ++kk) {
+            //std::cout << "here4" << std::endl;
+            FloatType zf = zfraction(z, kk);
+            //std::cout << "here5" << std::endl;
+            profile_(kk, jj, ii) += ivalue * zf;
+            //std::cout << "here6" << std::endl;
+            background_(kk, jj, ii) += bvalue * zf;
+            //std::cout << "here7" << std::endl;
+          }
+        }*/
+      }
+
+      /**
+       * Get a grid coordinate from an image coordinate
+       * @param j The y index
+       * @param i The x index
+       * @returns The grid (c1, c2) index
+       */
+      vec2<double> gc(const Panel &panel, std::size_t j, std::size_t i) const {
+        vec3<double> sp = panel.get_pixel_lab_coord(vec2<double>(x0_ + i, y0_ + j));
+        vec3<double> ds = sp.normalize() * s1_.length() - s1_;
+        return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],
+                            grid_cent_[1] + (e2_ * ds) / step_size_[1]);
+      }
+
+      vec2<double> gc(const Panel &panel,
+                      std::size_t j,
+                      std::size_t i,
+                      double attenuation_length) const {
+        vec3<double> sp =
+          panel.get_pixel_lab_coord(vec2<double>(x0_ + i, y0_ + j), attenuation_length);
+        vec3<double> ds = sp.normalize() * s1_.length() - s1_;
+        return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],
+                            grid_cent_[1] + (e2_ * ds) / step_size_[1]);
+      }
+
+      int x0_, y0_;
+      int3 shoebox_size_;
+      int3 grid_size_;
+      double3 step_size_;
+      double3 grid_cent_;
+      vec3<double> s1_, e1_, e2_;
+      af::versa<bool, af::c_grid<3>> mask_;
+      af::versa<FloatType, af::c_grid<3>> profile_;
+      af::versa<FloatType, af::c_grid<3>> background_;
+      af::versa<FloatType, af::c_grid<2>> zfraction_arr_;
+      af::versa<FloatType, af::c_grid<2>> efraction_arr_;
+      const Panel &panel;
+      // af::versa<vec2<double>, af::c_grid<2> > gc_array;
+      std::vector<std::vector<ii_jj_frac<FloatType>>> precalc_data_all;
+    };
+
+    template <typename FloatType = double>
     class TransformForward {
     public:
       typedef FloatType float_type;
@@ -199,8 +491,8 @@ namespace dials { namespace algorithms { namespace profile_model {
                        const CoordinateSystem &cs,
                        int6 bbox,
                        std::size_t panel,
-                       const af::const_ref<FloatType, af::c_grid<3> > &image,
-                       const af::const_ref<bool, af::c_grid<3> > &mask) {
+                       const af::const_ref<FloatType, af::c_grid<3>> &image,
+                       const af::const_ref<bool, af::c_grid<3>> &mask) {
         init(spec, cs, bbox, panel);
         call(spec.detector()[panel], image, mask);
       }
@@ -209,24 +501,24 @@ namespace dials { namespace algorithms { namespace profile_model {
                        const CoordinateSystem &cs,
                        int6 bbox,
                        std::size_t panel,
-                       const af::const_ref<FloatType, af::c_grid<3> > &image,
-                       const af::const_ref<FloatType, af::c_grid<3> > &bkgrd,
-                       const af::const_ref<bool, af::c_grid<3> > &mask) {
+                       const af::const_ref<FloatType, af::c_grid<3>> &image,
+                       const af::const_ref<FloatType, af::c_grid<3>> &bkgrd,
+                       const af::const_ref<bool, af::c_grid<3>> &mask) {
         init(spec, cs, bbox, panel);
         call(spec.detector()[panel], image, bkgrd, mask);
       }
 
       /** @returns The transformed profile */
-      af::versa<FloatType, af::c_grid<3> > profile() const {
+      af::versa<FloatType, af::c_grid<3>> profile() const {
         return profile_;
       }
 
       /** @returns The transformed background (if set) */
-      af::versa<FloatType, af::c_grid<3> > background() const {
+      af::versa<FloatType, af::c_grid<3>> background() const {
         return background_;
       }
 
-      af::versa<bool, af::c_grid<3> > mask() const {
+      af::versa<bool, af::c_grid<3>> mask() const {
         return mask_;
       }
 
@@ -278,19 +570,19 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param mask The mask accompanying the image
        */
       void call(const Panel &panel,
-                const af::const_ref<FloatType, af::c_grid<3> > &image,
-                const af::const_ref<bool, af::c_grid<3> > &mask) {
+                const af::const_ref<FloatType, af::c_grid<3>> &image,
+                const af::const_ref<bool, af::c_grid<3>> &mask) {
         // Check the input
         DIALS_ASSERT(image.accessor().all_eq(shoebox_size_));
         DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 
-        af::const_ref<FloatType, af::c_grid<2> > zfraction = zfraction_arr_.const_ref();
-        af::const_ref<FloatType, af::c_grid<2> > efraction = efraction_arr_.const_ref();
+        af::const_ref<FloatType, af::c_grid<2>> zfraction = zfraction_arr_.const_ref();
+        af::const_ref<FloatType, af::c_grid<2>> efraction = efraction_arr_.const_ref();
 
         // Initialise the profile arrays
         af::c_grid<3> accessor(grid_size_);
-        profile_ = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
-        mask_ = af::versa<bool, af::c_grid<3> >(accessor, 0.0);
+        profile_ = af::versa<FloatType, af::c_grid<3>>(accessor, 0.0);
+        mask_ = af::versa<bool, af::c_grid<3>>(accessor, 0.0);
 
         // Compute the mask
         for (std::size_t kk = 0; kk < grid_size_[0]; ++kk) {
@@ -310,7 +602,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         vec2<double> shoebox_centroid_px = panel.get_ray_intersection_px(s1_);
         double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
 
-        af::versa<vec2<double>, af::c_grid<2> > gc_array(
+        af::versa<vec2<double>, af::c_grid<2>> gc_array(
           af::c_grid<2>(shoebox_size_[1] + 1, shoebox_size_[2] + 1));
         for (int j = 0; j <= shoebox_size_[1]; ++j) {
           for (int i = 0; i <= shoebox_size_[2]; ++i) {
@@ -365,22 +657,22 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param mask The mask accompanying the image
        */
       void call(const Panel &panel,
-                const af::const_ref<FloatType, af::c_grid<3> > &image,
-                const af::const_ref<FloatType, af::c_grid<3> > &bkgrd,
-                const af::const_ref<bool, af::c_grid<3> > &mask) {
+                const af::const_ref<FloatType, af::c_grid<3>> &image,
+                const af::const_ref<FloatType, af::c_grid<3>> &bkgrd,
+                const af::const_ref<bool, af::c_grid<3>> &mask) {
         // Check the input
         DIALS_ASSERT(image.accessor().all_eq(shoebox_size_));
         DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
         DIALS_ASSERT(image.accessor().all_eq(bkgrd.accessor()));
 
-        af::const_ref<FloatType, af::c_grid<2> > zfraction = zfraction_arr_.const_ref();
-        af::const_ref<FloatType, af::c_grid<2> > efraction = efraction_arr_.const_ref();
+        af::const_ref<FloatType, af::c_grid<2>> zfraction = zfraction_arr_.const_ref();
+        af::const_ref<FloatType, af::c_grid<2>> efraction = efraction_arr_.const_ref();
 
         // Initialise the profile arrays
         af::c_grid<3> accessor(grid_size_);
-        profile_ = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
-        background_ = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
-        mask_ = af::versa<bool, af::c_grid<3> >(accessor, 0.0);
+        profile_ = af::versa<FloatType, af::c_grid<3>>(accessor, 0.0);
+        background_ = af::versa<FloatType, af::c_grid<3>>(accessor, 0.0);
+        mask_ = af::versa<bool, af::c_grid<3>>(accessor, 0.0);
 
         // Compute the mask
         for (std::size_t kk = 0; kk < grid_size_[0]; ++kk) {
@@ -401,7 +693,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
 
         // Mapping from shoebox image coordinate to transformed grid coordinate
-        af::versa<vec2<double>, af::c_grid<2> > gc_array(
+        af::versa<vec2<double>, af::c_grid<2>> gc_array(
           af::c_grid<2>(shoebox_size_[1] + 1, shoebox_size_[2] + 1));
         for (int j = 0; j <= shoebox_size_[1]; ++j) {
           for (int i = 0; i <= shoebox_size_[2]; ++i) {
@@ -483,11 +775,11 @@ namespace dials { namespace algorithms { namespace profile_model {
       double3 step_size_;
       double3 grid_cent_;
       vec3<double> s1_, e1_, e2_;
-      af::versa<bool, af::c_grid<3> > mask_;
-      af::versa<FloatType, af::c_grid<3> > profile_;
-      af::versa<FloatType, af::c_grid<3> > background_;
-      af::versa<FloatType, af::c_grid<2> > zfraction_arr_;
-      af::versa<FloatType, af::c_grid<2> > efraction_arr_;
+      af::versa<bool, af::c_grid<3>> mask_;
+      af::versa<FloatType, af::c_grid<3>> profile_;
+      af::versa<FloatType, af::c_grid<3>> background_;
+      af::versa<FloatType, af::c_grid<2>> zfraction_arr_;
+      af::versa<FloatType, af::c_grid<2>> efraction_arr_;
     };
 
     /**
@@ -501,9 +793,9 @@ namespace dials { namespace algorithms { namespace profile_model {
                               const CoordinateSystem &cs,
                               int6 bbox,
                               std::size_t panel,
-                              const af::const_ref<double, af::c_grid<3> > &image,
-                              const af::const_ref<bool, af::c_grid<3> > &mask) {
-        af::versa<double, af::c_grid<3> > bkgrd;
+                              const af::const_ref<double, af::c_grid<3>> &image,
+                              const af::const_ref<bool, af::c_grid<3>> &mask) {
+        af::versa<double, af::c_grid<3>> bkgrd;
         init(spec, cs, bbox, panel, image, bkgrd.const_ref(), mask);
       }
 
@@ -511,19 +803,19 @@ namespace dials { namespace algorithms { namespace profile_model {
                               const CoordinateSystem &cs,
                               int6 bbox,
                               std::size_t panel,
-                              const af::const_ref<double, af::c_grid<3> > &image,
-                              const af::const_ref<double, af::c_grid<3> > &bkgrd,
-                              const af::const_ref<bool, af::c_grid<3> > &mask) {
+                              const af::const_ref<double, af::c_grid<3>> &image,
+                              const af::const_ref<double, af::c_grid<3>> &bkgrd,
+                              const af::const_ref<bool, af::c_grid<3>> &mask) {
         init(spec, cs, bbox, panel, image, bkgrd, mask);
       }
 
       /** @returns The transformed profile */
-      af::versa<double, af::c_grid<3> > profile() const {
+      af::versa<double, af::c_grid<3>> profile() const {
         return data_;
       }
 
       /** @returns The transformed background (if set) */
-      af::versa<double, af::c_grid<3> > background() const {
+      af::versa<double, af::c_grid<3>> background() const {
         return background_;
       }
 
@@ -532,9 +824,9 @@ namespace dials { namespace algorithms { namespace profile_model {
                 const CoordinateSystem &cs,
                 int6 bbox,
                 std::size_t panel,
-                const af::const_ref<double, af::c_grid<3> > &image,
-                const af::const_ref<double, af::c_grid<3> > &bkgrd,
-                const af::const_ref<bool, af::c_grid<3> > &mask) {
+                const af::const_ref<double, af::c_grid<3>> &image,
+                const af::const_ref<double, af::c_grid<3>> &bkgrd,
+                const af::const_ref<bool, af::c_grid<3>> &mask) {
         // Check if we're using background
         bool use_background = bkgrd.size() > 0;
 
@@ -549,9 +841,9 @@ namespace dials { namespace algorithms { namespace profile_model {
 
         // Init the arrays
         af::c_grid<3> accessor(spec.grid_size());
-        data_ = af::versa<double, af::c_grid<3> >(accessor, 0);
+        data_ = af::versa<double, af::c_grid<3>>(accessor, 0);
         if (use_background) {
-          background_ = af::versa<double, af::c_grid<3> >(accessor, 0);
+          background_ = af::versa<double, af::c_grid<3>>(accessor, 0);
         }
 
         // Get the bbox size
@@ -575,7 +867,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         const Panel &dp = spec.detector()[panel];
 
         // Compute the detector coordinates of each point on the grid
-        af::versa<vec2<double>, af::c_grid<2> > xy(
+        af::versa<vec2<double>, af::c_grid<2>> xy(
           af::c_grid<2>(data_.accessor()[1] + 1, data_.accessor()[2] + 1));
         for (std::size_t j = 0; j <= data_.accessor()[1]; ++j) {
           for (std::size_t i = 0; i <= data_.accessor()[2]; ++i) {
@@ -667,8 +959,8 @@ namespace dials { namespace algorithms { namespace profile_model {
         }
       }
 
-      af::versa<double, af::c_grid<3> > data_;
-      af::versa<double, af::c_grid<3> > background_;
+      af::versa<double, af::c_grid<3>> data_;
+      af::versa<double, af::c_grid<3>> background_;
     };
 
     /**
@@ -682,12 +974,12 @@ namespace dials { namespace algorithms { namespace profile_model {
                               const CoordinateSystem &cs,
                               int6 bbox,
                               std::size_t panel,
-                              const af::const_ref<double, af::c_grid<3> > &data) {
+                              const af::const_ref<double, af::c_grid<3>> &data) {
         init(spec, cs, bbox, panel, data);
       }
 
       /** @returns The transformed profile */
-      af::versa<double, af::c_grid<3> > profile() const {
+      af::versa<double, af::c_grid<3>> profile() const {
         return profile_;
       }
 
@@ -696,7 +988,7 @@ namespace dials { namespace algorithms { namespace profile_model {
                 const CoordinateSystem &cs,
                 int6 bbox,
                 std::size_t panel,
-                const af::const_ref<double, af::c_grid<3> > &data) {
+                const af::const_ref<double, af::c_grid<3>> &data) {
         DIALS_ASSERT(data.accessor().all_eq(spec.grid_size()));
         DIALS_ASSERT(bbox[1] > bbox[0]);
         DIALS_ASSERT(bbox[3] > bbox[2]);
@@ -706,7 +998,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         std::size_t xs = bbox[1] - bbox[0];
         std::size_t ys = bbox[3] - bbox[2];
         std::size_t zs = bbox[5] - bbox[4];
-        profile_ = af::versa<double, af::c_grid<3> >(af::c_grid<3>(zs, ys, xs), 0);
+        profile_ = af::versa<double, af::c_grid<3>>(af::c_grid<3>(zs, ys, xs), 0);
 
         // Compute the deltas
         double delta_b = spec.sigma_b() * spec.n_sigma();
@@ -724,7 +1016,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         const Panel &dp = spec.detector()[panel];
 
         // Compute the detector coordinates of each point on the grid
-        af::versa<vec2<double>, af::c_grid<2> > xy(
+        af::versa<vec2<double>, af::c_grid<2>> xy(
           af::c_grid<2>(data.accessor()[1] + 1, data.accessor()[2] + 1));
         for (std::size_t j = 0; j <= data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i <= data.accessor()[2]; ++i) {
@@ -816,7 +1108,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         }
       }
 
-      af::versa<double, af::c_grid<3> > profile_;
+      af::versa<double, af::c_grid<3>> profile_;
     };
 
     /**
@@ -830,12 +1122,12 @@ namespace dials { namespace algorithms { namespace profile_model {
                        const CoordinateSystem &cs,
                        int6 bbox,
                        std::size_t panel,
-                       const af::const_ref<double, af::c_grid<3> > &data) {
+                       const af::const_ref<double, af::c_grid<3>> &data) {
         init(spec, cs, bbox, panel, data);
       }
 
       /** @returns The transformed profile */
-      af::versa<double, af::c_grid<3> > profile() const {
+      af::versa<double, af::c_grid<3>> profile() const {
         return profile_;
       }
 
@@ -844,7 +1136,7 @@ namespace dials { namespace algorithms { namespace profile_model {
                 const CoordinateSystem &cs,
                 int6 bbox,
                 std::size_t panel,
-                const af::const_ref<double, af::c_grid<3> > &data) {
+                const af::const_ref<double, af::c_grid<3>> &data) {
         DIALS_ASSERT(data.accessor().all_eq(spec.grid_size()));
         DIALS_ASSERT(bbox[1] > bbox[0]);
         DIALS_ASSERT(bbox[3] > bbox[2]);
@@ -854,7 +1146,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         std::size_t xs = bbox[1] - bbox[0];
         std::size_t ys = bbox[3] - bbox[2];
         std::size_t zs = bbox[5] - bbox[4];
-        profile_ = af::versa<double, af::c_grid<3> >(af::c_grid<3>(zs, ys, xs), 0);
+        profile_ = af::versa<double, af::c_grid<3>>(af::c_grid<3>(zs, ys, xs), 0);
 
         // Compute the deltas
         double delta_b = spec.sigma_b() * spec.n_sigma();
@@ -872,7 +1164,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         const Panel &dp = spec.detector()[panel];
 
         // Compute the detector coordinates of each point on the grid
-        af::versa<vec2<double>, af::c_grid<2> > xy(
+        af::versa<vec2<double>, af::c_grid<2>> xy(
           af::c_grid<2>(data.accessor()[1] + 1, data.accessor()[2] + 1));
         for (std::size_t j = 0; j <= data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i <= data.accessor()[2]; ++i) {
@@ -902,9 +1194,9 @@ namespace dials { namespace algorithms { namespace profile_model {
                                             spec.sigma_m(),
                                             spec.n_sigma(),
                                             spec.grid_size()[2] / 2);
-        af::versa<double, af::c_grid<2> > zfraction_arr =
+        af::versa<double, af::c_grid<2>> zfraction_arr =
           map_frames(zrange, cs.phi(), cs.zeta());
-        af::const_ref<double, af::c_grid<2> > zfraction = zfraction_arr.const_ref();
+        af::const_ref<double, af::c_grid<2>> zfraction = zfraction_arr.const_ref();
 
         // Get a list of pairs of overlapping polygons
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
@@ -973,7 +1265,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         }
       }
 
-      af::versa<double, af::c_grid<3> > profile_;
+      af::versa<double, af::c_grid<3>> profile_;
     };
 
 }}}}}  // namespace dials::algorithms::profile_model::gaussian_rs::transform
