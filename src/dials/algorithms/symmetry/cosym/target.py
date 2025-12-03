@@ -53,10 +53,10 @@ def _compute_rij_matrix_one_row_block(
     rij_col = []
     rij_data = []
     wij = None
-    if weights:
-        wij_row = []
-        wij_col = []
-        wij_data = []
+    # if weights:
+    wij_row = []
+    wij_col = []
+    wij_data = []
 
     i_lower, i_upper = _lattice_lower_upper_index(lattices, i)
     intensities_i = data.data()[i_lower:i_upper]
@@ -133,14 +133,20 @@ def _compute_rij_matrix_one_row_block(
                     if ma_i.size() < min_pairs:
                         n, cc = (None, None)
                     else:
-                        corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
-                            ma_i, ma_j, assume_index_matching=True
-                        )[0]
-                        if neff:
-                            cc = corr
-                            n = neff
+                        if weights:
+                            corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
+                                ma_i, ma_j, assume_index_matching=True
+                            )[0]
+                            if neff:
+                                cc = corr
+                                n = neff
+                            else:
+                                n, cc = (None, None)
                         else:
-                            n, cc = (None, None)
+                            cc = flex.linear_correlation(
+                                ma_i.data(), ma_j.data()
+                            ).coefficient()
+                            n = n_pairs
 
                     rij_cache[key] = (cc, n, n_pairs)
 
@@ -150,10 +156,10 @@ def _compute_rij_matrix_one_row_block(
                     or (min_pairs is not None and n_pairs < min_pairs)
                 ):
                     continue
-                if weights:
-                    wij_row.append(ik)
-                    wij_col.append(jk)
-                    wij_data.append(n)
+                # if weights:
+                wij_row.append(ik)
+                wij_col.append(jk)
+                wij_data.append(n)
                 rij_row.append(ik)
                 rij_col.append(jk)
                 rij_data.append(cc)
@@ -164,8 +170,8 @@ def _compute_rij_matrix_one_row_block(
             + "\nIncreasing min_reflections may overcome this problem."
         )
     rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
-    if weights:
-        wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
+    # if weights:
+    wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
     # print(f"Called reindex {n_reindexes} times")
     return rij, wij
 
@@ -264,9 +270,13 @@ class Target:
             "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
         if cc_weights == "sigma":
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights()
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights(
+                cc_weights=True
+            )
         else:
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights(
+                cc_weights=False
+            )
 
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
@@ -307,20 +317,7 @@ class Target:
 
         return operators
 
-    def _compute_rij_wij_ccweights(self):
-        # Use flex-based methods for calculating matrices.
-        # Pre-calculate miller indices after application of each cb_op. Only calculate
-        # this once per cb_op instead of on-the-fly every time we need it.
-        indices = {}
-        space_group_type = self._data.space_group().type()
-        """for cb_op in self.sym_ops:
-            cb_op = sgtbx.change_of_basis_op(cb_op)
-            indices_reindexed = cb_op.apply(self._data.indices())
-            miller.map_to_asu(space_group_type, False, indices_reindexed)
-            cb_op_str = cb_op.as_xyz()
-            #indices[cb_op_str] = indices_reindexed"""
-
-        # print(len(indices))
+    def _compute_rij_wij_ccweights(self, cc_weights=True):
         rij_matrix = None
         wij_matrix = None
 
@@ -333,10 +330,9 @@ class Target:
                     i,
                     self._lattices,
                     self._data,
-                    # indices,
                     self.sym_ops,
                     self._patterson_group,
-                    weights=True,
+                    weights=cc_weights,
                     min_pairs=self._min_pairs,
                 )
                 for i, _ in enumerate(self._lattices)
