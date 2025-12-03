@@ -31,11 +31,13 @@ def _lattice_lower_upper_index(lattices, lattice_id):
     return lower_index, upper_index
 
 
+# import time
+
+
 def _compute_rij_matrix_one_row_block(
     i,
     lattices,
     data,
-    indices,
     sym_ops,
     patterson_group,
     weights=True,
@@ -44,7 +46,7 @@ def _compute_rij_matrix_one_row_block(
     cs = data.crystal_symmetry()
     n_lattices = len(lattices)
     rij_cache = {}
-
+    space_group_type = data.space_group().type()
     NN = n_lattices * len(sym_ops)
 
     rij_row = []
@@ -60,13 +62,24 @@ def _compute_rij_matrix_one_row_block(
     intensities_i = data.data()[i_lower:i_upper]
     sigmas_i = data.sigmas()[i_lower:i_upper]
     cb_ops = [sgtbx.change_of_basis_op(cb_op_k) for cb_op_k in sym_ops]
+    original_indices_i = data.indices()[i_lower:i_upper]
+    # n_reindexes = 0
 
     for j in range(n_lattices):
         j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
         intensities_j = data.data()[j_lower:j_upper]
         sigmas_j = data.sigmas()[j_lower:j_upper]
+        original_indices_j = data.indices()[j_lower:j_upper]
         for k, cb_op_k in enumerate(cb_ops):
-            indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+            # c#b_op = sgtbx.change_of_basis_op(cb_op_k)
+            # st = time.time()
+            indices_i = cb_op_k.apply(original_indices_i)
+            miller.map_to_asu(space_group_type, False, indices_i)
+            # t1 = time.time()
+            # print(f"Reindex time {t1-st:.6f}s")
+            # n_reindexes += 1
+
+            # indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
 
             for kk, cb_op_kk in enumerate(cb_ops):
                 if i == j and k == kk:
@@ -80,7 +93,14 @@ def _compute_rij_matrix_one_row_block(
                 if key in rij_cache:
                     cc, n, n_pairs = rij_cache[key]
                 else:
-                    indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
+                    # cb_op = sgtbx.change_of_basis_op(cb_op_kk)
+                    # st = time.time()
+                    indices_j = cb_op_kk.apply(original_indices_j)
+                    miller.map_to_asu(space_group_type, False, indices_j)
+                    # t1 = time.time()
+                    # logger.debug(f"Reindex time {t1-st:.6f}s")
+                    # n_reindexes += 1
+                    # indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
 
                     matches = miller.match_indices(indices_i, indices_j)
                     pairs = matches.pairs()
@@ -95,6 +115,7 @@ def _compute_rij_matrix_one_row_block(
                     ms = miller.set(
                         crystal_symmetry=cs, indices=indices_j.select(isel_j)
                     )
+                    # if ms.size() < min_pairs?
                     ma_j = miller.array(
                         miller_set=ms,
                         data=intensities_j.select(isel_j),
@@ -145,7 +166,7 @@ def _compute_rij_matrix_one_row_block(
     rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
     if weights:
         wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
-
+    # print(f"Called reindex {n_reindexes} times")
     return rij, wij
 
 
@@ -291,16 +312,15 @@ class Target:
         # Pre-calculate miller indices after application of each cb_op. Only calculate
         # this once per cb_op instead of on-the-fly every time we need it.
         indices = {}
-        epsilons = {}
         space_group_type = self._data.space_group().type()
-        for cb_op in self.sym_ops:
+        """for cb_op in self.sym_ops:
             cb_op = sgtbx.change_of_basis_op(cb_op)
             indices_reindexed = cb_op.apply(self._data.indices())
             miller.map_to_asu(space_group_type, False, indices_reindexed)
             cb_op_str = cb_op.as_xyz()
-            indices[cb_op_str] = indices_reindexed
-            epsilons[cb_op_str] = self._patterson_group.epsilon(indices_reindexed)
+            #indices[cb_op_str] = indices_reindexed"""
 
+        # print(len(indices))
         rij_matrix = None
         wij_matrix = None
 
@@ -313,7 +333,7 @@ class Target:
                     i,
                     self._lattices,
                     self._data,
-                    indices,
+                    # indices,
                     self.sym_ops,
                     self._patterson_group,
                     weights=True,
