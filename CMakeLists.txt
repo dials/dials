@@ -93,6 +93,7 @@ install(
         dials_pychef_ext
         dials_refinement_helpers_ext
         dials_scaling_ext
+        dials_cosym_ext
         dials_tof_scaling_ext
         dials_util_ext
         dials_util_streambuf_test_ext

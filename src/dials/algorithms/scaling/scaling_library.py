@@ -488,7 +488,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         cls, this, other, assume_index_matching=False, use_binning=False
     ) -> list[tuple]:
         if not use_binning:
-            assert other.indices().size() == this.indices().size()
+            # assert other.indices().size() == this.indices().size()
             if this.data().size() == 0:
                 return [(None, 0)]
 

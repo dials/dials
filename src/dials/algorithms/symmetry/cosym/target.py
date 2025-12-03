@@ -17,6 +17,7 @@ from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
 from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
+from dials_cosym_ext import matcher
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,19 @@ def _lattice_lower_upper_index(lattices, lattice_id):
 
 
 # import time
+class FakeArray:
+    def __init__(self, data, sigmas):
+        self._data = data
+        self._sigmas = sigmas
+
+    def data(self):
+        return self._data
+
+    def sigmas(self):
+        return self._sigmas
+
+    def size(self):
+        return self._sigmas.size()
 
 
 def _compute_rij_matrix_one_row_block(
@@ -43,7 +57,7 @@ def _compute_rij_matrix_one_row_block(
     weights=True,
     min_pairs=3,
 ):
-    cs = data.crystal_symmetry()
+    # cs = data.crystal_symmetry()
     n_lattices = len(lattices)
     rij_cache = {}
     space_group_type = data.space_group().type()
@@ -72,13 +86,14 @@ def _compute_rij_matrix_one_row_block(
         original_indices_j = data.indices()[j_lower:j_upper]
         for k, cb_op_k in enumerate(cb_ops):
             # c#b_op = sgtbx.change_of_basis_op(cb_op_k)
-            # st = time.time()
+            # ()
             indices_i = cb_op_k.apply(original_indices_i)
             miller.map_to_asu(space_group_type, False, indices_i)
             # t1 = time.time()
             # print(f"Reindex time {t1-st:.6f}s")
             # n_reindexes += 1
-
+            # make matcher with indices_i
+            M = matcher(indices_i)
             # indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
 
             for kk, cb_op_kk in enumerate(cb_ops):
@@ -101,18 +116,26 @@ def _compute_rij_matrix_one_row_block(
                     # logger.debug(f"Reindex time {t1-st:.6f}s")
                     # n_reindexes += 1
                     # indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
-
-                    matches = miller.match_indices(indices_i, indices_j)
+                    # st = time.time()
+                    """matches = miller.match_indices(indices_i, indices_j)
                     pairs = matches.pairs()
                     isel_i = pairs.column(0)
-                    isel_j = pairs.column(1)
+                    isel_j = pairs.column(1)"""
+                    isel_i, isel_j = M.match(indices_j)
+
+                    # t1 = time.time()
                     isel_i = isel_i.select(
                         patterson_group.epsilon(indices_i.select(isel_i)) == 1
                     )
                     isel_j = isel_j.select(
                         patterson_group.epsilon(indices_j.select(isel_j)) == 1
                     )
-                    ms = miller.set(
+                    # t2 = time.time()
+                    # print(f"Time getting pairs {t1-st:6f}s, time on epsilon {t2-t1:.6f}s")
+                    ma_j = FakeArray(
+                        intensities_j.select(isel_j), sigmas_j.select(isel_j)
+                    )
+                    """ms = miller.set(
                         crystal_symmetry=cs, indices=indices_j.select(isel_j)
                     )
                     # if ms.size() < min_pairs?
@@ -120,23 +143,29 @@ def _compute_rij_matrix_one_row_block(
                         miller_set=ms,
                         data=intensities_j.select(isel_j),
                         sigmas=sigmas_j.select(isel_j),
-                    )
-                    ms = miller.set(
+                    )"""
+                    """ms = miller.set(
                         crystal_symmetry=cs, indices=indices_i.select(isel_i)
                     )
                     ma_i = miller.array(
                         miller_set=ms,
                         data=intensities_i.select(isel_i),
                         sigmas=sigmas_i.select(isel_i),
+                    )"""
+                    ma_i = FakeArray(
+                        intensities_i.select(isel_i), sigmas_i.select(isel_i)
                     )
                     n_pairs = ma_i.size()
                     if ma_i.size() < min_pairs:
                         n, cc = (None, None)
                     else:
                         if weights:
+                            # t1 = time.time()
                             corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
                                 ma_i, ma_j, assume_index_matching=True
                             )[0]
+                            # t2 = time.time()
+                            # print(f"Time doing weighted cchalf {t2-t1:.6f}s")
                             if neff:
                                 cc = corr
                                 n = neff
@@ -320,7 +349,7 @@ class Target:
     def _compute_rij_wij_ccweights(self, cc_weights=True):
         rij_matrix = None
         wij_matrix = None
-
+        n = 0
         with concurrent.futures.ProcessPoolExecutor(max_workers=self._nproc) as pool:
             # note we use weights=True to help us work out where we have calculated rij,
             # even if the weights phil option is None
@@ -339,6 +368,8 @@ class Target:
             ]
             for future in concurrent.futures.as_completed(futures):
                 rij, wij = future.result()
+                n += 1
+                logger.info(n)
                 if rij_matrix is None:
                     rij_matrix = rij
                 else:
