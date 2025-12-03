@@ -218,11 +218,13 @@ P b n m: 80"""
 
 
 def test_refstat_symmetry_analysis(tmp_path):
-    subprocess.run(
+    result = subprocess.run(
         (
             shutil.which("dev.dials.refstat_symmetry_analysis"),
             f"check_file={fnames.thpp_ins}",
         ),
         cwd=tmp_path,
         capture_output=True,
-    ).check_returncode()
+    )
+    assert not result.check_returncode()
+    assert result.stdout.endswith(b"Matches: P 1 21/n 1\n")
