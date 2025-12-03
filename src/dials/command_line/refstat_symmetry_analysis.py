@@ -132,7 +132,7 @@ def check_reflections_(cell, hkl_file):
 
     sa = refstat.extinctions(miller_array)
     sa.analyse(scale_I_to=10000)
-    sa.show_stats()
+    logger.info(sa.show_stats())
     logger.info("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
     matches = sa.get_all_matching_space_groups()
 
