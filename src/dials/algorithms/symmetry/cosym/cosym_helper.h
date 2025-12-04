@@ -25,6 +25,8 @@ struct MillerIndexHash {
 class matcher {
 public:
   matcher(scitbx::af::const_ref<cctbx::miller::index<> > const& miller_indices) {
+    // Create the lookup map for the miller indices of a dataset on initialisation,
+    // then future calls can just match against this.
     lookup_map_.reserve(miller_indices.size());
     for (std::size_t i = 0; i < miller_indices.size(); i++) {
       lookup_map_.emplace(miller_indices[i], i);
@@ -32,6 +34,8 @@ public:
   }
   boost::python::tuple match(
     scitbx::af::const_ref<cctbx::miller::index<> > const& miller_indices) {
+    // Return the two arrays of matching indices (in order) for a dataset
+    // against the original dataset used in initialisation.
     scitbx::af::shared<std::size_t> indices_0{};
     scitbx::af::shared<std::size_t> indices_1{};
 

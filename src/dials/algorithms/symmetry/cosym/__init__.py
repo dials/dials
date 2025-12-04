@@ -277,11 +277,8 @@ class CosymAnalysis(symmetry_base, Subject):
             self.params.lattice_group = tmp_intensities.space_group_info()
         # N.B. currently only multiprocessing used if cc_weights=sigma
         if self.params.nproc is Auto:
-            if self.params.cc_weights == "sigma":
-                params.nproc = dials.util.system.CPU_COUNT
-                logger.info(f"Setting nproc={params.nproc}")
-            else:
-                params.nproc = 1
+            params.nproc = dials.util.system.CPU_COUNT
+            logger.info(f"Setting nproc={params.nproc}")
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -313,7 +310,7 @@ class CosymAnalysis(symmetry_base, Subject):
         dimensions = []
         functional = []
         for dim in range(1, dims_to_test + 1):
-            logger.debug("Testing dimension: %i", dim)
+            logger.info(f"Testing dimension: {dim}")
             self.target.set_dimensions(dim)
             max_calls = self.params.minimization.max_calls
             self._optimise(
