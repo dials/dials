@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import concurrent.futures
 import copy
-import itertools
 import logging
 
 import numpy as np
-import pandas as pd
 from ordered_set import OrderedSet
 from scipy import sparse
 
@@ -33,6 +31,7 @@ def _lattice_lower_upper_index(lattices, lattice_id):
 
 
 class FakeArray:
+    ## Confroms to a subset of the miller array interface.
     def __init__(self, data, sigmas):
         self._data = data
         self._sigmas = sigmas
@@ -53,20 +52,20 @@ def _compute_rij_matrix_one_row_block(
     data,
     sym_ops,
     patterson_group,
-    weights=True,
+    weights=True,  # use sigma weights or not for CC1/2 calculation
     min_pairs=3,
 ):
-    # cs = data.crystal_symmetry()
+    ## Calculate the upper half-triangle of the rij matrix for row-block i.
+
     n_lattices = len(lattices)
     rij_cache = {}
     space_group_type = data.space_group().type()
     NN = n_lattices * len(sym_ops)
 
+    ## Lists to aggregate data for matrix output.
     rij_row = []
     rij_col = []
     rij_data = []
-    wij = None
-    # if weights:
     wij_row = []
     wij_col = []
     wij_data = []
@@ -76,18 +75,19 @@ def _compute_rij_matrix_one_row_block(
     sigmas_i = data.sigmas()[i_lower:i_upper]
     cb_ops = [sgtbx.change_of_basis_op(cb_op_k) for cb_op_k in sym_ops]
     original_indices_i = data.indices()[i_lower:i_upper]
-    # n_reindexes = 0
 
-    for j in range(n_lattices):
+    for j in range(i, n_lattices):  # only calculating a half-triangle of rij
         j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
         intensities_j = data.data()[j_lower:j_upper]
         sigmas_j = data.sigmas()[j_lower:j_upper]
         original_indices_j = data.indices()[j_lower:j_upper]
+
         for k, cb_op_k in enumerate(cb_ops):
             matcher_k = None
             for kk, cb_op_kk in enumerate(cb_ops):
-                if i == j and k == kk:
-                    # don't include correlation of dataset with itself
+                if i == j and k <= kk:
+                    # don't include correlation of dataset with itself (i==j, k==kk)
+                    # also make sure we're only filling a half-triangle for i==j
                     continue
 
                 ik = i + (n_lattices * k)
@@ -97,6 +97,8 @@ def _compute_rij_matrix_one_row_block(
                 if key in rij_cache:
                     cc, n, n_pairs = rij_cache[key]
                 else:
+                    # only do expensive calculations at this point, as we may have
+                    # been able to use the cache for the given combination of cb ops.
                     if not matcher_k:
                         indices_i = cb_op_k.apply(original_indices_i)
                         miller.map_to_asu(space_group_type, False, indices_i)
@@ -145,7 +147,7 @@ def _compute_rij_matrix_one_row_block(
                     or (min_pairs is not None and n_pairs < min_pairs)
                 ):
                     continue
-                # if weights:
+
                 wij_row.append(ik)
                 wij_col.append(jk)
                 wij_data.append(n)
@@ -153,15 +155,8 @@ def _compute_rij_matrix_one_row_block(
                 rij_col.append(jk)
                 rij_data.append(cc)
 
-    if weights and not any(wij_data):
-        raise RuntimeError(
-            f"Unable to calculate any correlations for dataset index {i} ({len(intensities_i)} reflections)."
-            + "\nIncreasing min_reflections may overcome this problem."
-        )
     rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
-    # if weights:
     wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
-    # print(f"Called reindex {n_reindexes} times")
     return rij, wij
 
 
@@ -259,11 +254,11 @@ class Target:
             "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
         if cc_weights == "sigma":
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights(
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_blockwise(
                 cc_weights=True
             )
         else:
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights(
+            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_blockwise(
                 cc_weights=False
             )
 
@@ -306,10 +301,13 @@ class Target:
 
         return operators
 
-    def _compute_rij_wij_ccweights(self, cc_weights=True):
+    def _compute_rij_wij_blockwise(self, cc_weights=True):
         rij_matrix = None
         wij_matrix = None
         n = 0
+        logger.info(
+            f"Calculating rij matrix elements in {len(self._lattices)} row-blocks"
+        )
         with concurrent.futures.ProcessPoolExecutor(max_workers=self._nproc) as pool:
             # note we use weights=True to help us work out where we have calculated rij,
             # even if the weights phil option is None
@@ -329,7 +327,7 @@ class Target:
             for future in concurrent.futures.as_completed(futures):
                 rij, wij = future.result()
                 n += 1
-                logger.info(n)
+                logger.info(f"Calculated rij matrix for row-block {n}")
                 if rij_matrix is None:
                     rij_matrix = rij
                 else:
@@ -341,9 +339,21 @@ class Target:
                         wij_matrix += wij
 
         rij_matrix = rij_matrix.toarray().astype(np.float64)
+        rij_matrix += rij_matrix.T
+        wij_matrix = wij_matrix.toarray().astype(np.float64)
+        wij_matrix += wij_matrix.T
+        has_zero_row = np.any(np.sum(wij_matrix, axis=1) == 0)
+        if has_zero_row:
+            zero_rows = np.where(np.all(wij_matrix == 0, axis=1))[0]
+            n_list = []
+            for idx in zero_rows:
+                i_lower, i_upper = _lattice_lower_upper_index(self._lattices, idx)
+                n_list.append(i_upper - i_lower)
+            raise RuntimeError(
+                f"Unable to calculate any correlations for datasets with indices {zero_rows} ({n_list} reflections)."
+                + "\nIncreasing min_reflections or the resolution limit may overcome this problem."
+            )
         if self._weights:
-            ## use the counts as weights
-            wij_matrix = wij_matrix.toarray().astype(np.float64)
             if self._weights == "standard_error":
                 # N.B. using effective n due to sigma weighting, which can be below 2
                 # but approches 1 in the limit, so rather say efective sample size
@@ -352,6 +362,7 @@ class Target:
                 se = (1 - np.square(rij_matrix[sel])) / np.sqrt(wij_matrix[sel] - 1)
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
+            ## else uses the counts as weights
             # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
             scale = np.count_nonzero(wij_matrix) / np.sum(wij_matrix)
             wij_matrix *= scale
@@ -363,13 +374,12 @@ class Target:
             ## evaluation.
             ## at this point, wij matrix contains neff values where it was possible to calculate
             ## a pairwise correlation.
-            wij_matrix = wij_matrix.toarray().astype(np.float64)
             sel = np.where(wij_matrix > 0)
             wij_matrix[sel] = 1
 
         return rij_matrix, wij_matrix
 
-    def _compute_rij_wij(self, use_cache=True):
+    '''def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix.
 
         Rij is a symmetric matrix of size (n x m, n x m), where n is the number of
@@ -502,7 +512,7 @@ class Target:
             # Symmetrise the wij matrix
             wij += wij.T
 
-        return rij, wij
+        return rij, wij'''
 
     def compute_functional(self, x: np.ndarray) -> float:
         """Compute the target function at coordinates `x`.
