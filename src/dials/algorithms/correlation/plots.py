@@ -82,13 +82,16 @@ analysis (Zhang et al 2006).
     return d
 
 
-def plot_reachability(nums: np.ndarray, reach: np.ndarray, labels: np.ndarray) -> dict:
+def plot_reachability(
+    nums: np.ndarray, reach: np.ndarray, labels: np.ndarray, all_data: np.ndarray
+) -> dict:
     """
     Prepares a plotly-style figure of the reachability plot calculated by OPTICS.
     Args:
         nums (np.ndarray): array of datasets in OPTICS cluster order - NOT the same as dataset IDS
         reach (np.ndarray): reachability value between neighbouring datasets
         labels (np.ndarray): labels for which cluster each point belongs to in OPTICS cluster order
+        all_data (np.ndarray): all dataset labels
     Returns:
         d (dict): plotly-style dictionary of reachability plot
     """
@@ -119,6 +122,8 @@ def plot_reachability(nums: np.ndarray, reach: np.ndarray, labels: np.ndarray) -
                     "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
                 },
                 "name": "Cluster %i" % k if k >= 0 else "Noise",
+                "text": all_data[isel].tolist(),
+                "hovertemplate": "Dataset %{text}",
             }
         )
 
@@ -129,6 +134,7 @@ def plot_reachability(nums: np.ndarray, reach: np.ndarray, labels: np.ndarray) -
                 "title": "OPTICS Reachability",
                 "xaxis": {"title": "Cluster-order of Datasets"},
                 "yaxis": {"title": "Reachability Distance Between Datasets"},
+                "hovermode": "closest",
             },
             "help": """\
 Reachability plot from OPTICS analysis (M. Ankerst et al, 1999, ACM SIGMOD). As this is a density-
@@ -307,7 +313,9 @@ def to_plotly_json(
     return d
 
 
-def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
+def plot_pca_coords(
+    pca_coords, axes_labels, cluster_labels, dimensions, cluster_list, noise_labels
+):
     clusters = []
     unique_labels = sorted(dict.fromkeys(cluster_labels))
     n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
@@ -349,6 +357,11 @@ def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
                 "axis": {"matches": True},
             }
             dim_data.append(dim_dict)
+            for cluster in cluster_list:
+                if cluster.cluster_id == i:
+                    labels = cluster.labels
+            if i == -1:
+                labels = noise_labels
         ddict = {
             "name": "Cluster %i" % i if i >= 0 else "Noise",
             "type": "splom",
@@ -358,6 +371,8 @@ def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
                 "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
                 "size": 3,
             },
+            "text": labels,
+            "hovertemplate": "Dataset %{text}",
         }
         clusters.append(ddict)
 
@@ -368,6 +383,7 @@ def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
 
         layout[xtitle] = {"range": data_range}
         layout[ytitle] = {"range": data_range}
+        layout["hovermode"] = "closest"
 
     d = {
         "data": clusters,
