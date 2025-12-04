@@ -83,6 +83,11 @@ def _compute_rij_matrix_one_row_block(
         original_indices_j = data.indices()[j_lower:j_upper]
 
         for k, cb_op_k in enumerate(cb_ops):
+            ## We initialise the miller index matcher per k, which creates a lookup map
+            ## for dataset i reindexed by operator k. Then it is quicker to generate the
+            ## matching indices in repeated lookups. Delay the construction until we
+            ## require it, as if the data is in the cache we might not need it and it is
+            ## relatively expensive.
             matcher_k = None
             for kk, cb_op_kk in enumerate(cb_ops):
                 if i == j and k <= kk:
@@ -114,6 +119,8 @@ def _compute_rij_matrix_one_row_block(
                     isel_j = isel_j.select(
                         patterson_group.epsilon(indices_j.select(isel_j)) == 1
                     )
+                    ## Make a miller-index like object for the data, for calling the weighted
+                    ## cc-half calculator.
                     ma_j = FakeArray(
                         intensities_j.select(isel_j), sigmas_j.select(isel_j)
                     )
