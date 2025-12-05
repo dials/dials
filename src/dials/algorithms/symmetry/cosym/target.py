@@ -342,17 +342,25 @@ class Target:
         rij_matrix += rij_matrix.T
         wij_matrix = wij_matrix.toarray().astype(np.float64)
         wij_matrix += wij_matrix.T
-        has_zero_row = np.any(np.sum(wij_matrix, axis=1) == 0)
-        if has_zero_row:
-            zero_rows = np.where(np.all(wij_matrix == 0, axis=1))[0]
-            n_list = []
-            for idx in zero_rows:
-                i_lower, i_upper = _lattice_lower_upper_index(self._lattices, idx)
-                n_list.append(i_upper - i_lower)
-            raise RuntimeError(
-                f"Unable to calculate any correlations for datasets with indices {zero_rows} ({n_list} reflections)."
-                + "\nIncreasing min_reflections or the resolution limit may overcome this problem."
-            )
+
+        ## Check if we have a dataset where no correlations could be calculate.
+        zero_rows = np.where(np.all(wij_matrix == 0, axis=1))[0]
+        if zero_rows.any():
+            # only a problem if zero for all rows for dataset i
+            Nlatt = len(self._lattices)
+            Nsym = len(self.sym_ops)
+            for i in range(Nlatt):
+                all_rows = [i + j * Nlatt for j in range(Nsym)]
+                if all(k in zero_rows for k in all_rows):
+                    i_lower, i_upper = _lattice_lower_upper_index(self._lattices, i)
+                    if not i_upper:
+                        i_upper = len(self._data.data())
+                    n = i_upper - i_lower
+                    logger.warning(
+                        f"Unable to calculate any correlations for datasets with index {i} ({n} reflections)."
+                        + "\nIncreasing min_reflections or the resolution limit may overcome this problem."
+                    )
+
         if self._weights:
             if self._weights == "standard_error":
                 # N.B. using effective n due to sigma weighting, which can be below 2
