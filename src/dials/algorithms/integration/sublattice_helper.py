@@ -115,32 +115,21 @@ def integrate_coset(self, experiments, indexed):
     if self.params.integration.debug.delete_shoeboxes and "shoebox" in integrated:
         del integrated["shoebox"]
 
-    if self.params.output.composite_output:
-        if (
-            self.params.output.coset_experiments_filename
-            or self.params.output.coset_filename
-        ):
-            assert (
-                self.params.output.coset_experiments_filename is not None
-                and self.params.output.coset_filename is not None
+    if self.params.output.coset_suffix:
+        if self.params.output.composite_output:
+            # Cache the results
+            self.all_coset_experiments, self.all_coset_reflections = (
+                self.concat_results(
+                    experiments_local,
+                    integrated,
+                    self.all_coset_experiments,
+                    self.all_coset_reflections,
+                )
             )
-            n = len(self.all_coset_experiments)
-            self.all_coset_experiments.extend(experiments_local)
-            for i, experiment in enumerate(experiments_local):
-                refls = integrated.select(integrated["id"] == i)
-                refls["id"] = flex.int(len(refls), n)
-                del refls.experiment_identifiers()[i]
-                refls.experiment_identifiers()[n] = experiment.identifier
-                self.all_coset_reflections.extend(refls)
-                n += 1
-    else:
-        # Dump experiments to disk
-        if self.params.output.coset_experiments_filename:
-            experiments_local.as_json(self.params.output.coset_experiments_filename)
-
-        if self.params.output.coset_filename:
-            # Save the reflections
-            self.save_reflections(integrated, self.params.output.coset_filename)
+        else:
+            # Save the results to a file
+            experiments_local.as_file(self.coset_experiments_filename)
+            self.save_reflections(integrated, self.coset_reflections_filename)
 
     rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
     log_str = "coset RMSD indexed (px): %f\n" % (rmsd_indexed)
