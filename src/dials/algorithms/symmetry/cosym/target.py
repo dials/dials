@@ -58,7 +58,6 @@ def _compute_rij_matrix_one_row_block(
     ## Calculate the upper half-triangle of the rij matrix for row-block i.
 
     n_lattices = len(lattices)
-    rij_cache = {}
     space_group_type = data.space_group().type()
     NN = n_lattices * len(sym_ops)
 
@@ -81,6 +80,7 @@ def _compute_rij_matrix_one_row_block(
         intensities_j = data.data()[j_lower:j_upper]
         sigmas_j = data.sigmas()[j_lower:j_upper]
         original_indices_j = data.indices()[j_lower:j_upper]
+        rij_cache = {}
 
         for k, cb_op_k in enumerate(cb_ops):
             ## We initialise the miller index matcher per k, which creates a lookup map
@@ -89,6 +89,7 @@ def _compute_rij_matrix_one_row_block(
             ## require it, as if the data is in the cache we might not need it and it is
             ## relatively expensive.
             matcher_k = None
+            cb_op_k_inverse = cb_op_k.inverse()
             for kk, cb_op_kk in enumerate(cb_ops):
                 if i == j and k <= kk:
                     # don't include correlation of dataset with itself (i==j, k==kk)
@@ -98,7 +99,7 @@ def _compute_rij_matrix_one_row_block(
                 ik = i + (n_lattices * k)
                 jk = j + (n_lattices * kk)
 
-                key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
+                key = str(cb_op_k_inverse * cb_op_kk)
                 if key in rij_cache:
                     cc, n, n_pairs = rij_cache[key]
                 else:
@@ -107,20 +108,12 @@ def _compute_rij_matrix_one_row_block(
                     if not matcher_k:
                         indices_i = cb_op_k.apply(original_indices_i)
                         miller.map_to_asu(space_group_type, False, indices_i)
-                        matcher_k = matcher(indices_i)
+                        matcher_k = matcher(indices_i, patterson_group)
 
                     indices_j = cb_op_kk.apply(original_indices_j)
                     miller.map_to_asu(space_group_type, False, indices_j)
                     isel_i, isel_j = matcher_k.match(indices_j)
 
-                    isel_i = isel_i.select(
-                        patterson_group.epsilon(indices_i.select(isel_i)) == 1
-                    )
-                    isel_j = isel_j.select(
-                        patterson_group.epsilon(indices_j.select(isel_j)) == 1
-                    )
-                    ## Make a miller-index like object for the data, for calling the weighted
-                    ## cc-half calculator.
                     ma_j = FakeArray(
                         intensities_j.select(isel_j), sigmas_j.select(isel_j)
                     )

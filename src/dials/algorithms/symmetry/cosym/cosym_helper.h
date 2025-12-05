@@ -4,7 +4,7 @@
 #include <tuple>
 #include <scitbx/array_family/shared.h>
 #include <cctbx/import_scitbx_af.h>
-
+#include <cctbx/sgtbx/space_group.h>
 #include <functional>
 #include <cstddef>
 
@@ -24,12 +24,16 @@ struct MillerIndexHash {
 
 class matcher {
 public:
-  matcher(scitbx::af::const_ref<cctbx::miller::index<> > const& miller_indices) {
+  matcher(scitbx::af::const_ref<cctbx::miller::index<> > const& miller_indices,
+          cctbx::sgtbx::space_group const& patterson_group) {
     // Create the lookup map for the miller indices of a dataset on initialisation,
     // then future calls can just match against this.
     lookup_map_.reserve(miller_indices.size());
     for (std::size_t i = 0; i < miller_indices.size(); i++) {
-      lookup_map_.emplace(miller_indices[i], i);
+      cctbx::miller::index<> index = miller_indices[i];
+      if (patterson_group.epsilon(index) == 1) {
+        lookup_map_.emplace(index, i);
+      }
     }
   }
   boost::python::tuple match(
