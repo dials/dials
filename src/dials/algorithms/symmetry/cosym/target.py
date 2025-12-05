@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import atexit
 import concurrent.futures
 import copy
 import logging
+from multiprocessing import get_context
 
 import numpy as np
 from ordered_set import OrderedSet
@@ -308,7 +310,7 @@ class Target:
         logger.info(
             f"Calculating rij matrix elements in {len(self._lattices)} row-blocks"
         )
-        if self._nproc == 1:  # don't create a pool
+        if self._nproc == 1:  # don't create a process pool
             for i, _ in enumerate(self._lattices):
                 rij, wij = _compute_rij_matrix_one_row_block(
                     i,
@@ -330,43 +332,46 @@ class Target:
                     wij_matrix += wij
         else:
             n = 0
-            with concurrent.futures.ProcessPoolExecutor(
-                max_workers=self._nproc
-            ) as pool:
-                # note we use weights=True to help us work out where we have calculated rij,
-                # even if the weights phil option is None
-                futures = [
-                    pool.submit(
-                        _compute_rij_matrix_one_row_block,
-                        i,
-                        self._lattices,
-                        self._data,
-                        self.sym_ops,
-                        self._patterson_group,
-                        weights=cc_weights,
-                        min_pairs=self._min_pairs,
-                    )
-                    for i, _ in enumerate(self._lattices)
-                ]
-                for future in concurrent.futures.as_completed(futures):
-                    rij, wij = future.result()
-                    n += 1
-                    logger.info(f"Calculated rij matrix for row-block {n}")
-                    if rij_matrix is None:
-                        rij_matrix = rij
-                    else:
-                        rij_matrix += rij
-                    if wij_matrix is None:
-                        wij_matrix = wij
-                    else:
-                        wij_matrix += wij
+            ctx = get_context("spawn")
+            executor = concurrent.futures.ProcessPoolExecutor(
+                max_workers=min(self._nproc, len(self._lattices)),
+                mp_context=ctx,
+            )
+            atexit.register(executor.shutdown)
+
+            futures = [
+                executor.submit(
+                    _compute_rij_matrix_one_row_block,
+                    i,
+                    self._lattices,
+                    self._data,
+                    self.sym_ops,
+                    self._patterson_group,
+                    weights=cc_weights,
+                    min_pairs=self._min_pairs,
+                )
+                for i, _ in enumerate(self._lattices)
+            ]
+
+            for future in concurrent.futures.as_completed(futures):
+                rij, wij = future.result()
+                n += 1
+                logger.info(f"Calculated rij matrix for row-block {n}")
+                if rij_matrix is None:
+                    rij_matrix = rij
+                else:
+                    rij_matrix += rij
+                if wij_matrix is None:
+                    wij_matrix = wij
+                else:
+                    wij_matrix += wij
 
         rij_matrix = rij_matrix.toarray().astype(np.float64)
         rij_matrix += rij_matrix.T
         wij_matrix = wij_matrix.toarray().astype(np.float64)
         wij_matrix += wij_matrix.T
 
-        ## Check if we have a dataset where no correlations could be calculate.
+        ## Check if we have a dataset where no correlations could be calculated.
         zero_rows = np.where(np.all(wij_matrix == 0, axis=1))[0]
         if zero_rows.any():
             # only a problem if zero for all rows for dataset i
