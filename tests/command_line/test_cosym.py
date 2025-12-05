@@ -88,7 +88,8 @@ def test_cosym_partial_dataset(dials_data, run_in_tmp_path):
 
 def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmp_path):
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
-    args = ["space_group=P4", "seed=0", "d_min=10.0", "min_reflections=15", "nproc=1"]
+    args = ["space_group=P4", "seed=0", "d_min=10.0", "min_reflections=15", "nproc=2"]
+    # use nproc=2 to test the multiprocessing option in cosym.
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
         args.append(os.fspath(mcp / f"experiments_{i}.json"))
         args.append(os.fspath(mcp / f"reflections_{i}.pickle"))

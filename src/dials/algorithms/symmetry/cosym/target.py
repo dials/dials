@@ -304,16 +304,13 @@ class Target:
     def _compute_rij_wij_blockwise(self, cc_weights=True):
         rij_matrix = None
         wij_matrix = None
-        n = 0
+
         logger.info(
             f"Calculating rij matrix elements in {len(self._lattices)} row-blocks"
         )
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self._nproc) as pool:
-            # note we use weights=True to help us work out where we have calculated rij,
-            # even if the weights phil option is None
-            futures = [
-                pool.submit(
-                    _compute_rij_matrix_one_row_block,
+        if self._nproc == 1:  # don't create a pool
+            for i, _ in enumerate(self._lattices):
+                rij, wij = _compute_rij_matrix_one_row_block(
                     i,
                     self._lattices,
                     self._data,
@@ -322,17 +319,43 @@ class Target:
                     weights=cc_weights,
                     min_pairs=self._min_pairs,
                 )
-                for i, _ in enumerate(self._lattices)
-            ]
-            for future in concurrent.futures.as_completed(futures):
-                rij, wij = future.result()
-                n += 1
-                logger.info(f"Calculated rij matrix for row-block {n}")
+                logger.info(f"Calculated rij matrix for row-block {i + 1}")
                 if rij_matrix is None:
                     rij_matrix = rij
                 else:
                     rij_matrix += rij
-                if wij is not None:
+                if wij_matrix is None:
+                    wij_matrix = wij
+                else:
+                    wij_matrix += wij
+        else:
+            n = 0
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=self._nproc
+            ) as pool:
+                # note we use weights=True to help us work out where we have calculated rij,
+                # even if the weights phil option is None
+                futures = [
+                    pool.submit(
+                        _compute_rij_matrix_one_row_block,
+                        i,
+                        self._lattices,
+                        self._data,
+                        self.sym_ops,
+                        self._patterson_group,
+                        weights=cc_weights,
+                        min_pairs=self._min_pairs,
+                    )
+                    for i, _ in enumerate(self._lattices)
+                ]
+                for future in concurrent.futures.as_completed(futures):
+                    rij, wij = future.result()
+                    n += 1
+                    logger.info(f"Calculated rij matrix for row-block {n}")
+                    if rij_matrix is None:
+                        rij_matrix = rij
+                    else:
+                        rij_matrix += rij
                     if wij_matrix is None:
                         wij_matrix = wij
                     else:
