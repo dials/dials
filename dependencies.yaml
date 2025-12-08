@@ -62,6 +62,7 @@ build:
 host:
   - cctbx-base >=2025 #[prebuilt_cctbx]
   - dxtbx ={{ version_xy }} #[not bootstrap]
+  - eigen
   - hatchling
   - libboost-devel
   - libboost-python-devel
