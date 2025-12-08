@@ -1,6 +1,30 @@
 from __future__ import annotations
 
+import numpy as np
 import wx
+from skimage.measure import EllipseModel
+
+
+def extract_ellipse_parameters(ellipse: EllipseModel):
+    try:
+        xc, yc, a, b, theta = ellipse.params
+    except AttributeError:
+        # Deprecated from skimage 0.26
+        (
+            xc,
+            yc,
+        ) = ellipse.center
+        a, b = ellipse.axis_lengths
+        theta = ellipse.theta
+
+    phi = float(np.degrees(theta))
+    centre_xy = (float(xc), float(yc))
+
+    # Use a simplistic model to calculate l1 and l2 scale factors from a and b.
+    l1 = 1.0
+    l2 = float(b) / float(a)
+
+    return phi, l1, l2, centre_xy
 
 
 class EllipseSettingsFrame(wx.MiniFrame):
@@ -98,19 +122,29 @@ class EllipseSettingsPanel(wx.Panel):
             elif len(coords[0]) == 2:
                 self._panel = 0
 
+        phi_txt = " "
+        l1_txt = " "
+        l2_txt = " "
+        centre_txt = " "
         if len(coords) >= 5:
-            # Dummy values for now
-            phi = "0.0"
-            l1 = "1.0"
-            l2 = "1.0"
-            centre = "(0.0, 0.0)"
-        else:
-            phi = " "
-            l1 = " "
-            l2 = " "
-            centre = " "
+            try:
+                ellipse = EllipseModel.from_estimate(np.array(coords))
+            except AttributeError:
+                # Deprecated from skimage 0.26
+                ellipse = EllipseModel()
+                success = ellipse.estimate(np.array(coords))
+                if not success:
+                    ellipse = None
+            if not ellipse:
+                phi_txt = "Fit failed"
+            else:
+                phi, l1, l2, centre = extract_ellipse_parameters(ellipse)
+                phi_txt = f"{phi:.2f}"
+                l1_txt = f"{l1:.4f}"
+                l2_txt = f"{l2:.4f}"
+                centre_txt = f"({centre[0]:.2f}, {centre[1]:.2f})"
 
-        for value in (phi, l1, l2, centre):
+        for value in (phi_txt, l1_txt, l2_txt, centre_txt):
             grid.Add(
                 wx.TextCtrl(
                     self,
@@ -147,7 +181,7 @@ class EllipseSettingsPanel(wx.Panel):
 
         self._point_layer = self._pyslip.AddPointLayer(
             [(p[0], p[1], {}) for p in self._points],
-            name="<predictions_layer>",
+            name="<points_layer>",
             radius=3,
             renderer=self._pyslip.DrawPointLayer,
             color="#00ffff",
