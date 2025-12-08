@@ -229,6 +229,20 @@ channels:
 """.lstrip()
         )
 
+def environment_activator():
+    # type: () -> str
+    """Generate a string to write to file to activate the environment"""
+    # conda is lagging support in recent versions of python, so look
+    # for mamba if it is not present
+    for activator in ["conda", "mamba"]:
+        script = "%s/conda_base/etc/profile.d/%s.sh" % (os.getcwd(), activator)
+        if os.path.isfile(script):
+            activate_script = script
+            break
+    else:
+        sys.exit("Error: Could not find conda or mamba activation script")
+
+    return "#!/bin/bash\nsource {}\n{} activate {}/conda_base\n".format(activate_script, activator, os.getcwd())
 
 def run_command(command, workdir):
     print("Running %s (in %s)" % (" ".join(command), workdir))
@@ -275,20 +289,9 @@ def run_indirect_command(command, args):
         indirection = ["cmd.exe", "/C", "indirection.cmd"]
     else:
         filename = os.path.join("build", "indirection.sh")
-        # conda is lagging support in recent versions of python, so look
-        # for multiple options here
-        activate_script = None
-        for activator in ["conda", "mamba"]:
-            script = "%s/conda_base/etc/profile.d/%s.sh" % (os.getcwd(), activator)
-            if os.path.isfile(script):
-                activate_script = script
-        if activate_script is None:
-            sys.exit("Error: Could not find conda or mamba activation script")
 
         with open(filename, "w") as fh:
-            fh.write("#!/bin/bash\n")
-            fh.write("source %s\n" % activate_script)
-            fh.write("conda activate %s/conda_base\n" % os.getcwd())
+            fh.write(environment_activator())
             fh.write('"$@"\n')
         make_executable(filename)
         indirection = ["./indirection.sh"]
@@ -1089,15 +1092,7 @@ conda activate {}
             )
     else:
         with open("dials", "w") as f:
-            f.write(
-                """\
-# enable conda environment
-source {dist_root}/conda_base/etc/profile.d/conda.sh
-conda activate {dist_root}/conda_base
-""".format(
-                    dist_root=os.getcwd(),
-                )
-            )
+            f.write(environment_activator())
 
     # Write a compound CMakeLists.txt, if one doesn't exist
     if not os.path.isfile("modules/CMakeLists.txt"):

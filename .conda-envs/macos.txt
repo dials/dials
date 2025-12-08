@@ -55,6 +55,6 @@ sqlite
 tabulate
 tqdm
 urllib3
-wxpython>=4.2.0=*_5
+wxpython>=4.2.0
 xz
 zlib
