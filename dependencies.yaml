@@ -42,22 +42,22 @@
 #
 
 build:
-  - python # [build_platform != target_platform] # [not bootstrap]
-  - cross-python_{{ target_platform }} # [build_platform != target_platform] # [not bootstrap]
   - {{ compiler('cxx') }} # [not bootstrap]
-  - cxx-compiler #[bootstrap]
   - {{ stdlib('c') }} #[not bootstrap]
-  - cmake # [prebuilt_cctbx]
-  - ninja # [prebuilt_cctbx]
-  - requests # Used for doc builds to update release list for sphinx # [bootstrap]
-  - sphinx >=4 #[bootstrap]
-  - conda # [bootstrap]
-  - mamba # [bootstrap]
   - alabaster # Used for doc builds # [bootstrap]
   - biopython # Used for doc builds #[bootstrap]
+  - cmake # [prebuilt_cctbx]
+  - conda # [bootstrap]
+  - cross-python_{{ target_platform }} # [build_platform != target_platform] # [not bootstrap]
+  - cxx-compiler #[bootstrap]
   - docutils #[bootstrap]
-  - setuptools
+  - mamba # [bootstrap]
+  - ninja # [prebuilt_cctbx]
   - pre-commit #[bootstrap]
+  - python # [build_platform != target_platform] # [not bootstrap]
+  - requests # Used for doc builds to update release list for sphinx # [bootstrap]
+  - setuptools
+  - sphinx >=4 #[bootstrap]
 
 host:
   - cctbx-base >=2025 #[prebuilt_cctbx]
@@ -65,17 +65,18 @@ host:
   - hatchling
   - libboost-devel
   - libboost-python-devel
+  - libcxx # [bootstrap and osx]
+  - libglu # [linux and not prebuilt_cctbx]
+  - mesa-libgl-devel-cos7-x86_64 # [linux and not prebuilt_cctbx]
   - msgpack-cxx
   - pip
-  - python
   - pthread-stubs # [bootstrap and osx]
-  - libcxx # [bootstrap and osx]
-  - mesa-libgl-devel-cos7-x86_64 # [linux and not prebuilt_cctbx]
-  - libglu # [linux and not prebuilt_cctbx]
+  - python
 
 run:
   - {{ pin_compatible('cctbx-base') }} #[not bootstrap]
   - {{ pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) }} #[not bootstrap]
+  - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
   - ffbidx >=1.1.3 #[linux]
   - gemmi >=0.7
   - h5py >=3.1.0
@@ -90,14 +91,13 @@ run:
   - pycbf #[prebuilt_cctbx]
   - pyopengl # Shouldn't be necessary with prebuilt_cctbx but they don't include this
   - python
+  - python.app # [bootstrap and osx]
   - reportlab
   - scikit-learn
   - scipy
   - tabulate
   - tqdm
   - wxpython >=4.2.2
-  - python.app # [bootstrap and osx]
-  - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
 
 test:
   - dials-data >=2.4.123
