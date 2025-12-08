@@ -12,6 +12,7 @@ from typing import Any
 
 import numpy as np
 
+from dxtbx.format.FormatMultiImage import FormatMultiImage
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from libtbx import Auto, phil
 
@@ -36,6 +37,7 @@ class InputToIndex:
     method_list: list[str] = field(default_factory=list)
     known_crystal_models: list[Crystal] | None = None
     imageset_no: int = 0
+    imageset_index: int = 0
 
 
 @dataclass
@@ -51,6 +53,7 @@ class IndexingResult:
     rmsd_y: list[float] = field(default_factory=list)
     rmsd_dpsi: list[float] = field(default_factory=list)
     imageset_no: int = 0
+    imageset_index: int = 0
     unindexed_experiment: Experiment = None
 
 
@@ -175,6 +178,7 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
             unindexed_experiment=input_to_index.experiment,
+            imageset_index=input_to_index.imageset_index,
         )
         for id_, identifier in table.experiment_identifiers():
             selr = table.select(table["id"] == id_)
@@ -200,6 +204,7 @@ def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
             n_strong=n_strong,
             imageset_no=input_to_index.imageset_no,
             unindexed_experiment=input_to_index.experiment,
+            imageset_index=input_to_index.imageset_index,
         )
 
     # If chosen, output a message to json to show live progress
@@ -252,12 +257,17 @@ def index_all_concurrent(
                         image_no=refl_index,
                         method_list=method_list,
                         imageset_no=n_iset,
+                        imageset_index=i,
                     )
                 )
             else:  # experiments that have already been filtered
+                image = pathlib.Path(iset.get_image_identifier(i)).name
+                if issubclass(iset.get_format_class(), FormatMultiImage):
+                    index = iset.indices()[i] + 1
+                    image += f"-{index}"
                 results_summary[refl_index].append(
                     {
-                        "Image": pathlib.Path(iset.get_image_identifier(i)).name,
+                        "Image": image,
                         "n_indexed": 0,
                         "n_strong": 0,
                     }
@@ -301,10 +311,7 @@ def _join_indexing_results(
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
 
-    use_beam = None
     use_gonio = None
-    if len(experiments.beams()) == 1:
-        use_beam = experiments.beams()[0]
     if len(experiments.goniometers()):  # need a placeholder gonio
         use_gonio = experiments.goniometers()[0]
 
@@ -319,8 +326,6 @@ def _join_indexing_results(
                 res.reflection_table["imageset_id"] = flex.int(
                     res.reflection_table.size(), res.imageset_no
                 )
-                if use_beam:
-                    expt.beam = use_beam
                 if use_gonio:
                     expt.goniometer = use_gonio
 
@@ -347,10 +352,23 @@ def _add_results_to_summary_dict(
     # convert to results_summary dict current format
     for res in results:
         if res.n_indexed:
+            # for things like nexus files, we want image to be expressed like
+            # experiment_001.nxs-50, experiment_001.nxs-62, etc.
+            # for things like cbfs, we want image to be expressed like
+            # experiment_0050.cbf, experiment_0062.cbf, etc.
+            # these will be displayed in the summary table.
+            image = pathlib.Path(
+                res.experiments[0].imageset.paths()[res.imageset_index]
+            ).name
+            if issubclass(
+                res.experiments[0].imageset.get_format_class(), FormatMultiImage
+            ):
+                index = res.experiments[0].imageset.indices()[res.imageset_index] + 1
+                image += f"-{index}"
             for j in range(len(res.n_indexed)):
                 results_summary[res.image_no].append(
                     {
-                        "Image": res.image,
+                        "Image": image,
                         "identifier": res.identifiers[j],
                         "n_indexed": res.n_indexed[j],
                         "n_strong": res.n_strong,
@@ -360,6 +378,8 @@ def _add_results_to_summary_dict(
                     }
                 )
         else:
+            # Note we can't currently get the true image string here, but this is
+            # not used.
             results_summary[res.image_no].append(
                 {
                     "Image": res.image,

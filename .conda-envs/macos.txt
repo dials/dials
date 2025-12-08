@@ -37,6 +37,7 @@ msgpack-python
 natsort
 numpy
 nxmx
+optuna
 ordered-set
 pandas
 pillow>=5.4.1
