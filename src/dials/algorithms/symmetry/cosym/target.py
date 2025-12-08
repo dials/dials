@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import atexit
 import concurrent.futures
 import copy
 import logging
-from multiprocessing import get_context
 
 import numpy as np
 from ordered_set import OrderedSet
@@ -32,8 +30,8 @@ def _lattice_lower_upper_index(lattices, lattice_id):
     return lower_index, upper_index
 
 
-class FakeArray:
-    ## Confroms to a subset of the miller array interface.
+class LightArray:
+    ## Conforms to a subset of the miller array interface.
     def __init__(self, data, sigmas):
         self._data = data
         self._sigmas = sigmas
@@ -116,10 +114,10 @@ def _compute_rij_matrix_one_row_block(
                     miller.map_to_asu(space_group_type, False, indices_j)
                     isel_i, isel_j = matcher_k.match(indices_j)
 
-                    ma_j = FakeArray(
+                    ma_j = LightArray(
                         intensities_j.select(isel_j), sigmas_j.select(isel_j)
                     )
-                    ma_i = FakeArray(
+                    ma_i = LightArray(
                         intensities_i.select(isel_i), sigmas_i.select(isel_i)
                     )
                     n_pairs = ma_i.size()
@@ -307,6 +305,9 @@ class Target:
         rij_matrix = None
         wij_matrix = None
 
+        def accumulate(target, value):
+            return value if target is None else target + value
+
         logger.info(
             f"Calculating rij matrix elements in {len(self._lattices)} row-blocks"
         )
@@ -322,49 +323,33 @@ class Target:
                     min_pairs=self._min_pairs,
                 )
                 logger.info(f"Calculated rij matrix for row-block {i + 1}")
-                if rij_matrix is None:
-                    rij_matrix = rij
-                else:
-                    rij_matrix += rij
-                if wij_matrix is None:
-                    wij_matrix = wij
-                else:
-                    wij_matrix += wij
+                rij_matrix = accumulate(rij_matrix, rij)
+                wij_matrix = accumulate(wij_matrix, wij)
         else:
             n = 0
-            ctx = get_context("spawn")
-            executor = concurrent.futures.ProcessPoolExecutor(
-                max_workers=min(self._nproc, len(self._lattices)),
-                mp_context=ctx,
-            )
-            atexit.register(executor.shutdown)
-
-            futures = [
-                executor.submit(
-                    _compute_rij_matrix_one_row_block,
-                    i,
-                    self._lattices,
-                    self._data,
-                    self.sym_ops,
-                    self._patterson_group,
-                    weights=cc_weights,
-                    min_pairs=self._min_pairs,
-                )
-                for i, _ in enumerate(self._lattices)
-            ]
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=min(self._nproc, len(self._lattices))
+            ) as pool:
+                futures = [
+                    pool.submit(
+                        _compute_rij_matrix_one_row_block,
+                        i,
+                        self._lattices,
+                        self._data,
+                        self.sym_ops,
+                        self._patterson_group,
+                        weights=cc_weights,
+                        min_pairs=self._min_pairs,
+                    )
+                    for i, _ in enumerate(self._lattices)
+                ]
 
             for future in concurrent.futures.as_completed(futures):
                 rij, wij = future.result()
                 n += 1
                 logger.info(f"Calculated rij matrix for row-block {n}")
-                if rij_matrix is None:
-                    rij_matrix = rij
-                else:
-                    rij_matrix += rij
-                if wij_matrix is None:
-                    wij_matrix = wij
-                else:
-                    wij_matrix += wij
+                rij_matrix = accumulate(rij_matrix, rij)
+                wij_matrix = accumulate(wij_matrix, wij)
 
         rij_matrix = rij_matrix.toarray().astype(np.float64)
         rij_matrix += rij_matrix.T
