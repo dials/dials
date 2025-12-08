@@ -275,9 +275,19 @@ def run_indirect_command(command, args):
         indirection = ["cmd.exe", "/C", "indirection.cmd"]
     else:
         filename = os.path.join("build", "indirection.sh")
+        # conda is lagging support in recent versions of python, so look
+        # for multiple options here
+        activate_script = None
+        for activator in ["conda", "mamba"]:
+            script = "%s/conda_base/etc/profile.d/%s.sh" % (os.getcwd(), activator)
+            if os.path.isfile(script):
+                activate_script = script
+        if activate_script is None:
+            sys.exit("Error: Could not find conda or mamba activation script")
+
         with open(filename, "w") as fh:
             fh.write("#!/bin/bash\n")
-            fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
+            fh.write("source %s\n" % activate_script)
             fh.write("conda activate %s/conda_base\n" % os.getcwd())
             fh.write('"$@"\n')
         make_executable(filename)

@@ -3,7 +3,6 @@ biopython
 bzip2
 c-compiler
 colorlog
-conda
 cxx-compiler
 dials-data>=2.4.123
 docutils
@@ -19,12 +18,13 @@ jinja2
 libboost-devel
 libboost-python-devel
 libcxx
+mamba
 matplotlib-base>=3.0.2
 mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy<2.3.0
+numpy
 nxmx
 optuna
 ordered-set

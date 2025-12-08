@@ -20,13 +20,14 @@ jinja2
 libboost-devel
 libboost-python-devel
 libglu
+mamba
 matplotlib-base>=3.0.2
 mesa-libgl-devel-cos7-x86_64
 mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy<2.3.0
+numpy
 nxmx
 optuna
 ordered-set
