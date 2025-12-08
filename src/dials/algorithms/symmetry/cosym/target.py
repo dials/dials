@@ -343,13 +343,12 @@ class Target:
                     )
                     for i, _ in enumerate(self._lattices)
                 ]
-
-            for future in concurrent.futures.as_completed(futures):
-                rij, wij = future.result()
-                n += 1
-                logger.info(f"Calculated rij matrix for row-block {n}")
-                rij_matrix = accumulate(rij_matrix, rij)
-                wij_matrix = accumulate(wij_matrix, wij)
+                for future in concurrent.futures.as_completed(futures):
+                    rij, wij = future.result()
+                    n += 1
+                    logger.info(f"Calculated rij matrix for row-block {n}")
+                    rij_matrix = accumulate(rij_matrix, rij)
+                    wij_matrix = accumulate(wij_matrix, wij)
 
         rij_matrix = rij_matrix.toarray().astype(np.float64)
         rij_matrix += rij_matrix.T
