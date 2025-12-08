@@ -101,7 +101,7 @@ class EllipseSettingsPanel(wx.Panel):
         title_text.GetFont().SetWeight(wx.BOLD)
         title.Add(title_text, 0, wx.ALL | wx.TOP, border=10)
 
-        grid = wx.FlexGridSizer(cols=4, rows=3, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
         sizer.Add(grid)
 
         # Titles
@@ -155,7 +155,7 @@ class EllipseSettingsPanel(wx.Panel):
                 self.phi_txt = f"{phi:.2f}"
                 self.l1_txt = f"{l1:.6f}"
                 self.l2_txt = f"{l2:.6f}"
-                self.centre_txt = f"({centre[0]:.2f}, {centre[1]:.2f}"
+                self.centre_txt = f"{centre[0]:.2f} {centre[1]:.2f}"
                 enable_save_button = True
 
         for value in (self.phi_txt, self.l1_txt, self.l2_txt, self.centre_txt):
@@ -163,13 +163,16 @@ class EllipseSettingsPanel(wx.Panel):
                 wx.TextCtrl(
                     self,
                     value=value,
-                    size=wx.Size(130, -1),
+                    size=wx.Size(140, -1),
                     style=wx.TE_READONLY,
                 ),
                 0,
                 wx.ALL,
                 5,
             )
+
+        grid = wx.FlexGridSizer(cols=3, rows=1, vgap=0, hgap=0)
+        sizer.Add(grid)
 
         self.clear_button = wx.Button(self, -1, "Clear")
         grid.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
