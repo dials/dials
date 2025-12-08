@@ -4,6 +4,9 @@ import numpy as np
 import wx
 from skimage.measure import EllipseModel
 
+from wxtbx.phil_controls import EVT_PHIL_CONTROL
+from wxtbx.phil_controls.strctrl import StrCtrl
+
 
 def extract_ellipse_parameters(ellipse: EllipseModel):
     try:
@@ -30,6 +33,7 @@ def extract_ellipse_parameters(ellipse: EllipseModel):
 class EllipseSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
+        self.phil_params = args[0].params
         szr = wx.BoxSizer(wx.VERTICAL)
         panel = EllipseSettingsPanel(self)
         self.SetSizer(szr)
@@ -50,6 +54,8 @@ class EllipseSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
+        self.params = args[0].phil_params
+
         self._pyslip = self.GetParent().GetParent().pyslip
         self._pyslip.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
 
@@ -67,6 +73,12 @@ class EllipseSettingsPanel(wx.Panel):
         except RuntimeError:
             # If the application is closing, the PySlip object has already been deleted
             pass
+
+    def OnClear(self, event):
+        self._points = []
+        self._pyslip.DeleteLayer(self._point_layer)
+        self._point_layer = None
+        self.draw_settings()
 
     def Destroy(self):
         self.__del__()
@@ -122,10 +134,11 @@ class EllipseSettingsPanel(wx.Panel):
             elif len(coords[0]) == 2:
                 self._panel = 0
 
-        phi_txt = " "
-        l1_txt = " "
-        l2_txt = " "
-        centre_txt = " "
+        self.phi_txt = " "
+        self.l1_txt = " "
+        self.l2_txt = " "
+        self.centre_txt = " "
+        enable_save_button = False
         if len(coords) >= 5:
             try:
                 ellipse = EllipseModel.from_estimate(np.array(coords))
@@ -136,15 +149,16 @@ class EllipseSettingsPanel(wx.Panel):
                 if not success:
                     ellipse = None
             if not ellipse:
-                phi_txt = "Fit failed"
+                self.phi_txt = "Fit failed"
             else:
                 phi, l1, l2, centre = extract_ellipse_parameters(ellipse)
-                phi_txt = f"{phi:.2f}"
-                l1_txt = f"{l1:.4f}"
-                l2_txt = f"{l2:.4f}"
-                centre_txt = f"({centre[0]:.2f}, {centre[1]:.2f})"
+                self.phi_txt = f"{phi:.2f}"
+                self.l1_txt = f"{l1:.6f}"
+                self.l2_txt = f"{l2:.6f}"
+                self.centre_txt = f"({centre[0]:.2f}, {centre[1]:.2f}"
+                enable_save_button = True
 
-        for value in (phi_txt, l1_txt, l2_txt, centre_txt):
+        for value in (self.phi_txt, self.l1_txt, self.l2_txt, self.centre_txt):
             grid.Add(
                 wx.TextCtrl(
                     self,
@@ -157,7 +171,22 @@ class EllipseSettingsPanel(wx.Panel):
                 5,
             )
 
-        # XXX Space for clear and save buttons
+        self.clear_button = wx.Button(self, -1, "Clear")
+        grid.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
+
+        self.save_params_button = wx.Button(self, -1, "Save parameters")
+        self.save_params_button.Enable(enable_save_button)
+        grid.Add(self.save_params_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(wx.EVT_BUTTON, self.OnSaveEllipseParams, self.save_params_button)
+
+        self.save_ellipse_txt_ctrl = StrCtrl(
+            self, value=self.params.output.ellipse_params, name="ellipse_phil"
+        )
+        grid.Add(self.save_ellipse_txt_ctrl, 0, wx.ALL, 5)
+        self.Bind(
+            EVT_PHIL_CONTROL, self.OnSaveEllipseParams, self.save_ellipse_txt_ctrl
+        )
 
         sizer.Layout()
         self.Layout()
@@ -167,7 +196,6 @@ class EllipseSettingsPanel(wx.Panel):
             click_posn = event.GetPosition()
             self._points.append(self._pyslip.ConvertView2Geo(click_posn))
 
-            # FIXME only draw the point if the last point was on the same panel
             self.DrawPoint()
 
             self.draw_settings()
@@ -187,3 +215,18 @@ class EllipseSettingsPanel(wx.Panel):
             color="#00ffff",
             show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
         )
+
+    def OnSaveEllipseParams(self, event):
+        self.params.output.ellipse_params = self.save_ellipse_txt_ctrl.GetValue()
+        file_name = self.params.output.ellipse_params
+        with open(file_name, "w") as f:
+            print(f"Saving parameters to {file_name}")
+            template = """ellipse
+{{
+  phi = {0}
+  l1 = {1}
+  l2 = {2}
+  centre_xy = {3}
+}}
+""".format(self.phi_txt, self.l1_txt, self.l2_txt, self.centre_txt)
+            f.write(template)
