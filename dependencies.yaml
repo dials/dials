@@ -84,7 +84,7 @@ run:
   - jinja2
   - matplotlib-base >=3.0.2
   - msgpack-python
-  - numpy
+  - numpy <2.3.0
   - optuna
   - ordered-set
   - pandas
