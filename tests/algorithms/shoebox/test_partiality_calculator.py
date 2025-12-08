@@ -10,7 +10,7 @@ from dials.array_family import flex
 
 def test(dials_data):
     exlist = ExperimentListFactory.from_json_file(
-        dials_data("centroid_test_data", pathlib=True) / "fake_long_experiments.json"
+        dials_data("centroid_test_data") / "fake_long_experiments.json"
     )
 
     assert len(exlist) == 1

@@ -17,7 +17,7 @@ from dials.command_line import estimate_resolution as cmdline
     ],
 )
 def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
-    x4wide = dials_data("x4wide_processed", pathlib=True)
+    x4wide = dials_data("x4wide_processed")
     paths = [str(x4wide / p) for p in input_files]
     reference_mtz = x4wide / "AUTOMATIC_DEFAULT_scaled.mtz"
     cmdline.run(
@@ -70,7 +70,7 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
 
 
 def test_multi_sequence_with_batch_range(dials_data, run_in_tmp_path, capsys):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -96,7 +96,7 @@ def test_dispatcher_name(tmp_path):
 
 
 def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     cmdline.run(
         ["misigma=1"]
         + [
@@ -122,7 +122,7 @@ def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
 
 
 def test_mismatched_experiments_reflections(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     with pytest.raises(SystemExit):
         cmdline.run(
             [
