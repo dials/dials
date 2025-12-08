@@ -224,7 +224,8 @@ class EllipseSettingsPanel(wx.Panel):
         file_name = self.params.output.ellipse_params
         with open(file_name, "w") as f:
             print(f"Saving parameters to {file_name}")
-            template = """ellipse
+            template = """mode = ellipse
+ellipse
 {{
   phi = {0}
   l1 = {1}
