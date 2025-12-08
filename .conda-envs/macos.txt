@@ -45,6 +45,7 @@ python-dateutil>=2.7.0
 python.app
 reportlab
 requests
+scikit-image
 scikit-learn
 scipy
 scons

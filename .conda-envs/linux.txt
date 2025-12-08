@@ -45,6 +45,7 @@ pytest-xdist
 python-dateutil>=2.7.0
 reportlab
 requests
+scikit-image
 scikit-learn
 scipy
 scons
