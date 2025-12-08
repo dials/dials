@@ -242,7 +242,15 @@ def environment_activator():
     else:
         sys.exit("Error: Could not find conda or mamba activation script")
 
-    return "#!/bin/bash\nsource {}\n{} activate {}/conda_base\n".format(activate_script, activator, os.getcwd())
+    # Work out which shell... mamba.sh uses bash 4+ syntax, which the
+    # user might not have if running on macOS; so in these cases we need
+    # to use zsh. If not zsh, then fall back to the old (possibly
+    # incorrect) bash-only behaviour
+    shell = os.getenv("SHELL", "/bin/bash")
+    if not shell.endswith("/zsh"):
+        shell = "/bin/bash"
+
+    return "#!{}\nsource {}\n{} activate {}/conda_base\n".format(shell, activate_script, activator, os.getcwd())
 
 def run_command(command, workdir):
     print("Running %s (in %s)" % (" ".join(command), workdir))
