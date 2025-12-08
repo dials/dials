@@ -85,6 +85,7 @@ run:
   - matplotlib-base >=3.0.2
   - msgpack-python
   - numpy
+  - optuna
   - ordered-set
   - pandas
   - pillow >=5.4.1
