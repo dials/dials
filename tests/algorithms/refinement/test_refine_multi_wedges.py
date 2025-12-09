@@ -16,7 +16,7 @@ from dials.algorithms.refinement.engine import Journal
 
 
 def test(dials_data, tmp_path):
-    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = dials_data("polyhedra_narrow_wedges")
 
     selection = (2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 17, 18, 19, 20)
 
@@ -80,7 +80,7 @@ def test_order_invariance(dials_data, tmp_path):
     """Check that the order that datasets are included in refinement does not
     matter"""
 
-    data_dir = data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = data_dir = dials_data("polyhedra_narrow_wedges")
     selection1 = (2, 3, 4, 5, 6)
     selection2 = (2, 3, 4, 6, 5)
 

@@ -6,7 +6,7 @@ import dials.command_line.correlation_matrix as dials_corr_mat
 
 
 def test_corr_mat(dials_data, run_in_tmp_path):
-    mcp = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    mcp = dials_data("vmxi_proteinase_k_sweeps")
     args = []
     for i in [0, 1, 2, 3]:
         args.append(str(mcp / f"experiments_{i}.expt"))
