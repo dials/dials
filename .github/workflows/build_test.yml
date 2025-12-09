@@ -44,7 +44,8 @@ jobs:
         run: |
           python modules/dials/installer/bootstrap.py update base \
             --python "${{ env.PYTHON_TESTING_VERSION }}" \
-            --extra-dependencies modules/dials/.github/ci-dependencies.yaml
+            --extra-dependencies modules/dials/.github/ci-dependencies.yaml \
+            --without ffbidx
       - if: runner.os != 'Windows'
         run: echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
       - name: Build

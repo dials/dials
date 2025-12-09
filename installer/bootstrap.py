@@ -92,8 +92,8 @@ working network connection for downloading conda packages.
         )
 
 
-def get_requirements(conda_platform, conda_arch, python_version, is_cmake, extra_deps):
-    # type: (str, Literal["linux", "macos", "windows"], str, bool, list[str] | None) -> str
+def get_requirements(conda_platform, conda_arch, python_version, is_cmake, extra_deps, without):
+    # type: (str, Literal["linux", "macos", "windows"], str, bool, list[str] | None, list[str] | None) -> str
 
     """
     Find or create a file of platform-specific dependencies
@@ -152,13 +152,18 @@ def get_requirements(conda_platform, conda_arch, python_version, is_cmake, extra
         + expected_dependency_lists
     )
     filename = "modules/dials/.conda-envs/requirements.txt"
+    if without:
+        lines = results.decode().splitlines()
+        search = re.compile(r"::(?:{})(:?[^\w\-_]|$)".format("|".join(without)))
+        results = "\n".join([line for line in lines if not search.search(line)]).encode()
+
     with open(filename, "wb") as f:
         f.write(results)
     return filename
 
 
-def install_micromamba(python, cmake, extra_deps):
-    # type: (str, bool, list[str] | None) -> None
+def install_micromamba(python, cmake, extra_deps, without):
+    # type: (str, bool, list[str] | None, list[str] | None) -> None
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
@@ -206,6 +211,7 @@ def install_micromamba(python, cmake, extra_deps):
         python_version=python,
         is_cmake=cmake,
         extra_deps=extra_deps,
+        without=without,
     )
     # install a new environment or update an existing one
     prefix = os.path.realpath("conda_base")
@@ -1371,8 +1377,14 @@ be passed separately with quotes to avoid confusion (e.g
         action="append",
         help=argparse.SUPPRESS,
     )
-
+    # Remove dependencies before resolving. So we can exclude large dependencies on CI.
+    parser.add_argument(
+        "--without",
+        action="append",
+        help=argparse.SUPPRESS,
+    )
     options = parser.parse_args()
+
     if options.removed_cmake:
         # User passed the obsolete parameter
         sys.exit("Error: --cmake is now the default, please remove --cmake.")
@@ -1389,6 +1401,7 @@ be passed separately with quotes to avoid confusion (e.g
             options.python,
             cmake=options.cmake,
             extra_deps=options.extra_dependencies,
+            without=options.without,
         )
         if options.clean:
             shutil.rmtree(os.path.realpath("micromamba"))
