@@ -51,7 +51,7 @@ expected_8 = np.loadtxt(parent_path / "test_coords/labels_8.txt")
 
 @pytest.fixture()
 def proteinase_k(dials_data):
-    mcp = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    mcp = dials_data("vmxi_proteinase_k_sweeps")
     params = phil_scope.extract()
     input_data = []
     parser = ArgumentParser(

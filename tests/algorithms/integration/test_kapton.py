@@ -15,7 +15,7 @@ def test_kapton(tmp_path, dials_data):
     """Test script for kapton correction applied to integrated data.
     Currently only testing kapton 2019 correction on rayonix-340 at LCLS
     """
-    dd = dials_data("lcls_rayonix_kapton", pathlib=True)
+    dd = dials_data("lcls_rayonix_kapton")
     image_file = dd / "hit-20181213155134902.cbf"
     mask_file = dd / "mask_rayonix340mx_4x4.pickle"
     geom_file = dd / "experiments_000.json"
