@@ -250,7 +250,7 @@ def environment_activator():
     if not shell.endswith("/zsh"):
         shell = "/bin/bash"
 
-    return "#!{}\nsource {}\n{} activate {}/conda_base\n".format(shell, activate_script, activator, os.getcwd())
+    return "#!{}\nwhich -a bash\nsource {}\n{} activate {}/conda_base\n".format(shell, activate_script, activator, os.getcwd())
 
 def run_command(command, workdir):
     print("Running %s (in %s)" % (" ".join(command), workdir))
