@@ -179,7 +179,6 @@ def install_micromamba(python, cmake):
     if cmake:
         extra_deps = [
             "cctbx-base=" + _prebuilt_cctbx_base,
-            "pycbf",
             "cmake",
             "pre-commit",
         ]
