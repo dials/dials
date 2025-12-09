@@ -429,7 +429,7 @@ class CorrelationMatrix:
                 )
                 raise optuna.exceptions.TrialPruned()
 
-            logger.info("Cluster labels for solution:\n")
+            logger.info("Cluster labels for solution:")
             if len(all_data_labels) != len(optics_model.labels_):
                 logger.info("Warning - missing datasets.")
             else:
@@ -438,9 +438,9 @@ class CorrelationMatrix:
                 for i in unique_labels:
                     ids = all_data_array[np.where(optics_model.labels_ == i)]
                     if i != -1:
-                        logger.info(f"Cluster {i}: {' '.join([str(i) for i in ids])}\n")
+                        logger.info(f"Cluster {i}: {' '.join([str(i) for i in ids])}")
                     else:
-                        logger.info(f"Noise: {' '.join([str(i) for i in ids])}\n")
+                        logger.info(f"Noise: {' '.join([str(i) for i in ids])}")
 
             trial.set_user_attr("labels", optics_model.labels_)
             trial.set_user_attr("model", optics_model)
@@ -473,7 +473,7 @@ class CorrelationMatrix:
             score = silhouette * noise_penalty
 
             logger.info(
-                f"Trial {trial.number} finished with overall score accounting for noise: {score} (Silhouette Score: {silhouette}) using 'min_samples': {min_samples}."
+                f"Score (with noise): {score:.3f} (Silhouette Score: {silhouette:.3f}) using 'min_samples': {min_samples}."
             )
 
             trial.set_user_attr("silhouette", silhouette)
