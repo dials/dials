@@ -581,14 +581,19 @@ class CorrelationMatrix:
             return (
                 initial_min_samples,
                 "N/A as only one cluster",
-                "N/A as only one cluster",
                 labels,
                 model,
             )
         else:
-            logger.info(
-                f"Best trial was {study.best_trial.number} with overall score of {study.best_trial.user_attrs['score']} (Silhouette Score {study.best_trial.user_attrs['silhouette']})"
-            )
+            logger.info("---Optimisation Summary---")
+            if isinstance(study.best_trial.user_attrs["silhouette"], str):
+                logger.info(
+                    f"Best trial was {study.best_trial.number} (score {study.best_trial.user_attrs['silhouette']})"
+                )
+            else:
+                logger.info(
+                    f"Best trial was {study.best_trial.number} with overall score of {study.best_trial.user_attrs['score']:.3f} (Silhouette Score {study.best_trial.user_attrs['silhouette']:.3f})"
+                )
             if study.best_trial.user_attrs["score"] < 0:
                 logger.info(
                     "Likely only a single cluster present, switching to single cluster optimisation."
@@ -597,7 +602,6 @@ class CorrelationMatrix:
                 return (
                     initial_min_samples,
                     "N/A as only one cluster",
-                    "N/A as only one cluster",
                     labels,
                     model,
                 )
@@ -605,7 +609,6 @@ class CorrelationMatrix:
                 return (
                     study.best_params["min_samples"],
                     study.best_trial.user_attrs["silhouette"],
-                    study.best_trial.user_attrs["score"],
                     study.best_trial.user_attrs["labels"],
                     study.best_trial.user_attrs["model"],
                 )
@@ -635,17 +638,9 @@ class CorrelationMatrix:
                 silhouette = silhouette_score(
                     self.cosym_analysis.coords[mask], optics_model.labels_[mask]
                 )
-                noise_fraction = (len(optics_model.labels_) - np.sum(mask)) / len(
-                    optics_model.labels_
-                )
-                noise_penalty = 1 - (
-                    noise_fraction**self.params.significant_clusters.noise_penalty
-                )
-                overall_score = silhouette * noise_penalty
 
             else:
                 silhouette = "N/A as only one cluster"
-                overall_score = "N/A as only one cluster"
 
         else:
             # Heuristic using number of dimensions as a proxy for number of systematic differences
@@ -669,7 +664,6 @@ class CorrelationMatrix:
                     (
                         min_points,
                         silhouette,
-                        overall_score,
                         self.cluster_labels,
                         optics_model,
                     ) = self.optimise_clustering(
