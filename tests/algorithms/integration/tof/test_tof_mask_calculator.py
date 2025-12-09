@@ -47,12 +47,10 @@ def test_tof_calculate_shoebox_mask(dials_data):
 
         return bboxes
 
-    image_file = join(
-        dials_data("isis_sxd_example_data", pathlib=True), "sxd_nacl_run.nxs"
-    )
+    image_file = join(dials_data("isis_sxd_example_data"), "sxd_nacl_run.nxs")
     experiments = ExperimentListFactory.from_filenames([image_file])
     reflections = flex.reflection_table.from_msgpack_file(
-        join(dials_data("isis_sxd_nacl_processed", pathlib=True), "strong.refl")
+        join(dials_data("isis_sxd_nacl_processed"), "strong.refl")
     )
     _, _, pz = reflections["xyzobs.px.value"].parts()
     reflections = reflections.select(pz < 100)

@@ -7,7 +7,7 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 
 
 def test_sequence_to_stills(dials_data, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     input_experiments = data_dir / "integrated.expt"
     input_reflections = data_dir / "refined.refl"
     result = subprocess.run(
@@ -35,7 +35,7 @@ def test_sequence_to_stills(dials_data, tmp_path):
 
 def test_data_with_static_model(dials_data, tmp_path):
     # test for regression of https://github.com/dials/dials/issues/2516
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     input_experiments = data_dir / "indexed.expt"
     input_reflections = data_dir / "indexed.refl"
     result = subprocess.run(
@@ -59,7 +59,7 @@ def test_data_with_static_model(dials_data, tmp_path):
 
 def test_sliced_sequence(dials_data, tmp_path):
     # test for regression of https://github.com/dials/dials/issues/2519
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     input_experiments = data_dir / "indexed.expt"
     input_reflections = data_dir / "indexed.refl"
 

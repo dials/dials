@@ -28,7 +28,7 @@ def check_french_wilson_amplitudes(amplitudes):
 
 
 def test_french_wilson_insulin(dials_data):
-    insulin = dials_data("insulin_processed", pathlib=True)
+    insulin = dials_data("insulin_processed")
     expts = load.experiment_list(insulin / "scaled.expt", check_format=False)
     refls = flex.reflection_table.from_file(insulin / "scaled.refl")
     merged, _, _ = merge.merge(expts, refls)
@@ -40,7 +40,7 @@ def test_french_wilson_insulin(dials_data):
 
 @pytest.mark.parametrize("space_group_symbol", [None, "P1"])
 def test_french_wilson_l_cysteine(dials_data, space_group_symbol):
-    l_cysteine = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    l_cysteine = dials_data("l_cysteine_4_sweeps_scaled")
     expts = load.experiment_list(l_cysteine / "scaled_30.expt", check_format=False)
     refls = flex.reflection_table.from_file(l_cysteine / "scaled_30.refl")
     if space_group_symbol:
