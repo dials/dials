@@ -56,7 +56,7 @@ class EllipseSettingsPanel(wx.Panel):
         self.params = args[0].phil_params
 
         self._pyslip = self.GetParent().GetParent().pyslip
-        self._pyslip.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self._pyslip.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftDClick)
 
         self._points = []
         self._panel = None
@@ -69,7 +69,7 @@ class EllipseSettingsPanel(wx.Panel):
         try:
             self._pyslip.DeleteLayer(self._point_layer)
             self._point_layer = None
-            self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
+            self._pyslip.Unbind(wx.EVT_LEFT_DCLICK, handler=self.OnLeftDClick)
         except RuntimeError:
             # If the application is closing, the PySlip object has already been deleted
             pass
@@ -99,7 +99,9 @@ class EllipseSettingsPanel(wx.Panel):
 
         title = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(title)
-        title_text = wx.StaticText(self, -1, "Click on at least 5 points around a ring")
+        title_text = wx.StaticText(
+            self, -1, "Double click on at least 5 points around a ring"
+        )
         title_text.GetFont().SetWeight(wx.BOLD)
         title.Add(title_text, 0, wx.ALL | wx.TOP, border=10)
 
@@ -261,7 +263,7 @@ class EllipseSettingsPanel(wx.Panel):
             points.append((lon, lat))
         return points
 
-    def OnLeftDown(self, event):
+    def OnLeftDClick(self, event):
         if not event.ShiftDown():
             click_posn = event.GetPosition()
             self._points.append(self._pyslip.ConvertView2Geo(click_posn))
