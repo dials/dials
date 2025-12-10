@@ -1,0 +1,1 @@
+``dials.index``: two new parameters, ``xy_rmsd_threshold`` and ``n_indexed_threshold`` are introduced to exclude obvious bad indexing solutions, with defaults set to 4 pixels and 5 reflections respectively.
