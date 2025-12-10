@@ -139,7 +139,7 @@ def test_index_i04_weak_data_fft3d(dials_data, tmp_path):
 
 
 def test_index_trypsin_two_lattice_P212121(dials_data, tmp_path):
-    data_dir = dials_data("semisynthetic_multilattice", pathlib=True)
+    data_dir = dials_data("semisynthetic_multilattice")
     strong_path = data_dir / "ag_strong_1_50.refl"
     sequence_path = data_dir / "ag_imported_1_50.expt"
     extra_args = [
@@ -201,7 +201,7 @@ def test_index_i04_weak_data_fft1d(dials_data, tmp_path):
 
 
 def test_index_trypsin_index_assignment_local(dials_data, tmp_path):
-    data_dir = dials_data("semisynthetic_multilattice", pathlib=True)
+    data_dir = dials_data("semisynthetic_multilattice")
     reflections_path = data_dir / "ag_strong_1_50.refl"
     sequence_path = data_dir / "ag_imported_1_50.expt"
     extra_args = [
@@ -307,7 +307,7 @@ def test_index_imosflm_tutorial(dials_data, tmp_path, specify_unit_cell):
 def insulin_spotfinding(dials_data, tmp_path_factory):
     """Return experiment and reflection files for 2 images of the insulin dataset"""
 
-    data_dir = dials_data("insulin", pathlib=True)
+    data_dir = dials_data("insulin")
     tmp_path = tmp_path_factory.mktemp("insulin")
 
     command = [shutil.which("dials.import")]
@@ -362,7 +362,7 @@ def insulin_spotfinding_stills(dials_data, tmp_path_factory):
     """Return experiment and reflection files for 1 image of the insulin
     dataset treated as still image"""
 
-    data_dir = dials_data("insulin", pathlib=True)
+    data_dir = dials_data("insulin")
     tmp_path = tmp_path_factory.mktemp("insulin")
 
     command = [
@@ -506,7 +506,7 @@ def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
 def test_index_small_molecule_multi_sequence_3(dials_data, tmp_path):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
-    data_dir = dials_data("misc_regression", pathlib=True)
+    data_dir = dials_data("misc_regression")
     refl_paths = [
         str(data_dir / f"dials-191_sweep{i + 1}_strong.refl") for i in range(3)
     ]
@@ -582,13 +582,9 @@ def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
     """Problem: Sometimes there is enough data to index, but not enough to
     refine. If this happens in the (N>1)th crystal of max_lattices, then
     all existing solutions are also dropped."""
-    lpe4_expt = (
-        dials_data("indexing_test_data", pathlib=True)
-        / "lattice_failure-lpe4-2-a15.expt"
-    )
+    lpe4_expt = dials_data("indexing_test_data") / "lattice_failure-lpe4-2-a15.expt"
     lpe4_pickle = (
-        dials_data("indexing_test_data", pathlib=True)
-        / "lattice_failure-lpe4-2-a15_strong.pickle"
+        dials_data("indexing_test_data") / "lattice_failure-lpe4-2-a15_strong.pickle"
     )
 
     result = subprocess.run(
@@ -677,7 +673,7 @@ def test_indexers_dont_lose_reflections(
 
 
 def test_index_multi_lattice_multi_sweep(dials_data, tmp_path):
-    loc = dials_data("semisynthetic_multilattice", pathlib=True)
+    loc = dials_data("semisynthetic_multilattice")
     result = subprocess.run(
         [
             shutil.which("dials.index"),
@@ -753,7 +749,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path)
         phil_scope as stills_process_phil_scope,
     )
 
-    data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
+    data_dir = dials_data("iterative_cspad_refinement")
     experiment_data = data_dir / "cspad_refined_experiments_step6_level2_300.json"
     reflection_data = data_dir / "cspad_reflections_step7_300.pickle"
 
@@ -804,7 +800,7 @@ def test_pink_indexer(
     dials_data,
     tmp_path,
 ):
-    data_dir = dials_data("cunir_serial_processed", pathlib=True)
+    data_dir = dials_data("cunir_serial_processed")
     expt_file = data_dir / "imported_with_ref_5.expt"
     refl_file = data_dir / "strong_5.refl"
 
@@ -858,7 +854,7 @@ def test_ffbidx(
     except RuntimeError:
         pytest.skip("ffbidx installed but not functional on this system")
 
-    data_dir = dials_data("cunir_serial_processed", pathlib=True)
+    data_dir = dials_data("cunir_serial_processed")
     expt_file = data_dir / "imported_with_ref_5.expt"
     refl_file = data_dir / "strong_5.refl"
 
@@ -905,9 +901,7 @@ def test_index_ED_still_low_res_spot_match(
 ):
     # test indexing from a single simulated lysozyme ED still
 
-    image_path = (
-        dials_data("image_examples", pathlib=True) / "simtbx_FormatSMVJHSim_001.img"
-    )
+    image_path = dials_data("image_examples") / "simtbx_FormatSMVJHSim_001.img"
 
     command = [shutil.which("dials.import"), image_path]
     result = subprocess.run(command, cwd=tmp_path)
@@ -960,7 +954,7 @@ def test_unconventional_P1_cell(dials_data, tmp_path, cell_params):
     Indexing in P1 should succeed even if the cell parameters are provided in
     a non-conventional setting
     """
-    data_dir = dials_data("mpro_x0305_processed", pathlib=True)
+    data_dir = dials_data("mpro_x0305_processed")
     experiment = data_dir / "imported.expt"
     reflections = data_dir / "strong.refl"
 
@@ -1006,7 +1000,7 @@ def test_real_space_grid_search_no_unit_cell(dials_data, tmp_path):
 
 
 def test_index_known_orientation(dials_data, tmp_path):
-    data_dir = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    data_dir = dials_data("vmxi_proteinase_k_sweeps")
     experiments_json = data_dir / "experiments_0.json"
     reflections = data_dir / "reflections_0.pickle"
 
@@ -1026,7 +1020,7 @@ def test_index_known_orientation(dials_data, tmp_path):
 
 
 def test_index_known_A_matrix(dials_data, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     experiments_json = data_dir / "imported.expt"
     reflections = data_dir / "strong.refl"
 
@@ -1054,8 +1048,8 @@ def test_all_expt_ids_have_expts(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.index"),
-            dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.expt",
-            dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.refl",
+            dials_data("vmxi_thaumatin_grid_index") / "split_07602.expt",
+            dials_data("vmxi_thaumatin_grid_index") / "split_07602.refl",
             "stills.indexer=sequences",
             "indexing.method=real_space_grid_search",
             "space_group=P4",
@@ -1090,8 +1084,8 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.index"),
-            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
-            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            dials_data("l_cysteine_dials_output") / "indexed.expt",
+            dials_data("l_cysteine_dials_output") / "indexed.refl",
             "max_lattices=2",
         ],
         cwd=tmp_path,
@@ -1111,8 +1105,8 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.index"),
-            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.expt",
-            dials_data("l_cysteine_dials_output", pathlib=True) / "indexed.refl",
+            dials_data("l_cysteine_dials_output") / "indexed.expt",
+            dials_data("l_cysteine_dials_output") / "indexed.refl",
             "max_lattices=2",
             "minimum_angular_separation=0.001",
         ],
@@ -1134,7 +1128,7 @@ def test_rigaku_hypix_arc_150(dials_data, tmp_path):
     # This is a test of multi-sweep indexing with a three-panel Rigaku HyPix-Arc
     # 150° detector. It additionally checks successful import with the unusual
     # non-zero-padded image numbering used by Rigaku.
-    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+    data_dir = dials_data("Rigaku_HyPix_Arc")
 
     command = [
         shutil.which("dials.import"),
@@ -1173,7 +1167,7 @@ def test_rigaku_hypix_arc_150(dials_data, tmp_path):
 def test_rigaku_hypix_arc_100(dials_data, tmp_path):
     # This is a test of multi-sweep indexing with a two-panel Rigaku HyPix-Arc
     # 100° detector.
-    data_dir = dials_data("Rigaku_HyPix_Arc", pathlib=True)
+    data_dir = dials_data("Rigaku_HyPix_Arc")
 
     command = [
         shutil.which("dials.import"),

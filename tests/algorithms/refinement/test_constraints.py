@@ -118,7 +118,7 @@ def test_constrained_refinement(dials_data, tmp_path):
     # useful because the detector has fast and slow exactly aligned with X, -Y
     # so the distance is exactly along the normal vector and can be altered
     # directly by changing the Z component of the origin vector
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "from-xds.json"
     pickle_path = data_dir / "from-xds-1000.pickle"
 

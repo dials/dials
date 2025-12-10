@@ -243,7 +243,7 @@ def test_reindex_experiments():
 
 
 def test_reindex_cb_op_exit(dials_data, run_in_tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
 
     # Want a SystemExit, rather than an uncaught exception
     with pytest.raises(SystemExit) as e:
@@ -259,7 +259,7 @@ def test_reindex_cb_op_exit(dials_data, run_in_tmp_path):
 
 
 def test_reindex_reference_multi_crystal(dials_data, tmp_path):
-    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    mcp = dials_data("multi_crystal_proteinase_k")
     args = [shutil.which("dials.cosym"), "space_group=P4"]
     for i in [1, 2, 3, 4]:
         args.append(mcp / f"experiments_{i}.json")
@@ -297,8 +297,8 @@ def test_reindex_reference_multi_crystal(dials_data, tmp_path):
 
 
 def test_reindex_reference_file(dials_data, tmp_path):
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    ssx_data = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    ssx_data = dials_data("cunir_serial")
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
 
