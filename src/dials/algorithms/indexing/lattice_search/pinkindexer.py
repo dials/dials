@@ -314,10 +314,14 @@ class Indexer:
 
         # Possible solutions are voxels with the highest density
         idx = np.indices(voxels.shape).reshape((3, -1))
-        asort = np.argsort(voxels, axis=None)
-        peaks = idx[:, asort][..., -min_lattices:]
-        peaks = peaks[..., ::-1].T
+        asort = np.argsort(voxels, axis=None)  # Return n**3 flat, 1D indices
+        best_indices = asort[-min_lattices:]  # Get best lattices
+        best_indices = best_indices[::-1]  # Order best lattices in descending order
+        idx = np.indices(voxels.shape)  # Shape is 3 x n x n x n
+        idx = idx.reshape((3, -1))  # Flatten indices to 3 x n**3
+        peaks = idx[:, best_indices].T
 
+        # Get UB matrices for best peak voxels
         for peak in peaks:
             v = bin_centers[peak]
             l = norm2(v)
@@ -392,11 +396,14 @@ class PinkIndexer(Strategy):
         reflections["id"] *= 0
         reflections["id"] -= 1
 
+        # Get data from still
         expt = experiments[0]
         refls = reflections
 
+        # Build unit cell
         cell = gemmi.UnitCell(*self.cell.parameters())
 
+        # Get wavelength and bandwidth
         wav, bw = self.wavelength, self.percent_bandwidth
         beam = expt.beam
         if wav is None:
@@ -410,6 +417,7 @@ class PinkIndexer(Strategy):
             bw = 1.0
         pidxr = Indexer(cell, wav, bw)
 
+        # Get reciprocal lattice points and beam info
         rlps = flex.vec3_double(len(refls))
         s1 = refls["s1"]
         s1_hat = s1 / s1.norms()
@@ -437,6 +445,8 @@ class PinkIndexer(Strategy):
 
         rlps = np.array(rlps, dtype="float32")
         self.candidate_crystal_models = []
+
+        # Get candidate crystal models from lattice search
         for UB in pidxr.index_pink(
             rlps,
             self.max_refls,
