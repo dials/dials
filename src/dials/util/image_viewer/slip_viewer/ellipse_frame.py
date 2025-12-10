@@ -62,6 +62,7 @@ class EllipseSettingsPanel(wx.Panel):
         self._panel = None
         self._point_layer = None
         self._ellipse_layer = None
+        self._show_ellipse = True
 
         self.draw_settings()
 
@@ -168,12 +169,17 @@ class EllipseSettingsPanel(wx.Panel):
                 5,
             )
 
-        grid = wx.FlexGridSizer(cols=3, rows=1, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=4, rows=1, vgap=0, hgap=0)
         sizer.Add(grid)
 
         self.clear_button = wx.Button(self, -1, "Clear")
         grid.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
+
+        self.show_ellipse_ctrl = wx.CheckBox(self, -1, "Show ellipse")
+        self.show_ellipse_ctrl.SetValue(self._show_ellipse)
+        grid.Add(self.show_ellipse_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        self.Bind(wx.EVT_CHECKBOX, self.OnShowEllipse, self.show_ellipse_ctrl)
 
         self.save_params_button = wx.Button(self, -1, "Save parameters")
         self.save_params_button.Enable(enable_save_button)
@@ -287,6 +293,13 @@ class EllipseSettingsPanel(wx.Panel):
             color="#00ffff",
             show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
         )
+
+    def OnShowEllipse(self, event):
+        self._show_ellipse = self.show_ellipse_ctrl.GetValue()
+        if self._show_ellipse:
+            self._pyslip.ShowLayer(self._ellipse_layer)
+        else:
+            self._pyslip.HideLayer(self._ellipse_layer)
 
     def OnSaveEllipseParams(self, event):
         self.params.output.ellipse_params = self.save_ellipse_txt_ctrl.GetValue()
