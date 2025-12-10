@@ -43,9 +43,6 @@ class DispersionThresholdStrategy(ThresholdStrategy):
         # Save the constant gain
         self._gain_map = None
 
-        # Create a buffer
-        self.algorithm = {}
-
     def __call__(self, image, mask):
         """
         Call the thresholding function
@@ -58,19 +55,14 @@ class DispersionThresholdStrategy(ThresholdStrategy):
         from dials.array_family import flex
 
         # Initialise the algorithm
-        try:
-            algorithm = self.algorithm[image.all()]
-        except Exception:
-            algorithm = threshold.DispersionThreshold(
-                image.all(),
-                self._kernel_size,
-                self._n_sigma_b,
-                self._n_sigma_s,
-                self._threshold,
-                self._min_count,
-            )
-            self.algorithm[image.all()] = algorithm
-
+        algorithm = threshold.DispersionThreshold(
+            image.all(),
+            self._kernel_size,
+            self._n_sigma_b,
+            self._n_sigma_s,
+            self._threshold,
+            self._min_count,
+        )
         # Set the gain
         if self._gain is not None:
             assert self._gain > 0
@@ -83,6 +75,7 @@ class DispersionThresholdStrategy(ThresholdStrategy):
             algorithm(image, mask, self._gain_map, result)
         else:
             algorithm(image, mask, result)
+        del algorithm
 
         # Return the result
         return result
@@ -112,9 +105,6 @@ class DispersionExtendedThresholdStrategy(ThresholdStrategy):
         # Save the constant gain
         self._gain_map = None
 
-        # Create a buffer
-        self.algorithm = {}
-
     def __call__(self, image, mask):
         """
         Call the thresholding function
@@ -127,19 +117,14 @@ class DispersionExtendedThresholdStrategy(ThresholdStrategy):
         from dials.array_family import flex
 
         # Initialise the algorithm
-        try:
-            algorithm = self.algorithm[image.all()]
-        except Exception:
-            algorithm = threshold.DispersionExtendedThreshold(
-                image.all(),
-                self._kernel_size,
-                self._n_sigma_b,
-                self._n_sigma_s,
-                self._threshold,
-                self._min_count,
-            )
-            self.algorithm[image.all()] = algorithm
-
+        algorithm = threshold.DispersionExtendedThreshold(
+            image.all(),
+            self._kernel_size,
+            self._n_sigma_b,
+            self._n_sigma_s,
+            self._threshold,
+            self._min_count,
+        )
         # Set the gain
         if self._gain is not None:
             assert self._gain > 0
@@ -152,6 +137,6 @@ class DispersionExtendedThresholdStrategy(ThresholdStrategy):
             algorithm(image, mask, self._gain_map, result)
         else:
             algorithm(image, mask, result)
-
+        del algorithm
         # Return the result
         return result
