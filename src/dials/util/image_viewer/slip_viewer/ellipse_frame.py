@@ -4,6 +4,7 @@ import numpy as np
 import wx
 from skimage.measure import EllipseModel
 
+from scitbx import matrix
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 from wxtbx.phil_controls.strctrl import StrCtrl
 
@@ -21,13 +22,11 @@ def extract_ellipse_parameters(ellipse: EllipseModel):
         theta = ellipse.theta
 
     phi = float(np.degrees(theta))
+    a = float(a)
+    b = float(b)
     centre_xy = (float(xc), float(yc))
 
-    # Use a simplistic model to calculate l1 and l2 scale factors from a and b.
-    l1 = 1.0
-    l2 = float(b) / float(a)
-
-    return phi, l1, l2, centre_xy
+    return phi, a, b, centre_xy
 
 
 class EllipseSettingsFrame(wx.MiniFrame):
@@ -62,6 +61,7 @@ class EllipseSettingsPanel(wx.Panel):
         self._points = []
         self._panel = None
         self._point_layer = None
+        self._ellipse_layer = None
 
         self.draw_settings()
 
@@ -78,6 +78,8 @@ class EllipseSettingsPanel(wx.Panel):
         self._points = []
         self._pyslip.DeleteLayer(self._point_layer)
         self._point_layer = None
+        self._pyslip.DeleteLayer(self._ellipse_layer)
+        self._ellipse_layer = None
         self.draw_settings()
 
     def Destroy(self):
@@ -120,20 +122,7 @@ class EllipseSettingsPanel(wx.Panel):
 
         coords = []
         if self._points:
-            coords = [
-                self._pyslip.tiles.get_flex_pixel_coordinates(*pt)
-                for pt in self._points
-            ]
-
-            # Filter coords to only those on the same panel
-            if len(coords[0]) == 3:
-                p = coords[0][2]
-                self._panel = int(p)
-                coords = [(c[0], c[1]) for c in coords if c[2] == p]
-
-            elif len(coords[0]) == 2:
-                self._panel = 0
-
+            coords = self._lon_lat_to_slow_fast_panel(self._points)
         self.phi_txt = " "
         self.l1_txt = " "
         self.l2_txt = " "
@@ -151,12 +140,18 @@ class EllipseSettingsPanel(wx.Panel):
             if not ellipse:
                 self.phi_txt = "Fit failed"
             else:
-                phi, l1, l2, centre = extract_ellipse_parameters(ellipse)
+                phi, a, b, centre = extract_ellipse_parameters(ellipse)
+                # Use a simplistic model to calculate l1 and l2 scale factors from a and b.
+                l1 = 1.0
+                l2 = b / a
                 self.phi_txt = f"{phi:.2f}"
                 self.l1_txt = f"{l1:.6f}"
                 self.l2_txt = f"{l2:.6f}"
                 self.centre_txt = f"{centre[0]:.2f} {centre[1]:.2f}"
                 enable_save_button = True
+
+                # Draw the ellipse
+                self._draw_ellipse(ellipse)
 
         for value in (self.phi_txt, self.l1_txt, self.l2_txt, self.centre_txt):
             grid.Add(
@@ -193,6 +188,78 @@ class EllipseSettingsPanel(wx.Panel):
 
         sizer.Layout()
         self.Layout()
+
+    def _draw_ellipse(self, ellipse: EllipseModel):
+        if self._ellipse_layer:
+            self._pyslip.DeleteLayer(self._ellipse_layer)
+            self._ellipse_layer = None
+        phi, a, b, centre = extract_ellipse_parameters(ellipse)
+        center = matrix.col(centre)
+        e1 = matrix.col((1, 0)).rotate_2d(phi, deg=True)
+        e2 = matrix.col((0, 1)).rotate_2d(phi, deg=True)
+        ellipse_data = (
+            center + a * e1 + b * e2,
+            center + a * e1 - b * e2,
+            center + a * -e1 - b * e2,
+            center + a * -e1 + b * e2,
+            center + a * e1 + b * e2,
+        )
+        ellipse_data = self._slow_fast_to_lon_lat(ellipse_data)
+
+        self._ellipse_layer = self._pyslip.AddEllipseLayer(
+            ellipse_data,
+            map_rel=True,
+            color="#00ffff",
+            radius=5,
+            visible=True,
+            # show_levels=[3,4],
+            name="<ellipse_layer>",
+        )
+
+    def _lon_lat_to_slow_fast_panel(self, points):
+        coords = []
+        first_pt = self._pyslip.tiles.get_flex_pixel_coordinates(*points[0])
+        if len(first_pt) == 3:
+            s, f, self._panel = first_pt
+            self._panel = int(self._panel)
+        else:
+            s, f = coords
+            self._panel = 0
+        # Correct for half pixel shifts
+        coords.append((s + 0.5, f + 0.5))
+
+        for pt in points[1:]:
+            coord = self._pyslip.tiles.get_flex_pixel_coordinates(*pt)
+            if len(coord) == 3:
+                s, f, p = coord
+                p = int(p)
+            else:
+                s, f = coord
+                p = 0
+            # Skip coordinates not on the same panel as the first point
+            if p != self._panel:
+                continue
+            coords.append((s + 0.5, f + 0.5))
+
+        return coords
+
+    def _slow_fast_to_lon_lat(self, coords):
+        points = []
+        for coord in coords:
+            s, f = coord
+            s -= 0.5
+            f -= 0.5
+
+            if self._pyslip.tiles.flex_image.supports_rotated_tiles_antialiasing_recommended:
+                # Need to undo the effect of picture_to_readout in this case
+                s, f = self._pyslip.tiles.flex_image.tile_readout_to_picture(
+                    self._panel, s, f
+                )
+
+            lon, lat = self._pyslip.tiles.picture_fast_slow_to_map_relative(f, s)
+
+            points.append((lon, lat))
+        return points
 
     def OnLeftDown(self, event):
         if not event.ShiftDown():
