@@ -12,7 +12,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename T>
   class_<T, bases<ProfileModellerIface> > empirical_profile_modeller_wrapper(
-    const char *name) {
+    const char* name) {
     class_<T, bases<ProfileModellerIface> > result(name, no_init);
     /* bases<ProfileModellerIface> >("EmpiricalProfileModeller", no_init) */
     result.def("add", &T::add)

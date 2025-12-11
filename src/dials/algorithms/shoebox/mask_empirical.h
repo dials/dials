@@ -38,14 +38,14 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param beam The beam model
      * @param detector The detector model
      */
-    MaskEmpirical(const af::reflection_table &reference) : reference_(reference) {}
+    MaskEmpirical(const af::reflection_table& reference) : reference_(reference) {}
 
     /**
      * Set all the foreground/background pixels in the shoebox mask by looking at the
      * nearest bright spots
      * @param table Reflection table with a shoebox array and a bbox array for masking
      */
-    void mask(af::reflection_table &table) {
+    void mask(af::reflection_table& table) {
       // Convert the reference xyz mm values to a single array for AnnAdaptor, instead
       // of a vec3 double array
       af::shared<vec3<double> > reference_xyz_mm;

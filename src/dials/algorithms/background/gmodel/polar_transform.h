@@ -67,9 +67,9 @@ namespace dials { namespace algorithms {
      * @param panel The panel model
      * @param goniometer The goniometer model
      */
-    PolarTransform(const BeamBase &beam,
-                   const Panel &panel,
-                   const Goniometer &goniometer) {
+    PolarTransform(const BeamBase& beam,
+                   const Panel& panel,
+                   const Goniometer& goniometer) {
       // Set some image sizes
       vec2<std::size_t> image_size = panel.get_image_size();
       DIALS_ASSERT(image_size[0] > 0);
@@ -232,8 +232,8 @@ namespace dials { namespace algorithms {
      * @returns The transformed data
      */
     PolarTransformResult to_polar(
-      const af::const_ref<double, af::c_grid<2> > &data,
-      const af::const_ref<bool, af::c_grid<2> > &mask) const {
+      const af::const_ref<double, af::c_grid<2> >& data,
+      const af::const_ref<bool, af::c_grid<2> >& mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(data.accessor().all_eq(image_grid_));
       DIALS_ASSERT(data.accessor()[0] + 1 == discontinuity_.accessor()[0]);
@@ -288,8 +288,8 @@ namespace dials { namespace algorithms {
      * @returns The transformed data
      */
     PolarTransformResult from_polar(
-      const af::const_ref<double, af::c_grid<2> > &data,
-      const af::const_ref<bool, af::c_grid<2> > &mask) const {
+      const af::const_ref<double, af::c_grid<2> >& data,
+      const af::const_ref<bool, af::c_grid<2> >& mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(data.accessor().all_eq(polar_grid_));
       af::versa<double, af::c_grid<2> > data_out(image_grid_, 0);

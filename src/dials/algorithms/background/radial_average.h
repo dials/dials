@@ -25,7 +25,7 @@ namespace dials { namespace algorithms {
   class RadialAverage {
   public:
     RadialAverage(std::shared_ptr<BeamBase> beam,
-                  const Detector &detector,
+                  const Detector& detector,
                   double vmin,
                   double vmax,
                   std::size_t num_bins)
@@ -45,11 +45,11 @@ namespace dials { namespace algorithms {
       }
     }
 
-    void add(const af::const_ref<double, af::c_grid<2> > &data,
-             const af::const_ref<bool, af::c_grid<2> > &mask) {
+    void add(const af::const_ref<double, af::c_grid<2> >& data,
+             const af::const_ref<bool, af::c_grid<2> >& mask) {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       vec3<double> s0 = beam_->get_s0();
-      const Panel &panel = detector_[current_++];
+      const Panel& panel = detector_[current_++];
       std::size_t height = panel.get_image_size()[1];
       std::size_t width = panel.get_image_size()[0];
       DIALS_ASSERT(data.accessor()[0] == height);

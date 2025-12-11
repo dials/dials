@@ -71,7 +71,7 @@ namespace dials { namespace pychef {
   };
 
   struct Observations {
-    Observations(scitbx::af::const_ref<cctbx::miller::index<> > const &miller_indices,
+    Observations(scitbx::af::const_ref<cctbx::miller::index<> > const& miller_indices,
                  sgtbx::space_group space_group,
                  bool anomalous_flag) {
       scitbx::af::shared<cctbx::miller::index<> > asu_indices(miller_indices.begin(),
@@ -132,9 +132,9 @@ namespace dials { namespace pychef {
 
     class CompletenessAccumulator {
     public:
-      CompletenessAccumulator(af::const_ref<std::size_t> const &dose,
-                              af::const_ref<double> const &d_star_sq,
-                              cctbx::miller::binner const &binner,
+      CompletenessAccumulator(af::const_ref<std::size_t> const& dose,
+                              af::const_ref<double> const& d_star_sq,
+                              cctbx::miller::binner const& binner,
                               int n_steps)
           : finalised_(false),
             dose_(dose.begin(), dose.end()),
@@ -289,7 +289,7 @@ namespace dials { namespace pychef {
 
       af::shared<std::size_t> dose_;
       af::shared<double> d_star_sq_;
-      cctbx::miller::binner const &binner_;
+      cctbx::miller::binner const& binner_;
       std::size_t const n_steps_;
 
       af::versa<double, af::c_grid<2> > iplus_count, iminus_count, ieither_count,
@@ -301,11 +301,11 @@ namespace dials { namespace pychef {
 
     class RcpScpAccumulator {
     public:
-      RcpScpAccumulator(af::const_ref<double> const &intensities,
-                        af::const_ref<double> const &sigmas,
-                        af::const_ref<std::size_t> const &dose,
-                        af::const_ref<double> const &d_star_sq,
-                        cctbx::miller::binner const &binner,
+      RcpScpAccumulator(af::const_ref<double> const& intensities,
+                        af::const_ref<double> const& sigmas,
+                        af::const_ref<std::size_t> const& dose,
+                        af::const_ref<double> const& d_star_sq,
+                        cctbx::miller::binner const& binner,
                         int n_steps)
           : finalised_(false),
             intensities_(intensities.begin(), intensities.end()),
@@ -447,7 +447,7 @@ namespace dials { namespace pychef {
       af::shared<double> sigmas_;
       af::shared<std::size_t> dose_;
       af::shared<double> d_star_sq_;
-      cctbx::miller::binner const &binner_;
+      cctbx::miller::binner const& binner_;
       std::size_t const n_steps_;
 
       af::versa<double, af::c_grid<2> > A, B, isigma, rcp_bins_, scp_bins_;
@@ -459,8 +459,8 @@ namespace dials { namespace pychef {
 
     class RdAccumulator {
     public:
-      RdAccumulator(af::const_ref<double> const &intensities,
-                    af::const_ref<std::size_t> const &dose,
+      RdAccumulator(af::const_ref<double> const& intensities,
+                    af::const_ref<std::size_t> const& dose,
                     int n_steps)
           : finalised_(false),
             intensities_(intensities.begin(), intensities.end()),
@@ -527,13 +527,13 @@ namespace dials { namespace pychef {
 
   class ChefStatistics {
   public:
-    ChefStatistics(scitbx::af::const_ref<cctbx::miller::index<> > const &miller_indices,
-                   af::const_ref<double> const &intensities,
-                   af::const_ref<double> const &sigmas,
-                   af::const_ref<double> const &d_star_sq,
-                   af::const_ref<std::size_t> const &dose,
+    ChefStatistics(scitbx::af::const_ref<cctbx::miller::index<> > const& miller_indices,
+                   af::const_ref<double> const& intensities,
+                   af::const_ref<double> const& sigmas,
+                   af::const_ref<double> const& d_star_sq,
+                   af::const_ref<std::size_t> const& dose,
                    af::const_ref<std::size_t> counts_complete,
-                   cctbx::miller::binner const &binner,
+                   cctbx::miller::binner const& binner,
                    sgtbx::space_group space_group,
                    bool anomalous_flag,
                    int n_steps)

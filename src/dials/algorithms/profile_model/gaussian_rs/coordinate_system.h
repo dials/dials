@@ -101,7 +101,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param s_dash The beam vector
        * @returns The e1, e2 coordinates
        */
-      vec2<double> from_beam_vector(const vec3<double> &s_dash) const {
+      vec2<double> from_beam_vector(const vec3<double>& s_dash) const {
         double s1_length = s1_.length();
         DIALS_ASSERT(s1_length > 0);
         vec3<double> scaled_e1 = e1_ / s1_length;
@@ -114,7 +114,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param c12 The e1 and e2 coordinates.
        * @returns The beam vector
        */
-      vec3<double> to_beam_vector(const vec2<double> &c12) const {
+      vec3<double> to_beam_vector(const vec2<double>& c12) const {
         double radius = s1_.length();
         DIALS_ASSERT(radius > 0);
         vec3<double> scaled_e1 = e1_ * radius;
@@ -252,7 +252,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param s_dash The beam vector
        * @returns The e1, e2 coordinates
        */
-      vec2<double> from_beam_vector(const vec3<double> &s_dash) const {
+      vec2<double> from_beam_vector(const vec3<double>& s_dash) const {
         double s1_length = s1_.length();
         DIALS_ASSERT(s1_length > 0);
         vec3<double> scaled_e1 = e1_ / s1_length;
@@ -301,7 +301,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param c12 The e1 and e2 coordinates.
        * @returns The beam vector
        */
-      vec3<double> to_beam_vector(const vec2<double> &c12) const {
+      vec3<double> to_beam_vector(const vec2<double>& c12) const {
         double radius = s1_.length();
         DIALS_ASSERT(radius > 0);
         vec3<double> scaled_e1 = e1_ * radius;
