@@ -29,7 +29,7 @@ class reader:
         if "bnry" in self.cbf_handle.get_typeofvalue():
             # Read the image data into an array
             image_string = self.cbf_handle.get_integerarray_as_string()
-            image = flex.int(np.fromstring(image_string, np.int32))
+            image = flex.int(np.frombuffer(image_string, np.int32))
 
             # Get the array parameters
             parameters = self.cbf_handle.get_integerarrayparameters_wdims()
