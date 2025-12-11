@@ -1160,7 +1160,6 @@ def configure_build(config_flags):
         "xfel",
         "dials",
         "xia2",
-        "prime",
         "--skip_phenix_dispatchers",
         "--use_environment",
     ] + config_flags
