@@ -310,7 +310,7 @@ class CosymAnalysis(symmetry_base, Subject):
         dimensions = []
         functional = []
         for dim in range(1, dims_to_test + 1):
-            logger.info(f"Testing dimension: {dim}")
+            logger.info(f"Testing dimension: {dim}/{dims_to_test}")
             self.target.set_dimensions(dim)
             max_calls = self.params.minimization.max_calls
             self._optimise(
