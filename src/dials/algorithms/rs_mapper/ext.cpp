@@ -34,11 +34,11 @@ namespace recviewer { namespace ext {
     return ret;
   }
 
-  static void fill_voxels(const af::flex_int &image,
-                          af::flex_double &grid,
-                          af::flex_int &counts,
-                          const flex_vec3_double &rotated_S,
-                          const flex_vec2_double &xy,
+  static void fill_voxels(const af::flex_int& image,
+                          af::flex_double& grid,
+                          af::flex_int& counts,
+                          const flex_vec3_double& rotated_S,
+                          const flex_vec2_double& xy,
                           const double rec_range) {
     int npoints = grid.accessor().all()[0];
     double step = 2 * rec_range / npoints;
@@ -58,7 +58,7 @@ namespace recviewer { namespace ext {
     }
   }
 
-  static void normalize_voxels(af::flex_double &grid, af::flex_int &counts) {
+  static void normalize_voxels(af::flex_double& grid, af::flex_int& counts) {
     for (int i = 0, ilim = grid.size(); i < ilim; i++) {
       if (counts[i] != 0) {
         grid[i] /= counts[i];

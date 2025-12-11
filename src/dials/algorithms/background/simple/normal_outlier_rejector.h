@@ -45,7 +45,7 @@ namespace dials { namespace algorithms { namespace background {
    * @returns The expected number of standard deviations
    */
   template <typename FloatType>
-  FloatType minimum_n_sigma(const af::const_ref<FloatType> &data) {
+  FloatType minimum_n_sigma(const af::const_ref<FloatType>& data) {
     // Calculate the mean and standard deviation of the data
     mean_and_variance<FloatType> mean_and_variance(data);
     FloatType mean = mean_and_variance.mean();
@@ -66,7 +66,7 @@ namespace dials { namespace algorithms { namespace background {
    * @returns The maximum number of standard deviations
    */
   template <typename FloatType>
-  FloatType maximum_n_sigma(const af::const_ref<FloatType> &data) {
+  FloatType maximum_n_sigma(const af::const_ref<FloatType>& data) {
     // Calculate the mean and standard deviation of the data
     mean_and_variance<FloatType> mean_and_variance(data);
     FloatType mean = mean_and_variance.mean();
@@ -87,7 +87,7 @@ namespace dials { namespace algorithms { namespace background {
    * @returns The maximum number of standard deviations
    */
   template <typename FloatType>
-  FloatType absolute_maximum_n_sigma(const af::const_ref<FloatType> &data) {
+  FloatType absolute_maximum_n_sigma(const af::const_ref<FloatType>& data) {
     // Calculate the mean and standard deviation of the data
     mean_and_variance<FloatType> mean_and_variance(data);
     FloatType mean = mean_and_variance.mean();
@@ -115,7 +115,7 @@ namespace dials { namespace algorithms { namespace background {
    * @returns True/False
    */
   template <typename FloatType>
-  bool is_normally_distributed(const af::const_ref<FloatType> &data, double n_sigma) {
+  bool is_normally_distributed(const af::const_ref<FloatType>& data, double n_sigma) {
     return maximum_n_sigma(data) < n_sigma;
   }
 
@@ -129,7 +129,7 @@ namespace dials { namespace algorithms { namespace background {
    * @returns True/False
    */
   template <typename FloatType>
-  bool is_normally_distributed(const af::const_ref<FloatType> &data) {
+  bool is_normally_distributed(const af::const_ref<FloatType>& data) {
     return is_normally_distributed<FloatType>(data,
                                               normal_expected_n_sigma(data.size()));
   }
@@ -167,7 +167,7 @@ namespace dials { namespace algorithms { namespace background {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    virtual void mark(const af::const_ref<double, af::c_grid<3> > &shoebox,
+    virtual void mark(const af::const_ref<double, af::c_grid<3> >& shoebox,
                       af::ref<int, af::c_grid<3> > mask) const {
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());

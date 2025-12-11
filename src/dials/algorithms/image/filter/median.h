@@ -28,7 +28,7 @@ namespace dials { namespace algorithms {
    */
   template <typename T>
   af::versa<T, af::c_grid<2> > median_filter(
-    const af::const_ref<T, af::c_grid<2> > &image,
+    const af::const_ref<T, af::c_grid<2> >& image,
     int2 size) {
     // Check the input is valid
     DIALS_ASSERT(size.all_ge(0));
@@ -74,8 +74,8 @@ namespace dials { namespace algorithms {
    */
   template <typename T>
   af::versa<T, af::c_grid<2> > median_filter_masked(
-    const af::const_ref<T, af::c_grid<2> > &image,
-    const af::const_ref<bool, af::c_grid<2> > &mask,
+    const af::const_ref<T, af::c_grid<2> >& image,
+    const af::const_ref<bool, af::c_grid<2> >& mask,
     int2 size,
     bool periodic) {
     // Check the input is valid

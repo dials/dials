@@ -20,11 +20,11 @@ namespace dials { namespace model { namespace boost_python {
   using scitbx::vec2;
   using scitbx::vec3;
 
-  static vec3<double> get_s1(const Ray &ray) {
+  static vec3<double> get_s1(const Ray& ray) {
     return ray.s1;
   }
 
-  static void set_s1(Ray &ray, const vec3<double> &s1) {
+  static void set_s1(Ray& ray, const vec3<double>& s1) {
     ray.s1 = s1;
   }
 
