@@ -36,7 +36,7 @@ from dials.array_family import flex
 def test_dynamic_shadowing(
     fname, count_only_shadow, count_mask_shadow, count_mask_no_shadow, dials_data
 ):
-    path = str(dials_data("shadow_test_data", pathlib=True) / fname)
+    path = str(dials_data("shadow_test_data") / fname)
     assert os.path.exists(path), path
     for shadowing in (libtbx.Auto, True, False):
         format_kwargs = {"dynamic_shadowing": shadowing}
@@ -76,7 +76,7 @@ def test_shadow_plot(dials_data, tmp_path):
     result = subprocess.run(
         (
             shutil.which("dials.import"),
-            dials_data("image_examples", pathlib=True) / "DLS_I03_smargon_0001.cbf.gz",
+            dials_data("image_examples") / "DLS_I03_smargon_0001.cbf.gz",
         ),
         cwd=tmp_path,
         capture_output=True,
@@ -104,10 +104,10 @@ def test_shadow_plot(dials_data, tmp_path):
 
 def test_filter_shadowed_reflections(dials_data):
     experiments_json = str(
-        dials_data("shadow_test_data", pathlib=True) / "DLS_I04_SmarGon-indexed.expt"
+        dials_data("shadow_test_data") / "DLS_I04_SmarGon-indexed.expt"
     )
     predicted_pickle = str(
-        dials_data("shadow_test_data", pathlib=True) / "DLS_I04_SmarGon-predicted.refl"
+        dials_data("shadow_test_data") / "DLS_I04_SmarGon-predicted.refl"
     )
 
     experiments = load.experiment_list(experiments_json, check_format=True)
@@ -187,9 +187,7 @@ def test_lru_equality_cache_id():
 
 
 def test_generate_mask(dials_data):
-    imageset = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
+    imageset = load.imageset(dials_data("centroid_test_data") / "sweep.json")
     params = dials.util.masking.phil_scope.extract()
     params.border = 2
     params.d_min = 1.5
@@ -214,7 +212,7 @@ def test_generate_mask_parallax_correction(
     disable_parallax_correction, expected, dials_data
 ):
     expts = ExperimentListFactory.from_filenames(
-        sorted(dials_data("centroid_test_data", pathlib=True).glob("*.cbf"))
+        sorted(dials_data("centroid_test_data").glob("*.cbf"))
     )
     imageset = expts[0].imageset
     params = dials.util.masking.phil_scope.extract()

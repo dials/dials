@@ -384,7 +384,7 @@ class Target:
                 wij_matrix[sel] = 1 / se
             ## else uses the counts as weights
             # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
-            scale = np.count_nonzero(wij_matrix) / np.sum(wij_matrix)
+            scale = int(np.count_nonzero(wij_matrix)) / np.sum(wij_matrix)
             wij_matrix *= scale
         else:
             ## No weights - i.e. equal weights in places where we can calculate an rij value,

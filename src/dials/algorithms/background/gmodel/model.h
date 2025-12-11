@@ -69,7 +69,7 @@ namespace dials { namespace algorithms {
      * Add the background model
      * @param data The model data
      */
-    void add(const af::const_ref<double, af::c_grid<2> > &data) {
+    void add(const af::const_ref<double, af::c_grid<2> >& data) {
       af::versa<double, af::c_grid<2> > temp(data.accessor());
       std::copy(data.begin(), data.end(), temp.begin());
       data_.push_back(temp);

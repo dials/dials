@@ -26,7 +26,7 @@ from dials.util import Sorry
     ],
 )
 def test_cosym(dials_data, run_in_tmp_path, space_group, engine, weights, cc_weights):
-    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    mcp = dials_data("multi_crystal_proteinase_k")
     args = [
         "space_group=" + str(space_group),
         "seed=0",
@@ -63,7 +63,7 @@ def test_cosym(dials_data, run_in_tmp_path, space_group, engine, weights, cc_wei
 
 def test_cosym_partial_dataset(dials_data, run_in_tmp_path):
     """Test how cosym handles partial/bad datasets."""
-    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    mcp = dials_data("multi_crystal_proteinase_k")
     args = ["nproc=1"]
     for i in [1, 2]:
         args.append(os.fspath(mcp / f"experiments_{i}.json"))
@@ -87,7 +87,7 @@ def test_cosym_partial_dataset(dials_data, run_in_tmp_path):
 
 
 def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmp_path):
-    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    mcp = dials_data("multi_crystal_proteinase_k")
     args = ["space_group=P4", "seed=0", "d_min=10.0", "min_reflections=15", "nproc=2"]
     # use nproc=2 to test the multiprocessing option in cosym.
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
@@ -109,7 +109,7 @@ def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmp_path)
 
 def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmp_path, capsys):
     """Test how cosym handles partial/bad datasets."""
-    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    mcp = dials_data("multi_crystal_proteinase_k")
     args = ["renamed.refl", os.fspath(mcp / "experiments_8.json"), "nproc=1"]
     r2 = flex.reflection_table.from_file(mcp / "reflections_10.pickle")
     r2["partiality"] = flex.double(r2.size(), 0.1)
@@ -124,10 +124,10 @@ def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmp_path, capsys)
 def test_cosym_with_reference(dials_data, run_in_tmp_path):
     """Test indexing ambiguity resolution against a reference. Use
     SSX example data as have reference data for these."""
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
-    reference = dials_data("cunir_serial", pathlib=True) / "2bw4-sf.cif"
+    reference = dials_data("cunir_serial") / "2bw4-sf.cif"
 
     args = ["d_min=2.0", str(refls), str(expts), f"reference={reference}", "nproc=1"]
     dials_cosym.run(args=args)

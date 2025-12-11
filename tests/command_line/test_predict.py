@@ -23,10 +23,7 @@ def test_static_prediction(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            str(
-                dials_data("misc_regression", pathlib=True)
-                / "prediction-static-crystal.expt"
-            ),
+            str(dials_data("misc_regression") / "prediction-static-crystal.expt"),
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -42,10 +39,7 @@ def test_scan_varying_prediction(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            str(
-                dials_data("misc_regression", pathlib=True)
-                / "prediction-varying-crystal.expt"
-            ),
+            str(dials_data("misc_regression") / "prediction-varying-crystal.expt"),
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -61,10 +55,7 @@ def test_force_static_prediction(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            str(
-                dials_data("misc_regression", pathlib=True)
-                / "prediction-varying-crystal.expt"
-            ),
+            str(dials_data("misc_regression") / "prediction-varying-crystal.expt"),
             "force_static=True",
         ],
         cwd=tmp_path,
@@ -80,10 +71,7 @@ def test_experiment_parameters(dials_data: Path, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.predict"),
-            str(
-                dials_data("misc_regression", pathlib=True)
-                / "prediction-varying-crystal.expt"
-            ),
+            str(dials_data("misc_regression") / "prediction-varying-crystal.expt"),
         ],
         cwd=tmp_path,
     )

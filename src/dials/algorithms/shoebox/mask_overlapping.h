@@ -52,13 +52,13 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param adjacency_list The adjacency_list
      */
     void operator()(af::ref<Shoebox<> > shoeboxes,
-                    const af::const_ref<vec3<double> > &coords,
-                    const std::shared_ptr<AdjacencyList> &adjacency_list) const {
+                    const af::const_ref<vec3<double> >& coords,
+                    const std::shared_ptr<AdjacencyList>& adjacency_list) const {
       // Loop through all the reflections
       if (adjacency_list) {
         for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
           // Get a reference to the reflection
-          Shoebox<> &s = shoeboxes[i];
+          Shoebox<>& s = shoeboxes[i];
           vec3<double> c = coords[i];
 
           // Get the list of overlapping shoeboxes
@@ -105,9 +105,9 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param coord_b The coordinate of b
      * @throws RuntimeError if reflections to do overlap.
      */
-    void assign_ownership(Shoebox<> &a,
+    void assign_ownership(Shoebox<>& a,
                           vec3<double> coord_a,
-                          Shoebox<> &b,
+                          Shoebox<>& b,
                           vec3<double> coord_b) const {
       // Get the reflection mask arrays
       af::ref<int, af::c_grid<3> > mask_a = a.mask.ref();

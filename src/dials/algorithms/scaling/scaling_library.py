@@ -646,8 +646,6 @@ def create_datastructures_for_reference_file(
 
     table.experiment_identifiers()[len(experiments)] = expt.identifier
 
-    table.experiment_identifiers()[len(experiments)] = expt.identifier
-
     return expt, table
 
 

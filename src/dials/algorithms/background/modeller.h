@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
      * Initialize from an image volume
      * @param volume The image volume
      */
-    BackgroundStatistics(const ImageVolume<> &volume)
+    BackgroundStatistics(const ImageVolume<>& volume)
         : accessor_(volume.accessor()[1], volume.accessor()[2]),
           sum_(accessor_, 0.0),
           sum_sq_(accessor_, 0.0),
@@ -61,7 +61,7 @@ namespace dials { namespace algorithms {
      * Add results from another object
      * @param other The other object
      */
-    BackgroundStatistics operator+=(const BackgroundStatistics &other) {
+    BackgroundStatistics operator+=(const BackgroundStatistics& other) {
       DIALS_ASSERT(accessor_.all_eq(other.accessor_));
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         sum_[i] += other.sum_[i];
@@ -197,7 +197,7 @@ namespace dials { namespace algorithms {
      * Initialize with multipanel image volume
      * @param volume The multi panel image volume
      */
-    MultiPanelBackgroundStatistics(const MultiPanelImageVolume<> &volume) {
+    MultiPanelBackgroundStatistics(const MultiPanelImageVolume<>& volume) {
       for (std::size_t i = 0; i < volume.size(); ++i) {
         statistics_.push_back(BackgroundStatistics(volume.get(i)));
       }
@@ -223,7 +223,7 @@ namespace dials { namespace algorithms {
      * @param other The other object
      */
     MultiPanelBackgroundStatistics operator+=(
-      const MultiPanelBackgroundStatistics &other) {
+      const MultiPanelBackgroundStatistics& other) {
       DIALS_ASSERT(size() == other.size());
       for (std::size_t i = 0; i < size(); ++i) {
         statistics_[i] += other.statistics_[i];
