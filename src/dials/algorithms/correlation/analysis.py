@@ -690,7 +690,7 @@ class CorrelationMatrix:
                 if len(set(optics_model.labels_[mask])) > 1:
                     silhouette = silhouette_score(
                         self.cosym_analysis.coords[mask], optics_model.labels_[mask]
-                    )[0]
+                    )
                 self.optics_reachability = optics_model.reachability_[
                     optics_model.ordering_
                 ]
