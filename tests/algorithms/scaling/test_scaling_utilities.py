@@ -466,7 +466,7 @@ def test_calculate_harmonic_tables_from_selections():
 
 
 def test_equality_of_two_harmonic_table_methods(dials_data):
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     refl = location / "20_integrated.pickle"
     expt = location / "20_integrated_experiments.json"
 

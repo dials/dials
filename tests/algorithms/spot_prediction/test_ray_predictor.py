@@ -20,7 +20,7 @@ class RayPredictor:
         from dials.util import ioutil
 
         # The XDS files to read from
-        data_dir = dials_data("misc_regression", pathlib=True)
+        data_dir = dials_data("misc_regression")
         integrate_filename = str(data_dir / "sim_mx-INTEGRATE.HKL")
         gxparm_filename = str(data_dir / "sim_mx-GXPARM.XDS")
 

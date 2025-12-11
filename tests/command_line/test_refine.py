@@ -27,7 +27,7 @@ from dials.command_line.refine import _find_disjoint_sets
 
 
 def test_i04_weak_data(dials_data, tmp_path):
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "i04-weak.json"
     pickle_path = data_dir / "i04-weak.pickle"
 
@@ -67,7 +67,7 @@ def test_i04_weak_data(dials_data, tmp_path):
 def test_scan_varying_refinement_rmsds(dials_data, tmp_path):
     """Run scan-varying refinement, comparing RMSD table with expected values."""
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "from-xds.json"
     pickle_path = data_dir / "from-xds-all.pickle"
 
@@ -141,7 +141,7 @@ def test_scan_varying_with_automated_outlier_rejection_block_width_interval_widt
     """Strict check for scan-varying refinement using automated outlier rejection
     block width and interval width setting"""
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "from-xds.json"
     pickle_path = data_dir / "from-xds-all.pickle"
 
@@ -201,7 +201,7 @@ def test_scan_varying_with_automated_outlier_rejection_block_width_interval_widt
 
 @pytest.mark.parametrize("fix", ["cell", "orientation"])
 def test_scan_varying_with_fixed_crystal(fix, dials_data, tmp_path):
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
     refls = location / "reflections_1.pickle"
     expts = location / "experiments_1.json"
 
@@ -215,7 +215,7 @@ def test_scan_varying_with_fixed_crystal(fix, dials_data, tmp_path):
 
 def test_scan_varying_missing_segments_multi_crystal(dials_data, tmp_path):
     # https://github.com/dials/dials/issues/1053
-    location = dials_data("i19_1_pdteet_index", pathlib=True)
+    location = dials_data("i19_1_pdteet_index")
     refls = location / "indexed.refl"
     expts = location / "indexed.expt"
 
@@ -257,7 +257,7 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmp_path):
 @pytest.mark.parametrize("gcb", ["None", "3000"])
 def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
     # https://github.com/dials/dials/issues/994
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     refls = location / "indexed.refl"
     expts = location / "indexed.expt"
 
@@ -375,7 +375,7 @@ def test_find_disjoint_sets():
 
 def test_refinement_of_disjoint_sets(dials_data, tmp_path):
     # Take 22 input experiments that are in 7 disjoint groups
-    location = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    location = dials_data("polyhedra_narrow_wedges")
     expts = [
         location / f"sweep_00{i}_experiments.json"
         for i in ["2", "3", "4", "5", "6", "7", "9"]
