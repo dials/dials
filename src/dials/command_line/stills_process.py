@@ -128,31 +128,25 @@ def _control_phil_str():
       .type = choice
       .help = normal includes all logging, suppress turns off DIALS refine output
       .help = and disabled removes basically all logging
-    experiments_filename = None
+    imported_suffix = None
       .type = str
-      .help = The filename for output experiments. For example, %s_imported.expt
-    strong_filename = None
+      .help = The suffix for imported experiments. For example, imported
+    strong_suffix = None
       .type = str
-      .help = The filename for strong reflections from spot finder output. For example: \
-              %s_strong.refl
-    indexed_filename = %s_indexed.refl
+      .help = The suffix for strong experiments and reflections from spot finder output. \
+              For example: strong
+    indexed_suffix = indexed
       .type = str
-      .help = The filename for indexed reflections.
-    refined_experiments_filename = %s_refined.expt
+      .help = The suffix for indexed experiments and reflections.
+    refined_suffix = None
       .type = str
-      .help = The filename for saving refined experimental models
-    integrated_filename = %s_integrated.refl
+      .help = The filename for saving refined experiments and reflections. For example, refined
+    integrated_suffix = integrated
       .type = str
-      .help = The filename for final integrated reflections.
-    integrated_experiments_filename = %s_integrated.expt
+      .help = The suffix for final integrated data.
+    coset_suffix = coset
       .type = str
-      .help = The filename for saving final experimental models.
-    coset_filename = %s_coset%d.refl
-      .type = str
-      .help = The filename for final coset reflections.
-    coset_experiments_filename = %s_coset%d.expt
-      .type = str
-      .help = The filename for saving final coset experimental models.
+      .help = The filename for final coset data.
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
@@ -882,23 +876,75 @@ class Processor:
         self.params = params
         self.composite_tag = composite_tag
 
-        # The convention is to put %s in the phil parameter to add a tag to
-        # each output datafile. Save the initial templates here.
-        self.experiments_filename_template = params.output.experiments_filename
-        self.strong_filename_template = params.output.strong_filename
-        self.indexed_filename_template = params.output.indexed_filename
-        self.refined_experiments_filename_template = (
-            params.output.refined_experiments_filename
+        # Set up file name templates
+        self.imported_filename_template = (
+            f"%s_{params.output.imported_suffix}.expt"
+            if params.output.imported_suffix
+            else None
         )
-        self.integrated_filename_template = params.output.integrated_filename
+        self.strong_experiments_filename_template = (
+            f"%s_{params.output.strong_suffix}.expt"
+            if params.output.strong_suffix
+            else None
+        )
+        self.strong_reflections_filename_template = (
+            f"%s_{params.output.strong_suffix}.refl"
+            if params.output.strong_suffix
+            else None
+        )
+        self.indexed_experiments_filename_template = (
+            f"%s_{params.output.indexed_suffix}.expt"
+            if params.output.indexed_suffix
+            else None
+        )
+        self.indexed_reflections_filename_template = (
+            f"%s_{params.output.indexed_suffix}.refl"
+            if params.output.indexed_suffix
+            else None
+        )
+        self.refined_experiments_filename_template = (
+            f"%s_{params.output.refined_suffix}.expt"
+            if params.output.refined_suffix
+            else None
+        )
+        self.refined_reflections_filename_template = (
+            f"%s_{params.output.refined_suffix}.refl"
+            if params.output.refined_suffix
+            else None
+        )
         self.integrated_experiments_filename_template = (
-            params.output.integrated_experiments_filename
+            f"%s_{params.output.integrated_suffix}.expt"
+            if params.output.integrated_suffix
+            else None
+        )
+        self.integrated_reflections_filename_template = (
+            f"%s_{params.output.integrated_suffix}.refl"
+            if params.output.integrated_suffix
+            else None
         )
         if params.dispatch.coset:
-            self.coset_filename_template = params.output.coset_filename
             self.coset_experiments_filename_template = (
-                params.output.coset_experiments_filename
+                f"%s_{params.output.coset_suffix}%d.expt"
+                if params.output.coset_suffix
+                else None
             )
+            self.coset_reflections_filename_template = (
+                f"%s_{params.output.coset_suffix}%d.refl"
+                if params.output.coset_suffix
+                else None
+            )
+
+        self.imported_filename = None
+        self.strong_experiments_filename = None
+        self.strong_reflections_filename = None
+        self.indexed_experiments_filename = None
+        self.indexed_reflections_filename = None
+        self.refined_experiments_filename = None
+        self.refined_reflections_filename = None
+        self.integrated_experiments_filename = None
+        self.integrated_reflections_filename = None
+        self.coset_experiments_filename = None
+        self.coset_reflections_filename = None
 
         debug_dir = os.path.join(params.output.output_dir, "debug")
         if not os.path.exists(debug_dir):
@@ -917,9 +963,12 @@ class Processor:
             assert composite_tag is not None
 
             self.all_imported_experiments = ExperimentList()
+            self.all_strong_experiments = ExperimentList()
             self.all_strong_reflections = flex.reflection_table()
             self.all_indexed_experiments = ExperimentList()
             self.all_indexed_reflections = flex.reflection_table()
+            self.all_refined_experiments = ExperimentList()
+            self.all_refined_reflections = flex.reflection_table()
             self.all_integrated_experiments = ExperimentList()
             self.all_integrated_reflections = flex.reflection_table()
             self.all_int_pickle_filenames = []
@@ -931,72 +980,67 @@ class Processor:
 
     def setup_filenames(self, tag):
         # before processing, set output paths according to the templates
-        if (
-            self.experiments_filename_template is not None
-            and "%s" in self.experiments_filename_template
-        ):
-            self.params.output.experiments_filename = os.path.join(
+        if self.imported_filename_template is not None:
+            self.imported_filename = os.path.join(
                 self.params.output.output_dir,
-                self.experiments_filename_template % ("idx-" + tag),
+                self.imported_filename_template % ("idx-" + tag),
             )
-        if (
-            self.strong_filename_template is not None
-            and "%s" in self.strong_filename_template
-        ):
-            self.params.output.strong_filename = os.path.join(
+        if self.strong_experiments_filename_template is not None:
+            self.strong_experiments_filename = os.path.join(
                 self.params.output.output_dir,
-                self.strong_filename_template % ("idx-" + tag),
+                self.strong_experiments_filename_template % ("idx-" + tag),
             )
-        if (
-            self.indexed_filename_template is not None
-            and "%s" in self.indexed_filename_template
-        ):
-            self.params.output.indexed_filename = os.path.join(
+        if self.strong_reflections_filename_template is not None:
+            self.strong_reflections_filename = os.path.join(
                 self.params.output.output_dir,
-                self.indexed_filename_template % ("idx-" + tag),
+                self.strong_reflections_filename_template % ("idx-" + tag),
             )
-        if (
-            self.refined_experiments_filename_template is not None
-            and "%s" in self.refined_experiments_filename_template
-        ):
-            self.params.output.refined_experiments_filename = os.path.join(
+        if self.indexed_experiments_filename_template is not None:
+            self.indexed_experiments_filename = os.path.join(
+                self.params.output.output_dir,
+                self.indexed_experiments_filename_template % ("idx-" + tag),
+            )
+        if self.indexed_reflections_filename_template is not None:
+            self.indexed_reflections_filename = os.path.join(
+                self.params.output.output_dir,
+                self.indexed_reflections_filename_template % ("idx-" + tag),
+            )
+        if self.refined_experiments_filename_template is not None:
+            self.refined_experiments_filename = os.path.join(
                 self.params.output.output_dir,
                 self.refined_experiments_filename_template % ("idx-" + tag),
             )
-        if (
-            self.integrated_filename_template is not None
-            and "%s" in self.integrated_filename_template
-        ):
-            self.params.output.integrated_filename = os.path.join(
+        if self.refined_reflections_filename_template is not None:
+            self.refined_reflections_filename = os.path.join(
                 self.params.output.output_dir,
-                self.integrated_filename_template % ("idx-" + tag),
+                self.refined_reflections_filename_template % ("idx-" + tag),
             )
-        if (
-            self.integrated_experiments_filename_template is not None
-            and "%s" in self.integrated_experiments_filename_template
-        ):
-            self.params.output.integrated_experiments_filename = os.path.join(
+        if self.integrated_experiments_filename_template is not None:
+            self.integrated_experiments_filename = os.path.join(
                 self.params.output.output_dir,
                 self.integrated_experiments_filename_template % ("idx-" + tag),
             )
-        if (
-            self.params.dispatch.coset
-            and self.coset_filename_template is not None
-            and "%s" in self.coset_filename_template
-        ):
-            self.params.output.coset_filename = os.path.join(
+        if self.integrated_reflections_filename_template is not None:
+            self.integrated_reflections_filename = os.path.join(
                 self.params.output.output_dir,
-                self.coset_filename_template
-                % ("idx-" + tag, self.params.integration.coset.transformation),
+                self.integrated_reflections_filename_template % ("idx-" + tag),
             )
         if (
             self.params.dispatch.coset
             and self.coset_experiments_filename_template is not None
-            and "%s" in self.coset_experiments_filename_template
         ):
-            self.params.output.coset_experiments_filename = os.path.join(
+            self.coset_experiments_filename = os.path.join(
                 self.params.output.output_dir,
                 self.coset_experiments_filename_template
+                % ("idx-" + tag, self.params.integration.coset.transformation),
+            )
+        if (
+            self.params.dispatch.coset
+            and self.coset_reflections_filename_template is not None
+        ):
+            self.coset_reflections_filename = os.path.join(
+                self.params.output.output_dir,
+                self.coset_reflections_filename_template
                 % ("idx-" + tag, self.params.integration.coset.transformation),
             )
 
@@ -1032,11 +1076,11 @@ class Processor:
         self.tag = tag
         self.debug_start(tag)
 
-        if self.params.output.experiments_filename:
+        if self.imported_filename and experiments:
             if self.params.output.composite_output:
                 self.all_imported_experiments.extend(experiments)
             else:
-                experiments.as_json(self.params.output.experiments_filename)
+                experiments.as_file(self.params.output.imported_filename)
 
         # Do the processing
         try:
@@ -1171,21 +1215,23 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         for i in range(len(bbox)):
             bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
-        if self.params.output.composite_output:
-            n = len(self.all_strong_reflections.experiment_identifiers())
-            for i, experiment in enumerate(experiments):
-                refls = observed.select(observed["id"] == i)
-                refls["id"] = flex.int(len(refls), n)
-                del refls.experiment_identifiers()[i]
-                refls.experiment_identifiers()[n] = experiment.identifier
-                self.all_strong_reflections.extend(refls)
-                n += 1
-        else:
-            # Save the reflections to file
-            logger.info("\n" + "-" * 80)
-            if self.params.output.strong_filename:
-                self.save_reflections(observed, self.params.output.strong_filename)
+        if self.params.output.strong_suffix:
+            if self.params.output.composite_output:
+                # Cache the results
+                self.all_strong_experiments, self.all_strong_reflections = (
+                    self.concat_results(
+                        experiments,
+                        observed,
+                        self.all_strong_experiments,
+                        self.all_strong_reflections,
+                    )
+                )
+            else:
+                # Save the results to a file
+                experiments.as_file(self.strong_experiments_filename)
+                self.save_reflections(observed, self.strong_reflections_filename)
 
+        logger.info("\n" + "-" * 80)
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
         return observed
@@ -1328,6 +1374,22 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             )
             indexed = filtered
 
+        if self.params.output.indexed_suffix:
+            if self.params.output.composite_output:
+                # Cache the results
+                self.all_indexed_experiments, self.all_indexed_reflections = (
+                    self.concat_results(
+                        experiments,
+                        indexed,
+                        self.all_indexed_experiments,
+                        self.all_indexed_reflections,
+                    )
+                )
+            else:
+                # Save the results to a file
+                experiments.as_file(self.indexed_experiments_filename)
+                self.save_reflections(indexed, self.indexed_reflections_filename)
+
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
         return experiments, indexed
@@ -1367,34 +1429,22 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             acceptance_flags_nv = nv.nv_acceptance_flags
             centroids = centroids.select(acceptance_flags_nv)
 
-        if self.params.output.composite_output:
-            if (
-                self.params.output.refined_experiments_filename
-                or self.params.output.indexed_filename
-            ):
-                assert (
-                    self.params.output.refined_experiments_filename is not None
-                    and self.params.output.indexed_filename is not None
-                )
+            if self.params.output.refined_suffix:
+                if self.params.output.composite_output:
+                    # Cache the results
+                    self.all_refined_experiments, self.all_refined_reflections = (
+                        self.concat_results(
+                            experiments,
+                            centroids,
+                            self.all_refined_experiments,
+                            self.all_refined_reflections,
+                        )
+                    )
+                else:
+                    # Save the results to a file
+                    experiments.as_file(self.refined_experiments_filename)
+                    self.save_reflections(centroids, self.refined_reflections_filename)
 
-                n = len(self.all_indexed_experiments)
-                self.all_indexed_experiments.extend(experiments)
-                for i, experiment in enumerate(experiments):
-                    refls = centroids.select(centroids["id"] == i)
-                    refls["id"] = flex.int(len(refls), n)
-                    del refls.experiment_identifiers()[i]
-                    refls.experiment_identifiers()[n] = experiment.identifier
-                    self.all_indexed_reflections.extend(refls)
-                    n += 1
-        else:
-            # Dump experiments to disk
-            if self.params.output.refined_experiments_filename:
-                experiments.as_json(self.params.output.refined_experiments_filename)
-
-            if self.params.output.indexed_filename:
-                self.save_reflections(centroids, self.params.output.indexed_filename)
-
-        if self.params.dispatch.refine:
             logger.info("")
             logger.info("Time Taken = %f seconds", time.time() - st)
 
@@ -1531,35 +1581,21 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         if self.params.integration.debug.delete_shoeboxes and "shoebox" in integrated:
             del integrated["shoebox"]
 
-        if self.params.output.composite_output:
-            if (
-                self.params.output.integrated_experiments_filename
-                or self.params.output.integrated_filename
-            ):
-                assert (
-                    self.params.output.integrated_experiments_filename is not None
-                    and self.params.output.integrated_filename is not None
+        if self.params.output.integrated_suffix:
+            if self.params.output.composite_output:
+                # Cache the results
+                self.all_integrated_experiments, self.all_integrated_reflections = (
+                    self.concat_results(
+                        experiments,
+                        integrated,
+                        self.all_integrated_experiments,
+                        self.all_integrated_reflections,
+                    )
                 )
-
-                n = len(self.all_integrated_experiments)
-                self.all_integrated_experiments.extend(experiments)
-                for i, experiment in enumerate(experiments):
-                    refls = integrated.select(integrated["id"] == i)
-                    refls["id"] = flex.int(len(refls), n)
-                    del refls.experiment_identifiers()[i]
-                    refls.experiment_identifiers()[n] = experiment.identifier
-                    self.all_integrated_reflections.extend(refls)
-                    n += 1
-        else:
-            # Dump experiments to disk
-            if self.params.output.integrated_experiments_filename:
-                experiments.as_json(self.params.output.integrated_experiments_filename)
-
-            if self.params.output.integrated_filename:
-                # Save the reflections
-                self.save_reflections(
-                    integrated, self.params.output.integrated_filename
-                )
+            else:
+                # Save the results to a file
+                experiments.as_file(self.integrated_experiments_filename)
+                self.save_reflections(integrated, self.integrated_reflections_filename)
 
         self.write_integration_pickles(integrated, experiments)
         from dials.algorithms.indexing.stills_indexer import (
@@ -1702,6 +1738,24 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info(" time taken: %g", time.time() - st)
         return reference, rubbish
 
+    def concat_results(
+        self, experiments, reflections, all_experiments, all_reflections
+    ):
+        """Concatenate individual results to the cached results"""
+        if reflections:
+            subsets = []
+            for experiment, indices in reflections.iterate_experiments_and_indices(
+                experiments
+            ):
+                subset = reflections.select(indices)
+                if subset:
+                    all_experiments.append(experiment)
+                    subsets.append(subset)
+            all_reflections = flex.reflection_table.concat([all_reflections] + subsets)
+        else:
+            all_experiments.extend(experiments)
+        return all_experiments, all_reflections
+
     def save_reflections(self, reflections, filename):
         """Save the reflections to file."""
         st = time.time()
@@ -1730,9 +1784,12 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         (
                             sender,
                             imported_experiments,
+                            strong_experiments,
                             strong_reflections,
                             indexed_experiments,
                             indexed_reflections,
+                            refined_experiments,
+                            refined_reflections,
                             integrated_experiments,
                             integrated_reflections,
                             coset_experiments,
@@ -1742,52 +1799,45 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         ) = comm.recv(source=MPI.ANY_SOURCE)
                         logger.info("Rank %d received data from rank %d", rank, sender)
 
-                        def extend_with_bookkeeping(
-                            src_expts, src_refls, dest_expts, dest_refls
-                        ):
-                            n = len(dest_refls.experiment_identifiers())
-                            src_refls["id"] += n
-                            idents = src_refls.experiment_identifiers()
-                            keys = idents.keys()
-                            values = idents.values()
-                            for key in keys:
-                                del idents[key]
-                            for i, key in enumerate(keys):
-                                idents[key + n] = values[i]
-                            dest_expts.extend(src_expts)
-                            dest_refls.extend(src_refls)
-
-                        if len(imported_experiments) > 0:
-                            extend_with_bookkeeping(
-                                imported_experiments,
+                        self.all_imported_experiments = self.concat_results(
+                            imported_experiments,
+                            None,
+                            self.all_imported_experiments,
+                            None,
+                        )
+                        self.all_strong_experiments, self.all_strong_reflections = (
+                            self.concat_results(
+                                strong_experiments,
                                 strong_reflections,
-                                self.all_imported_experiments,
+                                self.all_strong_experiments,
                                 self.all_strong_reflections,
                             )
-
-                        if len(indexed_experiments) > 0:
-                            extend_with_bookkeeping(
+                        )
+                        self.all_indexed_experiments, self.all_indexed_reflections = (
+                            self.concat_results(
                                 indexed_experiments,
                                 indexed_reflections,
                                 self.all_indexed_experiments,
                                 self.all_indexed_reflections,
                             )
-
-                        if len(integrated_experiments) > 0:
-                            extend_with_bookkeeping(
-                                integrated_experiments,
-                                integrated_reflections,
-                                self.all_integrated_experiments,
-                                self.all_integrated_reflections,
-                            )
-
-                        if len(coset_experiments) > 0:
-                            extend_with_bookkeeping(
+                        )
+                        (
+                            self.all_integrated_experiments,
+                            self.all_integrated_reflections,
+                        ) = self.concat_results(
+                            integrated_experiments,
+                            integrated_reflections,
+                            self.all_integrated_experiments,
+                            self.all_integrated_reflections,
+                        )
+                        self.all_coset_experiments, self.all_coset_reflections = (
+                            self.concat_results(
                                 coset_experiments,
                                 coset_reflections,
                                 self.all_coset_experiments,
                                 self.all_coset_reflections,
                             )
+                        )
 
                         self.all_int_pickles.extend(int_pickles)
                         self.all_int_pickle_filenames.extend(int_pickle_filenames)
@@ -1803,9 +1853,12 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         (
                             rank,
                             self.all_imported_experiments,
+                            self.all_strong_experiments,
                             self.all_strong_reflections,
                             self.all_indexed_experiments,
                             self.all_indexed_reflections,
+                            self.all_refined_experiments,
+                            self.all_refined_reflections,
                             self.all_integrated_experiments,
                             self.all_integrated_reflections,
                             self.all_coset_experiments,
@@ -1816,80 +1869,70 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         dest=destrank,
                     )
 
-                    self.all_imported_experiments = self.all_strong_reflections = (
-                        self.all_indexed_experiments
-                    ) = self.all_indexed_reflections = (
+                    self.all_imported_experiments = self.all_strong_experiments = (
+                        self.all_strong_reflections
+                    ) = self.all_indexed_experiments = self.all_indexed_reflections = (
+                        self.all_refined_experiments
+                    ) = self.all_refined_reflections = (
                         self.all_integrated_experiments
                     ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
 
             # Dump composite files to disk
-            if (
-                len(self.all_imported_experiments) > 0
-                and self.params.output.experiments_filename
-            ):
-                self.all_imported_experiments.as_json(
-                    self.params.output.experiments_filename
-                )
+            if self.all_imported_experiments and self.imported_filename:
+                self.all_imported_experiments.as_file(self.imported_filename)
 
             if (
-                len(self.all_strong_reflections) > 0
-                and self.params.output.strong_filename
+                self.params.output.strong_suffix
+                and self.all_strong_experiments
+                and self.all_strong_reflections
             ):
+                self.all_strong_experiments.as_file(self.strong_experiments_filename)
                 self.save_reflections(
-                    self.all_strong_reflections, self.params.output.strong_filename
+                    self.all_strong_reflections, self.strong_reflections_filename
                 )
-
             if (
-                len(self.all_indexed_experiments) > 0
-                and self.params.output.refined_experiments_filename
+                self.params.output.indexed_suffix
+                and self.all_indexed_experiments
+                and self.all_indexed_reflections
             ):
-                self.all_indexed_experiments.as_json(
-                    self.params.output.refined_experiments_filename
-                )
-
-            if (
-                len(self.all_indexed_reflections) > 0
-                and self.params.output.indexed_filename
-            ):
+                self.all_indexed_experiments.as_file(self.indexed_experiments_filename)
                 self.save_reflections(
-                    self.all_indexed_reflections, self.params.output.indexed_filename
+                    self.all_indexed_reflections, self.indexed_reflections_filename
                 )
-
             if (
-                len(self.all_integrated_experiments) > 0
-                and self.params.output.integrated_experiments_filename
+                self.params.output.refined_suffix
+                and self.all_refined_experiments
+                and self.all_refined_reflections
             ):
-                self.all_integrated_experiments.as_json(
-                    self.params.output.integrated_experiments_filename
+                self.all_refined_experiments.as_file(self.refined_experiments_filename)
+                self.save_reflections(
+                    self.all_refined_reflections, self.refined_reflections_filename
                 )
-
             if (
-                len(self.all_integrated_reflections) > 0
-                and self.params.output.integrated_filename
+                self.params.output.integrated_suffix
+                and self.all_integrated_experiments
+                and self.all_integrated_reflections
             ):
+                self.all_integrated_experiments.as_file(
+                    self.integrated_experiments_filename
+                )
                 self.save_reflections(
                     self.all_integrated_reflections,
-                    self.params.output.integrated_filename,
+                    self.integrated_reflections_filename,
                 )
 
-            if self.params.dispatch.coset:
-                if (
-                    len(self.all_coset_experiments) > 0
-                    and self.params.output.coset_experiments_filename
-                ):
-                    self.all_coset_experiments.as_json(
-                        self.params.output.coset_experiments_filename
-                    )
-
-                if (
-                    len(self.all_coset_reflections) > 0
-                    and self.params.output.coset_filename
-                ):
-                    self.save_reflections(
-                        self.all_coset_reflections, self.params.output.coset_filename
-                    )
+            if (
+                self.params.dispatch.coset
+                and self.params.output.coset_suffix
+                and self.all_coset_experiments
+                and self.all_coset_reflections
+            ):
+                self.all_integrated_experiments.as_file(self.coset_experiment_filename)
+                self.save_reflections(
+                    self.all_coset_reflections, self.coset_reflections_filename
+                )
 
             # Create a tar archive of the integration dictionary pickles
             if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
