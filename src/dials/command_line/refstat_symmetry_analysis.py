@@ -147,7 +147,7 @@ def check_reflections_(cell, hkl_file):
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
         logger.info(
-            "Inonsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
+            "Inconsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
             % (
                 merge_stats.inconsistent_count,
                 merge_stats.r_int * 100,
