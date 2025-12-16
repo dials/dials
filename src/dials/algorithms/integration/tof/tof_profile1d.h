@@ -33,8 +33,9 @@ namespace dials { namespace algorithms {
     double beta;
     double beta_min;
     double beta_max;
-    int n_restarts;         // number of attempts when fitting
-    bool optimize_profile;  // If false the profile is generated with input params
+    int n_restarts;              // number of attempts when fitting
+    bool optimize_profile;       // If false the profile is generated with input params
+    bool show_profile_failures;  // Prints debugging information
 
     TOFProfile1DParams(double A,
                        double alpha,
@@ -44,7 +45,8 @@ namespace dials { namespace algorithms {
                        double beta_min,
                        double beta_max,
                        int n_restarts,
-                       bool optimize_profile)
+                       bool optimize_profile,
+                       bool show_profile_failures)
 
         : A(A),
           alpha(alpha),
@@ -54,7 +56,8 @@ namespace dials { namespace algorithms {
           beta_min(beta_min),
           beta_max(beta_max),
           n_restarts(n_restarts),
-          optimize_profile(optimize_profile) {}
+          optimize_profile(optimize_profile),
+          show_profile_failures(show_profile_failures) {}
   };
 
   static scitbx::af::shared<double> profile1d_func(scitbx::af::const_ref<double> tof,
@@ -342,6 +345,7 @@ namespace dials { namespace algorithms {
     }
 
     bool fit(std::size_t max_sum_index,  // Peak index of the projected intensity
+             bool show_profile_failures,
              int maxfev = 200,
              double xtol = 1e-8,
              double ftol = 1e-8) {
@@ -395,7 +399,11 @@ namespace dials { namespace algorithms {
 
       if (success) {
         I_prf = this->calc_intensity();
-        if (this->trust_result(fit_resid, I_prf, max_sum_index, max_profile_index)) {
+        if (this->trust_result(fit_resid,
+                               I_prf,
+                               max_sum_index,
+                               max_profile_index,
+                               show_profile_failures)) {
           return true;
         }
       }
@@ -419,7 +427,11 @@ namespace dials { namespace algorithms {
 
         I_prf = this->calc_intensity();
         max_profile_index = this->get_max_profile_index();
-        if (this->trust_result(fit_resid, I_prf, max_sum_index, max_profile_index)) {
+        if (this->trust_result(fit_resid,
+                               I_prf,
+                               max_sum_index,
+                               max_profile_index,
+                               show_profile_failures)) {
           return true;
         }
       }
@@ -430,43 +442,69 @@ namespace dials { namespace algorithms {
     bool trust_result(double error,
                       double I_prf,
                       std::size_t max_sum_index,
-                      std::size_t max_profile_index) {
+                      std::size_t max_profile_index,
+                      bool show_error = false) {
       /*
        * Tests to check the fit is reasonable
        */
       if (!std::isfinite(error) || error <= 0.0) {
+        if (show_error) {
+          std::cerr << "profile1d fitting failure: invalid error value (error=" << error
+                    << ")\n";
+        }
         return false;
       }
+
       // Check reasonable intensity
       if (I_prf < 1e-7) {
+        if (show_error) {
+          std::cerr << "profile1d fitting failure: profile intensity too small (I_prf="
+                    << I_prf << ")\n";
+        }
         return false;
       }
+
       // Check peak position close to data peak
-      if (std::abs(static_cast<int>(max_sum_index)
-                   - static_cast<int>(max_profile_index))
-          > 3) {
+      int peak_delta =
+        std::abs(static_cast<int>(max_sum_index) - static_cast<int>(max_profile_index));
+      if (peak_delta > 3) {
+        if (show_error) {
+          std::cerr << "profile1d fitting failure: peak index mismatch (max_sum_index="
+                    << max_sum_index << ", max_profile_index=" << max_profile_index
+                    << ", delta=" << peak_delta << ")\n";
+        }
         return false;
       }
+
       // Check peak isn't very flat
       auto m = result();
       double max_val = *std::max_element(m.begin(), m.end());
       double mean_val = std::accumulate(m.begin(), m.end(), 0.0) / m.size();
       double contrast = (max_val - mean_val) / (max_val + 1e-12);
       if (contrast < 0.1) {
+        if (show_error) {
+          std::cerr << "profile1d fitting failure: insufficient peak contrast "
+                    << "(contrast=" << contrast << ", max_val=" << max_val
+                    << ", mean_val=" << mean_val << ")\n";
+        }
         return false;
       }
+
       // Check correlation with data
-      double profile_peak, data_peak;
-      double num = 0, denom_y = 0, denom_m = 0;
+      double profile_peak = 0.0, data_peak = 0.0;
+      double num = 0.0, denom_y = 0.0, denom_m = 0.0;
+
       for (std::size_t i = 0; i < tof.size(); ++i) {
         double y = y_norm[i];
         double p = m[i] / intensity_max;
+
         if (i == 0 || y > data_peak) {
           data_peak = y;
         }
         if (i == 0 || p > profile_peak) {
           profile_peak = p;
         }
+
         num += y * p;
         denom_y += y * y;
         denom_m += p * p;
@@ -474,13 +512,24 @@ namespace dials { namespace algorithms {
 
       double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
       if (corr < 0.9) {
+        if (show_error) {
+          std::cerr << "profile1d fitting failure: low correlation (corr=" << corr
+                    << ")\n";
+        }
         return false;
       }
 
       // Check peak height is within 10% of data peak
-      if (std::abs(profile_peak - data_peak) > data_peak * 0.1) {
+      double peak_diff = std::abs(profile_peak - data_peak);
+      if (peak_diff > data_peak * 0.1) {
+        if (show_error) {
+          std::cerr << "profile1d fitting failure: peak height mismatch "
+                    << "(profile_peak=" << profile_peak << ", data_peak=" << data_peak
+                    << ", diff=" << peak_diff << ")\n";
+        }
         return false;
       }
+
       return true;
     }
   };
@@ -522,7 +571,7 @@ namespace dials { namespace algorithms {
 
     bool profile_success = true;
     if (profile_params.optimize_profile) {
-      profile_success = profile.fit(max_index);
+      profile_success = profile.fit(max_index, profile_params.show_profile_failures);
     }
 
     if (profile_success) {

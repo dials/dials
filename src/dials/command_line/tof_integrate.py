@@ -288,6 +288,7 @@ def integrate_reflection_table_for_experiment(
 
     logger.info(f"    Integrating using {params.method}")
 
+    show_profile_failures = logger.getEffectiveLevel() == logging.DEBUG
     if params.method == "profile1d":
         alpha = params.profile1d.init_alpha
         beta = params.profile1d.init_beta
@@ -298,7 +299,16 @@ def integrate_reflection_table_for_experiment(
         max_beta = params.profile1d.max_beta
         n_restarts = params.profile1d.n_restarts
         profile1d_params = TOFProfile1DParams(
-            A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts, True
+            A,
+            alpha,
+            min_alpha,
+            max_alpha,
+            beta,
+            min_beta,
+            max_beta,
+            n_restarts,
+            True,
+            show_profile_failures,
         )
     elif params.method == "profile3d":
         alpha = params.profile3d.init_alpha
@@ -319,6 +329,7 @@ def integrate_reflection_table_for_experiment(
             n_restarts,
             True,
             use_central_diff,
+            show_profile_failures,
         )
 
     if apply_lorentz:
