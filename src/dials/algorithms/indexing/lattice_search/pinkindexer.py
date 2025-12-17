@@ -36,9 +36,10 @@ pink_indexer
     voxel_grid_points=150
         .type = int(value_min=10, value_max=1000)
         .help = "Controls the number of voxels onto which the rotograms are discretized"
-    min_lattices=1
+    target_lattices=1
         .type = int(value_min=1, value_max=100)
-        .help = "The minimum number of candidate lattices to generate."
+        .alias = min_lattices
+        .help = "The target number of candidate lattices to generate."
 }
 """
 
@@ -197,7 +198,7 @@ class Indexer:
         voxel_grid_points=200,
         int_dtype="uint8",
         float_dtype="float32",
-        min_lattices=1,
+        target_lattices=1,
         dilate_r=None,
     ):
         """
@@ -208,7 +209,7 @@ class Indexer:
             voxel_grid_points (int, optional): The fineness of the discretization used to quantitate rotograms.
             int_dtype (str or dtype, optional): the dtype to use for the voxel grid
             float_dtype (str or dtype, optional): the dtype to use for floating point values
-            min_lattices (int, optional): the minimum number of candidate lattices returned by this function
+            target_lattices (int, optional): the target number of candidate lattices returned by this function
             dilate_r (float, optional): optionally dilate the voxel grid by a kernel with this radius in pixels.
 
         Returns:
@@ -314,7 +315,7 @@ class Indexer:
 
         # Possible solutions are voxels with the highest density
         num_voxels = voxels.size
-        target_probability = (num_voxels - min_lattices) / num_voxels
+        target_probability = (num_voxels - target_lattices) / num_voxels
         cutoff = np.quantile(voxels, target_probability)
         idx = np.where(voxels > cutoff)
         asort = np.argsort(voxels[idx])
@@ -382,7 +383,7 @@ class PinkIndexer(Strategy):
         self.max_refls = params.max_refls
         self.rotogram_grid_points = params.rotogram_grid_points
         self.voxel_grid_points = params.voxel_grid_points
-        self.min_lattices = params.min_lattices
+        self.target_lattices = params.target_lattices
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
@@ -452,7 +453,7 @@ class PinkIndexer(Strategy):
             self.max_refls,
             rotogram_grid_points=self.rotogram_grid_points,
             voxel_grid_points=self.voxel_grid_points,
-            min_lattices=self.min_lattices,
+            target_lattices=self.target_lattices,
         ):
             real_a, real_b, real_c = np.linalg.inv(UB.astype("double"))
             crystal = Crystal(real_a, real_b, real_c, self.spacegroup)
