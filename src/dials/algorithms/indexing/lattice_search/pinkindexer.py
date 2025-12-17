@@ -313,7 +313,6 @@ class Indexer:
             voxels = fftconvolve(voxels, kernel, mode="same")
 
         # Possible solutions are voxels with the highest density
-        idx = np.indices(voxels.shape).reshape((3, -1))
         asort = np.argsort(voxels, axis=None)  # Return n**3 flat, 1D indices
         best_indices = asort[-min_lattices:]  # Get best lattices
         best_indices = best_indices[::-1]  # Order best lattices in descending order
