@@ -125,11 +125,12 @@ class EllipseSettingsPanel(wx.Panel):
 
         coords = []
         if self._points:
-            coords = self._lon_lat_to_slow_fast_panel(self._points)
+            coords = self._lon_lat_to_fast_slow_panel(self._points)
         self.phi_txt = " "
         self.l1_txt = " "
         self.l2_txt = " "
-        self.centre_txt = " "
+        self.centre = None
+        centre_txt = " "
         enable_save_button = False
         if len(coords) >= 5:
             try:
@@ -143,20 +144,21 @@ class EllipseSettingsPanel(wx.Panel):
             if not ellipse:
                 self.phi_txt = "Fit failed"
             else:
-                phi, a, b, centre = extract_ellipse_parameters(ellipse)
+                phi, a, b, self.centre = extract_ellipse_parameters(ellipse)
+
                 # Use a simplistic model to calculate l1 and l2 scale factors from a and b.
                 l1 = 1.0
                 l2 = b / a
                 self.phi_txt = f"{phi:.2f}"
                 self.l1_txt = f"{l1:.6f}"
                 self.l2_txt = f"{l2:.6f}"
-                self.centre_txt = f"{centre[0]:.2f} {centre[1]:.2f}"
+                centre_txt = f"{self.centre[0]:.2f} {self.centre[1]:.2f}"
                 enable_save_button = True
 
                 # Draw the ellipse
                 self._draw_ellipse(ellipse)
 
-        for value in (self.phi_txt, self.l1_txt, self.l2_txt, self.centre_txt):
+        for value in (self.phi_txt, self.l1_txt, self.l2_txt, centre_txt):
             grid.Add(
                 wx.TextCtrl(
                     self,
@@ -212,7 +214,7 @@ class EllipseSettingsPanel(wx.Panel):
             center + a * -e1 + b * e2,
             center + a * e1 + b * e2,
         )
-        ellipse_data = self._slow_fast_to_lon_lat(ellipse_data)
+        ellipse_data = self._fast_slow_to_lon_lat(ellipse_data)
 
         self._ellipse_layer = self._pyslip.AddEllipseLayer(
             ellipse_data,
@@ -224,17 +226,17 @@ class EllipseSettingsPanel(wx.Panel):
             name="<ellipse_layer>",
         )
 
-    def _lon_lat_to_slow_fast_panel(self, points):
+    def _lon_lat_to_fast_slow_panel(self, points):
         coords = []
         first_pt = self._pyslip.tiles.get_flex_pixel_coordinates(*points[0])
         if len(first_pt) == 3:
             s, f, self._panel = first_pt
             self._panel = int(self._panel)
         else:
-            s, f = coords
+            s, f = first_pt
             self._panel = 0
         # Correct for half pixel shifts
-        coords.append((s + 0.5, f + 0.5))
+        coords.append((f + 0.5, s + 0.5))
 
         for pt in points[1:]:
             coord = self._pyslip.tiles.get_flex_pixel_coordinates(*pt)
@@ -247,14 +249,14 @@ class EllipseSettingsPanel(wx.Panel):
             # Skip coordinates not on the same panel as the first point
             if p != self._panel:
                 continue
-            coords.append((s + 0.5, f + 0.5))
+            coords.append((f + 0.5, s + 0.5))
 
         return coords
 
-    def _slow_fast_to_lon_lat(self, coords):
+    def _fast_slow_to_lon_lat(self, coords):
         points = []
         for coord in coords:
-            s, f = coord
+            f, s = coord
             s -= 0.5
             f -= 0.5
 
@@ -304,6 +306,12 @@ class EllipseSettingsPanel(wx.Panel):
     def OnSaveEllipseParams(self, event):
         self.params.output.ellipse_params = self.save_ellipse_txt_ctrl.GetValue()
         file_name = self.params.output.ellipse_params
+
+        # Convert centre from pixels to mm
+        panel = self._pyslip.tiles.raw_image.get_detector()[self._panel]
+        centre = panel.pixel_to_millimeter(self.centre)
+        centre_txt = f"{centre[0]:.6f} {centre[1]:.6f}"
+
         with open(file_name, "w") as f:
             print(f"Saving parameters to {file_name}")
             template = """mode = ellipse
@@ -314,5 +322,5 @@ ellipse
   l2 = {2}
   centre_xy = {3}
 }}
-""".format(self.phi_txt, self.l1_txt, self.l2_txt, self.centre_txt)
+""".format(self.phi_txt, self.l1_txt, self.l2_txt, centre_txt)
             f.write(template)
