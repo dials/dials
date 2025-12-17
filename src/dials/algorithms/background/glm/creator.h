@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
   namespace detail {
 
     template <typename T>
-    T median(const af::const_ref<T> &x) {
+    T median(const af::const_ref<T>& x) {
       af::shared<T> temp(x.begin(), x.end());
       std::nth_element(temp.begin(), temp.begin() + temp.size() / 2, temp.end());
       return temp[temp.size() / 2];
@@ -80,9 +80,9 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < sbox.size(); ++i) {
         try {
           single(sbox[i]);
-        } catch (scitbx::error const &) {
+        } catch (scitbx::error const&) {
           success[i] = false;
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           success[i] = false;
         }
       }
@@ -94,7 +94,7 @@ namespace dials { namespace algorithms {
      * @param sbox The shoeboxes
      * @returns Success True/False
      */
-    void single(Shoebox<> &sbox) const {
+    void single(Shoebox<>& sbox) const {
       DIALS_ASSERT(sbox.is_consistent());
       compute(sbox.data.const_ref(), sbox.background.ref(), sbox.mask.ref());
     }
@@ -132,9 +132,9 @@ namespace dials { namespace algorithms {
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch (scitbx::error const &) {
+        } catch (scitbx::error const&) {
           success[i] = false;
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           success[i] = false;
         }
       }
@@ -147,7 +147,7 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     template <typename T>
-    void compute(const af::const_ref<T, af::c_grid<3> > &data,
+    void compute(const af::const_ref<T, af::c_grid<3> >& data,
                  af::ref<T, af::c_grid<3> > background,
                  af::ref<int, af::c_grid<3> > mask) const {
       switch (model_) {
@@ -173,7 +173,7 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     template <typename T>
-    void compute_constant_2d(const af::const_ref<T, af::c_grid<3> > &data,
+    void compute_constant_2d(const af::const_ref<T, af::c_grid<3> >& data,
                              af::ref<T, af::c_grid<3> > background,
                              af::ref<int, af::c_grid<3> > mask) const {
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
@@ -237,7 +237,7 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     template <typename T>
-    void compute_constant_3d(const af::const_ref<T, af::c_grid<3> > &data,
+    void compute_constant_3d(const af::const_ref<T, af::c_grid<3> >& data,
                              af::ref<T, af::c_grid<3> > background,
                              af::ref<int, af::c_grid<3> > mask) const {
       // Compute number of background pixels
@@ -290,7 +290,7 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     template <typename T>
-    void compute_loglinear_2d(const af::const_ref<T, af::c_grid<3> > &data,
+    void compute_loglinear_2d(const af::const_ref<T, af::c_grid<3> >& data,
                               af::ref<T, af::c_grid<3> > background,
                               af::ref<int, af::c_grid<3> > mask) const {
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
@@ -391,7 +391,7 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     template <typename T>
-    void compute_loglinear_3d(const af::const_ref<T, af::c_grid<3> > &data,
+    void compute_loglinear_3d(const af::const_ref<T, af::c_grid<3> >& data,
                               af::ref<T, af::c_grid<3> > background,
                               af::ref<int, af::c_grid<3> > mask) const {
       // Compute number of background pixels

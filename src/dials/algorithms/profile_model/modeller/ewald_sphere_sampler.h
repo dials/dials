@@ -47,9 +47,9 @@ namespace dials { namespace algorithms {
      * Initialise the sampler
      */
     EwaldSphereSampler(const std::shared_ptr<BeamBase> beam,
-                       const Detector &detector,
-                       const Goniometer &goniometer,
-                       const Scan &scan,
+                       const Detector& detector,
+                       const Goniometer& goniometer,
+                       const Scan& scan,
                        std::size_t num_phi)
         : beam_(beam),
           detector_(detector),
@@ -70,7 +70,7 @@ namespace dials { namespace algorithms {
       // centre
       max_angle_ = 0;
       for (std::size_t i = 0; i < detector.size(); ++i) {
-        const Panel &p = detector[i];
+        const Panel& p = detector[i];
         std::size_t width = p.get_image_size()[0];
         std::size_t height = p.get_image_size()[1];
         vec3<double> s1 = p.get_pixel_lab_coord(vec2<double>(0, 0)).normalize();

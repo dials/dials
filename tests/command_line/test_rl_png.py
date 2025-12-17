@@ -5,7 +5,7 @@ import subprocess
 
 
 def test_rl_png_imported_experiments(dials_data, tmp_path):
-    data_dir = dials_data("centroid_test_data", pathlib=True)
+    data_dir = dials_data("centroid_test_data")
     experiments_path = data_dir / "imported_experiments.json"
     strong_pickle = data_dir / "strong.pickle"
 
@@ -28,7 +28,7 @@ def test_rl_png_imported_experiments(dials_data, tmp_path):
 
 
 def test_rl_png_refinement_data(dials_data, tmp_path):
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "i04-weak.json"
     indexed_pickle = data_dir / "i04-weak.pickle"
 

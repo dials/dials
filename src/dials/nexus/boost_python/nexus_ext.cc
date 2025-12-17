@@ -26,13 +26,13 @@ namespace dials { namespace nexus { namespace boost_python {
     struct getter {
       typedef Type value_type;
       typedef Class class_type;
-      typedef value_type class_type::*pointer_type;
+      typedef value_type class_type::* pointer_type;
 
       const pointer_type variable;
 
       getter(pointer_type p) : variable(p) {}
 
-      value_type operator()(const class_type &obj) const {
+      value_type operator()(const class_type& obj) const {
         return obj.*variable;
       }
     };
@@ -41,34 +41,34 @@ namespace dials { namespace nexus { namespace boost_python {
     struct setter {
       typedef Type value_type;
       typedef Class class_type;
-      typedef value_type class_type::*pointer_type;
+      typedef value_type class_type::* pointer_type;
 
       pointer_type variable;
 
       setter(pointer_type p) : variable(p) {}
 
-      void operator()(class_type &obj, value_type value) const {
+      void operator()(class_type& obj, value_type value) const {
         obj.*variable = value;
       }
     };
 
     template <typename Type, typename Class>
-    object make_getter(Type Class::*ptr) {
-      typedef boost::mpl::vector<Type, const Class &> signature;
+    object make_getter(Type Class::* ptr) {
+      typedef boost::mpl::vector<Type, const Class&> signature;
       return make_function(
         getter<Type, Class>(ptr), default_call_policies(), signature());
     }
 
     template <typename Type, typename Class>
-    object make_setter(Type Class::*ptr) {
-      typedef boost::mpl::vector<void, Class &, Type> signature;
+    object make_setter(Type Class::* ptr) {
+      typedef boost::mpl::vector<void, Class&, Type> signature;
       return make_function(
         setter<Type, Class>(ptr), default_call_policies(), signature());
     }
 
   }  // namespace detail
 
-  af::shared<NXmx> load(const char *filename) {
+  af::shared<NXmx> load(const char* filename) {
     // Turn off printing errors
     H5::Exception::dontPrint();
 
@@ -99,7 +99,7 @@ namespace dials { namespace nexus { namespace boost_python {
     return result;
   };
 
-  void dump(const NXmx &obj, const char *filename) {}
+  void dump(const NXmx& obj, const char* filename) {}
 
   BOOST_PYTHON_MODULE(dials_nexus_ext) {
     using boost_adaptbx::optional_conversions::to_and_from_python;

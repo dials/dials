@@ -8,7 +8,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_create_plane_distortion_maps() {
     class_<PlaneLinearTransformationMaps>("PlaneLinearTransformationMaps", no_init)
-      .def(init<const Panel &,
+      .def(init<const Panel&,
                 scitbx::mat2<double>,
                 scitbx::vec3<double>,
                 scitbx::vec3<double>,

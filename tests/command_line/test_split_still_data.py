@@ -16,14 +16,14 @@ import dials.command_line.split_still_data as split
 )
 @pytest.mark.parametrize("use_yaml", [True, False])
 def test_split_still_data(dials_data, run_in_tmp_path, use_yaml):
-    data = dials_data("cunir_serial_processed", pathlib=True)
+    data = dials_data("cunir_serial_processed")
     args = [
         os.fspath(data / "integrated.expt"),
         os.fspath(data / "integrated.refl"),
         "nproc=1",
     ]
     if use_yaml:
-        images = os.fspath(dials_data("cunir_serial", pathlib=True))
+        images = os.fspath(dials_data("cunir_serial"))
         yml = f"""
 ---
 metadata:
