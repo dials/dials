@@ -313,12 +313,13 @@ class Indexer:
             voxels = fftconvolve(voxels, kernel, mode="same")
 
         # Possible solutions are voxels with the highest density
-        asort = np.argsort(voxels, axis=None)  # Return n**3 flat, 1D indices
-        best_indices = asort[-min_lattices:]  # Get best lattices
-        best_indices = best_indices[::-1]  # Order best lattices in descending order
-        idx = np.indices(voxels.shape)  # Shape is 3 x n x n x n
-        idx = idx.reshape((3, -1))  # Flatten indices to 3 x n**3
-        peaks = idx[:, best_indices].T
+        num_voxels = voxels.size
+        target_probability = (num_voxels - min_lattices) / num_voxels
+        cutoff = np.quantile(voxels, target_probability)
+        idx = np.where(voxels > cutoff)
+        asort = np.argsort(voxels[idx])
+        sortidx = tuple(i[asort[::-1]] for i in idx)  # Descending order
+        peaks = np.column_stack(sortidx)
 
         # Get UB matrices for best peak voxels
         for peak in peaks:
