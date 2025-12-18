@@ -3,7 +3,10 @@ from __future__ import annotations
 import itertools
 import logging
 import math
+import os
 from time import time
+
+import psutil
 
 import boost_adaptbx.boost.python
 import libtbx
@@ -780,9 +783,14 @@ class _Manager:
         available_limit = available_memory * self.params.block.max_memory_usage
 
         # Get the maximum shoebox memory to estimate memory use for one process
-        memory_required_per_process = flex.max(
+        required_shoebox_memory = flex.max(
             self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
         )
+
+        # Get the current memory usage
+        current_memory_usage = psutil.Process(os.getpid()).memory_info().rss
+
+        memory_required_per_process = required_shoebox_memory + current_memory_usage
 
         # Compile a memory report
         report = ["Memory situation report:"]
@@ -792,6 +800,8 @@ class _Manager:
 
         _report("Available system memory", available_memory)
         _report("Maximum memory for processing", available_limit)
+        _report("Current memory usage", current_memory_usage)
+        _report("Memory required for shoeboxes", required_shoebox_memory)
         _report("Memory required per process", memory_required_per_process)
 
         output_level = logging.INFO
