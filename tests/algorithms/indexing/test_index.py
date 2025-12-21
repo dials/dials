@@ -345,6 +345,7 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmp_path, method):
         f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
         f"indexing.method={method}",
         "treat_single_image_as_still=False",
+        "joint_indexing=True",
     ]
     run_indexing(
         reflections,
@@ -486,7 +487,11 @@ def test_index_small_molecule_multi_sequence_4(dials_data, tmp_path):
     sequence_paths = [
         data_dir / f"multi_sweep-SWEEP{i + 1}-experiments.json" for i in range(4)
     ]
-    extra_args = ["known_symmetry.space_group=I4", "filter_ice=False"]
+    extra_args = [
+        "known_symmetry.space_group=I4",
+        "filter_ice=False",
+        "joint_indexing=True",
+    ]
     expected_unit_cell = uctbx.unit_cell((7.310, 7.310, 6.820, 90.000, 90.000, 90.000))
     expected_rmsds = (0.10, 0.7, 0.5)
     expected_hall_symbol = " I 4"
@@ -514,7 +519,7 @@ def test_index_small_molecule_multi_sequence_3(dials_data, tmp_path):
         str(data_dir / f"dials-191_sweep{i + 1}_imported.expt") for i in range(3)
     ]
     # max_refine is set to speed the test up
-    extra_args = ["filter_ice=False", "max_refine=10"]
+    extra_args = ["filter_ice=False", "max_refine=10", "joint_indexing=True"]
     expected_unit_cell = uctbx.unit_cell(
         (9.440, 15.313, 17.126, 90.073, 90.106, 79.248)
     )
@@ -592,6 +597,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
             shutil.which("dials.index"),
             lpe4_pickle,
             lpe4_expt,
+            "joint_indexing=True",
             "max_lattices=3",
         ],
         cwd=tmp_path,
@@ -611,6 +617,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_data, tmp_path):
             shutil.which("dials.index"),
             tmp_path / "indexed.expt",
             lpe4_pickle,
+            "joint_indexing=True",
             "max_lattices=2",
         ],
         cwd=tmp_path,
@@ -1087,6 +1094,7 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
             dials_data("l_cysteine_dials_output") / "indexed.expt",
             dials_data("l_cysteine_dials_output") / "indexed.refl",
             "max_lattices=2",
+            "joint_indexing=True",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -1108,6 +1116,7 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
             dials_data("l_cysteine_dials_output") / "indexed.expt",
             dials_data("l_cysteine_dials_output") / "indexed.refl",
             "max_lattices=2",
+            "joint_indexing=True",
             "minimum_angular_separation=0.001",
         ],
         cwd=tmp_path,
@@ -1153,7 +1162,7 @@ def test_rigaku_hypix_arc_150(dials_data, tmp_path):
         "strong.refl",
         "imported.expt",
         tmp_path,
-        [],
+        ["joint_indexing=True"],
         expected_unit_cell,
         expected_rmsds,
         expected_hall_symbol,
@@ -1192,7 +1201,7 @@ def test_rigaku_hypix_arc_100(dials_data, tmp_path):
         "strong.refl",
         "imported.expt",
         tmp_path,
-        [],
+        ["joint_indexing=True"],
         expected_unit_cell,
         expected_rmsds,
         expected_hall_symbol,
