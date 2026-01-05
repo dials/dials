@@ -414,7 +414,7 @@ class IhTable:
             self.Ih_table_blocks[j] = block.select_on_groups(~groups_for_free_set)
             # Now need to update dataset_info dict.
             removed_from_each_dataset = [
-                np.count_nonzero(free_block.Ih_table["dataset_id"].to_numpy() == i)
+                int(np.count_nonzero(free_block.Ih_table["dataset_id"].to_numpy() == i))
                 for i in range(0, block.n_datasets)
             ]
             n_removed = 0
@@ -432,7 +432,7 @@ class IhTable:
         n_refl = 0
         for id_ in datasets:
             dataset_sel = free_reflection_table["dataset_id"].to_numpy() == id_
-            n_refl += np.count_nonzero(dataset_sel)
+            n_refl += int(np.count_nonzero(dataset_sel))
             tables.append(free_reflection_table[dataset_sel])
             indices_lists.append(free_indices[dataset_sel])
         free_block = IhTableBlock(

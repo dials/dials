@@ -331,7 +331,7 @@ def test_10_crystals_with_stills_parameterisation(dials_data):
     working_params = working_phil.extract()
 
     # use the multi stills test data
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "multi_stills_combined.json"
     pickle_path = data_dir / "multi_stills_combined.pickle"
 
@@ -424,7 +424,7 @@ def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_data)
     working_params = working_phil.extract()
 
     # use the multi stills test data
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "multi_stills_combined.json"
     pickle_path = data_dir / "multi_stills_combined.pickle"
 

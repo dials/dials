@@ -194,7 +194,7 @@ def test_filtered_arrays_from_experiments_reflections():
 
 
 def test_filtered_arrays_from_experiments_reflections_with_batches(dials_data):
-    x4wide_dir = dials_data("x4wide_processed", pathlib=True)
+    x4wide_dir = dials_data("x4wide_processed")
     refl = flex.reflection_table.from_file(x4wide_dir / "AUTOMATIC_DEFAULT_scaled.refl")
     expts = ExperimentListFactory.from_serialized_format(
         x4wide_dir / "AUTOMATIC_DEFAULT_scaled.expt", check_format=False

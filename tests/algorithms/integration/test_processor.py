@@ -14,7 +14,7 @@ from dials_algorithms_integration_integrator_ext import JobList, max_memory_need
 
 
 def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
-    path = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    path = dials_data("centroid_test_data") / "experiments.json"
 
     exlist = ExperimentListFactory.from_json_file(path)[0]
     exlist.profile = Model(
