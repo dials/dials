@@ -427,11 +427,12 @@ class MaximumLikelihoodTarget:
         The MSE in local reflection coordinates
 
         """
-        mse = 0
+        mse = 0.0
         for i in range(len(self.data)):
             mbar = self.data[i].conditional.mean()
             xobs = self.data[i].mobs
-            mse += np.dot((xobs - mbar).T, xobs - mbar)
+            diff = xobs - mbar
+            mse += np.linalg.norm(diff) ** 2
         mse /= len(self.data)
         return mse
 
