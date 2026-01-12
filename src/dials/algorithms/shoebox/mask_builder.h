@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     int nrx,
     int nry,
     int nc,
-    const af::const_ref<double, af::c_grid<2> > &data2d) {
+    const af::const_ref<double, af::c_grid<2> >& data2d) {
     /*
     std::cout << "\n" << "nx=" << nx <<"\n" << "ny=" << ny <<"\n"
     << "nrx=" << nrx <<"\n" << "nry=" << nry <<"\n" << "nc=" << nc <<"\n";

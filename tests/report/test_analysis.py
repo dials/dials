@@ -212,7 +212,7 @@ def test_batch_dependent_properties(batch_array, data_array):
 
 
 def test_table_1_summary(dials_data):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     expts = load.experiment_list(location / "scaled_20_25.expt", check_format=False)
     refls = flex.reflection_table.from_file(location / "scaled_20_25.refl")
     # Get a miller array of real data and calculate an iotbx.merging_statistics

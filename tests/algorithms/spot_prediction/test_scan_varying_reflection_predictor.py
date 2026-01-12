@@ -11,7 +11,7 @@ from .test_scan_static_reflection_predictor import (  # noqa: F401, used as test
 
 class Data:
     def __init__(self, dials_data):
-        data_dir = dials_data("misc_regression", pathlib=True)
+        data_dir = dials_data("misc_regression")
         path = str(data_dir / "prediction-varying-crystal.expt")
 
         from dxtbx.model.experiment_list import ExperimentListFactory

@@ -28,9 +28,9 @@ namespace dials { namespace algorithms {
      * Initialise the sampler
      */
     StereographicProjectionSampler(const std::shared_ptr<BeamBase> beam,
-                                   const Detector &detector,
-                                   const Goniometer &goniometer,
-                                   const Scan &scan,
+                                   const Detector& detector,
+                                   const Goniometer& goniometer,
+                                   const Scan& scan,
                                    double dmin,
                                    std::size_t num_scan_points)
         : num_profiles_(9), num_scan_points_(num_scan_points) {}

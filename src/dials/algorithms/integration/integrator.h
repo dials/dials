@@ -107,7 +107,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The group
      */
-    const Group &operator[](std::size_t index) const {
+    const Group& operator[](std::size_t index) const {
       DIALS_ASSERT(index < size());
       return groups_[index];
     }
@@ -165,7 +165,7 @@ namespace dials { namespace algorithms {
 
     JobList() {}
 
-    JobList(tiny<int, 2> expr, const af::const_ref<tiny<int, 2> > &jobs) {
+    JobList(tiny<int, 2> expr, const af::const_ref<tiny<int, 2> >& jobs) {
       DIALS_ASSERT(expr[1] > expr[0]);
       DIALS_ASSERT(jobs.size() > 0);
       DIALS_ASSERT(jobs[0][1] > jobs[0][0]);
@@ -199,7 +199,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The requested job
      */
-    const Job &operator[](std::size_t index) const {
+    const Job& operator[](std::size_t index) const {
       DIALS_ASSERT(index < jobs_.size());
       return jobs_[index];
     }
@@ -271,8 +271,8 @@ namespace dials { namespace algorithms {
     /**
      * Construct the lookup
      */
-    JobRangeLookup(const JobList &jobs) {
-      const GroupList &groups = jobs.groups();
+    JobRangeLookup(const JobList& jobs) {
+      const GroupList& groups = jobs.groups();
       DIALS_ASSERT(0 == groups[0].expr()[0]);
       for (std::size_t i = 0; i < groups.size(); ++i) {
         for (std::size_t j = groups[i].expr()[0]; j < groups[i].expr()[1]; ++j) {
@@ -370,10 +370,10 @@ namespace dials { namespace algorithms {
    */
   class ReflectionLookup {
   public:
-    ReflectionLookup(const af::const_ref<int> &id,
-                     const af::const_ref<std::size_t> &flags,
-                     const af::const_ref<int6> &bbox,
-                     const JobList &jobs)
+    ReflectionLookup(const af::const_ref<int>& id,
+                     const af::const_ref<std::size_t>& flags,
+                     const af::const_ref<int6>& bbox,
+                     const JobList& jobs)
         : jobs_(jobs) {
       DIALS_ASSERT(jobs_.size() > 0);
 
@@ -396,7 +396,7 @@ namespace dials { namespace algorithms {
         std::size_t eid = id[index];
         int z0 = bbox[index][4];
         int z1 = bbox[index][5];
-        const std::size_t &f = flags[index];
+        const std::size_t& f = flags[index];
         if (!(f & af::DontIntegrate)) {
           std::size_t j0 = lookup.first(eid, z0);
           std::size_t j1 = lookup.last(eid, z1 - 1);
@@ -444,7 +444,7 @@ namespace dials { namespace algorithms {
       indices_.resize(offset_.back());
       std::size_t k = 0;
       for (std::size_t i = 0; i < indices.size(); ++i) {
-        const job_list_type &ind = indices[i];
+        const job_list_type& ind = indices[i];
         for (std::size_t j = 0; j < ind.size(); ++j, ++k) {
           DIALS_ASSERT(k < indices_.size());
           indices_[k] = ind[j];
@@ -464,7 +464,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The block indices
      */
-    const JobList::Job &job(std::size_t index) const {
+    const JobList::Job& job(std::size_t index) const {
       DIALS_ASSERT(index < jobs_.size());
       return jobs_[index];
     }
@@ -499,7 +499,7 @@ namespace dials { namespace algorithms {
      * @param groups The group that each experiment is in
      * @param data The reflection data
      */
-    ReflectionManager(const JobList &jobs, af::reflection_table data)
+    ReflectionManager(const JobList& jobs, af::reflection_table data)
         : lookup_(init(jobs, data)), data_(data), finished_(lookup_.size(), false) {
       DIALS_ASSERT(finished_.size() > 0);
     }
@@ -529,7 +529,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The job
      */
-    const JobList::Job &job(std::size_t index) const {
+    const JobList::Job& job(std::size_t index) const {
       return lookup_.job(index);
     }
 
@@ -604,7 +604,7 @@ namespace dials { namespace algorithms {
     /**
      * Initialise the indexer
      */
-    ReflectionLookup init(const JobList &jobs, af::reflection_table data) {
+    ReflectionLookup init(const JobList& jobs, af::reflection_table data) {
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.size() > 0);
       DIALS_ASSERT(data.contains("id"));

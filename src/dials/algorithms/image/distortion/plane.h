@@ -16,7 +16,7 @@ namespace dials { namespace algorithms {
 
   class PlaneLinearTransformationMaps {
   public:
-    PlaneLinearTransformationMaps(const Panel &panel,
+    PlaneLinearTransformationMaps(const Panel& panel,
                                   const mat2<double> matrix,
                                   const vec3<double> fast,
                                   const vec3<double> slow,

@@ -346,7 +346,7 @@ class Target:
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
             # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
-            scale = np.count_nonzero(wij_matrix) / np.sum(wij_matrix)
+            scale = int(np.count_nonzero(wij_matrix)) / np.sum(wij_matrix)
             wij_matrix *= scale
         else:
             ## No weights - i.e. equal weights in places where we can calculate an rij value,
@@ -449,8 +449,8 @@ class Target:
         # the sample used to calculate that coefficient
         pairwise_combos = itertools.combinations(np.isfinite(all_intensities), 2)
 
-        def sample_size(x, y):
-            pairs = np.count_nonzero(x & y)
+        def sample_size(x, y) -> int:
+            pairs = int(np.count_nonzero(x & y))
             if pairs < self._min_pairs:
                 return 0
             else:
@@ -484,7 +484,7 @@ class Target:
                         + "\nIncreasing min_reflections may overcome this problem."
                     )
             # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
-            scale = np.count_nonzero(wij) / np.sum(wij)
+            scale = int(np.count_nonzero(wij)) / np.sum(wij)
             wij *= scale
         else:
             ## we are not going to use weights, so set them to constant weights
