@@ -53,7 +53,7 @@ class extinctions(extinctions_registry):
     def analyse(self, scale_I_to=None):
         """Analyses the given miller array and collects statistics on present and
         unique extinction elements. Unique elements exclude 'shadowed' elements.
-        Use scake_I_to to 'normalise' view between different datasets.
+        Use scale_I_to to 'normalise' view between different datasets.
         """
         if scale_I_to is None:
             scale_I_to = 0.0

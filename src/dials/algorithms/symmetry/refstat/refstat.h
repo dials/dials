@@ -238,7 +238,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
           space_groups[i].get_name(), &space_groups[i]));
       }
 
-      /* importanet to reserve enough to make sure memory is not reallocated as
+      /* important to reserve enough to make sure memory is not reallocated as
       addresses are taken
       */
       elements.reserve(20);
