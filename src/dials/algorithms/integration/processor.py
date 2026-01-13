@@ -796,7 +796,7 @@ class _Manager:
         report = ["Memory situation report:"]
 
         def _report(description, numbytes):
-            report.append(f"  {description:<50}: {numbytes / 1e9:5.1f} GB")
+            report.append(f"  {description:<50}: {numbytes / 1e6:5.1f} MB")
 
         _report("Available system memory", available_memory)
         _report("Maximum memory for processing", available_limit)
