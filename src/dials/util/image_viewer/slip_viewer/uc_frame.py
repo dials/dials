@@ -68,6 +68,7 @@ class UCSettingsPanel(wx.Panel):
             self._spacegroup = "P1"
 
         self._show_hkl = self.phil_params.calibrate_unit_cell.show_hkl
+        self._show_hkl_labels = True
 
         self._cell_control_names = [
             "uc_a_ctrl",
@@ -320,6 +321,13 @@ class UCSettingsPanel(wx.Panel):
         sizer.Add(box)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
+        self.show_hkl_labels_ctrl = wx.CheckBox(self, -1, "Show HKLs")
+        self.show_hkl_labels_ctrl.SetValue(self._show_hkl_labels)
+        box.Add(self.show_hkl_labels_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        self.Bind(wx.EVT_CHECKBOX, self.OnShowHKL, self.show_hkl_labels_ctrl)
+        sizer.Add(box)
+
+        box = wx.BoxSizer(wx.HORIZONTAL)
         self.clear_button = wx.Button(self, -1, "Clear")
         box.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
@@ -338,6 +346,9 @@ class UCSettingsPanel(wx.Panel):
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
             self._ring_layer = None
+        if hasattr(self, "_hkl_text_layer") and self._hkl_text_layer is not None:
+            self._pyslip.DeleteLayer(self._hkl_text_layer)
+            self._hkl_text_layer = None
 
     def OnSpinCenter(self, event):
         obj = event.EventObject
@@ -364,6 +375,12 @@ class UCSettingsPanel(wx.Panel):
     def OnSpaceGroup(self, event):
         obj = event.EventObject
         self._spacegroup = obj.GetValue()
+
+        self.DrawRings()
+
+    def OnShowHKL(self, event):
+        obj = event.EventObject
+        self._show_hkl_labels = obj.GetValue()
 
         self.DrawRings()
 
@@ -466,10 +483,21 @@ class UCSettingsPanel(wx.Panel):
             for pxl in L_pixels
         ]
 
+        hkl_text_data = []
+        metadata = {
+            "placement": "cc",
+            "colour": "magenta",
+        }
+        for ring, spacing in zip(ring_data, spacings):
+            x, y = ring[0] + ring[2]["radius"], ring[1]
+            txt_str = str(spacing[0])
+            hkl_text_data.append((x, y, txt_str, metadata))
+
         # Remove the old ring layer, and draw a new one.
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
             self._ring_layer = None
+
         self._ring_layer = self._pyslip.AddPointLayer(
             ring_data,
             map_rel=True,
@@ -478,6 +506,24 @@ class UCSettingsPanel(wx.Panel):
             renderer=self._draw_rings_layer,
             name="<ring_layer>",
         )
+
+        # Remove the old HKL text layer, and draw a new one.
+        if hasattr(self, "_hkl_text_layer") and self._hkl_text_layer is not None:
+            self._pyslip.DeleteLayer(self._hkl_text_layer)
+            self._hkl_text_layer = None
+
+        if hkl_text_data and self._show_hkl_labels:
+            self._hkl_text_layer = self._pyslip.AddTextLayer(
+                hkl_text_data,
+                map_rel=True,
+                visible=True,
+                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                selectable=False,
+                name="<hkl_text_layer>",
+                fontsize=10,
+                textcolour="#3b3b3b",
+            )
+
         panel = detector[0]
         fast = col(panel.get_fast_axis())
         slow = col(panel.get_slow_axis())
