@@ -462,7 +462,8 @@ class UCSettingsPanel(wx.Panel):
 
         # XXX Transparency?
         ring_data = [
-            (center[0], center[1], {"colour": "red", "radius": pxl}) for pxl in L_pixels
+            (center[0], center[1], {"colour": "magenta", "radius": pxl})
+            for pxl in L_pixels
         ]
 
         # Remove the old ring layer, and draw a new one.
