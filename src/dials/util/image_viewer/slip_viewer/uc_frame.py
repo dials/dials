@@ -29,6 +29,15 @@ class UCSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
+        # 1. Calculate the width for 10 characters + some padding
+        # We use '0' as a standard width character.
+        char_w, char_h = self.GetTextExtent("0" * 10)
+
+        # For FloatSpin, we add ~80 pixels for the spin buttons
+        self.spin_size = (char_w + 80, -1)
+        # For standard TextCtrl
+        self.text_size = (char_w + 10, -1)
+
         self.phil_params = args[0].phil_params
 
         # Needed to draw and delete the rings.  XXX Applies to
@@ -76,6 +85,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[0],
             value=self._cell[0],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_a, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -88,6 +98,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[3],
             value=self._cell[3],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_alpha,
@@ -109,6 +120,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[1],
             value=self._cell[1],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_b, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -121,6 +133,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[4],
             value=self._cell[4],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_beta, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -139,6 +152,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[2],
             value=self._cell[2],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_c, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -151,6 +165,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[5],
             value=self._cell[5],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_gamma,
@@ -169,7 +184,7 @@ class UCSettingsPanel(wx.Panel):
         box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.space_group_ctrl = wx.TextCtrl(
-            self, name="space group", value=self._spacegroup
+            self, name="space group", value=self._spacegroup, size=self.text_size
         )
         box.Add(
             self.space_group_ctrl,
@@ -195,6 +210,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name="Detector Distance",
             value=img.get_detector_distance(),
+            size=self.spin_size,
         )
         self.distance_ctrl.SetIncrement(0.5)
         box.Add(
@@ -213,7 +229,11 @@ class UCSettingsPanel(wx.Panel):
         img = self.GetParent().GetParent()._img
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.wavelength_ctrl = FloatSpin(
-            self, digits=4, name="Wavelength", value=img.get_wavelength()
+            self,
+            digits=4,
+            name="Wavelength",
+            value=img.get_wavelength(),
+            size=self.spin_size,
         )
         self.wavelength_ctrl.SetIncrement(0.05)
         box.Add(
@@ -235,7 +255,11 @@ class UCSettingsPanel(wx.Panel):
             self.d_min = 3.5
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.d_min_ctrl = FloatSpin(
-            self, digits=self.digits, name="d_min", value=self.d_min
+            self,
+            digits=self.digits,
+            name="d_min",
+            value=self.d_min,
+            size=self.spin_size,
         )
         box.Add(
             self.d_min_ctrl,
@@ -254,7 +278,11 @@ class UCSettingsPanel(wx.Panel):
         box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.spinner_fast = FloatSpin(
-            self, digits=self.digits, name="fast_ctrl", value=self._center[0]
+            self,
+            digits=self.digits,
+            name="fast_ctrl",
+            value=self._center[0],
+            size=self.spin_size,
         )
         box.Add(
             self.spinner_fast,
@@ -271,7 +299,11 @@ class UCSettingsPanel(wx.Panel):
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_fast)
 
         self.spinner_slow = FloatSpin(
-            self, digits=self.digits, name="slow_ctrl", value=self._center[1]
+            self,
+            digits=self.digits,
+            name="slow_ctrl",
+            value=self._center[1],
+            size=self.spin_size,
         )
         box.Add(
             self.spinner_slow,
