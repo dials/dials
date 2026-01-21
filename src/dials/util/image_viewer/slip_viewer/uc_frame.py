@@ -29,13 +29,13 @@ class UCSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        # 1. Calculate the width for 10 characters + some padding
+        # Calculate the width for 10 characters + some padding
         # We use '0' as a standard width character.
         char_w, char_h = self.GetTextExtent("0" * 10)
 
         # For FloatSpin, we add ~80 pixels for the spin buttons
         self.spin_size = (char_w + 80, -1)
-        # For standard TextCtrl
+        # For standard TextCtrl add 10 pixels for padding
         self.text_size = (char_w + 10, -1)
 
         self.phil_params = args[0].phil_params
