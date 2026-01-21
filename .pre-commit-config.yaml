@@ -15,6 +15,7 @@ repos:
     args: ['--maxkb=200']
   - id: check-yaml
     args: ['--allow-multiple-documents']
+    exclude: ^(.conda-envs/.*-dependencies.yaml|dependencies.yaml)$
   - id: no-commit-to-branch
     name: "Don't commit to 'main' directly"
 
@@ -43,3 +44,8 @@ repos:
       https://github.com/dials/dials.github.io
     language: fail
     files: '.*\.png$'
+  - id: regenerate_fixed_deps
+    name: Regenerate fixed dependency lists
+    language: python
+    entry: .conda-envs/regenerate.py
+    files: ^(.conda-envs/.*|dependencies.yaml|util/parse_dependency_selectors.py)$
