@@ -29,6 +29,15 @@ class UCSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
+        # Calculate the width for 10 characters + some padding
+        # We use '0' as a standard width character.
+        char_w, char_h = self.GetTextExtent("0" * 10)
+
+        # For FloatSpin, we add ~80 pixels for the spin buttons
+        self.spin_size = (char_w + 80, -1)
+        # For standard TextCtrl add 10 pixels for padding
+        self.text_size = (char_w + 10, -1)
+
         self.phil_params = args[0].phil_params
 
         # Needed to draw and delete the rings.  XXX Applies to
@@ -59,6 +68,7 @@ class UCSettingsPanel(wx.Panel):
             self._spacegroup = "P1"
 
         self._show_hkl = self.phil_params.calibrate_unit_cell.show_hkl
+        self._show_hkl_labels = True
 
         self._cell_control_names = [
             "uc_a_ctrl",
@@ -76,6 +86,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[0],
             value=self._cell[0],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_a, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -88,6 +99,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[3],
             value=self._cell[3],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_alpha,
@@ -109,6 +121,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[1],
             value=self._cell[1],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_b, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -121,6 +134,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[4],
             value=self._cell[4],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_beta, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -139,6 +153,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[2],
             value=self._cell[2],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_c, 0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5
@@ -151,6 +166,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name=self._cell_control_names[5],
             value=self._cell[5],
+            size=self.spin_size,
         )
         box.Add(
             self.uc_gamma,
@@ -169,7 +185,7 @@ class UCSettingsPanel(wx.Panel):
         box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.space_group_ctrl = wx.TextCtrl(
-            self, name="space group", value=self._spacegroup
+            self, name="space group", value=self._spacegroup, size=self.text_size
         )
         box.Add(
             self.space_group_ctrl,
@@ -195,6 +211,7 @@ class UCSettingsPanel(wx.Panel):
             digits=self.digits,
             name="Detector Distance",
             value=img.get_detector_distance(),
+            size=self.spin_size,
         )
         self.distance_ctrl.SetIncrement(0.5)
         box.Add(
@@ -213,7 +230,11 @@ class UCSettingsPanel(wx.Panel):
         img = self.GetParent().GetParent()._img
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.wavelength_ctrl = FloatSpin(
-            self, digits=4, name="Wavelength", value=img.get_wavelength()
+            self,
+            digits=4,
+            name="Wavelength",
+            value=img.get_wavelength(),
+            size=self.spin_size,
         )
         self.wavelength_ctrl.SetIncrement(0.05)
         box.Add(
@@ -235,7 +256,11 @@ class UCSettingsPanel(wx.Panel):
             self.d_min = 3.5
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.d_min_ctrl = FloatSpin(
-            self, digits=self.digits, name="d_min", value=self.d_min
+            self,
+            digits=self.digits,
+            name="d_min",
+            value=self.d_min,
+            size=self.spin_size,
         )
         box.Add(
             self.d_min_ctrl,
@@ -254,7 +279,11 @@ class UCSettingsPanel(wx.Panel):
         box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.spinner_fast = FloatSpin(
-            self, digits=self.digits, name="fast_ctrl", value=self._center[0]
+            self,
+            digits=self.digits,
+            name="fast_ctrl",
+            value=self._center[0],
+            size=self.spin_size,
         )
         box.Add(
             self.spinner_fast,
@@ -271,7 +300,11 @@ class UCSettingsPanel(wx.Panel):
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_fast)
 
         self.spinner_slow = FloatSpin(
-            self, digits=self.digits, name="slow_ctrl", value=self._center[1]
+            self,
+            digits=self.digits,
+            name="slow_ctrl",
+            value=self._center[1],
+            size=self.spin_size,
         )
         box.Add(
             self.spinner_slow,
@@ -285,6 +318,13 @@ class UCSettingsPanel(wx.Panel):
             wx.ALL | wx.ALIGN_CENTER_VERTICAL,
             5,
         )
+        sizer.Add(box)
+
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.show_hkl_labels_ctrl = wx.CheckBox(self, -1, "Show HKLs")
+        self.show_hkl_labels_ctrl.SetValue(self._show_hkl_labels)
+        box.Add(self.show_hkl_labels_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        self.Bind(wx.EVT_CHECKBOX, self.OnShowHKL, self.show_hkl_labels_ctrl)
         sizer.Add(box)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -306,6 +346,9 @@ class UCSettingsPanel(wx.Panel):
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
             self._ring_layer = None
+        if hasattr(self, "_hkl_text_layer") and self._hkl_text_layer is not None:
+            self._pyslip.DeleteLayer(self._hkl_text_layer)
+            self._hkl_text_layer = None
 
     def OnSpinCenter(self, event):
         obj = event.EventObject
@@ -332,6 +375,12 @@ class UCSettingsPanel(wx.Panel):
     def OnSpaceGroup(self, event):
         obj = event.EventObject
         self._spacegroup = obj.GetValue()
+
+        self.DrawRings()
+
+    def OnShowHKL(self, event):
+        obj = event.EventObject
+        self._show_hkl_labels = obj.GetValue()
 
         self.DrawRings()
 
@@ -430,13 +479,25 @@ class UCSettingsPanel(wx.Panel):
 
         # XXX Transparency?
         ring_data = [
-            (center[0], center[1], {"colour": "red", "radius": pxl}) for pxl in L_pixels
+            (center[0], center[1], {"colour": "magenta", "radius": pxl})
+            for pxl in L_pixels
         ]
+
+        hkl_text_data = []
+        metadata = {
+            "placement": "cc",
+            "colour": "magenta",
+        }
+        for ring, spacing in zip(ring_data, spacings):
+            x, y = ring[0] + ring[2]["radius"], ring[1]
+            txt_str = str(spacing[0])
+            hkl_text_data.append((x, y, txt_str, metadata))
 
         # Remove the old ring layer, and draw a new one.
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
             self._ring_layer = None
+
         self._ring_layer = self._pyslip.AddPointLayer(
             ring_data,
             map_rel=True,
@@ -445,6 +506,24 @@ class UCSettingsPanel(wx.Panel):
             renderer=self._draw_rings_layer,
             name="<ring_layer>",
         )
+
+        # Remove the old HKL text layer, and draw a new one.
+        if hasattr(self, "_hkl_text_layer") and self._hkl_text_layer is not None:
+            self._pyslip.DeleteLayer(self._hkl_text_layer)
+            self._hkl_text_layer = None
+
+        if hkl_text_data and self._show_hkl_labels:
+            self._hkl_text_layer = self._pyslip.AddTextLayer(
+                hkl_text_data,
+                map_rel=True,
+                visible=True,
+                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                selectable=False,
+                name="<hkl_text_layer>",
+                fontsize=10,
+                textcolour="#3b3b3b",
+            )
+
         panel = detector[0]
         fast = col(panel.get_fast_axis())
         slow = col(panel.get_slow_axis())

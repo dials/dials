@@ -221,7 +221,7 @@ class EllipseSettingsPanel(wx.Panel):
             map_rel=True,
             color="#00ffff",
             radius=5,
-            visible=True,
+            visible=self._show_ellipse,
             # show_levels=[3,4],
             name="<ellipse_layer>",
         )
