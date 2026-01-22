@@ -1,3 +1,37 @@
+DIALS 3.27.0 (2026-01-22)
+=========================
+
+Features
+--------
+
+- Add psana2 support, which allows reading data from LCLS-II file formats (`#3038 <https://github.com/dials/dials/issues/3038>`_)
+- Add tof_integrate with 1D and 3D profile fitting methods for time-of-flight data. (`#3039 <https://github.com/dials/dials/issues/3039>`_)
+- Enable `dials.export` to output hklf2 files. (`#3047 <https://github.com/dials/dials/issues/3047>`_)
+- ``dials.index``: change behaviour of ``joint_index`` option to require manual assignment for multi-sweep data (`#3051 <https://github.com/dials/dials/issues/3051>`_)
+- ``dials.correlation_matrix``: Use silhouette score for quantifying cluster solution quality and include dataset labels on clustering plots. (`#3060 <https://github.com/dials/dials/issues/3060>`_)
+- ``dials.image_viewer``: Add a new ellipse tool to aid the calculation of elliptical distortion parameters. (`#3067 <https://github.com/dials/dials/issues/3067>`_)
+
+
+Bugfixes
+--------
+
+- Fix failed builds on Visual Studio 2022 due to excessively large obj files. (`#3019 <https://github.com/dials/dials/issues/3019>`_)
+- ``dials.cosym``: Fix crash if run with lattice_group parameter. (`#3048 <https://github.com/dials/dials/issues/3048>`_)
+- Reduce memory footprint of the ``Importer`` used by the DIALS ``ArgumentParser`` (`#3072 <https://github.com/dials/dials/issues/3072>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- Remove IOTA and Prime from installation. These are both deprecated. (`#3030 <https://github.com/dials/dials/issues/3030>`_)
+
+
+Misc
+----
+
+- `#3046 <https://github.com/dials/dials/issues/3046>`_, `#3057 <https://github.com/dials/dials/issues/3057>`_, `#3059 <https://github.com/dials/dials/issues/3059>`_, `#3063 <https://github.com/dials/dials/issues/3063>`_, `#3065 <https://github.com/dials/dials/issues/3065>`_, `#3077 <https://github.com/dials/dials/issues/3077>`_
+
+
 DIALS 3.26.0 (2025-11-06)
 =========================
 
