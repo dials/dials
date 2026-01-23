@@ -96,16 +96,18 @@ def get_cs_hkl(file_base):
     return cs, hkl_file
 
 
-def load_miller_array_from_hkl(file_base):
+def load_miller_array_and_centering_from_hkl(file_base):
     cs, hkl_file = get_cs_hkl(str(file_base))
     assert cs is not None
+    original_sg_name = cs.space_group().match_tabulated_settings().hermann_mauguin()
+    centering = original_sg_name[0]
     logger.info(
         "Original space group: %s"
         % (cs.space_group().match_tabulated_settings().hermann_mauguin())
     )
     miller_array = get_miller_array(cs.unit_cell(), hkl_file)
     logger.info("Read in %s reflections" % (len(miller_array.indices())))
-    return miller_array
+    return miller_array, centering
 
 
 def get_miller_array(cell, hkl_file):
@@ -121,7 +123,7 @@ def get_miller_array(cell, hkl_file):
     return reflections_server.get_miller_arrays(None)[0]
 
 
-def check_reflections(miller_array):
+def check_reflections(miller_array, centering="P"):
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
@@ -147,7 +149,7 @@ def check_reflections(miller_array):
     sa.analyse(scale_I_to=10000)
     logger.info(sa.show_stats())
     logger.info("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
-    matches = sa.get_all_matching_space_groups()
+    matches = sa.get_all_matching_space_groups(centering=centering)
 
     for sg, mp in matches:
         t = refstat.merge_test(miller_array.indices(), data, sigmas)
@@ -198,8 +200,8 @@ def check_samples(samples_dir):
     for sample_base in test_list:
         try:
             logger.info("Testing: %s" % sample_base)
-            ma = load_miller_array_from_hkl(sample_base)
-            check_reflections(ma)
+            ma, centering = load_miller_array_and_centering_from_hkl(sample_base)
+            check_reflections(ma, centering)
         except Exception as e:
             import traceback
 
@@ -332,6 +334,12 @@ def check_dials_input(experiments, reflections):
         reflections["variance"] = reflections["intensity.sum.variance"]
 
     cs = crystal.symmetry(experiments[0].crystal.get_unit_cell(), "P1")
+    centering = (
+        experiments[0]
+        .crystal.get_space_group()
+        .match_tabulated_settings()
+        .hermann_mauguin()[0]
+    )
     miller_set = cctbx.miller.set(
         crystal_symmetry=cs,
         indices=reflections["miller_index"],
@@ -344,7 +352,7 @@ def check_dials_input(experiments, reflections):
         cctbx.miller.array_info(source="DIALS", source_type="reflection_tables")
     )
 
-    check_reflections(i_obs)
+    check_reflections(i_obs, centering)
 
 
 @dials.util.show_mail_on_error()
@@ -391,8 +399,8 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     elif params.check_file and os.path.exists(params.check_file):
         check_base = os.path.splitext(params.check_file)[0]
         logger.info("Testing: %s" % check_base)
-        ma = load_miller_array_from_hkl(check_base)
-        check_reflections(ma)
+        ma, centering = load_miller_array_and_centering_from_hkl(check_base)
+        check_reflections(ma, centering)
         sys.exit(0)
 
     elif params.sample_dir and os.path.exists(params.sample_dir):
