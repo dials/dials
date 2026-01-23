@@ -13,7 +13,8 @@ from iotbx import reflection_file_reader, reflection_file_utils
 
 import dials.util.log
 from dials.algorithms.symmetry import refstat
-from dials.util.options import ArgumentParser
+from dials.util.multi_dataset_handling import parse_multiple_datasets
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 xr = refstat.registry()
@@ -83,14 +84,16 @@ def get_cs_hkl(file_base):
     return cs, hkl_file
 
 
-def check_reflections(file_base):
+def load_miller_array_from_hkl(file_base):
     cs, hkl_file = get_cs_hkl(str(file_base))
     assert cs is not None
     logger.info(
         "Original space group: %s"
         % (cs.space_group().match_tabulated_settings().hermann_mauguin())
     )
-    check_reflections_(cs.unit_cell(), hkl_file)
+    miller_array = get_miller_array(cs.unit_cell(), hkl_file)
+    logger.info("Read in %s reflections" % (len(miller_array.indices())))
+    return miller_array
 
 
 def get_miller_array(cell, hkl_file):
@@ -106,9 +109,7 @@ def get_miller_array(cell, hkl_file):
     return reflections_server.get_miller_arrays(None)[0]
 
 
-def check_reflections_(cell, hkl_file):
-    miller_array = get_miller_array(cell, hkl_file)
-    logger.info("Read in %s reflections" % (len(miller_array.indices())))
+def check_reflections(miller_array):
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
@@ -185,7 +186,8 @@ def check_samples(samples_dir):
     for sample_base in test_list:
         try:
             logger.info("Testing: %s" % sample_base)
-            check_reflections(sample_base)
+            ma = load_miller_array_from_hkl(sample_base)
+            check_reflections(ma)
         except Exception as e:
             import traceback
 
@@ -261,8 +263,8 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     parser = ArgumentParser(
         usage=usage,
         phil=phil,
-        read_reflections=False,
-        read_experiments=False,
+        read_reflections=True,
+        read_experiments=True,
         check_format=False,
         epilog=help_message,
     )
@@ -281,14 +283,24 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
+    # Run analysis in the various modes
+    if params.input.experiments and params.input.reflections:
+        reflections, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
+        reflections = parse_multiple_datasets(reflections)
+        print("DIALS input files not yet supported.")
+
     if [params.sample_dir, params.check_dir, params.check_file].count(None) == 3:
+        parser.print_help()
         logger.info("No test paths provided. Only performing a basic test.")
         logger.info(basics())
 
     if params.check_file and os.path.exists(params.check_file):
         check_base = os.path.splitext(params.check_file)[0]
         logger.info("Testing: %s" % check_base)
-        check_reflections(check_base)
+        ma = load_miller_array_from_hkl(check_base)
+        check_reflections(ma)
 
     if params.sample_dir and os.path.exists(params.sample_dir):
         check_samples(params.sample_dir)
