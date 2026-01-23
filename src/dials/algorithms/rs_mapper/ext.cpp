@@ -34,7 +34,8 @@ namespace recviewer { namespace ext {
     return ret;
   }
 
-  static void fill_voxels(const af::flex_int& image,
+  template <typename ImageType>
+  static void fill_voxels(const ImageType& image,
                           af::flex_double& grid,
                           af::flex_int& counts,
                           const flex_vec3_double& rotated_S,
@@ -66,10 +67,15 @@ namespace recviewer { namespace ext {
     }
   }
 
+  // Define specific pointers to the template instances
+  auto fill_voxels_int = &fill_voxels<af::flex_int>;
+  auto fill_voxels_double = &fill_voxels<af::flex_double>;
+
   void init_module() {
     using namespace boost::python;
     def("get_target_pixels", get_target_pixels);
-    def("fill_voxels", fill_voxels);
+    def("fill_voxels", fill_voxels_int);
+    def("fill_voxels", fill_voxels_double);
     def("normalize_voxels", normalize_voxels);
   }
 
