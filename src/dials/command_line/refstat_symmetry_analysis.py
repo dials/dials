@@ -31,7 +31,7 @@ from dials.util.version import dials_version
 
 xr = refstat.registry()
 
-logger = logging.getLogger("dials.command_line.refstat_symmetry_analysis")
+logger = logging.getLogger("dev.dials.command_line.refstat_symmetry_analysis")
 
 phil_scope = libtbx.phil.parse(
     """
