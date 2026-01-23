@@ -3,17 +3,29 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import time
 from pathlib import Path
 
+import cctbx.miller
 import iotbx
 import libtbx.phil
 from cctbx import crystal
 from iotbx import reflection_file_reader, reflection_file_utils
 
 import dials.util.log
-from dials.algorithms.symmetry import refstat
-from dials.util.multi_dataset_handling import parse_multiple_datasets
+from dials.algorithms.symmetry import (
+    get_subset_for_symmetry,
+    refstat,
+    resolution_filter_from_reflections_experiments,
+)
+from dials.array_family import flex
+from dials.command_line.symmetry import phil_scope as symmetry_phil_scope
+from dials.util.filter_reflections import filter_reflection_table
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+)
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -256,6 +268,85 @@ def check_dir(root_):
     return stats
 
 
+def check_dials_input(experiments, reflections):
+    # Perform the same steps that dials.symmetry does to prepare the data
+    params = symmetry_phil_scope.extract()
+    refls_for_sym = get_subset_for_symmetry(
+        experiments, reflections, params.exclude_images
+    )
+    d_min = resolution_filter_from_reflections_experiments(
+        refls_for_sym,
+        experiments,
+        params.min_i_mean_over_sigma_mean,
+        params.min_cc_half,
+    )
+    d_max = None
+    if len(reflections) > 1:
+        reflection_table = flex.reflection_table()
+        for table in refls_for_sym:
+            reflection_table.extend(table)
+    else:
+        reflection_table = refls_for_sym[0]
+
+    # Filter reflections and make an intensity choice
+    partiality_threshold = 0.99
+    if (
+        "inverse_scale_factor" in reflection_table
+        and "intensity.scale.value" in reflection_table
+    ):
+        logger.info("Performing systematic absence checks on scaled data")
+        reflections = filter_reflection_table(
+            reflection_table,
+            intensity_choice=["scale"],
+            d_min=d_min,
+            d_max=d_max,
+            partiality_threshold=partiality_threshold,
+        )
+        reflections["intensity"] = reflections["intensity.scale.value"]
+        reflections["variance"] = reflections["intensity.scale.variance"]
+    elif "intensity.prf.value" in reflection_table:
+        logger.info(
+            "Performing systematic absence checks on unscaled profile-integrated data"
+        )
+        reflections = filter_reflection_table(
+            reflection_table,
+            intensity_choice=["profile"],
+            d_min=d_min,
+            d_max=d_max,
+            partiality_threshold=partiality_threshold,
+        )
+        reflections["intensity"] = reflections["intensity.prf.value"]
+        reflections["variance"] = reflections["intensity.prf.variance"]
+    else:
+        logger.info(
+            "Performing systematic absence checks on unscaled summation-integrated data"
+        )
+        reflections = filter_reflection_table(
+            reflection_table,
+            intensity_choice=["sum"],
+            d_min=d_min,
+            d_max=d_max,
+            partiality_threshold=partiality_threshold,
+        )
+        reflections["intensity"] = reflections["intensity.sum.value"]
+        reflections["variance"] = reflections["intensity.sum.variance"]
+
+    cs = crystal.symmetry(experiments[0].crystal.get_unit_cell(), "P1")
+    miller_set = cctbx.miller.set(
+        crystal_symmetry=cs,
+        indices=reflections["miller_index"],
+        anomalous_flag=False,
+    )
+    i_obs = cctbx.miller.array(miller_set, data=reflections["intensity"])
+    i_obs.set_observation_type_xray_intensity()
+    i_obs.set_sigmas(cctbx.array_family.flex.sqrt(reflections["variance"]))
+    i_obs.set_info(
+        cctbx.miller.array_info(source="DIALS", source_type="reflection_tables")
+    )
+
+    check_reflections(i_obs)
+
+
 @dials.util.show_mail_on_error()
 def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     usage = "dev.dials.refstat_symmetry_analysis [options]"
@@ -289,7 +380,13 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
             params.input.reflections, params.input.experiments
         )
         reflections = parse_multiple_datasets(reflections)
-        print("DIALS input files not yet supported.")
+        try:
+            experiments, reflections = assign_unique_identifiers(
+                experiments, reflections
+            )
+            check_dials_input(experiments, reflections)
+        except ValueError as e:
+            sys.exit(e)
 
     if [params.sample_dir, params.check_dir, params.check_file].count(None) == 3:
         parser.print_help()
