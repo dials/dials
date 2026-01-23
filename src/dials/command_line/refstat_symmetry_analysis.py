@@ -385,26 +385,29 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
                 experiments, reflections
             )
             check_dials_input(experiments, reflections)
-        except ValueError as e:
-            sys.exit(e)
+        except ValueError:
+            pass
 
-    if [params.sample_dir, params.check_dir, params.check_file].count(None) == 3:
-        parser.print_help()
-        logger.info("No test paths provided. Only performing a basic test.")
-        logger.info(basics())
-
-    if params.check_file and os.path.exists(params.check_file):
+    elif params.check_file and os.path.exists(params.check_file):
         check_base = os.path.splitext(params.check_file)[0]
         logger.info("Testing: %s" % check_base)
         ma = load_miller_array_from_hkl(check_base)
         check_reflections(ma)
+        sys.exit(0)
 
-    if params.sample_dir and os.path.exists(params.sample_dir):
+    elif params.sample_dir and os.path.exists(params.sample_dir):
         check_samples(params.sample_dir)
+        sys.exit(0)
 
-    if params.check_dir and os.path.exists(params.check_dir):
+    elif params.check_dir and os.path.exists(params.check_dir):
         stats = check_dir(params.check_dir)
         logger.info(stats)
+        sys.exit(0)
+
+    elif [params.sample_dir, params.check_dir, params.check_file].count(None) == 3:
+        parser.print_help()
+        logger.info("No test paths provided. Only performing a basic test.")
+        logger.info(basics())
 
 
 if __name__ == "__main__":

@@ -217,7 +217,7 @@ P b n m: 80"""
     assert filtered_matches[0].name == "P 1 21/n 1"
 
 
-def test_refstat_symmetry_analysis(tmp_path):
+def test_refstat_symmetry_analysis_check_file(tmp_path):
     result = subprocess.run(
         (
             shutil.which("dev.dials.refstat_symmetry_analysis"),
@@ -228,3 +228,18 @@ def test_refstat_symmetry_analysis(tmp_path):
     )
     assert not result.check_returncode()
     assert result.stdout.endswith(b"Matches: P 1 21/n 1\n")
+
+
+def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
+    quartz = dials_data("quartz_processed")
+    result = subprocess.run(
+        (
+            shutil.which("dev.dials.refstat_symmetry_analysis"),
+            quartz / "integrated.expt",
+            quartz / "integrated.refl",
+        ),
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.check_returncode()
+    assert result.stdout.endswith(b"Matches: P 31, P 32, P 31 2 1, P 32 2 1\n")
