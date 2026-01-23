@@ -161,6 +161,10 @@ def _control_phil_str():
       .type = str
       .expert_level = 3
       .help = Filename for legacy cxi.merge integration pickle files. Example: int-%d-%s.pickle
+    psana_identifiers = False
+      .type = bool
+      .expert_level = 3
+      .help = Add psana timestamps to the experiment identifiers
   }
 
   mp {
@@ -1425,6 +1429,16 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 % (len(filtered), len(indexed))
             )
             indexed = filtered
+
+        if self.params.output.psana_identifiers:
+            identifiers = indexed.experiment_identifiers()
+            for expt_id, expt in enumerate(experiments):
+                fmt = expt.imageset.get_format_class().get_instance(
+                    expt.imageset.paths()[0]
+                )
+                ts = fmt.get_psana_timestamp(expt.imageset.indices()[0])
+                expt.identifier = ts + "_" + expt.identifier
+                identifiers[expt_id] = expt.identifier
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
