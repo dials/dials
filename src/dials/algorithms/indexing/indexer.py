@@ -609,6 +609,12 @@ class Indexer:
                         experiments, self.reflections, n_lattices_previous_cycle
                     )
 
+                # Check if crystal needs reindexing to better match target unit cell
+                if i_cycle == 0 and self.params.known_symmetry.unit_cell is not None:
+                    self._reindex_to_nearest_setting(
+                        experiments, self.reflections, n_lattices_previous_cycle
+                    )
+
                 logger.info("\nIndexed crystal models:")
                 self.show_experiments(experiments, self.reflections, d_min=self.d_min)
 
@@ -820,6 +826,67 @@ class Indexer:
                 if expt.crystal is not cryst:
                     continue
                 if not cb_op.is_identity_op():
+                    miller_indices = reflections["miller_index"].select(
+                        reflections["id"] == i_expt
+                    )
+                    miller_indices = cb_op.apply(miller_indices)
+                    reflections["miller_index"].set_selected(
+                        reflections["id"] == i_expt, miller_indices
+                    )
+
+    def _reindex_to_nearest_setting(
+        self, experiments, reflections, n_lattices_previous_cycle
+    ):
+        """
+        Check if newly indexed crystals need reindexing to match the target unit cell setting.
+
+        This method compares each newly indexed crystal to the target unit cell and
+        reindexes if a better matching setting is found. This prevents indexing in
+        non-optimal settings that can occur near lattice reduction boundaries.
+        """
+        from cctbx.crystal import symmetry
+
+        if self._symmetry_handler.target_symmetry_primitive is None:
+            return
+
+        target_uc = self._symmetry_handler.target_symmetry_primitive.unit_cell()
+        if target_uc is None:
+            return
+
+        # Create reference symmetry from target unit cell
+        # Use P1 to avoid space group constraints on the reindexing
+        target_symmetry = symmetry(
+            unit_cell=target_uc,
+            space_group="P1"
+        )
+
+        for cryst in experiments.crystals()[n_lattices_previous_cycle:]:
+            # Create symmetry from the indexed crystal
+            cryst_symmetry = symmetry(
+                unit_cell=cryst.get_unit_cell(),
+                space_group="P1"
+            )
+
+            # Check if reindexing is needed
+            if target_symmetry.has_nearer_setting(cryst_symmetry):
+                # Get the change-of-basis operator
+                cb_op = target_symmetry.change_of_basis_op_to_nearest_setting(
+                    cryst_symmetry
+                )
+
+                logger.info(
+                    "Reindexing crystal to better match target unit cell setting"
+                )
+                logger.info(f"Change-of-basis operator: {cb_op.as_xyz()}")
+
+                # Apply change-of-basis to the crystal
+                new_cryst = cryst.change_basis(cb_op)
+                cryst.update(new_cryst)
+
+                # Reindex Miller indices for all experiments using this crystal
+                for i_expt, expt in enumerate(experiments):
+                    if expt.crystal is not cryst:
+                        continue
                     miller_indices = reflections["miller_index"].select(
                         reflections["id"] == i_expt
                     )
