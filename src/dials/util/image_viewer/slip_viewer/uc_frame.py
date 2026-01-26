@@ -488,7 +488,13 @@ class UCSettingsPanel(wx.Panel):
             "placement": "cc",
             "colour": "magenta",
         }
+        skip = set()
         for ring, spacing in zip(ring_data, hkl_list.d_spacings()):
+            # Skip duplicate d-spacings within a small tolerance, so labels don't overlap
+            this_d = round(spacing[1], 3)
+            if this_d in skip:
+                continue
+            skip.add(this_d)
             x, y = ring[0] + ring[2]["radius"], ring[1]
             txt_str = str(spacing[0])
             hkl_text_data.append((x, y, txt_str, metadata))
