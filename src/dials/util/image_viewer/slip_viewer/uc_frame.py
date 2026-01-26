@@ -488,7 +488,7 @@ class UCSettingsPanel(wx.Panel):
             "placement": "cc",
             "colour": "magenta",
         }
-        for ring, spacing in zip(ring_data, spacings):
+        for ring, spacing in zip(ring_data, hkl_list.d_spacings()):
             x, y = ring[0] + ring[2]["radius"], ring[1]
             txt_str = str(spacing[0])
             hkl_text_data.append((x, y, txt_str, metadata))
