@@ -51,6 +51,10 @@ phil_scope = libtbx.phil.parse(
         .help="Path to an .ins or .res file to calculate statistics for a"
               "particular example"
 
+    sigma_level = 5.0
+        .type = float
+        .help = "Sigma level to use to identify systematic absences"
+
     output {
         log = dev.dials.refstat_symmetry_analysis.log
             .type = str
@@ -123,7 +127,7 @@ def get_miller_array(cell, hkl_file):
     return reflections_server.get_miller_arrays(None)[0]
 
 
-def check_reflections(miller_array, centering="P"):
+def check_reflections(miller_array, centering="P", sigma_level=5.0):
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
@@ -145,7 +149,7 @@ def check_reflections(miller_array, centering="P"):
 
     xr.reset()
 
-    sa = refstat.extinctions(miller_array)
+    sa = refstat.extinctions(miller_array, sigma_level=sigma_level)
     sa.analyse(scale_I_to=10000)
     logger.info(sa.show_stats())
     logger.info("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
@@ -209,12 +213,12 @@ def check_samples(samples_dir):
             logger.info("Failed to test %s: %s " % (sample_base, str(e)))
 
 
-def check_dir(root_):
+def check_dir(root_, sigma_level=5.0):
     def get_matches(cs, hkl_file, centering):
         miller_array = get_miller_array(cs.unit_cell(), hkl_file)
         miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
         xr.reset()
-        sa = refstat.extinctions(miller_array)
+        sa = refstat.extinctions(miller_array, sigma_level=sigma_level)
         sa.analyse(scale_I_to=10000)
         matches = sa.get_all_matching_space_groups(centering=centering)
         if not matches:
@@ -400,15 +404,15 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         check_base = os.path.splitext(params.check_file)[0]
         logger.info("Testing: %s" % check_base)
         ma, centering = load_miller_array_and_centering_from_hkl(check_base)
-        check_reflections(ma, centering)
+        check_reflections(ma, centering, sigma_level=params.sigma_level)
         sys.exit(0)
 
     elif params.sample_dir and os.path.exists(params.sample_dir):
-        check_samples(params.sample_dir)
+        check_samples(params.sample_dir, sigma_level=params.sigma_level)
         sys.exit(0)
 
     elif params.check_dir and os.path.exists(params.check_dir):
-        stats = check_dir(params.check_dir)
+        stats = check_dir(params.check_dir, sigma_level=params.sigma_level)
         logger.info(stats)
         sys.exit(0)
 
