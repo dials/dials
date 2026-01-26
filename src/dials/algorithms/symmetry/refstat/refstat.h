@@ -241,7 +241,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
       /* important to reserve enough to make sure memory is not reallocated as
       addresses are taken
       */
-      elements.reserve(20);
+      elements.reserve(max_extinction_elements+1);
 
       elements.push_back(element_t(elements.size(), "b--", find_sg("P b 1 1")));
       glide_b1 = &elements[elements.size() - 1];
@@ -521,7 +521,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
       ref_count = Is.size();
       for (size_t i = 0; i < ref_count; i++) {
         FloatType I = Is[i];
-        sumI += I;
+        sumI += I < 0 ? 0 : I;
         if (I < minI) {
           minI = I;
         }
