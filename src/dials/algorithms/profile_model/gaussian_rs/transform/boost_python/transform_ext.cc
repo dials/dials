@@ -22,8 +22,8 @@ namespace dials { namespace algorithms { namespace profile_model {
 
     using namespace boost::python;
 
-    CoordinateGenerator *make_coordinate_generator(
-      const CoordinateSystem &cs,
+    CoordinateGenerator* make_coordinate_generator(
+      const CoordinateSystem& cs,
       int x0,
       int y0,
       af::versa<vec3<double>, scitbx::af::flex_grid<> > s1_map) {
@@ -35,8 +35,8 @@ namespace dials { namespace algorithms { namespace profile_model {
                                                 af::c_grid<2>(s1_map.accessor())));
     }
 
-    GridIndexGenerator *make_grid_index_generator(
-      const CoordinateSystem &cs,
+    GridIndexGenerator* make_grid_index_generator(
+      const CoordinateSystem& cs,
       int x0,
       int y0,
       vec2<double> step_size,
@@ -73,7 +73,7 @@ namespace dials { namespace algorithms { namespace profile_model {
      * A class to pickle the transform spec
      */
     struct TransformSpecPickleSuite : boost::python::pickle_suite {
-      static boost::python::tuple getinitargs(const TransformSpec &obj) {
+      static boost::python::tuple getinitargs(const TransformSpec& obj) {
         return boost::python::make_tuple(obj.beam(),
                                          obj.detector(),
                                          obj.goniometer(),
@@ -96,75 +96,75 @@ namespace dials { namespace algorithms { namespace profile_model {
     /* } */
 
     template <typename FloatType>
-    void transform_forward_wrapper(const char *name) {
+    void transform_forward_wrapper(const char* name) {
       typedef TransformForward<FloatType> TransformForwardType;
 
       class_<TransformForwardType>(name, no_init)
-        .def(init<const TransformSpec &,
-                  const CoordinateSystem &,
+        .def(init<const TransformSpec&,
+                  const CoordinateSystem&,
                   int6,
                   std::size_t,
-                  const af::const_ref<FloatType, af::c_grid<3> > &,
-                  const af::const_ref<bool, af::c_grid<3> > &>())
-        .def(init<const TransformSpec &,
-                  const CoordinateSystem &,
+                  const af::const_ref<FloatType, af::c_grid<3> >&,
+                  const af::const_ref<bool, af::c_grid<3> >&>())
+        .def(init<const TransformSpec&,
+                  const CoordinateSystem&,
                   int6,
                   std::size_t,
-                  const af::const_ref<FloatType, af::c_grid<3> > &,
-                  const af::const_ref<FloatType, af::c_grid<3> > &,
-                  const af::const_ref<bool, af::c_grid<3> > &>())
+                  const af::const_ref<FloatType, af::c_grid<3> >&,
+                  const af::const_ref<FloatType, af::c_grid<3> >&,
+                  const af::const_ref<bool, af::c_grid<3> >&>())
         .def("profile", &TransformForwardType::profile)
         .def("background", &TransformForwardType::background)
         .def("mask", &TransformForwardType::mask);
     }
 
     template <typename FloatType>
-    void transform_reverse_wrapper(const char *name) {
+    void transform_reverse_wrapper(const char* name) {
       class_<TransformReverse>(name, no_init)
-        .def(init<const TransformSpec &,
-                  const CoordinateSystem &,
+        .def(init<const TransformSpec&,
+                  const CoordinateSystem&,
                   int6,
                   std::size_t,
-                  const af::const_ref<double, af::c_grid<3> > &>())
+                  const af::const_ref<double, af::c_grid<3> >&>())
         .def("profile", &TransformReverse::profile);
     }
 
-    void transform_forward_no_model_wrapper(const char *name) {
+    void transform_forward_no_model_wrapper(const char* name) {
       class_<TransformForwardNoModel>(name, no_init)
-        .def(init<const TransformSpec &,
-                  const CoordinateSystem &,
+        .def(init<const TransformSpec&,
+                  const CoordinateSystem&,
                   int6,
                   std::size_t,
-                  const af::const_ref<double, af::c_grid<3> > &,
-                  const af::const_ref<bool, af::c_grid<3> > &>())
-        .def(init<const TransformSpec &,
-                  const CoordinateSystem &,
+                  const af::const_ref<double, af::c_grid<3> >&,
+                  const af::const_ref<bool, af::c_grid<3> >&>())
+        .def(init<const TransformSpec&,
+                  const CoordinateSystem&,
                   int6,
                   std::size_t,
-                  const af::const_ref<double, af::c_grid<3> > &,
-                  const af::const_ref<double, af::c_grid<3> > &,
-                  const af::const_ref<bool, af::c_grid<3> > &>())
+                  const af::const_ref<double, af::c_grid<3> >&,
+                  const af::const_ref<double, af::c_grid<3> >&,
+                  const af::const_ref<bool, af::c_grid<3> >&>())
         .def("profile", &TransformForwardNoModel::profile)
         .def("background", &TransformForwardNoModel::background);
     }
 
-    void transform_reverse_no_model_wrapper(const char *name) {
+    void transform_reverse_no_model_wrapper(const char* name) {
       class_<TransformReverseNoModel>(name, no_init)
-        .def(init<const TransformSpec &,
-                  const CoordinateSystem &,
+        .def(init<const TransformSpec&,
+                  const CoordinateSystem&,
                   int6,
                   std::size_t,
-                  const af::const_ref<double, af::c_grid<3> > &>())
+                  const af::const_ref<double, af::c_grid<3> >&>())
         .def("profile", &TransformReverseNoModel::profile);
     }
 
     BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_transform_ext) {
       af::versa<vec3<double>, af::c_grid<2> > (*overload1)(
-        const Panel &, const BeamBase &, std::size_t, bool) = &beam_vector_map;
+        const Panel&, const BeamBase&, std::size_t, bool) = &beam_vector_map;
       af::versa<vec3<double>, af::c_grid<2> > (*overload2)(
-        const Panel &, const BeamBase &, bool) = &beam_vector_map;
+        const Panel&, const BeamBase&, bool) = &beam_vector_map;
       af::versa<vec3<double>, af::c_grid<2> > (*overload3)(
-        const Panel &, const BeamBase &) = &beam_vector_map;
+        const Panel&, const BeamBase&) = &beam_vector_map;
 
       def("beam_vector_map",
           overload1,
@@ -218,9 +218,9 @@ namespace dials { namespace algorithms { namespace profile_model {
 
       class_<TransformSpec>("TransformSpec", no_init)
         .def(init<std::shared_ptr<BeamBase>,
-                  const Detector &,
-                  const Goniometer &,
-                  const Scan &,
+                  const Detector&,
+                  const Goniometer&,
+                  const Scan&,
                   double,
                   double,
                   double,

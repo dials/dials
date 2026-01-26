@@ -8,9 +8,9 @@
 
 namespace dials { namespace refinement {
 
-  af::shared<double> maha_dist_sq(const af::const_ref<double, af::c_grid<2> > &obs,
-                                  const af::const_ref<double> &center,
-                                  const af::const_ref<double, af::c_grid<2> > &cov) {
+  af::shared<double> maha_dist_sq(const af::const_ref<double, af::c_grid<2> >& obs,
+                                  const af::const_ref<double>& center,
+                                  const af::const_ref<double, af::c_grid<2> >& cov) {
     std::size_t nobs = obs.accessor()[0];
     std::size_t nparam = obs.accessor()[1];
 

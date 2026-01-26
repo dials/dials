@@ -8,7 +8,7 @@ def test_run(dials_data, run_in_tmp_path):
     from dials.command_line.export import phil_scope
     from dials.util.nexus import dump, load
 
-    data_dir = dials_data("misc_regression", pathlib=True)
+    data_dir = dials_data("misc_regression")
 
     # Read the experiments
     experiments1 = ExperimentListFactory.from_json_file(

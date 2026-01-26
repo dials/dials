@@ -16,13 +16,13 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  static void add_detector(Centroider &self, const Detector &detector) {
+  static void add_detector(Centroider& self, const Detector& detector) {
     self.add(detector);
   }
 
-  static void add_detector_and_scan(Centroider &self,
-                                    const Detector &detector,
-                                    const Scan &scan) {
+  static void add_detector_and_scan(Centroider& self,
+                                    const Detector& detector,
+                                    const Scan& scan) {
     self.add(detector, scan);
   }
 

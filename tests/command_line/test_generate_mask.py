@@ -28,9 +28,7 @@ from dials.command_line.generate_mask import generate_mask, phil_scope, run
     ids=["One sequence", "Four sequences"],
 )
 def experiments_masks(request, dials_data):
-    filename = (
-        dials_data(request.param["directory"], pathlib=True) / request.param["filename"]
-    )
+    filename = dials_data(request.param["directory"]) / request.param["filename"]
     return ExperimentList.from_file(filename), request.param["masks"]
 
 
@@ -193,9 +191,7 @@ def test_generate_mask_function_with_untrusted_rectangle(experiments_masks, tmp_
 def test_generate_mask_trusted_range(dials_data, tmp_path, monkeypatch):
     # https://github.com/dials/dials/issues/978
 
-    image_files = sorted(
-        str(f) for f in dials_data("x4wide", pathlib=True).glob("*.cbf")
-    )
+    image_files = sorted(str(f) for f in dials_data("x4wide").glob("*.cbf"))
     monkeypatch.chdir(tmp_path)
     # Import as usual
     do_import(
@@ -255,7 +251,7 @@ untrusted {
 
 
 def test_combine_masks(dials_data, run_in_tmp_path):
-    path = dials_data("centroid_test_data", pathlib=True)
+    path = dials_data("centroid_test_data")
     experiments_path = path / "imported_experiments.json"
     mask_path = path / "mask.pickle"
     experiments = ExperimentList.from_file(experiments_path)

@@ -30,7 +30,7 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   af::versa<FloatType, af::c_grid<2> > mean_filter(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
     int2 size) {
     // Check the input is valid
     DIALS_ASSERT(size.all_gt(0));
@@ -68,7 +68,7 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   af::versa<FloatType, af::c_grid<2> > mean_filter_masked(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
     af::ref<int, af::c_grid<2> > mask,
     int2 size,
     int min_count,
@@ -126,7 +126,7 @@ namespace dials { namespace algorithms {
      * @params image The image to filter
      * @param size The size of the filter kernel (2 * size + 1)
      */
-    MeanAndVarianceFilter(const af::const_ref<FloatType, af::c_grid<2> > &image,
+    MeanAndVarianceFilter(const af::const_ref<FloatType, af::c_grid<2> >& image,
                           int2 size) {
       // Check the input is valid
       DIALS_ASSERT(size.all_gt(0));
@@ -221,8 +221,8 @@ namespace dials { namespace algorithms {
      * @param size The size of the filter kernel (2 * size + 1)
      * @param min_count The minimum counts to use
      */
-    MeanAndVarianceFilterMasked(const af::const_ref<FloatType, af::c_grid<2> > &image,
-                                const af::const_ref<int, af::c_grid<2> > &mask,
+    MeanAndVarianceFilterMasked(const af::const_ref<FloatType, af::c_grid<2> >& image,
+                                const af::const_ref<int, af::c_grid<2> >& mask,
                                 int2 size,
                                 int min_count)
         : min_count_(min_count), mask_(mask.accessor()) {

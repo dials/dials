@@ -17,6 +17,7 @@
 #include <scitbx/constants.h>
 #include <eigen3/Eigen/Dense>
 #include <vector>
+#include <dials/util/thread_pool.h>
 
 namespace dials { namespace algorithms {
 
@@ -304,7 +305,8 @@ namespace dials { namespace algorithms {
   void tof_calculate_seed_skewness_shoebox_mask(af::reflection_table& reflection_table,
                                                 Experiment& experiment,
                                                 float d_skewness_threshold,
-                                                int min_iterations) {
+                                                int min_iterations,
+                                                int n_threads = 1) {
     /**
      * Implementation based on
      * J. Peters, The 'seed-skewness' integration method generalized for
@@ -320,90 +322,107 @@ namespace dials { namespace algorithms {
      */
 
     af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
+    std::size_t n_reflections = reflection_table.size();
 
-    for (std::size_t i = 0; i < reflection_table.size(); ++i) {
-      // Get shoebox data
-      Shoebox<> shoebox = shoeboxes[i];
-      af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
-      af::ref<float, af::c_grid<3>> data = shoebox.data.ref();
-      std::size_t zsize = data.accessor()[0];
-      std::size_t ysize = data.accessor()[1];
-      std::size_t xsize = data.accessor()[2];
+    auto worker = [&](std::size_t start, std::size_t end) {
+      for (std::size_t i = start; i < end; ++i) {
+        // Get shoebox data
+        Shoebox<> shoebox = shoeboxes[i];
+        af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
+        af::ref<float, af::c_grid<3>> data = shoebox.data.ref();
+        std::size_t zsize = data.accessor()[0];
+        std::size_t ysize = data.accessor()[1];
+        std::size_t xsize = data.accessor()[2];
 
-      // Keep track of which pixels are selected
-      std::set<std::size_t> selected_pixels;
+        // Keep track of which pixels are selected
+        std::set<std::size_t> selected_pixels;
 
-      // Initial seed
-      auto max_it = std::max_element(data.begin(), data.end());
-      DIALS_ASSERT(max_it != data.end());  // data empty
-      float max_val = *max_it;
-      std::size_t max_idx = std::distance(data.begin(), max_it);
-      selected_pixels.insert(max_idx);
+        // Initial seed
+        auto max_it = std::max_element(data.begin(), data.end());
+        DIALS_ASSERT(max_it != data.end());  // data empty
+        float max_val = *max_it;
+        std::size_t max_idx = std::distance(data.begin(), max_it);
+        selected_pixels.insert(max_idx);
 
-      float skewness = calculate_skewness(data, selected_pixels);
-      float d_skewness = 0.0;
-      int num_iterations = 0;
+        float skewness = calculate_skewness(data, selected_pixels);
+        float d_skewness = 0.0;
+        int num_iterations = 0;
 
-      while ((d_skewness < 0 && std::abs(d_skewness) > d_skewness_threshold)
-             || (num_iterations < min_iterations)) {
-        std::set<std::size_t> neighbors;
+        while ((d_skewness < 0 && std::abs(d_skewness) > d_skewness_threshold)
+               || (num_iterations < min_iterations)) {
+          std::set<std::size_t> neighbors;
 
-        // Collect neighbors of all selected pixels
-        for (std::size_t idx : selected_pixels) {
-          auto neighbor_indices = get_shoebox_pixel_neighbors(idx, zsize, ysize, xsize);
-          for (std::size_t n_idx : neighbor_indices) {
-            neighbors.insert(n_idx);
+          // Collect neighbors of all selected pixels
+          for (std::size_t idx : selected_pixels) {
+            auto neighbor_indices =
+              get_shoebox_pixel_neighbors(idx, zsize, ysize, xsize);
+            for (std::size_t n_idx : neighbor_indices) {
+              neighbors.insert(n_idx);
+            }
+          }
+
+          // Find the neighbor with the maximum value not in selected pixels
+          auto max_it = std::max_element(
+            neighbors.begin(), neighbors.end(), [&](std::size_t a, std::size_t b) {
+              bool a_selected = selected_pixels.find(a) != selected_pixels.end();
+              bool b_selected = selected_pixels.find(b) != selected_pixels.end();
+
+              if (a_selected && b_selected) return false;
+              if (a_selected) return true;
+              if (b_selected) return false;
+
+              return data[a] < data[b];
+            });
+
+          if (max_it != neighbors.end()
+              && selected_pixels.find(*max_it) == selected_pixels.end()) {
+            std::size_t max_neighbor_index = *max_it;
+            float max_neighbor_value = data[*max_it];
+            selected_pixels.insert(max_neighbor_index);
+          } else {
+            break;
+          }
+
+          float new_skewness = calculate_skewness(data, selected_pixels);
+          d_skewness = new_skewness - skewness;
+          skewness = new_skewness;
+          num_iterations++;
+        }
+
+        // Now update the shoebox mask with selected pixels as foreground
+        for (std::size_t z = 0; z < zsize; ++z) {
+          for (std::size_t y = 0; y < ysize; ++y) {
+            for (std::size_t x = 0; x < xsize; ++x) {
+              std::size_t idx = z * (ysize * xsize) + y * xsize + x;
+              int mask_value = selected_pixels.find(idx) != selected_pixels.end()
+                                 ? Foreground
+                                 : Background;
+              mask(z, y, x) &= ~(Foreground | Background);
+              mask(z, y, x) |= mask_value;
+            }
           }
         }
 
-        // Find the neighbor with the maximum value not in selected pixels
-        auto max_it = std::max_element(
-          neighbors.begin(), neighbors.end(), [&](std::size_t a, std::size_t b) {
-            bool a_selected = selected_pixels.find(a) != selected_pixels.end();
-            bool b_selected = selected_pixels.find(b) != selected_pixels.end();
-
-            if (a_selected && b_selected) return false;
-            if (a_selected) return true;
-            if (b_selected) return false;
-
-            return data[a] < data[b];
-          });
-
-        if (max_it != neighbors.end()
-            && selected_pixels.find(*max_it) == selected_pixels.end()) {
-          std::size_t max_neighbor_index = *max_it;
-          float max_neighbor_value = data[*max_it];
-          selected_pixels.insert(max_neighbor_index);
-        } else {
-          break;
-        }
-
-        float new_skewness = calculate_skewness(data, selected_pixels);
-        d_skewness = new_skewness - skewness;
-        skewness = new_skewness;
-        num_iterations++;
+        mask = fill_holes_in_mask(mask);
       }
+    };
 
-      // Now update the shoebox mask with selected pixels as foreground
-      for (std::size_t z = 0; z < zsize; ++z) {
-        for (std::size_t y = 0; y < ysize; ++y) {
-          for (std::size_t x = 0; x < xsize; ++x) {
-            std::size_t idx = z * (ysize * xsize) + y * xsize + x;
-            int mask_value = selected_pixels.find(idx) != selected_pixels.end()
-                               ? Foreground
-                               : Background;
-            mask(z, y, x) &= ~(Foreground | Background);
-            mask(z, y, x) |= mask_value;
-          }
-        }
-      }
+    dials::util::ThreadPool pool(n_threads);
+    std::size_t chunk_size = (n_reflections + n_threads - 1) / n_threads;
 
-      mask = fill_holes_in_mask(mask);
+    for (int t = 0; t < n_threads; ++t) {
+      std::size_t start = t * chunk_size;
+      std::size_t end = std::min(start + chunk_size, n_reflections);
+      if (start >= end) break;
+
+      pool.post([=]() { worker(start, end); });
     }
+    pool.wait();
   }
 
   void tof_calculate_ellipse_shoebox_mask(af::reflection_table& reflection_table,
-                                          Experiment& experiment) {
+                                          Experiment& experiment,
+                                          int n_threads = 1) {
     /**
      * Updates the masks of shoeboxes in reflection_table based on weighted
      * ellipses in reciprocal space
@@ -434,54 +453,69 @@ namespace dials { namespace algorithms {
     af::const_ref<int6> bboxes = reflection_table["bbox"];
     scitbx::af::shared<vec3<double>> rlps = reflection_table["rlp"];
 
-    for (std::size_t i = 0; i < reflection_table.size(); ++i) {
-      /*
-       * For each reflection get rlps for each shoebox pixel in detector space
-       * Then compute an ellipsoid based on the intensity of these points and
-       * check which points sit inside it
-       */
+    std::size_t n_reflections = reflection_table.size();
+    auto worker = [&](std::size_t start, std::size_t end) {
+      for (std::size_t i = start; i < end; ++i) {
+        /*
+         * For each reflection get rlps for each shoebox pixel in detector space
+         * Then compute an ellipsoid based on the intensity of these points and
+         * check which points sit inside it
+         */
 
-      Shoebox<> shoebox = shoeboxes[i];
-      af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
-      int panel = shoebox.panel;
-      int6 bbox = bboxes[i];
-      vec3<double> rlp = rlps[i];
-      std::vector<Eigen::Vector3d> shoebox_rlps;
-      std::vector<double> shoebox_values;
-      get_shoebox_rlps(shoebox,
-                       shoebox_rlps,
-                       shoebox_values,
-                       detector,
-                       panel,
-                       bbox,
-                       img_tof,
-                       unit_s0,
-                       sample_to_source_distance,
-                       setting_rotation);
+        Shoebox<> shoebox = shoeboxes[i];
+        af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
+        int panel = shoebox.panel;
+        int6 bbox = bboxes[i];
+        vec3<double> rlp = rlps[i];
+        std::vector<Eigen::Vector3d> shoebox_rlps;
+        std::vector<double> shoebox_values;
+        get_shoebox_rlps(shoebox,
+                         shoebox_rlps,
+                         shoebox_values,
+                         detector,
+                         panel,
+                         bbox,
+                         img_tof,
+                         unit_s0,
+                         sample_to_source_distance,
+                         setting_rotation);
 
-      // Centre the ellipse around the peak value
-      auto peak_val = std::max_element(shoebox_values.begin(), shoebox_values.end());
-      size_t peak_idx = std::distance(shoebox_values.begin(), peak_val);
-      Eigen::Vector3d mean = shoebox_rlps[peak_idx];
-      Eigen::Matrix3d eigenvectors;
-      Eigen::Vector3d axes_lengths;
-      compute_weighted_ellipsoid(
-        shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths, false);
-      int count = 0;
-      for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
-        for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
-          for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-            int mask_value = point_inside_ellipsoid(
-                               shoebox_rlps[count], mean, eigenvectors, axes_lengths)
-                               ? Foreground
-                               : Background;
-            mask(z, y, x) &= ~(Foreground | Background);
-            mask(z, y, x) |= mask_value;
-            count++;
+        // Centre the ellipse around the peak value
+        auto peak_val = std::max_element(shoebox_values.begin(), shoebox_values.end());
+        size_t peak_idx = std::distance(shoebox_values.begin(), peak_val);
+        Eigen::Vector3d mean = shoebox_rlps[peak_idx];
+        Eigen::Matrix3d eigenvectors;
+        Eigen::Vector3d axes_lengths;
+        compute_weighted_ellipsoid(
+          shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths, false);
+        int count = 0;
+        for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+          for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+            for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+              int mask_value = point_inside_ellipsoid(
+                                 shoebox_rlps[count], mean, eigenvectors, axes_lengths)
+                                 ? Foreground
+                                 : Background;
+              mask(z, y, x) &= ~(Foreground | Background);
+              mask(z, y, x) |= mask_value;
+              count++;
+            }
           }
         }
       }
+    };
+
+    dials::util::ThreadPool pool(n_threads);
+    std::size_t chunk_size = (n_reflections + n_threads - 1) / n_threads;
+
+    for (int t = 0; t < n_threads; ++t) {
+      std::size_t start = t * chunk_size;
+      std::size_t end = std::min(start + chunk_size, n_reflections);
+      if (start >= end) break;
+
+      pool.post([=]() { worker(start, end); });
     }
+    pool.wait();
   }
 
 }}  // namespace dials::algorithms

@@ -196,8 +196,7 @@ const double pc[8][19] = {{-6.4910e-07,
                            0.0000e+00,
                            0.0000e+00}};
 
-double tof_pixel_spherical_absorption_correction(double pixel_data,
-                                                 double muR,
+double tof_pixel_spherical_absorption_correction(double muR,
                                                  double two_theta,
                                                  int two_theta_idx) {
   double ln_t1 = 0;
@@ -217,12 +216,33 @@ double tof_pixel_spherical_absorption_correction(double pixel_data,
 }
 
 /*
- * Holds constants required for correcting time-of-flight data
+ * Holds constants required for corrected time-of-flight data for the incident
+ * spectrum
  */
-struct TOFCorrectionsData {
+
+struct TOFIncidentSpectrumParams {
+  std::shared_ptr<ImageSequence> incident_data;
+  std::shared_ptr<ImageSequence> empty_data;
   double sample_proton_charge;
   double incident_proton_charge;
   double empty_proton_charge;
+
+  TOFIncidentSpectrumParams(std::shared_ptr<ImageSequence> incident_data,
+                            std::shared_ptr<ImageSequence> empty_data,
+                            double sample_proton_charge,
+                            double incident_proton_charge,
+                            double empty_proton_charge)
+      : incident_data(std::move(incident_data)),
+        empty_data(std::move(empty_data)),
+        sample_proton_charge(sample_proton_charge),
+        incident_proton_charge(incident_proton_charge),
+        empty_proton_charge(empty_proton_charge) {}
+};
+
+/*
+ * Holds constants required for correcting time-of-flight data for absorption
+ */
+struct TOFAbsorptionParams {
   double sample_radius;
   double sample_scattering_x_section;
   double sample_absorption_x_section;
@@ -236,21 +256,15 @@ struct TOFCorrectionsData {
   double sample_linear_absorption_c;
   double incident_linear_absorption_c;
 
-  TOFCorrectionsData(double sample_proton_charge,
-                     double incident_proton_charge,
-                     double empty_proton_charge,
-                     double sample_radius,
-                     double sample_scattering_x_section,
-                     double sample_absorption_x_section,
-                     double sample_number_density,
-                     double incident_radius,
-                     double incident_scattering_x_section,
-                     double incident_absorption_x_section,
-                     double incident_number_density)
-      : sample_proton_charge(sample_proton_charge),
-        incident_proton_charge(incident_proton_charge),
-        empty_proton_charge(empty_proton_charge),
-        sample_radius(sample_radius * .1),  // Given in mm but calculated in cm
+  TOFAbsorptionParams(double sample_radius,
+                      double sample_scattering_x_section,
+                      double sample_absorption_x_section,
+                      double sample_number_density,
+                      double incident_radius,
+                      double incident_scattering_x_section,
+                      double incident_absorption_x_section,
+                      double incident_number_density)
+      : sample_radius(sample_radius * .1),  // Given in mm but calculated in cm
         sample_scattering_x_section(sample_scattering_x_section),
         sample_absorption_x_section(sample_absorption_x_section),
         sample_number_density(sample_number_density),
@@ -267,34 +281,127 @@ struct TOFCorrectionsData {
   }
 };
 
+scitbx::af::shared<double> savitzky_golay(scitbx::af::shared<double> signal,
+                                          int window_size,
+                                          int poly_order) {
+  /*
+   * Method to smooth spectra to reduce noise.
+   * Based on: https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+   */
+
+  // window_size must be odd
+  DIALS_ASSERT(window_size % 2 == 1);
+  DIALS_ASSERT(window_size > 1);
+  DIALS_ASSERT(poly_order < window_size);
+
+  int half_window = (window_size - 1) / 2;
+  int n = signal.size();
+  scitbx::af::shared<double> result(n, 0.0);
+
+  // Build Vandermonde matrix A
+  scitbx::af::c_grid<2> A_grid(window_size, poly_order + 1);
+  scitbx::af::versa<double, scitbx::af::c_grid<2>> A(A_grid, 0);
+  for (int i = -half_window; i <= half_window; ++i) {
+    for (int j = 0; j <= poly_order; ++j) {
+      A(i + half_window, j) = std::pow(i, j);
+    }
+  }
+
+  // Build (A^T A)
+  scitbx::af::c_grid<2> ATA_grid(poly_order + 1, poly_order + 1);
+  scitbx::af::versa<double, scitbx::af::c_grid<2>> ATA(ATA_grid, 0);
+  for (int i = 0; i <= poly_order; ++i) {
+    for (int j = 0; j <= poly_order; ++j) {
+      for (int k = 0; k < window_size; ++k) {
+        ATA(i, j) += A(k, i) * A(k, j);
+      }
+    }
+  }
+
+  // Build (A^T)
+  scitbx::af::c_grid<2> AT_grid(poly_order + 1, window_size);
+  scitbx::af::versa<double, scitbx::af::c_grid<2>> AT(AT_grid, 0);
+  for (int i = 0; i <= poly_order; ++i) {
+    for (int k = 0; k < window_size; ++k) {
+      AT(i, k) = A(k, i);
+    }
+  }
+
+  scitbx::af::shared<double> coeffs(window_size, 0.0);
+
+  // Right-hand side vector: evaluate polynomial at x=0
+  scitbx::af::shared<double> b(poly_order + 1, 0.0);
+  b[0] = 1.0;
+
+  // Solve ATA * c = b using Gaussian elimination with pivoting
+  int m = poly_order + 1;
+  for (int i = 0; i < m; i++) {
+    // Partial pivot
+    int maxRow = i;
+    for (int k = i + 1; k < m; k++) {
+      if (std::fabs(ATA(k, i) > std::fabs(ATA(maxRow, i)))) {
+        maxRow = k;
+      }
+    }
+    std::swap(ATA[i], ATA[maxRow]);
+    std::swap(b[i], b[maxRow]);
+
+    double pivot = ATA(i, i);
+    assert(std::fabs(pivot) > 1e-12);
+    for (int j = i; j < m; j++) {
+      ATA(i, j) /= pivot;
+    }
+    b[i] /= pivot;
+
+    for (int k = 0; k < m; k++) {
+      if (k != i) {
+        double factor = ATA(k, i);
+        for (int j = i; j < m; j++) {
+          ATA(k, j) -= factor * ATA(i, j);
+        }
+        b[k] -= factor * b[i];
+      }
+    }
+  }
+
+  // Compute convolution coeffs
+  for (int k = -half_window; k <= half_window; ++k) {
+    double sum = 0.0;
+    for (int j = 0; j <= poly_order; ++j) {
+      sum += b[j] * std::pow(k, j);
+    }
+    coeffs[k + half_window] = sum;
+  }
+
+  // Convolve
+  for (int i = 0; i < n; ++i) {
+    double sm = 0.0;
+    for (int j = -half_window; j <= half_window; ++j) {
+      int idx = i + j;
+      if (idx < 0) idx = 0;
+      if (idx >= n) idx = n - 1;
+      sm += coeffs[j + half_window] * signal[idx];
+    }
+    result[i] = sm;
+  }
+
+  return result;
+}
+
 /*
  * Extracts shoeboxes to reflection_table with each pixel corrected
  * optionally for the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
-  dials::af::reflection_table &reflection_table,
-  Experiment &experiment,
-  ImageSequence &data,
+  dials::af::reflection_table& reflection_table,
+  Experiment& experiment,
+  ImageSequence& data,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();
-
-  // Required beam params
-  std::shared_ptr<dxtbx::model::BeamBase> beam_ptr = experiment.get_beam();
-  std::shared_ptr<PolychromaticBeam> beam =
-    std::dynamic_pointer_cast<PolychromaticBeam>(beam_ptr);
-  DIALS_ASSERT(beam != nullptr);
-  vec3<double> unit_s0 = beam->get_unit_s0();
-  double sample_to_source_distance = beam->get_sample_to_source_distance();
-
-  // Required scan params
   scitbx::af::shared<double> img_tof = scan.get_property<double>("time_of_flight");
-
-  // Required detector params
   int n_panels = detector.size();
   int num_images = data.size();
-  vec2<std::size_t> image_size = detector[0].get_image_size();
-  DIALS_ASSERT(num_images == img_tof.size());
 
   // Processor to get the image data into shoeboxes
   ShoeboxProcessor shoebox_processor(reflection_table, n_panels, 0, num_images, false);
@@ -304,9 +411,9 @@ void tof_extract_shoeboxes_to_reflection_table(
     dxtbx::format::Image<double> img = data.get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = data.get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2> > > output_data(
+    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
-    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2> > > output_mask(
+    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
 
     for (std::size_t i = 0; i < output_data.size(); ++i) {
@@ -317,8 +424,24 @@ void tof_extract_shoeboxes_to_reflection_table(
       dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
   }
 
+  if (!apply_lorentz_correction) {
+    return;
+  }
+
+  // Required beam params
+  std::shared_ptr<dxtbx::model::BeamBase> beam_ptr = experiment.get_beam();
+  std::shared_ptr<PolychromaticBeam> beam =
+    std::dynamic_pointer_cast<PolychromaticBeam>(beam_ptr);
+  DIALS_ASSERT(beam != nullptr);
+  vec3<double> unit_s0 = beam->get_unit_s0();
+  double sample_to_source_distance = beam->get_sample_to_source_distance();
+
+  // Required detector params
+  vec2<std::size_t> image_size = detector[0].get_image_size();
+  DIALS_ASSERT(num_images == img_tof.size());
+
   // Now correct each pixel for each shoebox
-  dials::af::shared<Shoebox<> > shoeboxes = reflection_table["shoebox"];
+  dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
   dials::af::const_ref<int6> bboxes = reflection_table["bbox"];
 
   for (std::size_t i = 0; i < reflection_table.size(); ++i) {
@@ -344,21 +467,17 @@ void tof_extract_shoeboxes_to_reflection_table(
 
           double pixel_data = shoebox.data(z, y, x);
 
+          // Lorentz correction
           scitbx::vec3<double> s1 =
             detector[panel].get_pixel_lab_coord(scitbx::vec2<double>(panel_x, panel_y));
           double distance = s1.length() + sample_to_source_distance;
           distance *= std::pow(10, -3);  // (m)
           double wl = ((Planck * tof) / (m_n * (distance))) * std::pow(10, 10);
-
-          // Lorentz correction
-          if (apply_lorentz_correction) {
-            double two_theta = detector[panel].get_two_theta_at_pixel(
-              unit_s0, scitbx::vec2<double>(panel_x, panel_y));
-            double two_theta_deg = two_theta * (180 / pi);
-            double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
-            double lorentz_correction = sin_two_theta_sq / std::pow(wl, 4);
-            pixel_data *= lorentz_correction;
-          }
+          double two_theta = detector[panel].get_two_theta_at_pixel(
+            unit_s0, scitbx::vec2<double>(panel_x, panel_y));
+          double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
+          double lorentz_correction = sin_two_theta_sq / std::pow(wl, 4);
+          pixel_data *= lorentz_correction;
 
           shoebox.data(z, y, x) = double(pixel_data);
         }
@@ -372,14 +491,10 @@ void tof_extract_shoeboxes_to_reflection_table(
  * an incident run, an empty run, and optionally the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
-  dials::af::reflection_table &reflection_table,
-  Experiment &experiment,
-  ImageSequence &data,
-  ImageSequence &incident_data,
-  ImageSequence &empty_data,
-  double sample_proton_charge,
-  double incident_proton_charge,
-  double empty_proton_charge,
+  dials::af::reflection_table& reflection_table,
+  Experiment& experiment,
+  ImageSequence& data,
+  TOFIncidentSpectrumParams& incident_params,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();
@@ -422,9 +537,9 @@ void tof_extract_shoeboxes_to_reflection_table(
     dxtbx::format::Image<double> img = data.get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = data.get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2> > > output_data(
+    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
-    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2> > > output_mask(
+    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
 
     for (std::size_t i = 0; i < output_data.size(); ++i) {
@@ -437,12 +552,13 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for incident data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = incident_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = incident_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.incident_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.incident_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2> > > output_data(
+    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
-    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2> > > output_mask(
+    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
 
     for (std::size_t i = 0; i < output_data.size(); ++i) {
@@ -455,12 +571,13 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for empty data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = empty_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = empty_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.empty_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2> > > output_data(
+    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
-    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2> > > output_mask(
+    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
 
     for (std::size_t i = 0; i < output_data.size(); ++i) {
@@ -472,9 +589,9 @@ void tof_extract_shoeboxes_to_reflection_table(
   }
 
   // Now correct each pixel for each shoebox
-  dials::af::shared<Shoebox<> > shoeboxes = reflection_table["shoebox"];
-  dials::af::shared<Shoebox<> > e_shoeboxes = i_reflection_table["shoebox"];
-  dials::af::shared<Shoebox<> > i_shoeboxes = e_reflection_table["shoebox"];
+  dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
+  dials::af::shared<Shoebox<>> e_shoeboxes = i_reflection_table["shoebox"];
+  dials::af::shared<Shoebox<>> i_shoeboxes = e_reflection_table["shoebox"];
   dials::af::const_ref<int6> bboxes = reflection_table["bbox"];
 
   for (std::size_t i = 0; i < reflection_table.size(); ++i) {
@@ -505,9 +622,9 @@ void tof_extract_shoeboxes_to_reflection_table(
           double pixel_data = shoebox.data(z, y, x);
 
           // Normalise w.r.t proton charge
-          pixel_data /= sample_proton_charge;
-          incident_pixel_data /= incident_proton_charge;
-          empty_pixel_data /= empty_proton_charge;
+          pixel_data /= incident_params.sample_proton_charge;
+          incident_pixel_data /= incident_params.incident_proton_charge;
+          empty_pixel_data /= incident_params.empty_proton_charge;
 
           // Subtract empty from incident and sample
           pixel_data -= empty_pixel_data;
@@ -532,7 +649,6 @@ void tof_extract_shoeboxes_to_reflection_table(
           if (apply_lorentz_correction) {
             double two_theta = detector[panel].get_two_theta_at_pixel(
               unit_s0, scitbx::vec2<double>(panel_x, panel_y));
-            double two_theta_deg = two_theta * (180 / pi);
             double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
             double lorentz_correction = sin_two_theta_sq / std::pow(wl, 4);
             pixel_data *= lorentz_correction;
@@ -551,12 +667,11 @@ void tof_extract_shoeboxes_to_reflection_table(
  * and optionally the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
-  dials::af::reflection_table &reflection_table,
-  Experiment &experiment,
-  ImageSequence &data,
-  ImageSequence &incident_data,
-  ImageSequence &empty_data,
-  TOFCorrectionsData &corrections_data,
+  dials::af::reflection_table& reflection_table,
+  Experiment& experiment,
+  ImageSequence& data,
+  TOFIncidentSpectrumParams& incident_params,
+  TOFAbsorptionParams& absorption_params,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();
@@ -599,9 +714,9 @@ void tof_extract_shoeboxes_to_reflection_table(
     dxtbx::format::Image<double> img = data.get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = data.get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2> > > output_data(
+    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
-    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2> > > output_mask(
+    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
 
     for (std::size_t i = 0; i < output_data.size(); ++i) {
@@ -614,12 +729,13 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for incident data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = incident_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = incident_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.incident_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.incident_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2> > > output_data(
+    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
-    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2> > > output_mask(
+    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
 
     for (std::size_t i = 0; i < output_data.size(); ++i) {
@@ -632,12 +748,13 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for empty data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = empty_data.get_corrected_data(img_num);
-    dxtbx::format::Image<bool> mask = empty_data.get_mask(img_num);
+    dxtbx::format::Image<double> img =
+      incident_params.empty_data->get_corrected_data(img_num);
+    dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2> > > output_data(
+    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
       n_panels);
-    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2> > > output_mask(
+    dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
 
     for (std::size_t i = 0; i < output_data.size(); ++i) {
@@ -649,9 +766,9 @@ void tof_extract_shoeboxes_to_reflection_table(
   }
 
   // Now correct each pixel for each shoebox
-  dials::af::shared<Shoebox<> > shoeboxes = reflection_table["shoebox"];
-  dials::af::shared<Shoebox<> > e_shoeboxes = i_reflection_table["shoebox"];
-  dials::af::shared<Shoebox<> > i_shoeboxes = e_reflection_table["shoebox"];
+  dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
+  dials::af::shared<Shoebox<>> e_shoeboxes = i_reflection_table["shoebox"];
+  dials::af::shared<Shoebox<>> i_shoeboxes = e_reflection_table["shoebox"];
   dials::af::const_ref<int6> bboxes = reflection_table["bbox"];
 
   for (std::size_t i = 0; i < reflection_table.size(); ++i) {
@@ -682,9 +799,9 @@ void tof_extract_shoeboxes_to_reflection_table(
           double pixel_data = shoebox.data(z, y, x);
 
           // Normalise w.r.t proton charge
-          pixel_data /= corrections_data.sample_proton_charge;
-          incident_pixel_data /= corrections_data.incident_proton_charge;
-          empty_pixel_data /= corrections_data.empty_proton_charge;
+          pixel_data /= incident_params.sample_proton_charge;
+          incident_pixel_data /= incident_params.incident_proton_charge;
+          empty_pixel_data /= incident_params.empty_proton_charge;
 
           // Subtract empty from incident and sample
           pixel_data -= empty_pixel_data;
@@ -704,12 +821,12 @@ void tof_extract_shoeboxes_to_reflection_table(
           // Spherical absorption correction
           // for image data and incident data
           double sample_muR =
-            (corrections_data.sample_linear_scattering_c
-             + (corrections_data.sample_linear_absorption_c / 1.8) * wl)
-            * corrections_data.sample_radius;
+            (absorption_params.sample_linear_scattering_c
+             + (absorption_params.sample_linear_absorption_c / 1.8) * wl)
+            * absorption_params.sample_radius;
           double sample_absorption_correction =
             tof_pixel_spherical_absorption_correction(
-              pixel_data, sample_muR, two_theta, two_theta_idx);
+              sample_muR, two_theta, two_theta_idx);
 
           // Pixel data will be divided by absorption correction
           // Infinities are set to zero
@@ -719,12 +836,12 @@ void tof_extract_shoeboxes_to_reflection_table(
           }
 
           double incident_muR =
-            (corrections_data.incident_linear_scattering_c
-             + (corrections_data.incident_linear_absorption_c / 1.8) * wl)
-            * corrections_data.incident_radius;
+            (absorption_params.incident_linear_scattering_c
+             + (absorption_params.incident_linear_absorption_c / 1.8) * wl)
+            * absorption_params.incident_radius;
           double incident_absorption_correction =
             tof_pixel_spherical_absorption_correction(
-              pixel_data, incident_muR, two_theta, two_theta_idx);
+              incident_muR, two_theta, two_theta_idx);
 
           // Pixel data will be divided by absorption correction
           // Infinities are set to zero

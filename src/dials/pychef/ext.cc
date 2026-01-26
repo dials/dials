@@ -22,7 +22,7 @@ namespace dials { namespace pychef { namespace boost_python {
       .def(map_indexing_suite<Observations::map_type>());
 
     class_<Observations>("Observations", no_init)
-      .def(init<scitbx::af::const_ref<cctbx::miller::index<> > const &,
+      .def(init<scitbx::af::const_ref<cctbx::miller::index<> > const&,
                 sgtbx::space_group,
                 bool>((arg("miller_index"), arg("space_group"), arg("anomalous_flag"))))
       .def("observation_groups", &Observations::observation_groups);
@@ -42,13 +42,13 @@ namespace dials { namespace pychef { namespace boost_python {
   void export_chef_statistics() {
     typedef ChefStatistics chef_statistics_t;
     class_<chef_statistics_t>("ChefStatistics", no_init)
-      .def(init<scitbx::af::const_ref<cctbx::miller::index<> > const &,
-                af::const_ref<double> const &,
-                af::const_ref<double> const &,
-                af::const_ref<double> const &,
-                af::const_ref<std::size_t> const &,
-                af::const_ref<std::size_t> const &,
-                cctbx::miller::binner const &,
+      .def(init<scitbx::af::const_ref<cctbx::miller::index<> > const&,
+                af::const_ref<double> const&,
+                af::const_ref<double> const&,
+                af::const_ref<double> const&,
+                af::const_ref<std::size_t> const&,
+                af::const_ref<std::size_t> const&,
+                cctbx::miller::binner const&,
                 sgtbx::space_group,
                 bool,
                 int>((arg("miller_index"),
