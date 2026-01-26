@@ -8,14 +8,12 @@ cxx-compiler
 dials-data>=2.4.123
 docutils
 eigen
-ffbidx>=1.1.3
 future
 gemmi>=0.7
 h5py>=3.1.0
 hatchling
 hdf5
 hdf5plugin
-iota
 jinja2
 libboost-devel
 libboost-python-devel
@@ -26,7 +24,7 @@ mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy<2.3.0
+numpy
 nxmx
 optuna
 ordered-set
@@ -45,6 +43,7 @@ pytest-xdist
 python-dateutil>=2.7.0
 reportlab
 requests
+scikit-image
 scikit-learn
 scipy
 scons

@@ -1,0 +1,1 @@
+Reduce memory footprint of the ``Importer`` used by the DIALS ``ArgumentParser``

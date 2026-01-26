@@ -71,10 +71,10 @@ namespace dials { namespace algorithms {
      * @param delta_b The beam divergence
      * @param delta_m The mosaicity
      */
-    GaussianRSMaskCalculator(const BeamBase &beam,
-                             const Detector &detector,
-                             const Goniometer &gonio,
-                             const Scan &scan,
+    GaussianRSMaskCalculator(const BeamBase& beam,
+                             const Detector& detector,
+                             const Goniometer& gonio,
+                             const Scan& scan,
                              double delta_b,
                              double delta_m)
         : func_(beam, detector, gonio, scan, delta_b, delta_m) {}
@@ -86,7 +86,7 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection object
      * @param adjacent Is this an adjacent reflection?
      */
-    virtual void operator()(af::Reflection &reflection, bool adjacent = false) const {
+    virtual void operator()(af::Reflection& reflection, bool adjacent = false) const {
       func_.single(reflection.get<Shoebox<> >("shoebox"),
                    reflection.get<vec3<double> >("s1"),
                    reflection.get<vec3<double> >("xyzcal.px")[2],
@@ -109,7 +109,7 @@ namespace dials { namespace algorithms {
      * Add a mask calculator to the list
      * @param alg The mask calculator
      */
-    void append(const GaussianRSMaskCalculator &alg) {
+    void append(const GaussianRSMaskCalculator& alg) {
       algorithms_.push_back(alg);
     }
 
@@ -118,7 +118,7 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection object
      * @param adjacent Is this an adjacent reflection?
      */
-    virtual void operator()(af::Reflection &reflection, bool adjacent = false) const {
+    virtual void operator()(af::Reflection& reflection, bool adjacent = false) const {
       int index = reflection.get<int>("id");
       DIALS_ASSERT(index >= 0 && index < algorithms_.size());
       algorithms_[index](reflection, adjacent);
@@ -150,7 +150,7 @@ namespace dials { namespace algorithms {
      * Compute the background
      * @param reflection The reflection object
      */
-    virtual void operator()(af::Reflection &reflection) const {
+    virtual void operator()(af::Reflection& reflection) const {
       creator_(reflection.get<Shoebox<> >("shoebox"));
     }
 
@@ -182,7 +182,7 @@ namespace dials { namespace algorithms {
      * Compute the background
      * @param reflection The reflection object
      */
-    virtual void operator()(af::Reflection &reflection) const {
+    virtual void operator()(af::Reflection& reflection) const {
       creator_.single(reflection.get<Shoebox<> >("shoebox"));
     }
 
@@ -212,7 +212,7 @@ namespace dials { namespace algorithms {
      * Compute the background
      * @param reflection The reflection object
      */
-    virtual void operator()(af::Reflection &reflection) const {
+    virtual void operator()(af::Reflection& reflection) const {
       creator_.single(reflection.get<Shoebox<> >("shoebox"));
     }
 
@@ -231,8 +231,8 @@ namespace dials { namespace algorithms {
      * Do nothing
      */
     virtual void operator()(
-      af::Reflection &reflection,
-      const std::vector<af::Reflection> &adjacent_reflections) const {}
+      af::Reflection& reflection,
+      const std::vector<af::Reflection>& adjacent_reflections) const {}
   };
 
   /**
@@ -303,15 +303,15 @@ namespace dials { namespace algorithms {
      * @param sampler The sampler object
      * @param spec The transform spec
      */
-    GaussianRSReferenceProfileData(const ReferenceProfileData &reference,
+    GaussianRSReferenceProfileData(const ReferenceProfileData& reference,
                                    std::shared_ptr<SamplerIface> sampler,
-                                   const TransformSpec &spec)
+                                   const TransformSpec& spec)
         : reference_(reference), sampler_(sampler), spec_(spec) {}
 
     /**
      * Get the reference
      */
-    const ReferenceProfileData &reference() const {
+    const ReferenceProfileData& reference() const {
       return reference_;
     }
 
@@ -325,7 +325,7 @@ namespace dials { namespace algorithms {
     /**
      * Get the transform spec
      */
-    const TransformSpec &spec() const {
+    const TransformSpec& spec() const {
       return spec_;
     }
 
@@ -344,7 +344,7 @@ namespace dials { namespace algorithms {
      * Add a data spec to the list
      * @param alg The mask calculator
      */
-    void append(const GaussianRSReferenceProfileData &spec) {
+    void append(const GaussianRSReferenceProfileData& spec) {
       spec_list_.push_back(spec);
     }
 
@@ -353,7 +353,7 @@ namespace dials { namespace algorithms {
      * @param index The index of the experiment
      * @returns The data spec for the experiments
      */
-    const GaussianRSReferenceProfileData &operator[](std::size_t index) const {
+    const GaussianRSReferenceProfileData& operator[](std::size_t index) const {
       DIALS_ASSERT(index < spec_list_.size());
       return spec_list_[index];
     }
@@ -377,8 +377,8 @@ namespace dials { namespace algorithms {
     virtual ~GaussianRSIntensityCalculatorAlgorithm() {}
 
     virtual void exec(
-      af::Reflection &reflection,
-      const std::vector<af::Reflection> &adjacent_reflections) const = 0;
+      af::Reflection& reflection,
+      const std::vector<af::Reflection>& adjacent_reflections) const = 0;
   };
 
   /**
@@ -392,7 +392,7 @@ namespace dials { namespace algorithms {
      * @param data The data to do profile fitting
      */
     GaussianRSReciprocalSpaceIntensityCalculator(
-      const GaussianRSMultiCrystalReferenceProfileData &data)
+      const GaussianRSMultiCrystalReferenceProfileData& data)
         : data_spec_(data) {}
 
     /**
@@ -400,8 +400,8 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection object
      * @param adjacent_reflections The adjacent reflections
      */
-    virtual void exec(af::Reflection &reflection,
-                      const std::vector<af::Reflection> &adjacent_reflections) const {
+    virtual void exec(af::Reflection& reflection,
+                      const std::vector<af::Reflection>& adjacent_reflections) const {
       // Typedefs
       typedef af::const_ref<double, af::c_grid<3> > data_const_reference;
       typedef af::const_ref<bool, af::c_grid<3> > mask_const_reference;
@@ -409,7 +409,7 @@ namespace dials { namespace algorithms {
       // Get the index of the reflection
       int experiment_id = reflection.get<int>("id");
       DIALS_ASSERT(experiment_id >= 0);
-      const GaussianRSReferenceProfileData &data_spec = data_spec_[experiment_id];
+      const GaussianRSReferenceProfileData& data_spec = data_spec_[experiment_id];
 
       // Get the reflection flags and Unset profile fitting
       reflection["flags"] = reflection.get<std::size_t>("flags") & ~af::IntegratedPrf;
@@ -505,7 +505,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns True/False if the shoebox is valid
      */
-    bool check(const Shoebox<> &sbox, const Detector &detector) const {
+    bool check(const Shoebox<>& sbox, const Detector& detector) const {
       // Check if the bounding box is in the image
       bool bbox_valid = sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
                         && sbox.bbox[1] <= detector[sbox.panel].get_image_size()[0]
@@ -539,7 +539,7 @@ namespace dials { namespace algorithms {
      * @param data The data to do profile fitting
      */
     GaussianRSDetectorSpaceIntensityCalculator(
-      const GaussianRSMultiCrystalReferenceProfileData &data)
+      const GaussianRSMultiCrystalReferenceProfileData& data)
         : data_spec_(data) {}
 
     /**
@@ -547,15 +547,15 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection object
      * @param adjacent_reflections The adjacent reflections
      */
-    virtual void exec(af::Reflection &reflection,
-                      const std::vector<af::Reflection> &adjacent_reflections) const {
+    virtual void exec(af::Reflection& reflection,
+                      const std::vector<af::Reflection>& adjacent_reflections) const {
       // Typedefs
       typedef af::const_ref<double, af::c_grid<3> > data_const_reference;
 
       // Get the index of the reflection
       int experiment_id = reflection.get<int>("id");
       DIALS_ASSERT(experiment_id >= 0);
-      const GaussianRSReferenceProfileData &data_spec = data_spec_[experiment_id];
+      const GaussianRSReferenceProfileData& data_spec = data_spec_[experiment_id];
 
       // Get the reflection flags and Unset profile fitting
       reflection["flags"] = reflection.get<std::size_t>("flags") & ~af::IntegratedPrf;
@@ -627,8 +627,8 @@ namespace dials { namespace algorithms {
     /**
      * Compute partiality
      */
-    double compute_partiality(const af::const_ref<double, af::c_grid<3> > &data,
-                              const af::const_ref<bool, af::c_grid<3> > &mask) const {
+    double compute_partiality(const af::const_ref<double, af::c_grid<3> >& data,
+                              const af::const_ref<bool, af::c_grid<3> >& mask) const {
       DIALS_ASSERT(data.size() == mask.size());
       double partiality = 0.0;
       for (std::size_t i = 0; i < data.size(); ++i) {
@@ -665,7 +665,7 @@ namespace dials { namespace algorithms {
      * @param data The data to do profile fitting
      */
     GaussianRSDetectorSpaceWithDeconvolutionIntensityCalculator(
-      const GaussianRSMultiCrystalReferenceProfileData &data)
+      const GaussianRSMultiCrystalReferenceProfileData& data)
         : GaussianRSDetectorSpaceIntensityCalculator(data) {}
 
     /**
@@ -673,15 +673,15 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection object
      * @param adjacent_reflections The adjacent reflections
      */
-    virtual void exec(af::Reflection &reflection,
-                      const std::vector<af::Reflection> &adjacent_reflections) const {
+    virtual void exec(af::Reflection& reflection,
+                      const std::vector<af::Reflection>& adjacent_reflections) const {
       // Typedefs
       typedef af::const_ref<double, af::c_grid<3> > data_const_reference;
 
       // Get the index of the reflection
       int experiment_id = reflection.get<int>("id");
       DIALS_ASSERT(experiment_id >= 0);
-      const GaussianRSReferenceProfileData &data_spec = data_spec_[experiment_id];
+      const GaussianRSReferenceProfileData& data_spec = data_spec_[experiment_id];
 
       // Get the reflection flags and Unset profile fitting
       reflection["flags"] = reflection.get<std::size_t>("flags") & ~af::IntegratedPrf;
@@ -751,7 +751,7 @@ namespace dials { namespace algorithms {
         // Get the index of the reflection
         int experiment_id = adjacent_reflections[j].get<int>("id");
         DIALS_ASSERT(experiment_id >= 0);
-        const GaussianRSReferenceProfileData &data_spec2 = data_spec_[experiment_id];
+        const GaussianRSReferenceProfileData& data_spec2 = data_spec_[experiment_id];
 
         // Compute coordinate system
         vec3<double> s12 = adjacent_reflections[j].get<vec3<double> >("s1");
@@ -791,7 +791,7 @@ namespace dials { namespace algorithms {
         reflection["partiality"] = partiality;
         reflection["flags"] = reflection.get<std::size_t>("flags") | af::IntegratedPrf;
 
-      } catch (std::runtime_error const &) {
+      } catch (std::runtime_error const&) {
         // This is only thrown if the matrix is singular, in which case try and
         // do profile fitting with no deconvolution
         GaussianRSDetectorSpaceIntensityCalculator::exec(reflection,
@@ -805,7 +805,7 @@ namespace dials { namespace algorithms {
      * @param mask The mask array
      * @returns True/False if the shoebox is overlapping
      */
-    bool is_overlapping(const af::const_ref<int, af::c_grid<3> > &mask) const {
+    bool is_overlapping(const af::const_ref<int, af::c_grid<3> >& mask) const {
       bool result = false;
       int mask_code = Valid | Foreground | Overlapped;
       for (std::size_t i = 0; i < mask.size(); ++i) {
@@ -846,7 +846,7 @@ namespace dials { namespace algorithms {
      * @param deconvolution Do spot deconvolution
      */
     GaussianRSIntensityCalculator(
-      const GaussianRSMultiCrystalReferenceProfileData &data,
+      const GaussianRSMultiCrystalReferenceProfileData& data,
       bool detector_space,
       bool deconvolution) {
       typedef GaussianRSDetectorSpaceWithDeconvolutionIntensityCalculator DSDCAlgorithm;
@@ -871,8 +871,8 @@ namespace dials { namespace algorithms {
      * @param adjacent_reflections The adjacent reflections list
      */
     virtual void operator()(
-      af::Reflection &reflection,
-      const std::vector<af::Reflection> &adjacent_reflections) const {
+      af::Reflection& reflection,
+      const std::vector<af::Reflection>& adjacent_reflections) const {
       algorithm_->exec(reflection, adjacent_reflections);
     }
 
@@ -926,15 +926,15 @@ namespace dials { namespace algorithms {
   class GaussianRSReferenceCalculator : public ReferenceCalculatorIface {
   public:
     GaussianRSReferenceCalculator(std::shared_ptr<SamplerIface> sampler,
-                                  const af::const_ref<TransformSpec> &spec)
+                                  const af::const_ref<TransformSpec>& spec)
         : sampler_(sampler),
           spec_(spec.begin(), spec.end()),
           modeller_(init_modeller(sampler, spec)) {}
 
     GaussianRSReferenceCalculator(
       std::shared_ptr<SamplerIface> sampler,
-      const af::const_ref<TransformSpec> &spec,
-      const af::const_ref<ThreadSafeEmpiricalProfileModeller> &modeller)
+      const af::const_ref<TransformSpec>& spec,
+      const af::const_ref<ThreadSafeEmpiricalProfileModeller>& modeller)
         : sampler_(sampler),
           spec_(spec.begin(), spec.end()),
           modeller_(modeller.begin(), modeller.end()) {}
@@ -967,7 +967,7 @@ namespace dials { namespace algorithms {
      * Do the reference profile formation
      * @param reflection The reflection to process
      */
-    virtual void operator()(af::Reflection &reflection) {
+    virtual void operator()(af::Reflection& reflection) {
       // Check input is OK
       DIALS_ASSERT(reflection.contains("id"));
       DIALS_ASSERT(reflection.contains("shoebox"));
@@ -1040,7 +1040,7 @@ namespace dials { namespace algorithms {
      * Accumulate resulrs from other reference calculators
      * @param other The other reference calculator
      */
-    void accumulate(const GaussianRSReferenceCalculator &other) {
+    void accumulate(const GaussianRSReferenceCalculator& other) {
       DIALS_ASSERT(modeller_.size() == other.modeller_.size());
       for (std::size_t i = 0; i < modeller_.size(); ++i) {
         modeller_[i].accumulate_raw_pointer(&other.modeller_[i]);
@@ -1061,7 +1061,7 @@ namespace dials { namespace algorithms {
           try {
             reference.append(modeller_[i].data(j).const_ref(),
                              modeller_[i].mask(j).const_ref());
-          } catch (dials::error const &) {
+          } catch (dials::error const&) {
             af::versa<double, af::c_grid<3> > data;
             af::versa<bool, af::c_grid<3> > mask;
             reference.append(data.const_ref(), mask.const_ref());
@@ -1078,7 +1078,7 @@ namespace dials { namespace algorithms {
      */
     af::shared<ThreadSafeEmpiricalProfileModeller> init_modeller(
       std::shared_ptr<SamplerIface> sampler,
-      const af::const_ref<TransformSpec> &spec) const {
+      const af::const_ref<TransformSpec>& spec) const {
       DIALS_ASSERT(spec.size() > 0);
       DIALS_ASSERT(sampler != NULL);
       af::shared<ThreadSafeEmpiricalProfileModeller> result;
@@ -1100,7 +1100,7 @@ namespace dials { namespace algorithms {
     bool check(std::size_t experiment_id,
                std::size_t flags,
                double partiality,
-               const Shoebox<> &sbox) const {
+               const Shoebox<>& sbox) const {
       // Check we're fully recorded
       bool full = partiality > 0.99;
 

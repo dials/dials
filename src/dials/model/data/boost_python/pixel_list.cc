@@ -19,14 +19,14 @@ namespace dials { namespace model { namespace boost_python {
   using namespace boost::python;
 
   struct PixelListPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const PixelList &obj) {
+    static boost::python::tuple getinitargs(const PixelList& obj) {
       return boost::python::make_tuple(
         obj.frame(), obj.size(), obj.value(), obj.index());
     }
   };
 
   /// Better __repr__ than default for python
-  std::string PixelList_repr(PixelList const &pixel_list) {
+  std::string PixelList_repr(PixelList const& pixel_list) {
     std::stringstream ss;
     ss << "<PixelList frame=" << pixel_list.frame() << " size=" << pixel_list.size()[0]
        << "," << pixel_list.size()[1] << " len=" << pixel_list.num_points() << ">";
@@ -37,16 +37,16 @@ namespace dials { namespace model { namespace boost_python {
     class_<PixelList>("PixelList", no_init)
       .def(init<int,
                 int2,
-                const af::const_ref<double> &,
-                const af::const_ref<std::size_t> &>(
+                const af::const_ref<double>&,
+                const af::const_ref<std::size_t>&>(
         (arg("frame"), arg("size"), arg("value"), arg("index"))))
       .def(init<int,
-                const af::const_ref<int, af::c_grid<2> > &,
-                const af::const_ref<bool, af::c_grid<2> > &>(
+                const af::const_ref<int, af::c_grid<2> >&,
+                const af::const_ref<bool, af::c_grid<2> >&>(
         (arg("frame"), arg("size"), arg("value"), arg("index"))))
       .def(init<int,
-                const af::const_ref<double, af::c_grid<2> > &,
-                const af::const_ref<bool, af::c_grid<2> > &>(
+                const af::const_ref<double, af::c_grid<2> >&,
+                const af::const_ref<bool, af::c_grid<2> >&>(
         (arg("frame"), arg("size"), arg("value"), arg("index"))))
       .def("size", &PixelList::size)
       .def("frame", &PixelList::frame)

@@ -53,7 +53,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
         "NHALF2",
     ]  # appear for additional_stats=True
 
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -112,7 +112,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
 def test_merge_dmin_dmax(dials_data, tmp_path, best_unit_cell):
     """Test the d_min, d_max"""
 
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -171,7 +171,7 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
         for sgn in ["+", "-"]
     ]
 
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refl1 = location / "scaled_30.refl"
     expt1 = location / "scaled_30.expt"
     refl2 = location / "scaled_35.refl"
@@ -245,7 +245,7 @@ def test_merge_multi_wavelength(dials_data, tmp_path):
 
 
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmp_path):
-    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    location = dials_data("vmxi_proteinase_k_sweeps")
 
     command = [
         shutil.which("dials.merge"),
@@ -267,7 +267,7 @@ Only scaled data can be processed with dials.merge
 def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     dials_data, tmp_path
 ):
-    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    location = dials_data("vmxi_proteinase_k_sweeps")
 
     command = [
         shutil.which("dials.merge"),
@@ -291,7 +291,7 @@ can be processed with dials.merge
 def test_merge_exclude_images(dials_data, tmp_path):
     """Test the command line script with LCY data: exclude_images"""
 
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_30.refl"
     expts = location / "scaled_30.expt"
 

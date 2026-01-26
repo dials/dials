@@ -40,8 +40,8 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param target The clip polygon
    * @returns The intersecting polygon
    */
-  inline shared_vec2_double simple_with_convex(const shared_vec2_double &subject,
-                                               const shared_vec2_double &target) {
+  inline shared_vec2_double simple_with_convex(const shared_vec2_double& subject,
+                                               const shared_vec2_double& target) {
     return sutherland_hodgman<shared_vec2_double>(subject, target);
   }
 
@@ -52,8 +52,8 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param rect The clip polygon
    * @returns The intersecting polygon
    */
-  inline shared_vec2_double simple_with_rect(const shared_vec2_double &poly,
-                                             const tiny<vec2<double>, 2> &rect) {
+  inline shared_vec2_double simple_with_rect(const shared_vec2_double& poly,
+                                             const tiny<vec2<double>, 2>& rect) {
     return sutherland_hodgman_rect(poly, rect);
   }
 
@@ -64,7 +64,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param target The clip polygon
    * @returns The intersecting polygon
    */
-  inline vert6 triangle_with_triangle(const vert3 &subject, const vert3 &target) {
+  inline vert6 triangle_with_triangle(const vert3& subject, const vert3& target) {
     return sutherland_hodgman_simple_convex<vert3, vert3, vert6, 6>(subject, target);
   }
 
@@ -75,7 +75,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param target The clip polygon
    * @returns The intersecting polygon
    */
-  inline vert7 triangle_with_convex_quad(const vert3 &subject, const vert4 &target) {
+  inline vert7 triangle_with_convex_quad(const vert3& subject, const vert4& target) {
     return sutherland_hodgman_simple_convex<vert3, vert4, vert7, 7>(subject, target);
   }
 
@@ -86,7 +86,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param target The clip polygon
    * @returns The intersecting polygon
    */
-  inline vert7 quad_with_triangle(const vert4 &subject, const vert3 &target) {
+  inline vert7 quad_with_triangle(const vert4& subject, const vert3& target) {
     return sutherland_hodgman_simple_convex<vert4, vert3, vert7, 7>(subject, target);
   }
 
@@ -97,7 +97,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param target The clip polygon
    * @returns The intersecting polygon
    */
-  inline vert8 quad_with_convex_quad(const vert4 &subject, const vert4 &target) {
+  inline vert8 quad_with_convex_quad(const vert4& subject, const vert4& target) {
     return sutherland_hodgman_simple_convex<vert4, vert4, vert8, 8>(subject, target);
   }
 
@@ -107,7 +107,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param rect The box
    * @returns The intersecting line
    */
-  inline std::pair<vert2, bool> line_with_rect(const vert2 &line, const vert2 &rect) {
+  inline std::pair<vert2, bool> line_with_rect(const vert2& line, const vert2& rect) {
     return cohen_sutherland_single(line, rect);
   }
 

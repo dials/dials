@@ -7,7 +7,7 @@ from boilerplate import run
 
 def test_boilerplate(dials_data, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    x4wide = dials_data("x4wide_processed", pathlib=True)
+    x4wide = dials_data("x4wide_processed")
     with mock.patch("boilerplate.dials.util.log"):
         run(
             args=[

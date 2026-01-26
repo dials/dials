@@ -50,23 +50,23 @@ namespace dials { namespace algorithms { namespace profile_model {
     public:
       virtual ~MaskCalculatorIface() {}
 
-      virtual void single(Shoebox<> &shoebox,
+      virtual void single(Shoebox<>& shoebox,
                           vec3<double> s1,
                           double frame,
                           std::size_t panel,
                           bool adjacent = false) const = 0;
 
       virtual void array(af::ref<Shoebox<> > shoebox,
-                         const af::const_ref<vec3<double> > &s1,
-                         const af::const_ref<double> &frame,
-                         const af::const_ref<std::size_t> &panel) const = 0;
+                         const af::const_ref<vec3<double> >& s1,
+                         const af::const_ref<double>& frame,
+                         const af::const_ref<std::size_t>& panel) const = 0;
 
       virtual af::shared<double> volume(
         MultiPanelImageVolume<> image_volume,
-        const af::const_ref<int6> &bbox,
-        const af::const_ref<vec3<double> > &s1,
-        const af::const_ref<double> &frame,
-        const af::const_ref<std::size_t> &panel) const = 0;
+        const af::const_ref<int6>& bbox,
+        const af::const_ref<vec3<double> >& s1,
+        const af::const_ref<double>& frame,
+        const af::const_ref<std::size_t>& panel) const = 0;
     };
 
     /**
@@ -83,10 +83,10 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param delta_b nsigma * sigma_divergence
        * @param delta_m nsigma * mosaicity
        */
-      MaskCalculator3D(const BeamBase &beam,
-                       const Detector &detector,
-                       const Goniometer &gonio,
-                       const Scan &scan,
+      MaskCalculator3D(const BeamBase& beam,
+                       const Detector& detector,
+                       const Goniometer& gonio,
+                       const Scan& scan,
                        double delta_b,
                        double delta_m)
           : detector_(detector),
@@ -113,12 +113,12 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param delta_b nsigma * sigma_divergence
        * @param delta_m nsigma * mosaicity
        */
-      MaskCalculator3D(const BeamBase &beam,
-                       const Detector &detector,
-                       const Goniometer &gonio,
-                       const Scan &scan,
-                       const af::const_ref<double> &delta_b,
-                       const af::const_ref<double> &delta_m)
+      MaskCalculator3D(const BeamBase& beam,
+                       const Detector& detector,
+                       const Goniometer& gonio,
+                       const Scan& scan,
+                       const af::const_ref<double>& delta_b,
+                       const af::const_ref<double>& delta_m)
           : detector_(detector),
             m2_(gonio.get_rotation_axis()),
             s0_(beam.get_s0()),
@@ -146,7 +146,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param frame The frame number
        * @param panel The panel number
        */
-      virtual void single(Shoebox<> &shoebox,
+      virtual void single(Shoebox<>& shoebox,
                           vec3<double> s1,
                           double frame,
                           std::size_t panel,
@@ -167,9 +167,9 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param panel The list of panel numbers
        */
       virtual void array(af::ref<Shoebox<> > shoeboxes,
-                         const af::const_ref<vec3<double> > &s1,
-                         const af::const_ref<double> &frame,
-                         const af::const_ref<std::size_t> &panel) const {
+                         const af::const_ref<vec3<double> >& s1,
+                         const af::const_ref<double>& frame,
+                         const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(shoeboxes.size() == s1.size());
         DIALS_ASSERT(shoeboxes.size() == frame.size());
         DIALS_ASSERT(shoeboxes.size() == panel.size());
@@ -179,10 +179,10 @@ namespace dials { namespace algorithms { namespace profile_model {
       }
 
       virtual af::shared<double> volume(MultiPanelImageVolume<> volume,
-                                        const af::const_ref<int6> &bbox,
-                                        const af::const_ref<vec3<double> > &s1,
-                                        const af::const_ref<double> &frame,
-                                        const af::const_ref<std::size_t> &panel) const {
+                                        const af::const_ref<int6>& bbox,
+                                        const af::const_ref<vec3<double> >& s1,
+                                        const af::const_ref<double>& frame,
+                                        const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(bbox.size() == s1.size());
         DIALS_ASSERT(bbox.size() == frame.size());
         DIALS_ASSERT(bbox.size() == panel.size());
@@ -245,7 +245,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         }
 
         // Get the panel
-        const Panel &panel = detector_[panel_number];
+        const Panel& panel = detector_[panel_number];
 
         // Create the coordinate system and generators
         CoordinateSystem cs(m2_, s0_, s1, phi);
@@ -304,7 +304,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param frame The frame number
        * @param panel The panel number
        */
-      void single_normal(Shoebox<> &shoebox,
+      void single_normal(Shoebox<>& shoebox,
                          vec3<double> s1,
                          double frame,
                          std::size_t panel_number,
@@ -342,7 +342,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         }
 
         // Get the panel
-        const Panel &panel = detector_[panel_number];
+        const Panel& panel = detector_[panel_number];
 
         // Check the size of the mask
         DIALS_ASSERT(mask.accessor()[0] == zsize);
@@ -413,7 +413,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param frame The frame number
        * @param panel The panel number
        */
-      void single_flat(Shoebox<> &shoebox,
+      void single_flat(Shoebox<>& shoebox,
                        vec3<double> s1,
                        double frame,
                        std::size_t panel_number) const {
@@ -450,7 +450,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         }
 
         // Get the panel
-        const Panel &panel = detector_[panel_number];
+        const Panel& panel = detector_[panel_number];
 
         // Check the size of the mask
         DIALS_ASSERT(mask.accessor()[0] == 1);
@@ -517,8 +517,8 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param delta_b nsigma * sigma_divergence
        * @param delta_m nsigma * mosaicity
        */
-      MaskCalculator2D(const BeamBase &beam,
-                       const Detector &detector,
+      MaskCalculator2D(const BeamBase& beam,
+                       const Detector& detector,
                        double delta_b,
                        double delta_m)
           : detector_(detector), s0_(beam.get_s0()) {
@@ -535,7 +535,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param frame The frame number
        * @param panel The panel number
        */
-      virtual void single(Shoebox<> &shoebox,
+      virtual void single(Shoebox<>& shoebox,
                           vec3<double> s1,
                           double frame,
                           std::size_t panel_number,
@@ -557,7 +557,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         /* double delta_m_r2 = delta_m_r_ * delta_m_r_; */
 
         // Get the panel
-        const Panel &panel = detector_[panel_number];
+        const Panel& panel = detector_[panel_number];
 
         // Check the size of the mask
         DIALS_ASSERT(mask.accessor()[0] == zsize);
@@ -605,9 +605,9 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param panel The list of panel numbers
        */
       virtual void array(af::ref<Shoebox<> > shoeboxes,
-                         const af::const_ref<vec3<double> > &s1,
-                         const af::const_ref<double> &frame,
-                         const af::const_ref<std::size_t> &panel) const {
+                         const af::const_ref<vec3<double> >& s1,
+                         const af::const_ref<double>& frame,
+                         const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(shoeboxes.size() == s1.size());
         DIALS_ASSERT(shoeboxes.size() == frame.size());
         DIALS_ASSERT(shoeboxes.size() == panel.size());
@@ -617,10 +617,10 @@ namespace dials { namespace algorithms { namespace profile_model {
       }
 
       virtual af::shared<double> volume(MultiPanelImageVolume<> volume,
-                                        const af::const_ref<int6> &bbox,
-                                        const af::const_ref<vec3<double> > &s1,
-                                        const af::const_ref<double> &frame,
-                                        const af::const_ref<std::size_t> &panel) const {
+                                        const af::const_ref<int6>& bbox,
+                                        const af::const_ref<vec3<double> >& s1,
+                                        const af::const_ref<double>& frame,
+                                        const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(bbox.size() == s1.size());
         DIALS_ASSERT(bbox.size() == frame.size());
         DIALS_ASSERT(bbox.size() == panel.size());
@@ -664,7 +664,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         /* double delta_m_r2 = delta_m_r_ * delta_m_r_; */
 
         // Get the panel
-        const Panel &panel = detector_[panel_number];
+        const Panel& panel = detector_[panel_number];
 
         // Create the coordinate system and generators
         CoordinateSystem2d cs(s0_, s1);
@@ -743,11 +743,11 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param s1 The list of beam vectors
        * @param frame The list of frame numbers
        */
-      void operator()(const af::const_ref<int> &id,
+      void operator()(const af::const_ref<int>& id,
                       af::ref<Shoebox<> > shoeboxes,
-                      const af::const_ref<vec3<double> > &s1,
-                      const af::const_ref<double> &frame,
-                      const af::const_ref<std::size_t> &panel) const {
+                      const af::const_ref<vec3<double> >& s1,
+                      const af::const_ref<double>& frame,
+                      const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(shoeboxes.size() == id.size());
         DIALS_ASSERT(shoeboxes.size() == s1.size());
         DIALS_ASSERT(shoeboxes.size() == frame.size());
