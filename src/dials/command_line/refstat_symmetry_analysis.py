@@ -126,13 +126,19 @@ def get_miller_array(cell, hkl_file):
     )
     return reflections_server.get_miller_arrays(None)[0]
 
+def format_sg_name(name):
+    toks = name.split()
+    if len(toks) == 4:
+        if toks[1] == '1' and toks[3] == '1':
+            return "%s%s" %(toks[0], toks[2])
+    return "".join(toks)
 
 def check_reflections(miller_array, centering="P", sigma_level=5.0):
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
     logger.info("Uniq in P1: %s" % (len(data)))
-    timex = 10
+    timex = 1
     t = time.time()
     for r in range(timex):
         xr.process(miller_array.indices(), data, sigmas)
@@ -150,13 +156,17 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
     xr.reset()
 
     sa = refstat.extinctions(miller_array, sigma_level=sigma_level)
-    sa.analyse(scale_I_to=10000)
+    sa.analyse(scale_I_to=1)
     logger.info(sa.show_stats())
     logger.info("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
     matches = sa.get_all_matching_space_groups(centering=centering)
-
+    filtered_matches = sa.get_filtered_matching_space_groups(matches=matches)
+    # merge_test object
+    t = refstat.merge_test(miller_array.indices(), data, sigmas)
     for sg, mp in matches:
-        t = refstat.merge_test(miller_array.indices(), data, sigmas)
+        # limit to the filteres selection, maybe for non-verbose only?
+        if not sg in filtered_matches:
+            continue
         weak_stats = t.sysabs_test(sg, sa.scale)
         wI = weak_stats.weak_I_sum / weak_stats.weak_count
         wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
@@ -180,22 +190,54 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
                 sI / sIs,
             )
         )
-        logger.info("%s: %s" % (sg.name, int(mp * 100)))
+        logger.info("%s: %s%% matches" % (format_sg_name(sg.name), int(mp * 100)))
 
     logger.info(
-        "Matches: %s"
+        "All matches: %s"
         % (
             ", ".join(
                 [
-                    sg.name
-                    for sg in sa.get_filtered_matching_space_groups(matches=matches)
+                    format_sg_name(sg.name)
+                    for sg in filtered_matches
+                ]
+            )
+        )
+    )
+    centric, acentric = [], []
+    max_top = 3
+    for sg in filtered_matches:
+        if sg.is_centric():
+            if len(centric) < max_top:
+                centric.append(sg)
+        else:
+            if len(acentric) < max_top:
+                acentric.append(sg)
+    logger.info(
+        "Top acentric matches: %s"
+        % (
+            ", ".join(
+                [
+                    format_sg_name(sg.name)
+                    for sg in acentric
+                ]
+            )
+        )
+    )
+    logger.info(
+        "Top centric matches: %s"
+        % (
+            ", ".join(
+                [
+                    format_sg_name(sg.name)
+                    for sg in centric
                 ]
             )
         )
     )
 
 
-def check_samples(samples_dir):
+
+def check_samples(samples_dir, sigma_level=5.0):
     samples_dir = Path(samples_dir)
     test_list = [
         samples_dir / "THPP" / "thpp",
@@ -205,7 +247,7 @@ def check_samples(samples_dir):
         try:
             logger.info("Testing: %s" % sample_base)
             ma, centering = load_miller_array_and_centering_from_hkl(sample_base)
-            check_reflections(ma, centering)
+            check_reflections(ma, centering, sigma_level=sigma_level)
         except Exception as e:
             import traceback
 

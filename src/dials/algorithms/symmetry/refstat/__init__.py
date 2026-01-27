@@ -5,7 +5,7 @@ in Olex2 from OlexSys Ltd."""
 from __future__ import annotations
 
 from dials_algorithms_symmetry_refstat_ext import extinctions_registry, merge_test
-
+import functools
 
 class registry(extinctions_registry):
     """Useful for testing"""
@@ -72,7 +72,7 @@ class extinctions(extinctions_registry):
                 scale=scale_I_to,
             )
         self.meanI = self.sumI / self.ref_count
-        self.mean_sig = (self.sum_sig_sq**0.5) / self.ref_count
+        self.mean_sig = (self.sum_sig_sq / self.ref_count) **0.5
 
         present, unique = [], []
         for x in self.all_elements:
@@ -117,7 +117,7 @@ class extinctions(extinctions_registry):
         contains all of the space groups that match the given centring and unique
         extinctions elements, must be called after 'analyse'
         """
-        sgs = []
+        sgs, all_sg = [], []
         if not self.unique:
             return sgs
         u_s = {x.id for x in self.unique}
@@ -127,8 +127,14 @@ class extinctions(extinctions_registry):
             if not sg.name.startswith(centering):
                 continue
             sge = set(self.get_extinctions(i))
-            if len(sge & u_s) == len(u_s):
+            matches_n = len(sge & u_s)
+            if matches_n == len(u_s):
                 sgs.append((sg, len(sge & p_s) / len(p_s)))
+            elif matches_n:
+                all_sg.append((sg, len(sge & p_s) / len(p_s)))
+        if not sgs and u_s:
+            all_sg.sort(key=lambda x: x[1])
+            sgs = all_sg
         return sgs
 
     def get_filtered_matching_space_groups(
@@ -153,17 +159,27 @@ class extinctions(extinctions_registry):
             if wI > self.sigma_level * wIs:
                 continue
             merge_stats = mt.merge_test(sg)
-            sgs.append((merge_stats.r_int + wI / wIs / 10, sg))
+            sgs.append((merge_stats.r_int, sg, mp, weak_stats.weak_count, merge_stats.inconsistent_count))
 
         if len(sgs) == 0:
             return sgs
         if len(sgs) > 1:
-            sgs.sort(key=lambda x: x[0])
+            def cmp(a, b):
+                if abs(a[0]-b[0]) < 0.5e-2: # check for Rint
+                    if a[2] == b[2]: # check for number of matches
+                        return b[3] - a[3] # check the number of week refs
+                    return b[2] - a[2]
+                return a[0] - b[0]
+            sgs.sort(key=functools.cmp_to_key(cmp))
+            #sgs.sort(key=lambda x: x[0])
             rv = [sgs[0][1]]
-            r_int_th = sgs[0][0] * 2
+            r_int_th = sgs[0][0] * 1.5
+            i_eq_th = sgs[0][4]
             for i in range(1, len(sgs)):
                 if sgs[i][0] > r_int_th:
-                    break
+                    continue
+                if sgs[i][4] > i_eq_th:
+                    continue
                 rv.append(sgs[i][1])
             return rv
         else:
