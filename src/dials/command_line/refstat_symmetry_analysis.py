@@ -126,12 +126,14 @@ def get_miller_array(cell, hkl_file):
     )
     return reflections_server.get_miller_arrays(None)[0]
 
+
 def format_sg_name(name):
     toks = name.split()
     if len(toks) == 4:
-        if toks[1] == '1' and toks[3] == '1':
-            return "%s%s" %(toks[0], toks[2])
+        if toks[1] == "1" and toks[3] == "1":
+            return "%s%s" % (toks[0], toks[2])
     return "".join(toks)
+
 
 def check_reflections(miller_array, centering="P", sigma_level=5.0):
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
@@ -165,7 +167,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
     t = refstat.merge_test(miller_array.indices(), data, sigmas)
     for sg, mp in matches:
         # limit to the filteres selection, maybe for non-verbose only?
-        if not sg in filtered_matches:
+        if sg not in filtered_matches:
             continue
         weak_stats = t.sysabs_test(sg, sa.scale)
         wI = weak_stats.weak_I_sum / weak_stats.weak_count
@@ -194,14 +196,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
 
     logger.info(
         "All matches: %s"
-        % (
-            ", ".join(
-                [
-                    format_sg_name(sg.name)
-                    for sg in filtered_matches
-                ]
-            )
-        )
+        % (", ".join([format_sg_name(sg.name) for sg in filtered_matches]))
     )
     centric, acentric = [], []
     max_top = 3
@@ -214,27 +209,12 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
                 acentric.append(sg)
     logger.info(
         "Top acentric matches: %s"
-        % (
-            ", ".join(
-                [
-                    format_sg_name(sg.name)
-                    for sg in acentric
-                ]
-            )
-        )
+        % (", ".join([format_sg_name(sg.name) for sg in acentric]))
     )
     logger.info(
         "Top centric matches: %s"
-        % (
-            ", ".join(
-                [
-                    format_sg_name(sg.name)
-                    for sg in centric
-                ]
-            )
-        )
+        % (", ".join([format_sg_name(sg.name) for sg in centric]))
     )
-
 
 
 def check_samples(samples_dir, sigma_level=5.0):

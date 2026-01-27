@@ -4,8 +4,10 @@ in Olex2 from OlexSys Ltd."""
 
 from __future__ import annotations
 
-from dials_algorithms_symmetry_refstat_ext import extinctions_registry, merge_test
 import functools
+
+from dials_algorithms_symmetry_refstat_ext import extinctions_registry, merge_test
+
 
 class registry(extinctions_registry):
     """Useful for testing"""
@@ -72,7 +74,7 @@ class extinctions(extinctions_registry):
                 scale=scale_I_to,
             )
         self.meanI = self.sumI / self.ref_count
-        self.mean_sig = (self.sum_sig_sq / self.ref_count) **0.5
+        self.mean_sig = (self.sum_sig_sq / self.ref_count) ** 0.5
 
         present, unique = [], []
         for x in self.all_elements:
@@ -159,19 +161,29 @@ class extinctions(extinctions_registry):
             if wI > self.sigma_level * wIs:
                 continue
             merge_stats = mt.merge_test(sg)
-            sgs.append((merge_stats.r_int, sg, mp, weak_stats.weak_count, merge_stats.inconsistent_count))
+            sgs.append(
+                (
+                    merge_stats.r_int,
+                    sg,
+                    mp,
+                    weak_stats.weak_count,
+                    merge_stats.inconsistent_count,
+                )
+            )
 
         if len(sgs) == 0:
             return sgs
         if len(sgs) > 1:
+
             def cmp(a, b):
-                if abs(a[0]-b[0]) < 0.5e-2: # check for Rint
-                    if a[2] == b[2]: # check for number of matches
-                        return b[3] - a[3] # check the number of week refs
+                if abs(a[0] - b[0]) < 0.5e-2:  # check for Rint
+                    if a[2] == b[2]:  # check for number of matches
+                        return b[3] - a[3]  # check the number of week refs
                     return b[2] - a[2]
                 return a[0] - b[0]
+
             sgs.sort(key=functools.cmp_to_key(cmp))
-            #sgs.sort(key=lambda x: x[0])
+            # sgs.sort(key=lambda x: x[0])
             rv = [sgs[0][1]]
             r_int_th = sgs[0][0] * 1.5
             i_eq_th = sgs[0][4]

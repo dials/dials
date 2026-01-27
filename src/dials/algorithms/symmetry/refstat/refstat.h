@@ -225,9 +225,8 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
       space_group_symbol_iterator itr;
       space_group_symbols sgs;
       while ((sgs = itr.next()).number() != 0) {
-        if (sgs.change_of_basis_symbol().length() != 0 ||
-          (sgs.extension() != '\0' && sgs.extension() != '1'))
-        {
+        if (sgs.change_of_basis_symbol().length() != 0
+            || (sgs.extension() != '\0' && sgs.extension() != '1')) {
           continue;
         }
         space_groups.push_back(sgs);
