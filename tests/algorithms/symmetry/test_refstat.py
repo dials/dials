@@ -166,7 +166,7 @@ d--  (  658):            87.07(  0.53) -
     )
 
     assert pytest.approx(sa.meanI, 0.001) == 53.880
-    assert pytest.approx(sa.mean_sig, 0.001) == 0.098
+    assert pytest.approx(sa.mean_sig, 0.001) == 10.450
     assert sa.ref_count == 11372
 
     expected_output = """Inconsistent eq: 30, r_int: 4.264, w: -0.025(0.47)/224 -0.054, s: 190.118(49.62)/231 3.832
@@ -227,7 +227,9 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
         capture_output=True,
     )
     assert not result.check_returncode()
-    assert result.stdout.endswith(b"Matches: P 1 21/n 1\n")
+    assert result.stdout.endswith(
+        b"P21/n: 40% matches\nAll matches: P21/n\nTop acentric matches: \nTop centric matches: P21/n\n"
+    )
 
 
 def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
@@ -242,4 +244,6 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
         capture_output=True,
     )
     assert not result.check_returncode()
-    assert result.stdout.endswith(b"Matches: P 31, P 32, P 31 2 1, P 32 2 1\n")
+    assert result.stdout.endswith(
+        b"P3221: 100% matches\nAll matches: P31, P32, P3121, P3221\nTop acentric matches: P31, P32, P3121\nTop centric matches: \n"
+    )
