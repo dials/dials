@@ -225,9 +225,10 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
         ),
         cwd=tmp_path,
         capture_output=True,
+        text=True,
     )
     assert not result.check_returncode()
-    assert result.stdout.decode().strip().endswith("Matches: P 1 21/n 1")
+    assert result.stdout.strip().endswith("Matches: P 1 21/n 1")
 
 
 def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
@@ -240,10 +241,7 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
         ),
         cwd=tmp_path,
         capture_output=True,
+        text=True,
     )
     assert not result.check_returncode()
-    assert (
-        result.stdout.decode()
-        .strip()
-        .endswith("Matches: P 31, P 32, P 31 2 1, P 32 2 1")
-    )
+    assert result.stdout.strip().endswith("Matches: P 31, P 32, P 31 2 1, P 32 2 1")
