@@ -1,0 +1,1 @@
+``dials.split_still_data``: Fix bug in splitting logic for nxs/h5 data in recent versions of dials, where all images were assigned to the first group. 
