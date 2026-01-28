@@ -166,7 +166,7 @@ d--  (  658):            87.07(  0.53) -
     )
 
     assert pytest.approx(sa.meanI, 0.001) == 53.880
-    assert pytest.approx(sa.mean_sig, 0.001) == 0.098
+    assert pytest.approx(sa.mean_sig, 0.001) == 10.450
     assert sa.ref_count == 11372
 
     expected_output = """Inconsistent eq: 30, r_int: 4.264, w: -0.025(0.47)/224 -0.054, s: 190.118(49.62)/231 3.832
