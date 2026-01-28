@@ -21,12 +21,14 @@ def test_dials_cluster_unit_cell_command_line(dials_data, tmp_path):
     experiments = sorted(data_dir.glob("sweep_*_experiments.json"))
 
     result = subprocess.run(
-        [shutil.which("dials.cluster_unit_cell"), "plot.show=False"] + experiments,
+        [shutil.which("dials.cluster_unit_cell"), "plot.show=False", "html=tmp.html"]
+        + experiments,
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode
     assert tmp_path.joinpath("cluster_unit_cell.png").is_file()
+    assert tmp_path.joinpath("tmp.html").is_file()
 
 
 def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path):

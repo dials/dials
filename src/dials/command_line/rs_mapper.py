@@ -135,6 +135,9 @@ class Script:
             self.map_file = params.output.map_file
 
         self.experiments = flatten_experiments(params.input.experiments)
+        if len(self.experiments) == 0:
+            self.parser.print_help()
+            return
 
         self.reverse_phi = params.rs_mapper.reverse_phi
         self.grid_size = params.rs_mapper.grid_size
