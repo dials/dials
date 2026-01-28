@@ -1,1 +1,1 @@
-``dials.integrate``: Include overhead in the calculation of memory required per process
+``dials.integrate``: Include overhead in the calculation of memory required per process, report memory calculations in MB rather than GB, and reduce the default ``max_memory_usage`` parameter to 0.8 rather than 0.9.
