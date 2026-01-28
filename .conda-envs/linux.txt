@@ -50,6 +50,7 @@ scons
 setuptools
 six
 sphinx>=4
+sphinx-design
 sqlite
 tabulate
 tqdm
