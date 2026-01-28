@@ -87,19 +87,6 @@ a.new-documentation:hover {
   }
 }
 
-.toggle .header {
-    display: block;
-    clear: both;
-}
-
-.toggle .header:after {
-    content: " ▼";
-}
-
-.toggle .header.open:after {
-    content: " ▲";
-}
-
 a.button span {
   -moz-box-shadow:inset 0px 1px 0px 0px #061679;
   -webkit-box-shadow:inset 0px 1px 0px 0px #061679;
