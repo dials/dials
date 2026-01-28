@@ -33,9 +33,10 @@ namespace dials { namespace algorithms {
     double beta;
     double beta_min;
     double beta_max;
-    int n_restarts;         // number of attempts when fitting
-    bool optimize_profile;  // If false the profile is generated with input params
-    bool use_central_diff;  // Use more expensive central differences for gradients
+    int n_restarts;              // number of attempts when fitting
+    bool optimize_profile;       // If false the profile is generated with input params
+    bool use_central_diff;       // Use more expensive central differences for gradients
+    bool show_profile_failures;  // Prints debugging information
 
     TOFProfile3DParams(double alpha,
                        double alpha_min,
@@ -45,7 +46,8 @@ namespace dials { namespace algorithms {
                        double beta_max,
                        int n_restarts,
                        bool optimize_profile,
-                       bool use_central_diff)
+                       bool use_central_diff,
+                       bool show_profile_failures)
         : alpha(alpha),
           alpha_min(alpha_min),
           alpha_max(alpha_max),
@@ -54,7 +56,8 @@ namespace dials { namespace algorithms {
           beta_max(beta_max),
           n_restarts(n_restarts),
           optimize_profile(optimize_profile),
-          use_central_diff(use_central_diff) {}
+          use_central_diff(use_central_diff),
+          show_profile_failures(show_profile_failures) {}
   };
 
   struct GutmannProfileFunctor {
@@ -568,7 +571,10 @@ namespace dials { namespace algorithms {
       return total;
     }
 
-    bool fit(int maxfev = 200, double xtol = 1e-8, double ftol = 1e-8) {
+    bool fit(bool show_profile_failures,
+             int maxfev = 200,
+             double xtol = 1e-8,
+             double ftol = 1e-8) {
       /*
        * Least-squares minimization
        * Updates alpha, beta, H
@@ -611,7 +617,7 @@ namespace dials { namespace algorithms {
 
       if (success) {
         I_prf = this->calc_intensity();
-        if (this->trust_result(fit_resid, I_prf)) {
+        if (this->trust_result(fit_resid, I_prf, show_profile_failures)) {
           return true;
         }
       }
@@ -654,7 +660,7 @@ namespace dials { namespace algorithms {
         success = run_single_fit(x_try, fit_resid);
         if (!success) continue;
         I_prf = this->calc_intensity();
-        if (this->trust_result(fit_resid, I_prf)) {
+        if (this->trust_result(fit_resid, I_prf, show_profile_failures)) {
           return true;
         }
       }
@@ -662,18 +668,26 @@ namespace dials { namespace algorithms {
       return false;
     }
 
-    bool trust_result(double error, double I_prf) const {
+    bool trust_result(double error, double I_prf, bool show_error = false) const {
       /**
        * Tests to check the fit is reasonable
        */
 
       // Check reasonable error
       if (!std::isfinite(error) || error <= 0.0) {
+        if (show_error) {
+          std::cerr << "profile3d fitting failure: invalid error value (error=" << error
+                    << ")\n";
+        }
         return false;
       }
 
       // Check reasonable intensity
       if (I_prf < 1e-7) {
+        if (show_error) {
+          std::cerr << "profile3d fitting failure: profile intensity too small (I_prf="
+                    << I_prf << ")\n";
+        }
         return false;
       }
 
@@ -683,7 +697,12 @@ namespace dials { namespace algorithms {
       // Check positive H
       Eigen::Matrix3d H = functor->build_H_from_L(params);
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eig(H);
-      if (eig.eigenvalues().minCoeff() <= 0.0) {
+      double min_eig = eig.eigenvalues().minCoeff();
+      if (min_eig <= 0.0) {
+        if (show_error) {
+          std::cerr << "profile3d fitting failure: non-positive Hessian eigenvalue "
+                    << "(min_eigenvalue=" << min_eig << ")\n";
+        }
         return false;
       }
 
@@ -694,10 +713,15 @@ namespace dials { namespace algorithms {
       const std::size_t nx = acc[0];
       const std::size_t ny = acc[1];
       const std::size_t nz = acc[2];
-      double profile_peak = 0, data_peak = 0, sum_val = 0;
-      double num = 0, denom_y = 0, denom_m = 0;
+
+      double profile_peak = 0.0;
+      double data_peak = 0.0;
+      double sum_val = 0.0;
+      double num = 0.0, denom_y = 0.0, denom_m = 0.0;
+
       double norm_factor = functor->cached_norm;
       double A = functor->cached_A;
+
       for (std::size_t ix = 0; ix < nx; ++ix) {
         for (std::size_t iy = 0; iy < ny; ++iy) {
           for (std::size_t iz = 0; iz < nz; ++iz) {
@@ -709,36 +733,65 @@ namespace dials { namespace algorithms {
                                        A,
                                        norm_factor,
                                        functor->dt_widths[iz]);
+
             if (!std::isfinite(val)) {
+              if (show_error) {
+                std::cerr << "profile3d fitting failure: non-finite model value "
+                          << "(ix=" << ix << ", iy=" << iy << ", iz=" << iz
+                          << ", val=" << val << ")\n";
+              }
               return false;
             }
+
+            if (val > exp_limit) {
+              if (show_error) {
+                std::cerr << "profile3d fitting failure: model value exceeds limit "
+                          << "(ix=" << ix << ", iy=" << iy << ", iz=" << iz
+                          << ", val=" << val << ", limit=" << exp_limit << ")\n";
+              }
+              return false;
+            }
+
             data_peak = std::max(data_peak, data_val);
             profile_peak = std::max(profile_peak, val);
             sum_val += val;
             num += data_val * val;
             denom_y += data_val * data_val;
             denom_m += val * val;
-            if (val > exp_limit) {
-              return false;
-            }
           }
         }
       }
+
       double mean_val = sum_val / coords.size();
       if (mean_val > mean_limit) {
+        if (show_error) {
+          std::cerr << "profile3d fitting failure: mean profile value too large "
+                    << "(mean_val=" << mean_val << ", limit=" << mean_limit << ")\n";
+        }
         return false;
       }
 
       // Check correlation with data
       double corr = num / std::sqrt(denom_y * denom_m + 1e-12);
       if (corr < 0.75) {
+        if (show_error) {
+          std::cerr << "profile3d fitting failure: low correlation with data "
+                    << "(corr=" << corr << ")\n";
+        }
         return false;
       }
 
       // Check peak height is within 25% of data peak
-      if (std::abs(profile_peak - data_peak) > data_peak * 0.25) {
+      double peak_diff = std::abs(profile_peak - data_peak);
+      if (peak_diff > data_peak * 0.25) {
+        if (show_error) {
+          std::cerr << "profile3d fitting failure: peak height mismatch "
+                    << "(profile_peak=" << profile_peak << ", data_peak=" << data_peak
+                    << ", diff=" << peak_diff << ")\n";
+        }
         return false;
       }
+
       return true;
     }
   };
@@ -776,7 +829,7 @@ namespace dials { namespace algorithms {
 
     bool profile_success = true;
     if (profile_params.optimize_profile) {
-      profile_success = profile.fit();
+      profile_success = profile.fit(profile_params.show_profile_failures);
     }
 
     if (profile_success) {
