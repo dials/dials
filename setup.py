@@ -69,6 +69,7 @@ setup_kwargs = {
         ],
         "dials.index.lattice_search": [
             "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch",
+            "small_cell = dials.algorithms.indexing.lattice_search:SmallCell",
             "pink_indexer = dials.algorithms.indexing.lattice_search:PinkIndexer",
             "ffbidx = dials.algorithms.indexing.lattice_search:FfbIndexer",
         ],
