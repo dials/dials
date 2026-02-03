@@ -72,7 +72,7 @@ class extinctions(extinctions_registry):
                 scale=scale_I_to,
             )
         self.meanI = self.sumI / self.ref_count
-        self.mean_sig = (self.sum_sig_sq**0.5) / self.ref_count
+        self.mean_sig = (self.sum_sig_sq / self.ref_count) ** 0.5
 
         present, unique = [], []
         for x in self.all_elements:
