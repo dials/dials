@@ -377,6 +377,7 @@ namespace dials { namespace algorithms {
 
         // Compute residual norm
         Eigen::VectorXd fvec(functor.num_data_points);
+        functor(x, fvec);
         final_error = fvec.squaredNorm();
 
         // Update fitted parameters

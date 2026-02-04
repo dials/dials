@@ -1,0 +1,1 @@
+Fix missing residual calculation in ToF profile1d fitting causing failures on MacOS.
