@@ -1,0 +1,8 @@
+Import("env")
+
+env.SharedLibrary(
+    target="#/lib/dials_cosym_ext",
+    source=["boost_python/cosym_helper.cc", "boost_python/cosym_ext.cc"],
+    LIBS=env["LIBS"],
+)
+
