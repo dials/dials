@@ -8,7 +8,6 @@ cxx-compiler
 dials-data>=2.4.123
 docutils
 eigen
-ffbidx>=1.1.3
 future
 gemmi>=0.7
 h5py>=3.1.0
@@ -29,7 +28,7 @@ numpy
 nxmx
 optuna
 ordered-set
-pandas
+pandas<3.0.0
 pillow>=5.4.1
 pint
 pip

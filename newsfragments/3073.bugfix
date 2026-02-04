@@ -1,0 +1,1 @@
+``dials.integrate``: avoid ``FutureWarning`` from deprecated usage of ``functools.partial``.
