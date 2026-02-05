@@ -84,7 +84,7 @@ def basics():
 
     sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
     extinctions = [xr.show_extinctions_for(sgn) for sgn in sgs]
-    return val + "\n".join(extinctions)
+    return val + "\n" + "\n".join(extinctions)
 
 
 def get_cs_hkl(file_base):
@@ -178,7 +178,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
         logger.info(
-            "Inconsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
+            "Inconsistent equivalents: %s, r_int: %.3f, weak: %.3f(%.2f)/%s %.3f, strong: %.3f(%.2f)/%s %.3f"
             % (
                 merge_stats.inconsistent_count,
                 merge_stats.r_int * 100,
@@ -438,9 +438,9 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         logger.info(stats)
         sys.exit(0)
 
-    elif [params.sample_dir, params.check_dir, params.check_file].count(None) == 3:
+    else:
         parser.print_help()
-        logger.info("No test paths provided. Only performing a basic test.")
+        logger.info("No valid input files. Only performing a basic test.")
         logger.info(basics())
 
 
