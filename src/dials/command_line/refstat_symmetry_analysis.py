@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -428,18 +427,22 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     elif params.check_file and os.path.exists(params.check_file):
         check_base = os.path.splitext(params.check_file)[0]
         logger.info("Testing: %s" % check_base)
-        ma, centering = load_miller_array_and_centering_from_hkl(check_base)
+        try:
+            ma, centering = load_miller_array_and_centering_from_hkl(check_base)
+        except Exception as e:
+            import traceback
+
+            logger.info(traceback.format_exc())
+            logger.info("Failed to test %s: %s " % (check_base, str(e)))
+            return
         check_reflections(ma, centering, sigma_level=params.sigma_level)
-        sys.exit(0)
 
     elif params.sample_dir and os.path.exists(params.sample_dir):
         check_samples(params.sample_dir, sigma_level=params.sigma_level)
-        sys.exit(0)
 
     elif params.check_dir and os.path.exists(params.check_dir):
         stats = check_dir(params.check_dir, sigma_level=params.sigma_level)
         logger.info(stats)
-        sys.exit(0)
 
     else:
         parser.print_help()
