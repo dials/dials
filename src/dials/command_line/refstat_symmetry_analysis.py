@@ -170,10 +170,13 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
         if sg not in filtered_matches:
             continue
         weak_stats = t.sysabs_test(sg, sa.scale)
-        wI = weak_stats.weak_I_sum / weak_stats.weak_count
-        wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
-        if wI > 5 * wIs:
-            continue
+        if weak_stats.weak_count:
+            wI = weak_stats.weak_I_sum / weak_stats.weak_count
+            wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
+            if wI > 5 * wIs:
+                continue
+        else:
+            wI, wIs = 0, 0
         merge_stats = t.merge_test(sg)
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
@@ -185,7 +188,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
                 wI,
                 wIs,
                 weak_stats.weak_count,
-                wI / wIs,
+                wI / wIs if wIs else 0,
                 sI,
                 sIs,
                 weak_stats.strong_count,

@@ -79,6 +79,8 @@ class extinctions(extinctions_registry):
         present, unique = [], []
         for x in self.all_elements:
             if not x.count:
+                x.meanI, x.sig = 0, 0
+                present.append(x)
                 continue
             x.meanI, x.sig = x.sumI / x.count, (x.sumS_sq**0.5) / x.count
             # check the overall intensity as well
@@ -100,8 +102,6 @@ class extinctions(extinctions_registry):
         """Return a string giving extinction elements statistics, must be called after 'analyse'"""
         lines = []
         for x in self.all_elements:
-            if not x.count:
-                continue
             if x in self.present:
                 flag = "+"
                 if x not in self.unique:
@@ -120,8 +120,6 @@ class extinctions(extinctions_registry):
         extinctions elements, must be called after 'analyse'
         """
         sgs, all_sg = [], []
-        if not self.unique:
-            return sgs
         u_s = {x.id for x in self.unique}
         p_s = {x.id for x in self.present}
         for i in range(self.sg_count()):
@@ -156,10 +154,11 @@ class extinctions(extinctions_registry):
                 self.miller_array.sigmas(),
             )
             weak_stats = mt.sysabs_test(sg, self.scale)
-            wI = weak_stats.weak_I_sum / weak_stats.weak_count
-            wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
-            if wI > self.sigma_level * wIs:
-                continue
+            if weak_stats.weak_count:
+                wI = weak_stats.weak_I_sum / weak_stats.weak_count
+                wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
+                if wI > self.sigma_level * wIs:
+                    continue
             merge_stats = mt.merge_test(sg)
             sgs.append(
                 (
