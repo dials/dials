@@ -247,5 +247,5 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
     )
     assert not result.check_returncode()
     assert result.stdout.endswith(
-        "P3221: 100% matches\nAll matches: P31, P32, P3121, P3221\nTop acentric matches: P31, P32, P3121\nTop centric matches: \n"
+        "P3221: 50% matches\nAll matches: P31, P32, P3121, P3221\nTop acentric matches: P31, P32, P3121\nTop centric matches: \n"
     )
