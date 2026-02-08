@@ -50,6 +50,11 @@ phil_scope = libtbx.phil.parse(
         .help="Path to an .ins or .res file to calculate statistics for a"
               "particular example"
 
+    explore = False
+        .type = bool
+        .help = "If set True, do not check any files, but print information about"
+                "the symmetry elements and extinctions for a few example space groups."
+
     sigma_level = 5.0
         .type = float
         .help = "Sigma level to use to identify systematic absences"
@@ -411,7 +416,13 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     # Run analysis in the various modes
-    if params.input.experiments and params.input.reflections:
+    if params.explore:
+        logger.info(
+            "Exploring symmetry elements and extinctions for example space groups"
+        )
+        logger.info(basics())
+
+    elif params.input.experiments and params.input.reflections:
         reflections, experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
@@ -446,8 +457,6 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
 
     else:
         parser.print_help()
-        logger.info("No valid input files. Only performing a basic test.")
-        logger.info(basics())
 
 
 if __name__ == "__main__":
