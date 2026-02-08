@@ -170,7 +170,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
     # merge_test object
     t = refstat.merge_test(miller_array.indices(), data, sigmas)
     for sg, mp in matches:
-        # limit to the filteres selection, maybe for non-verbose only?
+        # limit to the filtered selection, maybe for non-verbose only?
         if sg not in filtered_matches:
             continue
         weak_stats = t.sysabs_test(sg, sa.scale)
@@ -278,7 +278,7 @@ def check_dir(root_, sigma_level=5.0):
                 if not original_sg_name:
                     continue
                 logger.info("Original space group: %s" % (original_sg_name))
-                matches, filtred_matches = get_matches(
+                matches, filtered_matches = get_matches(
                     cs, hkl_path, original_sg_name[0]
                 )
                 if matches is None:
@@ -288,12 +288,12 @@ def check_dir(root_, sigma_level=5.0):
                         stats["P1"] += 1
                     continue
 
-                filtred_matches_names = [sg.name for sg in filtred_matches]
-                if original_sg_name in filtred_matches_names:
+                filtered_matches_names = [sg.name for sg in filtered_matches]
+                if original_sg_name in filtered_matches_names:
                     stats["100"] += 1
                 else:
                     stats["+"] += 1
-                logger.info("Matches: %s" % (", ".join(filtred_matches_names)))
+                logger.info("Matches: %s" % (", ".join(filtered_matches_names)))
 
             except Exception as e:
                 import traceback
