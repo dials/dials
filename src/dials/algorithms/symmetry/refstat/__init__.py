@@ -140,6 +140,23 @@ class extinctions(extinctions_registry):
     def get_filtered_matching_space_groups(
         self, matches=None, cell_compatible_only=True
     ):
+        """
+        Filter the list of matching space groups, selecting only those that are
+        compatible with the unit cell of the miller array (if cell_compatible_only
+        is True) and have acceptable weak reflection statistics. The filtered
+        list is then sorted based on Rint, where for elements with similar Rint
+        the number of matching present elements is used to break ties. For
+        elements with the same number of matching present elements, the number
+        of weak reflections is used to break ties.
+
+        Parameters:
+        matches (list): The list of matching space groups to filter.
+        cell_compatible_only (bool): If true, only consider space groups that are
+            compatible with the unit cell of the given miller array.
+
+        Returns:
+        list: A list of matching space groups that pass the filter criteria.
+        """
         if matches is None:
             matches = self.get_all_matching_space_groups()
         sgs = []
@@ -177,12 +194,11 @@ class extinctions(extinctions_registry):
             def cmp(a, b):
                 if abs(a[0] - b[0]) < 0.5e-2:  # check for Rint
                     if a[2] == b[2]:  # check for number of matches
-                        return b[3] - a[3]  # check the number of week refs
+                        return b[3] - a[3]  # check the number of weak refs
                     return b[2] - a[2]
                 return a[0] - b[0]
 
             sgs.sort(key=functools.cmp_to_key(cmp))
-            # sgs.sort(key=lambda x: x[0])
             rv = [sgs[0][1]]
             r_int_th = sgs[0][0] * 1.5
             i_eq_th = sgs[0][4]
