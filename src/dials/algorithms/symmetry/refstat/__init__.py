@@ -143,7 +143,7 @@ class extinctions(extinctions_registry):
         """
         Filter the list of matching space groups, selecting only those that are
         compatible with the unit cell of the miller array (if cell_compatible_only
-        is True) and have acceptable weak reflection statistics. The filtered
+        is True) and have acceptable systematic absence statistics. The filtered
         list is then sorted based on Rint, where for elements with similar Rint
         the number of matching present elements is used to break ties. For
         elements with the same number of matching present elements, the number
@@ -170,11 +170,16 @@ class extinctions(extinctions_registry):
                 self.miller_array.data(),
                 self.miller_array.sigmas(),
             )
-            weak_stats = mt.sysabs_test(sg, self.scale)
-            if weak_stats.weak_count:
-                wI = weak_stats.weak_I_sum / weak_stats.weak_count
-                wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
+            sysabs_stats = mt.sysabs_test(sg, self.scale)
+            if sysabs_stats.weak_count:
+                wI = sysabs_stats.weak_I_sum / sysabs_stats.weak_count
+                wIs = (sysabs_stats.weak_sig_sq_sum / sysabs_stats.weak_count) ** 0.5
                 if wI > self.sigma_level * wIs:
+                    continue
+                if (
+                    sysabs_stats.strong_count
+                    and wI > sysabs_stats.strong_I_sum / sysabs_stats.strong_count
+                ):
                     continue
             merge_stats = mt.merge_test(sg)
             sgs.append(
@@ -182,7 +187,7 @@ class extinctions(extinctions_registry):
                     merge_stats.r_int,
                     sg,
                     mp,
-                    weak_stats.weak_count,
+                    sysabs_stats.weak_count,
                     merge_stats.inconsistent_count,
                 )
             )
