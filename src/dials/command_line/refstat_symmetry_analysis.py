@@ -20,6 +20,7 @@ from dials.algorithms.symmetry import (
 )
 from dials.array_family import flex
 from dials.command_line.symmetry import phil_scope as symmetry_phil_scope
+from dials.util import tabulate
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -169,6 +170,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
     filtered_matches = sa.get_filtered_matching_space_groups(matches=matches)
     # merge_test object
     t = refstat.merge_test(miller_array.indices(), data, sigmas)
+    rows = []
     for sg, mp in matches:
         # limit to the filtered selection, maybe for non-verbose only?
         if sg not in filtered_matches:
@@ -184,22 +186,33 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
         merge_stats = t.merge_test(sg)
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
-        logger.info(
-            "Inconsistent equivalents: %s, r_int: %.3f, weak: %.3f(%.2f)/%s %.3f, strong: %.3f(%.2f)/%s %.3f"
-            % (
+        rows.append(
+            [
+                format_sg_name(sg.name),
+                f"{int(mp * 100)}",
                 merge_stats.inconsistent_count,
-                merge_stats.r_int * 100,
-                wI,
-                wIs,
+                f"{merge_stats.r_int * 100:.3f}",
                 weak_stats.weak_count,
-                wI / wIs if wIs else 0,
-                sI,
-                sIs,
+                f"{wI / wIs if wIs else 0:.2f}",
                 weak_stats.strong_count,
-                sI / sIs,
-            )
+                f"{sI / sIs if sIs else 0:.2f}",
+            ]
         )
-        logger.info("%s: %s%% matches" % (format_sg_name(sg.name), int(mp * 100)))
+    logger.info(
+        tabulate(
+            rows,
+            headers=[
+                "Space group",
+                "Matches (%)",
+                "Incons.\nequiv.",
+                "Rint",
+                "#Weak",
+                "Weak I/σ(I)",
+                "#Strong",
+                "Strong I/σ(I)",
+            ],
+        )
+    )
 
     logger.info(
         "All matches: %s"
