@@ -1006,7 +1006,11 @@ class GroupingImageFiles(GroupingImageTemplates):
                     groups_for_this = []
                     group_indices = group_info["img_idx_to_group_id"]
                     for expt in expts:
-                        index = expt.imageset.indices()[0]
+                        # Current processing have scans that index into an imageset
+                        try:
+                            index = expt.scan.get_image_range()[0] - 1
+                        except AttributeError:  # fallback for old style processing files that don't have scans
+                            index = expt.imageset.indices()[0]
                         idx = group_indices[index]
                         groups_for_this.append(idx)
                     groupdata.groups_array = np.array(groups_for_this, dtype=np.uint64)
