@@ -14,7 +14,7 @@ from dials.command_line.ssx_index import run
 
 
 def test_ssx_index_reference_geometry(dials_data, tmp_path):
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
     expts = ssx / "imported_with_ref_5.expt"
     refls = ssx / "strong_5.refl"
     pathlib.Path.mkdir(tmp_path / "nuggets")
@@ -48,18 +48,21 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
 
 @pytest.mark.parametrize("indexer", ["stills", "sequences"])
 def test_ssx_index_no_reference_geometry(dials_data, tmp_path, indexer):
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
     expts = ssx / "imported_no_ref_5.expt"
     refls = ssx / "strong_5.refl"
 
+    args = [
+        shutil.which("dials.ssx_index"),
+        expts,
+        refls,
+        f"stills.indexer={indexer}",
+        "-vv",
+    ]
+    if indexer == "sequences":
+        args.append("refinement.reflections.outlier.algorithm=null")
     result = subprocess.run(
-        [
-            shutil.which("dials.ssx_index"),
-            expts,
-            refls,
-            f"stills.indexer={indexer}",
-            "-vv",
-        ],
+        args,
         cwd=tmp_path,
         capture_output=True,
     )
@@ -80,7 +83,7 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path, indexer):
 
 
 def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
     expts = str(ssx / "imported_no_ref_5.expt")
     refls = str(ssx / "strong_1.refl")
 
@@ -90,7 +93,7 @@ def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
 
 
 def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
     expts = str(ssx / "imported_with_ref_5.expt")
     refls = str(ssx / "strong_5.refl")
 

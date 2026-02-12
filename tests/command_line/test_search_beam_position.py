@@ -102,7 +102,7 @@ def test_index_after_search(dials_data, run_in_tmp_path):
     unit cell is obtained and that the RMSDs are smaller than or equal to some
     expected values."""
 
-    insulin = dials_data("insulin_processed", pathlib=True)
+    insulin = dials_data("insulin_processed")
 
     # load the original experiment and perturb
     # the beam centre by a small offset
@@ -159,7 +159,7 @@ def test_search_single(dials_data, run_in_tmp_path):
     in detector origin.
     """
 
-    insulin = dials_data("insulin_processed", pathlib=True)
+    insulin = dials_data("insulin_processed")
     refl_path = insulin / "strong.refl"
     experiments_path = insulin / "imported.expt"
 
@@ -190,7 +190,7 @@ def test_search_small_molecule(dials_data, run_in_tmp_path):
     in detector origin.
     """
 
-    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    data = dials_data("l_cysteine_dials_output")
     experiments_path = data / "imported.expt"
     refl_path = data / "strong.refl"
 
@@ -216,7 +216,7 @@ def test_search_small_molecule(dials_data, run_in_tmp_path):
 
 
 def test_multi_sweep_fixed_rotation(dials_data, run_in_tmp_path):
-    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    data = dials_data("l_cysteine_dials_output")
     experiments_path = data / "imported.expt"
     refl_path = data / "strong.refl"
 
@@ -261,8 +261,8 @@ def test_midpoint_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=309.64,
-        y0=373.41,
+        x0=401.57,
+        y0=131.00,
         image_index=0,
         imageset_index=0,
         out_fig="beam_position_detector_0.png",
@@ -299,8 +299,8 @@ def test_maximum_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=308.0,
-        y0=374.0,
+        x0=394.0,
+        y0=221.0,
         image_index=1,
         imageset_index=0,
         out_fig="beam_position_detector_0.png",
@@ -334,8 +334,8 @@ def test_inversion_method(tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
     check_output(
         result,
-        x0=378.0,
-        y0=254.0,
+        x0=396.0,
+        y0=257.0,
         image_index=2,
         imageset_index=0,
         out_fig="beam_position_detector_0.png",

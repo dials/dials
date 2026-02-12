@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 import iotbx.mtz
 import iotbx.phil
@@ -12,6 +15,7 @@ from cctbx import crystal
 from dxtbx.model import ExperimentList
 
 import dials.util
+from dials.algorithms.clustering.plots import scipy_dendrogram_to_plotly_json
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.array_family import flex
 from dials.util import log
@@ -49,9 +53,14 @@ output {
     .type = bool
     .help = "If True, clusters will be split at the threshold value and a pair"
             "of output files will be created for each cluster"
-
-    log = dials.cluster_unit_cell.log
-      .type = str
+  log = dials.cluster_unit_cell.log
+    .type = str
+  json = None
+    .type = path
+    .help = "Filename to output JSON summary of clustering results"
+  html = None
+    .type = path
+    .help = "Filename for HTML report of clustering results"
 }
 """
 )
@@ -211,6 +220,45 @@ def do_cluster_analysis(crystal_symmetries, params):
             plt.savefig(params.plot.name)
         if params.plot.show:
             plt.show()
+
+    dendrogram_json = scipy_dendrogram_to_plotly_json(
+        clustering.dendrogram,
+        title="Unit cell clustering",
+        xtitle="Dataset",
+        ytitle="Distance (Å<sup>2</sup>)",
+        help="""\
+The results of single-linkage hierarchical clustering on the unit cell parameters using
+the Andrews–Bernstein NCDist distance metric (Andrews & Bernstein, 2014). The height at
+which two clusters are merged in the dendrogram is a measure of the similarity between
+the unit cells in each cluster. A larger separation between two clusters may be
+indicative of a higher degree of non-isomorphism between the clusters. Conversely, a
+small separation between two clusters suggests that their unit cell parameters are
+relatively isomorphous.
+""",
+    )
+
+    if params.output.json:
+        logger.info("Writing clustering JSON summary to: %s", params.output.json)
+        with open(params.output.json, "w") as f:
+            json.dump(dendrogram_json, f, indent=2)
+
+    if params.output.html:
+        logger.info("Writing html report to: %s", params.output.html)
+        loader = ChoiceLoader(
+            [
+                PackageLoader("dials", "templates"),
+                PackageLoader("dials", "static", encoding="utf-8"),
+            ]
+        )
+        env = Environment(loader=loader)
+        template = env.get_template("cluster_unit_cell.html")
+        html = template.render(
+            page_title="DIALS unit cell clustering report",
+            panel_title="Dendrogram",
+            dendrogram_json=dendrogram_json,
+        )
+        with open(params.output.html, "wb") as f:
+            f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
     return clustering.clusters
 

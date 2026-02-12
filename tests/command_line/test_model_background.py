@@ -12,7 +12,7 @@ from scitbx.array_family import flex
 
 def test_model_background(dials_data, tmp_path):
     # Use a data set from a P2M for speed (small detector).
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
 
     result = subprocess.run(
         [shutil.which("dials.model_background"), data_dir / "11_integrated.expt"],

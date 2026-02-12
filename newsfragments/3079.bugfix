@@ -1,0 +1,1 @@
+``dials.index``: the ``ffbidx`` indexer is no longer installed by default to reduce the size of DIALS builds.

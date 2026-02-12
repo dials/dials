@@ -9,7 +9,7 @@ from dials.util import missing_reflections
 
 def test_connected_components(dials_data):
     experiment = ExperimentList.from_file(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+        dials_data("centroid_test_data") / "experiments.json"
     )[0]
 
     image_ranges = [(1, 9), (1, 100), (1, 1000)]
@@ -35,7 +35,7 @@ def test_connected_components(dials_data):
 
 def test_connected_components_centred_cell(dials_data):
     experiment = ExperimentList.from_file(
-        dials_data("insulin_processed", pathlib=True) / "scaled.expt",
+        dials_data("insulin_processed") / "scaled.expt",
         check_format=False,
     )[0]
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import pathlib
 
+import numpy as np
 import pytest
 
 from dials.algorithms.correlation.analysis import CorrelationMatrix
@@ -13,10 +14,48 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
+parent_path = pathlib.Path(__file__).parent.resolve()
+
+# cows + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - two clear clusters
+data_1 = np.loadtxt(parent_path / "test_coords/data_1.txt")
+expected_1 = np.loadtxt(parent_path / "test_coords/labels_1.txt")
+
+# cryo cows + pigs + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - three clear clusters
+data_2 = np.loadtxt(parent_path / "test_coords/data_2.txt")
+expected_2 = np.loadtxt(parent_path / "test_coords/labels_2.txt")
+
+# 4 x CPVs from VMXm - four clear clusters
+data_3 = np.loadtxt(parent_path / "test_coords/data_3.txt")
+expected_3 = np.loadtxt(parent_path / "test_coords/labels_3.txt")
+
+# room temp cows + pigs + people from Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 - three clusters + noise
+data_4 = np.loadtxt(parent_path / "test_coords/data_4.txt")
+expected_4 = np.loadtxt(parent_path / "test_coords/labels_4.txt")
+
+# example made up coordinates - one clear cluster + noise
+data_5 = np.loadtxt(parent_path / "test_coords/data_5.txt")
+expected_5 = np.loadtxt(parent_path / "test_coords/labels_5.txt")
+
+# single cluster + noise, high dimension
+data_6 = np.loadtxt(parent_path / "test_coords/data_6.txt")
+expected_6 = np.loadtxt(parent_path / "test_coords/labels_6.txt")
+
+# One large cluster + one small cluster
+data_7 = np.loadtxt(parent_path / "test_coords/data_7.txt")
+expected_7 = np.loadtxt(parent_path / "test_coords/labels_7.txt")
+
+# Two tight clusters with one obvious outlier
+data_8 = np.loadtxt(parent_path / "test_coords/data_8.txt")
+expected_8 = np.loadtxt(parent_path / "test_coords/labels_8.txt")
+
+# Single clear cluster + broad cluster with a noise component
+data_9 = np.loadtxt(parent_path / "test_coords/data_9.txt")
+expected_9 = np.loadtxt(parent_path / "test_coords/labels_9.txt")
+
 
 @pytest.fixture()
 def proteinase_k(dials_data):
-    mcp = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    mcp = dials_data("vmxi_proteinase_k_sweeps")
     params = phil_scope.extract()
     input_data = []
     parser = ArgumentParser(
@@ -90,3 +129,67 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
         assert len(data["correlation_matrix_clustering"][i]["datasets"]) == len(j)
         for a, e in zip(data["correlation_matrix_clustering"][i]["datasets"], j):
             assert a == ids_to_identifiers_map[e]
+
+
+# Test for very clearcut cases
+# initial guesses taken from heuristic (Thompson, A.J. et al 2025) for known datasets
+@pytest.mark.parametrize(
+    "coordinates,expected_labels,initial_min_samples",
+    [
+        (data_1, expected_1, 5),
+        (data_2, expected_2, 6),
+        (data_3, expected_3, 8),
+        (data_5, expected_5, 10),
+        (data_8, expected_8, 5),
+    ],
+)
+def test_optics_classification_definitive(
+    coordinates, expected_labels, initial_min_samples
+):
+    _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
+        coordinates, range(0, len(coordinates)), initial_min_samples=initial_min_samples
+    )
+
+    assert np.array_equal(actual_labels, expected_labels)
+
+
+# Test for more ambiguous datasets - set up to add more in future if needed
+@pytest.mark.parametrize(
+    "coordinates,expected_labels,initial_min_samples",
+    [
+        (data_4, expected_4, 27),
+        (data_6, expected_6, 5),
+        (data_7, expected_7, 40),
+        (data_9, expected_9, 25),
+    ],
+)
+def test_optics_classification_variable(
+    coordinates, expected_labels, initial_min_samples
+):
+    _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
+        coordinates, range(0, len(coordinates)), initial_min_samples=initial_min_samples
+    )
+
+    differences = actual_labels != expected_labels
+
+    difference_indices = np.argwhere(differences)
+
+    values = [
+        (actual_labels[tuple(idx)], expected_labels[tuple(idx)])
+        for idx in difference_indices
+    ]
+
+    noise_change_count = 0
+    changed_classification = []
+
+    # Expected as algorithms change that a small number of datasets may switch between noise/cluster
+    for i in values:
+        if i[0] == -1 or i[1] == -1:
+            noise_change_count += 1
+        else:
+            changed_classification.append(i)
+
+    assert noise_change_count < 0.03 * len(coordinates)  # 3% error in noise permitted
+    assert (
+        len(changed_classification) == 0
+    )  # do not want any clusters to change identity

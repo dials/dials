@@ -9,22 +9,23 @@ import pytest
 
 import scitbx.matrix
 from cctbx import crystal, sgtbx, uctbx
-from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
+from dxtbx.model import Crystal, Experiment, ExperimentList, GoniometerFactory, Scan
 from dxtbx.serialize import load
 from dxtbx.util import ersatz_uuid4
 
-from dials.algorithms.symmetry.cosym._generate_test_data import (
-    generate_experiments_reflections,
-)
-from dials.array_family import flex
-from dials.command_line import symmetry
-from dials.command_line.symmetry import (
+from dials.algorithms import symmetry  # import module for mocker
+from dials.algorithms.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
     get_subset_for_symmetry,
     median_unit_cell,
 )
+from dials.algorithms.symmetry.cosym._generate_test_data import (
+    generate_experiments_reflections,
+)
+from dials.array_family import flex
+from dials.command_line import symmetry as dials_symmetry
 from dials.util.exclude_images import exclude_image_ranges_from_scans
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.phil import parse
@@ -33,7 +34,7 @@ from dials.util.phil import parse
 def test_symmetry_laue_only(dials_data, tmp_path):
     """Simple test to check that dials.symmetry completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),
@@ -117,7 +118,7 @@ def test_symmetry_basis_changes_for_C2(tmp_path):
 def test_symmetry_with_absences(dials_data, tmp_path, option):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     cmd = [
         shutil.which("dials.symmetry"),
         lcyst_data / "20_integrated_experiments.json",
@@ -139,7 +140,7 @@ def test_symmetry_with_absences(dials_data, tmp_path, option):
 def test_symmetry_with_laue_group_override(dials_data, tmp_path):
     """Simple test to check that dials.symmetry, with overridden laue group, completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),
@@ -167,7 +168,7 @@ def test_symmetry_with_laue_group_override(dials_data, tmp_path):
 @pytest.mark.parametrize("method", ["direct", "fourier"])
 def test_symmetry_absences_only(dials_data, tmp_path, method):
     """Test the command line script with real data. Proteinase K in P41"""
-    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    location = dials_data("vmxi_proteinase_k_sweeps")
 
     command = [
         shutil.which("dials.symmetry"),
@@ -273,6 +274,10 @@ def _make_input_for_exclude_tests(exclude_images=True):
         exclude_images = [["0:360:720"], ["1:360:720"]]
     expt1 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, 1.0)))
     expt2 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, -1.0)))
+    # Need to set a goniometer otherwise is_still() is True
+    goniometer = GoniometerFactory.known_axis((1, 0, 0))
+    expt1.goniometer = goniometer
+    expt2.goniometer = goniometer
     refls1 = flex.reflection_table()
     refls2 = flex.reflection_table()
     refls1["xyzobs.mm.value"] = flex.vec3_double(
@@ -516,15 +521,15 @@ def test_few_reflections(dials_data, run_in_tmp_path):
                          directory.
     """
     # Get and use the default parameters for dials.symmetry.
-    params = symmetry.phil_scope.fetch(source=parse("")).extract()
+    params = dials_symmetry.phil_scope.fetch(source=parse("")).extract()
 
     # Use the integrated data from the first ten images of the first sweep.
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     experiments = ExperimentList.from_file(data_dir / "11_integrated.expt")
     reflections = [flex.reflection_table.from_file(data_dir / "11_integrated.refl")]
 
     # Run dials.symmetry on the above data files.
-    symmetry.symmetry(experiments, reflections, params)
+    dials_symmetry.symmetry(experiments, reflections, params)
 
 
 def test_x4wide(dials_data, tmp_path):
@@ -535,7 +540,7 @@ def test_x4wide(dials_data, tmp_path):
     Expected space group is P 43 21 2 (or its enantiomorphic equivalent, P 41 21 2)
     See also https://www.rcsb.org/structure/3QF8
     """
-    x4wide = dials_data("x4wide_processed", pathlib=True)
+    x4wide = dials_data("x4wide_processed")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),

@@ -10,9 +10,7 @@ from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem, transfo
 
 
 def test_run(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
+    sequence = load.imageset(dials_data("centroid_test_data") / "sweep.json")
 
     # Get the models
     beam = sequence.get_beam()

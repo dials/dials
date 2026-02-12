@@ -93,7 +93,7 @@ def test_select_experiments(dials_data, tmp_path):
 
 
 def test_update(dials_data):
-    orig_expt = dials_data("aluminium_standard", pathlib=True) / "imported.expt"
+    orig_expt = dials_data("aluminium_standard") / "imported.expt"
     assert orig_expt.is_file()
 
     orig_expt = load.experiment_list(orig_expt, check_format=False)

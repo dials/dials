@@ -7,7 +7,7 @@ import iotbx.merging_statistics
 
 
 def test_indexed_as_integrated(dials_data, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     refl = data_dir / "indexed.refl"
     expt = data_dir / "indexed.expt"
 

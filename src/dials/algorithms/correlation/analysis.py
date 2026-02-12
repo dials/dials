@@ -4,12 +4,15 @@ import copy
 import json
 import logging
 import sys
+import warnings
 from collections import OrderedDict
 
 import numpy as np
+import optuna
 import scipy.spatial.distance as ssd
 from scipy.cluster import hierarchy
 from sklearn.cluster import OPTICS
+from sklearn.metrics import silhouette_score
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
@@ -55,10 +58,27 @@ dimensionality_assessment {
 significant_clusters {
   min_points_buffer = 0.5
     .type = float(value_min=0, value_max=1)
-    .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer"
+    .help = "Buffer for minimum number of points required for a cluster in OPTICS algorithm: min_points=(number_of_datasets/number_of_dimensions)*buffer - INITIAL GUESS ONLY"
+  min_points = 5
+    .type = int
+    .help = "Set minimum number of points required for a cluster in OPTICS for custom clustering."
   xi = 0.05
     .type = float(value_min=0, value_max=1)
     .help = "xi parameter to determine min steepness to define cluster boundary"
+  max_distance = 0.5
+    .type = float
+    .help = "maximum distance away from cluster centre for a data point to be considered (max_eps)"
+  optimise_input = True
+    .type = bool
+    .help = "Turn to false to use custom clustering parameters."
+  noise_penalty {
+    alpha = 1.0
+      .type = float(value_max=1)
+      .help = "Linear scale for noise penalty."
+    gamma = 1.5
+      .type = float(value_min=0)
+      .help = "Exponential scale for noise penalty."
+  }
 }
 
 hierarchical_clustering {
@@ -256,7 +276,7 @@ class CorrelationMatrix:
             self.params.hierarchical_clustering.linkage_method,
         )
 
-        self.correlation_clusters = self.cluster_info(
+        self.correlation_clusters, _ = self.cluster_info(
             linkage_matrix_to_dict(self.cc_linkage_matrix)
         )
 
@@ -268,7 +288,7 @@ class CorrelationMatrix:
             self.params.hierarchical_clustering.linkage_method,
         )
 
-        self.cos_angle_clusters = self.cluster_info(
+        self.cos_angle_clusters, _ = self.cluster_info(
             linkage_matrix_to_dict(self.cos_linkage_matrix)
         )
 
@@ -357,6 +377,242 @@ class CorrelationMatrix:
 
         return cos_angle, cos_linkage_matrix
 
+    @staticmethod
+    def optimise_clustering(
+        cosym_coords: np.ndarray,
+        all_data_labels: list,
+        initial_min_samples: int = 5,
+        xi: float = 0.05,
+        max_eps: float = 0.5,
+        alpha: float = 1,
+        gamma: float = 1.5,
+    ) -> tuple[int, np.float64, np.float64, np.ndarray, OPTICS]:
+        """
+        Performs OPTICS analysis on coordinates output from cosym by minimising the silhouette score for more robust classification.
+        Args:
+            cosym_coords(numpy.ndarray): matrix of coordinates output from cosym optimisation
+            all_data_labels (list): used to better log the clustering outputs
+            initial_min_samples(int): initial guess for the minimum number of datasets in a cluster
+            xi(float): parameter to determine min steepness to define cluster boundary
+            max_eps (float): furthest distance away from a core point another dataset can be considered in the cluster
+            alpha (float): used in calculating the noise penalty - linear scale
+            gamma (float): used in calculating the noise penalty - exponential scale
+        Returns:
+            study.best_params["min_samples"](int): min_samples value that minimises the noise-weighted silhouette score
+            study.best_trial.user_attrs["silhouette"](np.float64): silhouette score of the best trial or study.best_trial.user_attrs["reachability"](np.float64): median reachability if only one cluster present
+            study.best_trial.user_attrs["score"] (np.float64): overall score including noise penalty
+            study.best_trial.user_attrs["labels"](np.ndarray): OPTICS classification of cosym_coordinates from best trial
+            study.best_trial.usser_attrs["model"](OPTICS): The OPTICS model from the best trial
+        """
+
+        logger.info("Optimising Minimum Samples using OPTUNA.....")
+
+        optuna.logging.set_verbosity(logging.WARNING)
+
+        def objective(trial: optuna.Trial) -> float:
+            # the min_samples parameter can really be anywhere from 5 to the total number of datasets (though 50 is a sensible stopping point)
+            # 5 as a base value recommended for OPTICS algorithm
+
+            logger.info(f"---Trial {trial.number}---")
+
+            min_samples = trial.suggest_int(
+                "min_samples", 5, min(len(cosym_coords), 50)
+            )
+
+            # Calculate OPTICS clusters
+
+            optics_model = OPTICS(min_samples=min_samples, xi=xi, max_eps=max_eps)
+            optics_model.fit(cosym_coords)
+            if np.all(np.isinf(optics_model.reachability_)):
+                logger.info(
+                    f"No reasonable OPTICS clusters found with min_samples {min_samples}, xi {xi} and max_eps {max_eps}."
+                )
+                raise optuna.exceptions.TrialPruned()
+
+            logger.info("Cluster labels for solution:")
+            if len(all_data_labels) != len(optics_model.labels_):
+                logger.info("Warning - missing datasets.")
+            else:
+                unique_labels = sorted(dict.fromkeys(optics_model.labels_))
+                all_data_array = np.array(all_data_labels)
+                for i in unique_labels:
+                    ids = all_data_array[np.where(optics_model.labels_ == i)]
+                    if i != -1:
+                        logger.info(f"Cluster {i}: {' '.join([str(i) for i in ids])}")
+                    else:
+                        logger.info(f"Noise: {' '.join([str(i) for i in ids])}")
+
+            trial.set_user_attr("labels", optics_model.labels_)
+            trial.set_user_attr("model", optics_model)
+
+            # Mask noise datasets for Silhouette Score calculation as doesn't accept
+
+            mask = optics_model.labels_ != -1
+            num_datasets = len(optics_model.labels_)
+            num_noise = num_datasets - np.sum(mask)
+            noise_fraction = num_noise / num_datasets
+
+            # Include penalty for noise as don't want to bias for only tiny dense groups if majority a bit less dense
+            # Can make this non-linear because don't want to harshly penalise a small amount of noise with only harsh penalties for lots of noise
+            noise_penalty = 1 - alpha * (noise_fraction**gamma)
+
+            if len(set(optics_model.labels_[mask])) <= 1:
+                trial.set_user_attr("silhouette", "N/A as only one cluster")
+                trial.set_user_attr("score", -1)
+                logger.info(
+                    f"Silhouette Score cannot be calculated as only one cluster present with min_samples {min_samples}. Setting score to -1."
+                )
+                return -1
+
+            # Silhouette score from -1 -> 1. Positive values indicate valid clustering solutions.
+            # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.silhouette_score.html
+
+            silhouette = silhouette_score(
+                cosym_coords[mask], optics_model.labels_[mask]
+            )
+            score = silhouette * noise_penalty
+
+            logger.info(
+                f"Score (with noise): {score:.3f} (Silhouette Score: {silhouette:.3f}) using 'min_samples': {min_samples}."
+            )
+
+            trial.set_user_attr("silhouette", silhouette)
+            trial.set_user_attr("score", score)
+
+            return score
+
+        def single_cluster_optics():
+            """
+            After optimisation, if it is determined that a multi-cluster solution is not likely, this method is used instead.
+            Calculate gradients of the reachability points, and find the first instance where a gradient larger than xi exists.
+            As this is only evaluating for a single cluster, this simplification can be applied.
+            """
+            optics_model = OPTICS(min_samples=initial_min_samples, max_eps=max_eps)
+            optics_model.fit(cosym_coords)
+
+            initial_labels = optics_model.labels_
+            model = optics_model
+
+            finite_mask = np.isfinite(
+                optics_model.reachability_[optics_model.ordering_]
+            )
+            gradients = np.zeros_like(
+                optics_model.reachability_[optics_model.ordering_]
+            )
+            gradients[finite_mask] = np.gradient(
+                optics_model.reachability_[optics_model.ordering_][finite_mask]
+            )
+            large_gradients = np.where(~(gradients[finite_mask] < xi))[
+                0
+            ]  # only evaluate within finite values
+            first_finite = np.where(finite_mask)[
+                0
+            ]  # find first idx where finite vals occur
+            if large_gradients.size > 0:
+                first_false = large_gradients[0]
+                original_first_false = np.flatnonzero(finite_mask)[
+                    first_false
+                ]  # map back to full list of values
+
+                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
+                new_labels[first_finite[0] : original_first_false] = 0
+                new_labels[original_first_false:] = -1
+                # can sometimes have a large value at the start that was cut off by max_eps
+                # need to account for this and also label it noise, but the first dataset is always inf due to optics and does not mean it is noise
+                # minus 1 because still need core point from OPTICS
+                new_labels[: first_finite[0] - 1] = -1
+            else:
+                # This means that the gradient never gets steep - so everything is one cluster
+                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
+                new_labels[: first_finite[0] - 1] = -1
+                new_labels[first_finite[0] :] = 0
+
+            # put back in dataset order rather than OPTICS order
+
+            new_labels_dataset_order = np.empty_like(new_labels)
+            new_labels_dataset_order[optics_model.ordering_] = new_labels[
+                np.arange(len(optics_model.ordering_))
+            ]
+
+            return new_labels_dataset_order, model
+
+        def default_optics():
+            """
+            Generally seems that the above optimisations are not as well suited for very low completeness serial data.
+            This applies a very simple model to any cases where no trials are able to successfully complete.
+            """
+            optics_model = OPTICS(min_samples=initial_min_samples)
+            optics_model.fit(cosym_coords)
+
+            labels = optics_model.labels_
+            model = optics_model
+
+            return labels, model
+
+        # Test a series of min_samples to find best clusters
+
+        # Want RandomSampler as it better handles noisier surfaces and avoids bias from previous trials
+        # Use to identify an initial good region
+
+        logger.info("Locating best region using random sampling...")
+
+        sampler = optuna.samplers.RandomSampler(seed=42)
+        study = optuna.create_study(direction="maximize", sampler=sampler)
+
+        # Use heuristic relating dimensions to systematic differences as an initial starting point
+        # Some testing found that this was still important
+
+        study.enqueue_trial({"min_samples": initial_min_samples})
+        study.optimize(objective, n_trials=20)
+
+        logger.info("Switching to Bayesian Optimisation...")
+
+        # Once have a good region, switch to a Bayesian Optimization approach to "intelligently" select which parameters to test
+        study.sampler = optuna.samplers.TPESampler(n_startup_trials=0)
+        study.optimize(objective, n_trials=30)
+
+        try:
+            study.best_trial
+        except ValueError:
+            logger.info(
+                "No trials successfully completed. Using default OPTICS analysis."
+            )
+            labels, model = default_optics()
+            return (
+                initial_min_samples,
+                "N/A as only one cluster",
+                labels,
+                model,
+            )
+        else:
+            logger.info("---Optimisation Summary---")
+            if isinstance(study.best_trial.user_attrs["silhouette"], str):
+                logger.info(
+                    f"Best trial was {study.best_trial.number} (score {study.best_trial.user_attrs['silhouette']})"
+                )
+            else:
+                logger.info(
+                    f"Best trial was {study.best_trial.number} with overall score of {study.best_trial.user_attrs['score']:.3f} (Silhouette Score {study.best_trial.user_attrs['silhouette']:.3f})"
+                )
+            if study.best_trial.user_attrs["score"] < 0:
+                logger.info(
+                    "Likely only a single cluster present, switching to single cluster optimisation."
+                )
+                labels, model = single_cluster_optics()
+                return (
+                    initial_min_samples,
+                    "N/A as only one cluster",
+                    labels,
+                    model,
+                )
+            else:
+                return (
+                    study.best_params["min_samples"],
+                    study.best_trial.user_attrs["silhouette"],
+                    study.best_trial.user_attrs["labels"],
+                    study.best_trial.user_attrs["model"],
+                )
+
     def cluster_cosine_coords(self):
         """
         Cluster cosine coords using the OPTICS algorithm to determine significant clusters.
@@ -364,55 +620,130 @@ class CorrelationMatrix:
 
         logger.info("Using OPTICS Algorithm (M. Ankerst et al, 1999, ACM SIGMOD)")
 
-        # Minimum number required to make sense for such algorithms
-
-        min_points = max(
-            5,
-            int(
-                (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
-                * self.params.significant_clusters.min_points_buffer
-            ),
-        )
-
         # Check for very small datasets
-        if len(self.unmerged_datasets) < min_points:
+        if len(self.unmerged_datasets) < 5:
             min_points = len(self.unmerged_datasets)
             logger.info(
                 "WARNING: less than 5 samples present, OPTICS not optimised for very small datasets."
             )
+            optics_model = OPTICS(
+                min_samples=min_points,
+                xi=self.params.significant_clusters.xi,
+                max_eps=self.params.significant_clusters.max_distance,
+            )
+            optics_model.fit(self.cosym_analysis.coords)
+            self.cluster_labels = optics_model.labels_
+            mask = optics_model.labels_ != -1
+            if len(set(optics_model.labels_[mask])) > 1:
+                silhouette = silhouette_score(
+                    self.cosym_analysis.coords[mask], optics_model.labels_[mask]
+                )
 
-        logger.info(f"Setting Minimum Samples to {min_points}")
+            else:
+                silhouette = "N/A as only one cluster"
 
-        # Fit OPTICS model and determine number of clusters
+        else:
+            # Heuristic using number of dimensions as a proxy for number of systematic differences
+            # Includes a buffer for groups of different sizes
 
-        optics_model = OPTICS(
-            min_samples=min_points, xi=self.params.significant_clusters.xi
+            initial_min_samples = max(
+                5,
+                int(
+                    (len(self.unmerged_datasets) / self.cosym_analysis.target.dim)
+                    * self.params.significant_clusters.min_points_buffer
+                ),
+            )
+
+            if self.params.significant_clusters.optimise_input:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message="All reachability values are inf. Set a larger max_eps or all data will be considered outliers.",
+                        category=UserWarning,
+                    )
+                    (
+                        min_points,
+                        silhouette,
+                        self.cluster_labels,
+                        optics_model,
+                    ) = self.optimise_clustering(
+                        self.cosym_analysis.coords,
+                        self.labels,
+                        initial_min_samples,
+                        self.params.significant_clusters.xi,
+                        self.params.significant_clusters.max_distance,
+                        self.params.significant_clusters.noise_penalty.alpha,
+                        self.params.significant_clusters.noise_penalty.gamma,
+                    )
+
+                logger.info(f"Set Minimum Samples to {min_points}")
+
+            else:
+                optics_model = OPTICS(
+                    min_samples=self.params.significant_clusters.min_points,
+                    xi=self.params.significant_clusters.xi,
+                    max_eps=self.params.significant_clusters.max_distance,
+                )
+                optics_model.fit(self.cosym_analysis.coords)
+                self.cluster_labels = optics_model.labels_
+                mask = optics_model.labels_ != -1
+                if len(set(optics_model.labels_[mask])) > 1:
+                    silhouette = silhouette_score(
+                        self.cosym_analysis.coords[mask], optics_model.labels_[mask]
+                    )
+                self.optics_reachability = optics_model.reachability_[
+                    optics_model.ordering_
+                ]
+
+                min_points = self.params.significant_clusters.min_points
+
+        # needed max_eps to deal with edge cases where datasets far away were mistakenly included in cluster
+        # but, if such datasets are cut off by max_eps, OPTICS does not calculate a reachability value for them (set to inf)
+        # to keep them in plot (which is nice and visual), need to rerun OPTICS without any max_eps
+        # note that the first dataset is always inf (as can't have reachability for starting point), so look for cases with > 1 inf values
+
+        if np.sum(np.isinf(optics_model.reachability_)) > 1:
+            tmp_model = OPTICS(
+                min_samples=min_points,
+                xi=self.params.significant_clusters.xi,
+            )
+            tmp_model.fit(self.cosym_analysis.coords)
+            self.optics_reachability = tmp_model.reachability_[tmp_model.ordering_]
+        else:
+            self.optics_reachability = optics_model.reachability_[
+                optics_model.ordering_
+            ]
+
+        # still make sure to use cluster labels from previous optimisation
+
+        self.optics_ordering = optics_model.ordering_
+
+        self.optics_reachability_labels = self.cluster_labels[optics_model.ordering_]
+
+        cluster_dict = self._prep_optics_for_info()
+
+        self.significant_clusters, self.outliers = self.cluster_info(cluster_dict)
+
+        logger.info(
+            f"OPTICS identified {len(self.significant_clusters)} clusters and {len(self.outliers)} outlier datasets."
         )
 
-        optics_model.fit(self.cosym_analysis.coords)
+        if len(self.significant_clusters) > 1:
+            logger.info(f"Silhouette score of OPTICS result is {silhouette:.4f}.")
 
-        self.cluster_labels = optics_model.labels_
+        for i in self.significant_clusters:
+            logger.info(i)
 
-        # Reachability plot data
-
-        self.optics_reachability = optics_model.reachability_[optics_model.ordering_]
-        self.optics_reachability_labels = optics_model.labels_[optics_model.ordering_]
-
+    def _prep_optics_for_info(self) -> OrderedDict:
+        """
+        Separated out code that OPTICS clusters need to get IDs correct.
+        Also includes noise in the cluster dictionary for use in making plots.
+        Returns:
+            sig_cluster_dict(OrderedDict): IDs and cluster identifiers (note these are not correct dataset ids but used to convert to correct IDs later)
+        """
         # Match each dataset to an OPTICS cluster and make them Cluster Objects
 
         unique_labels = sorted(dict.fromkeys(self.cluster_labels))
-
-        if -1 in unique_labels:
-            unique_labels.remove(-1)
-
-        outliers = 0
-        for i in self.cluster_labels:
-            if i == -1:
-                outliers += 1
-
-        logger.info(
-            f"OPTICS identified {len(unique_labels)} clusters and {outliers} outlier datasets."
-        )
 
         sig_cluster_dict = OrderedDict()
 
@@ -437,10 +768,7 @@ class CorrelationMatrix:
             cluster_dict = {"datasets": ids}
             sig_cluster_dict[i] = cluster_dict
 
-        self.significant_clusters = self.cluster_info(sig_cluster_dict)
-
-        for i in self.significant_clusters:
-            logger.info(i)
+        return sig_cluster_dict
 
     def cluster_info(self, cluster_dict: dict) -> list:
         """
@@ -453,40 +781,45 @@ class CorrelationMatrix:
         """
 
         info = []
+        outlier_ids = []
         for cluster_id, cluster in cluster_dict.items():
-            uc_params = [flex.double() for i in range(6)]
-            for j in cluster["datasets"]:
-                uc_j = self.datasets[j - 1].unit_cell().parameters()
-                for i in range(6):
-                    uc_params[i].append(uc_j[i])
-            average_uc = [flex.mean(uc_params[i]) for i in range(6)]
-            intensities_cluster = []
-            labels_cluster = []
-            ids = [self._labels_all[id - 1] for id in cluster["datasets"]]
-            for idx, k in zip(self._labels_all, self.unmerged_datasets):
-                if idx in ids:
-                    intensities_cluster.append(k)
-                    labels_cluster.append(idx)
-            merged = None
-            for d in intensities_cluster:
-                if merged is None:
-                    merged = copy.deepcopy(d)
-                else:
-                    merged = merged.concatenate(d, assert_is_similar_symmetry=False)
-            merging = merged.merge_equivalents()
-            merged_intensities = merging.array()
-            multiplicities = merging.redundancies()
-            info.append(
-                ClusterInfo(
-                    cluster_id,
-                    labels_cluster,
-                    flex.mean(multiplicities.data().as_double()),
-                    merged_intensities.completeness(),
-                    unit_cell=average_uc,
-                    height=cluster.get("height"),
+            if cluster_id != -1:
+                uc_params = [flex.double() for i in range(6)]
+                for j in cluster["datasets"]:
+                    uc_j = self.datasets[j - 1].unit_cell().parameters()
+                    for i in range(6):
+                        uc_params[i].append(uc_j[i])
+                average_uc = [flex.mean(uc_params[i]) for i in range(6)]
+                intensities_cluster = []
+                labels_cluster = []
+                ids = [self._labels_all[id - 1] for id in cluster["datasets"]]
+                for idx, k in zip(self._labels_all, self.unmerged_datasets):
+                    if idx in ids:
+                        intensities_cluster.append(k)
+                        labels_cluster.append(idx)
+                merged = None
+                for d in intensities_cluster:
+                    if merged is None:
+                        merged = copy.deepcopy(d)
+                    else:
+                        merged = merged.concatenate(d, assert_is_similar_symmetry=False)
+                merging = merged.merge_equivalents()
+                merged_intensities = merging.array()
+                multiplicities = merging.redundancies()
+                info.append(
+                    ClusterInfo(
+                        cluster_id,
+                        labels_cluster,
+                        flex.mean(multiplicities.data().as_double()),
+                        merged_intensities.completeness(),
+                        unit_cell=average_uc,
+                        height=cluster.get("height"),
+                    )
                 )
-            )
-        return info
+            else:
+                outlier_ids = [self._labels_all[id - 1] for id in cluster["datasets"]]
+
+        return info, outlier_ids
 
     def convert_to_html_json(self):
         """
@@ -522,11 +855,18 @@ class CorrelationMatrix:
                 )
             )
 
+        all_optics_ids = np.array([])
+        for cluster in self.significant_clusters:
+            all_optics_ids = np.append(all_optics_ids, np.array(cluster.labels))
+        all_optics_ids = np.append(all_optics_ids, np.array(self.outliers))
+        all_optics_ids = np.sort(all_optics_ids)[self.optics_ordering]
+
         self.rij_graphs.update(
             plot_reachability(
                 np.arange(len(self.optics_reachability)),
                 self.optics_reachability,
                 self.optics_reachability_labels,
+                all_optics_ids,
             )
         )
 
@@ -550,7 +890,6 @@ class CorrelationMatrix:
                 coords = rot_coord
             else:
                 coords = np.vstack([coords, rot_coord])
-
         if coords.shape[1] > 6:
             coords = coords[:, 0:6]
             dim_list = list(range(0, 6))
@@ -562,6 +901,8 @@ class CorrelationMatrix:
             axes_labels,
             cluster_labels,
             dim_list,
+            self.significant_clusters,
+            self.outliers,
         )
 
         # Separately also plot the two most significant principal components for ease of visualisation
@@ -595,6 +936,25 @@ summarises the effect of the first two principal components.
         self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["yaxis"][
             "title"
         ] = axes_labels["1"]
+        self.rij_graphs["cosym_coordinates_principal_components"]["layout"][
+            "hovermode"
+        ] = "closest"
+        for idx, i in enumerate(
+            self.rij_graphs["cosym_coordinates_principal_components"]["data"]
+        ):
+            self.rij_graphs["cosym_coordinates_principal_components"]["data"][idx][
+                "hovertemplate"
+            ] = "Dataset %{text}"
+            if i["name"] == "Noise":
+                self.rij_graphs["cosym_coordinates_principal_components"]["data"][idx][
+                    "text"
+                ] = self.outliers
+            else:
+                for j in self.significant_clusters:
+                    if i["name"] == f"Cluster {j.cluster_id}":
+                        self.rij_graphs["cosym_coordinates_principal_components"][
+                            "data"
+                        ][idx]["text"] = j.labels
 
         # Generate the table for the html that lists all datasets and image paths present in the analysis
 
