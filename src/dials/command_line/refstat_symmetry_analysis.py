@@ -144,7 +144,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
-    logger.info("Uniq in P1: %s" % (len(data)))
+    logger.info("Uniq in P 1: %s" % (len(data)))
     timex = 1
     t = time.time()
     for r in range(timex):

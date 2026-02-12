@@ -119,7 +119,7 @@ def test_reflections():
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
-    print("Uniq in P1: %s" % (len(data)))
+    print("Uniq in P 1: %s" % (len(data)))
     xr = refstat.registry()
     timex = 10
     t = time.time()
