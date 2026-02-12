@@ -183,9 +183,12 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
                 continue
         else:
             wI, wIs = 0, 0
+        if weak_stats.strong_count:
+            sI = weak_stats.strong_I_sum / weak_stats.strong_count
+            sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
+        else:
+            sI, sIs = 0, 0
         merge_stats = t.merge_test(sg)
-        sI = weak_stats.strong_I_sum / weak_stats.strong_count
-        sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
         rows.append(
             [
                 format_sg_name(sg.name),
@@ -198,21 +201,22 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
                 f"{sI / sIs if sIs else 0:.2f}",
             ]
         )
-    logger.info(
-        tabulate(
-            rows,
-            headers=[
-                "Space group",
-                "Matches (%)",
-                "Incons.\nequiv.",
-                "Rint",
-                "#Weak",
-                "Weak I/σ(I)",
-                "#Strong",
-                "Strong I/σ(I)",
-            ],
+    if rows:
+        logger.info(
+            tabulate(
+                rows,
+                headers=[
+                    "Space group",
+                    "Matches (%)",
+                    "Incons.\nequiv.",
+                    "Rint",
+                    "#Weak",
+                    "Weak I/σ(I)",
+                    "#Strong",
+                    "Strong I/σ(I)",
+                ],
+            )
         )
-    )
 
     logger.info(
         "All matches: %s"
