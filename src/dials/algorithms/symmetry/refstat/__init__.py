@@ -122,6 +122,8 @@ class extinctions(extinctions_registry):
         sgs, all_sg = [], []
         u_s = {x.id for x in self.unique}
         p_s = {x.id for x in self.present}
+        if not p_s:
+            return sgs
         for i in range(self.sg_count()):
             sg = self.get_space_group(i)
             if not sg.name.startswith(centering):
