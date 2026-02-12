@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 
 import gemmi
 import numpy as np
@@ -36,9 +37,12 @@ pink_indexer
     voxel_grid_points=150
         .type = int(value_min=10, value_max=1000)
         .help = "Controls the number of voxels onto which the rotograms are discretized"
+    target_lattices=1
+        .type = int(value_min=1, value_max=100)
+        .help = "The target number of candidate lattices to generate."
     min_lattices=1
         .type = int(value_min=1, value_max=100)
-        .help = "The minimum number of candidate lattices to generate."
+        .help = "(Deprecated) The minimum number of candidate lattices to generate."
 }
 """
 
@@ -197,7 +201,7 @@ class Indexer:
         voxel_grid_points=200,
         int_dtype="uint8",
         float_dtype="float32",
-        min_lattices=1,
+        target_lattices=1,
         dilate_r=None,
     ):
         """
@@ -208,7 +212,7 @@ class Indexer:
             voxel_grid_points (int, optional): The fineness of the discretization used to quantitate rotograms.
             int_dtype (str or dtype, optional): the dtype to use for the voxel grid
             float_dtype (str or dtype, optional): the dtype to use for floating point values
-            min_lattices (int, optional): the minimum number of candidate lattices returned by this function
+            target_lattices (int, optional): the target number of candidate lattices returned by this function
             dilate_r (float, optional): optionally dilate the voxel grid by a kernel with this radius in pixels.
 
         Returns:
@@ -313,8 +317,15 @@ class Indexer:
             voxels = fftconvolve(voxels, kernel, mode="same")
 
         # Possible solutions are voxels with the highest density
-        cutoff = np.sort(voxels.flatten())[-min_lattices]
-        peaks = np.column_stack(np.where(voxels >= cutoff))
+        num_voxels = voxels.size
+        target_probability = (num_voxels - target_lattices) / num_voxels
+        cutoff = np.quantile(voxels, target_probability)
+        idx = np.where(voxels > cutoff)
+        asort = np.argsort(voxels[idx])
+        sortidx = tuple(i[asort[::-1]] for i in idx)  # Descending order
+        peaks = np.column_stack(sortidx)
+
+        # Get UB matrices for best peak voxels
         for peak in peaks:
             v = bin_centers[peak]
             l = norm2(v)
@@ -375,7 +386,14 @@ class PinkIndexer(Strategy):
         self.max_refls = params.max_refls
         self.rotogram_grid_points = params.rotogram_grid_points
         self.voxel_grid_points = params.voxel_grid_points
-        self.min_lattices = params.min_lattices
+        if params.min_lattices != 1:
+            warnings.warn(
+                "The parameter min_lattices is deprecated. Please use target_lattices instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            params.target_lattices = params.min_lattices
+        self.target_lattices = params.target_lattices
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
@@ -389,11 +407,14 @@ class PinkIndexer(Strategy):
         reflections["id"] *= 0
         reflections["id"] -= 1
 
+        # Get data from still
         expt = experiments[0]
         refls = reflections
 
+        # Build unit cell
         cell = gemmi.UnitCell(*self.cell.parameters())
 
+        # Get wavelength and bandwidth
         wav, bw = self.wavelength, self.percent_bandwidth
         beam = expt.beam
         if wav is None:
@@ -407,6 +428,7 @@ class PinkIndexer(Strategy):
             bw = 1.0
         pidxr = Indexer(cell, wav, bw)
 
+        # Get reciprocal lattice points and beam info
         rlps = flex.vec3_double(len(refls))
         s1 = refls["s1"]
         s1_hat = s1 / s1.norms()
@@ -434,12 +456,14 @@ class PinkIndexer(Strategy):
 
         rlps = np.array(rlps, dtype="float32")
         self.candidate_crystal_models = []
+
+        # Get candidate crystal models from lattice search
         for UB in pidxr.index_pink(
             rlps,
             self.max_refls,
             rotogram_grid_points=self.rotogram_grid_points,
             voxel_grid_points=self.voxel_grid_points,
-            min_lattices=self.min_lattices,
+            target_lattices=self.target_lattices,
         ):
             real_a, real_b, real_c = np.linalg.inv(UB.astype("double"))
             crystal = Crystal(real_a, real_b, real_c, self.spacegroup)
