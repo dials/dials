@@ -191,7 +191,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
         merge_stats = t.merge_test(sg)
         rows.append(
             [
-                format_sg_name(sg.name),
+                sg.name,
                 f"{int(mp * 100)}",
                 merge_stats.inconsistent_count,
                 f"{merge_stats.r_int * 100:.3f}",
