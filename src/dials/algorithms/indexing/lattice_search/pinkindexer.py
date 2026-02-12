@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 
 import gemmi
 import numpy as np
@@ -38,8 +39,10 @@ pink_indexer
         .help = "Controls the number of voxels onto which the rotograms are discretized"
     target_lattices=1
         .type = int(value_min=1, value_max=100)
-        .alias = min_lattices
         .help = "The target number of candidate lattices to generate."
+    min_lattices=1
+        .type = int(value_min=1, value_max=100)
+        .help = "(Deprecated) The minimum number of candidate lattices to generate."
 }
 """
 
@@ -383,6 +386,13 @@ class PinkIndexer(Strategy):
         self.max_refls = params.max_refls
         self.rotogram_grid_points = params.rotogram_grid_points
         self.voxel_grid_points = params.voxel_grid_points
+        if params.min_lattices != 1:
+            warnings.warn(
+                "The parameter min_lattices is deprecated. Please use target_lattices instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            params.target_lattices = params.min_lattices
         self.target_lattices = params.target_lattices
 
     def find_crystal_models(self, reflections, experiments):
