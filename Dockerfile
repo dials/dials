@@ -6,10 +6,7 @@ RUN dnf install -y 'dnf-command(config-manager)' && \
 WORKDIR /dials
 COPY installer/bootstrap.py .
 ENV PIP_ROOT_USER_ACTION=ignore
-ENV CMAKE_GENERATOR=Ninja
-RUN python3 bootstrap.py
-RUN /dials/conda_base/bin/cmake --install build
-RUN /dials/conda_base/bin/python3 -mpip install modules/dxtbx modules/dials modules/xia2
+RUN python3 bootstrap.py --libtbx
 
 # Copy to final image
 FROM rockylinux:9
@@ -20,6 +17,8 @@ ENV LANG en_US.UTF-8
 
 RUN mkdir /dials
 COPY --from=builder /dials/conda_base /dials/conda_base
+COPY --from=builder /dials/modules /dials/modules
+COPY --from=builder /dials/build /dials/build
 COPY --from=builder /dials/dials /dials
-ENV PATH="/dials/conda_base/bin:$PATH"
+ENV PATH="/dials/conda_base/bin:/dials/build/bin:$PATH"
 CMD ["dials.version"]
