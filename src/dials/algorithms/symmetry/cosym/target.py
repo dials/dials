@@ -435,7 +435,7 @@ class Target:
             .values
         )
         # Set any NaN correlation coefficients to zero
-        np.nan_to_num(rij, copy=False)
+        rij = np.nan_to_num(rij)
         # Cosym does not make use of the on-diagonal correlation coefficients
         np.fill_diagonal(rij, 0)
 

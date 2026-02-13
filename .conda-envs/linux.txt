@@ -28,7 +28,7 @@ numpy
 nxmx
 optuna
 ordered-set
-pandas<3.0.0
+pandas
 pillow>=5.4.1
 pint
 pip

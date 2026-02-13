@@ -1,0 +1,1 @@
+Fix cosym using a read-only array with pandas 3.0+.
