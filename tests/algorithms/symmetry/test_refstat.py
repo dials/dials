@@ -228,7 +228,7 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
         text=True,  # Convert bytes to strings and normalizes line endings
         encoding="utf-8",
     )
-    assert not result.check_returncode()
+    assert result.returncode == 0
     assert result.stdout.endswith("""
 +---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
 | Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
@@ -252,7 +252,7 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
         text=True,  # Convert bytes to strings and normalizes line endings
         encoding="utf-8",
     )
-    assert not result.check_returncode()
+    assert result.returncode == 0
     assert result.stdout.endswith("""
 +---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
 | Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
