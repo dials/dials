@@ -171,10 +171,10 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
     # merge_test object
     t = refstat.merge_test(miller_array.indices(), data, sigmas)
     rows = []
-    for sg, mp in matches:
-        # limit to the filtered selection, maybe for non-verbose only?
-        if sg not in filtered_matches:
-            continue
+    matches = {sg.name: mp for sg, mp in matches}
+    # Loop through the filtered matches
+    for sg in filtered_matches:
+        mp = matches[sg.name]
         weak_stats = t.sysabs_test(sg, sa.scale)
         if weak_stats.weak_count:
             wI = weak_stats.weak_I_sum / weak_stats.weak_count
