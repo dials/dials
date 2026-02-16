@@ -192,6 +192,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
         rows.append(
             [
                 sg.name,
+                "✔" if sg.is_centric() else "",
                 f"{int(mp * 100)}",
                 merge_stats.inconsistent_count,
                 f"{merge_stats.r_int * 100:.3f}",
@@ -207,6 +208,7 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
                 rows,
                 headers=[
                     "Space group",
+                    "Centric",
                     "Matches (%)",
                     "Incons.\nequiv.",
                     "Rint",
@@ -217,28 +219,6 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
                 ],
             )
         )
-
-    logger.info(
-        "All matches: %s"
-        % (", ".join([format_sg_name(sg.name) for sg in filtered_matches]))
-    )
-    centric, acentric = [], []
-    max_top = 3
-    for sg in filtered_matches:
-        if sg.is_centric():
-            if len(centric) < max_top:
-                centric.append(sg)
-        else:
-            if len(acentric) < max_top:
-                acentric.append(sg)
-    logger.info(
-        "Top acentric matches: %s"
-        % (", ".join([format_sg_name(sg.name) for sg in acentric]))
-    )
-    logger.info(
-        "Top centric matches: %s"
-        % (", ".join([format_sg_name(sg.name) for sg in centric]))
-    )
 
 
 def check_samples(samples_dir, sigma_level=5.0):
