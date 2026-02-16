@@ -226,6 +226,7 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
         cwd=tmp_path,
         capture_output=True,
         text=True,  # Convert bytes to strings and normalizes line endings
+        encoding="utf-8",
     )
     assert not result.check_returncode()
     assert result.stdout.endswith("""
@@ -249,6 +250,7 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
         cwd=tmp_path,
         capture_output=True,
         text=True,  # Convert bytes to strings and normalizes line endings
+        encoding="utf-8",
     )
     assert not result.check_returncode()
     assert result.stdout.endswith("""
