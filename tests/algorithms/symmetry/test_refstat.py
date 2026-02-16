@@ -228,9 +228,14 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
         text=True,  # Convert bytes to strings and normalizes line endings
     )
     assert not result.check_returncode()
-    assert result.stdout.endswith(
-        "All matches: P21/n\nTop acentric matches: \nTop centric matches: P21/n\n"
-    )
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 1 21/n 1    | ✔         |            40 |        30 |  4.264 |     224 |         -0.05 |       231 |            3.83 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+""")
 
 
 def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
@@ -246,6 +251,14 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
         text=True,  # Convert bytes to strings and normalizes line endings
     )
     assert not result.check_returncode()
-    assert result.stdout.endswith(
-        "All matches: P31, P32, P3121, P3221\nTop acentric matches: P31, P32, P3121\nTop centric matches: \n"
-    )
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 31          |           |            50 |        59 | 14.944 |      12 |           1.1 |         6 |           16.28 |
+| P 32          |           |            50 |        59 | 14.944 |      12 |           1.1 |         6 |           16.28 |
+| P 31 2 1      |           |            50 |        48 | 16.691 |      12 |           1.1 |        13 |           19.47 |
+| P 32 2 1      |           |            50 |        48 | 16.691 |      12 |           1.1 |        13 |           19.47 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+""")
