@@ -218,6 +218,11 @@ P b n m: 80"""
 
 
 def test_refstat_symmetry_analysis_check_file(tmp_path):
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
     result = subprocess.run(
         (
             shutil.which("dev.dials.refstat_symmetry_analysis"),
@@ -226,6 +231,7 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
         cwd=tmp_path,
         capture_output=True,
         text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
         encoding="utf-8",
     )
     assert result.returncode == 0
@@ -241,6 +247,12 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
 
 def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
     quartz = dials_data("quartz_processed")
+
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
     result = subprocess.run(
         (
             shutil.which("dev.dials.refstat_symmetry_analysis"),
@@ -250,6 +262,7 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
         cwd=tmp_path,
         capture_output=True,
         text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
         encoding="utf-8",
     )
     assert result.returncode == 0
