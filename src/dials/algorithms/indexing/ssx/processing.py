@@ -5,7 +5,7 @@ import logging
 import math
 import os
 import pathlib
-import sys
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from typing import Any
@@ -155,75 +155,81 @@ def index_one(
 
 
 def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
-    # First unpack the input and run the function
-    expts, table = index_one(
-        input_to_index.experiment,
-        input_to_index.reflection_table,
-        input_to_index.parameters,
-        input_to_index.method_list,
-        input_to_index.image_no,
-        input_to_index.known_crystal_models,
-    )
-
-    # Now calculate some useful quantities for the result
-    n_strong = input_to_index.reflection_table.get_flags(
-        input_to_index.reflection_table.flags.strong
-    ).count(True)
-    if expts and table:
-        result = IndexingResult(
-            input_to_index.image_identifier,
+    # block printing from rstbx
+    with (
+        open(os.devnull, "w") as devnull,
+        redirect_stdout(devnull),
+        redirect_stderr(devnull),
+    ):
+        # First unpack the input and run the function
+        expts, table = index_one(
+            input_to_index.experiment,
+            input_to_index.reflection_table,
+            input_to_index.parameters,
+            input_to_index.method_list,
             input_to_index.image_no,
-            table,
-            expts,
-            n_strong=n_strong,
-            imageset_no=input_to_index.imageset_no,
-            unindexed_experiment=input_to_index.experiment,
-            imageset_index=input_to_index.imageset_index,
-        )
-        for id_, identifier in table.experiment_identifiers():
-            selr = table.select(table["id"] == id_)
-            calx, caly, _ = selr["xyzcal.px"].parts()
-            obsx, obsy, _ = selr["xyzobs.px.value"].parts()
-            if "delpsical.rad" in selr:
-                delpsi = selr["delpsical.rad"]
-                rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
-            else:
-                rmsd_z = 0.0
-            rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
-            rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
-            n_id_ = calx.size()
-            result.n_indexed.append(n_id_)
-            result.rmsd_x.append(rmsd_x)
-            result.rmsd_y.append(rmsd_y)
-            result.rmsd_dpsi.append(rmsd_z)
-            result.identifiers.append(identifier)
-    else:
-        result = IndexingResult(
-            input_to_index.image_identifier,
-            input_to_index.image_no,
-            n_strong=n_strong,
-            imageset_no=input_to_index.imageset_no,
-            unindexed_experiment=input_to_index.experiment,
-            imageset_index=input_to_index.imageset_index,
+            input_to_index.known_crystal_models,
         )
 
-    # If chosen, output a message to json to show live progress
-    if input_to_index.parameters.output.nuggets:
-        msg = {
-            "image_no": input_to_index.image_no + 1,
-            "n_indexed": (len(table) if table else 0),
-            "n_strong": n_strong,
-            "n_cryst": (len(expts) if expts else 0),
-            "image": input_to_index.image_identifier,
-        }
-        with open(
-            input_to_index.parameters.output.nuggets
-            / f"nugget_index_{msg['image']}.json",
-            "w",
-        ) as f:
-            f.write(json.dumps(msg))
+        # Now calculate some useful quantities for the result
+        n_strong = input_to_index.reflection_table.get_flags(
+            input_to_index.reflection_table.flags.strong
+        ).count(True)
+        if expts and table:
+            result = IndexingResult(
+                input_to_index.image_identifier,
+                input_to_index.image_no,
+                table,
+                expts,
+                n_strong=n_strong,
+                imageset_no=input_to_index.imageset_no,
+                unindexed_experiment=input_to_index.experiment,
+                imageset_index=input_to_index.imageset_index,
+            )
+            for id_, identifier in table.experiment_identifiers():
+                selr = table.select(table["id"] == id_)
+                calx, caly, _ = selr["xyzcal.px"].parts()
+                obsx, obsy, _ = selr["xyzobs.px.value"].parts()
+                if "delpsical.rad" in selr:
+                    delpsi = selr["delpsical.rad"]
+                    rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
+                else:
+                    rmsd_z = 0.0
+                rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
+                rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
+                n_id_ = calx.size()
+                result.n_indexed.append(n_id_)
+                result.rmsd_x.append(rmsd_x)
+                result.rmsd_y.append(rmsd_y)
+                result.rmsd_dpsi.append(rmsd_z)
+                result.identifiers.append(identifier)
+        else:
+            result = IndexingResult(
+                input_to_index.image_identifier,
+                input_to_index.image_no,
+                n_strong=n_strong,
+                imageset_no=input_to_index.imageset_no,
+                unindexed_experiment=input_to_index.experiment,
+                imageset_index=input_to_index.imageset_index,
+            )
 
-    return result
+        # If chosen, output a message to json to show live progress
+        if input_to_index.parameters.output.nuggets:
+            msg = {
+                "image_no": input_to_index.image_no + 1,
+                "n_indexed": (len(table) if table else 0),
+                "n_strong": n_strong,
+                "n_cryst": (len(expts) if expts else 0),
+                "image": input_to_index.image_identifier,
+            }
+            with open(
+                input_to_index.parameters.output.nuggets
+                / f"nugget_index_{msg['image']}.json",
+                "w",
+            ) as f:
+                f.write(json.dumps(msg))
+
+        return result
 
 
 def index_all_concurrent(
@@ -274,24 +280,17 @@ def index_all_concurrent(
                 )
         n += len(iset)
 
-    with open(os.devnull, "w") as devnull:
-        sys.stdout = devnull  # block printing from rstbx
-        with manage_loggers(
-            params.individual_log_verbosity,
-            loggers_to_disable,
-            debug_loggers_to_disable,
-        ):
-            if params.indexing.nproc > 1:
-                with Pool(params.indexing.nproc) as pool:
-                    results: list[IndexingResult] = pool.map(
-                        wrap_index_one, input_iterable
-                    )
-            else:
-                results: list[IndexingResult] = [
-                    wrap_index_one(i) for i in input_iterable
-                ]
+    with manage_loggers(
+        params.individual_log_verbosity,
+        loggers_to_disable,
+        debug_loggers_to_disable,
+    ):
+        if params.indexing.nproc > 1:
+            with Pool(params.indexing.nproc) as pool:
+                results: list[IndexingResult] = pool.map(wrap_index_one, input_iterable)
+        else:
+            results: list[IndexingResult] = [wrap_index_one(i) for i in input_iterable]
 
-    sys.stdout = sys.__stdout__
     # prepare tables for output
     indexed_experiments, indexed_reflections = _join_indexing_results(
         results, experiments, original_isets, identifiers_to_scans
