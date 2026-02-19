@@ -527,11 +527,9 @@ class CorrelationMatrix:
                 new_labels[: first_finite[0] - 1] = -1
                 new_labels[first_finite[0] :] = 0
 
-            # Check that all values originally marked as inf because cut by max_eps (all except first dataset) are labelled as noise 
+            # Check that all values originally marked as inf because cut by max_eps (all except first dataset) are labelled as noise
 
-            inf_mask = np.isinf(
-                optics_model.reachability_[optics_model.ordering_][1:]
-            )
+            inf_mask = np.isinf(optics_model.reachability_[optics_model.ordering_][1:])
             new_labels[1:][inf_mask] = -1
 
             # put back in dataset order rather than OPTICS order
