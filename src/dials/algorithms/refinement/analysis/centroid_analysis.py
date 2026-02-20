@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 from scitbx.math.periodogram import Periodogram
 
 from dials.array_family import flex
@@ -59,25 +61,18 @@ class CentroidAnalyser:
             phi_width = phi_range[1] - phi_range[0]
             ideal_block_size = 1.0
             old_nblocks = 0
+            # Convert once; reused across while-loop iterations
+            phi_np = phi_obs_deg.as_numpy_array()
             while True:
                 nblocks = int(phi_width // ideal_block_size)
                 if nblocks == old_nblocks:
                     nblocks -= 1
                 nblocks = max(nblocks, 1)
                 block_size = phi_width / nblocks
-                nr = flex.int()
-                for i in range(nblocks - 1):
-                    blk_start = phi_range[0] + i * block_size
-                    blk_end = blk_start + block_size
-                    sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
-                    nref_in_block = sel.count(True)
-                    nr.append(nref_in_block)
-                # include max phi in the final block
-                blk_start = phi_range[0] + (nblocks - 1) * block_size
-                blk_end = phi_range[1]
-                sel = (phi_obs_deg >= blk_start) & (phi_obs_deg <= blk_end)
-                nref_in_block = sel.count(True)
-                nr.append(nref_in_block)
+                # numpy.histogram places a closed right edge on the last bin,
+                # matching the original `<= blk_end` logic for the final block.
+                counts, _ = np.histogram(phi_np, bins=nblocks, range=phi_range)
+                nr = flex.int(counts.tolist())
                 # Break if there are enough reflections, otherwise increase block size,
                 # unless only one block remains
                 if nblocks == 1:
@@ -136,20 +131,42 @@ class CentroidAnalyser:
                 xr_per_blk = flex.double()
                 yr_per_blk = flex.double()
                 pr_per_blk = flex.double()
-                for i in range(nblocks - 1):
-                    blk_start = phi_range[0] + i * block_size
-                    blk_end = blk_start + block_size
-                    sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
+                if self._av_callback is flex.mean:
+                    # Fast path: use numpy.digitize + numpy.bincount to compute
+                    # per-block means without per-block boolean array allocation.
+                    phi_np = phi_obs_deg.as_numpy_array()
+                    xr_np = x_resid.as_numpy_array()
+                    yr_np = y_resid.as_numpy_array()
+                    pr_np = phi_resid.as_numpy_array()
+                    edges = np.linspace(phi_range[0], phi_range[1], nblocks + 1)
+                    # digitize against interior edges: maps each value to bin 0..nblocks-1
+                    bin_idx = np.digitize(phi_np, edges[1:-1])
+                    counts = np.bincount(bin_idx, minlength=nblocks)
+                    safe_counts = np.maximum(counts, 1)
+                    for resid_np, result_list in (
+                        (xr_np, xr_per_blk),
+                        (yr_np, yr_per_blk),
+                        (pr_np, pr_per_blk),
+                    ):
+                        sums = np.bincount(bin_idx, weights=resid_np, minlength=nblocks)
+                        means = sums / safe_counts
+                        result_list.extend(flex.double(means.tolist()))
+                else:
+                    # Fallback for non-default callbacks: original per-block selection
+                    for i in range(nblocks - 1):
+                        blk_start = phi_range[0] + i * block_size
+                        blk_end = blk_start + block_size
+                        sel = (phi_obs_deg >= blk_start) & (phi_obs_deg < blk_end)
+                        xr_per_blk.append(self._av_callback(x_resid.select(sel)))
+                        yr_per_blk.append(self._av_callback(y_resid.select(sel)))
+                        pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+                    # include max phi in the final block
+                    blk_start = phi_range[0] + (nblocks - 1) * block_size
+                    blk_end = phi_range[1]
+                    sel = (phi_obs_deg >= blk_start) & (phi_obs_deg <= blk_end)
                     xr_per_blk.append(self._av_callback(x_resid.select(sel)))
                     yr_per_blk.append(self._av_callback(y_resid.select(sel)))
                     pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
-                # include max phi in the final block
-                blk_start = phi_range[0] + (nblocks - 1) * block_size
-                blk_end = phi_range[1]
-                sel = (phi_obs_deg >= blk_start) & (phi_obs_deg <= blk_end)
-                xr_per_blk.append(self._av_callback(x_resid.select(sel)))
-                yr_per_blk.append(self._av_callback(y_resid.select(sel)))
-                pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
                 # the first and last block of average residuals (especially those in
                 # phi) are usually bad because rocking curves are truncated at the
                 # edges of the scan. When we have enough blocks and they are narrow,
