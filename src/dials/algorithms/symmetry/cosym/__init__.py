@@ -275,9 +275,11 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
+        # nproc is currently only used for parallelising calculations in
+        # the target initialisation.
         if self.params.nproc is Auto:
-            params.nproc = dials.util.system.CPU_COUNT
-            logger.info(f"Setting nproc={params.nproc}")
+            self.params.nproc = dials.util.system.CPU_COUNT
+            logger.info(f"Setting nproc={self.params.nproc}")
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:

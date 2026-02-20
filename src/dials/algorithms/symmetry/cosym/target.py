@@ -296,7 +296,9 @@ class Target:
 
         return operators
 
-    def _compute_rij_wij(self, use_cache=False, cc_weights=False, nproc=1):
+    def _compute_rij_wij(
+        self, use_cache: bool = False, cc_weights: bool = False, nproc: int = 1
+    ):
         # Note, use_cache is a historical parameter retained for compatibility
         # with cctbx.xfel code.
         rij_matrix = None
