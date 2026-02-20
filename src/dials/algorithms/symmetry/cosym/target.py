@@ -253,14 +253,9 @@ class Target:
         logger.debug(
             "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
-        if cc_weights == "sigma":
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_blockwise(
-                cc_weights=True
-            )
-        else:
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_blockwise(
-                cc_weights=False
-            )
+        self.rij_matrix, self.wij_matrix = self._compute_rij_wij(
+            cc_weights=(cc_weights == "sigma"), nproc=self._nproc
+        )
 
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
@@ -301,7 +296,9 @@ class Target:
 
         return operators
 
-    def _compute_rij_wij_blockwise(self, cc_weights=True):
+    def _compute_rij_wij(self, use_cache=False, cc_weights=False, nproc=1):
+        # Note, use_cache is a historical parameter retained for compatibility
+        # with cctbx.xfel code.
         rij_matrix = None
         wij_matrix = None
 
@@ -311,7 +308,7 @@ class Target:
         logger.info(
             f"Calculating rij matrix elements in {len(self._lattices)} row-blocks"
         )
-        if self._nproc == 1:  # don't create a process pool
+        if nproc == 1:  # don't create a process pool
             for i, _ in enumerate(self._lattices):
                 rij, wij = _compute_rij_matrix_one_row_block(
                     i,
@@ -328,7 +325,7 @@ class Target:
         else:
             n = 0
             with concurrent.futures.ProcessPoolExecutor(
-                max_workers=min(self._nproc, len(self._lattices))
+                max_workers=min(nproc, len(self._lattices))
             ) as pool:
                 futures = [
                     pool.submit(

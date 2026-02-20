@@ -275,7 +275,6 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
-        # N.B. currently only multiprocessing used if cc_weights=sigma
         if self.params.nproc is Auto:
             params.nproc = dials.util.system.CPU_COUNT
             logger.info(f"Setting nproc={params.nproc}")
