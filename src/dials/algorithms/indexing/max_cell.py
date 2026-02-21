@@ -58,9 +58,21 @@ def find_max_cell(
             % len(reflections)
         )
 
+    # Sub-sample large datasets for performance - NN distance is a statistical estimate
+    MAX_NN_REFLECTIONS = 100000
+    if len(reflections) > MAX_NN_REFLECTIONS:
+        logger.info(
+            f"Sub-sampling {len(reflections)} reflections to {MAX_NN_REFLECTIONS} "
+            "for max_cell estimation"
+        )
+        sel = flex.random_selection(len(reflections), MAX_NN_REFLECTIONS)
+        reflections_for_nn = reflections.select(sel)
+    else:
+        reflections_for_nn = reflections
+
     try:
         NN = NeighborAnalysis(
-            reflections,
+            reflections_for_nn,
             step_size=step_size,
             max_height_fraction=max_height_fraction,
             tolerance=max_cell_multiplier,
