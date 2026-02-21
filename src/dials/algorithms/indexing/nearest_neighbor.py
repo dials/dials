@@ -69,7 +69,7 @@ class NeighborAnalysis:
                     IS_adapt.query(query)
 
                     direct.extend(1 / flex.sqrt(IS_adapt.distances))
-                    d_spacings.extend(1 / rs_vectors.norms())
+                    d_spacings.extend(1 / rs_vectors.select(sel_entering).norms())
 
         assert len(direct) > NEAR, (
             f"Too few spots ({len(direct)}) for nearest neighbour analysis."
