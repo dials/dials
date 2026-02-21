@@ -108,14 +108,6 @@ class ExperimentsPredictor:
 
 
 class ScansExperimentsPredictor(ExperimentsPredictor):
-    def __init__(self, experiments):
-        super().__init__(experiments)
-        # Cache ScanStaticReflectionPredictor objects keyed by experiment identity.
-        # Safe to reuse because for_reflection_table always receives the current UB
-        # matrix as an argument; the predictor object holds no mutable crystal state
-        # relevant to that call path.
-        self._scan_static_predictor_cache = {}
-
     def _predict_one_experiment(self, experiment, reflections):
         # scan-varying
         if "ub_matrix" in reflections:
@@ -127,10 +119,7 @@ class ScansExperimentsPredictor(ExperimentsPredictor):
             predictor.for_reflection_table(reflections, UB, s0, dmat, Smat)
         # scan static
         else:
-            exp_id = id(experiment)
-            if exp_id not in self._scan_static_predictor_cache:
-                self._scan_static_predictor_cache[exp_id] = sc(experiment)
-            predictor = self._scan_static_predictor_cache[exp_id]
+            predictor = sc(experiment)
             UB = experiment.crystal.get_A()
             predictor.for_reflection_table(reflections, UB)
 
