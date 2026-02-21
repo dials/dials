@@ -874,6 +874,9 @@ class ReflectionManager:
     def print_stats_on_matches(self):
         """Print some basic statistics on the matches"""
 
+        if not logger.isEnabledFor(logging.INFO):
+            return
+
         l = self.get_matches()
         nref = len(l)
         if nref == 0:
