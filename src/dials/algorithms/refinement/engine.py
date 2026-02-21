@@ -696,8 +696,13 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         # observations... See http://en.wikipedia.org/wiki/Non-linear_least_squares
         # at 'diagonal weight matrix'
 
-        # set current parameter values
-        self.prepare_for_step()
+        # set current parameter values, skipping if parameters haven't changed
+        # (objective-only evaluations often reuse the same parameter vector)
+        if not hasattr(self, "_last_build_up_params") or not (
+            self.x == self._last_build_up_params
+        ).all_eq(True):
+            self.prepare_for_step()
+            self._last_build_up_params = self.x.deep_copy()
 
         # Reset the state to construction time, i.e. no equations accumulated
         self.reset()
