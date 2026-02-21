@@ -33,7 +33,10 @@ from dials.algorithms.refinement.refinement_helpers import (
     ordinal_number,
     string_sel,
 )
-from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+from dials.algorithms.refinement.reflection_manager import (
+    ReflectionManager,
+    ReflectionManagerFactory,
+)
 from dials.algorithms.refinement.reflection_manager import (
     phil_str as reflections_phil_str,
 )
@@ -226,6 +229,12 @@ def _trim_scans_to_observations(experiments, reflections):
 class RefinerFactory:
     """Factory class to create refiners"""
 
+    # Cache for model-independent ReflectionManager state, keyed by an opaque
+    # token supplied by the caller. Only used when the caller passes
+    # _refman_cache_key; uncached calls (key=None) always bypass this dict.
+    # WARNING: Not thread-safe. Cache writes are skipped when nproc > 1.
+    _refman_cache: dict = {}
+
     @staticmethod
     def _filter_reflections(reflections):
         """Return a copy of the input reflections filtered to keep only
@@ -261,7 +270,9 @@ class RefinerFactory:
         return rt
 
     @classmethod
-    def from_parameters_data_experiments(cls, params, reflections, experiments):
+    def from_parameters_data_experiments(
+        cls, params, reflections, experiments, _refman_cache_key=None
+    ):
         # copy the experiments
         experiments = _copy_experiments_for_refining(experiments)
 
@@ -274,7 +285,7 @@ class RefinerFactory:
             ref_predictor,
             do_stills,
         ) = cls._build_reflection_manager_and_predictor(
-            params, reflections, experiments
+            params, reflections, experiments, _refman_cache_key=_refman_cache_key
         )
 
         return cls._build_refiner(params, experiments, refman, ref_predictor, do_stills)
@@ -294,7 +305,9 @@ class RefinerFactory:
         return refman.get_obs()
 
     @classmethod
-    def _build_reflection_manager_and_predictor(cls, params, reflections, experiments):
+    def _build_reflection_manager_and_predictor(
+        cls, params, reflections, experiments, _refman_cache_key=None
+    ):
         # Currently a refinement job can only have one parameterisation of the
         # prediction equation. This can either be of the XYDelPsi (stills) type, the
         # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
@@ -349,10 +362,36 @@ class RefinerFactory:
         logger.debug("\nBuilding reflection manager")
         logger.debug("Input reflection list size = %d observations", len(reflections))
 
-        # create reflection manager
-        refman = ReflectionManagerFactory.from_parameters_reflections_experiments(
-            params.refinement.reflections, reflections, experiments, do_stills
-        )
+        # create reflection manager, using cached prepared state when available
+        if _refman_cache_key is not None and _refman_cache_key in cls._refman_cache:
+            # Cache hit: reuse the pre-built model-independent state
+            state = cls._refman_cache[_refman_cache_key]
+            refman = ReflectionManager.from_prepared_state(state, experiments)
+        else:
+            # Cache miss: attempt to build and cache the prepared state.
+            # For stills/Laue/ToF, prepare_state returns None and we fall back
+            # to the full constructor.
+            state = ReflectionManagerFactory.prepare_state(
+                params.refinement.reflections, reflections, experiments, do_stills
+            )
+            if state is not None:
+                # Only write to cache on single-process runs to avoid races.
+                if _refman_cache_key is not None and params.refinement.mp.nproc == 1:
+                    cls._refman_cache[_refman_cache_key] = state
+                    # Bound cache size to avoid unbounded memory growth
+                    while len(cls._refman_cache) > 4:
+                        cls._refman_cache.pop(next(iter(cls._refman_cache)))
+                refman = ReflectionManager.from_prepared_state(state, experiments)
+            else:
+                # Fallback for stills / Laue / ToF (caching not supported)
+                refman = (
+                    ReflectionManagerFactory.from_parameters_reflections_experiments(
+                        params.refinement.reflections,
+                        reflections,
+                        experiments,
+                        do_stills,
+                    )
+                )
 
         logger.debug(
             "Number of observations that pass initial inclusion criteria = %d",

@@ -3,6 +3,7 @@ principally ReflectionManager."""
 
 from __future__ import annotations
 
+import collections as _collections
 import logging
 import math
 import random
@@ -31,6 +32,24 @@ logger = logging.getLogger(__name__)
 # constants
 RAD2DEG = 180.0 / math.pi
 DEG2RAD = math.pi / 180.0
+
+_PreparedReflectionState = _collections.namedtuple(
+    "_PreparedReflectionState",
+    [
+        "indexed",
+        "reflections",
+        "accepted_refs_size",
+        "weighting_strategy",
+        "outlier_detector",
+        "nref_per_degree",
+        "max_sample_size",
+        "min_sample_size",
+        "close_to_spindle_cutoff",
+        "scan_margin_rad",
+        "axes",
+        "s0vecs",
+    ],
+)
 
 # PHIL
 format_data = {"outlier_phil": outlier_phil_str}
@@ -508,6 +527,157 @@ class ReflectionManagerFactory:
 
         return None
 
+    @staticmethod
+    def prepare_state(params, reflections, experiments, do_stills=False):
+        """Run the model-independent preprocessing steps and return a cached
+        _PreparedReflectionState that can be reused across calls that share the
+        same reflections, beam, and goniometer.
+
+        This covers only rotation-scan experiments. If the experiments are stills,
+        Laue, or ToF, None is returned and the caller should fall back to the
+        uncached path.
+
+        Args:
+            params: refinement.reflections phil scope extract
+            reflections: filtered reflection table (output of _filter_reflections)
+            experiments: ExperimentList for the current candidate
+            do_stills: bool
+
+        Returns:
+            _PreparedReflectionState or None if caching is not supported for
+            this experiment type.
+        """
+        # Only cache for rotation scans; fall back for stills/Laue/ToF
+        if do_stills or experiments.all_laue() or experiments.all_tof():
+            return None
+
+        # Random seed (must match what __init__ would do)
+        if params.random_seed is not None:
+            random.seed(params.random_seed)
+            flex.set_random_seed(params.random_seed)
+
+        # Build outlier detector and weighting strategy (model-independent,
+        # depend only on params)
+        if params.outlier.algorithm in ("auto", libtbx.Auto):
+            params.outlier.algorithm = "mcd"
+        if params.outlier.algorithm == "sauter_poon":
+            if params.outlier.sauter_poon.px_sz is libtbx.Auto:
+                params.outlier.sauter_poon.px_sz = experiments.detectors()[0][
+                    0
+                ].get_pixel_size()
+
+        if params.outlier.algorithm in ("null", None):
+            outlier_detector = None
+        else:
+            colnames = ReflectionManagerFactory.get_col_names(params)
+            from dials.algorithms.refinement.outlier_detection import (
+                CentroidOutlierFactory,
+            )
+
+            outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
+                params, colnames
+            )
+
+        if params.weighting_strategy.override in ["stills", "external_deltapsi"]:
+            msg = (
+                f'The "{params.weighting_strategy.override}" weighting strategy is not compatible with '
+                "scan refinement"
+            )
+            raise DialsRefineConfigError(msg)
+
+        weighting_strategy = ReflectionManagerFactory.get_weighting_strategy_override(
+            params
+        )
+
+        # Precompute axes and s0vecs from the (stable) beam and goniometer
+        goniometers = [e.goniometer for e in experiments]
+        axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
+        s0vecs = [matrix.col(e.beam.get_s0()) for e in experiments]
+
+        # ---- Begin model-independent preprocessing (mirrors ReflectionManager.__init__) ----
+
+        # Unset refinement flags
+        reflections.unset_flags(
+            flex.size_t_range(len(reflections)),
+            flex.reflection_table.flags.used_in_refinement,
+        )
+
+        # Compute s1 if missing
+        n_s1_set = set_obs_s1(reflections, experiments)
+        if n_s1_set > 0:
+            logger.debug("Set scattering vectors for %d reflections", n_s1_set)
+
+        # Assign original indices
+        reflections["iobs"] = flex.size_t_range(len(reflections))
+
+        # Sort by id then panel if not already sorted
+        l_id = reflections["id"]
+        id0 = l_id[0]
+        for id_x in l_id[1:]:
+            if id0 <= id_x:
+                id0 = id_x
+            else:
+                reflections.sort("id")
+                reflections.subsort("id", "panel")
+                break
+
+        # Build a temporary ReflectionManager-like object to call _id_refs_to_keep.
+        # We do this by using a lightweight object with the required attributes.
+        class _TempManager:
+            pass
+
+        tmp = _TempManager()
+        tmp._experiments = experiments
+        tmp._axes = axes
+        tmp._s0vecs = s0vecs
+        tmp._close_to_spindle_cutoff = params.close_to_spindle_cutoff
+        tmp._scan_margin = DEG2RAD * params.scan_margin
+        # Borrow _id_refs_to_keep as an unbound method call
+        refs_to_keep = ReflectionManager._id_refs_to_keep(tmp, reflections)
+        accepted_refs_size = len(refs_to_keep)
+
+        # Calculate entering flags for all reflections
+        reflections.calculate_entering_flags(experiments)
+
+        # Set observed frame numbers if not already present
+        calculate_frame_numbers(reflections, experiments)
+
+        # Reset all use flags
+        mask = reflections.get_flags(reflections.flags.used_in_refinement)
+        reflections.unset_flags(mask, reflections.flags.used_in_refinement)
+
+        # Build indexed (full) and reflections (subset passing criteria)
+        indexed = reflections
+        kept_reflections = reflections.select(refs_to_keep)
+
+        # Set exclusion flag for reflections that failed the tests
+        refs_to_excl = flex.bool(len(indexed), True)
+        refs_to_excl.set_selected(refs_to_keep, False)
+        indexed.set_flags(refs_to_excl, indexed.flags.excluded_for_refinement)
+
+        # Calculate weights
+        ws = (
+            weighting_strategy
+            if weighting_strategy is not None
+            else ReflectionManager._weighting_strategy
+        )
+        ws.calculate_weights(kept_reflections)
+
+        return _PreparedReflectionState(
+            indexed=indexed,
+            reflections=kept_reflections,
+            accepted_refs_size=accepted_refs_size,
+            weighting_strategy=ws,
+            outlier_detector=outlier_detector,
+            nref_per_degree=params.reflections_per_degree,
+            max_sample_size=params.maximum_sample_size,
+            min_sample_size=params.minimum_sample_size,
+            close_to_spindle_cutoff=params.close_to_spindle_cutoff,
+            scan_margin_rad=DEG2RAD * params.scan_margin,
+            axes=axes,
+            s0vecs=s0vecs,
+        )
+
 
 class ReflectionManager:
     """A class to maintain information about observed and predicted
@@ -616,6 +786,51 @@ class ReflectionManager:
 
         # cache for get_matches(); invalidated whenever used_in_refinement flags change
         self._matches_cache = None
+
+    @classmethod
+    def from_prepared_state(cls, state, experiments):
+        """Construct a ReflectionManager from a cached _PreparedReflectionState,
+        bypassing the expensive model-independent preprocessing in __init__.
+
+        The reflection tables are deep-copied so that finalise() mutations in one
+        call do not corrupt the cached state used by the next call.
+
+        NOTE: The cached axes and s0vecs were computed from the beam and goniometer
+        at the time prepare_state() ran. This is only safe to reuse when beam and
+        goniometer have not changed between calls (e.g. when only the crystal model
+        is being varied in model evaluation). Do not reuse a cache token across
+        calls where beam or goniometer parameters are being refined.
+        """
+        import copy
+
+        self = object.__new__(cls)
+
+        # Experiments (crystal varies per call; beam/goniometer/scan are stable)
+        self._experiments = experiments
+
+        # Deep-copy the reflection tables so that in-place mutations during
+        # finalise() do not corrupt the shared cached state.
+        self._indexed = copy.deepcopy(state.indexed)
+        self._reflections = copy.deepcopy(state.reflections)
+
+        self._accepted_refs_size = state.accepted_refs_size
+        self._weighting_strategy = state.weighting_strategy
+        self._outlier_detector = state.outlier_detector
+        self._nref_per_degree = state.nref_per_degree
+        self._max_sample_size = state.max_sample_size
+        self._min_sample_size = state.min_sample_size
+        self._close_to_spindle_cutoff = state.close_to_spindle_cutoff
+        self._scan_margin = state.scan_margin_rad
+        self._axes = state.axes
+        self._s0vecs = state.s0vecs
+
+        # not known until the manager is finalised
+        self._sample_size = None
+
+        # cache for get_matches(); invalidated whenever used_in_refinement flags change
+        self._matches_cache = None
+
+        return self
 
     def get_centroid_analyser(self, debug=False):
         """Create a CentroidAnalysis object for the current reflections"""

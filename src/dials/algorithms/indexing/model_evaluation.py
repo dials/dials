@@ -4,6 +4,7 @@ import collections
 import copy
 import logging
 import math
+import uuid
 
 import libtbx
 from dxtbx.model import Crystal
@@ -309,6 +310,10 @@ class Strategy:
 class ModelEvaluation(Strategy):
     def __init__(self, params):
         self._params = copy.deepcopy(params)
+        # Stable cache key for all evaluate() calls on this instance.
+        # Using uuid4 avoids any collision with keys from other ModelEvaluation
+        # instances or from the final (uncached) refinement calls.
+        self._refman_cache_key = uuid.uuid4()
         # override several parameters, mainly for speed
         self._params.refinement.parameterisation.auto_reduction.action = "fix"
         self._params.refinement.parameterisation.scan_varying = False
@@ -346,7 +351,10 @@ class ModelEvaluation(Strategy):
                 return
             try:
                 refiner = RefinerFactory.from_parameters_data_experiments(
-                    self._params, indexed_reflections, experiments
+                    self._params,
+                    indexed_reflections,
+                    experiments,
+                    _refman_cache_key=self._refman_cache_key,
                 )
                 refiner.run()
             except (RuntimeError, ValueError):
