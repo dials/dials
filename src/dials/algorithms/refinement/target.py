@@ -398,11 +398,6 @@ class Target:
 
         self.update_matches()
 
-        # Need to be able to track the indices of the original matches table for
-        # scan-varying gradient calculations. A simple and robust (but slightly
-        # expensive) way to do this is to add an index column to the matches table
-        self._matches["imatch"] = flex.size_t_range(len(self._matches))
-
         if self._gradient_calculation_blocksize:
             nblocks = int(
                 math.floor(
@@ -414,6 +409,18 @@ class Target:
         # ensure at least 100 reflections per block
         nblocks = min(nblocks, int(len(self._matches) / 100))
         nblocks = max(nblocks, 1)
+
+        # Fast path: single block avoids a full-table copy via self._matches[0:N].
+        # Return self._matches directly instead of slicing it.
+        if nblocks == 1:
+            self._matches["imatch"] = flex.size_t_range(len(self._matches))
+            return [self._matches]
+
+        # Multi-block case: add index column then slice into blocks.
+        # Need to be able to track the indices of the original matches table for
+        # scan-varying gradient calculations. A simple and robust (but slightly
+        # expensive) way to do this is to add an index column to the matches table
+        self._matches["imatch"] = flex.size_t_range(len(self._matches))
         blocksize = int(math.floor(len(self._matches) / nblocks))
         blocks = []
         for block_num in range(nblocks - 1):
