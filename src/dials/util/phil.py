@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections
+import functools
 import os
 import re
 
@@ -11,6 +12,18 @@ from libtbx.utils import Sorry
 from dials.array_family import flex
 
 FilenameDataWrapper = collections.namedtuple("FilenameDataWrapper", "filename, data")
+
+
+@functools.lru_cache(maxsize=32)
+def _cached_reflection_table(abspath):
+    """Cache reflection tables by absolute path to avoid redundant disk reads."""
+    return flex.reflection_table.from_file(abspath)
+
+
+@functools.lru_cache(maxsize=32)
+def _cached_experiment_list(abspath):
+    """Cache experiment lists by absolute path to avoid redundant disk reads."""
+    return ExperimentListFactory.from_json_file(abspath, check_format=False)
 
 
 class ExperimentListConverters:
@@ -34,9 +47,7 @@ class ExperimentListConverters:
             raise Sorry(f"File {s} does not exist")
         return FilenameDataWrapper(
             filename=s,
-            data=ExperimentListFactory.from_json_file(
-                s, check_format=self._check_format
-            ),
+            data=_cached_experiment_list(os.path.abspath(s)),
         )
 
     def as_words(self, python_object, master):
@@ -61,7 +72,9 @@ class ReflectionTableConverters:
             return None
         if not os.path.exists(s):
             raise Sorry(f"File {s} does not exist")
-        return FilenameDataWrapper(filename=s, data=flex.reflection_table.from_file(s))
+        return FilenameDataWrapper(
+            filename=s, data=_cached_reflection_table(os.path.abspath(s))
+        )
 
     def as_words(self, python_object, master):
         if python_object is None:
