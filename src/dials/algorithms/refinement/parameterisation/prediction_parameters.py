@@ -722,18 +722,30 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         """Setup additional attributes used in gradients calculation. These are
         specific to scans-type prediction parameterisations"""
 
-        # Spindle rotation matrices for every reflection
-        # R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
-        # R = flex.mat3_double(len(reflections))
-        # NB for now use flex.vec3_double.rotate_around_origin each time I need the
-        # rotation matrix R.
-
         # r is the reciprocal lattice vector, in the lab frame
         self._phi_calc = reflections["xyzcal.mm"].parts()[2]
+
+        # Precompute per-reflection rotation matrices R for use in _xl_derivatives.
+        # Use 3 basis-vector rotations (scalar axis, so normalization is done once)
+        # instead of one rotate_around_origin call per parameter in the derivative loop.
+        # self._axis[0] is the uniform scalar rotation axis for this experiment.
+        ax = self._axis[0]
+        n = len(reflections)
+        e1 = flex.vec3_double(n, (1.0, 0.0, 0.0))
+        e2 = flex.vec3_double(n, (0.0, 1.0, 0.0))
+        e3 = flex.vec3_double(n, (0.0, 0.0, 1.0))
+        r1 = e1.rotate_around_origin(ax, self._phi_calc)
+        r2 = e2.rotate_around_origin(ax, self._phi_calc)
+        r3 = e3.rotate_around_origin(ax, self._phi_calc)
+        # Build flex.mat3_double in row-major order: column j of R is the image of ej.
+        # Row 0: (r1[i][0], r2[i][0], r3[i][0]), row 1: (...), row 2: (...)
+        x1, y1, z1 = r1.parts()
+        x2, y2, z2 = r2.parts()
+        x3, y3, z3 = r3.parts()
+        self._R = flex.mat3_double(list(zip(x1, x2, x3, y1, y2, y3, z1, z2, z3)))
+
         q = self._fixed_rotation * (self._UB * self._h)
-        self._r = self._setting_rotation * q.rotate_around_origin(
-            self._axis, self._phi_calc
-        )
+        self._r = self._setting_rotation * q.rotate_around_origin(ax, self._phi_calc)
 
         # All of the derivatives of phi have a common denominator, given by
         # (e X r).s0, where e is the rotation axis. Calculate this once, here.
@@ -823,10 +835,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         generic parameterisations."""
 
         # Get required data
-        axis = self._axis.select(isel)
         fixed_rotation = self._fixed_rotation.select(isel)
         setting_rotation = self._setting_rotation.select(isel)
-        phi_calc = self._phi_calc.select(isel)
         h = self._h.select(isel)
         s1 = self._s1.select(isel)
         e_X_r = self._e_X_r.select(isel)
@@ -859,7 +869,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
                 tmp = fixed_rotation * (der * B * h)
             else:
                 tmp = fixed_rotation * (U * der * h)
-            dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
+            dr = setting_rotation * (self._R.select(isel) * tmp)
 
             # calculate the derivative of phi for this parameter
             dphi = -1.0 * dr.dot(s1) / e_r_s0
