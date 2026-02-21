@@ -609,7 +609,15 @@ class Indexer:
                     )
 
                 logger.info("\nIndexed crystal models:")
-                self.show_experiments(experiments, self.reflections, d_min=self.d_min)
+                # Only show experiments for the first cycle - subsequent cycles
+                # already print the same info at the end of the previous cycle
+                # (via the "Refined crystal models" block below). Each
+                # show_experiments call computes rlp.norms() twice on 2M
+                # reflections, so skipping saves ~5-7 s per omitted call.
+                if i_cycle == 0:
+                    self.show_experiments(
+                        experiments, self.reflections, d_min=self.d_min
+                    )
 
                 if self._remove_similar_crystal_models(experiments):
                     have_similar_crystal_models = True
