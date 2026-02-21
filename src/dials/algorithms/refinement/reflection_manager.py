@@ -614,6 +614,9 @@ class ReflectionManager:
         # not known until the manager is finalised
         self._sample_size = None
 
+        # cache for get_matches(); invalidated whenever used_in_refinement flags change
+        self._matches_cache = None
+
     def get_centroid_analyser(self, debug=False):
         """Create a CentroidAnalysis object for the current reflections"""
 
@@ -679,6 +682,7 @@ class ReflectionManager:
             flex.bool(len(self._reflections), True),
             self._reflections.flags.used_in_refinement,
         )
+        self.invalidate_matches_cache()
 
         logger.info("%d reflections remain in the manager", len(self._reflections))
         if len(self._reflections) == 0:
@@ -850,9 +854,16 @@ class ReflectionManager:
     def get_matches(self):
         """For every observation used in refinement return (a copy of) all data"""
 
-        return self._reflections.select(
-            self._reflections.get_flags(self._reflections.flags.used_in_refinement)
-        )
+        if self._matches_cache is None:
+            self._matches_cache = self._reflections.select(
+                self._reflections.get_flags(self._reflections.flags.used_in_refinement)
+            )
+        return self._matches_cache
+
+    def invalidate_matches_cache(self):
+        """Invalidate the cached matches table, forcing recomputation on next call"""
+
+        self._matches_cache = None
 
     def get_free_reflections(self):
         """Return all reflections that were accepted for refinement but not chosen
@@ -910,6 +921,7 @@ class ReflectionManager:
 
         mask = reflections.get_flags(reflections.flags.used_in_refinement)
         reflections.unset_flags(mask, reflections.flags.used_in_refinement)
+        self.invalidate_matches_cache()
 
     def get_obs(self):
         """Get the list of managed observations"""
@@ -921,6 +933,7 @@ class ReflectionManager:
         external classes can filter according to criteria not available here"""
 
         self._reflections = self._reflections.select(sel)
+        self.invalidate_matches_cache()
         return self._reflections
 
     def update_residuals(self):
