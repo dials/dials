@@ -705,11 +705,13 @@ class Indexer:
                 self.refined_reflections.clean_experiment_identifiers_map()
                 self.unindexed_reflections = unindexed_reflections
 
-                for i, expt in enumerate(self.experiments):
+                if len(self.experiments) == 1:
+                    # Fast path for single experiment: skip expensive select() on
+                    # the full reflection table just to find imageset_id == 0.
+                    expt = self.experiments[0]
                     ref_sel = self.refined_reflections.select(
-                        self.refined_reflections["imageset_id"] == i
+                        self.refined_reflections["id"] >= 0
                     )
-                    ref_sel = ref_sel.select(ref_sel["id"] >= 0)
                     for i_expt in set(ref_sel["id"]):
                         refined_expt = refined_experiments[i_expt]
                         expt.detector = refined_expt.detector
@@ -717,6 +719,19 @@ class Indexer:
                         expt.goniometer = refined_expt.goniometer
                         expt.scan = refined_expt.scan
                         refined_expt.imageset = expt.imageset
+                else:
+                    for i, expt in enumerate(self.experiments):
+                        ref_sel = self.refined_reflections.select(
+                            self.refined_reflections["imageset_id"] == i
+                        )
+                        ref_sel = ref_sel.select(ref_sel["id"] >= 0)
+                        for i_expt in set(ref_sel["id"]):
+                            refined_expt = refined_experiments[i_expt]
+                            expt.detector = refined_expt.detector
+                            expt.beam = refined_expt.beam
+                            expt.goniometer = refined_expt.goniometer
+                            expt.scan = refined_expt.scan
+                            refined_expt.imageset = expt.imageset
 
                 if not (
                     self.all_params.refinement.parameterisation.beam.fix == "all"
