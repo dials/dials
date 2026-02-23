@@ -49,7 +49,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2025"
+_prebuilt_cctbx_base = "2025.12"
 
 
 def make_executable(filepath):
@@ -839,30 +839,35 @@ def update_sources(options):
 
     if not options.cmake:
         repositories = {
-            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            source.split("/")[1]: {
+                "base-repository": source,
+                "branch-local": "dials-3.28",
+            }
             for source, branch in (
-                ("cctbx/annlib_adaptbx", "master"),
-                ("cctbx/cctbx_project", "master"),
-                ("cctbx/dxtbx", "main"),
+                ("dials/annlib_adaptbx", "master"),
                 ("dials/annlib", "master"),
                 ("dials/cbflib", "CBFlib-0.9.8"),
                 ("dials/ccp4io", "master"),
                 ("dials/ccp4io_adaptbx", "master"),
+                ("dials/ccp4io", "master"),
+                ("dials/cctbx_project", "master"),
                 ("dials/dials", "main"),
+                ("cctbx/dxtbx", "main"),
                 ("dials/gui_resources", "master"),
                 ("xia2/xia2", "main"),
             )
         }
         repositories["cctbx_project"] = {
-            "base-repository": "cctbx/cctbx_project",
-            "effective-repository": "dials/cctbx",
-            "branch-remote": "master",
-            "branch-local": "stable",
+            "base-repository": "dials/cctbx_project",
+            "branch-local": "dials-3.28",
         }
     else:
         # Only what we need for CMake
         repositories = {
-            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            source.split("/")[1]: {
+                "base-repository": source,
+                "branch-local": "dials-3.28",
+            }
             for source, branch in (
                 ("cctbx/dxtbx", "main"),
                 ("dials/dials", "main"),
@@ -1303,9 +1308,11 @@ be passed separately with quotes to avoid confusion (e.g
     )
 
     options = parser.parse_args()
-    if options.removed_cmake:
+    if options.removed_cmake or options.cmake:
         # User passed the obsolete parameter
-        sys.exit("Error: --cmake is now the default, please remove --cmake.")
+        sys.exit(
+            "Error: --cmake is now the default, please pass --libtbx for release builds."
+        )
 
     print("Performing actions:", " ".join(options.actions))
 
