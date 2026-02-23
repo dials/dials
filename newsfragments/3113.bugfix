@@ -1,1 +1,1 @@
-``dials.correlation_matrix``: Fix bug with OPTICS classification if single cluster present and no large gradient within allowed max_eps range.
+``dials.correlation_matrix``: Fix bug with OPTICS classification, if single cluster present and no large gradient within allowed max_eps range.

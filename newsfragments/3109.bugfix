@@ -1,1 +1,1 @@
-``dials.ssx_index``: suppress unwanted prints to the terminal on Windows
+``dials.ssx_index``: Less noisy output to the terminal in Windows.
