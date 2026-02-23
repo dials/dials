@@ -1,3 +1,12 @@
+DIALS 3.26.1 (2026-02-23)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.cosym``: Fix crash if run with lattice_group parameter. (`#3048 <https://github.com/dials/dials/issues/3048>`_)
+
+
 DIALS 3.26.0 (2025-11-06)
 =========================
 
