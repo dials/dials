@@ -13,7 +13,7 @@ gemmi>=0.7
 h5py>=3.1.0
 hatchling
 hdf5
-hdf5plugin
+hdf5plugin<=6
 jinja2
 libboost-devel
 libboost-python-devel

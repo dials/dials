@@ -1,1 +1,0 @@
-Fix failed builds on Visual Studio 2022 due to excessively large obj files.
