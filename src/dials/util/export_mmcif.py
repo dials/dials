@@ -14,6 +14,7 @@ from cctbx import miller
 from cctbx.sgtbx import bravais_types
 from iotbx.merging_statistics import dataset_statistics
 from libtbx import Auto
+from mmtbx.scaling import data_statistics as mmtbx_dataset_statistics
 from scitbx.array_family import flex
 
 import dials.util.version
@@ -29,6 +30,33 @@ from dials.util.filter_reflections import filter_reflection_table
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
 dials_version = dials.util.version.dials_version()
+
+
+stats_formats = {
+    "_reflns.d_resolution_high": "{:.3f}",
+    "_reflns.d_resolution_low": "{:.3f}",
+    "_reflns.pdbx_CC_half": "{:.4f}",
+    "_reflns.pdbx_Rmerge_I_obs": "{:.4f}",
+    "_reflns.pdbx_Rpim_I_all": "{:.4f}",
+    "_reflns.pdbx_Rrim_I_all": "{:.4f}",
+    "_reflns.pdbx_netI_over_sigmaI": "{:.3f}",
+    "_reflns.pdbx_netI_over_av_sigmaI": "{:.3f}",
+    "_reflns.pdbx_redundancy": "{:.3f}",
+    "_reflns.percent_possible_obs": "{:.3f}",
+}
+
+stats_array_formats = {
+    "_reflns_shell.d_res_high": "{:.3f}",
+    "_reflns_shell.d_res_low": "{:.3f}",
+    "_reflns_shell.pdbx_CC_half": "{:.4f}",
+    "_reflns_shell.Rmerge_I_obs": "{:.4f}",
+    "_reflns_shell.pdbx_Rpim_I_all": "{:.4f}",
+    "_reflns_shell.pdbx_Rrim_I_all": "{:.4f}",
+    "_reflns_shell.pdbx_netI_over_sigmaI_obs": "{:.3f}",
+    "_reflns_shell.meanI_over_sigI_obs": "{:.3f}",
+    "_reflns_shell.pdbx_redundancy": "{:.3f}",
+    "_reflns_shell.percent_possible_obs": "{:.3f}",
+}
 
 
 class MMCIFOutputFile:
@@ -128,6 +156,7 @@ class MMCIFOutputFile:
             "_software.type",
             "_software.classification",
             "_software.description",
+            "_software.pdbx_reference_DOI",
         )
 
         mmcif_citations_header = (
@@ -373,11 +402,28 @@ class MMCIFOutputFile:
                 eliminate_sys_absent=False,
                 assert_is_not_unique_set_under_symmetry=False,
             )
+            merged = i_obs.merge_equivalents(use_internal_variance=False)
+            # Also estimate the Wilson B factor.
+            iso_b_wilson = mmtbx_dataset_statistics.wilson_scaling(
+                miller_array=merged.array(), n_residues=200
+            ).iso_b_wilson
             merged_block = iotbx.cif.model.block()
             merged_block["_reflns.pdbx_ordinal"] = 1
             merged_block["_reflns.pdbx_diffrn_id"] = 1
             merged_block["_reflns.entry_id"] = "DIALS"
             merged_data = result.as_cif_block()
+            # Apply custom formatting.
+            for k in list(merged_data.keys()):
+                if k in stats_formats:
+                    merged_data[k] = stats_formats[k].format(float(merged_data[k]))
+                elif k in stats_array_formats:
+                    merged_data[k] = flex.std_string(
+                        [
+                            stats_array_formats[k].format(float(i))
+                            for i in merged_data[k]
+                        ]
+                    )
+            merged_block["_reflns.B_iso_Wilson_estimate"] = f"{iso_b_wilson:.3f}"
             merged_block.update(merged_data)
             cif_block.update(merged_block)
 
