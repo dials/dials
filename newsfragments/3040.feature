@@ -1,3 +1,0 @@
-Add the ``refstat`` algorithm, a utility to check space group symmetry based on Olex2 functionality.
-An associated command-line program, `dev.dials.refstat_symmetry_analysis` is also added, but this
-is intended to be temporary as the feature will eventually be incorporated into `dials.symmetry`.
