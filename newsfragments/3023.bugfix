@@ -1,1 +1,1 @@
-``dials.index``: return best pinkIndexer orientation matrices when `target_lattices` > `max_refine`. Deprecate the min_lattices parameter in favour of target_lattices.
+``dials.index``: Return best pinkIndexer orientation matrices when ``target_lattices`` > ``max_refine``. Deprecate the min_lattices parameter in favour of target_lattices.

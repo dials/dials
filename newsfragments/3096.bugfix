@@ -1,1 +1,1 @@
-``dials.ssx_integrate``: Fix crash if both unit_cell.fix=True and orientation.fix=True
+``dials.ssx_integrate``: Fix crash if both ``unit_cell.fix=True`` and ``orientation.fix=True``

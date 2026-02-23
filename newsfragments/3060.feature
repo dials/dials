@@ -1,1 +1,1 @@
-``dials.correlation_matrix``: Use silhouette score for quantifying cluster solution quality and include dataset labels on clustering plots.
+``dials.correlation_matrix``: Use silhouette score for quantifying cluster solution quality, and include dataset labels on clustering plots.

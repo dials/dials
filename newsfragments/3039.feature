@@ -1,1 +1,1 @@
-Add tof_integrate with 1D and 3D profile fitting methods for time-of-flight data.
+New tool: ``dials.tof_integrate`` with 1D and 3D profile fitting methods, for processing time-of-flight data.

@@ -1,2 +1,1 @@
-``dials.index``: change behaviour of ``joint_index`` option to require manual assignment for multi-sweep data
-
+``dials.index``: Change behaviour of ``joint_index=`` option. Multi-sweep data now requests an explicit ``joint_index=true`` or ``=false`` to specify how to handle multi-sweep data.

@@ -1,1 +1,1 @@
-Enable `dials.export` to output hklf2 files.
+``dials.export``: Add output of hklf2 files.
