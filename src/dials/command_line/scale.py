@@ -230,7 +230,7 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
 
     try:
         scaled_experiments, joint_table = run_scaling(params, experiments, reflections)
-    except ValueError as e:
+    except (ValueError, RuntimeError) as e:
         raise Sorry(e)
     else:
         # Note, cross validation mode does not produce scaled datafiles
