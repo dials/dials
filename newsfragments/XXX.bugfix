@@ -1,0 +1,1 @@
+``dials.scale``: Provide clean error message if attempting to scale a single dataset with model=KB.
