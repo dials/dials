@@ -220,7 +220,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
             // Write mask array
             buffer.write((const char*)&it->mask[0],
-                         it->mask.size() * element_size_helper<int>::size());
+                         it->mask.size() * element_size_helper<uint8_t>::size());
 
             // Write background array
             buffer.write((const char*)&it->background[0],
@@ -484,7 +484,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
             // Copy to the buffer
             buffer.read((char*)&it->mask[0],
-                        it->mask.size() * element_size_helper<int>::size());
+                        it->mask.size() * element_size_helper<uint8_t>::size());
 
             // Allocate the array
             it->background = scitbx::af::versa<T, scitbx::af::c_grid<3> >(accessor);
