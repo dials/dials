@@ -926,6 +926,14 @@ namespace dials { namespace af { namespace boost_python {
       *this << version;
     }
 
+    /** Add the << operator for uint8_t, which is missing from
+     * scitbx::serialization::double_buffered::to_string */
+    to_string& operator<<(uint8_t const& val) {
+      char buf[64];
+      buffer.append(buf, scitbx::serialization::base_256::to_string(buf, val));
+      return *this;
+    }
+
     /** Convert a single shoebox instance to string */
     shoebox_to_string& operator<<(const shoebox_type& val) {
       *this << val.panel << val.bbox[0] << val.bbox[1] << val.bbox[2] << val.bbox[3]
@@ -967,9 +975,9 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(version == 1);
     }
 
-    /** Add the >> operator for unsigned char, which is missing from
+    /** Add the >> operator for uint8_t, which is missing from
      * scitbx::serialization::double_buffered::from_string */
-    from_string& operator>>(unsigned char& val) {
+    from_string& operator>>(uint8_t& val) {
       val = get_value(scitbx::type_holder<unsigned char>());
       return *this;
     }
