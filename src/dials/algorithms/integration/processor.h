@@ -122,7 +122,7 @@ namespace dials { namespace algorithms {
       using dxtbx::af::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
       typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      typedef af::ref<uint8_t, af::c_grid<3> > sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == npanels_);
 
@@ -232,7 +232,7 @@ namespace dials { namespace algorithms {
       using dxtbx::af::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
       typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      typedef af::ref<uint8_t, af::c_grid<3> > sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == npanels_);
 

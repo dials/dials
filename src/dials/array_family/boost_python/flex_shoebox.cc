@@ -370,7 +370,7 @@ namespace dials { namespace af { namespace boost_python {
    * Allocate the shoeboxes
    */
   template <typename FloatType>
-  void allocate_with_value(af::ref<Shoebox<FloatType> > a, int mask_code) {
+  void allocate_with_value(af::ref<Shoebox<FloatType> > a, uint8_t mask_code) {
     for (std::size_t i = 0; i < a.size(); ++i) {
       a[i].allocate_with_value(mask_code);
     }
@@ -649,7 +649,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<double> result(a.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       af::versa<FloatType, af::c_grid<3> > data = a[i].data;
-      af::versa<int, af::c_grid<3> > mask = a[i].mask;
+      af::versa<uint8_t, af::c_grid<3> > mask = a[i].mask;
       double mean = 0.0;
       std::size_t count = 0;
       for (std::size_t j = 0; j < data.size(); ++j) {
@@ -676,7 +676,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<double> result(a.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       af::versa<FloatType, af::c_grid<3> > data = a[i].background;
-      af::versa<int, af::c_grid<3> > mask = a[i].mask;
+      af::versa<uint8_t, af::c_grid<3> > mask = a[i].mask;
       double mean = 0.0;
       std::size_t count = 0;
       for (std::size_t j = 0; j < data.size(); ++j) {
@@ -732,7 +732,7 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(p == 0);
 
       // Get the shoebox mask
-      af::const_ref<int, af::c_grid<3> > sbox_mask = self[s].mask.const_ref();
+      af::const_ref<uint8_t, af::c_grid<3> > sbox_mask = self[s].mask.const_ref();
 
       // Make sure bbox range is ok
       int x00 = x0 >= 0 ? x0 : 0;
@@ -768,7 +768,7 @@ namespace dials { namespace af { namespace boost_python {
     size_t ntot = 0;
     af::shared<float> data_array(n, 0);
     af::shared<float> bg_array(n, 0);
-    af::shared<size_t> mask_array(n, 0);
+    af::shared<uint8_t> mask_array(n, 0);
     for (int i = 0; i < self.size(); ++i) {
       const Shoebox<>& s1 = self[i];
       std::copy(s1.data.begin(), s1.data.end(), data_array.begin() + ntot);
@@ -812,7 +812,7 @@ namespace dials { namespace af { namespace boost_python {
       // Get the shoebox mask
       af::ref<FloatType, af::c_grid<3> > sbox_data = self[s].data.ref();
       af::ref<FloatType, af::c_grid<3> > sbox_bgrd = self[s].background.ref();
-      af::ref<int, af::c_grid<3> > sbox_mask = self[s].mask.ref();
+      af::ref<uint8_t, af::c_grid<3> > sbox_mask = self[s].mask.ref();
 
       // Make sure bbox range is ok
       int x00 = x0 >= 0 ? x0 : 0;
@@ -851,7 +851,7 @@ namespace dials { namespace af { namespace boost_python {
                                 cctbx::miller::index<> hkl,
                                 const PixelToMillerIndex& compute_miller_index) {
     bool modified = false;
-    int mask_code = Valid | Background;
+    uint8_t mask_code = Valid | Background;
     int x0 = self.bbox[0];
     int x1 = self.bbox[1];
     int y0 = self.bbox[2];
@@ -973,7 +973,7 @@ namespace dials { namespace af { namespace boost_python {
         >> val.bbox[4] >> val.bbox[5];
 
       val.data = profile_from_string<versa<FloatType, c_grid<3> > >();
-      val.mask = profile_from_string<versa<int, c_grid<3> > >();
+      val.mask = profile_from_string<versa<uint8_t, c_grid<3> > >();
       val.background = profile_from_string<versa<FloatType, c_grid<3> > >();
 
       return *this;

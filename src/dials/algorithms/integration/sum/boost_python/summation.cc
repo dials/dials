@@ -25,18 +25,18 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<SummationType>(name, no_init)
       .def(init<const af::const_ref<FloatType>&,
                 const af::const_ref<FloatType>&,
-                const af::const_ref<int>&>((boost::python::arg("signal"),
-                                            boost::python::arg("background"),
-                                            boost::python::arg("mask"))))
+                const af::const_ref<uint8_t>&>((boost::python::arg("signal"),
+                                                boost::python::arg("background"),
+                                                boost::python::arg("mask"))))
       .def(init<const af::const_ref<FloatType, af::c_grid<2> >&,
                 const af::const_ref<FloatType, af::c_grid<2> >&,
-                const af::const_ref<int, af::c_grid<2> >&>(
+                const af::const_ref<uint8_t, af::c_grid<2> >&>(
         (boost::python::arg("signal"),
          boost::python::arg("background"),
          boost::python::arg("mask"))))
       .def(init<const af::const_ref<FloatType, af::c_grid<3> >&,
                 const af::const_ref<FloatType, af::c_grid<3> >&,
-                const af::const_ref<int, af::c_grid<3> >&>(
+                const af::const_ref<uint8_t, af::c_grid<3> >&>(
         (boost::python::arg("signal"),
          boost::python::arg("background"),
          boost::python::arg("mask"))))
@@ -52,7 +52,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   template <typename FloatType>
   Summation<FloatType> make_summation_1d(const af::const_ref<FloatType>& image,
                                          const af::const_ref<FloatType>& background,
-                                         const af::const_ref<int>& mask) {
+                                         const af::const_ref<uint8_t>& mask) {
     return Summation<FloatType>(image, background, mask);
   }
 
@@ -60,7 +60,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   Summation<FloatType> make_summation_2d(
     const af::const_ref<FloatType, af::c_grid<2> >& image,
     const af::const_ref<FloatType, af::c_grid<2> >& background,
-    const af::const_ref<int, af::c_grid<2> >& mask) {
+    const af::const_ref<uint8_t, af::c_grid<2> >& mask) {
     return Summation<FloatType>(image, background, mask);
   }
 
@@ -68,7 +68,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   Summation<FloatType> make_summation_3d(
     const af::const_ref<FloatType, af::c_grid<3> >& image,
     const af::const_ref<FloatType, af::c_grid<3> >& background,
-    const af::const_ref<int, af::c_grid<3> >& mask) {
+    const af::const_ref<uint8_t, af::c_grid<3> >& mask) {
     return Summation<FloatType>(image, background, mask);
   }
 

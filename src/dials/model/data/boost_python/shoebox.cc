@@ -33,7 +33,7 @@ namespace dials { namespace model { namespace boost_python {
   void set_mask(Shoebox<FloatType>& obj, flex_int& mask) {
     DIALS_ASSERT(mask.accessor().all().size() == 3);
     obj.mask =
-      af::versa<int, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
+      af::versa<uint8_t, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
   }
 
   /** Set the bgrd array as a flex array */

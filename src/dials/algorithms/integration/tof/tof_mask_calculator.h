@@ -190,7 +190,8 @@ namespace dials { namespace algorithms {
     return skewness;
   }
 
-  af::ref<int, af::c_grid<3>> fill_holes_in_mask(af::ref<int, af::c_grid<3>>& mask) {
+  af::ref<uint8_t, af::c_grid<3>> fill_holes_in_mask(
+    af::ref<uint8_t, af::c_grid<3>>& mask) {
     /*
      * Flood fill to ensure no holes in mask
      */
@@ -328,7 +329,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = start; i < end; ++i) {
         // Get shoebox data
         Shoebox<> shoebox = shoeboxes[i];
-        af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3>> mask = shoebox.mask.ref();
         af::ref<float, af::c_grid<3>> data = shoebox.data.ref();
         std::size_t zsize = data.accessor()[0];
         std::size_t ysize = data.accessor()[1];
@@ -394,9 +395,9 @@ namespace dials { namespace algorithms {
           for (std::size_t y = 0; y < ysize; ++y) {
             for (std::size_t x = 0; x < xsize; ++x) {
               std::size_t idx = z * (ysize * xsize) + y * xsize + x;
-              int mask_value = selected_pixels.find(idx) != selected_pixels.end()
-                                 ? Foreground
-                                 : Background;
+              uint8_t mask_value = selected_pixels.find(idx) != selected_pixels.end()
+                                     ? Foreground
+                                     : Background;
               mask(z, y, x) &= ~(Foreground | Background);
               mask(z, y, x) |= mask_value;
             }
@@ -463,7 +464,7 @@ namespace dials { namespace algorithms {
          */
 
         Shoebox<> shoebox = shoeboxes[i];
-        af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3>> mask = shoebox.mask.ref();
         int panel = shoebox.panel;
         int6 bbox = bboxes[i];
         vec3<double> rlp = rlps[i];
@@ -492,10 +493,11 @@ namespace dials { namespace algorithms {
         for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
           for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
             for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-              int mask_value = point_inside_ellipsoid(
-                                 shoebox_rlps[count], mean, eigenvectors, axes_lengths)
-                                 ? Foreground
-                                 : Background;
+              uint8_t mask_value =
+                point_inside_ellipsoid(
+                  shoebox_rlps[count], mean, eigenvectors, axes_lengths)
+                  ? Foreground
+                  : Background;
               mask(z, y, x) &= ~(Foreground | Background);
               mask(z, y, x) |= mask_value;
               count++;
