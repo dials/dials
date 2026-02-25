@@ -49,8 +49,10 @@ namespace dials { namespace algorithms {
           if (panel1 == panel2 && bbox1[5] == bbox2[4]
               && (bbox1[0] < bbox2[1] && bbox1[1] > bbox2[0] && bbox1[2] < bbox2[3]
                   && bbox1[3] > bbox2[2])) {
-            af::const_ref<int, af::c_grid<3> > mask1 = shoeboxes_[s1].mask.const_ref();
-            af::const_ref<int, af::c_grid<3> > mask2 = shoeboxes_[s2].mask.const_ref();
+            af::const_ref<uint8_t, af::c_grid<3> > mask1 =
+              shoeboxes_[s1].mask.const_ref();
+            af::const_ref<uint8_t, af::c_grid<3> > mask2 =
+              shoeboxes_[s2].mask.const_ref();
             int x0 = std::max(bbox1[0], bbox2[0]);
             int x1 = std::min(bbox1[1], bbox2[1]);
             int y0 = std::max(bbox1[2], bbox2[2]);
@@ -121,10 +123,10 @@ namespace dials { namespace algorithms {
         int6 bbox2 = result[l].bbox;
         DIALS_ASSERT(result[l].is_consistent());
         DIALS_ASSERT(shoeboxes_[i].is_consistent());
-        af::const_ref<int, af::c_grid<3> > mask1 = shoeboxes_[i].mask.const_ref();
+        af::const_ref<uint8_t, af::c_grid<3> > mask1 = shoeboxes_[i].mask.const_ref();
         af::const_ref<float_type, af::c_grid<3> > data1 =
           shoeboxes_[i].data.const_ref();
-        af::ref<int, af::c_grid<3> > mask2 = result[l].mask.ref();
+        af::ref<uint8_t, af::c_grid<3> > mask2 = result[l].mask.ref();
         af::ref<float_type, af::c_grid<3> > data2 = result[l].data.ref();
         for (int z = bbox1[4]; z < bbox1[5]; ++z) {
           for (int y = bbox1[2]; y < bbox1[3]; ++y) {

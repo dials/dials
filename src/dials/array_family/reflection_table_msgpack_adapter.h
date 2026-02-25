@@ -480,7 +480,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
                         it->data.size() * element_size_helper<T>::size());
 
             // Allocate the array
-            it->mask = scitbx::af::versa<int, scitbx::af::c_grid<3> >(accessor);
+            it->mask = scitbx::af::versa<uint8_t, scitbx::af::c_grid<3> >(accessor);
 
             // Copy to the buffer
             buffer.read((char*)&it->mask[0],
