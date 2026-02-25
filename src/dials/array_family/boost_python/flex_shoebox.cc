@@ -967,6 +967,13 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(version == 1);
     }
 
+    /** Add the >> operator for unsigned char, which is missing from
+     * scitbx::serialization::double_buffered::from_string */
+    from_string& operator>>(unsigned char& val) {
+      val = get_value(scitbx::type_holder<unsigned char>());
+      return *this;
+    }
+
     /** Get a single shoebox instance from a string */
     shoebox_from_string& operator>>(shoebox_type& val) {
       *this >> val.panel >> val.bbox[0] >> val.bbox[1] >> val.bbox[2] >> val.bbox[3]
