@@ -211,8 +211,8 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
           if (it->data.size() > 0) {
             DIALS_ASSERT(it->is_consistent());
 
-            // Write 1 to indicate data is present
-            write(buffer, (uint8_t)1);
+            // Write 2 to indicate version 2 data is present
+            write(buffer, (uint8_t)2);
 
             // Write data array
             buffer.write((const char*)&it->data[0],
@@ -349,7 +349,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
                                           const dials::af::reflection_table& v) const {
         typedef dials::af::reflection_table::const_iterator iterator;
         std::string filetype = "dials::af::reflection_table";
-        std::size_t version = 1;
+        std::size_t version = 2;
 
         // Pack the:
         //  filetype
@@ -464,29 +464,39 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
           DIALS_ASSERT(it->bbox[3] >= it->bbox[2]);
           DIALS_ASSERT(it->bbox[5] >= it->bbox[4]);
 
-          // If the data present
-          bool read_data = read<uint8_t>(buffer);
-          if (read_data) {
+          // Check if version 1 or 2 data are present
+          uint8_t read_data = read<uint8_t>(buffer);
+          if (read_data == 1 || read_data == 2) {
             // Create the accessor
             scitbx::af::c_grid<3> accessor(it->bbox[5] - it->bbox[4],
                                            it->bbox[3] - it->bbox[2],
                                            it->bbox[1] - it->bbox[0]);
 
-            // Allocate the array
+            // Allocate the data array
             it->data = scitbx::af::versa<T, scitbx::af::c_grid<3> >(accessor);
 
             // Copy to the buffer
             buffer.read((char*)&it->data[0],
                         it->data.size() * element_size_helper<T>::size());
 
-            // Allocate the array
+            // Allocate the mask array
             it->mask = scitbx::af::versa<uint8_t, scitbx::af::c_grid<3> >(accessor);
 
             // Copy to the buffer
-            buffer.read((char*)&it->mask[0],
-                        it->mask.size() * element_size_helper<uint8_t>::size());
+            if (read_data == 2) {
+              buffer.read((char*)&it->mask[0],
+                          it->mask.size() * element_size_helper<uint8_t>::size());
+            } else {
+              scitbx::af::versa<int, scitbx::af::c_grid<3> > mask_as_int;
+              mask_as_int = scitbx::af::versa<int, scitbx::af::c_grid<3> >(accessor);
+              buffer.read((char*)&mask_as_int[0],
+                          mask_as_int.size() * element_size_helper<int>::size());
+              for (std::size_t i = 0; i < mask_as_int.size(); ++i) {
+                it->mask[i] = mask_as_int[i];
+              }
+            }
 
-            // Allocate the array
+            // Allocate the background array
             it->background = scitbx::af::versa<T, scitbx::af::c_grid<3> >(accessor);
 
             // Copy to the buffer
@@ -739,9 +749,9 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         // Check the version
         std::size_t version;
         o.via.array.ptr[1].convert(version);
-        if (version != 1) {
+        if (version != 1 && version != 2) {
           throw DIALS_ERROR(
-            "dials::af::reflection_table: expected version 1, got something else");
+            "dials::af::reflection_table: expected version 1 or 2, got something else");
         }
 
         // Get the header object
