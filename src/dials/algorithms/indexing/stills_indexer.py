@@ -100,6 +100,20 @@ class StillsIndexer(Indexer):
         super().__init__(reflections, experiments, params)
         self.warn_if_setting_unused_refinement_protocol_params()
 
+        import iotbx.phil
+        from rstbx.indexing_api.outlier_procedure import OutlierPlotPDF
+        from rstbx.phil.phil_preferences import indexing_api_defs
+
+        self.hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
+        # comment this in if PDF graph is desired:
+        # self.hardcoded_phil.indexing.outlier_detection.pdf = "outlier.pdf"
+        # new code for outlier rejection inline here
+        if self.hardcoded_phil.indexing.outlier_detection.pdf is not None:
+            self.hardcoded_phil.__inject__(
+                "writer",
+                OutlierPlotPDF(self.hardcoded_phil.indexing.outlier_detection.pdf),
+            )
+
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
         # specific modifications (don't re-index after choose best orientation matrix, but use the indexing from
@@ -495,7 +509,7 @@ class StillsIndexer(Indexer):
 
         candidates = []
 
-        params = copy.deepcopy(self.all_params)
+        params = self.all_params
 
         for icm, cm in enumerate(candidate_orientation_matrices):
             if icm >= self.params.basis_vector_combinations.max_refine:
