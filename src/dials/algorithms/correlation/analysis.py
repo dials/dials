@@ -493,39 +493,49 @@ class CorrelationMatrix:
             initial_labels = optics_model.labels_
             model = optics_model
 
-            finite_mask = np.isfinite(
-                optics_model.reachability_[optics_model.ordering_]
-            )
-            gradients = np.zeros_like(
-                optics_model.reachability_[optics_model.ordering_]
-            )
-            gradients[finite_mask] = np.gradient(
-                optics_model.reachability_[optics_model.ordering_][finite_mask]
-            )
-            large_gradients = np.where(~(gradients[finite_mask] < xi))[
-                0
-            ]  # only evaluate within finite values
-            first_finite = np.where(finite_mask)[
-                0
-            ]  # find first idx where finite vals occur
-            if large_gradients.size > 0:
-                first_false = large_gradients[0]
-                original_first_false = np.flatnonzero(finite_mask)[
-                    first_false
-                ]  # map back to full list of values
+            # Use core_distances as easier to handle than reachability (and includes the first datapoint!)
 
-                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
-                new_labels[first_finite[0] : original_first_false] = 0
-                new_labels[original_first_false:] = -1
-                # can sometimes have a large value at the start that was cut off by max_eps
-                # need to account for this and also label it noise, but the first dataset is always inf due to optics and does not mean it is noise
-                # minus 1 because still need core point from OPTICS
-                new_labels[: first_finite[0] - 1] = -1
+            # First find the data points valid with the max_eps criteria
+
+            finite_mask = np.isfinite(
+                optics_model.core_distances_[optics_model.ordering_]
+            )
+
+            # Next, calculate gradients between points within valid region
+
+            gradients = np.zeros_like(
+                optics_model.core_distances_[optics_model.ordering_]
+            )
+
+            gradients[finite_mask] = np.gradient(
+                optics_model.core_distances_[optics_model.ordering_][finite_mask]
+            )
+
+            # Identify the large gradients
+
+            large_gradients = np.where(~(gradients[finite_mask] < xi))[0]
+
+            # Identify the large negative gradients
+
+            large_negative_gradients = np.where(gradients[finite_mask] < -xi)[0]
+
+            if large_negative_gradients.size > 0:
+                start = large_negative_gradients[0]
             else:
-                # This means that the gradient never gets steep within finite region - so everything is one cluster
-                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
-                new_labels[: first_finite[0] - 1] = -1
-                new_labels[first_finite[0] :] = 0
+                start = 0
+
+            if large_gradients.size > 0:
+                end = large_gradients[0]
+            else:
+                end = None
+
+            new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
+            new_labels[0:start] = -1
+            if end:
+                new_labels[start:end] = 0
+                new_labels[end:] = -1
+            else:
+                new_labels[start:] = 0
 
             # Check that all values originally marked as inf because cut by max_eps (all except first dataset) are labelled as noise
 
