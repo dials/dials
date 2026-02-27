@@ -269,7 +269,7 @@ namespace dials { namespace model {
      * @param code The code
      * @returns The number of pixels with that code
      */
-    int count_mask_values(int code) const {
+    int count_mask_values(uint8_t code) const {
       int count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if ((mask[i] & code) == code) {

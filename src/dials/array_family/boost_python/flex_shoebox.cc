@@ -441,7 +441,7 @@ namespace dials { namespace af { namespace boost_python {
    * Count the number of mask pixels with the given code
    */
   template <typename FloatType>
-  shared<int> count_mask_values(const const_ref<Shoebox<FloatType> >& a, int code) {
+  shared<int> count_mask_values(const const_ref<Shoebox<FloatType> >& a, uint8_t code) {
     shared<int> result(a.size(), af::init_functor_null<int>());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].count_mask_values(code);
