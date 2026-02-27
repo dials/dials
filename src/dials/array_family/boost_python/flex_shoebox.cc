@@ -988,18 +988,20 @@ namespace dials { namespace af { namespace boost_python {
         >> val.bbox[4] >> val.bbox[5];
 
       val.data = profile_from_string<versa<FloatType, c_grid<3> > >();
+
       if (version == 1) {
         // In version 1, the mask was stored as an int array, so read it as
-        // such and convert to uint8_t
+        // such and then copy it over, casting to uint8_t
         af::versa<int, af::c_grid<3> > mask_as_int =
           profile_from_string<versa<int, c_grid<3> > >();
-        val.mask.resize(mask_as_int.accessor());
+        val.mask = versa<uint8_t, c_grid<3> >(mask_as_int.accessor());
         for (std::size_t i = 0; i < mask_as_int.size(); ++i) {
           val.mask[i] = (uint8_t)mask_as_int[i];
         }
       } else {
         val.mask = profile_from_string<versa<uint8_t, c_grid<3> > >();
       }
+
       val.background = profile_from_string<versa<FloatType, c_grid<3> > >();
 
       return *this;
