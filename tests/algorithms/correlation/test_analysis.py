@@ -52,6 +52,10 @@ expected_8 = np.loadtxt(parent_path / "test_coords/labels_8.txt")
 data_9 = np.loadtxt(parent_path / "test_coords/data_9.txt")
 expected_9 = np.loadtxt(parent_path / "test_coords/labels_9.txt")
 
+# All datasets in single cluster - no significant noise
+data_10 = np.loadtxt(parent_path / "test_coords/data_10.txt")
+expected_10 = np.loadtxt(parent_path / "test_coords/labels_10.txt")
+
 
 @pytest.fixture()
 def proteinase_k(dials_data):
@@ -141,6 +145,7 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
         (data_3, expected_3, 8),
         (data_5, expected_5, 10),
         (data_8, expected_8, 5),
+        (data_10, expected_10, 5),
     ],
 )
 def test_optics_classification_definitive(
