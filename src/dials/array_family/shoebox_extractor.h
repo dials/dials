@@ -33,7 +33,7 @@ namespace dials { namespace af {
   void ShoeboxExtractFromData(af::shared<Shoebox<> > shoebox_,
                               af::shared<float> shoebox_data,
                               af::shared<float> background_data,
-                              af::shared<size_t> mask_data) {
+                              af::shared<uint8_t> mask_data) {
     std::vector<int> sizes(shoebox_.size());
     for (int i = 0; i < shoebox_.size(); ++i) {
       sizes[i] = shoebox_[i].data.size();
