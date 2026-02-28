@@ -18,7 +18,7 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
   using scitbx::af::flex;
-  using scitbx::af::flex_int;
+  using scitbx::af::flex_uint8_t;
 
   /** Set the data array as a flex array */
   template <typename FloatType>
@@ -30,10 +30,10 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Set the mask array as a flex array */
   template <typename FloatType>
-  void set_mask(Shoebox<FloatType>& obj, flex_int& mask) {
+  void set_mask(Shoebox<FloatType>& obj, flex_uint8_t& mask) {
     DIALS_ASSERT(mask.accessor().all().size() == 3);
     obj.mask =
-      af::versa<int, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
+      af::versa<uint8_t, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
   }
 
   /** Set the bgrd array as a flex array */

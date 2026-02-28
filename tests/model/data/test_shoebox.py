@@ -63,7 +63,7 @@ def generate_shoebox(bbox, centre, intensity, mask=False):
 def create_mask(size, x0, value):
     from scitbx.array_family import flex
 
-    mask = flex.int(flex.grid(size), 0)
+    mask = flex.uint8(flex.grid(size), 0)
     rad = min(s - c for s, c in zip(size, x0))
     for k in range(size[0]):
         for j in range(size[1]):
@@ -281,7 +281,7 @@ def test_flatten():
         ys = shoebox.ysize()
         xs = shoebox.xsize()
         expected_data = flex.real(flex.grid(1, ys, xs), 0)
-        expected_mask = flex.int(flex.grid(1, ys, xs), 0)
+        expected_mask = flex.uint8(flex.grid(1, ys, xs), 0)
         for k in range(zs):
             for j in range(ys):
                 for i in range(xs):

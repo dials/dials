@@ -310,7 +310,7 @@ namespace dials { namespace algorithms { namespace profile_model {
                          std::size_t panel_number,
                          bool adjacent = false) const {
         // Get some bits from the shoebox
-        af::ref<int, af::c_grid<3> > mask = shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3> > mask = shoebox.mask.ref();
         int6 bbox = shoebox.bbox;
         double phi = phi0_ + (frame - index0_) * dphi_;
         int x0 = bbox[0], x1 = bbox[1];
@@ -393,7 +393,7 @@ namespace dials { namespace algorithms { namespace profile_model {
                 double gzc2 = gz * gz * delta_m_r2;
                 /* int mask_value = (dxy + gzc2 <= 1.0) ? Foreground : Background; */
                 if (!adjacent) {
-                  int mask_value = (dxy <= 1.0) ? Foreground : Background;
+                  uint8_t mask_value = (dxy <= 1.0) ? Foreground : Background;
                   mask(k, j, i) |= mask_value;
                 } else {
                   if (dxy + gzc2 <= 1.0) {
@@ -418,7 +418,7 @@ namespace dials { namespace algorithms { namespace profile_model {
                        double frame,
                        std::size_t panel_number) const {
         // Get some bits from the shoebox
-        af::ref<int, af::c_grid<3> > mask = shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3> > mask = shoebox.mask.ref();
         int6 bbox = shoebox.bbox;
         double phi = phi0_ + (frame - index0_) * dphi_;
         int x0 = bbox[0], x1 = bbox[1];
@@ -486,7 +486,7 @@ namespace dials { namespace algorithms { namespace profile_model {
             double dxy3 = dxy_array(j, i + 1);
             double dxy4 = dxy_array(j + 1, i + 1);
             double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
-            int mask_value = (dxy <= 1.0) ? Foreground : Background;
+            uint8_t mask_value = (dxy <= 1.0) ? Foreground : Background;
             mask(0, j, i) |= mask_value;
           }
         }
@@ -542,7 +542,7 @@ namespace dials { namespace algorithms { namespace profile_model {
                           bool adjacent = false) const {
         DIALS_ASSERT(shoebox.is_consistent());
         // Get some bits from the shoebox
-        af::ref<int, af::c_grid<3> > mask = shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3> > mask = shoebox.mask.ref();
         int6 bbox = shoebox.bbox;
         int x0 = bbox[0], x1 = bbox[1];
         int y0 = bbox[2], y1 = bbox[3];
@@ -591,7 +591,7 @@ namespace dials { namespace algorithms { namespace profile_model {
             double dxy3 = dxy_array(j, i + 1);
             double dxy4 = dxy_array(j + 1, i + 1);
             double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
-            int mask_value = (dxy <= 1.0) ? Foreground : Background;
+            uint8_t mask_value = (dxy <= 1.0) ? Foreground : Background;
             mask(0, j, i) |= mask_value;
           }
         }
@@ -695,7 +695,7 @@ namespace dials { namespace algorithms { namespace profile_model {
             double dxy3 = dxy_array(j, i + 1);
             double dxy4 = dxy_array(j + 1, i + 1);
             double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
-            int mask_value = (dxy <= 1.0) ? Foreground : Background;
+            uint8_t mask_value = (dxy <= 1.0) ? Foreground : Background;
             int jj = y0 + j;
             int ii = x0 + i;
             if (jj >= 0 && ii >= 0 && jj < height && ii < width) {
