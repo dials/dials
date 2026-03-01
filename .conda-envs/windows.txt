@@ -3,7 +3,6 @@ biopython
 bzip2
 c-compiler
 colorlog
-conda
 cxx-compiler
 dials-data>=2.4.123
 docutils
@@ -17,6 +16,7 @@ hdf5plugin
 jinja2
 libboost-devel
 libboost-python-devel
+mamba
 matplotlib-base>=3.0.2
 mrcfile
 msgpack-cxx
