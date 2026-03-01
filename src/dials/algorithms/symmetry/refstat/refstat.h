@@ -112,7 +112,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
       }
       return true;
     }
-    /* cannot use as template as GCC seems to not being able to compe it? */
+    /* cannot use as template as GCC seems to not being able to compile it? */
     void update(const FloatType& I, const FloatType& s_sq, bool mt) {
       if (mt) {
         boost::mutex::scoped_lock lock(*mtx);
@@ -225,7 +225,8 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
       space_group_symbol_iterator itr;
       space_group_symbols sgs;
       while ((sgs = itr.next()).number() != 0) {
-        if (sgs.change_of_basis_symbol().length() != 0) {
+        if (sgs.change_of_basis_symbol().length() != 0
+            || (sgs.extension() != '\0' && sgs.extension() != '1')) {
           continue;
         }
         space_groups.push_back(sgs);
