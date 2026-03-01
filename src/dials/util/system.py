@@ -81,11 +81,11 @@ def memory_limit() -> int:
 
     Takes the minimum value from the following locations:
 
-    - Total system host memory
+    - Available system host memory
     - Cgroups limit (if set)
     - RSS rlimit (if set)
     """
-    limit = psutil.virtual_memory().total
+    limit = psutil.virtual_memory().available
 
     # Check cgroups if available
     # Note: can't use LINUX and WINDOWS constants as they upset mypy
