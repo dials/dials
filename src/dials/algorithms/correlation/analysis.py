@@ -493,41 +493,60 @@ class CorrelationMatrix:
             initial_labels = optics_model.labels_
             model = optics_model
 
-            # Use core_distances as easier to handle than reachability (and includes the first datapoint!)
-
             # First find the data points valid with the max_eps criteria
 
             finite_mask = np.isfinite(
-                optics_model.core_distances_[optics_model.ordering_]
+                optics_model.reachability_[optics_model.ordering_]
             )
 
             # Next, calculate gradients between points within valid region
 
             gradients = np.zeros_like(
-                optics_model.core_distances_[optics_model.ordering_]
+                optics_model.reachability_[optics_model.ordering_]
             )
 
-            gradients[finite_mask] = np.gradient(
-                optics_model.core_distances_[optics_model.ordering_][finite_mask]
+            diffs = np.diff(
+                optics_model.reachability_[optics_model.ordering_][finite_mask]
+            )
+
+            og_indices = np.flatnonzero(finite_mask)
+
+            gradients[og_indices[1:]] = (
+                diffs  # b/c one less difference then there are values - first one always not there with np.diff() so keep as zero
             )
 
             # Identify the large gradients
 
-            large_gradients = np.where(~(gradients[finite_mask] < xi))[0]
+            large_gradients = np.where(gradients[finite_mask] > xi)[0]
 
             # Identify the large negative gradients
 
             large_negative_gradients = np.where(gradients[finite_mask] < -xi)[0]
 
+            # NOTE: if first valid point results in a steep down, this won't be detected as first value cannot be calculated
+            # This is OK because using reachabilities, so a large reachability is often expected at the start of a cluster (means PREVIOUS point is far away)
+            # If multiple large reachabilities at start of cluster, this will find it.
+
             if large_negative_gradients.size > 0:
-                start = large_negative_gradients[0]
+                start = np.flatnonzero(finite_mask)[large_negative_gradients[-1]]
             else:
                 start = 0
 
             if large_gradients.size > 0:
-                end = large_gradients[0]
+                end = np.flatnonzero(finite_mask)[large_gradients[0]]
             else:
                 end = None
+
+            if end and start > end:
+                start = 0
+
+            # for negative gradient, means the idx BEFORE is the big one (start -1)
+            # BUT for OPTICS reachability, a large value means the one before it is far away, so we want to include the LAST large reachability before the cluster (start -2)
+
+            if start > 2:
+                start = start - 2
+            else:
+                start = 0
 
             new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
             new_labels[0:start] = -1
@@ -537,10 +556,12 @@ class CorrelationMatrix:
             else:
                 new_labels[start:] = 0
 
-            # Check that all values originally marked as inf because cut by max_eps (all except first dataset) are labelled as noise
+            # Check that all values originally marked as inf because cut by max_eps are labelled as noise
+            # Use core_distances_ here because when considering reachability, first value always inf even if not cut by max_eps
+            # Core distances only give inf if cut by max_eps
 
-            inf_mask = np.isinf(optics_model.reachability_[optics_model.ordering_][1:])
-            new_labels[1:][inf_mask] = -1
+            inf_mask = np.isinf(optics_model.core_distances_[optics_model.ordering_])
+            new_labels[inf_mask] = -1
 
             # put back in dataset order rather than OPTICS order
 
