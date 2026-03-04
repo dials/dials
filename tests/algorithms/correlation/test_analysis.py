@@ -56,6 +56,10 @@ expected_9 = np.loadtxt(parent_path / "test_coords/labels_9.txt")
 data_10 = np.loadtxt(parent_path / "test_coords/data_10.txt")
 expected_10 = np.loadtxt(parent_path / "test_coords/labels_10.txt")
 
+# Single clear cluster + two noise - one noise is first core dataset with no reachability value
+data_11 = np.loadtxt(parent_path / "test_coords/data_11.txt")
+expected_11 = np.loadtxt(parent_path / "test_coords/labels_11.txt")
+
 
 @pytest.fixture()
 def proteinase_k(dials_data):
@@ -146,6 +150,7 @@ def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
         (data_5, expected_5, 10),
         (data_8, expected_8, 5),
         (data_10, expected_10, 5),
+        (data_11, expected_11, 5),
     ],
 )
 def test_optics_classification_definitive(
@@ -154,6 +159,9 @@ def test_optics_classification_definitive(
     _, _, actual_labels, _ = CorrelationMatrix.optimise_clustering(
         coordinates, range(0, len(coordinates)), initial_min_samples=initial_min_samples
     )
+
+    print(actual_labels)
+    print(expected_labels)
 
     assert np.array_equal(actual_labels, expected_labels)
 

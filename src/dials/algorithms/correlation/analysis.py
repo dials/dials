@@ -563,6 +563,42 @@ class CorrelationMatrix:
             inf_mask = np.isinf(optics_model.core_distances_[optics_model.ordering_])
             new_labels[inf_mask] = -1
 
+            # Find dataset index where reachability is inf but core distance is NOT
+
+            mystery_point = np.isinf(
+                optics_model.reachability_[optics_model.ordering_]
+            ) & ~np.isinf(optics_model.core_distances_[optics_model.ordering_])
+            mystery_idx = np.flatnonzero(mystery_point)[0]
+
+            # Find average and standard deviation of core distances of all cluster datasets EXCEPT this identified point
+
+            current_cluster = np.where(new_labels == 0)[0]
+
+            verified_cluster = []
+
+            for i in current_cluster:
+                if i != mystery_idx:
+                    verified_cluster.append(
+                        optics_model.core_distances_[optics_model.ordering_][i]
+                    )
+                else:
+                    mystery_density = optics_model.core_distances_[
+                        optics_model.ordering_
+                    ][i]
+
+            avg = np.average(verified_cluster)
+            std = np.std(verified_cluster)
+
+            # See if core distance of unknown reachability dataset is within one standard deviation of the cluster
+            # If it is not, this means it is in a low density region and thus shouldn't be included in the cluster
+
+            if mystery_density <= avg + (3 * std) and mystery_density >= avg - (
+                3 * std
+            ):
+                new_labels[mystery_idx] = 0
+            else:
+                new_labels[mystery_idx] = -1
+
             # put back in dataset order rather than OPTICS order
 
             new_labels_dataset_order = np.empty_like(new_labels)
