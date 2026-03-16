@@ -14,7 +14,7 @@ smoother
   .help = "Options that affect scan-varying parameterisation"
   .expert_level = 1
 {
-  interval_width_degrees = 36.0
+  interval_width_degrees = 18.0
     .help = "Width of scan between checkpoints in degrees. Can be set to Auto."
     .type = float(value_min=0.)
 
