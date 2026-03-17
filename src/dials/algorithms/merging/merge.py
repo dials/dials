@@ -112,7 +112,8 @@ def prepare_merged_reflection_table(
     d_max=None,
     partiality_threshold=0.99,
 ):
-    """Filter the data and prepare a reflection table with merged data."""
+    """Filter the data and prepare a reflection table with merged data. Return
+    both the filtered reflection table and the merged reflection table."""
     if (
         "inverse_scale_factor" in reflection_table
         and "intensity.scale.value" in reflection_table
@@ -170,7 +171,7 @@ def prepare_merged_reflection_table(
     merged_reflections["intensity"] = merged.data()
     merged_reflections["variance"] = flex.pow2(merged.sigmas())
     merged_reflections["miller_index"] = merged.indices()
-    return merged_reflections
+    return reflections, merged_reflections
 
 
 class MTZDataClass:

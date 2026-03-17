@@ -291,7 +291,7 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
             else:
                 joint_reflections = refls_for_sym[0]
 
-            merged_reflections = prepare_merged_reflection_table(
+            reflections, merged_reflections = prepare_merged_reflection_table(
                 experiments,
                 joint_reflections,
                 d_min,
