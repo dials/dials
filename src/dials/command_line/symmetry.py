@@ -114,6 +114,11 @@ systematic_absences {
             "extended test that will check absences due to all elements, including "
             "glide planes."
 
+  sigma_level = 5.0
+    .type = float
+    .help = "Sigma level to use to identify systematic absences in the extended "
+            "small_molecule=True test."
+
 }
 
 output {
