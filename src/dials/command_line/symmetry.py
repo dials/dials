@@ -312,7 +312,9 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
             )
 
             if params.systematic_absences.small_molecule:
-                logger.info("Performing full space group check for small_molecule=True")
+                logger.info(
+                    "Performing full systematic absences check for small_molecule=True"
+                )
                 check_reflections(
                     experiments,
                     reflections,
