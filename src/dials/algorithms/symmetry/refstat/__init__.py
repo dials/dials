@@ -5,8 +5,15 @@ in Olex2 from OlexSys Ltd."""
 from __future__ import annotations
 
 import functools
+import logging
 
+import cctbx.miller
+from cctbx import crystal
+
+from dials.util import tabulate
 from dials_algorithms_symmetry_refstat_ext import extinctions_registry, merge_test
+
+logger = logging.getLogger(__name__)
 
 
 class registry(extinctions_registry):
@@ -97,6 +104,21 @@ class extinctions(extinctions_registry):
             if x in present and not x.is_shadowed_by(present):
                 unique.append(x)
         self.unique = unique
+
+    def get_symm_element_table(self):
+        """Return the header and rows for the symmetry element table, must be called after 'analyse'"""
+        headers = ["Element", "Count", "<I>", "<σ(I)>", "Present"]
+        rows = []
+        for x in self.all_elements:
+            if x in self.present:
+                flag = "+"
+                if x not in self.unique:
+                    flag += "-"
+            else:
+                flag = "-"
+
+            rows.append([x.name, f"{x.count}", f"{x.meanI:.2f}", f"{x.sig:.2f}", flag])
+        return rows, headers
 
     def show_stats(self):
         """Return a string giving extinction elements statistics, must be called after 'analyse'"""
@@ -218,3 +240,96 @@ class extinctions(extinctions_registry):
             return rv
         else:
             return [sgs[0][1]]
+
+
+def check_reflections(experiments, reflections, params):
+    cs = crystal.symmetry(experiments[0].crystal.get_unit_cell(), "P1")
+    centering = (
+        experiments[0]
+        .crystal.get_space_group()
+        .match_tabulated_settings()
+        .hermann_mauguin()[0]
+    )
+    miller_set = cctbx.miller.set(
+        crystal_symmetry=cs,
+        indices=reflections["miller_index"],
+        anomalous_flag=False,
+    )
+    i_obs = cctbx.miller.array(miller_set, data=reflections["intensity"])
+    i_obs.set_observation_type_xray_intensity()
+    i_obs.set_sigmas(cctbx.array_family.flex.sqrt(reflections["variance"]))
+    i_obs.set_info(
+        cctbx.miller.array_info(source="DIALS", source_type="reflection_tables")
+    )
+
+    xr = registry()
+
+    miller_array = i_obs.merge_equivalents(algorithm="gaussian").array()
+    data = miller_array.data()
+    sigmas = miller_array.sigmas()
+    logger.info("Uniq in P 1: %s" % (len(data)))
+    xr.process(miller_array.indices(), data, sigmas)
+    xr.reset()
+
+    sa = extinctions(miller_array, sigma_level=params.systematic_absences.sigma_level)
+    sa.analyse(scale_I_to=1)
+    rows, headers = sa.get_symm_element_table()
+    logger.info(tabulate(rows, headers))
+
+    logger.info(
+        "<I>: %.3f and <σ(I)>: %.2f for %s unique reflections"
+        % (sa.meanI, sa.mean_sig, sa.ref_count)
+    )
+    matches = sa.get_all_matching_space_groups(centering=centering)
+    filtered_matches = sa.get_filtered_matching_space_groups(matches=matches)
+    # merge_test object
+    t = merge_test(miller_array.indices(), data, sigmas)
+    rows = []
+    matches = {sg.name: mp for sg, mp in matches}
+    # Loop through the filtered matches
+    for sg in filtered_matches:
+        mp = matches[sg.name]
+        weak_stats = t.sysabs_test(sg, sa.scale)
+        if weak_stats.weak_count:
+            wI = weak_stats.weak_I_sum / weak_stats.weak_count
+            wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
+            if wI > 5 * wIs:
+                continue
+        else:
+            wI, wIs = 0, 0
+        if weak_stats.strong_count:
+            sI = weak_stats.strong_I_sum / weak_stats.strong_count
+            sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
+        else:
+            sI, sIs = 0, 0
+        merge_stats = t.merge_test(sg)
+        rows.append(
+            [
+                sg.name,
+                "✔" if sg.is_centric() else "",
+                f"{int(mp * 100)}",
+                merge_stats.inconsistent_count,
+                f"{merge_stats.r_int * 100:.3f}",
+                weak_stats.weak_count,
+                f"{wI / wIs if wIs else 0:.2f}",
+                weak_stats.strong_count,
+                f"{sI / sIs if sIs else 0:.2f}",
+            ]
+        )
+    if rows:
+        logger.info(
+            tabulate(
+                rows,
+                headers=[
+                    "Space group",
+                    "Centric",
+                    "Matches (%)",
+                    "Incons.\nequiv.",
+                    "Rint",
+                    "#Weak",
+                    "Weak I/σ(I)",
+                    "#Strong",
+                    "Strong I/σ(I)",
+                ],
+            )
+        )

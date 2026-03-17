@@ -25,6 +25,7 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 )
 from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
+from dials.algorithms.symmetry.refstat import check_reflections
 from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
 from dials.util import log, tabulate
@@ -303,6 +304,14 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 float(params.systematic_absences.significance_level),
                 method=params.systematic_absences.method,
             )
+
+            if params.systematic_absences.small_molecule:
+                logger.info("Performing full space group check for small_molecule=True")
+                check_reflections(
+                    experiments,
+                    reflections,
+                    params,
+                )
 
     logger.info(
         "Saving reindexed experiments to %s in space group %s",
