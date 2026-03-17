@@ -250,7 +250,10 @@ def symmetry(experiments, reflection_tables, params=None):
         space_group = experiments[0].crystal.get_space_group()
         laue_group = str(space_group.build_derived_patterson_group().info())
         logger.info("Laue group: %s", laue_group)
-        if laue_group in ("I m -3", "I m m m"):
+        if (
+            laue_group in ("I m -3", "I m m m")
+            and not params.systematic_absences.small_molecule
+        ):
             if laue_group == "I m -3":
                 logger.info(
                     """Space groups I 2 3 & I 21 3 cannot be distinguished with systematic absence
@@ -263,7 +266,10 @@ Using space group I 2 3, space group I 21 3 is equally likely.\n"""
 analysis, due to lattice centering.
 Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 )
-        elif laue_group not in laue_groups_for_absence_analysis:
+        elif (
+            laue_group not in laue_groups_for_absence_analysis
+            and not params.systematic_absences.small_molecule
+        ):
             logger.info("No absences to check for this laue group\n")
         else:
             if not refls_for_sym:
