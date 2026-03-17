@@ -101,12 +101,18 @@ systematic_absences {
   method = *direct fourier
     .type = choice
     .help = "Use fourier analysis or direct analysis of I/sigma to determine"
-            "likelihood of systematic absences"
+            "likelihood of systematic absences due to screw axes"
 
   significance_level = 0.95
     .type = float(value_min=0, value_max=1)
     .help = "Significance to use when testing whether axial reflections are "
             "different to zero (absences and reflections in reflecting condition)."
+
+  small_molecule = False
+    .type = bool
+    .help = "If True, then after the specific check for screw axes, perform an "
+            "extended test that will check absences due to all elements, including "
+            "glide planes."
 
 }
 
