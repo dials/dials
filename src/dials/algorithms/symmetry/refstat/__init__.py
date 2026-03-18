@@ -282,6 +282,16 @@ def check_reflections(experiments, reflections, params):
     )
     matches = sa.get_all_matching_space_groups(centering=centering)
     filtered_matches = sa.get_filtered_matching_space_groups(matches=matches)
+
+    # Further filtering to select only those SGs in the same Laue group
+    space_group = experiments[0].crystal.get_space_group()
+    laue_group = str(space_group.build_derived_patterson_group().info())
+    filtered_matches = [
+        sg
+        for sg in filtered_matches
+        if str(sg.build_derived_patterson_group().info()) == laue_group
+    ]
+
     # merge_test object
     t = merge_test(miller_array.indices(), data, sigmas)
     rows = []
