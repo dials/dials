@@ -283,15 +283,6 @@ def check_reflections(experiments, reflections, params):
     matches = sa.get_all_matching_space_groups(centering=centering)
     filtered_matches = sa.get_filtered_matching_space_groups(matches=matches)
 
-    # Further filtering to select only those SGs in the same Laue group
-    space_group = experiments[0].crystal.get_space_group()
-    laue_group = str(space_group.build_derived_patterson_group().info())
-    filtered_matches = [
-        sg
-        for sg in filtered_matches
-        if str(sg.build_derived_patterson_group().info()) == laue_group
-    ]
-
     # merge_test object
     t = merge_test(miller_array.indices(), data, sigmas)
     rows = []
@@ -344,7 +335,22 @@ def check_reflections(experiments, reflections, params):
             )
         )
 
+    # Further filtering to select only those SGs in the same Laue group
+    space_group = experiments[0].crystal.get_space_group()
+    laue_group = str(space_group.build_derived_patterson_group().info())
+    filtered_matches = [
+        sg
+        for sg in filtered_matches
+        if str(sg.build_derived_patterson_group().info()) == laue_group
+    ]
+
     # Set the space group for all experiments to the first match
     if filtered_matches:
+        logger.info(
+            f"Selected results in Laue group {laue_group}: "
+            + ", ".join([sg.name for sg in filtered_matches])
+        )
         for experiment in experiments:
             experiment.crystal.set_space_group(filtered_matches[0])
+    else:
+        logger.info(f"No space groups found in Laue group {laue_group}")
