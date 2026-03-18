@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import shutil
 import subprocess
 
@@ -554,3 +555,41 @@ def test_x4wide(dials_data, tmp_path):
     assert tmp_path.joinpath("symmetrized.expt").is_file()
     exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
     assert str(exps[0].crystal.get_space_group().info()) == "P 41 21 2"
+
+
+def test_small_molecule(dials_data, tmp_path):
+    quartz = dials_data("quartz_processed")
+
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    result = subprocess.run(
+        (
+            shutil.which("dials.symmetry"),
+            quartz / "integrated.expt",
+            quartz / "integrated.refl",
+            "small_molecule=True",
+        ),
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
+        encoding="utf-8",
+    )
+    assert result.returncode == 0
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 31          |           |            33 |        61 | 14.891 |      12 |           1.1 |         4 |            14.4 |
+| P 32          |           |            33 |        61 | 14.891 |      12 |           1.1 |         4 |            14.4 |
+| P 31 2 1      |           |            33 |        47 | 16.219 |      12 |           1.1 |         4 |            14.4 |
+| P 32 2 1      |           |            33 |        47 | 16.219 |      12 |           1.1 |         4 |            14.4 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+Selected results in Laue group P -3 m 1: P 31 2 1, P 32 2 1
+Saving reindexed experiments to symmetrized.expt in space group P 31 2 1
+Saving 1653 reindexed reflections to symmetrized.refl
+""")
