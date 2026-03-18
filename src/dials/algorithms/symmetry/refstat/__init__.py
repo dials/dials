@@ -343,3 +343,8 @@ def check_reflections(experiments, reflections, params):
                 ],
             )
         )
+
+    # Set the space group for all experiments to the first match
+    if filtered_matches:
+        for experiment in experiments:
+            experiment.crystal.set_space_group(filtered_matches[0])
