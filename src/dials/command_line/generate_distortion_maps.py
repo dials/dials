@@ -118,7 +118,7 @@ def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     a21 = l2_inv * sphi
     a22 = l2_inv * cphi
 
-    return matrix.sqr((a11, a12, a21, a22))
+    return matrix.sqr((cphi, sphi, -sphi, cphi)) * matrix.sqr((a11, a12, a21, a22))
 
 
 def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
@@ -137,7 +137,7 @@ def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     a21 = -l1 * sphi
     a22 = l2 * cphi
 
-    return matrix.sqr((a11, a12, a21, a22))
+    return matrix.sqr((a11, a12, a21, a22)) * matrix.sqr((cphi, -sphi, sphi, cphi))
 
 
 def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
