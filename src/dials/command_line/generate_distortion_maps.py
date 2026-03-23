@@ -158,7 +158,13 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     topleft = matrix.col(p0.get_pixel_lab_coord((0, 0)))
     mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow
 
-    # Get matrix that describes the elliptical distortion
+    # The provided parameters describe an ellipse visible in the image.
+    # For the distortion map we need the matrix that corrects for this
+    # ellipse. For that reason we swap l1 and l2 here.
+    # (https://github.com/dials/dials/issues/3124#issuecomment-4106412353)
+    l1, l2 = l2, l1
+
+    # Get the transformation matrix
     M = circle_to_ellipse_transform(phi, l1, l2)
 
     distortion_map_x = []
