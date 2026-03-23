@@ -160,12 +160,8 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
 
     # The provided parameters describe an ellipse visible in the image.
     # For the distortion map we need the matrix that corrects for this
-    # ellipse. For that reason we swap l1 and l2 here.
-    # (https://github.com/dials/dials/issues/3124#issuecomment-4106412353)
-    l1, l2 = l2, l1
-
-    # Get the transformation matrix
-    M = circle_to_ellipse_transform(phi, l1, l2)
+    # ellipse.
+    M = ellipse_to_circle_transform(phi, l1, l2)
 
     distortion_map_x = []
     distortion_map_y = []
