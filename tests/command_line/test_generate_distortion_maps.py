@@ -8,6 +8,7 @@ import subprocess
 
 import numpy as np
 import pytest
+from skimage.measure import EllipseModel
 
 from dxtbx.format.Format import Reader
 from dxtbx.imageset import ImageSet, ImageSetData
@@ -22,6 +23,7 @@ from dials.command_line.generate_distortion_maps import (
     circle_to_ellipse_transform,
     ellipse_to_circle_transform,
 )
+from dials.util.image_viewer.slip_viewer.ellipse_frame import extract_ellipse_parameters
 
 
 def make_detector():
@@ -254,9 +256,10 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
     )
 
     # Test (1) for panel 2 as well, which then covers everything needed
-    col0 = dy[2].matrix_copy_column(0)
+    row0 = dx[2].matrix_transpose().matrix_copy_column(0)
+    dx2t = dx[2].matrix_transpose()
     for i in range(1, d[0].get_image_size()[0]):
-        assert (col0 == dy[2].matrix_copy_column(i)).all_eq(True)
+        assert row0 == pytest.approx(dx2t.matrix_copy_column(i))
 
 
 def test_undistort_an_ellipse(dials_data, tmp_path):
@@ -279,7 +282,6 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
 
     # Put centre of distortion at the beam centre
     centre_xy = panel.get_beam_centre(beam.get_s0())
-    centre_px = panel.millimeter_to_pixel(centre_xy)
 
     # Get beam vector and two orthogonal vectors
     beamvec = matrix.col(beam.get_s0())
@@ -319,6 +321,27 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # Get rays for the distorted intersections
     lab_coords = panel.get_lab_coord(ellipse_mm)
     rays = lab_coords.each_normalize() * (1.0 / beam.get_wavelength())
+    panel = experiments[0].detector[0]
+    intersections_px = flex.vec2_double(
+        (panel.get_ray_intersection_px(ray) for ray in rays)
+    )
+
+    # Calculate the ellipse parameters in the same way that the ellipse tool
+    # in dials.image_viewer does
+    try:
+        ellipse = EllipseModel.from_estimate(np.array(intersections_px))
+    except AttributeError:
+        # Deprecated from skimage 0.26
+        ellipse = EllipseModel()
+        ellipse.estimate(np.array(intersections_px))  #
+    phi, a, b, centre = extract_ellipse_parameters(ellipse)
+    l1 = 1.0
+    l2 = b / a
+
+    # We find in practice that l2 parameter is the same as above where we distorted
+    # the rays, but the angle is rotated by 90°
+    assert l2 == pytest.approx(0.95)
+    assert phi == pytest.approx(165)
 
     # Generate and apply distortion maps
     result = subprocess.run(
@@ -351,14 +374,12 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # Load the experiment with correction maps and calculate ray intersections
     experiments = ExperimentList.from_file(tmp_path / "imported.expt")
     panel = experiments[0].detector[0]
-    intersections_px = flex.vec2_double(
-        (panel.get_ray_intersection_px(ray) for ray in rays)
-    )
+    intersections = flex.vec2_double((panel.get_ray_intersection(ray) for ray in rays))
 
-    # Check that the pixel intersections really are circular
-    shifted = intersections_px - centre_px
+    # Check that the intersections really are circular
+    shifted = intersections - centre_xy
     x, y = shifted.parts()
     r = flex.sqrt(x * x + y * y)
 
-    # Seem to have errors of half a pixel or so...
-    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.5)
+    # Seem to have quite high errors here of 0.2 mm?
+    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.2)
