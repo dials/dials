@@ -175,7 +175,7 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
     cmd = (
         "dials.generate_distortion_maps dummy.expt "
         "mode=ellipse centre_xy={},{} "
-        "phi=0 l1=1.0 l2=0.95"
+        "phi=90 l1=1.0 l2=0.95"
     ).format(*centre_xy)
     easy_run.fully_buffered(command=cmd).raise_if_errors()
 
@@ -188,64 +188,70 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
     # Check there are 4 maps each
     assert len(dx) == len(dy) == 4
 
-    # Ellipse has phi=0, so all correction is in the dy map
-    for arr in dx:
-        assert min(arr) == max(arr) == 0.0
+    # Ellipse has phi=90, so all correction is in the dx map. This is simplest
+    # to understand because the fast direction is along the X axis.
+    for arr in dy:
+        assert min(arr) == pytest.approx(0.0)
+        assert max(arr) == pytest.approx(0.0)
 
     # The ellipse correction is centred at the middle of the detector and all in
-    # the Y direction. Therefore we expect a few things from the dy maps:
+    # the X direction. Therefore we expect a few things from the dx maps:
     #
     # (1) Within each panel the columns of the array are identical.
-    # (2) The two upper panels should be the same
-    # (3) The two lower panels should be the same.
-    # (4) One column from an upper panel is a negated, reversed column from a
-    #     lower panel.
+    # (2) The two leftmost panels should be the same
+    # (3) The two rightmost panels should be the same.
+    # (4) One row from a panel on the left is a negated, reversed column from a
+    #     panel on the right.
     #
-    # All together expect the 4 dy maps to look something like this:
+    # All together expect the 4 dx maps to look something like this (indicative
+    # values only):
     #
     # /-----------\ /-----------\
-    # |-4 -4 -4 -4| |-4 -4 -4 -4|
-    # |-3 -3 -3 -3| |-3 -3 -3 -3|
-    # |-2 -2 -2 -2| |-2 -2 -2 -2|
-    # |-1 -1 -1 -1| |-1 -1 -1 -1|
-    # | 0  0  0  0| | 0  0  0  0|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
     # \-----------/ \-----------/
     # /-----------\ /-----------\
-    # | 0  0  0  0| | 0  0  0  0|
-    # | 1  1  1  1| | 1  1  1  1|
-    # | 2  2  2  2| | 2  2  2  2|
-    # | 3  3  3  3| | 3  3  3  3|
-    # | 4  4  4  4| | 4  4  4  4|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
+    # | 3  2  1  0| |-0 -1 -2 -3|
     # \-----------/ \-----------/
 
-    # So the fundamental data is all in the first column of first panel's map
-    col0 = dy[0].matrix_copy_column(0)
+    # So the fundamental data is all in the first row of first panel's map
+    dx0t = dx[0].matrix_transpose()
+    row0 = dx0t.matrix_copy_column(0)
 
-    # The correction should be 5% of the distance from the ellipse centre to a
-    # corrected pixel (l2 = 0.95 above) along the slow axis. Check that is the
+    # The distortion is an ellipse pinched in by 5% (l2 = 0.95) horizontally.
+    # To correct for this we expand by a factor of 1/0.95. Check that is the
     # case (for the first pixel at least)
     vec_centre_to_first_px = matrix.col(
         d[0].get_pixel_lab_coord((0.5, 0.5))
     ) - matrix.col(d[0].get_lab_coord(centre_xy))
     dist_centre_to_first_px = vec_centre_to_first_px.dot(
-        matrix.col(d[0].get_slow_axis())
+        matrix.col(d[0].get_fast_axis())
     )
-    corr_mm = dist_centre_to_first_px * 0.05
+    corr_mm = (1 - 1 / 0.95) * dist_centre_to_first_px
     corr_px = corr_mm / d[0].get_pixel_size()[1]
-    assert col0[0] == pytest.approx(corr_px)
+    assert row0[0] == pytest.approx(corr_px)
 
     # Test (1) from above list for panel 0
     for i in range(1, d[0].get_image_size()[0]):
-        assert (col0 == dy[0].matrix_copy_column(i)).all_eq(True)
+        assert row0 == pytest.approx(dx0t.matrix_copy_column(i))
 
     # Test (2)
-    assert (dy[0] == dy[1]).all_eq(True)
+    assert dx[0] == pytest.approx(dx[2])
 
     # Test (3)
-    assert (dy[2] == dy[3]).all_eq(True)
+    assert dx[1] == pytest.approx(dx[3])
 
     # Test (4)
-    assert col0 == pytest.approx(-1.0 * dy[2].matrix_copy_column(0).reversed())
+    assert row0 == pytest.approx(
+        -1.0 * dx[1].matrix_transpose().matrix_copy_column(0).reversed()
+    )
 
     # Test (1) for panel 2 as well, which then covers everything needed
     col0 = dy[2].matrix_copy_column(0)
