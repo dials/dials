@@ -139,6 +139,16 @@ def test_ellipse_transforms():
     # Check that the points give the expected r^2
     assert r_sq == pytest.approx(radius**2)
 
+    # When one of the scale parameters is 1.0, then the offsets should all have the same absolute
+    # angle (the rotation fix from https://github.com/dials/dials/issues/3124#issuecomment-4109235695)
+    l1 = 1.0
+    m2 = circle_to_ellipse_transform(phi, l1, l2)
+    p2 = p1.__rmul__(m2)
+    offsets = p2 - p1
+    x = flex.vec2_double(len(offsets), (1, 0))
+    angles = abs(offsets.each_normalize().dot(x))
+    assert angles.all_approx_equal(angles[0])
+
 
 def test_elliptical_distortion_simple(run_in_tmp_path):
     """Create distortion maps for elliptical distortion using a dummy experiments
