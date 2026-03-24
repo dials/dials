@@ -374,12 +374,14 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # Load the experiment with correction maps and calculate ray intersections
     experiments = ExperimentList.from_file(tmp_path / "imported.expt")
     panel = experiments[0].detector[0]
-    intersections = flex.vec2_double((panel.get_ray_intersection(ray) for ray in rays))
+
+    # Convert the elliptically distorted pixel intersections to millimetres
+    intersections = panel.pixel_to_millimeter(intersections_px)
 
     # Check that the intersections really are circular
     shifted = intersections - centre_xy
     x, y = shifted.parts()
     r = flex.sqrt(x * x + y * y)
 
-    # Seem to have quite high errors here of 0.2 mm?
-    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.2)
+    # This still has 5% error!
+    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.055)
