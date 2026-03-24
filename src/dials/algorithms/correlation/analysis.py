@@ -493,44 +493,111 @@ class CorrelationMatrix:
             initial_labels = optics_model.labels_
             model = optics_model
 
+            # First find the data points valid with the max_eps criteria
+
             finite_mask = np.isfinite(
                 optics_model.reachability_[optics_model.ordering_]
             )
+
+            # Next, calculate gradients between points within valid region
+
             gradients = np.zeros_like(
                 optics_model.reachability_[optics_model.ordering_]
             )
-            gradients[finite_mask] = np.gradient(
+
+            diffs = np.diff(
                 optics_model.reachability_[optics_model.ordering_][finite_mask]
             )
-            large_gradients = np.where(~(gradients[finite_mask] < xi))[
-                0
-            ]  # only evaluate within finite values
-            first_finite = np.where(finite_mask)[
-                0
-            ]  # find first idx where finite vals occur
-            if large_gradients.size > 0:
-                first_false = large_gradients[0]
-                original_first_false = np.flatnonzero(finite_mask)[
-                    first_false
-                ]  # map back to full list of values
 
-                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
-                new_labels[first_finite[0] : original_first_false] = 0
-                new_labels[original_first_false:] = -1
-                # can sometimes have a large value at the start that was cut off by max_eps
-                # need to account for this and also label it noise, but the first dataset is always inf due to optics and does not mean it is noise
-                # minus 1 because still need core point from OPTICS
-                new_labels[: first_finite[0] - 1] = -1
+            og_indices = np.flatnonzero(finite_mask)
+
+            gradients[og_indices[1:]] = (
+                diffs  # b/c one less difference then there are values - first one always not there with np.diff() so keep as zero
+            )
+
+            # Identify the large gradients
+
+            large_gradients = np.where(gradients[finite_mask] > xi)[0]
+
+            # Identify the large negative gradients
+
+            large_negative_gradients = np.where(gradients[finite_mask] < -xi)[0]
+
+            # NOTE: if first valid point results in a steep down, this won't be detected as first value cannot be calculated
+            # This is OK because using reachabilities, so a large reachability is often expected at the start of a cluster (means PREVIOUS point is far away)
+            # If multiple large reachabilities at start of cluster, this will find it.
+
+            if large_negative_gradients.size > 0:
+                start = np.flatnonzero(finite_mask)[large_negative_gradients[-1]]
             else:
-                # This means that the gradient never gets steep within finite region - so everything is one cluster
-                new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
-                new_labels[: first_finite[0] - 1] = -1
-                new_labels[first_finite[0] :] = 0
+                start = 0
 
-            # Check that all values originally marked as inf because cut by max_eps (all except first dataset) are labelled as noise
+            if large_gradients.size > 0:
+                end = np.flatnonzero(finite_mask)[large_gradients[0]]
+            else:
+                end = None
 
-            inf_mask = np.isinf(optics_model.reachability_[optics_model.ordering_][1:])
-            new_labels[1:][inf_mask] = -1
+            if end and start > end:
+                start = 0
+
+            # for negative gradient, means the idx BEFORE is the big one (start -1)
+            # BUT for OPTICS reachability, a large value means the one before it is far away, so we want to include the LAST large reachability before the cluster (start -2)
+
+            if start > 2:
+                start = start - 2
+            else:
+                start = 0
+
+            new_labels = copy.deepcopy(initial_labels[optics_model.ordering_])
+            new_labels[0:start] = -1
+            if end:
+                new_labels[start:end] = 0
+                new_labels[end:] = -1
+            else:
+                new_labels[start:] = 0
+
+            # Check that all values originally marked as inf because cut by max_eps are labelled as noise
+            # Use core_distances_ here because when considering reachability, first value always inf even if not cut by max_eps
+            # Core distances only give inf if cut by max_eps
+
+            inf_mask = np.isinf(optics_model.core_distances_[optics_model.ordering_])
+            new_labels[inf_mask] = -1
+
+            # Find dataset index where reachability is inf but core distance is NOT
+
+            mystery_point = np.isinf(
+                optics_model.reachability_[optics_model.ordering_]
+            ) & ~np.isinf(optics_model.core_distances_[optics_model.ordering_])
+            mystery_idx = np.flatnonzero(mystery_point)[0]
+
+            # Find average and standard deviation of core distances of all cluster datasets EXCEPT this identified point
+
+            current_cluster = np.where(new_labels == 0)[0]
+
+            verified_cluster = []
+
+            for i in current_cluster:
+                if i != mystery_idx:
+                    verified_cluster.append(
+                        optics_model.core_distances_[optics_model.ordering_][i]
+                    )
+                else:
+                    mystery_density = optics_model.core_distances_[
+                        optics_model.ordering_
+                    ][i]
+
+            avg = np.average(verified_cluster)
+            std = np.std(verified_cluster)
+
+            # See if core distance of unknown reachability dataset is within one standard deviation of the cluster
+            # If it is not, this means it is in a low density region and thus shouldn't be included in the cluster
+
+            if mystery_density <= avg + (3 * std) and mystery_density >= avg - (
+                3 * std
+            ):
+                new_labels[mystery_idx] = 0
+            else:
+                new_labels[mystery_idx] = -1
 
             # put back in dataset order rather than OPTICS order
 
