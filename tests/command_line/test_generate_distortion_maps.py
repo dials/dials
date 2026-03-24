@@ -282,6 +282,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
 
     # Put centre of distortion at the beam centre
     centre_xy = panel.get_beam_centre(beam.get_s0())
+    centre_px = panel.millimeter_to_pixel(centre_xy)
 
     # Get beam vector and two orthogonal vectors
     beamvec = matrix.col(beam.get_s0())
@@ -382,6 +383,14 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     shifted = intersections - centre_xy
     x, y = shifted.parts()
     r = flex.sqrt(x * x + y * y)
+
+    # Check percentage error - this shows we still have 5% error, so it is like
+    # no distortion correction has been applied?
+    print("mm error:", (max(r) - min(r)) / flex.mean(r) * 100)
+    shifted_px = intersections_px - centre_px
+    x, y = shifted_px.parts()
+    r_px = flex.sqrt(x * x + y * y)
+    print("px error:", (max(r_px) - min(r_px)) / flex.mean(r_px) * 100)
 
     # This still has 5% error!
     assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.055)
