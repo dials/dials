@@ -289,7 +289,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     bor1 = beamvec.ortho()
     bor2 = beamvec.cross(bor1)
 
-    # Generate rays at a 2θ circle out to halfway to the panel edge
+    # Generate rays around a 2θ circle out to halfway to the panel edge
     d_min = panel.get_max_resolution_ellipse(beam)
     theta = math.asin(beam.get_wavelength() / (2 * d_min)) / 2
     n_rays = 100
@@ -307,7 +307,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # from matplotlib import pyplot as plt
     # plt.scatter(*zip(*circle_mm))
 
-    # Get the matrix to distort to a rotated ellipse
+    # Get the matrix to distort to the points to an ellipse rotated 15° from the fast axis
     phi = 15
     l1 = 1.0
     l2 = 0.95
@@ -319,7 +319,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # plt.gca().set_aspect("equal")
     # plt.show()
 
-    # Get rays for the distorted intersections
+    # Get rays for the distorted intersections and get new intersections
     lab_coords = panel.get_lab_coord(ellipse_mm)
     rays = lab_coords.each_normalize() * (1.0 / beam.get_wavelength())
     panel = experiments[0].detector[0]
@@ -327,14 +327,15 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
         (panel.get_ray_intersection_px(ray) for ray in rays)
     )
 
-    # Calculate the ellipse parameters in the same way that the ellipse tool
-    # in dials.image_viewer does
+    # Now we operate as the user faced with an image containing an elliptcal
+    # ring. We start by calculating the ellipse parameters in the same way that
+    # the ellipse tool in dials.image_viewer does
     try:
         ellipse = EllipseModel.from_estimate(np.array(intersections_px))
     except AttributeError:
         # Deprecated from skimage 0.26
         ellipse = EllipseModel()
-        ellipse.estimate(np.array(intersections_px))  #
+        ellipse.estimate(np.array(intersections_px))
     phi, a, b, centre = extract_ellipse_parameters(ellipse)
     l1 = 1.0
     l2 = b / a
@@ -344,7 +345,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     assert l2 == pytest.approx(0.95)
     assert phi == pytest.approx(165)
 
-    # Generate and apply distortion maps
+    # Generate and apply distortion maps using the ellipse parameters
     result = subprocess.run(
         [
             shutil.which("dials.generate_distortion_maps"),
@@ -372,25 +373,37 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
 
-    # Load the experiment with correction maps and calculate ray intersections
+    # Load the experiment with correction maps
     experiments = ExperimentList.from_file(tmp_path / "imported.expt")
     panel = experiments[0].detector[0]
 
-    # Convert the elliptically distorted pixel intersections to millimetres
+    # Now we operate as if we have done spot-finding. The elliptically distorted
+    # ring is already encoded in the positions in intersections_px. So, we will
+    # convert this to millimetres, going through the correction and resulting
+    # in what we hope are circular intersections. NB I have checked that this
+    # call does go to OffsetPxMmStrategy.to_millimeter, where the dx & dy map
+    # values are subtracted from the pixel coordinate prior to calling
+    # SimplePxMmStrategy::to_millimeter
     intersections = panel.pixel_to_millimeter(intersections_px)
 
-    # Check that the intersections really are circular
+    # Get the radius of each of the intersections
     shifted = intersections - centre_xy
     x, y = shifted.parts()
     r = flex.sqrt(x * x + y * y)
 
-    # Check percentage error - this shows we still have 5% error, so it is like
-    # no distortion correction has been applied?
+    # Check percentage error - this shows we still have 5% error, both
+    # in intersections_px and the "corrected" mm intersections. Why?!
     print("mm error:", (max(r) - min(r)) / flex.mean(r) * 100)
     shifted_px = intersections_px - centre_px
     x, y = shifted_px.parts()
     r_px = flex.sqrt(x * x + y * y)
     print("px error:", (max(r_px) - min(r_px)) / flex.mean(r_px) * 100)
 
-    # This still has 5% error!
-    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.055)
+    # Load the maps to check
+    # with open(tmp_path / "dx.pickle", "rb") as f:
+    #    dx = pickle.load(f)
+    # with open(tmp_path / "dy.pickle", "rb") as f:
+    #    dy = pickle.load(f)
+
+    # We want less than 0.5 pixel error!
+    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.055 / 2)
