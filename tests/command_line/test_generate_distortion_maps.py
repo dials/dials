@@ -393,11 +393,11 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
 
     # Check percentage error - this shows we still have 5% error, both
     # in intersections_px and the "corrected" mm intersections. Why?!
-    print("mm error:", (max(r) - min(r)) / flex.mean(r) * 100)
+    print("mm error:", (max(r) - min(r)) / flex.mean(r) * 100, "%")
     shifted_px = intersections_px - centre_px
     x, y = shifted_px.parts()
     r_px = flex.sqrt(x * x + y * y)
-    print("px error:", (max(r_px) - min(r_px)) / flex.mean(r_px) * 100)
+    print("px error:", (max(r_px) - min(r_px)) / flex.mean(r_px) * 100, "%")
 
     # Load the maps to check
     # with open(tmp_path / "dx.pickle", "rb") as f:
