@@ -82,10 +82,9 @@ scope = phil.parse(
 
 
 def make_dx_dy_translate(imageset, dx, dy):
-    images = imageset.indices()
-    image = imageset[images[0]]
+    detector = imageset.get_detector()
 
-    if (len(dx) != len(image)) or (len(dx) != len(image)):
+    if (len(dx) != len(detector)) or (len(dx) != len(detector)):
         raise Sorry(
             "Please provide separate translations for each panel of the detector"
         )
@@ -93,9 +92,13 @@ def make_dx_dy_translate(imageset, dx, dy):
     distortion_map_x = []
     distortion_map_y = []
 
-    for block, shift_x, shift_y in zip(image, dx, dy):
-        distortion_map_x.append(flex.double(flex.grid(block.focus()), shift_x))
-        distortion_map_y.append(flex.double(flex.grid(block.focus()), shift_y))
+    for panel, shift_x, shift_y in zip(detector, dx, dy):
+        distortion_map_x.append(
+            flex.double(flex.grid(reversed(panel.get_image_size())), shift_x)
+        )
+        distortion_map_y.append(
+            flex.double(flex.grid(reversed(panel.get_image_size())), shift_y)
+        )
 
     return tuple(distortion_map_x), tuple(distortion_map_y)
 
