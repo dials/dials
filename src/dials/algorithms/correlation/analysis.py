@@ -576,6 +576,8 @@ class CorrelationMatrix:
 
             verified_cluster = []
 
+            mystery_density = None
+
             for i in current_cluster:
                 if i != mystery_idx:
                     verified_cluster.append(
@@ -586,18 +588,22 @@ class CorrelationMatrix:
                         optics_model.ordering_
                     ][i]
 
-            avg = np.average(verified_cluster)
-            std = np.std(verified_cluster)
+            # If the unknown data point occurs outside the cluster (ie start > mystery_idx), then above condition never occurs
+            # In this case, accept previous label of noise
 
-            # See if core distance of unknown reachability dataset is within one standard deviation of the cluster
-            # If it is not, this means it is in a low density region and thus shouldn't be included in the cluster
+            if mystery_density:
+                avg = np.average(verified_cluster)
+                std = np.std(verified_cluster)
 
-            if mystery_density <= avg + (3 * std) and mystery_density >= avg - (
-                3 * std
-            ):
-                new_labels[mystery_idx] = 0
-            else:
-                new_labels[mystery_idx] = -1
+                # See if core distance of unknown reachability dataset is within one standard deviation of the cluster
+                # If it is not, this means it is in a low density region and thus shouldn't be included in the cluster
+
+                if mystery_density <= avg + (3 * std) and mystery_density >= avg - (
+                    3 * std
+                ):
+                    new_labels[mystery_idx] = 0
+                else:
+                    new_labels[mystery_idx] = -1
 
             # put back in dataset order rather than OPTICS order
 
