@@ -24,7 +24,7 @@ msgpack-cxx
 msgpack-python
 natsort
 numpy
-nxmx
+nxmx>=0.0.6
 optuna
 ordered-set
 pandas
