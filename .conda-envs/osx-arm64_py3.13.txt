@@ -266,7 +266,7 @@ https://conda.anaconda.org/conda-forge/osx-arm64/wxpython-4.2.2-py313h928ef07_5.
 https://conda.anaconda.org/conda-forge/osx-arm64/hdf5plugin-6.0.0-py313hb22e04b_3.conda#c3bf665e74a0c1efb57e7a98c9f8246a
 https://conda.anaconda.org/conda-forge/osx-arm64/libboost-python-devel-1.88.0-py313h866c4f8_6.conda#14337f169fefd9cc52611dacac10036f
 https://conda.anaconda.org/conda-forge/osx-arm64/matplotlib-base-3.10.8-py313h58042b9_0.conda#745c18472bc6d3dc9146c3dec18bb740
-https://conda.anaconda.org/conda-forge/noarch/nxmx-0.0.5-pyhd8ed1ab_0.conda#32d3b0d025b444c992e55ee485e89131
+https://conda.anaconda.org/conda-forge/noarch/nxmx-0.0.6-pyhd8ed1ab_0.conda#13079fc4c3c08187a7814b3f4505dbb6
 https://conda.anaconda.org/conda-forge/osx-arm64/scikit-learn-1.8.0-np2py313h3b23316_1.conda#4434adab69e6300db1e98aff4c3565f3
 https://conda.anaconda.org/conda-forge/noarch/tifffile-2026.2.20-pyhd8ed1ab_0.conda#9ee854e39faa623a8e79ae20ac374f1f
 https://conda.anaconda.org/conda-forge/osx-arm64/scikit-image-0.26.0-np2py313h7c04bff_0.conda#76ae2de5cc4485abe07bcba7fe5420e1

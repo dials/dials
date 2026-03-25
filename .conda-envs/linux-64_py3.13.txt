@@ -321,7 +321,7 @@ https://conda.anaconda.org/conda-forge/noarch/dials-data-2.4.139-pyhd8ed1ab_0.co
 https://conda.anaconda.org/conda-forge/linux-64/gst-plugins-base-1.28.0-h62e8995_0.conda#bf792d379ab06802c6083cd311c4c8cf
 https://conda.anaconda.org/conda-forge/linux-64/gtk3-3.24.43-ha5ea40c_7.conda#f605332e1e4d9ff5c599933ae81db57d
 https://conda.anaconda.org/conda-forge/linux-64/librsvg-2.60.2-h61e6d4b_0.conda#d62da3d560992bfa2feb611d7be813b8
-https://conda.anaconda.org/conda-forge/noarch/nxmx-0.0.5-pyhd8ed1ab_0.conda#32d3b0d025b444c992e55ee485e89131
+https://conda.anaconda.org/conda-forge/noarch/nxmx-0.0.6-pyhd8ed1ab_0.conda#13079fc4c3c08187a7814b3f4505dbb6
 https://conda.anaconda.org/conda-forge/noarch/optuna-4.7.0-pyhd8ed1ab_0.conda#fb2dc27c2f81461d277033566f066a1c
 https://conda.anaconda.org/conda-forge/noarch/reportlab-4.4.10-pyhcf101f3_1.conda#c89e6c0a10804fb87536a3980685990d
 https://conda.anaconda.org/conda-forge/linux-64/scikit-image-0.26.0-np2py313hb172dc5_0.conda#6b11ece96457f4f1bf078dbdba069ce6
