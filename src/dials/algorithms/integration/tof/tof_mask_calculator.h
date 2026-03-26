@@ -43,7 +43,8 @@ namespace dials { namespace algorithms {
                                   Eigen::Vector3d& mean,
                                   Eigen::Matrix3d& eigenvectors,
                                   Eigen::Vector3d& axes_lengths,
-                                  bool calculate_mean) {
+                                  bool calculate_mean,
+                                  double scale) {
     if (points.size() != values.size() || points.empty()) {
       throw std::invalid_argument(
         "Points and values must have the same size and cannot be empty.");
@@ -87,7 +88,7 @@ namespace dials { namespace algorithms {
     Eigen::VectorXd eigenvalues = eigensolver.eigenvalues();
     eigenvectors = eigensolver.eigenvectors();
     axes_lengths =
-      eigenvalues.cwiseSqrt();  // Semi-axis lengths are sqrt of eigenvalues
+      eigenvalues.cwiseSqrt() * scale;  // Semi-axis lengths are sqrt of eigenvalues
   }
 
   bool point_inside_ellipsoid(const Eigen::Vector3d& point,
@@ -422,10 +423,12 @@ namespace dials { namespace algorithms {
 
   void tof_calculate_ellipse_shoebox_mask(af::reflection_table& reflection_table,
                                           Experiment& experiment,
-                                          int n_threads = 1) {
+                                          int n_threads = 1,
+                                          double scale = 1) {
     /**
      * Updates the masks of shoeboxes in reflection_table based on weighted
      * ellipses in reciprocal space
+     * @param scale: Number of stds to define the ellipse
      */
 
     af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
@@ -487,7 +490,7 @@ namespace dials { namespace algorithms {
         Eigen::Matrix3d eigenvectors;
         Eigen::Vector3d axes_lengths;
         compute_weighted_ellipsoid(
-          shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths, false);
+          shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths, false, scale);
         int count = 0;
         for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
           for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
