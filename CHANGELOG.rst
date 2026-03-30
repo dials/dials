@@ -1,3 +1,12 @@
+DIALS 3.27.1 (2026-03-30)
+=========================
+
+Bugfixes
+--------
+
+- Update nxmx dependency for numpy 2 compatibility. (`#3136 <https://github.com/dials/dials/issues/3136>`_)
+
+
 DIALS 3.27.0 (2026-02-23)
 =========================
 
