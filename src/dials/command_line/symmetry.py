@@ -216,12 +216,18 @@ def symmetry(experiments, reflection_tables, params=None):
         # Get the best space group.
         best_subsym = result.best_solution.subgroup["best_subsym"]
         best_space_group = best_subsym.space_group().build_derived_acentric_group()
-        logger.info(
-            tabulate(
-                [[str(best_subsym.space_group_info()), str(best_space_group.info())]],
-                ["Patterson group", "Corresponding MX group"],
+        if not params.systematic_absences.small_molecule:
+            logger.info(
+                tabulate(
+                    [
+                        [
+                            str(best_subsym.space_group_info()),
+                            str(best_space_group.info()),
+                        ]
+                    ],
+                    ["Patterson group", "Corresponding MX group"],
+                )
             )
-        )
         # Reindex the input data
         _, refls_for_sym = _reindex_experiments_reflections(
             experiments, refls_for_sym, best_space_group, cb_op_inp_best
