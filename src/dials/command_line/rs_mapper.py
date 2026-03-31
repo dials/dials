@@ -163,6 +163,7 @@ class Script:
                 self.grid,
                 self.counts,
                 self.nproc,
+                False,
             )
         else:
             for i_expt, experiment in enumerate(self.experiments):
