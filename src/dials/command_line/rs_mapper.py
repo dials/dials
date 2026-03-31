@@ -156,13 +156,22 @@ class Script:
             self.nproc = CPU_COUNT
             logger.info(f"Setting nproc={self.nproc}")
 
-        for i_expt, experiment in enumerate(self.experiments):
-            logger.info(f"Calculation for experiment {i_expt}")
-            for i_panel in range(len(experiment.detector)):
-                grid, counts = self.process_imageset(experiment.imageset, i_panel)
+        if self.experiments.all_tof():
+            recviewer.process_tof_experiment_list(
+                self.experiments,
+                self.max_resolution,
+                self.grid,
+                self.counts,
+                self.nproc,
+            )
+        else:
+            for i_expt, experiment in enumerate(self.experiments):
+                logger.info(f"Calculation for experiment {i_expt}")
+                for i_panel in range(len(experiment.detector)):
+                    grid, counts = self.process_imageset(experiment.imageset, i_panel)
 
-                self.grid += grid
-                self.counts += counts
+                    self.grid += grid
+                    self.counts += counts
 
         recviewer.normalize_voxels(self.grid, self.counts)
 
