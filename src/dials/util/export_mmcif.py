@@ -388,9 +388,12 @@ class MMCIFOutputFile:
                 hkl.iround()
                 for hkl in reflections["miller_index"].as_vec3_double().parts()
             )
-            # Note, use observed position, so that we are within the
+            # Det_x, det_y, det_z are expected to be calculated positions
+            # according to the dictionary definition.
+            # But make sure that we are within the
             # allowed bounds (lower bound 0) for image_id
-            det_x, det_y, det_z = reflections["xyzobs.px.value"].parts()
+            det_x, det_y, det_z = reflections["xyzcal.px"].parts()
+            det_z.set_selected(det_z < 0, 0)
             image_id = flex.ceil(det_z).iround()
             loop_values = [
                 flex.int(len(reflections), 1),  # diffn id
