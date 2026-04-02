@@ -63,6 +63,9 @@ namespace dials { namespace af { namespace boost_python {
     scitbx::af::boost_python::c_grid_flex_conversions<bool, af::c_grid<4> >();
     scitbx::af::boost_python::c_grid_flex_conversions<double, af::c_grid<4> >();
 
+    // The uint8_t conversion is needed for the shoebox mask array
+    scitbx::af::boost_python::c_grid_flex_conversions<uint8_t, af::c_grid<3> >();
+
     tuple_mapping_fixed_capacity<af::small<model::Ray, 2> >();
   }
 

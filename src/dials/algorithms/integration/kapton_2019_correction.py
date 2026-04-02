@@ -606,7 +606,7 @@ class image_kapton_correction:
                     # foreground: integration mask
                     shoebox = self.reflections_sele[iref]["shoebox"]
                     foreground = (
-                        (shoebox.mask.as_1d() & mask_code) == mask_code
+                        (shoebox.mask.as_1d().as_int() & mask_code) == mask_code
                     ).iselection()
                     f_absolute, s_absolute, z_absolute = (
                         shoebox.coords().select(foreground).parts()
