@@ -19,16 +19,13 @@ from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.util import get_url_scheme
 
+from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.multi_dataset_handling import (
     renumber_table_id_columns,
     sort_tables_to_experiments_order,
 )
-from dials.util.phil import (
-    FilenameDataWrapper,
-    _cached_experiment_list,
-    _cached_reflection_table,
-)
+from dials.util.phil import FilenameDataWrapper
 
 
 class InvalidPhilError(ValueError):
@@ -320,7 +317,9 @@ class Importer:
                 self.experiments.append(
                     FilenameDataWrapper(
                         filename=argument,
-                        data=_cached_experiment_list(os.path.abspath(argument)),
+                        data=ExperimentListFactory.from_json_file(
+                            argument, check_format=check_format
+                        ),
                     )
                 )
             except InvalidExperimentListError as e:
@@ -349,7 +348,7 @@ class Importer:
                 self.reflections.append(
                     FilenameDataWrapper(
                         filename=argument,
-                        data=_cached_reflection_table(os.path.abspath(argument)),
+                        data=flex.reflection_table.from_file(argument),
                     )
                 )
             except pickle.UnpicklingError:

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import collections
-import functools
 import os
 import re
 
@@ -11,19 +9,48 @@ from libtbx.utils import Sorry
 
 from dials.array_family import flex
 
-FilenameDataWrapper = collections.namedtuple("FilenameDataWrapper", "filename, data")
+_UNLOADED = object()  # sentinel for "data not yet loaded"
 
 
-@functools.lru_cache(maxsize=32)
-def _cached_reflection_table(abspath):
-    """Cache reflection tables by absolute path to avoid redundant disk reads."""
-    return flex.reflection_table.from_file(abspath)
+class FilenameDataWrapper:
+    """
+    Wraps a filename and its lazily-loaded data object.
 
+    Data is loaded on first access of the `.data` property so that
+    constructing a wrapper (e.g. during diff_phil string comparison) does
+    not trigger a disk read.  Bad paths are detected eagerly in `from_words`
+    via `os.path.exists()` so user-facing errors still surface at
+    argument-parse time.
+    """
 
-@functools.lru_cache(maxsize=32)
-def _cached_experiment_list(abspath):
-    """Cache experiment lists by absolute path to avoid redundant disk reads."""
-    return ExperimentListFactory.from_json_file(abspath, check_format=False)
+    __slots__ = ("filename", "_data", "_loader")
+
+    def __init__(self, filename, data=_UNLOADED, _loader=None):
+        self.filename = filename
+        # Allow callers to pass pre-loaded data (e.g. from image-file import).
+        self._data = data
+        # _loader is a zero-argument callable that returns the data object.
+        self._loader = _loader
+
+    @property
+    def data(self):
+        if self._data is _UNLOADED:
+            if self._loader is None:
+                raise RuntimeError(f"No loader available for {self.filename!r}")
+            self._data = self._loader()
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = value
+
+    def __iter__(self):
+        """Support two-tuple unpacking: filename, data = wrapper."""
+        yield self.filename
+        yield self.data
+
+    def __repr__(self):
+        return f"FilenameDataWrapper(filename={self.filename!r})"
 
 
 class ExperimentListConverters:
@@ -45,9 +72,14 @@ class ExperimentListConverters:
             return FilenameDataWrapper(filename=s, data=None)
         if not os.path.exists(s):
             raise Sorry(f"File {s} does not exist")
+        # Capture check_format now; load lazily on first .data access.
+        check_format = self._check_format
+        abspath = os.path.abspath(s)
         return FilenameDataWrapper(
             filename=s,
-            data=_cached_experiment_list(os.path.abspath(s)),
+            _loader=lambda: ExperimentListFactory.from_json_file(
+                abspath, check_format=check_format
+            ),
         )
 
     def as_words(self, python_object, master):
@@ -72,8 +104,11 @@ class ReflectionTableConverters:
             return None
         if not os.path.exists(s):
             raise Sorry(f"File {s} does not exist")
+        # Load lazily on first .data access.
+        abspath = os.path.abspath(s)
         return FilenameDataWrapper(
-            filename=s, data=_cached_reflection_table(os.path.abspath(s))
+            filename=s,
+            _loader=lambda: flex.reflection_table.from_file(abspath),
         )
 
     def as_words(self, python_object, master):
