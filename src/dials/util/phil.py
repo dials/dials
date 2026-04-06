@@ -18,9 +18,9 @@ class FilenameDataWrapper:
 
     Data is loaded on first access of the `.data` property so that
     constructing a wrapper (e.g. during diff_phil string comparison) does
-    not trigger a disk read.  Bad paths are detected eagerly at construction
-    time via os.stat so user-facing errors still surface at argument-parse
-    time.
+    not trigger a disk read.  Bad paths are detected eagerly in `from_words`
+    via `os.path.exists()` so user-facing errors still surface at
+    argument-parse time.
     """
 
     __slots__ = ("filename", "_data", "_loader")
