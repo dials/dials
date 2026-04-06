@@ -107,7 +107,7 @@ class NeighborAnalysis:
             # ANN returned squared distances; cKDTree returns actual distances.
             # Original code: 1 / flex.sqrt(IS_adapt.distances)
             # Here:          1 / dists   (equivalent, bit-identical)
-            direct.extend(flex.double(dists.tolist()))
+            direct.extend(flex.double((1.0 / dists).tolist()))
             d_spacings.extend(1 / norms)
 
         assert len(direct) > NEAR, (
