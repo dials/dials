@@ -1,6 +1,31 @@
 from __future__ import annotations
 
+import concurrent.futures
 import math
+
+import numpy as np
+from scipy.spatial import cKDTree
+
+# Thread count for parallelising the ~160 NN sub-groups. Each group runs
+# cKDTree with workers=1; the GIL is released inside scipy's C layer, so
+# Python threads genuinely run in parallel. We follow the same CPU_COUNT
+# convention used elsewhere in DIALS (e.g. bravais_settings.py) rather than
+# hard-coding a thread count.
+from dials.util.system import CPU_COUNT
+
+_NN_MAX_WORKERS = CPU_COUNT
+
+
+def _ckdtree_nn_distances(pts_np):
+    """Return 1-NN distances for pts_np (N×3 float64 array).
+
+    scipy.cKDTree includes self-matches, so we query k=2 and take column 1
+    (column 0 is always 0.0, the self-match). This is bit-identical to the
+    AnnAdaptor result with ANN_ALLOW_SELF_MATCH=ANNfalse and k=1.
+    """
+    tree = cKDTree(pts_np, leafsize=20)
+    dists, _ = tree.query(pts_np, k=2, workers=1)
+    return dists[:, 1]  # actual distances in Å⁻¹ (not squared, unlike ANN)
 
 
 class NeighborAnalysis:
@@ -35,8 +60,12 @@ class NeighborAnalysis:
             z = z * (180 / math.pi)
 
         d_spacings = flex.double()
-        # nearest neighbor analysis
-        from annlib_ext import AnnAdaptor
+
+        # Collect all sub-groups first, then dispatch to a thread pool.
+        # Splitting by (imageset_id, 45° rotation window, entering/exiting)
+        # preserves the original grouping semantics exactly.
+        group_pts = []  # list of N×3 float64 arrays, one per sub-group
+        group_norms = []  # list of flex.double norms, one per sub-group
 
         for imageset_id in range(flex.max(reflections["imageset_id"]) + 1):
             sel_imageset = reflections["imageset_id"] == imageset_id
@@ -59,17 +88,27 @@ class NeighborAnalysis:
                     if sel_entering.count(True) == 0:
                         continue
 
-                    query = flex.double()
-                    query.extend(rs_vectors.select(sel_entering).as_double())
+                    vecs = rs_vectors.select(sel_entering)
+                    pts_np = np.array(vecs.as_double()).reshape(-1, 3)
 
-                    if query.size() == 0:
+                    if pts_np.shape[0] == 0:
                         continue
 
-                    IS_adapt = AnnAdaptor(data=query, dim=3, k=1)
-                    IS_adapt.query(query)
+                    group_pts.append(pts_np)
+                    group_norms.append(vecs.norms())
 
-                    direct.extend(1 / flex.sqrt(IS_adapt.distances))
-                    d_spacings.extend(1 / rs_vectors.select(sel_entering).norms())
+        # Parallel NN queries — cKDTree releases the GIL, so threads are effective
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=_NN_MAX_WORKERS
+        ) as executor:
+            all_dists = list(executor.map(_ckdtree_nn_distances, group_pts))
+
+        for dists, norms in zip(all_dists, group_norms):
+            # ANN returned squared distances; cKDTree returns actual distances.
+            # Original code: 1 / flex.sqrt(IS_adapt.distances)
+            # Here:          1 / dists   (equivalent, bit-identical)
+            direct.extend(flex.double((1.0 / dists).tolist()))
+            d_spacings.extend(1 / norms)
 
         assert len(direct) > NEAR, (
             f"Too few spots ({len(direct)}) for nearest neighbour analysis."
@@ -98,12 +137,12 @@ class NeighborAnalysis:
         else:
             hst = flex.histogram(direct, n_slots=int(len(direct) / self.NNBIN))
         if self.histogram_binning == "log":
-            self.slot_start = flex.double(
-                [10 ** (s - 0.5 * hst.slot_width()) for s in hst.slot_centers()]
-            )
-            self.slot_end = flex.double(
-                [10 ** (s + 0.5 * hst.slot_width()) for s in hst.slot_centers()]
-            )
+            # Vectorised form: avoids a Python loop over ~400k slot centers.
+            # Equivalent to the list-comprehension [10**(s ± half_width)] above.
+            centers = np.array(hst.slot_centers())
+            half_width = 0.5 * hst.slot_width()
+            self.slot_start = flex.double(10 ** (centers - half_width))
+            self.slot_end = flex.double(10 ** (centers + half_width))
             self.slot_width = self.slot_end - self.slot_start
         else:
             self.slot_start = hst.slot_centers() - 0.5 * hst.slot_width()
