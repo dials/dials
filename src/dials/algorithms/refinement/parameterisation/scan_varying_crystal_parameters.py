@@ -178,9 +178,7 @@ class ScanVaryingCrystalUnitCellParameterisation(
         self._B_at_t, dB_dval = self._compose_core(vals)
 
         # calculate derivatives of state wrt underlying parameters
-        self._dstate_dp = [
-            [b * e for e in a.as_dense_vector()] for a, b in zip(dvals_dp, dB_dval)
-        ]
+        # (sparse: only the nonzero smoother weights are populated below)
         self._dstate_dp = [[None] * e.size for e in dvals_dp]
         for i, (dv, dB) in enumerate(zip(dvals_dp, dB_dval)):
             for j, e in dv:
