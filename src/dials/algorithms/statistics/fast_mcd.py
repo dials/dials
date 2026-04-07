@@ -79,6 +79,32 @@ def maha_dist_sq(cols, center, cov):
     return d2
 
 
+def _cols_to_obs_np(cols):
+    """Pack a list of flex.double columns into a contiguous n×p numpy array.
+
+    Used to hoist the observation-matrix construction out of inner loops
+    where the columns are invariant across many calls.
+    """
+    return np.column_stack([col.as_numpy_array() for col in cols])
+
+
+def maha_dist_sq_from_matrix(X_np, center, cov):
+    """Calculate squared Mahalanobis distances from a prebuilt n×p numpy
+    observation matrix X_np, avoiding the per-call column-packing cost of
+    maha_dist_sq().
+
+    X_np   : n×p numpy float64 array (rows = observations, columns = variables)
+    center : flex.double of length p
+    cov    : flex.double of shape (p, p) — the covariance matrix
+
+    Returns a flex.double of length n containing the squared distances.
+    """
+    n, p = X_np.shape
+    obs = flex.double(X_np.flatten())
+    obs.reshape(flex.grid(n, p))
+    return maha_dist_sq_cpp(obs, center, cov)
+
+
 def mcd_finite_sample(p, n, alpha):
     """Finite sample correction factor for the MCD estimate. Described in
     Pison et al. Metrika (2002). doi.org/10.1007/s001840200191. Implementation
@@ -320,17 +346,42 @@ class FastMCD:
         return H1
 
     @staticmethod
-    def concentration_step(h, data, T, S):
-        """Practical application of Theorem 1 of R&vD"""
+    def concentration_step(h, data, T, S, obs_np=None):
+        """Practical application of Theorem 1 of R&vD.
 
-        d2s = maha_dist_sq(data, T, S)
-        p = flex.sort_permutation(d2s)
-        H1 = [col.select(p)[0:h] for col in data]
+        obs_np : optional prebuilt n×p numpy array for the columns in *data*.
+                 When provided (hot-path callers that iterate with fixed data),
+                 the per-call column-packing cost inside maha_dist_sq is avoided.
+                 When None (default), the observation matrix is built here as
+                 before, preserving API compatibility for any external callers.
+        """
+
+        if obs_np is not None:
+            # T is already a flex.double (returned by means_and_covariance);
+            # pass it directly to avoid any conversion overhead.
+            d2s_fd = maha_dist_sq_from_matrix(obs_np, T, S)
+        else:
+            d2s_fd = maha_dist_sq(data, T, S)
+
+        # Fix 2: partial sort — only the h smallest indices are needed.
+        # np.argpartition is O(n) vs O(n log n) for a full sort; the returned
+        # indices are unordered within the selected h, which is fine because
+        # we only use them as a row-selection mask.
+        d2s_np = d2s_fd.as_numpy_array()
+        idx_h = np.argpartition(d2s_np, h)[:h]
+
+        # Select the h rows from each data column.
+        sel = flex.size_t(idx_h.tolist())
+        H1 = [col.select(sel) for col in data]
         return H1
 
     def small_dataset_estimate(self):
         """When a dataset is small, perform the initial trials directly on the
         whole dataset"""
+
+        # Fix 1: self._data columns are invariant for all concentration steps
+        # in this function; pack the observation matrix once.
+        full_obs_np = _cols_to_obs_np(self._data)
 
         trials = []
         for i in range(self._n_trials):
@@ -341,7 +392,9 @@ class FastMCD:
             # perform concentration steps
             detScurr, Tcurr, Scurr = detS1, T1, S1
             for j in range(self._k1):  # take maximum of k1 steps
-                Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
+                Hnew = self.concentration_step(
+                    self._h, self._data, Tcurr, Scurr, obs_np=full_obs_np
+                )
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detSnew = Snew.matrix_determinant_via_lu()
 
@@ -359,7 +412,9 @@ class FastMCD:
         for i in range(10):
             detCurr, Tcurr, Scurr = trials[i]
             for j in range(self._k3):  # take maximum of k3 steps
-                Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
+                Hnew = self.concentration_step(
+                    self._h, self._data, Tcurr, Scurr, obs_np=full_obs_np
+                )
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detNew = Snew.matrix_determinant_via_lu()
                 if detNew == detCurr:
@@ -396,6 +451,9 @@ class FastMCD:
         h_frac = self._h / self._n
         for group in groups:
             h_sub = int(len(group[0]) * h_frac)
+            # Fix 1: pack the group columns once per group; reuse across all
+            # n_trials × k1 concentration_step calls that use this group.
+            group_obs_np = _cols_to_obs_np(group)
             gp_trials = []
             for i in range(n_trials):
                 H1 = self.form_initial_subset(h=h_sub, data=group)
@@ -405,7 +463,9 @@ class FastMCD:
                 # perform concentration steps
                 detScurr, Tcurr, Scurr = detS1, T1, S1
                 for j in range(self._k1):  # take k1 steps
-                    Hnew = self.concentration_step(h_sub, group, Tcurr, Scurr)
+                    Hnew = self.concentration_step(
+                        h_sub, group, Tcurr, Scurr, obs_np=group_obs_np
+                    )
                     Tnew, Snew = self.means_and_covariance(Hnew)
                     detSnew = Snew.matrix_determinant_via_lu()
 
@@ -425,10 +485,14 @@ class FastMCD:
         # set
         mrgd_trials = []
         h_mrgd = int(sample_size * h_frac)
+        # Fix 1: sampled columns are fixed across all merge trials; pack once.
+        sampled_obs_np = _cols_to_obs_np(sampled)
         for trial in trials:
             detScurr, Tcurr, Scurr = trial
             for j in range(self._k2):  # take k2 steps
-                Hnew = self.concentration_step(h_mrgd, sampled, Tcurr, Scurr)
+                Hnew = self.concentration_step(
+                    h_mrgd, sampled, Tcurr, Scurr, obs_np=sampled_obs_np
+                )
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detSnew = Snew.matrix_determinant_via_lu()
                 detScurr, Tcurr, Scurr = detSnew, Tnew, Snew
@@ -466,11 +530,16 @@ class FastMCD:
         # choose number of trials to look at based on number of obs (ugly)
         n_reps = 1 if self._n > 5000 else 10
 
+        # Fix 1: self._data columns are fixed for all final concentration steps;
+        # pack the observation matrix once before the loop.
+        full_obs_np = _cols_to_obs_np(self._data)
         best_trials = []
         for i in range(n_reps):
             detCurr, Tcurr, Scurr = mrgd_trials[i]
             for j in range(k4):  # take maximum of k4 steps
-                Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
+                Hnew = self.concentration_step(
+                    self._h, self._data, Tcurr, Scurr, obs_np=full_obs_np
+                )
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detNew = Snew.matrix_determinant_via_lu()
                 if detNew == detCurr:
