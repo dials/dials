@@ -199,8 +199,34 @@ namespace dials { namespace algorithms {
                                  const af::const_ref<bool>& entering,
                                  const af::const_ref<std::size_t>& panel,
                                  const mat3<double>& ub) const {
-      af::shared<mat3<double> > uba(h.size(), ub);
-      return for_hkl_with_individual_ub(h, entering, panel, uba.const_ref());
+      return for_hkl_with_uniform_ub(h, entering, panel, ub);
+    }
+
+    /**
+     * Predict reflections for specific Miller indices, entering flags and
+     * panels with a single UB matrix reused for all reflections.
+     * Avoids allocating an N-element array of identical UB copies.
+     * @param h The array of Miller indices
+     * @param entering The array of entering flags
+     * @param panel The array of panels
+     * @param ub A single UB matrix applied to every reflection
+     * @returns A reflection table.
+     */
+    af::reflection_table for_hkl_with_uniform_ub(
+      const af::const_ref<miller_index>& h,
+      const af::const_ref<bool>& entering,
+      const af::const_ref<std::size_t>& panel,
+      const mat3<double>& ub) const {
+      DIALS_ASSERT(h.size() == panel.size());
+      DIALS_ASSERT(h.size() == entering.size());
+      DIALS_ASSERT(!scan_.is_still());
+      af::reflection_table table;
+      prediction_data predictions(table);
+      for (std::size_t i = 0; i < h.size(); ++i) {
+        append_for_index(predictions, ub, h[i], entering[i], panel[i]);
+      }
+      DIALS_ASSERT(table.nrows() == h.size());
+      return table;
     }
 
     /**
@@ -232,14 +258,29 @@ namespace dials { namespace algorithms {
 
     /**
      * Predict reflections and add to the entries in the table for a single UB
-     * matrix
+     * matrix. Uses for_hkl_with_uniform_ub to avoid allocating an N-element
+     * array of identical UB copies.
      * @param table The reflection table
      * @param ub The ub matrix
      */
     void for_reflection_table(af::reflection_table table,
                               const mat3<double>& ub) const {
-      af::shared<mat3<double> > uba(table.nrows(), ub);
-      for_reflection_table_with_individual_ub(table, uba.const_ref());
+      af::reflection_table new_table = for_hkl_with_uniform_ub(
+        table["miller_index"], table["entering"], table["panel"], ub);
+      DIALS_ASSERT(new_table.nrows() == table.nrows());
+      table["miller_index"] = new_table["miller_index"];
+      table["entering"] = new_table["entering"];
+      table["panel"] = new_table["panel"];
+      table["s1"] = new_table["s1"];
+      table["xyzcal.px"] = new_table["xyzcal.px"];
+      table["xyzcal.mm"] = new_table["xyzcal.mm"];
+      af::shared<std::size_t> flags = table["flags"];
+      af::shared<std::size_t> new_flags = new_table["flags"];
+      for (std::size_t i = 0; i < flags.size(); ++i) {
+        flags[i] &= ~af::Predicted;
+        flags[i] |= new_flags[i];
+      }
+      DIALS_ASSERT(table.is_consistent());
     }
 
     /**
