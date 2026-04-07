@@ -51,6 +51,18 @@ basis_vector_combinations
         .type = int(value_min=0)
         .help = "Discard solutions with fewer than this number of indexed reflections"
         .expert_level = 1
+    n_strongest_for_evaluation = 20000
+        .type = int(value_min=1)
+        .help = "Before scoring candidate crystal models, subsample the reflection"
+                "table to at most this many reflections, selected by decreasing"
+                "intensity.sum.value (i.e. the strongest spots).  All candidates"
+                "are then evaluated against the same subset, making the comparison"
+                "fair and deterministic.  This only affects intermediate"
+                "model-evaluation refinement; final refinement always uses the"
+                "full table.  20000 is small enough to avoid expensive"
+                "prepare_state/finalise overhead while large enough to"
+                "discriminate reliably between candidate lattices."
+        .expert_level = 1
     filter
         .expert_level = 1
     {
@@ -170,6 +182,33 @@ class LatticeSearch(indexer.Indexer):
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
         from dials.algorithms.indexing import model_evaluation
 
+        # Subsample to the N strongest reflections (by intensity.sum.value) ONCE
+        # before entering the candidate-scoring loop.  Benefits:
+        #   - Deterministic: top-N by strength, not a random draw.
+        #   - Fair: every candidate is scored against exactly the same spots.
+        #   - Fast: the prepare_state/finalise/predictor pipeline in the refiner
+        #     scales with input table size; capping here avoids that cost for all
+        #     50 candidates at once, not just one at a time.
+        # N=20000 is large enough for reliable lattice discrimination and small
+        # enough to avoid expensive intermediate-refinement overhead.
+        # This only affects model-evaluation; final refinement (indexer.refine)
+        # always receives the full self.reflections table.
+        _n_strongest = self.params.basis_vector_combinations.n_strongest_for_evaluation
+        if (
+            "intensity.sum.value" in self.reflections
+            and len(self.reflections) > _n_strongest
+        ):
+            _intensity = self.reflections["intensity.sum.value"]
+            _perm = flex.sort_permutation(_intensity, reverse=True)
+            _eval_reflections = self.reflections.select(_perm[:_n_strongest])
+            logger.debug(
+                "Subsampled to %d strongest reflections (from %d) for model evaluation",
+                _n_strongest,
+                len(self.reflections),
+            )
+        else:
+            _eval_reflections = self.reflections
+
         solution_scorer = self.params.basis_vector_combinations.solution_scorer
         if solution_scorer == "weighted":
             weighted_params = self.params.basis_vector_combinations.weighted
@@ -191,11 +230,11 @@ class LatticeSearch(indexer.Indexer):
         args = []
 
         for cm in candidate_orientation_matrices:
-            sel = self.reflections["id"] == -1
+            sel = _eval_reflections["id"] == -1
             if self.d_min is not None:
-                sel &= 1 / self.reflections["rlp"].norms() > self.d_min
-            xo, yo, zo = self.reflections["xyzobs.mm.value"].parts()
-            imageset_id = self.reflections["imageset_id"]
+                sel &= 1 / _eval_reflections["rlp"].norms() > self.d_min
+            xo, yo, zo = _eval_reflections["xyzobs.mm.value"].parts()
+            imageset_id = _eval_reflections["imageset_id"]
             experiments = ExperimentList()
             for i_expt, expt in enumerate(self.experiments):
                 # XXX Not sure if we still need this loop over self.experiments
@@ -218,7 +257,7 @@ class LatticeSearch(indexer.Indexer):
                         crystal=cm,
                     )
                 )
-            refl = self.reflections.select(sel)
+            refl = _eval_reflections.select(sel)
             self.index_reflections(experiments, refl)
             if refl.get_flags(refl.flags.indexed).count(True) == 0:
                 continue

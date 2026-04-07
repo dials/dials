@@ -349,6 +349,7 @@ class ModelEvaluation(Strategy):
                 < self._params.indexing.basis_vector_combinations.n_indexed_threshold
             ):
                 return
+
             try:
                 refiner = RefinerFactory.from_parameters_data_experiments(
                     self._params,
