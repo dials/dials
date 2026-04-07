@@ -41,109 +41,88 @@ namespace dials { namespace algorithms {
           crystal_ids_(reciprocal_space_points.size(), -1) {
       DIALS_ASSERT(reciprocal_space_points.size() == phi.size());
 
-      typedef std::pair<const cctbx::miller::index<>, const std::size_t> pair_t;
-      typedef std::multimap<cctbx::miller::index<>, std::size_t> map_t;
+      // A3: Use a sorted vector instead of multimap for cache-friendly grouping.
+      // Pairs of (miller_index, reflection_index) are collected, then sorted
+      // once (stable sort to preserve insertion order within equal keys, which
+      // matches the original multimap iteration order and preserves tie-breaking).
+      typedef std::pair<cctbx::miller::index<>, std::size_t> pair_t;
+      std::vector<pair_t> hkl_to_rlp_vec;
 
-      map_t hkl_to_rlp_map;
-
-      std::vector<af::shared<cctbx::miller::index<> > > hkl_ints;
+      // A2: Keep per-lattice lengths_sq for dedupe pass (needed at lines
+      // equivalent to original 126/160), but eliminate hkl_ints by writing the
+      // winning hkl directly into miller_indices_ during the fused pass below.
       std::vector<af::shared<double> > lengths_sq;
 
       const double pi_4 = scitbx::constants::pi / 4;
+      const double tolerance_sq = tolerance * tolerance;
 
-      // loop over crystals and assign one hkl per crystal per reflection
-      for (int i_lattice = 0; i_lattice < UB_matrices.size(); i_lattice++) {
-        scitbx::mat3<double> A = UB_matrices[i_lattice];
-        scitbx::mat3<double> A_inv = A.inverse();
-        af::shared<cctbx::miller::index<> > hkl_ints_(
-          af::reserve(reciprocal_space_points.size()));
-        af::shared<double> lengths_sq_(af::reserve(reciprocal_space_points.size()));
-        for (int i_ref = 0; i_ref < reciprocal_space_points.size(); i_ref++) {
-          scitbx::vec3<double> rlp = reciprocal_space_points[i_ref];
-          scitbx::vec3<double> hkl_f = A_inv * rlp;
+      // A2: Pre-compute matrix inverses once per lattice (not per reflection),
+      // and pre-allocate per-lattice lengths_sq buffers.
+      std::vector<scitbx::mat3<double> > A_invs;
+      for (int i_lattice = 0; i_lattice < (int)UB_matrices.size(); i_lattice++) {
+        A_invs.push_back(UB_matrices[i_lattice].inverse());
+        lengths_sq.push_back(af::shared<double>(reciprocal_space_points.size(), 0.0));
+      }
+
+      // A2: Fused single pass — for each reflection, iterate over all lattices,
+      // compute hkl_f/hkl_i/diff, store lengths_sq, and immediately pick the
+      // best lattice.  Eliminates the separate hkl_ints arrays and the second
+      // full traversal of the reflection set.
+      for (int i_ref = 0; i_ref < (int)reciprocal_space_points.size(); i_ref++) {
+        scitbx::vec3<double> rlp = reciprocal_space_points[i_ref];
+
+        // A1: Replace af::shared<double> n and af::shared<miller_index>
+        // potential_hkls (allocated inside the loop) with plain stack variables.
+        double best_len_sq = -1.0;
+        int i_best_lattice = -1;
+        cctbx::miller::index<> best_hkl;
+
+        for (int i_lattice = 0; i_lattice < (int)UB_matrices.size(); i_lattice++) {
+          scitbx::vec3<double> hkl_f = A_invs[i_lattice] * rlp;
           cctbx::miller::index<> hkl_i;
           for (std::size_t j = 0; j < 3; j++) {
             hkl_i[j] = scitbx::math::iround(hkl_f[j]);
           }
           scitbx::vec3<double> diff = hkl_f - scitbx::vec3<double>(hkl_i);
-          hkl_ints_.push_back(hkl_i);
-          lengths_sq_.push_back(diff.length_sq());
+          double len_sq = diff.length_sq();
+          lengths_sq[i_lattice][i_ref] = len_sq;
+          if (i_best_lattice == -1 || len_sq < best_len_sq) {
+            best_len_sq = len_sq;
+            i_best_lattice = i_lattice;
+            best_hkl = hkl_i;
+          }
         }
-        hkl_ints.push_back(hkl_ints_);
-        lengths_sq.push_back(lengths_sq_);
-      }
 
-      // loop over all reflections and choose the best hkl (and consequently
-      // crystal) for each reflection
-      double tolerance_sq = tolerance * tolerance;
-      for (int i_ref = 0; i_ref < reciprocal_space_points.size(); i_ref++) {
-        af::shared<double> n;
-        af::shared<cctbx::miller::index<> > potential_hkls;
-        for (int i_lattice = 0; i_lattice < UB_matrices.size(); i_lattice++) {
-          n.push_back(lengths_sq[i_lattice][i_ref]);
-          potential_hkls.push_back(hkl_ints[i_lattice][i_ref]);
-        }
-        int i_best_lattice = af::min_index(n.const_ref());
-        if (n[i_best_lattice] > tolerance_sq) {
+        if (best_len_sq > tolerance_sq) {
           continue;
         }
-        cctbx::miller::index<> hkl = potential_hkls[i_best_lattice];
-        if (hkl[0] == 0 && hkl[1] == 0 && hkl[2] == 0) {
+        if (best_hkl[0] == 0 && best_hkl[1] == 0 && best_hkl[2] == 0) {
           continue;
         }
-        miller_indices_[i_ref] = hkl;
-        hkl_to_rlp_map.insert(pair_t(hkl, i_ref));
+        miller_indices_[i_ref] = best_hkl;
+        // A3: Push into vector instead of multimap insert.
+        hkl_to_rlp_vec.push_back(pair_t(best_hkl, (std::size_t)i_ref));
         crystal_ids_[i_ref] = i_best_lattice;
       }
 
+      // A3: Sort the vector by miller_index.  Use stable_sort so that
+      // reflections with the same miller_index remain in ascending i_ref order,
+      // matching the original multimap iteration behaviour and preserving the
+      // tie-breaking logic in the dedupe block below.
+      std::stable_sort(
+        hkl_to_rlp_vec.begin(),
+        hkl_to_rlp_vec.end(),
+        [](const pair_t& a, const pair_t& b) { return a.first < b.first; });
+
       cctbx::miller::index<> curr_hkl(0, 0, 0);
       std::vector<std::size_t> i_same_hkl;
-      // if more than one spot can be assigned the same miller index then
-      // choose the closest one
-      for (map_t::iterator it = hkl_to_rlp_map.begin(); it != hkl_to_rlp_map.end();
-           it++) {
-        if (it->first == cctbx::miller::index<>(0, 0, 0)) {
-          continue;
-        }
-        if (it->first != curr_hkl) {
-          if (i_same_hkl.size() > 1) {
-            for (int i = 0; i < i_same_hkl.size(); i++) {
-              const std::size_t i_ref = i_same_hkl[i];
-              for (int j = i + 1; j < i_same_hkl.size(); j++) {
-                const std::size_t j_ref = i_same_hkl[j];
-                int crystal_i = crystal_ids_[i_ref];
-                int crystal_j = crystal_ids_[j_ref];
-                if (crystal_i != crystal_j) {
-                  continue;
-                } else if (crystal_i == -1) {
-                  continue;
-                }
-                double phi_i = phi[i_ref];
-                double phi_j = phi[j_ref];
-                if (std::abs(phi_i - phi_j) > pi_4) {
-                  continue;
-                }
-                if (lengths_sq[crystal_j][j_ref] < lengths_sq[crystal_i][i_ref]) {
-                  miller_indices_[i_ref] = cctbx::miller::index<>(0, 0, 0);
-                  crystal_ids_[i_ref] = -1;
-                } else {
-                  miller_indices_[j_ref] = cctbx::miller::index<>(0, 0, 0);
-                  crystal_ids_[j_ref] = -1;
-                }
-              }
-            }
-          }
-          curr_hkl = it->first;
-          i_same_hkl.clear();
-        }
-        i_same_hkl.push_back(it->second);
-      }
 
-      // Now check the final group!
-      if (i_same_hkl.size() > 1) {
-        for (int i = 0; i < i_same_hkl.size(); i++) {
+      // Helper lambda: process one completed group of same-hkl reflections.
+      auto process_group = [&]() {
+        if (i_same_hkl.size() <= 1) return;
+        for (int i = 0; i < (int)i_same_hkl.size(); i++) {
           const std::size_t i_ref = i_same_hkl[i];
-          for (int j = i + 1; j < i_same_hkl.size(); j++) {
+          for (int j = i + 1; j < (int)i_same_hkl.size(); j++) {
             const std::size_t j_ref = i_same_hkl[j];
             int crystal_i = crystal_ids_[i_ref];
             int crystal_j = crystal_ids_[j_ref];
@@ -166,7 +145,26 @@ namespace dials { namespace algorithms {
             }
           }
         }
+      };
+
+      // if more than one spot can be assigned the same miller index then
+      // choose the closest one
+      for (std::size_t k = 0; k < hkl_to_rlp_vec.size(); k++) {
+        const cctbx::miller::index<>& hkl = hkl_to_rlp_vec[k].first;
+        const std::size_t i_ref = hkl_to_rlp_vec[k].second;
+        if (hkl == cctbx::miller::index<>(0, 0, 0)) {
+          continue;
+        }
+        if (hkl != curr_hkl) {
+          process_group();
+          curr_hkl = hkl;
+          i_same_hkl.clear();
+        }
+        i_same_hkl.push_back(i_ref);
       }
+
+      // Now check the final group!
+      process_group();
     }
 
     af::shared<cctbx::miller::index<> > miller_indices() {
