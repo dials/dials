@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 import logging
 import math
+import random
 
 import iotbx.phil
 import libtbx
@@ -199,6 +200,15 @@ indexing {
       .type = bool
       .help = "Disable sanity check on unrealistic increases in unit cell volume"
               "during refinement. Does not apply to stills.indexer=stills."
+      .expert_level = 1
+    n_reflections_for_early_macrocycles = 50000
+      .type = int(value_min=1)
+      .help = "In dials.index final refinement, all but the last macrocycle use"
+              "only a random subsample of N reflections (fixed seed 42) to keep"
+              "overhead low. The final macrocycle always uses the full reflection"
+              "table so the final refined parameters are high-quality. Random"
+              "sampling avoids the resolution bias of sorting by intensity. Set to"
+              "a large value to effectively disable subsampling in early macrocycles."
       .expert_level = 1
   }
   multiple_lattice_search
@@ -669,6 +679,43 @@ class Indexer:
                         reflections_for_refinement,
                     )
                 else:
+                    # For early macrocycles (all but the last TWO), subsample to
+                    # All but the last macrocycle use 50k random reflections
+                    # (fixed seed) to reduce refiner overhead. Random sampling
+                    # avoids the resolution bias of selecting the strongest
+                    # reflections (which tend to be low-resolution and less
+                    # constraining for unit-cell refinement).
+                    # Final cycle uses full table for high-quality parameters.
+                    # The seed is fixed (42) for reproducibility; the global random
+                    # state is saved and restored so we don't pollute other callers.
+                    # Edge case: if n_macro_cycles == 1, i_cycle < 0 is never True
+                    # and the single cycle uses the full table — correct and safe.
+                    _n_macro = self.params.refinement_protocol.n_macro_cycles
+                    _n_strongest = self.params.refinement_protocol.n_reflections_for_early_macrocycles
+                    _is_early_macrocycle = i_cycle < _n_macro - 1
+                    if (
+                        _is_early_macrocycle
+                        and len(reflections_for_refinement) > _n_strongest
+                    ):
+                        _n_total = len(reflections_for_refinement)
+                        seed_state = random.getstate()
+                        random.seed(42)
+                        try:
+                            indices = flex.size_t(
+                                random.sample(range(_n_total), _n_strongest)
+                            )
+                        finally:
+                            random.setstate(seed_state)
+                        reflections_for_refinement = reflections_for_refinement.select(
+                            indices
+                        )
+                        logger.debug(
+                            "Early macrocycle %d: random subsample of %d "
+                            "reflections (from %d) for refinement",
+                            i_cycle + 1,
+                            _n_strongest,
+                            _n_total,
+                        )
                     try:
                         refined_experiments, refined_reflections = self.refine(
                             experiments, reflections_for_refinement
