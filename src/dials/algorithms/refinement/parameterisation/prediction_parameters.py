@@ -510,6 +510,22 @@ class PredictionParameterisation:
     def _grads_detector_loop(self, reflections, results, callback=None):
         """Loop over all detector parameterisations, calculate gradients and extend
         the results"""
+        from dials_refinement_helpers_ext import compute_detector_derivatives
+
+        # Determine whether this instance uses the unoverridden base-class
+        # _detector_derivatives.  If so, the derivatives are always dense
+        # flex.mat3_double (broadcast) and we can use the fused C++ kernel that
+        # computes (D * (-der)) * pv and the dX/dY quotient-rule expansion in a
+        # single pass, eliminating all intermediate flex allocations.
+        #
+        # Scan-varying subclasses override _detector_derivatives to inject
+        # per-reflection SparseFlex derivatives from the state-derivative cache.
+        # Those cannot be passed to the C++ kernel, so we fall back to the
+        # original Python chain for that case.
+        _use_fused_kernel = (
+            type(self)._detector_derivatives
+            is PredictionParameterisation._detector_derivatives
+        )
 
         # loop over the detector parameterisations
         for dp in self._detector_parameterisations:
@@ -537,39 +553,72 @@ class PredictionParameterisation:
                     # if no reflections intersect this panel, skip calculation
                     continue
 
-                dpv_ddet_p = self._detector_derivatives(
-                    sub_isel, panel_id, parameterisation=dp, reflections=reflections
-                )
-
-                # convert to dX/dp, dY/dp and assign the elements of the vectors
-                # corresponding to this experiment and panel
                 sub_w_inv = self._w_inv.select(sub_isel)
                 sub_u_w_inv = self._u_w_inv.select(sub_isel)
                 sub_v_w_inv = self._v_w_inv.select(sub_isel)
-                dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-                    sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p
-                )
 
-                # use a local parameter index pointer because we set all derivatives
-                # for this panel before moving on to the next
-                iparam = self._iparam
-                for dX, dY in zip(dX_ddet_p, dY_ddet_p):
-                    if dX is not None:
-                        try:
-                            dX, indices = dX.data_and_indices
-                            indices = sub_isel.select(indices)
-                        except AttributeError:
-                            indices = sub_isel
-                        results[iparam][self._grad_names[0]].set_selected(indices, dX)
-                    if dY is not None:
-                        try:
-                            dY, indices = dY.data_and_indices
-                            indices = sub_isel.select(indices)
-                        except AttributeError:
-                            indices = sub_isel
-                        results[iparam][self._grad_names[1]].set_selected(indices, dY)
-                    # increment the local parameter index pointer
-                    iparam += 1
+                if _use_fused_kernel:
+                    # Fast path: dense derivatives.  Build dd_ddet_p here (same
+                    # logic as _detector_derivatives) and call the fused C++ kernel
+                    # which computes dpv = (D * (-der)) * pv and dX/dY in one pass.
+                    pv = self._pv.select(sub_isel)
+                    D_sub = self._D.select(sub_isel)
+                    dd_ddet_p_raw = dp.get_ds_dp(
+                        multi_state_elt=panel_id, use_none_as_null=True
+                    )
+                    dd_ddet_p = [
+                        None if e is None else flex.mat3_double(len(D_sub), e.elems)
+                        for e in dd_ddet_p_raw
+                    ]
+                    pairs = compute_detector_derivatives(
+                        D_sub, pv, sub_w_inv, sub_u_w_inv, sub_v_w_inv, dd_ddet_p
+                    )
+                    iparam = self._iparam
+                    for dX, dY in pairs:
+                        if len(dX) > 0:  # non-null parameter
+                            results[iparam][self._grad_names[0]].set_selected(
+                                sub_isel, dX
+                            )
+                            results[iparam][self._grad_names[1]].set_selected(
+                                sub_isel, dY
+                            )
+                        iparam += 1
+                else:
+                    # Slow path: scan-varying or other override that may return
+                    # SparseFlex derivatives.  Use original Python chain.
+                    dpv_ddet_p = self._detector_derivatives(
+                        sub_isel,
+                        panel_id,
+                        parameterisation=dp,
+                        reflections=reflections,
+                    )
+                    dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+                        sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p
+                    )
+                    # use a local parameter index pointer because we set all
+                    # derivatives for this panel before moving on to the next
+                    iparam = self._iparam
+                    for dX, dY in zip(dX_ddet_p, dY_ddet_p):
+                        if dX is not None:
+                            try:
+                                dX, indices = dX.data_and_indices
+                                indices = sub_isel.select(indices)
+                            except AttributeError:
+                                indices = sub_isel
+                            results[iparam][self._grad_names[0]].set_selected(
+                                indices, dX
+                            )
+                        if dY is not None:
+                            try:
+                                dY, indices = dY.data_and_indices
+                                indices = sub_isel.select(indices)
+                            except AttributeError:
+                                indices = sub_isel
+                            results[iparam][self._grad_names[1]].set_selected(
+                                indices, dY
+                            )
+                        # increment the local parameter index pointer
+                        iparam += 1
 
             if callback is not None:
                 iparam = self._iparam
@@ -840,6 +889,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
         """helper function to extend the derivatives lists by derivatives of
         generic parameterisations."""
+        from dials_refinement_helpers_ext import compute_xl_derivative_one
 
         # Get required data
         fixed_rotation = self._fixed_rotation.select(isel)
@@ -850,9 +900,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         e_X_r = self._e_X_r.select(isel)
         e_r_s0 = self._e_r_s0.select(isel)
         if b_matrix:
-            B = self._B.select(isel)
+            B_or_U = self._B.select(isel)
         else:
-            U = self._U.select(isel)
+            B_or_U = self._U.select(isel)
         D = self._D.select(isel)
 
         if derivatives is None:
@@ -862,40 +912,68 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
                 for der in parameterisation.get_ds_dp(use_none_as_null=True)
             ]
 
-        # Resolve the rotation axis once outside the parameter loop.
-        # Use the scalar axis overload when all experiments share the same
-        # rotation axis; it normalises the axis once rather than per-element.
-        if not self._uniform_axis:
+        # Resolve the rotation axis.  The C++ kernel always takes a per-element
+        # flex.vec3_double.  For the uniform-axis case, broadcast the scalar so
+        # the C++ normalise-per-element path produces identical bits (normalising
+        # a constant vector N times is deterministic).
+        if self._uniform_axis:
+            axis = flex.vec3_double(len(isel), self._axis_scalar)
+        else:
             axis = self._axis.select(isel)
 
         dphi_dp = []
         dpv_dp = []
 
-        # loop through the parameters
+        # loop through the parameters, dispatching the fused C++ kernel.
+        #
+        # NOTE: the C++ kernel requires a scalar (broadcast) der.  In the
+        # scan-static case, every entry is a flex.mat3_double constructed via
+        # flex.mat3_double(len(isel), der.elems) — all elements identical — so
+        # taking der[0] is exact.  In the scan-varying case, the ScanVaryingPrediction
+        # ParameterisationParameterisation subclass passes SparseFlex objects
+        # (non-broadcast, per-reflection derivatives).  We fall back to the original
+        # Python path for those.  See fused_xl_derivatives_design.md open question 1.
         for der in derivatives:
             if der is None:
                 dphi_dp.append(None)
                 dpv_dp.append(None)
                 continue
 
-            # calculate the derivative of r for this parameter
-            if b_matrix:
-                tmp = fixed_rotation * (der * B * h)
-            else:
-                tmp = fixed_rotation * (U * der * h)
-            if self._uniform_axis:
-                dr = setting_rotation * tmp.rotate_around_origin(
-                    self._axis_scalar, phi_calc
+            if isinstance(der, flex.mat3_double):
+                # Fast path: broadcast flex.mat3_double — extract scalar and call C++.
+                der_scalar = matrix.sqr(der[0])
+                dpv, dphi = compute_xl_derivative_one(
+                    der_scalar,
+                    fixed_rotation,
+                    setting_rotation,
+                    B_or_U,
+                    h,
+                    axis,
+                    phi_calc,
+                    s1,
+                    e_X_r,
+                    e_r_s0,
+                    D,
+                    b_matrix,
                 )
+                dphi_dp.append(dphi)
+                dpv_dp.append(dpv)
             else:
-                dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
-
-            # calculate the derivative of phi for this parameter
-            dphi = -1.0 * dr.dot(s1) / e_r_s0
-            dphi_dp.append(dphi)
-
-            # calculate the derivative of pv for this parameter
-            dpv_dp.append(D * (dr + e_X_r * dphi))
+                # Slow path: SparseFlex or other non-broadcast derivative
+                # (scan-varying crystal case).  Keep original Python arithmetic.
+                if b_matrix:
+                    tmp = fixed_rotation * (der * B_or_U * h)
+                else:
+                    tmp = fixed_rotation * (B_or_U * der * h)
+                if self._uniform_axis:
+                    dr = setting_rotation * tmp.rotate_around_origin(
+                        self._axis_scalar, phi_calc
+                    )
+                else:
+                    dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
+                dphi = -1.0 * dr.dot(s1) / e_r_s0
+                dphi_dp.append(dphi)
+                dpv_dp.append(D * (dr + e_X_r * dphi))
 
         return dpv_dp, dphi_dp
 

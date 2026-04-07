@@ -9,6 +9,8 @@ Python_add_library(
     boost_python/gaussian_smoother.cc
     boost_python/gaussian_smoother_2D.cc
     boost_python/gaussian_smoother_3D.cc
+    boost_python/xl_derivatives.cc
+    boost_python/detector_derivatives.cc
     boost_python/refinement_ext.cc
     boost_python/outlier_helpers.cc
 )
