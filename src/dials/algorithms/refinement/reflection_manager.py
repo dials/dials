@@ -157,6 +157,8 @@ class BlockCalculator:
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
 
+        import numpy as np
+
         if deg:
             width *= DEG2RAD
         self._create_block_columns()
@@ -188,12 +190,24 @@ class BlockCalculator:
                 for e in block_starts
             ]
 
-            for b_num, (b_start, b_cent) in enumerate(zip(block_starts, block_centres)):
-                sub_isel = isel.select(
-                    (b_start <= exp_phi) & (exp_phi <= (b_start + _width))
-                )
-                self._reflections["block"].set_selected(sub_isel, b_num)
-                self._reflections["block_centre"].set_selected(sub_isel, b_cent)
+            # Vectorized block assignment: compute block index for each reflection
+            # directly from phi position rather than looping over blocks.
+            phi_np = exp_phi.as_numpy_array()
+            # floor division maps phi to block index; clip to valid range
+            block_indices = np.floor((phi_np - start) / _width).astype(np.intp)
+            np.clip(block_indices, 0, nblocks - 1, out=block_indices)
+
+            # look up block centres from precomputed list
+            centres_np = np.array(block_centres)
+            block_centres_for_refl = centres_np[block_indices]
+
+            # bulk-convert back to flex and assign
+            self._reflections["block"].set_selected(
+                isel, flex.size_t(block_indices.tolist())
+            )
+            self._reflections["block_centre"].set_selected(
+                isel, flex.double(block_centres_for_refl.tolist())
+            )
 
         return self._reflections
 
