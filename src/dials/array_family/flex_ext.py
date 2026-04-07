@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import collections
-import copy
 import functools
 import itertools
 import logging
@@ -489,12 +488,17 @@ class _:
         :param key0: The name of the column values to sort within
         :param key1: The sorting key name within the selected column
         """
-        uniq_values = self[key0]
-        for ii in set(uniq_values):
-            val = (uniq_values == ii).iselection()
-            ref_tmp = copy.deepcopy(self[min(val) : (max(val) + 1)])
-            ref_tmp.sort(key1, reverse)
-            self[min(val) : (max(val) + 1)] = ref_tmp
+        # Two-pass stable sort: first by key1, then by key0.
+        # A stable sort by key0 after a stable sort by key1 gives
+        # lexicographic (key0, key1) order — no per-group deepcopy needed.
+        perm1 = cctbx.array_family.flex.sort_permutation(
+            self[key1], reverse=reverse, stable=True
+        )
+        self.reorder(perm1)
+        perm0 = cctbx.array_family.flex.sort_permutation(
+            self[key0], reverse=reverse, stable=True
+        )
+        self.reorder(perm0)
 
     def match_by_hkle(
         self, other: dials_array_family_flex_ext.reflection_table
