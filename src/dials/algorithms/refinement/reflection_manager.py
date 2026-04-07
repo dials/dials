@@ -195,7 +195,10 @@ class BlockCalculator:
             phi_np = exp_phi.as_numpy_array()
             # floor division maps phi to block index; clip to valid range
             block_indices = np.floor((phi_np - start) / _width).astype(np.intp)
-            np.clip(block_indices, 0, nblocks - 1, out=block_indices)
+            assert (block_indices >= 0).all() and (block_indices < nblocks).all(), (
+                "BlockCalculator.per_width received reflections outside the scan range; "
+                "callers are expected to filter via _id_refs_to_keep first"
+            )
 
             # look up block centres from precomputed list
             centres_np = np.array(block_centres)
