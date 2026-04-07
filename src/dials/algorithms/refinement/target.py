@@ -489,12 +489,16 @@ class Target:
         may be overridden for the case where these vectors use sparse storage"""
 
         jacobian = flex.double(flex.grid(nelem, nparam))
-        # loop over parameters
-        for i in range(nparam):
-            col = grads_each_dim[0][i]
-            for g in grads_each_dim[1:]:
-                col.extend(g[i])
-            jacobian.matrix_paste_column_in_place(col, i)
+        # Paste each dimension's gradient block directly into the Jacobian,
+        # avoiding the per-column extend+copy that matrix_paste_column_in_place
+        # previously required.
+        if nparam > 0:
+            nref_per_dim = len(grads_each_dim[0][0])
+            for d, grads in enumerate(grads_each_dim):
+                i_row = d * nref_per_dim
+                for i, g in enumerate(grads):
+                    g.reshape(flex.grid(nref_per_dim, 1))
+                    jacobian.matrix_paste_block_in_place(g, i_row, i)
 
         return jacobian
 
