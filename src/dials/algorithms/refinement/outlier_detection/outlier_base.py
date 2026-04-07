@@ -4,6 +4,8 @@ import concurrent.futures
 import logging
 import math
 
+import numpy as np
+
 import libtbx
 from libtbx.phil import parse
 
@@ -122,15 +124,21 @@ class CentroidOutlier:
                 data = job["data"]
                 iexp = job["id"]
                 indices = job["indices"]
-                for ipanel in range(flex.max(data["panel"]) + 1):
-                    sel = data["panel"] == ipanel
-                    job = {
-                        "id": iexp,
-                        "panel": ipanel,
-                        "data": data.select(sel),
-                        "indices": indices.select(sel),
-                    }
+                npanels = flex.max(data["panel"]) + 1
+                if npanels == 1:
+                    # fast path: only one panel, skip select overhead
+                    job["panel"] = 0
                     jobs2.append(job)
+                else:
+                    for ipanel in range(npanels):
+                        sel = data["panel"] == ipanel
+                        job = {
+                            "id": iexp,
+                            "panel": ipanel,
+                            "data": data.select(sel),
+                            "indices": indices.select(sel),
+                        }
+                        jobs2.append(job)
         else:
             # keep the splits as they are
             jobs2 = jobs
@@ -159,33 +167,51 @@ class CentroidOutlier:
                 nblocks = int(round(math.degrees(phi_range / bw)))
                 nblocks = max(1, nblocks)
                 real_width = phi_range / nblocks
-                block_end = 0.0
-                for iblock in range(nblocks - 1):  # all except the last block
-                    block_start = iblock * real_width
-                    block_end = (iblock + 1) * real_width
-                    sel = (phi >= (phi_low + block_start)) & (
-                        phi < (phi_low + block_end)
-                    )
+                # Compute block index for every reflection in one vectorized pass.
+                # block_idx = floor((phi - phi_low) / real_width), clamped to
+                # [0, nblocks-1].  This matches the original half-open interval
+                # convention [i*w, (i+1)*w) for interior blocks; for the last
+                # block the original used phi >= phi_low + block_end (closed at
+                # top), which is reproduced here because any phi == phi_max gives
+                # floor(phi_range / real_width) == nblocks, which clamps to
+                # nblocks-1.
+                inv_width = 1.0 / real_width
+                rel = (phi - phi_low) * inv_width
+                block_idx = flex.floor(rel).iround()
+                # clamp: reflections exactly at phi_max land at nblocks
+                upper_mask = block_idx >= nblocks
+                if upper_mask.count(True):
+                    block_idx.set_selected(upper_mask, nblocks - 1)
+                # clamp: guard against any phi slightly below phi_low
+                lower_mask = block_idx < 0
+                if lower_mask.count(True):
+                    block_idx.set_selected(lower_mask, 0)
+                # bucket reflections by block index using a single argsort
+                all_positions = flex.size_t_range(len(phi))
+                order = flex.sort_permutation(block_idx.as_double())
+                sorted_idx = block_idx.select(order)
+                sorted_pos = all_positions.select(order)
+                # compute all block boundaries in one numpy call
+                sorted_idx_np = sorted_idx.as_numpy_array()
+                n = len(sorted_idx_np)
+                boundaries = np.searchsorted(sorted_idx_np, np.arange(nblocks + 1))
+                for iblock in range(nblocks):
+                    start = int(boundaries[iblock])
+                    end = int(boundaries[iblock + 1])
+                    block_positions = sorted_pos[start:end]
+                    block_sel = flex.bool(n, False)
+                    block_sel.set_selected(block_positions, True)
+                    phi_block_start = phi_low + iblock * real_width
+                    phi_block_end = phi_low + (iblock + 1) * real_width
                     job = {
                         "id": iexp,
                         "panel": ipanel,
-                        "data": data.select(sel),
-                        "indices": indices.select(sel),
-                        "phi_start": math.degrees(phi_low + block_start),
-                        "phi_end": math.degrees(phi_low + block_end),
+                        "data": data.select(block_sel),
+                        "indices": indices.select(block_sel),
+                        "phi_start": math.degrees(phi_block_start),
+                        "phi_end": math.degrees(phi_block_end),
                     }
                     jobs3.append(job)
-                # now last block
-                sel = phi >= (phi_low + block_end)
-                job = {
-                    "id": iexp,
-                    "panel": ipanel,
-                    "data": data.select(sel),
-                    "indices": indices.select(sel),
-                    "phi_start": math.degrees(phi_low + block_end),
-                    "phi_end": math.degrees(phi_low + phi_range),
-                }
-                jobs3.append(job)
         elif self._separate_images:
             for job in jobs2:
                 data = job["data"]
@@ -246,6 +272,7 @@ class CentroidOutlier:
                 logger.debug(result["message"])
 
         # loop over the completed jobs
+        debug_enabled = logger.isEnabledFor(logging.DEBUG)
         for i, job in enumerate(jobs3):
             iexp = job["id"]
             ipanel = job["panel"]
@@ -258,29 +285,30 @@ class CentroidOutlier:
                 reflections.set_flags(ioutliers, reflections.flags.centroid_outlier)
                 self.nreject += nout
 
-            # Add job data to the table
-            row = [str(i + 1)]
-            if self._separate_experiments:
-                row.append(str(iexp))
-            if self._separate_panels:
-                row.append(str(ipanel))
-            if self.get_block_width() is not None:
-                try:
-                    row.append("{phi_start:.2f} - {phi_end:.2f}".format(**job))
-                except KeyError:
-                    row.append(f"{0.0:.2f} - {0.0:.2f}")
-            if nref == 0:
-                p100 = 0
-            else:
-                p100 = nout / nref * 100.0
-                if p100 > 30.0:
-                    msg = (
-                        f"{p100:3.1f}% of reflections were flagged as outliers from job"
-                        f" {i + 1}"
-                    )
-                    logger.debug(msg)
-            row.extend([str(nref), str(nout), f"{p100:3.1f}"])
-            rows.append(row)
+            # Add job data to the table (only when debug logging is active)
+            if debug_enabled:
+                row = [str(i + 1)]
+                if self._separate_experiments:
+                    row.append(str(iexp))
+                if self._separate_panels:
+                    row.append(str(ipanel))
+                if self.get_block_width() is not None:
+                    try:
+                        row.append("{phi_start:.2f} - {phi_end:.2f}".format(**job))
+                    except KeyError:
+                        row.append(f"{0.0:.2f} - {0.0:.2f}")
+                if nref == 0:
+                    p100 = 0
+                else:
+                    p100 = nout / nref * 100.0
+                    if p100 > 30.0:
+                        msg = (
+                            f"{p100:3.1f}% of reflections were flagged as outliers from job"
+                            f" {i + 1}"
+                        )
+                        logger.debug(msg)
+                row.extend([str(nref), str(nout), f"{p100:3.1f}"])
+                rows.append(row)
 
         if self.nreject == 0:
             return False
