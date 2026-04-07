@@ -333,6 +333,7 @@ class PredictionParameterisation:
         self._experiment_to_idx = []
 
         # Populate values in these arrays
+        _axes_seen = []
         for iexp, exp in enumerate(self._experiments):
             sel = reflections["id"] == iexp
             isel = sel.iselection()
@@ -346,10 +347,21 @@ class PredictionParameterisation:
             self._B.set_selected(sel, states["B"])
             if exp.goniometer:
                 self._setting_rotation.set_selected(sel, states["S"])
-                self._axis.set_selected(sel, exp.goniometer.get_rotation_axis_datum())
+                axis = exp.goniometer.get_rotation_axis_datum()
+                self._axis.set_selected(sel, axis)
                 self._fixed_rotation.set_selected(
                     sel, exp.goniometer.get_fixed_rotation()
                 )
+                _axes_seen.append(axis)
+
+        # Determine whether all experiments share a single rotation axis.
+        # This check is O(num_experiments), not O(num_reflections).
+        if _axes_seen and all(a == _axes_seen[0] for a in _axes_seen[1:]):
+            self._uniform_axis = True
+            self._axis_scalar = _axes_seen[0]
+        else:
+            self._uniform_axis = False
+            self._axis_scalar = None
 
         # Other derived values
         self._h = reflections["miller_index"].as_vec3_double()
@@ -731,9 +743,16 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         # r is the reciprocal lattice vector, in the lab frame
         self._phi_calc = reflections["xyzcal.mm"].parts()[2]
         q = self._fixed_rotation * (self._UB * self._h)
-        self._r = self._setting_rotation * q.rotate_around_origin(
-            self._axis, self._phi_calc
-        )
+        # Use the scalar axis overload when all experiments share the same
+        # rotation axis; it normalises the axis once rather than per-element.
+        if self._uniform_axis:
+            self._r = self._setting_rotation * q.rotate_around_origin(
+                self._axis_scalar, self._phi_calc
+            )
+        else:
+            self._r = self._setting_rotation * q.rotate_around_origin(
+                self._axis, self._phi_calc
+            )
 
         # All of the derivatives of phi have a common denominator, given by
         # (e X r).s0, where e is the rotation axis. Calculate this once, here.
@@ -823,7 +842,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         generic parameterisations."""
 
         # Get required data
-        axis = self._axis.select(isel)
         fixed_rotation = self._fixed_rotation.select(isel)
         setting_rotation = self._setting_rotation.select(isel)
         phi_calc = self._phi_calc.select(isel)
@@ -844,6 +862,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
                 for der in parameterisation.get_ds_dp(use_none_as_null=True)
             ]
 
+        # Resolve the rotation axis once outside the parameter loop.
+        # Use the scalar axis overload when all experiments share the same
+        # rotation axis; it normalises the axis once rather than per-element.
+        if not self._uniform_axis:
+            axis = self._axis.select(isel)
+
         dphi_dp = []
         dpv_dp = []
 
@@ -859,7 +883,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
                 tmp = fixed_rotation * (der * B * h)
             else:
                 tmp = fixed_rotation * (U * der * h)
-            dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
+            if self._uniform_axis:
+                dr = setting_rotation * tmp.rotate_around_origin(
+                    self._axis_scalar, phi_calc
+                )
+            else:
+                dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
 
             # calculate the derivative of phi for this parameter
             dphi = -1.0 * dr.dot(s1) / e_r_s0
@@ -895,7 +924,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         derivatives of the goniometer parameterisations"""
 
         # Get required data
-        axis = self._axis.select(isel)
         fixed_rotation = self._fixed_rotation.select(isel)
         phi_calc = self._phi_calc.select(isel)
         h = self._h.select(isel)
@@ -912,6 +940,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
                 for der in parameterisation.get_ds_dp(use_none_as_null=True)
             ]
 
+        # Resolve the rotation axis once outside the parameter loop.
+        # Use the scalar axis overload when all experiments share the same
+        # rotation axis; it normalises the axis once rather than per-element.
+        if not self._uniform_axis:
+            axis = self._axis.select(isel)
+
         dphi_dp = []
         dpv_dp = []
 
@@ -924,7 +958,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
             # calculate the derivative of r for this parameter
             tmp = fixed_rotation * (UB * h)
-            dr = der * tmp.rotate_around_origin(axis, phi_calc)
+            if self._uniform_axis:
+                dr = der * tmp.rotate_around_origin(self._axis_scalar, phi_calc)
+            else:
+                dr = der * tmp.rotate_around_origin(axis, phi_calc)
 
             # calculate the derivative of phi for this parameter
             dphi = -1.0 * dr.dot(s1) / e_r_s0
