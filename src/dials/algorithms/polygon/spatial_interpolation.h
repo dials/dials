@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_POLYGON_SPATIAL_INTERPOLATION_H
 
 #include <cmath>
+#include <vector>
 #include <scitbx/vec2.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
@@ -125,6 +126,35 @@ namespace dials { namespace algorithms { namespace polygon {
         }
       }
       return matches;
+    }
+
+    /**
+     * Get the overlaps between an input quad and the grid points, appending
+     * results into a caller-supplied reusable buffer.  The caller must call
+     * buf.clear() before each invocation to reset the contents without
+     * releasing the reserved capacity.
+     * @param input The quad
+     * @param output_size The size of the output grid
+     * @param index The index of the quad
+     * @param buf The output buffer (cleared and filled by this function)
+     */
+    inline void quad_to_grid(vert4 input,
+                             af::c_grid<2> output_size,
+                             int index,
+                             std::vector<Match>& buf) {
+      buf.clear();
+      int4 range = quad_grid_range(input, output_size);
+      if (range[0] >= range[1] || range[2] >= range[3]) return;
+      double target_area = reverse_quad_inplace_if_backward(input);
+      for (std::size_t jj = range[2]; jj < range[3]; ++jj) {
+        for (std::size_t ii = range[0]; ii < range[1]; ++ii) {
+          double result_area = quad_grid_intersection_area(input, ii, jj);
+          if (result_area > 0) {
+            double fraction = result_area / target_area;
+            buf.push_back(Match(index, ii + jj * output_size[1], fraction));
+          }
+        }
+      }
     }
 
     /**
