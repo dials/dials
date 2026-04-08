@@ -466,7 +466,7 @@ namespace dials { namespace algorithms {
               double g11 = j22 / spec_.step_size()[1];  // dc2_grid/dy
 
               // e3 (frame) direction
-              double osc_rad = spec_.scan().get_oscillation()[1] * M_PI / 180.0;
+              double osc_rad = spec_.scan().get_oscillation()[1];
               double g22 = cs.zeta() * osc_rad / spec_.step_size()[0];
 
               // Grid center: reflection centroid maps to (0,0,0) in its
@@ -545,6 +545,17 @@ namespace dials { namespace algorithms {
                     ref_profile(d, h, w) = val;
                     ref_m(d, h, w) = true;
                   }
+                }
+              }
+
+              // Normalize the extracted reference profile to sum to 1.0
+              double ref_sum = 0.0;
+              for (std::size_t j = 0; j < ref_profile.size(); ++j) {
+                if (ref_m[j]) ref_sum += ref_profile[j];
+              }
+              if (ref_sum > 0.0) {
+                for (std::size_t j = 0; j < ref_profile.size(); ++j) {
+                  ref_profile[j] /= ref_sum;
                 }
               }
 
