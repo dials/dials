@@ -449,9 +449,17 @@ namespace dials { namespace algorithms {
                   && ((sbox[i].mask[j] & (Valid | Foreground)) == (Valid | Foreground));
               }
 
+              // Convert float shoebox data/background to double for ProfileFitter
+              af::versa<double, af::c_grid<3>> data_d(sbox[i].data.accessor());
+              af::versa<double, af::c_grid<3>> bg_d(sbox[i].background.accessor());
+              for (std::size_t j = 0; j < data_d.size(); ++j) {
+                data_d[j] = static_cast<double>(sbox[i].data[j]);
+                bg_d[j] = static_cast<double>(sbox[i].background[j]);
+              }
+
               // IRLS fit using raw shoebox data and extracted detector-space reference
-              ProfileFitter<double> fit(sbox[i].data.const_ref(),
-                                        sbox[i].background.const_ref(),
+              ProfileFitter<double> fit(data_d.const_ref(),
+                                        bg_d.const_ref(),
                                         m.const_ref(),
                                         ref.profile.const_ref(),
                                         1e-3,
