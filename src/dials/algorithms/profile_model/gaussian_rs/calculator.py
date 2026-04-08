@@ -16,7 +16,6 @@ import math
 import numpy as np
 
 import scitbx.math
-from dxtbx import flumpy
 
 from dials.array_family import flex
 
@@ -64,7 +63,7 @@ class ComputeEsdBeamDivergence:
         xyz = reflections["xyzobs.px.value"]
 
         # Loop through all the reflections
-        variance = np.array([], dtype=np.float64)
+        variance = []
 
         if centroid_definition == "com":
             # Calculate the beam vector at the centroid
@@ -80,17 +79,17 @@ class ComputeEsdBeamDivergence:
             # FIXME maybe I note in Kabsch (2010) s3.1 step (v) is
             # background subtraction, appears to be missing here.
             mask = shoebox[r].mask != 0
-            values = flumpy.to_numpy(shoebox[r].values(mask))
+            values = shoebox[r].values(mask).as_numpy_array()
             s1 = shoebox[r].beam_vectors(detector, mask)
 
-            angles = flumpy.to_numpy(s1.angle(s1_centroid[r], deg=False))
+            angles = s1.angle(s1_centroid[r], deg=False).as_numpy_array()
 
             if np.sum(values) > 1:
                 var = np.sum(values * np.square(angles)) / (np.sum(values) - 1)
-                variance = np.append(variance, var)
+                variance.append(var)
 
         # Return a list of variances
-        return variance
+        return np.array(variance, dtype=np.float64)
 
 
 class FractionOfObservedIntensity:
