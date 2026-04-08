@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_TRANSFORM_H
 
 #include <memory>
+#include <vector>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
@@ -325,6 +326,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         // through the frames, mapping the fraction of the pixel value in each
         // frame to the grid point.
         af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
+        std::vector<Match> match_buf;
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
           if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
             // This y-coordinate is outside the bounds of the panel
@@ -339,10 +341,10 @@ namespace dials { namespace algorithms { namespace profile_model {
                         gc_array(j, i + 1),
                         gc_array(j + 1, i + 1),
                         gc_array(j + 1, i));
-            af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
-            for (int m = 0; m < matches.size(); ++m) {
-              FloatType fraction = matches[m].fraction;
-              int index = matches[m].out;
+            quad_to_grid(input, grid_size2, 0, match_buf);
+            for (int m = 0; m < (int)match_buf.size(); ++m) {
+              FloatType fraction = match_buf[m].fraction;
+              int index = match_buf[m].out;
               int ii = index % grid_size_[2];
               int jj = index / grid_size_[2];
               for (int k = 0; k < shoebox_size_[0]; ++k) {
@@ -416,6 +418,7 @@ namespace dials { namespace algorithms { namespace profile_model {
         // through the frames, mapping the fraction of the pixel value in each
         // frame to the grid point.
         af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
+        std::vector<Match> match_buf;
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
           if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
             // This y-coordinate is outside the bounds of the panel
@@ -431,10 +434,10 @@ namespace dials { namespace algorithms { namespace profile_model {
                         gc_array(j, i + 1),
                         gc_array(j + 1, i + 1),
                         gc_array(j + 1, i));
-            af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
-            for (int m = 0; m < matches.size(); ++m) {
-              FloatType fraction = matches[m].fraction;
-              int index = matches[m].out;
+            quad_to_grid(input, grid_size2, 0, match_buf);
+            for (int m = 0; m < (int)match_buf.size(); ++m) {
+              FloatType fraction = match_buf[m].fraction;
+              int index = match_buf[m].out;
               int jj = index / grid_size_[2];
               int ii = index % grid_size_[2];
               for (int k = 0; k < shoebox_size_[0]; ++k) {
