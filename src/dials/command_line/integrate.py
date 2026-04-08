@@ -522,16 +522,6 @@ def run_integration(params, experiments, reference=None):
                     predicted["imageset_id"].set_selected(sel, iset_id)
                     break
 
-    # [DIAG] Early exit after reflection prediction for profiling runs.
-    # Revert this commit before using integrate output for science.
-    import sys
-
-    print(
-        "[DIAG] Reflection prediction complete — exiting early for profiling.",
-        flush=True,
-    )
-    sys.exit(0)
-
     # Match reference with predicted
     if reference:
         matched, reference, unmatched = predicted.match_with_reference(reference)
