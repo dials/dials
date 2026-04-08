@@ -13,6 +13,8 @@
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_REFLECTION_PREDICTOR_H
 
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
 #include <memory>
 #include <vector>
 #include <scitbx/math/r3_rotation.h>
@@ -551,6 +553,11 @@ namespace dials { namespace algorithms {
         r_mats[k] = axis_and_angle_as_matrix(m2, phi);
       }
 
+      // [DIAG] Reset accumulators before this for_ub call.
+      diag_t_reeke_ctor_s_ = 0.0;
+      diag_t_reeke_iter_s_ = 0.0;
+      diag_t_ray_pred_s_ = 0.0;
+
       for (int frame = z0; frame < z1; ++frame) {
         int i = frame - offset;
         if (i < 0) i = 0;
@@ -567,6 +574,16 @@ namespace dials { namespace algorithms {
                          r_mats[k],
                          r_mats[k + 1]);
       }
+
+      // [DIAG] Print sub-phase timings so they are visible before any sys.exit.
+      std::fprintf(stderr,
+                   "[DIAG for_ub] reeke_ctor=%.3f s  reeke_iter=%.3f s  "
+                   "ray_pred=%.3f s  total=%.3f s\n",
+                   diag_t_reeke_ctor_s_,
+                   diag_t_reeke_iter_s_,
+                   diag_t_ray_pred_s_,
+                   diag_t_reeke_ctor_s_ + diag_t_reeke_iter_s_ + diag_t_ray_pred_s_);
+      std::fflush(stderr);
 
       // Return the reflection table
       return table;
@@ -816,18 +833,32 @@ namespace dials { namespace algorithms {
                           const mat3<double>& r_setting,
                           const mat3<double>& r_beg,
                           const mat3<double>& r_end) const {
+      // [DIAG] Coarse wall-clock timers — revert commit 2 before release.
+      using clk = std::chrono::steady_clock;
+
       // Apply the precomputed rotation matrices to obtain the setting matrices.
       A1 = r_setting * r_beg * r_fixed * A1;
       A2 = r_setting * r_end * r_fixed * A2;
 
-      // Construct the index generator and do the predictions for each index
+      // (a) ReekeIndexGenerator construction
+      auto t0 = clk::now();
       ReekeIndexGenerator indices(A1, A2, space_group_type_, m2, s0, dmin_, margin_);
+      auto t1 = clk::now();
+      diag_t_reeke_ctor_s_ += std::chrono::duration<double>(t1 - t0).count();
+
+      // (b) Reeke iteration and (c) per-reflection ray prediction interleaved.
       for (;;) {
+        auto ti0 = clk::now();
         miller_index h = indices.next();
+        auto ti1 = clk::now();
+        diag_t_reeke_iter_s_ += std::chrono::duration<double>(ti1 - ti0).count();
         if (h.is_zero()) {
           break;
         }
+        auto tp0 = clk::now();
         append_for_index(p, A1, A2, frame, h);
+        auto tp1 = clk::now();
+        diag_t_ray_pred_s_ += std::chrono::duration<double>(tp1 - tp0).count();
       }
     }
 
@@ -1042,6 +1073,11 @@ namespace dials { namespace algorithms {
     std::size_t margin_;
     double padding_;
     ScanVaryingRayPredictor predict_rays_;
+
+    // [DIAG] Accumulated wall-clock seconds per sub-phase — revert commit 2.
+    mutable double diag_t_reeke_ctor_s_ = 0.0;
+    mutable double diag_t_reeke_iter_s_ = 0.0;
+    mutable double diag_t_ray_pred_s_ = 0.0;
   };
 
   /**
