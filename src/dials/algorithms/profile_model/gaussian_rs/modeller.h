@@ -902,11 +902,11 @@ namespace dials { namespace algorithms {
             }
 
             // Check reference mask at all 8 corners
-            bool all_mask = ref_mask(ij, ii, ik) && ref_mask(ij, ii, ik + 1)
-                            && ref_mask(ij, ii + 1, ik) && ref_mask(ij, ii + 1, ik + 1)
-                            && ref_mask(ij + 1, ii, ik) && ref_mask(ij + 1, ii, ik + 1)
-                            && ref_mask(ij + 1, ii + 1, ik)
-                            && ref_mask(ij + 1, ii + 1, ik + 1);
+            bool all_mask = ref_mask(ik, ij, ii) && ref_mask(ik + 1, ij, ii)
+                            && ref_mask(ik, ij, ii + 1) && ref_mask(ik + 1, ij, ii + 1)
+                            && ref_mask(ik, ij + 1, ii) && ref_mask(ik + 1, ij + 1, ii)
+                            && ref_mask(ik, ij + 1, ii + 1)
+                            && ref_mask(ik + 1, ij + 1, ii + 1);
 
             if (!all_mask) {
               cube(d, h, w) = 0.0;
@@ -919,15 +919,15 @@ namespace dials { namespace algorithms {
             double fj = gj - ij;
             double fi = gi - ii;
 
-            // Trilinear interpolation: ref is indexed as (gj, gi, gk)
-            double val = ref(ij, ii, ik) * (1 - fi) * (1 - fj) * (1 - fk)
-                         + ref(ij, ii, ik + 1) * (1 - fi) * (1 - fj) * fk
-                         + ref(ij, ii + 1, ik) * fi * (1 - fj) * (1 - fk)
-                         + ref(ij, ii + 1, ik + 1) * fi * (1 - fj) * fk
-                         + ref(ij + 1, ii, ik) * (1 - fi) * fj * (1 - fk)
-                         + ref(ij + 1, ii, ik + 1) * (1 - fi) * fj * fk
-                         + ref(ij + 1, ii + 1, ik) * fi * fj * (1 - fk)
-                         + ref(ij + 1, ii + 1, ik + 1) * fi * fj * fk;
+            // Trilinear interpolation: ref is indexed as (e3, e2, e1) = (gk, gj, gi)
+            double val = ref(ik, ij, ii) * (1 - fi) * (1 - fj) * (1 - fk)
+                         + ref(ik + 1, ij, ii) * (1 - fi) * (1 - fj) * fk
+                         + ref(ik, ij, ii + 1) * fi * (1 - fj) * (1 - fk)
+                         + ref(ik + 1, ij, ii + 1) * fi * (1 - fj) * fk
+                         + ref(ik, ij + 1, ii) * (1 - fi) * fj * (1 - fk)
+                         + ref(ik + 1, ij + 1, ii) * (1 - fi) * fj * fk
+                         + ref(ik, ij + 1, ii + 1) * fi * fj * (1 - fk)
+                         + ref(ik + 1, ij + 1, ii + 1) * fi * fj * fk;
 
             cube(d, h, w) = val;
             cube_mask(d, h, w) = true;
