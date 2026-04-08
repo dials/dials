@@ -398,6 +398,9 @@ namespace dials { namespace algorithms {
       diag_t_xform_s_ = 0.0;
       diag_t_fit_s_ = 0.0;
       diag_t_post_s_ = 0.0;
+      TransformForward_t_init_s = 0.0;
+      TransformForward_t_gc_s = 0.0;
+      TransformForward_t_clip_s = 0.0;
       using clk = std::chrono::steady_clock;
 
       // Loop through all the reflections and process them
@@ -504,12 +507,16 @@ namespace dials { namespace algorithms {
       // Revert this diag: commit before release.
       std::fprintf(stderr,
                    "[DIAG fit_rs] setup=%.3f s  xform=%.3f s  fit=%.3f s"
-                   "  post=%.3f s  total=%.3f s\n",
+                   "  post=%.3f s  total=%.3f s"
+                   "  | xinit=%.3f s  xgc=%.3f s  xclip=%.3f s\n",
                    diag_t_setup_s_,
                    diag_t_xform_s_,
                    diag_t_fit_s_,
                    diag_t_post_s_,
-                   diag_t_setup_s_ + diag_t_xform_s_ + diag_t_fit_s_ + diag_t_post_s_);
+                   diag_t_setup_s_ + diag_t_xform_s_ + diag_t_fit_s_ + diag_t_post_s_,
+                   TransformForward_t_init_s,
+                   TransformForward_t_gc_s,
+                   TransformForward_t_clip_s);
       std::fflush(stderr);
 
       return success;
