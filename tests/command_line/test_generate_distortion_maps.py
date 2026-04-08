@@ -6,6 +6,7 @@ import random
 import shutil
 import subprocess
 
+import mrcfile
 import numpy as np
 import pytest
 from skimage.measure import EllipseModel
@@ -262,16 +263,14 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
         assert row0 == pytest.approx(dx2t.matrix_copy_column(i))
 
 
-def test_undistort_an_ellipse(dials_data, tmp_path):
-    """Check that impact points around an ellipse in lab space on a simple
-    detector can be undistorted into a circle in pixel space"""
+def create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2):
+    """Helper function to write an image consisting of 100 points around an ellipse"""
 
-    # Use a single-panel 3D ED image for this
-    image_path = dials_data("image_examples") / "TIMEPIX_SU_516-stdgoni_0001.img"
-    result = subprocess.run(
+    subprocess.run(
         [
             shutil.which("dials.import"),
             image_path,
+            f"fast_slow_beam_centre={beam_centre_px[0]},{beam_centre_px[1]}",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -282,7 +281,6 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
 
     # Put centre of distortion at the beam centre
     centre_xy = panel.get_beam_centre(beam.get_s0())
-    centre_px = panel.millimeter_to_pixel(centre_xy)
 
     # Get beam vector and two orthogonal vectors
     beamvec = matrix.col(beam.get_s0())
@@ -307,10 +305,8 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # from matplotlib import pyplot as plt
     # plt.scatter(*zip(*circle_mm))
 
-    # Get the matrix to distort to the points to an ellipse rotated 15° from the fast axis
-    phi = 15
+    # Get the matrix to distort to the points to an ellipse
     l1 = 1.0
-    l2 = 0.95
     m2 = circle_to_ellipse_transform(phi, l1, l2)
 
     # Distort the intersection points
@@ -327,34 +323,92 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
         (panel.get_ray_intersection_px(ray) for ray in rays)
     )
 
-    # Now we operate as the user faced with an image containing an elliptcal
-    # ring. We start by calculating the ellipse parameters in the same way that
-    # the ellipse tool in dials.image_viewer does
+    # Now write out a new image consisting only of the points around the ellipse
+    with mrcfile.open(image_path, permissive=True) as mrc_in:
+        data = mrc_in.data.copy()
+        exttyp = mrc_in.header["exttyp"]
+        extended_header = mrc_in.extended_header.copy()
+
+    # Set the data to zero, then set the points around the ellipse to 100
+    data[:] = 0
+    for f, s in intersections_px:
+        data[int(s), int(f)] = 100
+
+    with mrcfile.new(tmp_path / "ellipse_001.mrc", overwrite=True) as mrc_out:
+        mrc_out.set_data(data.astype(np.float32))
+        mrc_out.header["exttyp"] = exttyp
+        mrc_out.set_extended_header(extended_header)
+
+
+def test_undistort_an_ellipse(dials_data, tmp_path):
+    """Check that impact points around an ellipse in lab space on a simple
+    detector can be undistorted into a circle in pixel space"""
+
+    # Create an image containing spots in an ellipse rotated 15° from the fast axis.
+    # Shift the beam centre away from the image centre for a more general test.
+    beam_centre_px = (1040, 1010)
+    phi = 15
+    l2 = 0.95
+    image_path = dials_data("aluminium_standard") / "0p67_5s_0000.mrc"
+    create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2)
+
+    # Import the new image and find the spots
+    result = subprocess.run(
+        [
+            shutil.which("dials.import"),
+            tmp_path / "ellipse_001.mrc",
+            "fast_slow_beam_centre=1040,1010",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    result = subprocess.run(
+        [
+            shutil.which("dials.find_spots"),
+            tmp_path / "imported.expt",
+            "min_spot_size=1",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    # Check that the the correct number of spots are found
+    assert result.returncode == 0
+    assert b"Saved 100 reflections to strong.refl" in result.stdout
+
+    # Load the spots and calculate ellipse parameters as we would with the ellipse
+    # tool in dials.image_viewer. We find that l1 and l2 are as before and the angle
+    # is 180 - phi.
+    strong = flex.reflection_table.from_file(tmp_path / "strong.refl")
+    intersections_f, intersections_s, _ = strong["xyzobs.px.value"].parts()
+    intersections_px = flex.vec2_double(intersections_f, intersections_s)
     try:
         ellipse = EllipseModel.from_estimate(np.array(intersections_px))
     except AttributeError:
         # Deprecated from skimage 0.26
         ellipse = EllipseModel()
         ellipse.estimate(np.array(intersections_px))
-    phi, a, b, centre = extract_ellipse_parameters(ellipse)
-    l1 = 1.0
-    l2 = b / a
+    phi_, a, b, centre_ = extract_ellipse_parameters(ellipse)
+    l2_ = b / a
+    assert phi_ == pytest.approx(180 - phi, 0.1)
+    assert l2_ == pytest.approx(l2, 0.01)
+    assert centre_ == pytest.approx((beam_centre_px))
 
-    # We find in practice that l2 parameter is the same as above where we distorted
-    # the rays, but the angle is rotated by 90°
-    assert l2 == pytest.approx(0.95)
-    assert phi == pytest.approx(165)
-
-    # Generate and apply distortion maps using the ellipse parameters
+    # Generate and apply distortion maps using the ellipse parameters. Note the centre
+    # must be in millimetres, not pixels.
+    experiments = ExperimentList.from_file(tmp_path / "imported.expt")
+    beam = experiments[0].beam
+    panel = experiments[0].detector[0]
+    centre_xy = panel.get_beam_centre(beam.get_s0())
     result = subprocess.run(
         [
             shutil.which("dials.generate_distortion_maps"),
             tmp_path / "imported.expt",
             "mode=ellipse",
             f"centre_xy={centre_xy[0]},{centre_xy[1]}",
-            f"phi={phi}",
-            f"l1={l1}",
-            f"l2={l2}",
+            f"phi={180 - phi_}",
+            "l1=1.0",
+            f"l2={l2_}",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -364,7 +418,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import"),
-            image_path,
+            tmp_path / "ellipse_001.mrc",
             f"lookup.dx={tmp_path / 'dx.pickle'}",
             f"lookup.dy={tmp_path / 'dy.pickle'}",
         ],
@@ -373,37 +427,103 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
 
-    # Load the experiment with correction maps
+    # Now find spots again
+    result = subprocess.run(
+        [
+            shutil.which("dials.find_spots"),
+            tmp_path / "imported.expt",
+            "min_spot_size=1",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert result.returncode == 0
+    strong = flex.reflection_table.from_file(tmp_path / "strong.refl")
+
+    # The pixel positions should be unchanged.
+    intersections_f_, intersections_s_, _ = strong["xyzobs.px.value"].parts()
+    assert intersections_f_.all_eq(intersections_f)
+    assert intersections_s_.all_eq(intersections_s)
+    intersections_px = flex.vec2_double(intersections_f_, intersections_s_)
+
+    # Now calculate mm positions, which should be undistorted into a circle
     experiments = ExperimentList.from_file(tmp_path / "imported.expt")
+    beam = experiments[0].beam
     panel = experiments[0].detector[0]
+    intersections_mm = panel.pixel_to_millimeter(intersections_px)
 
-    # Now we operate as if we have done spot-finding. The elliptically distorted
-    # ring is already encoded in the positions in intersections_px. So, we will
-    # convert this to millimetres, going through the correction and resulting
-    # in what we hope are circular intersections. NB I have checked that this
-    # call does go to OffsetPxMmStrategy.to_millimeter, where the dx & dy map
-    # values are subtracted from the pixel coordinate prior to calling
-    # SimplePxMmStrategy::to_millimeter
-    intersections = panel.pixel_to_millimeter(intersections_px)
-
-    # Get the radius of each of the intersections
-    shifted = intersections - centre_xy
+    # Get the radius of each of the intersections and check fractional error
+    shifted = intersections_mm - centre_xy
     x, y = shifted.parts()
-    r = flex.sqrt(x * x + y * y)
+    radius = flex.sqrt(x * x + y * y)
+    mm_error = (max(radius) - min(radius)) / flex.mean(radius)
+    assert mm_error < 0.005
 
-    # Check percentage error - this shows we still have 5% error, both
-    # in intersections_px and the "corrected" mm intersections. Why?!
-    print("mm error:", (max(r) - min(r)) / flex.mean(r) * 100, "%")
-    shifted_px = intersections_px - centre_px
-    x, y = shifted_px.parts()
-    r_px = flex.sqrt(x * x + y * y)
-    print("px error:", (max(r_px) - min(r_px)) / flex.mean(r_px) * 100, "%")
+    # We seem to get radial errors of up to just over 1 pixel. This
+    # might be acceptable
+    assert radius.as_numpy_array() == pytest.approx(
+        flex.mean(radius), abs=1.1 * panel.get_pixel_size()[0]
+    )
 
-    # Load the maps to check
-    # with open(tmp_path / "dx.pickle", "rb") as f:
-    #    dx = pickle.load(f)
-    # with open(tmp_path / "dy.pickle", "rb") as f:
-    #    dy = pickle.load(f)
+    # Visually inspect the mm corrected positions
+    import matplotlib.pyplot as plt
 
-    # We want less than 0.5 pixel error!
-    assert r.as_numpy_array() == pytest.approx(flex.mean(r), abs=0.055 / 2)
+    fig, ax = plt.subplots()
+    intersections_x, intersections_y = intersections_mm.parts()
+    ax.scatter(intersections_x, intersections_y)
+    ax.yaxis.set_inverted(True)
+    ax.set_xlim(0, 2048 * panel.get_pixel_size()[0])
+    ax.set_ylim(0, 2048 * panel.get_pixel_size()[1])
+    plt.gca().set_aspect("equal", adjustable="box")
+    plt.title("mm corrected positions")
+    plt.show()
+
+    # Load the experiment and extract the correction maps
+    experiments = ExperimentList.from_file(tmp_path / "imported.expt")
+    dx = experiments[0].imageset.external_lookup.dx.data.tile(0).data()
+    dy = experiments[0].imageset.external_lookup.dy.data.tile(0).data()
+
+    # Check that the correction at the beam centre is very small. It isn't
+    # actually the smallest magnitude correction across the whole image. There
+    # is a line of pixels with close to zero correction from one side of the
+    # image to the other, passing through the beam centre. We'll accept that
+    # the correction at pixel containing the beam centre should be less than
+    # 1/5 of a pixel.
+    assert abs(dx[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
+    assert abs(dy[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
+
+    # For each intersection get the correction encoded by the distortion maps.
+    # In the pixel-to-millimetre transform, the dx and dy values are first
+    # *subtracted* from the pixel positions and then the result is converted
+    # to millimetre via the parallax correction.
+    corrections_f = []
+    corrections_s = []
+    for spot in intersections_px:
+        index = (int(spot[1]), int(spot[0]))
+        corrections_f.append(dx[*index])
+        corrections_s.append(dy[*index])
+    corrections_f = flex.double(corrections_f)
+    corrections_s = flex.double(corrections_s)
+
+    corrected_intersections_f = intersections_f - corrections_f
+    corrected_intersections_s = intersections_s - corrections_s
+
+    from matplotlib import pyplot as plt
+
+    fig, ax = plt.subplots()
+    ax.scatter(intersections_f, intersections_s)
+    ax.scatter(corrected_intersections_f, corrected_intersections_s)
+    ax.quiver(
+        corrected_intersections_f,
+        corrected_intersections_s,
+        corrections_f,
+        corrections_s,
+        angles="xy",
+        scale_units="xy",
+        scale=1,
+        color="red",
+    )
+    ax.yaxis.set_inverted(True)
+    plt.gca().set_aspect("equal", adjustable="box")
+    plt.title("pixel intersections before/after correction")
+    plt.show()
