@@ -208,8 +208,7 @@ namespace dials { namespace algorithms {
                 n_sigma,
                 grid_size) {
       DIALS_ASSERT(sampler_ != 0);
-      cube_cache_.resize(sampler_->size());
-      cube_valid_.resize(sampler_->size(), false);
+      jac_cache_.resize(sampler_->size());
     }
 
     std::shared_ptr<BeamBase> beam() const {
@@ -417,39 +416,149 @@ namespace dials { namespace algorithms {
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
 
             if (fit_method_ == CellCache) {
-              // --- CELL-CACHE PATH ---
-              // Skip reflections with no learned profile for this cell
+              // --- CELL-CACHE PATH: affine mapping into 11x11x11 reference ---
               if (!valid(index)) continue;
 
-              // Lazy-init the cube for this cell
-              if (!cube_valid_[index]) {
-                cube_cache_[index] = build_cell_cube(index, sbox[i].panel);
-                cube_valid_[index] = true;
+              // Lazy-init the Jacobian cache for this cell
+              if (!jac_cache_[index].valid) {
+                jac_cache_[index] = build_cell_jacobian_cache(index, sbox[i].panel);
               }
-              const CellCube& cc = cube_cache_[index];
+              const CellJacobianCache& cache = jac_cache_[index];
 
-              // Compute sub-pixel offset from cell centroid
-              vec3<double> cell_coord = sampler_->coord(index);
-              double dx = xyzpx[i][0] - cell_coord[0];
-              double dy = xyzpx[i][1] - cell_coord[1];
-              double dz = xyzpx[i][2] - cell_coord[2];
-              // Clamp to cube margin range
-              dx = std::max(-1.0, std::min(1.0, dx));
-              dy = std::max(-1.0, std::min(1.0, dy));
-              dz = std::max(-1.0, std::min(1.0, dz));
+              // Reference profile and mask (11x11x11, layout: (e2, e1, e3))
+              data_const_reference ref = data(index).const_ref();
+              mask_const_reference ref_mask = mask(index).const_ref();
+              const int n_grid = static_cast<int>(2 * spec_.half_grid_size() + 1);
+              const double3 step_size = spec_.step_size();
+              const double3 grid_cent = spec_.grid_centre();
 
-              // Extract reference sub-volume via trilinear interpolation
-              ExtractedRef ref = extract_from_cube(cc, dx, dy, dz, sbox[i].bbox);
+              // Construct CoordinateSystem at reflection position
+              vec3<double> m2 = spec_.goniometer().get_rotation_axis();
+              vec3<double> s0 = spec_.beam()->get_s0();
+              CoordinateSystem cs_refl(m2, s0, s1[i], xyzmm[i][2]);
 
-              // Build combined mask (reference mask AND shoebox foreground mask)
-              af::versa<bool, af::c_grid<3>> m(ref.mask.accessor());
+              // Compute J2_refl (2x2 spatial Jacobian at reflection)
+              const auto& det_panel = spec_.detector()[sbox[i].panel];
+              vec3<double> p =
+                det_panel.get_pixel_lab_coord(vec2<double>(xyzpx[i][0], xyzpx[i][1]));
+              double r = p.length();
+              vec3<double> p_hat = p / r;
+              vec3<double> d_fast = det_panel.get_fast_axis();
+              vec3<double> d_slow = det_panel.get_slow_axis();
+              vec2<double> px = det_panel.get_pixel_size();
+              vec3<double> f_perp = d_fast - p_hat * (p_hat * d_fast);
+              vec3<double> s_perp = d_slow - p_hat * (p_hat * d_slow);
+              double s1_len = cs_refl.s1().length();
+              double scale = s1_len / r;
+              vec3<double> e1_s = cs_refl.e1_axis() / s1_len;
+              vec3<double> e2_s = cs_refl.e2_axis() / s1_len;
+              double j11 = scale * px[0] * (e1_s * f_perp);
+              double j12 = scale * px[1] * (e1_s * s_perp);
+              double j21 = scale * px[0] * (e2_s * f_perp);
+              double j22 = scale * px[1] * (e2_s * s_perp);
+
+              // Compose M2 = G2_cell_inv * J2_refl
+              double m00 = cache.g_inv_00 * j11 + cache.g_inv_01 * j21;
+              double m01 = cache.g_inv_00 * j12 + cache.g_inv_01 * j22;
+              double m10 = cache.g_inv_10 * j11 + cache.g_inv_11 * j21;
+              double m11 = cache.g_inv_10 * j12 + cache.g_inv_11 * j22;
+
+              // M_33: frame direction
+              double m22 = step_size[0] * cs_refl.zeta() / cache.cs_cell.zeta();
+
+              // Translation: reflection centroid in cell's grid coordinates
+              vec2<double> c12 = cache.cs_cell.from_beam_vector(cs_refl.s1());
+              double c3 = cache.cs_cell.from_rotation_angle_fast(cs_refl.phi());
+              double t0 = c12[0] / step_size[2] + grid_cent[2];  // c1/e1 grid idx
+              double t1 = c12[1] / step_size[1] + grid_cent[1];  // c2/e2 grid idx
+              double t2 = c3 / step_size[0] + grid_cent[0];      // c3/e3 grid idx
+
+              // Shoebox dimensions
+              int6 bbox = sbox[i].bbox;
+              int W = bbox[1] - bbox[0];
+              int H = bbox[3] - bbox[2];
+              int D = bbox[5] - bbox[4];
+
+              // Reflection centroid in pixel coordinates
+              double x_cal = xyzpx[i][0];
+              double y_cal = xyzpx[i][1];
+              double z_cal = xyzpx[i][2];
+
+              // Allocate output reference profile and mask (shoebox shape)
+              af::c_grid<3> out_acc(D, H, W);
+              af::versa<double, af::c_grid<3>> ref_profile(out_acc, 0.0);
+              af::versa<bool, af::c_grid<3>> ref_m(out_acc, false);
+
+              // For each voxel in the shoebox, apply affine map and trilinear interp
+              for (int d = 0; d < D; ++d) {
+                double dz = (bbox[4] + d) - z_cal;
+                double gk = m22 * dz + t2;
+                int ik = static_cast<int>(std::floor(gk));
+                double fk = gk - ik;
+                bool k_ok = ik >= 0 && ik + 1 < n_grid;
+
+                for (int h = 0; h < H; ++h) {
+                  double dy = (bbox[2] + h) - y_cal;
+                  for (int w = 0; w < W; ++w) {
+                    double dx = (bbox[0] + w) - x_cal;
+
+                    // Affine map: pixel offset -> grid coordinates
+                    double gi = m00 * dx + m01 * dy + t0;
+                    double gj = m10 * dx + m11 * dy + t1;
+
+                    int ii = static_cast<int>(std::floor(gi));
+                    int ij = static_cast<int>(std::floor(gj));
+                    double fi = gi - ii;
+                    double fj = gj - ij;
+
+                    // Bounds check (all 8 corners of trilinear interp)
+                    if (!k_ok || ii < 0 || ii + 1 >= n_grid || ij < 0
+                        || ij + 1 >= n_grid) {
+                      ref_profile(d, h, w) = 0.0;
+                      ref_m(d, h, w) = false;
+                      continue;
+                    }
+
+                    // Check reference mask at all 8 corners
+                    // ref layout: (e2_idx=ij, e1_idx=ii, e3_idx=ik)
+                    bool all_mask =
+                      ref_mask(ij, ii, ik) && ref_mask(ij, ii, ik + 1)
+                      && ref_mask(ij, ii + 1, ik) && ref_mask(ij, ii + 1, ik + 1)
+                      && ref_mask(ij + 1, ii, ik) && ref_mask(ij + 1, ii, ik + 1)
+                      && ref_mask(ij + 1, ii + 1, ik)
+                      && ref_mask(ij + 1, ii + 1, ik + 1);
+
+                    if (!all_mask) {
+                      ref_profile(d, h, w) = 0.0;
+                      ref_m(d, h, w) = false;
+                      continue;
+                    }
+
+                    // Trilinear interpolation
+                    double val = ref(ij, ii, ik) * (1 - fi) * (1 - fj) * (1 - fk)
+                                 + ref(ij, ii, ik + 1) * (1 - fi) * (1 - fj) * fk
+                                 + ref(ij, ii + 1, ik) * fi * (1 - fj) * (1 - fk)
+                                 + ref(ij, ii + 1, ik + 1) * fi * (1 - fj) * fk
+                                 + ref(ij + 1, ii, ik) * (1 - fi) * fj * (1 - fk)
+                                 + ref(ij + 1, ii, ik + 1) * (1 - fi) * fj * fk
+                                 + ref(ij + 1, ii + 1, ik) * fi * fj * (1 - fk)
+                                 + ref(ij + 1, ii + 1, ik + 1) * fi * fj * fk;
+
+                    ref_profile(d, h, w) = val;
+                    ref_m(d, h, w) = true;
+                  }
+                }
+              }
+
+              // Build combined mask (reference AND shoebox foreground)
+              af::versa<bool, af::c_grid<3>> m(out_acc, false);
               for (std::size_t j = 0; j < m.size(); ++j) {
                 m[j] =
-                  ref.mask[j]
+                  ref_m[j]
                   && ((sbox[i].mask[j] & (Valid | Foreground)) == (Valid | Foreground));
               }
 
-              // Convert float shoebox data/background to double for ProfileFitter
+              // Convert float shoebox data/background to double
               af::versa<double, af::c_grid<3>> data_d(sbox[i].data.accessor());
               af::versa<double, af::c_grid<3>> bg_d(sbox[i].background.accessor());
               for (std::size_t j = 0; j < data_d.size(); ++j) {
@@ -457,15 +566,14 @@ namespace dials { namespace algorithms {
                 bg_d[j] = static_cast<double>(sbox[i].background[j]);
               }
 
-              // IRLS fit using raw shoebox data and extracted detector-space reference
+              // IRLS profile fit
               ProfileFitter<double> fit(data_d.const_ref(),
                                         bg_d.const_ref(),
                                         m.const_ref(),
-                                        ref.profile.const_ref(),
+                                        ref_profile.const_ref(),
                                         1e-3,
                                         100);
 
-              // Store results
               intensity_val[i] = fit.intensity()[0];
               intensity_var[i] = fit.variance()[0];
               reference_cor[i] = fit.correlation();
@@ -760,289 +868,111 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Pre-evaluated reference profile in detector space for one sampler cell.
+     * Cached Jacobian data for one sampler cell, used by the affine mapping
+     * path to trilinear-interpolate the 11x11x11 reference profile directly.
      */
-    struct CellCube {
-      af::versa<double, af::c_grid<3>> cube;  // (D_ext, H_ext, W_ext)
-      af::versa<bool, af::c_grid<3>> mask;    // same shape
-      scitbx::af::int6 bbox_nom;              // nominal bbox used to build the cube
-      vec3<double> s1_nom;                    // nominal s1 for this cell
-      double phi_nom;                         // nominal phi for this cell
-      std::size_t panel;                      // panel index
+    struct CellJacobianCache {
+      // G2_cell_inv: inverse of 2x2 spatial Jacobian in grid units
+      double g_inv_00, g_inv_01, g_inv_10, g_inv_11;
+      // Inverse e3 Jacobian in grid units: 1 / (zeta_cell * osc / step_c3)
+      double e3_inv_grid;
+      // Cell's CoordinateSystem (for from_beam_vector and from_rotation_angle_fast)
+      CoordinateSystem cs_cell;
+      bool valid;
+      CellJacobianCache()
+          : g_inv_00(0),
+            g_inv_01(0),
+            g_inv_10(0),
+            g_inv_11(0),
+            e3_inv_grid(0),
+            cs_cell(vec3<double>(0, 0, 1),
+                    vec3<double>(0, 0, -1),
+                    vec3<double>(0.01, 0, -1),
+                    0),
+            valid(false) {}
     };
 
     /**
-     * Result of extracting a shoebox-shaped sub-volume from a CellCube.
-     */
-    struct ExtractedRef {
-      af::versa<double, af::c_grid<3>> profile;  // shoebox shape (D, H, W)
-      af::versa<bool, af::c_grid<3>> mask;       // shoebox shape (D, H, W)
-    };
-
-    /**
-     * Build a detector-space reference cube for the given sampler cell.
+     * Build a CellJacobianCache for the given sampler cell.
      *
-     * For each voxel in the extended cube, computes the corresponding
-     * reciprocal-space grid position and trilinearly interpolates the
-     * 11x11x11 reference profile.
+     * Computes the inverse of the 2x2 spatial Jacobian (in grid units)
+     * and the inverse e3 Jacobian at the cell centroid position, plus the
+     * cell's CoordinateSystem for translating reflection positions.
      */
-    CellCube build_cell_cube(std::size_t cell_id, std::size_t panel) const {
-      // Get spec parameters
+    CellJacobianCache build_cell_jacobian_cache(std::size_t cell_id,
+                                                std::size_t panel) const {
       const vec3<double> s0 = spec_.beam()->get_s0();
       const vec3<double> m2 = spec_.goniometer().get_rotation_axis();
       const Scan& scan = spec_.scan();
       const auto& det_panel = spec_.detector()[panel];
       const double3 step_size = spec_.step_size();
-      const double3 grid_cent = spec_.grid_centre();
-      const int gs = static_cast<int>(spec_.half_grid_size());
-      const int ref_size = 2 * gs + 1;
 
-      // 1. Nominal centroid from sampler
+      // Nominal centroid from sampler
       vec3<double> cell_coord = sampler_->coord(cell_id);
       double x_px = cell_coord[0];
       double y_px = cell_coord[1];
       double z_frame = cell_coord[2];
 
-      // 2. Nominal s1: lab coord at pixel position, normalized to |s0|
+      // Nominal s1 and phi
       vec3<double> s1_nom = det_panel.get_pixel_lab_coord(vec2<double>(x_px, y_px));
       s1_nom = s1_nom.normalize() * s0.length();
-
-      // 3. Nominal phi from scan
       double phi_nom = scan.get_angle_from_array_index(z_frame);
 
-      // 4. Coordinate system at nominal position
+      // Coordinate system at cell centroid
       CoordinateSystem cs(m2, s0, s1_nom, phi_nom);
 
-      // 5. Compute nominal bbox (same approach as BBoxCalculator3D)
-      double delta_d = spec_.sigma_b() * spec_.n_sigma();
-      double delta_m = spec_.sigma_m() * spec_.n_sigma();
+      // Compute 2x2 spatial Jacobian at cell centroid, in grid units
+      // J2_cell: d(c1,c2)/d(x_px,y_px), then G2 = diag(1/step) * J2
+      vec3<double> p = det_panel.get_pixel_lab_coord(vec2<double>(x_px, y_px));
+      double r = p.length();
+      vec3<double> p_hat = p / r;
+      vec3<double> d_fast = det_panel.get_fast_axis();
+      vec3<double> d_slow = det_panel.get_slow_axis();
+      vec2<double> px = det_panel.get_pixel_size();
 
-      vec3<double> sd1 = cs.to_beam_vector(vec2<double>(-delta_d, -delta_d));
-      vec3<double> sd2 = cs.to_beam_vector(vec2<double>(+delta_d, -delta_d));
-      vec3<double> sd3 = cs.to_beam_vector(vec2<double>(-delta_d, +delta_d));
-      vec3<double> sd4 = cs.to_beam_vector(vec2<double>(+delta_d, +delta_d));
+      // Project panel axes perpendicular to beam direction
+      vec3<double> f_perp = d_fast - p_hat * (p_hat * d_fast);
+      vec3<double> s_perp = d_slow - p_hat * (p_hat * d_slow);
 
-      vec2<double> xy1 = det_panel.get_ray_intersection_px(sd1);
-      vec2<double> xy2 = det_panel.get_ray_intersection_px(sd2);
-      vec2<double> xy3 = det_panel.get_ray_intersection_px(sd3);
-      vec2<double> xy4 = det_panel.get_ray_intersection_px(sd4);
+      double s1_len = cs.s1().length();
+      double scale = s1_len / r;
+      vec3<double> e1_s = cs.e1_axis() / s1_len;
+      vec3<double> e2_s = cs.e2_axis() / s1_len;
 
-      double phi1 = cs.to_rotation_angle_fast(-delta_m);
-      double phi2 = cs.to_rotation_angle_fast(+delta_m);
-      double z1 = scan.get_array_index_from_angle(phi1);
-      double z2 = scan.get_array_index_from_angle(phi2);
+      // J2_cell entries
+      double j11 = scale * px[0] * (e1_s * f_perp);
+      double j12 = scale * px[1] * (e1_s * s_perp);
+      double j21 = scale * px[0] * (e2_s * f_perp);
+      double j22 = scale * px[1] * (e2_s * s_perp);
 
-      int x0 = static_cast<int>(
-        std::floor(std::min(std::min(xy1[0], xy2[0]), std::min(xy3[0], xy4[0]))));
-      int x1 = static_cast<int>(
-        std::ceil(std::max(std::max(xy1[0], xy2[0]), std::max(xy3[0], xy4[0]))));
-      int y0 = static_cast<int>(
-        std::floor(std::min(std::min(xy1[1], xy2[1]), std::min(xy3[1], xy4[1]))));
-      int y1 = static_cast<int>(
-        std::ceil(std::max(std::max(xy1[1], xy2[1]), std::max(xy3[1], xy4[1]))));
-      int z0 = static_cast<int>(std::floor(std::min(z1, z2)));
-      int z1i = static_cast<int>(std::ceil(std::max(z1, z2)));
+      // G2 = diag(1/step_c1, 1/step_c2) * J2
+      double g11 = j11 / step_size[2];  // step_size[2] = step_c1
+      double g12 = j12 / step_size[2];
+      double g21 = j21 / step_size[1];  // step_size[1] = step_c2
+      double g22 = j22 / step_size[1];
 
-      scitbx::af::int6 bbox_nom;
-      bbox_nom[0] = x0;
-      bbox_nom[1] = x1;
-      bbox_nom[2] = y0;
-      bbox_nom[3] = y1;
-      bbox_nom[4] = z0;
-      bbox_nom[5] = z1i;
+      // Invert 2x2
+      double det = g11 * g22 - g12 * g21;
+      DIALS_ASSERT(std::abs(det) > 1e-30);
 
-      // 6. Extended cube dimensions (+1 on each side for trilinear margin)
-      int W_sbox = x1 - x0;
-      int H_sbox = y1 - y0;
-      int D_sbox = z1i - z0;
-      int W_ext = W_sbox + 2;
-      int H_ext = H_sbox + 2;
-      int D_ext = D_sbox + 2;
+      CellJacobianCache cache;
+      cache.g_inv_00 = g22 / det;
+      cache.g_inv_01 = -g12 / det;
+      cache.g_inv_10 = -g21 / det;
+      cache.g_inv_11 = g11 / det;
 
-      af::c_grid<3> cube_acc(D_ext, H_ext, W_ext);
-      af::versa<double, af::c_grid<3>> cube(cube_acc, 0.0);
-      af::versa<bool, af::c_grid<3>> cube_mask(cube_acc, false);
-
-      // Reference profile for this cell: layout (gj, gi, gk)
-      data_const_reference ref = data(cell_id).const_ref();
-      mask_const_reference ref_mask = mask(cell_id).const_ref();
-
-      // Precompute e1/e2 scaled by 1/|s1| (same as TransformForward)
-      vec3<double> e1_scaled = cs.e1_axis() / s1_nom.length();
-      vec3<double> e2_scaled = cs.e2_axis() / s1_nom.length();
-
-      // 7. For each voxel in the extended cube
-      for (int d = 0; d < D_ext; ++d) {
-        // Frame index (the -1 accounts for the +1 extension margin)
-        double z_vox = static_cast<double>(z0 + d - 1);
-        double phi_vox = scan.get_angle_from_array_index(z_vox);
-        double c3 = cs.from_rotation_angle_fast(phi_vox);
-        double gk = grid_cent[0] + c3 / step_size[0];
-
-        for (int h = 0; h < H_ext; ++h) {
-          double y_vox = static_cast<double>(y0 + h - 1);
-
-          for (int w = 0; w < W_ext; ++w) {
-            double x_vox = static_cast<double>(x0 + w - 1);
-
-            // Beam vector at this pixel
-            vec3<double> s1_vox =
-              det_panel.get_pixel_lab_coord(vec2<double>(x_vox, y_vox));
-            s1_vox = s1_vox.normalize() * s0.length();
-
-            // Kabsch e1, e2 coords
-            vec3<double> ds = s1_vox - s1_nom;
-            double gi = grid_cent[2] + (e1_scaled * ds) / step_size[2];
-            double gj = grid_cent[1] + (e2_scaled * ds) / step_size[1];
-
-            // Trilinear interpolation of the reference profile
-            // Integer base indices
-            int ik = static_cast<int>(std::floor(gk));
-            int ij = static_cast<int>(std::floor(gj));
-            int ii = static_cast<int>(std::floor(gi));
-
-            // Check all 8 neighbors are in bounds
-            if (ik < 0 || ik + 1 >= ref_size || ij < 0 || ij + 1 >= ref_size || ii < 0
-                || ii + 1 >= ref_size) {
-              cube(d, h, w) = 0.0;
-              cube_mask(d, h, w) = false;
-              continue;
-            }
-
-            // Check reference mask at all 8 corners
-            bool all_mask = ref_mask(ij, ii, ik) && ref_mask(ij, ii, ik + 1)
-                            && ref_mask(ij, ii + 1, ik) && ref_mask(ij, ii + 1, ik + 1)
-                            && ref_mask(ij + 1, ii, ik) && ref_mask(ij + 1, ii, ik + 1)
-                            && ref_mask(ij + 1, ii + 1, ik)
-                            && ref_mask(ij + 1, ii + 1, ik + 1);
-
-            if (!all_mask) {
-              cube(d, h, w) = 0.0;
-              cube_mask(d, h, w) = false;
-              continue;
-            }
-
-            // Fractional parts
-            double fk = gk - ik;
-            double fj = gj - ij;
-            double fi = gi - ii;
-
-            // Trilinear interpolation: ref is indexed as (gj, gi, gk)
-            double val = ref(ij, ii, ik) * (1 - fi) * (1 - fj) * (1 - fk)
-                         + ref(ij, ii, ik + 1) * (1 - fi) * (1 - fj) * fk
-                         + ref(ij, ii + 1, ik) * fi * (1 - fj) * (1 - fk)
-                         + ref(ij, ii + 1, ik + 1) * fi * (1 - fj) * fk
-                         + ref(ij + 1, ii, ik) * (1 - fi) * fj * (1 - fk)
-                         + ref(ij + 1, ii, ik + 1) * (1 - fi) * fj * fk
-                         + ref(ij + 1, ii + 1, ik) * fi * fj * (1 - fk)
-                         + ref(ij + 1, ii + 1, ik + 1) * fi * fj * fk;
-
-            cube(d, h, w) = val;
-            cube_mask(d, h, w) = true;
-          }
-        }
-      }
-
-      CellCube result;
-      result.cube = cube;
-      result.mask = cube_mask;
-      result.bbox_nom = bbox_nom;
-      result.s1_nom = s1_nom;
-      result.phi_nom = phi_nom;
-      result.panel = panel;
-      return result;
-    }
-
-    /**
-     * Extract a shoebox-shaped sub-volume from a pre-computed CellCube via
-     * trilinear interpolation at a given sub-pixel offset.
-     *
-     * @param cc   The pre-computed cell cube (extended by +1 on each side)
-     * @param dx   Sub-pixel offset in x (columns, pixels)
-     * @param dy   Sub-pixel offset in y (rows, pixels)
-     * @param dz   Sub-pixel offset in z (frames)
-     * @param bbox The reflection bounding box [x0,x1,y0,y1,z0,z1]
-     * @return ExtractedRef with profile and mask of shoebox shape
-     */
-    ExtractedRef extract_from_cube(const CellCube& cc,
-                                   double dx,
-                                   double dy,
-                                   double dz,
-                                   int6 bbox) const {
-      // Output shoebox dimensions from bbox
-      int W = bbox[1] - bbox[0];
-      int H = bbox[3] - bbox[2];
-      int D = bbox[5] - bbox[4];
-
-      // Cube extended dimensions
-      int W_ext = static_cast<int>(cc.cube.accessor()[2]);
-      int H_ext = static_cast<int>(cc.cube.accessor()[1]);
-      int D_ext = static_cast<int>(cc.cube.accessor()[0]);
-
-      // Allocate output arrays
-      af::c_grid<3> out_acc(D, H, W);
-      af::versa<double, af::c_grid<3>> result_profile(out_acc, 0.0);
-      af::versa<bool, af::c_grid<3>> result_mask(out_acc, false);
-
-      for (int d = 0; d < D; ++d) {
-        for (int h = 0; h < H; ++h) {
-          for (int w = 0; w < W; ++w) {
-            // Position in the extended cube (+1.0 enters the margin zone)
-            double cx = w + 1.0 + dx;
-            double cy = h + 1.0 + dy;
-            double cz = d + 1.0 + dz;
-
-            // Integer base and fractional parts
-            int ix = static_cast<int>(std::floor(cx));
-            int iy = static_cast<int>(std::floor(cy));
-            int iz = static_cast<int>(std::floor(cz));
-            double fx = cx - ix;
-            double fy = cy - iy;
-            double fz = cz - iz;
-
-            // Bounds check: all 8 corners must be in [0, dim-1]
-            bool in_bounds = ix >= 0 && ix + 1 < W_ext && iy >= 0 && iy + 1 < H_ext
-                             && iz >= 0 && iz + 1 < D_ext;
-
-            if (!in_bounds) {
-              result_profile(d, h, w) = 0.0;
-              result_mask(d, h, w) = false;
-              continue;
-            }
-
-            // Trilinear interpolation (8 loads, 7 muls, 7 adds)
-            double val = cc.cube(iz, iy, ix) * (1 - fx) * (1 - fy) * (1 - fz)
-                         + cc.cube(iz, iy, ix + 1) * fx * (1 - fy) * (1 - fz)
-                         + cc.cube(iz, iy + 1, ix) * (1 - fx) * fy * (1 - fz)
-                         + cc.cube(iz, iy + 1, ix + 1) * fx * fy * (1 - fz)
-                         + cc.cube(iz + 1, iy, ix) * (1 - fx) * (1 - fy) * fz
-                         + cc.cube(iz + 1, iy, ix + 1) * fx * (1 - fy) * fz
-                         + cc.cube(iz + 1, iy + 1, ix) * (1 - fx) * fy * fz
-                         + cc.cube(iz + 1, iy + 1, ix + 1) * fx * fy * fz;
-
-            result_profile(d, h, w) = val;
-
-            // Mask: true only if ALL 8 cube mask corners are true
-            result_mask(d, h, w) =
-              cc.mask(iz, iy, ix) && cc.mask(iz, iy, ix + 1) && cc.mask(iz, iy + 1, ix)
-              && cc.mask(iz, iy + 1, ix + 1) && cc.mask(iz + 1, iy, ix)
-              && cc.mask(iz + 1, iy, ix + 1) && cc.mask(iz + 1, iy + 1, ix)
-              && cc.mask(iz + 1, iy + 1, ix + 1);
-          }
-        }
-      }
-
-      ExtractedRef extracted;
-      extracted.profile = result_profile;
-      extracted.mask = result_mask;
-      return extracted;
+      // e3 inverse: 1 / (zeta_cell * osc / step_c3)
+      double osc = scan.get_oscillation()[1];
+      cache.e3_inv_grid = step_size[0] / (cs.zeta() * osc);
+      cache.cs_cell = cs;
+      cache.valid = true;
+      return cache;
     }
 
     TransformSpec spec_;
 
-    // Cell-cache: per-cell precomputed detector-space reference cubes
-    mutable std::vector<CellCube> cube_cache_;
-    mutable std::vector<bool> cube_valid_;
+    // Cell-cache: per-cell Jacobian caches for affine mapping
+    mutable std::vector<CellJacobianCache> jac_cache_;
   };
 
 }}  // namespace dials::algorithms
