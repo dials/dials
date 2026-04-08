@@ -735,7 +735,12 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                     j = result["jacobian"]
                     if self._constr_manager is not None:
                         j = self._constr_manager.constrain_jacobian(j)
-                    self.add_equations(result["residuals"], j, result["weights"])
+                    self.add_equations(
+                        result["residuals"],
+                        j,
+                        result["weights"],
+                        optimise_for_tall_matrix=False,
+                    )
                     # no longer need the result
                     result["residuals"] = None
                     result["jacobian"] = None
@@ -761,7 +766,9 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                     if self._constr_manager is not None:
                         jacobian = self._constr_manager.constrain_jacobian(jacobian)
 
-                    self.add_equations(residuals, jacobian, weights)
+                    self.add_equations(
+                        residuals, jacobian, weights, optimise_for_tall_matrix=False
+                    )
 
                 # Keep reference to the Jacobian in case required by the Journal
                 self._jacobian = jacobian
@@ -775,7 +782,9 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                 j = restraints[1]
                 if self._constr_manager is not None:
                     j = self._constr_manager.constrain_jacobian(j)
-                self.add_equations(restraints[0], j, restraints[2])
+                self.add_equations(
+                    restraints[0], j, restraints[2], optimise_for_tall_matrix=False
+                )
 
     def step_forward(self):
         self.old_x = self.x.deep_copy()
