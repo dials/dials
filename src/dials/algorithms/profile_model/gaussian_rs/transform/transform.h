@@ -305,7 +305,9 @@ namespace dials { namespace algorithms { namespace profile_model {
         af::const_ref<FloatType, af::c_grid<2> > efraction = efraction_arr_.const_ref();
 
         // Initialise the profile arrays
-        af::c_grid<3> accessor(grid_size_);
+        // Layout: (jj, ii, kk) — kk is rightmost/fastest so the inner kk-loop
+        // over grid frames is contiguous in memory.
+        af::c_grid<3> accessor(grid_size_[1], grid_size_[2], grid_size_[0]);
         profile_ = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
         mask_ = af::versa<bool, af::c_grid<3> >(accessor, 0.0);
 
@@ -318,7 +320,7 @@ namespace dials { namespace algorithms { namespace profile_model {
           if (sumk > 0.99) {
             for (std::size_t j = 0; j < grid_size_[1]; ++j) {
               for (std::size_t i = 0; i < grid_size_[2]; ++i) {
-                mask_(kk, j, i) = true;
+                mask_(j, i, kk) = true;
               }
             }
           }
@@ -380,11 +382,13 @@ namespace dials { namespace algorithms { namespace profile_model {
               int index = match_buf[m].out;
               int ii = index % grid_size_[2];
               int jj = index / grid_size_[2];
+              FloatType* __restrict__ p_row = &profile_(jj, ii, 0);
               for (int vi = 0; vi < (int)valid_frames.size(); ++vi) {
                 int k = valid_frames[vi].k;
                 FloatType value = valid_frames[vi].base_value * fraction;
-                for (int kk = 0; kk < grid_size_[0]; ++kk) {
-                  profile_(kk, jj, ii) += value * zfraction(k, kk);
+                const FloatType* __restrict__ zf_row = &zfraction(k, 0);
+                for (int kk = 0; kk < (int)grid_size_[0]; ++kk) {
+                  p_row[kk] += value * zf_row[kk];
                 }
               }
             }
@@ -413,7 +417,9 @@ namespace dials { namespace algorithms { namespace profile_model {
         af::const_ref<FloatType, af::c_grid<2> > efraction = efraction_arr_.const_ref();
 
         // Initialise the profile arrays
-        af::c_grid<3> accessor(grid_size_);
+        // Layout: (jj, ii, kk) — kk is rightmost/fastest so the inner kk-loop
+        // over grid frames is contiguous in memory.
+        af::c_grid<3> accessor(grid_size_[1], grid_size_[2], grid_size_[0]);
         profile_ = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
         background_ = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
         mask_ = af::versa<bool, af::c_grid<3> >(accessor, 0.0);
@@ -427,7 +433,7 @@ namespace dials { namespace algorithms { namespace profile_model {
           if (sumk > 0.99) {
             for (std::size_t j = 0; j < grid_size_[1]; ++j) {
               for (std::size_t i = 0; i < grid_size_[2]; ++i) {
-                mask_(kk, j, i) = true;
+                mask_(j, i, kk) = true;
               }
             }
           }
@@ -501,14 +507,16 @@ namespace dials { namespace algorithms { namespace profile_model {
               int index = match_buf[m].out;
               int jj = index / grid_size_[2];
               int ii = index % grid_size_[2];
+              FloatType* __restrict__ p_row = &profile_(jj, ii, 0);
+              FloatType* __restrict__ b_row = &background_(jj, ii, 0);
               for (int vi = 0; vi < (int)valid_frames.size(); ++vi) {
                 int k = valid_frames[vi].k;
                 FloatType ivalue = valid_frames[vi].base_ivalue * fraction;
                 FloatType bvalue = valid_frames[vi].base_bvalue * fraction;
-                for (int kk = 0; kk < grid_size_[0]; ++kk) {
-                  FloatType zf = zfraction(k, kk);
-                  profile_(kk, jj, ii) += ivalue * zf;
-                  background_(kk, jj, ii) += bvalue * zf;
+                const FloatType* __restrict__ zf_row = &zfraction(k, 0);
+                for (int kk = 0; kk < (int)grid_size_[0]; ++kk) {
+                  p_row[kk] += ivalue * zf_row[kk];
+                  b_row[kk] += bvalue * zf_row[kk];
                 }
               }
             }
