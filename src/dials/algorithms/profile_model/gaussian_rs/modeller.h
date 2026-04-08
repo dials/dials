@@ -568,6 +568,25 @@ namespace dials { namespace algorithms {
                           double fh = vy - ih;
                           double fd = vz - id;
 
+                          // Clamp the upper corner: when a sample lands exactly
+                          // on the last pixel center (e.g. vx == W-1), floor
+                          // gives W-1 and iw+1 == W would fail the bounds check.
+                          // Clamp to W-2 and set fw=1.0 so trilinear returns
+                          // data[W-1] exactly.  Samples beyond W-1 are still
+                          // rejected below.
+                          if (iw == W - 1 && W >= 2) {
+                            iw = W - 2;
+                            fw = 1.0;
+                          }
+                          if (ih == H - 1 && H >= 2) {
+                            ih = H - 2;
+                            fh = 1.0;
+                          }
+                          if (id == D - 1 && D >= 2) {
+                            id = D - 2;
+                            fd = 1.0;
+                          }
+
                           // Bounds check (all 8 trilinear corners).
                           if (iw < 0 || iw + 1 >= W || ih < 0 || ih + 1 >= H || id < 0
                               || id + 1 >= D) {
