@@ -706,6 +706,14 @@ namespace dials { namespace algorithms {
     };
 
     /**
+     * Result of extracting a shoebox-shaped sub-volume from a CellCube.
+     */
+    struct ExtractedRef {
+      af::versa<double, af::c_grid<3>> profile;  // shoebox shape (D, H, W)
+      af::versa<bool, af::c_grid<3>> mask;       // shoebox shape (D, H, W)
+    };
+
+    /**
      * Build a detector-space reference cube for the given sampler cell.
      *
      * For each voxel in the extended cube, computes the corresponding
@@ -877,6 +885,91 @@ namespace dials { namespace algorithms {
       result.phi_nom = phi_nom;
       result.panel = panel;
       return result;
+    }
+
+    /**
+     * Extract a shoebox-shaped sub-volume from a pre-computed CellCube via
+     * trilinear interpolation at a given sub-pixel offset.
+     *
+     * @param cc   The pre-computed cell cube (extended by +1 on each side)
+     * @param dx   Sub-pixel offset in x (columns, pixels)
+     * @param dy   Sub-pixel offset in y (rows, pixels)
+     * @param dz   Sub-pixel offset in z (frames)
+     * @param bbox The reflection bounding box [x0,x1,y0,y1,z0,z1]
+     * @return ExtractedRef with profile and mask of shoebox shape
+     */
+    ExtractedRef extract_from_cube(const CellCube& cc,
+                                   double dx,
+                                   double dy,
+                                   double dz,
+                                   int6 bbox) const {
+      // Output shoebox dimensions from bbox
+      int W = bbox[1] - bbox[0];
+      int H = bbox[3] - bbox[2];
+      int D = bbox[5] - bbox[4];
+
+      // Cube extended dimensions
+      int W_ext = static_cast<int>(cc.cube.accessor()[2]);
+      int H_ext = static_cast<int>(cc.cube.accessor()[1]);
+      int D_ext = static_cast<int>(cc.cube.accessor()[0]);
+
+      // Allocate output arrays
+      af::c_grid<3> out_acc(D, H, W);
+      af::versa<double, af::c_grid<3>> result_profile(out_acc, 0.0);
+      af::versa<bool, af::c_grid<3>> result_mask(out_acc, false);
+
+      for (int d = 0; d < D; ++d) {
+        for (int h = 0; h < H; ++h) {
+          for (int w = 0; w < W; ++w) {
+            // Position in the extended cube (+1.0 enters the margin zone)
+            double cx = w + 1.0 + dx;
+            double cy = h + 1.0 + dy;
+            double cz = d + 1.0 + dz;
+
+            // Integer base and fractional parts
+            int ix = static_cast<int>(std::floor(cx));
+            int iy = static_cast<int>(std::floor(cy));
+            int iz = static_cast<int>(std::floor(cz));
+            double fx = cx - ix;
+            double fy = cy - iy;
+            double fz = cz - iz;
+
+            // Bounds check: all 8 corners must be in [0, dim-1]
+            bool in_bounds = ix >= 0 && ix + 1 < W_ext && iy >= 0 && iy + 1 < H_ext
+                             && iz >= 0 && iz + 1 < D_ext;
+
+            if (!in_bounds) {
+              result_profile(d, h, w) = 0.0;
+              result_mask(d, h, w) = false;
+              continue;
+            }
+
+            // Trilinear interpolation (8 loads, 7 muls, 7 adds)
+            double val = cc.cube(iz, iy, ix) * (1 - fx) * (1 - fy) * (1 - fz)
+                         + cc.cube(iz, iy, ix + 1) * fx * (1 - fy) * (1 - fz)
+                         + cc.cube(iz, iy + 1, ix) * (1 - fx) * fy * (1 - fz)
+                         + cc.cube(iz, iy + 1, ix + 1) * fx * fy * (1 - fz)
+                         + cc.cube(iz + 1, iy, ix) * (1 - fx) * (1 - fy) * fz
+                         + cc.cube(iz + 1, iy, ix + 1) * fx * (1 - fy) * fz
+                         + cc.cube(iz + 1, iy + 1, ix) * (1 - fx) * fy * fz
+                         + cc.cube(iz + 1, iy + 1, ix + 1) * fx * fy * fz;
+
+            result_profile(d, h, w) = val;
+
+            // Mask: true only if ALL 8 cube mask corners are true
+            result_mask(d, h, w) =
+              cc.mask(iz, iy, ix) && cc.mask(iz, iy, ix + 1) && cc.mask(iz, iy + 1, ix)
+              && cc.mask(iz, iy + 1, ix + 1) && cc.mask(iz + 1, iy, ix)
+              && cc.mask(iz + 1, iy, ix + 1) && cc.mask(iz + 1, iy + 1, ix)
+              && cc.mask(iz + 1, iy + 1, ix + 1);
+          }
+        }
+      }
+
+      ExtractedRef extracted;
+      extracted.profile = result_profile;
+      extracted.mask = result_mask;
+      return extracted;
     }
 
     TransformSpec spec_;
