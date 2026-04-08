@@ -561,6 +561,16 @@ namespace dials { namespace algorithms {
                           double vy = y - bbox[2] - 0.5;
                           double vz = z - bbox[4] - 0.5;
 
+                          // Reject samples that are entirely outside the
+                          // physical shoebox. The physical shoebox in
+                          // pixel-center coords spans [-0.5, D-0.5] because
+                          // pixel k has its center at k and physically covers
+                          // [k-0.5, k+0.5].
+                          if (vx < -0.5 || vx >= W - 0.5 || vy < -0.5 || vy >= H - 0.5
+                              || vz < -0.5 || vz >= D - 0.5) {
+                            continue;
+                          }
+
                           int iw = static_cast<int>(std::floor(vx));
                           int ih = static_cast<int>(std::floor(vy));
                           int id = static_cast<int>(std::floor(vz));
@@ -568,29 +578,36 @@ namespace dials { namespace algorithms {
                           double fh = vy - ih;
                           double fd = vz - id;
 
-                          // Clamp the upper corner: when a sample lands exactly
-                          // on the last pixel center (e.g. vx == W-1), floor
-                          // gives W-1 and iw+1 == W would fail the bounds check.
-                          // Clamp to W-2 and set fw=1.0 so trilinear returns
-                          // data[W-1] exactly.  Samples beyond W-1 are still
-                          // rejected below.
-                          if (iw == W - 1 && W >= 2) {
+                          // Symmetric edge clamp: samples in the half-pixel
+                          // margin at either edge are flat-extrapolated to the
+                          // nearest in-range pixel pair.
+                          // Lower edge: vx in [-0.5, 0) -> iw=-1, clamp to
+                          //   iw=0, fw=0 (returns data[0]).
+                          // Upper edge: vx in [W-1, W-0.5) -> iw=W-1, clamp
+                          //   to iw=W-2, fw=1 (returns data[W-1]).
+                          if (iw < 0) {
+                            iw = 0;
+                            fw = 0.0;
+                          }
+                          if (ih < 0) {
+                            ih = 0;
+                            fh = 0.0;
+                          }
+                          if (id < 0) {
+                            id = 0;
+                            fd = 0.0;
+                          }
+                          if (iw >= W - 1) {
                             iw = W - 2;
                             fw = 1.0;
                           }
-                          if (ih == H - 1 && H >= 2) {
+                          if (ih >= H - 1) {
                             ih = H - 2;
                             fh = 1.0;
                           }
-                          if (id == D - 1 && D >= 2) {
+                          if (id >= D - 1) {
                             id = D - 2;
                             fd = 1.0;
-                          }
-
-                          // Bounds check (all 8 trilinear corners).
-                          if (iw < 0 || iw + 1 >= W || ih < 0 || ih + 1 >= H || id < 0
-                              || id + 1 >= D) {
-                            continue;
                           }
 
                           // Trilinear weights.
