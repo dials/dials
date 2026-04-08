@@ -561,16 +561,6 @@ namespace dials { namespace algorithms {
                           double vy = y - bbox[2] - 0.5;
                           double vz = z - bbox[4] - 0.5;
 
-                          // Reject samples that are entirely outside the
-                          // physical shoebox. The physical shoebox in
-                          // pixel-center coords spans [-0.5, D-0.5] because
-                          // pixel k has its center at k and physically covers
-                          // [k-0.5, k+0.5].
-                          if (vx < -0.5 || vx >= W - 0.5 || vy < -0.5 || vy >= H - 0.5
-                              || vz < -0.5 || vz >= D - 0.5) {
-                            continue;
-                          }
-
                           int iw = static_cast<int>(std::floor(vx));
                           int ih = static_cast<int>(std::floor(vy));
                           int id = static_cast<int>(std::floor(vz));
