@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 #include <scitbx/math/r3_rotation.h>
 #include <scitbx/constants.h>
 #include <dxtbx/model/beam.h>
@@ -533,11 +534,38 @@ namespace dials { namespace algorithms {
       int z1 =
         std::floor(scan_.get_array_index_from_angle(a1 + padding_ * pi / 180.0) + 0.5);
       const int offset = array_range[0];
+
+      // Hoist constant goniometer quantities out of the per-frame loop.
+      vec3<double> m2 = goniometer_.get_rotation_axis_datum();
+      vec3<double> s0 = beam_->get_s0();
+      mat3<double> r_fixed = goniometer_.get_fixed_rotation();
+      mat3<double> r_setting = goniometer_.get_setting_rotation();
+
+      // Precompute the N+1 frame-boundary rotation matrices so that each
+      // interior boundary angle is evaluated only once instead of twice
+      // (once as r_end for frame i and once as r_beg for frame i+1).
+      int n_boundaries = z1 - z0 + 1;
+      std::vector<mat3<double> > r_mats(n_boundaries);
+      for (int k = 0; k < n_boundaries; ++k) {
+        double phi = scan_.get_angle_from_array_index(z0 + k);
+        r_mats[k] = axis_and_angle_as_matrix(m2, phi);
+      }
+
       for (int frame = z0; frame < z1; ++frame) {
         int i = frame - offset;
         if (i < 0) i = 0;
         if (i >= A.size() - 1) i = A.size() - 2;
-        append_for_image(predictions, frame, A[i], A[i + 1]);
+        int k = frame - z0;
+        append_for_image(predictions,
+                         frame,
+                         A[i],
+                         A[i + 1],
+                         m2,
+                         s0,
+                         r_fixed,
+                         r_setting,
+                         r_mats[k],
+                         r_mats[k + 1]);
       }
 
       // Return the reflection table
@@ -764,7 +792,49 @@ namespace dials { namespace algorithms {
 
     /**
      * For the given image with start and end A matrices, generate the indices
-     * and do the prediction.
+     * and do the prediction.  This overload accepts precomputed constant
+     * goniometer quantities and frame-boundary rotation matrices so that
+     * callers can hoist those out of the per-frame loop.
+     * @param p The reflection data
+     * @param frame The image frame to predict on.
+     * @param A1 The start UB matrix
+     * @param A2 The end UB matrix
+     * @param m2 The rotation axis (precomputed, constant across frames)
+     * @param s0 The beam vector (precomputed, constant across frames)
+     * @param r_fixed The fixed rotation matrix (precomputed, constant)
+     * @param r_setting The setting rotation matrix (precomputed, constant)
+     * @param r_beg The rotation matrix at the beginning of this frame
+     * @param r_end The rotation matrix at the end of this frame
+     */
+    void append_for_image(prediction_data& p,
+                          int frame,
+                          mat3<double> A1,
+                          mat3<double> A2,
+                          const vec3<double>& m2,
+                          const vec3<double>& s0,
+                          const mat3<double>& r_fixed,
+                          const mat3<double>& r_setting,
+                          const mat3<double>& r_beg,
+                          const mat3<double>& r_end) const {
+      // Apply the precomputed rotation matrices to obtain the setting matrices.
+      A1 = r_setting * r_beg * r_fixed * A1;
+      A2 = r_setting * r_end * r_fixed * A2;
+
+      // Construct the index generator and do the predictions for each index
+      ReekeIndexGenerator indices(A1, A2, space_group_type_, m2, s0, dmin_, margin_);
+      for (;;) {
+        miller_index h = indices.next();
+        if (h.is_zero()) {
+          break;
+        }
+        append_for_index(p, A1, A2, frame, h);
+      }
+    }
+
+    /**
+     * For the given image with start and end A matrices, generate the indices
+     * and do the prediction.  Legacy overload used by for_ub_on_single_image
+     * and other callers that do not precompute rotation matrices.
      * @param p The reflection data
      * @param frame The image frame to predict on.
      * @param A1 The start UB matrix
