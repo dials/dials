@@ -12,6 +12,8 @@
 #ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H
 
+#include <algorithm>
+#include <cmath>
 #include <memory>
 #include <fstream>
 #include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
@@ -275,11 +277,11 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
-      af::const_ref<Shoebox<> > sbox = reflections["shoebox"];
+      af::const_ref<Shoebox<>> sbox = reflections["shoebox"];
       af::const_ref<double> partiality = reflections["partiality"];
-      af::const_ref<vec3<double> > s1 = reflections["s1"];
-      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
-      af::const_ref<vec3<double> > xyzmm = reflections["xyzcal.mm"];
+      af::const_ref<vec3<double>> s1 = reflections["s1"];
+      af::const_ref<vec3<double>> xyzpx = reflections["xyzcal.px"];
+      af::const_ref<vec3<double>> xyzmm = reflections["xyzcal.mm"];
       af::ref<std::size_t> flags = reflections["flags"];
 
       // Loop through all the reflections and add them to the model
@@ -294,7 +296,7 @@ namespace dials { namespace algorithms {
           CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
           // Create the data array
-          af::versa<double, af::c_grid<3> > data(sbox[i].data.accessor());
+          af::versa<double, af::c_grid<3>> data(sbox[i].data.accessor());
           std::transform(sbox[i].data.begin(),
                          sbox[i].data.end(),
                          sbox[i].background.begin(),
@@ -302,7 +304,7 @@ namespace dials { namespace algorithms {
                          std::minus<double>());
 
           // Create the mask array
-          af::versa<bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
+          af::versa<bool, af::c_grid<3>> mask(sbox[i].mask.accessor());
           std::transform(sbox[i].mask.begin(),
                          sbox[i].mask.end(),
                          mask.begin(),
@@ -381,10 +383,10 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
-      af::const_ref<Shoebox<> > sbox = reflections["shoebox"];
-      af::const_ref<vec3<double> > s1 = reflections["s1"];
-      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
-      af::const_ref<vec3<double> > xyzmm = reflections["xyzcal.mm"];
+      af::const_ref<Shoebox<>> sbox = reflections["shoebox"];
+      af::const_ref<vec3<double>> s1 = reflections["s1"];
+      af::const_ref<vec3<double>> xyzpx = reflections["xyzcal.px"];
+      af::const_ref<vec3<double>> xyzmm = reflections["xyzcal.mm"];
       af::ref<std::size_t> flags = reflections["flags"];
       af::ref<double> intensity_val = reflections["intensity.prf.value"];
       af::ref<double> intensity_var = reflections["intensity.prf.variance"];
@@ -418,16 +420,16 @@ namespace dials { namespace algorithms {
             CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
             // Create the data array
-            af::versa<double, af::c_grid<3> > data(sbox[i].data.accessor());
+            af::versa<double, af::c_grid<3>> data(sbox[i].data.accessor());
             std::copy(sbox[i].data.begin(), sbox[i].data.end(), data.begin());
 
             // Create the background array
-            af::versa<double, af::c_grid<3> > background(sbox[i].background.accessor());
+            af::versa<double, af::c_grid<3>> background(sbox[i].background.accessor());
             std::copy(
               sbox[i].background.begin(), sbox[i].background.end(), background.begin());
 
             // Create the mask array
-            af::versa<bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
+            af::versa<bool, af::c_grid<3>> mask(sbox[i].mask.accessor());
             std::transform(sbox[i].mask.begin(),
                            sbox[i].mask.end(),
                            mask.begin(),
@@ -446,7 +448,7 @@ namespace dials { namespace algorithms {
             data_const_reference c = transform.profile().const_ref();
             data_const_reference b = transform.background().const_ref();
             mask_const_reference mask2 = transform.mask().const_ref();
-            af::versa<bool, af::c_grid<3> > m(mask2.accessor());
+            af::versa<bool, af::c_grid<3>> m(mask2.accessor());
             DIALS_ASSERT(mask1.size() == mask2.size());
             for (std::size_t j = 0; j < m.size(); ++j) {
               m[j] = mask1[j] && mask2[j];
@@ -491,10 +493,10 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
-      af::const_ref<Shoebox<> > sbox = reflections["shoebox"];
-      af::const_ref<vec3<double> > s1 = reflections["s1"];
-      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
-      af::const_ref<vec3<double> > xyzmm = reflections["xyzcal.mm"];
+      af::const_ref<Shoebox<>> sbox = reflections["shoebox"];
+      af::const_ref<vec3<double>> s1 = reflections["s1"];
+      af::const_ref<vec3<double>> xyzpx = reflections["xyzcal.px"];
+      af::const_ref<vec3<double>> xyzmm = reflections["xyzcal.mm"];
       af::ref<std::size_t> flags = reflections["flags"];
       af::ref<double> intensity_val = reflections["intensity.prf.value"];
       af::ref<double> intensity_var = reflections["intensity.prf.variance"];
@@ -530,15 +532,15 @@ namespace dials { namespace algorithms {
             data_const_reference p = transform.profile().const_ref();
 
             // Create the data array
-            af::versa<double, af::c_grid<3> > c(sbox[i].data.accessor());
+            af::versa<double, af::c_grid<3>> c(sbox[i].data.accessor());
             std::copy(sbox[i].data.begin(), sbox[i].data.end(), c.begin());
 
             // Create the background array
-            af::versa<double, af::c_grid<3> > b(sbox[i].background.accessor());
+            af::versa<double, af::c_grid<3>> b(sbox[i].background.accessor());
             std::copy(sbox[i].background.begin(), sbox[i].background.end(), b.begin());
 
             // Create the mask array
-            af::versa<bool, af::c_grid<3> > m(sbox[i].mask.accessor());
+            af::versa<bool, af::c_grid<3>> m(sbox[i].mask.accessor());
 
             std::transform(sbox[i].mask.begin(),
                            sbox[i].mask.end(),
@@ -689,6 +691,192 @@ namespace dials { namespace algorithms {
         }
       }
       return pixels_valid;
+    }
+
+    /**
+     * Pre-evaluated reference profile in detector space for one sampler cell.
+     */
+    struct CellCube {
+      af::versa<double, af::c_grid<3>> cube;  // (D_ext, H_ext, W_ext)
+      af::versa<bool, af::c_grid<3>> mask;    // same shape
+      scitbx::af::int6 bbox_nom;              // nominal bbox used to build the cube
+      vec3<double> s1_nom;                    // nominal s1 for this cell
+      double phi_nom;                         // nominal phi for this cell
+      std::size_t panel;                      // panel index
+    };
+
+    /**
+     * Build a detector-space reference cube for the given sampler cell.
+     *
+     * For each voxel in the extended cube, computes the corresponding
+     * reciprocal-space grid position and trilinearly interpolates the
+     * 11x11x11 reference profile.
+     */
+    CellCube build_cell_cube(std::size_t cell_id, std::size_t panel) const {
+      // Get spec parameters
+      const vec3<double> s0 = spec_.beam()->get_s0();
+      const vec3<double> m2 = spec_.goniometer().get_rotation_axis();
+      const Scan& scan = spec_.scan();
+      const auto& det_panel = spec_.detector()[panel];
+      const double3 step_size = spec_.step_size();
+      const double3 grid_cent = spec_.grid_centre();
+      const int gs = static_cast<int>(spec_.half_grid_size());
+      const int ref_size = 2 * gs + 1;
+
+      // 1. Nominal centroid from sampler
+      vec3<double> cell_coord = sampler_->coord(cell_id);
+      double x_px = cell_coord[0];
+      double y_px = cell_coord[1];
+      double z_frame = cell_coord[2];
+
+      // 2. Nominal s1: lab coord at pixel position, normalized to |s0|
+      vec3<double> s1_nom = det_panel.get_pixel_lab_coord(vec2<double>(x_px, y_px));
+      s1_nom = s1_nom.normalize() * s0.length();
+
+      // 3. Nominal phi from scan
+      double phi_nom = scan.get_angle_from_array_index(z_frame);
+
+      // 4. Coordinate system at nominal position
+      CoordinateSystem cs(m2, s0, s1_nom, phi_nom);
+
+      // 5. Compute nominal bbox (same approach as BBoxCalculator3D)
+      double delta_d = spec_.sigma_b() * spec_.n_sigma();
+      double delta_m = spec_.sigma_m() * spec_.n_sigma();
+
+      vec3<double> sd1 = cs.to_beam_vector(vec2<double>(-delta_d, -delta_d));
+      vec3<double> sd2 = cs.to_beam_vector(vec2<double>(+delta_d, -delta_d));
+      vec3<double> sd3 = cs.to_beam_vector(vec2<double>(-delta_d, +delta_d));
+      vec3<double> sd4 = cs.to_beam_vector(vec2<double>(+delta_d, +delta_d));
+
+      vec2<double> xy1 = det_panel.get_ray_intersection_px(sd1);
+      vec2<double> xy2 = det_panel.get_ray_intersection_px(sd2);
+      vec2<double> xy3 = det_panel.get_ray_intersection_px(sd3);
+      vec2<double> xy4 = det_panel.get_ray_intersection_px(sd4);
+
+      double phi1 = cs.to_rotation_angle_fast(-delta_m);
+      double phi2 = cs.to_rotation_angle_fast(+delta_m);
+      double z1 = scan.get_array_index_from_angle(phi1);
+      double z2 = scan.get_array_index_from_angle(phi2);
+
+      int x0 = static_cast<int>(
+        std::floor(std::min(std::min(xy1[0], xy2[0]), std::min(xy3[0], xy4[0]))));
+      int x1 = static_cast<int>(
+        std::ceil(std::max(std::max(xy1[0], xy2[0]), std::max(xy3[0], xy4[0]))));
+      int y0 = static_cast<int>(
+        std::floor(std::min(std::min(xy1[1], xy2[1]), std::min(xy3[1], xy4[1]))));
+      int y1 = static_cast<int>(
+        std::ceil(std::max(std::max(xy1[1], xy2[1]), std::max(xy3[1], xy4[1]))));
+      int z0 = static_cast<int>(std::floor(std::min(z1, z2)));
+      int z1i = static_cast<int>(std::ceil(std::max(z1, z2)));
+
+      scitbx::af::int6 bbox_nom;
+      bbox_nom[0] = x0;
+      bbox_nom[1] = x1;
+      bbox_nom[2] = y0;
+      bbox_nom[3] = y1;
+      bbox_nom[4] = z0;
+      bbox_nom[5] = z1i;
+
+      // 6. Extended cube dimensions (+1 on each side for trilinear margin)
+      int W_sbox = x1 - x0;
+      int H_sbox = y1 - y0;
+      int D_sbox = z1i - z0;
+      int W_ext = W_sbox + 2;
+      int H_ext = H_sbox + 2;
+      int D_ext = D_sbox + 2;
+
+      af::c_grid<3> cube_acc(D_ext, H_ext, W_ext);
+      af::versa<double, af::c_grid<3>> cube(cube_acc, 0.0);
+      af::versa<bool, af::c_grid<3>> cube_mask(cube_acc, false);
+
+      // Reference profile for this cell: layout (gj, gi, gk)
+      data_const_reference ref = data(cell_id).const_ref();
+      mask_const_reference ref_mask = mask(cell_id).const_ref();
+
+      // Precompute e1/e2 scaled by 1/|s1| (same as TransformForward)
+      vec3<double> e1_scaled = cs.e1_axis() / s1_nom.length();
+      vec3<double> e2_scaled = cs.e2_axis() / s1_nom.length();
+
+      // 7. For each voxel in the extended cube
+      for (int d = 0; d < D_ext; ++d) {
+        // Frame index (the -1 accounts for the +1 extension margin)
+        double z_vox = static_cast<double>(z0 + d - 1);
+        double phi_vox = scan.get_angle_from_array_index(z_vox);
+        double c3 = cs.from_rotation_angle_fast(phi_vox);
+        double gk = grid_cent[0] + c3 / step_size[0];
+
+        for (int h = 0; h < H_ext; ++h) {
+          double y_vox = static_cast<double>(y0 + h - 1);
+
+          for (int w = 0; w < W_ext; ++w) {
+            double x_vox = static_cast<double>(x0 + w - 1);
+
+            // Beam vector at this pixel
+            vec3<double> s1_vox =
+              det_panel.get_pixel_lab_coord(vec2<double>(x_vox, y_vox));
+            s1_vox = s1_vox.normalize() * s0.length();
+
+            // Kabsch e1, e2 coords
+            vec3<double> ds = s1_vox - s1_nom;
+            double gi = grid_cent[2] + (e1_scaled * ds) / step_size[2];
+            double gj = grid_cent[1] + (e2_scaled * ds) / step_size[1];
+
+            // Trilinear interpolation of the reference profile
+            // Integer base indices
+            int ik = static_cast<int>(std::floor(gk));
+            int ij = static_cast<int>(std::floor(gj));
+            int ii = static_cast<int>(std::floor(gi));
+
+            // Check all 8 neighbors are in bounds
+            if (ik < 0 || ik + 1 >= ref_size || ij < 0 || ij + 1 >= ref_size || ii < 0
+                || ii + 1 >= ref_size) {
+              cube(d, h, w) = 0.0;
+              cube_mask(d, h, w) = false;
+              continue;
+            }
+
+            // Check reference mask at all 8 corners
+            bool all_mask = ref_mask(ij, ii, ik) && ref_mask(ij, ii, ik + 1)
+                            && ref_mask(ij, ii + 1, ik) && ref_mask(ij, ii + 1, ik + 1)
+                            && ref_mask(ij + 1, ii, ik) && ref_mask(ij + 1, ii, ik + 1)
+                            && ref_mask(ij + 1, ii + 1, ik)
+                            && ref_mask(ij + 1, ii + 1, ik + 1);
+
+            if (!all_mask) {
+              cube(d, h, w) = 0.0;
+              cube_mask(d, h, w) = false;
+              continue;
+            }
+
+            // Fractional parts
+            double fk = gk - ik;
+            double fj = gj - ij;
+            double fi = gi - ii;
+
+            // Trilinear interpolation: ref is indexed as (gj, gi, gk)
+            double val = ref(ij, ii, ik) * (1 - fi) * (1 - fj) * (1 - fk)
+                         + ref(ij, ii, ik + 1) * (1 - fi) * (1 - fj) * fk
+                         + ref(ij, ii + 1, ik) * fi * (1 - fj) * (1 - fk)
+                         + ref(ij, ii + 1, ik + 1) * fi * (1 - fj) * fk
+                         + ref(ij + 1, ii, ik) * (1 - fi) * fj * (1 - fk)
+                         + ref(ij + 1, ii, ik + 1) * (1 - fi) * fj * fk
+                         + ref(ij + 1, ii + 1, ik) * fi * fj * (1 - fk)
+                         + ref(ij + 1, ii + 1, ik + 1) * fi * fj * fk;
+
+            cube(d, h, w) = val;
+            cube_mask(d, h, w) = true;
+          }
+        }
+      }
+
+      CellCube result;
+      result.cube = cube;
+      result.mask = cube_mask;
+      result.bbox_nom = bbox_nom;
+      result.s1_nom = s1_nom;
+      result.phi_nom = phi_nom;
+      result.panel = panel;
+      return result;
     }
 
     TransformSpec spec_;
