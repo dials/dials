@@ -46,7 +46,7 @@ namespace dials { namespace algorithms {
       SphericalGrid = 4,
     };
 
-    enum FitMethod { ReciprocalSpace = 1, DetectorSpace = 2 };
+    enum FitMethod { ReciprocalSpace = 1, DetectorSpace = 2, CellCache = 3 };
 
     GaussianRSProfileModellerBase(const std::shared_ptr<BeamBase> beam,
                                   const Detector& detector,
