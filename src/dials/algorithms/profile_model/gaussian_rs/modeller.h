@@ -506,10 +506,24 @@ namespace dials { namespace algorithms {
               af::versa<double, af::c_grid<3>> bg_grid(grid_acc, 0.0);
               af::versa<bool, af::c_grid<3>> combined_mask(grid_acc, false);
 
-              // Supersampling factor: N^3 sub-cells per grid cell when the
-              // grid cells are larger than detector pixels (det_G < 1).
-              int N = std::max(1, (int)std::ceil(std::cbrt(1.0 / det_G)));
-              double inv_N = 1.0 / N;
+              // Anisotropic supersampling: separate factors for the spatial
+              // 2D block and the 1D e3 (frame) direction.  The 2D spatial
+              // density is |det2| (grid cells per pixel^2) and the e3
+              // density is |g22| (grid cells per frame).
+              double sp_density = std::abs(det2);
+              double e3_density = std::abs(g22);
+
+              int N_sp = std::max(1, (int)std::ceil(std::sqrt(1.0 / sp_density)));
+              int N_e3 = std::max(1, (int)std::ceil(1.0 / e3_density));
+              double inv_Nsp = 1.0 / N_sp;
+              double inv_Ne3 = 1.0 / N_e3;
+
+              // Guard against pathological shapes that would require too
+              // many sub-samples to evaluate cheaply.
+              const int MAX_TOTAL_SAMPLES = 64;
+              if (N_sp * N_sp * N_e3 > MAX_TOTAL_SAMPLES) {
+                continue;
+              }
 
               const int need = Valid | Foreground;
 
@@ -524,12 +538,12 @@ namespace dials { namespace algorithms {
                     int n_hit = 0;
                     bool fg_all = true;
 
-                    for (int sa = 0; sa < N; ++sa) {
-                      double dgj = (jj + (sa + 0.5) * inv_N) - gc1;
-                      for (int sb = 0; sb < N; ++sb) {
-                        double dgi = (ii + (sb + 0.5) * inv_N) - gc0;
-                        for (int sc = 0; sc < N; ++sc) {
-                          double dgk = (kk + (sc + 0.5) * inv_N) - gc2;
+                    for (int sa = 0; sa < N_sp; ++sa) {
+                      double dgj = (jj + (sa + 0.5) * inv_Nsp) - gc1;
+                      for (int sb = 0; sb < N_sp; ++sb) {
+                        double dgi = (ii + (sb + 0.5) * inv_Nsp) - gc0;
+                        for (int sc = 0; sc < N_e3; ++sc) {
+                          double dgk = (kk + (sc + 0.5) * inv_Ne3) - gc2;
 
                           // Inverse map: grid offset -> pixel offset.
                           double dx = inv00 * dgi + inv01 * dgj;
