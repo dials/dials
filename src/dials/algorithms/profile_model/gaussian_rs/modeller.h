@@ -401,6 +401,8 @@ namespace dials { namespace algorithms {
       TransformForward_t_init_s = 0.0;
       TransformForward_t_gc_s = 0.0;
       TransformForward_t_clip_s = 0.0;
+      quad_to_grid_n_total = 0;
+      quad_to_grid_n_single_cell = 0;
       using clk = std::chrono::steady_clock;
 
       // Loop through all the reflections and process them
@@ -517,6 +519,14 @@ namespace dials { namespace algorithms {
                    TransformForward_t_init_s,
                    TransformForward_t_gc_s,
                    TransformForward_t_clip_s);
+      // [DIAG] Single-cell fast-path hit rate for quad_to_grid.
+      std::fprintf(stderr,
+                   "[DIAG quad_to_grid] total=%ld  single_cell=%ld  hit_rate=%.1f%%\n",
+                   quad_to_grid_n_total,
+                   quad_to_grid_n_single_cell,
+                   quad_to_grid_n_total > 0
+                     ? 100.0 * quad_to_grid_n_single_cell / quad_to_grid_n_total
+                     : 0.0);
       std::fflush(stderr);
 
       return success;

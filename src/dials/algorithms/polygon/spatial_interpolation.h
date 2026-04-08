@@ -21,6 +21,15 @@
 #include <dials/algorithms/polygon/area.h>
 #include <dials/error.h>
 
+// [DIAG] Single-cell fast-path counters for quad_to_grid (buffer overload).
+// Declared in an anonymous namespace so they are TU-local; reset and read by
+// modeller.h which is compiled in the same translation unit (via transform.h).
+// nproc=1 only — not thread-safe.
+namespace {
+long quad_to_grid_n_total = 0;        // incremented on every buf-overload call
+long quad_to_grid_n_single_cell = 0;  // incremented when single-cell fast path taken
+}  // namespace
+
 namespace dials { namespace algorithms { namespace polygon {
   namespace spatial_interpolation {
 
@@ -143,8 +152,17 @@ namespace dials { namespace algorithms { namespace polygon {
                              int index,
                              std::vector<Match>& buf) {
       buf.clear();
+      ++quad_to_grid_n_total;
       int4 range = quad_grid_range(input, output_size);
       if (range[0] >= range[1] || range[2] >= range[3]) return;
+      // Fast path: bounding box fits inside a single grid cell — no clipping needed.
+      // Cell index follows the same row-major convention as the full loop:
+      // out = ii + jj * output_size[1], where ii = range[0], jj = range[2].
+      if ((range[1] - range[0]) == 1 && (range[3] - range[2]) == 1) {
+        ++quad_to_grid_n_single_cell;
+        buf.push_back(Match(index, range[0] + range[2] * output_size[1], 1.0));
+        return;
+      }
       double target_area = reverse_quad_inplace_if_backward(input);
       for (std::size_t jj = range[2]; jj < range[3]; ++jj) {
         for (std::size_t ii = range[0]; ii < range[1]; ++ii) {
