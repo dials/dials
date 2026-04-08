@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import collections
 import functools
 import itertools
 import logging
@@ -578,49 +577,101 @@ class _:
         x2, y2, z2 = other["xyzcal.px"].parts()
         p2 = other["panel"]
 
-        class Match:
-            def __init__(self):
-                self.a = []
-                self.b = []
+        # Build key arrays via bulk numpy conversion (6 columns: h,k,l,entering,id,panel).
+        # flex.miller_index -> parts via as_vec3_double() is the idiomatic bulk path;
+        # iround() converts back to int safely (miller indices are always integers).
+        h1v = h1.as_vec3_double()
+        h2v = h2.as_vec3_double()
+        h1a, k1a, l1a = (c.as_numpy_array().astype(np.int32) for c in h1v.parts())
+        h2a, k2a, l2a = (c.as_numpy_array().astype(np.int32) for c in h2v.parts())
+        e1_np = e1.as_numpy_array().astype(np.int32)
+        e2_np = e2.as_numpy_array().astype(np.int32)
+        i1_np = i1.as_numpy_array().astype(np.int32)
+        i2_np = i2.as_numpy_array().astype(np.int32)
+        p1_np = p1.as_numpy_array().astype(np.int32)
+        p2_np = p2.as_numpy_array().astype(np.int32)
+        x1_np = x1.as_numpy_array()
+        y1_np = y1.as_numpy_array()
+        z1_np = z1.as_numpy_array()
+        x2_np = x2.as_numpy_array()
+        y2_np = y2.as_numpy_array()
+        z2_np = z2.as_numpy_array()
 
-        # Create the match lookup
-        lookup = collections.defaultdict(Match)
-        for i in range(len(self)):
-            item = h1[i] + (e1[i], i1[i], p1[i])
-            lookup[item].a.append(i)
+        # Stack into (N, 6) key matrices: columns are h,k,l,e,id,panel
+        keys1 = np.column_stack([h1a, k1a, l1a, e1_np, i1_np, p1_np])
+        keys2 = np.column_stack([h2a, k2a, l2a, e2_np, i2_np, p2_np])
 
-        # Add matches from input reflections
-        for i in range(len(other)):
-            item = h2[i] + (e2[i], i2[i], p2[i])
-            if item in lookup:
-                lookup[item].b.append(i)
+        # Sort self by key (lexsort takes rows in reverse column order)
+        sort1 = np.lexsort(keys1[:, ::-1].T)
+        sorted_keys1 = keys1[sort1]
 
-        # Create the list of matches
+        # Sort other by key
+        sort2 = np.lexsort(keys2[:, ::-1].T)
+        sorted_keys2 = keys2[sort2]
+
+        # Merge-join the two sorted key arrays to find matching groups
         match1 = []
         match2 = []
-        for item, value in lookup.items():
-            if len(value.b) == 0:
-                continue
-            elif len(value.a) == 1 and len(value.b) == 1:
-                match1.append(value.a[0])
-                match2.append(value.b[0])
+        n1 = len(sort1)
+        n2 = len(sort2)
+        p_i = 0  # pointer into sorted self
+        p_j = 0  # pointer into sorted other
+
+        while p_i < n1 and p_j < n2:
+            k1 = sorted_keys1[p_i]
+            k2 = sorted_keys2[p_j]
+            cmp = 0
+            for col in range(6):
+                if k1[col] < k2[col]:
+                    cmp = -1
+                    break
+                elif k1[col] > k2[col]:
+                    cmp = 1
+                    break
+            if cmp < 0:
+                p_i += 1
+            elif cmp > 0:
+                p_j += 1
             else:
-                matched = {}
-                for i in value.a:
-                    d = []
-                    for j in value.b:
-                        dx = x1[i] - x2[j]
-                        dy = y1[i] - y2[j]
-                        dz = z1[i] - z2[j]
-                        d.append((i, j, dx**2 + dy**2 + dz**2))
-                    i, j, d = min(d, key=lambda x: x[2])
-                    if j not in matched:
-                        matched[j] = (i, d)
-                    elif d < matched[j][1]:
-                        matched[j] = (i, d)
-                for key1, value1 in matched.items():
-                    match1.append(value1[0])
-                    match2.append(key1)
+                # Found a matching key; collect the full run for both sides
+                run_end1 = p_i + 1
+                while run_end1 < n1 and (sorted_keys1[run_end1] == k1).all():
+                    run_end1 += 1
+                run_end2 = p_j + 1
+                while run_end2 < n2 and (sorted_keys2[run_end2] == k2).all():
+                    run_end2 += 1
+
+                a_orig = sort1[p_i:run_end1]  # original indices in self
+                b_orig = sort2[p_j:run_end2]  # original indices in other
+
+                if len(a_orig) == 1 and len(b_orig) == 1:
+                    match1.append(int(a_orig[0]))
+                    match2.append(int(b_orig[0]))
+                else:
+                    # Tie-breaking: for each j in b, find nearest i in a (min sq dist).
+                    # Among all js that claim the same i, keep the one with smallest d
+                    # (last one wins on exact tie, matching original behaviour).
+                    matched = {}
+                    for i_idx in a_orig:
+                        d_list = []
+                        for j_idx in b_orig:
+                            dx = x1_np[i_idx] - x2_np[j_idx]
+                            dy = y1_np[i_idx] - y2_np[j_idx]
+                            dz = z1_np[i_idx] - z2_np[j_idx]
+                            d_list.append(
+                                (int(i_idx), int(j_idx), dx**2 + dy**2 + dz**2)
+                            )
+                        best_i, best_j, best_d = min(d_list, key=lambda x: x[2])
+                        if best_j not in matched:
+                            matched[best_j] = (best_i, best_d)
+                        elif best_d < matched[best_j][1]:
+                            matched[best_j] = (best_i, best_d)
+                    for j_key, (i_val, _) in matched.items():
+                        match1.append(i_val)
+                        match2.append(j_key)
+
+                p_i = run_end1
+                p_j = run_end2
 
         # Select everything which matches
         sind = cctbx.array_family.flex.size_t(match1)
