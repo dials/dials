@@ -12,6 +12,8 @@
 #ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H
 
+#include <chrono>
+#include <cstdio>
 #include <memory>
 #include <fstream>
 #include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
@@ -391,6 +393,13 @@ namespace dials { namespace algorithms {
       af::ref<double> reference_cor = reflections["profile.correlation"];
       // af::ref<double> reference_rmsd = reflections["profile.rmsd"];
 
+      // [DIAG] Reset sub-phase accumulators for this fit_reciprocal_space call.
+      diag_t_setup_s_ = 0.0;
+      diag_t_xform_s_ = 0.0;
+      diag_t_fit_s_ = 0.0;
+      diag_t_post_s_ = 0.0;
+      using clk = std::chrono::steady_clock;
+
       // Loop through all the reflections and process them
       af::shared<bool> success(reflections.size(), false);
       for (std::size_t i = 0; i < reflections.size(); ++i) {
@@ -407,6 +416,9 @@ namespace dials { namespace algorithms {
         // Check if we want to use this reflection
         if (integrate) {
           try {
+            // [DIAG] (1) Pre-transform setup: sampler lookup, CS ctor, data copies.
+            auto t0 = clk::now();
+
             // Get the reference profiles
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
             data_const_reference p = data(index).const_ref();
@@ -433,6 +445,10 @@ namespace dials { namespace algorithms {
                            mask.begin(),
                            detail::check_mask_code(Valid | Foreground));
 
+            auto t1 = clk::now();
+            diag_t_setup_s_ += std::chrono::duration<double>(t1 - t0).count();
+
+            // [DIAG] (2) TransformForward ctor (MapFrames erf + quad_to_grid).
             // Compute the transform
             TransformForward<double> transform(spec_,
                                                cs,
@@ -442,6 +458,10 @@ namespace dials { namespace algorithms {
                                                background.const_ref(),
                                                mask.const_ref());
 
+            auto t2 = clk::now();
+            diag_t_xform_s_ += std::chrono::duration<double>(t2 - t1).count();
+
+            // [DIAG] (3) Mask merge + ProfileFitter IRLS.
             // Get the transformed shoebox
             data_const_reference c = transform.profile().const_ref();
             data_const_reference b = transform.background().const_ref();
@@ -456,6 +476,10 @@ namespace dials { namespace algorithms {
             ProfileFitter<double> fit(c, b, m.const_ref(), p, 1e-3, 100);
             // DIALS_ASSERT(fit.niter() < 100);
 
+            auto t3 = clk::now();
+            diag_t_fit_s_ += std::chrono::duration<double>(t3 - t2).count();
+
+            // [DIAG] (4) Post-fit: store results and set flags.
             // Set the data in the reflection
             intensity_val[i] = fit.intensity()[0];
             intensity_var[i] = fit.variance()[0];
@@ -466,12 +490,28 @@ namespace dials { namespace algorithms {
             flags[i] |= af::IntegratedPrf;
             success[i] = true;
 
+            auto t4 = clk::now();
+            diag_t_post_s_ += std::chrono::duration<double>(t4 - t3).count();
+
           } catch (dials::error const& e) {
             /* std::cout << e.what() << std::endl; */
             continue;
           }
         }
       }
+
+      // [DIAG] Print sub-phase totals — fires once per fit_reciprocal_space call.
+      // Revert this diag: commit before release.
+      std::fprintf(stderr,
+                   "[DIAG fit_rs] setup=%.3f s  xform=%.3f s  fit=%.3f s"
+                   "  post=%.3f s  total=%.3f s\n",
+                   diag_t_setup_s_,
+                   diag_t_xform_s_,
+                   diag_t_fit_s_,
+                   diag_t_post_s_,
+                   diag_t_setup_s_ + diag_t_xform_s_ + diag_t_fit_s_ + diag_t_post_s_);
+      std::fflush(stderr);
+
       return success;
     }
 
@@ -691,6 +731,14 @@ namespace dials { namespace algorithms {
     }
 
     TransformSpec spec_;
+
+    // [DIAG] Accumulated wall-clock seconds per sub-phase of fit_reciprocal_space.
+    // Reset at the start of each fit_reciprocal_space call; printed at the end.
+    // Revert this diag: commit before release.
+    mutable double diag_t_setup_s_ = 0.0;  // shoebox extraction + CS + data copies
+    mutable double diag_t_xform_s_ = 0.0;  // TransformForward ctor
+    mutable double diag_t_fit_s_ = 0.0;    // mask merge + ProfileFitter IRLS
+    mutable double diag_t_post_s_ = 0.0;   // intensity/flag writes + bookkeeping
   };
 
 }}  // namespace dials::algorithms
