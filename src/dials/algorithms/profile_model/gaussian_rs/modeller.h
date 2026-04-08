@@ -554,15 +554,16 @@ namespace dials { namespace algorithms {
                 }
               }
 
-              // Normalize the extracted reference profile to sum to 1.0
-              double ref_sum = 0.0;
+              // Scale by the Jacobian determinant |det(G)| to convert from
+              // profile density per grid cell to profile value per pixel.
+              // G is the pixel->grid Jacobian; each pixel covers |det(G)| grid cells.
+              // The reference profile ref[i,j,k] is normalized so sum = 1.0 over the
+              // full grid, i.e., integrates to 1 in grid units. Multiplying by |det(G)|
+              // converts to per-pixel integration, so sum over pixels in the profile
+              // support is ~1.0.
+              double det_G = std::abs(g00 * g11 - g01 * g10) * std::abs(g22);
               for (std::size_t j = 0; j < ref_profile.size(); ++j) {
-                if (ref_m[j]) ref_sum += ref_profile[j];
-              }
-              if (ref_sum > 0.0) {
-                for (std::size_t j = 0; j < ref_profile.size(); ++j) {
-                  ref_profile[j] /= ref_sum;
-                }
+                ref_profile[j] *= det_G;
               }
 
               // Build combined mask (reference AND shoebox foreground)
