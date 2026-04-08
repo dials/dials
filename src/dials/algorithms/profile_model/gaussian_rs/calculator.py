@@ -378,13 +378,21 @@ class ComputeEsdReflectingRange:
             # as a prior for sigma, which accounts for which reflections were actually
             # recorded.
             #
-            L = 0
-            for kj, nj, i0, i1 in zip(
-                self.K, self.nj, self.indices[:-1], self.indices[1:]
-            ):
-                zj = zi[i0:i1]
-                logZ = math.log(flex.sum(zj))
-                L += flex.sum(nj * flex.log(zj)) - kj * logZ + logZ
+            # Vectorized form (equivalent algebra, no Python loop):
+            #   per-segment term = sum(nj * log(zj)) + (1 - kj) * log(sum(zj))
+            # which matches the original: flex.sum(nj*flex.log(zj)) - kj*logZ + logZ
+            zi_np = zi.as_numpy_array()
+            log_zi = np.log(zi_np)
+            # nj values are stored as a list of flex.double segments; concatenate
+            # into a flat numpy array aligned element-wise with zi_np.
+            nj_np = np.concatenate([nj.as_numpy_array() for nj in self.nj])
+            K_np = self.K.as_numpy_array()
+            # self.indices is flex.size_t; reduceat requires intp (native int index).
+            idx = self.indices.as_numpy_array().astype(np.intp)
+            # Per-segment sums via reduceat over the flat arrays.
+            seg_zi = np.add.reduceat(zi_np, idx[:-1])  # sum(zj) per segment
+            weighted = np.add.reduceat(nj_np * log_zi, idx[:-1])  # sum(nj*log(zj))
+            L = float(np.sum(weighted + (1.0 - K_np) * np.log(seg_zi)))
             logger.debug("Sigma M: %f, log(L): %f", sigma_m * 180 / math.pi, L)
 
             # Return the logarithm of r
