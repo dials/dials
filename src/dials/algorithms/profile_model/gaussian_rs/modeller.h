@@ -490,7 +490,10 @@ namespace dials { namespace algorithms {
               // trilinear interp from reference
               for (int d = 0; d < D; ++d) {
                 double dz = (bbox[4] + d + 0.5) - xyzpx[i][2];
-                double gk = g22 * dz + gc2;
+                // Subtract 0.5: ref[i] represents the area-weighted integral over
+                // the cell centred at i+0.5, so the reflection centroid maps to
+                // gc + 0.5 (the centre of a cell), not gc (the cell boundary).
+                double gk = g22 * dz + gc2 - 0.5;
                 int ik = static_cast<int>(std::floor(gk));
                 double fk = gk - ik;
                 bool k_ok = ik >= 0 && ik + 1 < n_grid;
@@ -500,9 +503,12 @@ namespace dials { namespace algorithms {
                   for (int w = 0; w < W; ++w) {
                     double dx = (bbox[0] + w + 0.5) - xyzpx[i][0];
 
-                    // Affine map: pixel offset -> grid coordinates
-                    double gi = g00 * dx + g01 * dy + gc0;
-                    double gj = g10 * dx + g11 * dy + gc1;
+                    // Affine map: pixel offset -> grid coordinates.
+                    // Subtract 0.5: ref[i] represents the area-weighted integral
+                    // over the cell centred at i+0.5 (TransformForward convention),
+                    // so we shift by -0.5 to align with the correct cell boundary.
+                    double gi = g00 * dx + g01 * dy + gc0 - 0.5;
+                    double gj = g10 * dx + g11 * dy + gc1 - 0.5;
 
                     int ii = static_cast<int>(std::floor(gi));
                     int ij = static_cast<int>(std::floor(gj));
