@@ -11,7 +11,6 @@
 #ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_TRANSFORM_H
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_TRANSFORM_H
 
-#include <chrono>
 #include <memory>
 #include <vector>
 #include <scitbx/vec2.h>
@@ -26,15 +25,6 @@
 #include <dials/algorithms/profile_model/gaussian_rs/transform/map_frames.h>
 #include <dials/algorithms/profile_model/gaussian_rs/transform/beam_vector_map.h>
 #include <dials/model/data/shoebox.h>
-
-// [DIAG] Static accumulators for TransformForward sub-phase timings.
-// Reset by fit_reciprocal_space before each reflection loop; read after.
-// nproc=1 only — not thread-safe.
-namespace {
-double TransformForward_t_init_s = 0.0;  // init() — MapFrames erf calls
-double TransformForward_t_gc_s = 0.0;    // gc_array construction loop
-double TransformForward_t_clip_s = 0.0;  // per-pixel quad_to_grid + accumulate
-}  // namespace
 
 namespace dials { namespace algorithms { namespace profile_model {
   namespace gaussian_rs { namespace transform {
@@ -247,9 +237,6 @@ namespace dials { namespace algorithms { namespace profile_model {
                 const CoordinateSystem& cs,
                 int6 bbox,
                 std::size_t panel) {
-        using clk = std::chrono::steady_clock;
-        auto _t_init_start = clk::now();
-
         // Initialise some stuff
         x0_ = bbox[0];
         y0_ = bbox[2];
@@ -284,9 +271,6 @@ namespace dials { namespace algorithms { namespace profile_model {
           spec.n_sigma(),
           spec.grid_size()[2] / 2);
         efraction_arr_ = map_frames_backward(zrange, cs.phi(), cs.zeta());
-
-        TransformForward_t_init_s +=
-          std::chrono::duration<double>(clk::now() - _t_init_start).count();
       }
 
       /**
@@ -406,8 +390,6 @@ namespace dials { namespace algorithms { namespace profile_model {
                 const af::const_ref<FloatType, af::c_grid<3> >& image,
                 const af::const_ref<FloatType, af::c_grid<3> >& bkgrd,
                 const af::const_ref<bool, af::c_grid<3> >& mask) {
-        using clk = std::chrono::steady_clock;
-
         // Check the input
         DIALS_ASSERT(image.accessor().all_eq(shoebox_size_));
         DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
@@ -442,9 +424,6 @@ namespace dials { namespace algorithms { namespace profile_model {
         vec2<double> shoebox_centroid_px = panel.get_ray_intersection_px(s1_);
         double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
 
-        // [DIAG] Sub-bucket: gc_array construction (get_pixel_lab_coord + normalize).
-        auto _t_gc_start = clk::now();
-
         // Mapping from shoebox image coordinate to transformed grid coordinate
         af::versa<vec2<double>, af::c_grid<2> > gc_array(
           af::c_grid<2>(shoebox_size_[1] + 1, shoebox_size_[2] + 1));
@@ -453,12 +432,6 @@ namespace dials { namespace algorithms { namespace profile_model {
             gc_array(j, i) = gc(panel, j, i, attenuation_length);
           }
         }
-
-        auto _t_clip_start = clk::now();
-        TransformForward_t_gc_s +=
-          std::chrono::duration<double>(_t_clip_start - _t_gc_start).count();
-
-        // [DIAG] Sub-bucket: per-pixel quad_to_grid polygon clipping + accumulate.
 
         // Loop through all the points in the shoebox. Calculate the polygon
         // formed by the pixel in the local coordinate system. Find the points
@@ -522,9 +495,6 @@ namespace dials { namespace algorithms { namespace profile_model {
             }
           }
         }
-
-        TransformForward_t_clip_s +=
-          std::chrono::duration<double>(clk::now() - _t_clip_start).count();
       }
 
       /**
