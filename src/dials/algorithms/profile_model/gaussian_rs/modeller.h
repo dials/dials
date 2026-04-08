@@ -481,111 +481,197 @@ namespace dials { namespace algorithms {
               int H = bbox[3] - bbox[2];
               int D = bbox[5] - bbox[4];
 
-              // Allocate output reference profile and mask (shoebox shape)
-              af::c_grid<3> out_acc(D, H, W);
-              af::versa<double, af::c_grid<3>> ref_profile(out_acc, 0.0);
-              af::versa<bool, af::c_grid<3>> ref_m(out_acc, false);
+              // --- Reverse interpolation with adaptive supersampling ---
+              // Invert the 3x3 block-diagonal Jacobian G once per reflection.
+              double det2 = g00 * g11 - g01 * g10;
+              double det_G = std::abs(det2) * std::abs(g22);
 
-              // For each voxel in the shoebox, apply linearized gc() and
-              // trilinear interp from reference
-              for (int d = 0; d < D; ++d) {
-                double dz = (bbox[4] + d + 0.5) - xyzpx[i][2];
-                // Subtract 0.5: ref[i] represents the area-weighted integral over
-                // the cell centred at i+0.5, so the reflection centroid maps to
-                // gc + 0.5 (the centre of a cell), not gc (the cell boundary).
-                double gk = g22 * dz + gc2 - 0.5;
-                int ik = static_cast<int>(std::floor(gk));
-                double fk = gk - ik;
-                bool k_ok = ik >= 0 && ik + 1 < n_grid;
+              const double DET_EPS = 1e-6;
+              if (det_G < DET_EPS) {
+                // Ill-conditioned (zeta ~ 0 or degenerate spatial block);
+                // skip this reflection rather than falling through.
+                continue;
+              }
 
-                for (int h = 0; h < H; ++h) {
-                  double dy = (bbox[2] + h + 0.5) - xyzpx[i][1];
-                  for (int w = 0; w < W; ++w) {
-                    double dx = (bbox[0] + w + 0.5) - xyzpx[i][0];
+              double inv00 = g11 / det2;
+              double inv01 = -g01 / det2;
+              double inv10 = -g10 / det2;
+              double inv11 = g00 / det2;
+              double inv22 = 1.0 / g22;
 
-                    // Affine map: pixel offset -> grid coordinates.
-                    // Subtract 0.5: ref[i] represents the area-weighted integral
-                    // over the cell centred at i+0.5 (TransformForward convention),
-                    // so we shift by -0.5 to align with the correct cell boundary.
-                    double gi = g00 * dx + g01 * dy + gc0 - 0.5;
-                    double gj = g10 * dx + g11 * dy + gc1 - 0.5;
+              // Allocate grid-space buffers (11x11x11, (jj, ii, kk) layout
+              // matching `ref`).
+              af::c_grid<3> grid_acc(n_grid, n_grid, n_grid);
+              af::versa<double, af::c_grid<3>> data_grid(grid_acc, 0.0);
+              af::versa<double, af::c_grid<3>> bg_grid(grid_acc, 0.0);
+              af::versa<bool, af::c_grid<3>> combined_mask(grid_acc, false);
 
-                    int ii = static_cast<int>(std::floor(gi));
-                    int ij = static_cast<int>(std::floor(gj));
-                    double fi = gi - ii;
-                    double fj = gj - ij;
+              // Supersampling factor: N^3 sub-cells per grid cell when the
+              // grid cells are larger than detector pixels (det_G < 1).
+              int N = std::max(1, (int)std::ceil(std::cbrt(1.0 / det_G)));
+              double inv_N = 1.0 / N;
 
-                    // Bounds check (all 8 corners of trilinear interp)
-                    if (!k_ok || ii < 0 || ii + 1 >= n_grid || ij < 0
-                        || ij + 1 >= n_grid) {
-                      ref_profile(d, h, w) = 0.0;
-                      ref_m(d, h, w) = false;
-                      continue;
+              const int need = Valid | Foreground;
+
+              // Walk the 1331 reference-grid cells, reverse-mapping to
+              // shoebox voxel coordinates. Iterate jj -> ii -> kk so the
+              // innermost axis walks contiguous memory for (e2, e1, e3).
+              for (int jj = 0; jj < n_grid; ++jj) {
+                for (int ii = 0; ii < n_grid; ++ii) {
+                  for (int kk = 0; kk < n_grid; ++kk) {
+                    double sum_d = 0.0;
+                    double sum_b = 0.0;
+                    int n_hit = 0;
+                    bool fg_all = true;
+
+                    for (int sa = 0; sa < N; ++sa) {
+                      double dgj = (jj + (sa + 0.5) * inv_N) - gc1;
+                      for (int sb = 0; sb < N; ++sb) {
+                        double dgi = (ii + (sb + 0.5) * inv_N) - gc0;
+                        for (int sc = 0; sc < N; ++sc) {
+                          double dgk = (kk + (sc + 0.5) * inv_N) - gc2;
+
+                          // Inverse map: grid offset -> pixel offset.
+                          double dx = inv00 * dgi + inv01 * dgj;
+                          double dy = inv10 * dgi + inv11 * dgj;
+                          double dz = inv22 * dgk;
+
+                          // Detector coordinates (fast, slow, frame).
+                          double x = xyzpx[i][0] + dx;
+                          double y = xyzpx[i][1] + dy;
+                          double z = xyzpx[i][2] + dz;
+
+                          // Shoebox voxel coordinates (continuous, with the
+                          // -0.5 pixel-centre convention).
+                          double vx = x - bbox[0] - 0.5;
+                          double vy = y - bbox[2] - 0.5;
+                          double vz = z - bbox[4] - 0.5;
+
+                          int iw = static_cast<int>(std::floor(vx));
+                          int ih = static_cast<int>(std::floor(vy));
+                          int id = static_cast<int>(std::floor(vz));
+                          double fw = vx - iw;
+                          double fh = vy - ih;
+                          double fd = vz - id;
+
+                          // Bounds check (all 8 trilinear corners).
+                          if (iw < 0 || iw + 1 >= W || ih < 0 || ih + 1 >= H || id < 0
+                              || id + 1 >= D) {
+                            continue;
+                          }
+
+                          // Trilinear weights.
+                          double w000 = (1 - fd) * (1 - fh) * (1 - fw);
+                          double w001 = (1 - fd) * (1 - fh) * fw;
+                          double w010 = (1 - fd) * fh * (1 - fw);
+                          double w011 = (1 - fd) * fh * fw;
+                          double w100 = fd * (1 - fh) * (1 - fw);
+                          double w101 = fd * (1 - fh) * fw;
+                          double w110 = fd * fh * (1 - fw);
+                          double w111 = fd * fh * fw;
+
+                          // Trilinear interpolation of data and background
+                          // (accumulate in double; shoebox storage is float).
+                          double val_d =
+                            w000 * static_cast<double>(sbox[i].data(id, ih, iw))
+                            + w001 * static_cast<double>(sbox[i].data(id, ih, iw + 1))
+                            + w010 * static_cast<double>(sbox[i].data(id, ih + 1, iw))
+                            + w011
+                                * static_cast<double>(sbox[i].data(id, ih + 1, iw + 1))
+                            + w100 * static_cast<double>(sbox[i].data(id + 1, ih, iw))
+                            + w101
+                                * static_cast<double>(sbox[i].data(id + 1, ih, iw + 1))
+                            + w110
+                                * static_cast<double>(sbox[i].data(id + 1, ih + 1, iw))
+                            + w111
+                                * static_cast<double>(
+                                  sbox[i].data(id + 1, ih + 1, iw + 1));
+
+                          double val_b =
+                            w000 * static_cast<double>(sbox[i].background(id, ih, iw))
+                            + w001
+                                * static_cast<double>(
+                                  sbox[i].background(id, ih, iw + 1))
+                            + w010
+                                * static_cast<double>(
+                                  sbox[i].background(id, ih + 1, iw))
+                            + w011
+                                * static_cast<double>(
+                                  sbox[i].background(id, ih + 1, iw + 1))
+                            + w100
+                                * static_cast<double>(
+                                  sbox[i].background(id + 1, ih, iw))
+                            + w101
+                                * static_cast<double>(
+                                  sbox[i].background(id + 1, ih, iw + 1))
+                            + w110
+                                * static_cast<double>(
+                                  sbox[i].background(id + 1, ih + 1, iw))
+                            + w111
+                                * static_cast<double>(
+                                  sbox[i].background(id + 1, ih + 1, iw + 1));
+
+                          // Mask: require (Valid | Foreground) at all 8
+                          // corners.
+                          bool fg_ok =
+                            ((sbox[i].mask(id, ih, iw) & need) == need)
+                            && ((sbox[i].mask(id, ih, iw + 1) & need) == need)
+                            && ((sbox[i].mask(id, ih + 1, iw) & need) == need)
+                            && ((sbox[i].mask(id, ih + 1, iw + 1) & need) == need)
+                            && ((sbox[i].mask(id + 1, ih, iw) & need) == need)
+                            && ((sbox[i].mask(id + 1, ih, iw + 1) & need) == need)
+                            && ((sbox[i].mask(id + 1, ih + 1, iw) & need) == need)
+                            && ((sbox[i].mask(id + 1, ih + 1, iw + 1) & need) == need);
+
+                          sum_d += val_d;
+                          sum_b += val_b;
+                          ++n_hit;
+                          fg_all = fg_all && fg_ok;
+                        }
+                      }
                     }
 
-                    // Check reference mask at all 8 corners
-                    // ref layout: (e2_idx=ij, e1_idx=ii, e3_idx=ik)
-                    bool all_mask =
-                      ref_mask(ij, ii, ik) && ref_mask(ij, ii, ik + 1)
-                      && ref_mask(ij, ii + 1, ik) && ref_mask(ij, ii + 1, ik + 1)
-                      && ref_mask(ij + 1, ii, ik) && ref_mask(ij + 1, ii, ik + 1)
-                      && ref_mask(ij + 1, ii + 1, ik)
-                      && ref_mask(ij + 1, ii + 1, ik + 1);
-
-                    if (!all_mask) {
-                      ref_profile(d, h, w) = 0.0;
-                      ref_m(d, h, w) = false;
-                      continue;
+                    if (n_hit > 0) {
+                      // Average over in-bounds sub-samples only (see design
+                      // section 6, edge case 7).
+                      data_grid(jj, ii, kk) = sum_d / n_hit;
+                      bg_grid(jj, ii, kk) = sum_b / n_hit;
+                      combined_mask(jj, ii, kk) = fg_all && ref_mask(jj, ii, kk);
+                    } else {
+                      data_grid(jj, ii, kk) = 0.0;
+                      bg_grid(jj, ii, kk) = 0.0;
+                      combined_mask(jj, ii, kk) = false;
                     }
-
-                    // Trilinear interpolation
-                    double val = ref(ij, ii, ik) * (1 - fi) * (1 - fj) * (1 - fk)
-                                 + ref(ij, ii, ik + 1) * (1 - fi) * (1 - fj) * fk
-                                 + ref(ij, ii + 1, ik) * fi * (1 - fj) * (1 - fk)
-                                 + ref(ij, ii + 1, ik + 1) * fi * (1 - fj) * fk
-                                 + ref(ij + 1, ii, ik) * (1 - fi) * fj * (1 - fk)
-                                 + ref(ij + 1, ii, ik + 1) * (1 - fi) * fj * fk
-                                 + ref(ij + 1, ii + 1, ik) * fi * fj * (1 - fk)
-                                 + ref(ij + 1, ii + 1, ik + 1) * fi * fj * fk;
-
-                    ref_profile(d, h, w) = val;
-                    ref_m(d, h, w) = true;
                   }
                 }
               }
 
-              // Normalize the extracted reference profile to sum to 1.0
-              double ref_sum = 0.0;
-              for (std::size_t j = 0; j < ref_profile.size(); ++j) {
-                if (ref_m[j]) ref_sum += ref_profile[j];
-              }
-              if (ref_sum > 0.0) {
-                for (std::size_t j = 0; j < ref_profile.size(); ++j) {
-                  ref_profile[j] /= ref_sum;
-                }
+              // Rescale cell-averaged densities by the grid-cell volume
+              // (1 / det_G) so both data and background are in per-cell
+              // integrated counts (see design section 5).
+              double inv_det_G = 1.0 / det_G;
+              for (std::size_t t = 0; t < data_grid.size(); ++t) {
+                data_grid[t] *= inv_det_G;
+                bg_grid[t] *= inv_det_G;
               }
 
-              // Build combined mask (reference AND shoebox foreground)
-              af::versa<bool, af::c_grid<3>> m(out_acc, false);
-              for (std::size_t j = 0; j < m.size(); ++j) {
-                m[j] =
-                  ref_m[j]
-                  && ((sbox[i].mask[j] & (Valid | Foreground)) == (Valid | Foreground));
+              // Partiality guard: require a minimum number of valid cells.
+              std::size_t num_valid = 0;
+              for (std::size_t t = 0; t < combined_mask.size(); ++t) {
+                if (combined_mask[t]) ++num_valid;
+              }
+              const std::size_t MIN_VALID_CELLS = 50;
+              if (num_valid < MIN_VALID_CELLS) {
+                continue;
               }
 
-              // Convert float shoebox data/background to double
-              af::versa<double, af::c_grid<3>> data_d(sbox[i].data.accessor());
-              af::versa<double, af::c_grid<3>> bg_d(sbox[i].background.accessor());
-              for (std::size_t j = 0; j < data_d.size(); ++j) {
-                data_d[j] = static_cast<double>(sbox[i].data[j]);
-                bg_d[j] = static_cast<double>(sbox[i].background[j]);
-              }
-
-              // IRLS profile fit
-              ProfileFitter<double> fit(data_d.const_ref(),
-                                        bg_d.const_ref(),
-                                        m.const_ref(),
-                                        ref_profile.const_ref(),
+              // IRLS profile fit on the grid. `ref` is already normalised
+              // over its valid cells during learning and must not be
+              // re-normalised here.
+              ProfileFitter<double> fit(data_grid.const_ref(),
+                                        bg_grid.const_ref(),
+                                        combined_mask.const_ref(),
+                                        ref,
                                         1e-3,
                                         100);
 
