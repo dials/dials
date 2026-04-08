@@ -922,6 +922,17 @@ class IntegratorExecutor(Executor):
 
         reflections.compute_summed_intensity()
         if self.profile_fitter:
+            # Gate out reflections that already failed summation or background
+            # modelling: they will fail inside the IRLS try/catch anyway, so
+            # skip the expensive TransformForward+IRLS cost upfront.  The
+            # failed_during_profile_fitting flag is still set by
+            # compute_fitted_intensity (success[i] remains False for these rows).
+            already_failed = reflections.get_flags(
+                reflections.flags.failed_during_summation
+                | reflections.flags.failed_during_background_modelling,
+                all=False,
+            )
+            reflections.set_flags(already_failed, reflections.flags.dont_integrate)
             reflections.compute_fitted_intensity(self.profile_fitter)
 
         # Compute the number of background/foreground pixels
