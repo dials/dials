@@ -208,7 +208,6 @@ namespace dials { namespace algorithms {
                 n_sigma,
                 grid_size) {
       DIALS_ASSERT(sampler_ != 0);
-      jac_cache_.resize(sampler_->size());
     }
 
     std::shared_ptr<BeamBase> beam() const {
@@ -416,62 +415,65 @@ namespace dials { namespace algorithms {
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
 
             if (fit_method_ == CellCache) {
-              // --- CELL-CACHE PATH: affine mapping into 11x11x11 reference ---
+              // --- CELL-CACHE PATH: linearized gc() mapping into reference ---
               if (!valid(index)) continue;
-
-              // Lazy-init the Jacobian cache for this cell
-              if (!jac_cache_[index].valid) {
-                jac_cache_[index] = build_cell_jacobian_cache(index, sbox[i].panel);
-              }
-              const CellJacobianCache& cache = jac_cache_[index];
 
               // Reference profile and mask (11x11x11, layout: (e2, e1, e3))
               data_const_reference ref = data(index).const_ref();
               mask_const_reference ref_mask = mask(index).const_ref();
               const int n_grid = static_cast<int>(2 * spec_.half_grid_size() + 1);
-              const double3 step_size = spec_.step_size();
-              const double3 grid_cent = spec_.grid_centre();
 
               // Construct CoordinateSystem at reflection position
               vec3<double> m2 = spec_.goniometer().get_rotation_axis();
               vec3<double> s0 = spec_.beam()->get_s0();
-              CoordinateSystem cs_refl(m2, s0, s1[i], xyzmm[i][2]);
+              CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
-              // Compute J2_refl (2x2 spatial Jacobian at reflection)
-              const auto& det_panel = spec_.detector()[sbox[i].panel];
+              // Detector geometry
+              const Panel& panel = spec_.detector()[sbox[i].panel];
+              vec3<double> d_fast = panel.get_fast_axis();
+              vec3<double> d_slow = panel.get_slow_axis();
+              vec2<double> px = panel.get_pixel_size();
+
+              // Lab position and beam direction at reflection centroid
               vec3<double> p =
-                det_panel.get_pixel_lab_coord(vec2<double>(xyzpx[i][0], xyzpx[i][1]));
+                panel.get_pixel_lab_coord(vec2<double>(xyzpx[i][0], xyzpx[i][1]));
               double r = p.length();
               vec3<double> p_hat = p / r;
-              vec3<double> d_fast = det_panel.get_fast_axis();
-              vec3<double> d_slow = det_panel.get_slow_axis();
-              vec2<double> px = det_panel.get_pixel_size();
+
+              // Kabsch basis vectors scaled by 1/|s1|
+              double s1_len = cs.s1().length();
+              vec3<double> e1_s = cs.e1_axis() / s1_len;
+              vec3<double> e2_s = cs.e2_axis() / s1_len;
+
+              // Project panel axes perpendicular to beam direction
               vec3<double> f_perp = d_fast - p_hat * (p_hat * d_fast);
               vec3<double> s_perp = d_slow - p_hat * (p_hat * d_slow);
-              double s1_len = cs_refl.s1().length();
+
+              // Scale factor
               double scale = s1_len / r;
-              vec3<double> e1_s = cs_refl.e1_axis() / s1_len;
-              vec3<double> e2_s = cs_refl.e2_axis() / s1_len;
+
+              // 2x2 spatial Jacobian: d(c1,c2)/d(x_px,y_px)
               double j11 = scale * px[0] * (e1_s * f_perp);
               double j12 = scale * px[1] * (e1_s * s_perp);
               double j21 = scale * px[0] * (e2_s * f_perp);
               double j22 = scale * px[1] * (e2_s * s_perp);
 
-              // Compose M2 = G2_cell_inv * J2_refl
-              double m00 = cache.g_inv_00 * j11 + cache.g_inv_01 * j21;
-              double m01 = cache.g_inv_00 * j12 + cache.g_inv_01 * j22;
-              double m10 = cache.g_inv_10 * j11 + cache.g_inv_11 * j21;
-              double m11 = cache.g_inv_10 * j12 + cache.g_inv_11 * j22;
+              // Convert to grid units: divide by step size
+              // step_size() returns (step_e3, step_e2, step_e1)
+              double g00 = j11 / spec_.step_size()[2];  // dc1_grid/dx
+              double g01 = j12 / spec_.step_size()[2];  // dc1_grid/dy
+              double g10 = j21 / spec_.step_size()[1];  // dc2_grid/dx
+              double g11 = j22 / spec_.step_size()[1];  // dc2_grid/dy
 
-              // M_33: frame direction
-              double m22 = step_size[0] * cs_refl.zeta() / cache.cs_cell.zeta();
+              // e3 (frame) direction
+              double osc_rad = spec_.scan().get_oscillation()[1] * M_PI / 180.0;
+              double g22 = cs.zeta() * osc_rad / spec_.step_size()[0];
 
-              // Translation: reflection centroid in cell's grid coordinates
-              vec2<double> c12 = cache.cs_cell.from_beam_vector(cs_refl.s1());
-              double c3 = cache.cs_cell.from_rotation_angle_fast(cs_refl.phi());
-              double t0 = c12[0] / step_size[2] + grid_cent[2];  // c1/e1 grid idx
-              double t1 = c12[1] / step_size[1] + grid_cent[1];  // c2/e2 grid idx
-              double t2 = c3 / step_size[0] + grid_cent[0];      // c3/e3 grid idx
+              // Grid center: reflection centroid maps to (0,0,0) in its
+              // own Kabsch frame, which maps to grid center by construction
+              double gc0 = spec_.grid_centre()[2];  // e1 grid center
+              double gc1 = spec_.grid_centre()[1];  // e2 grid center
+              double gc2 = spec_.grid_centre()[0];  // e3 grid center
 
               // Shoebox dimensions
               int6 bbox = sbox[i].bbox;
@@ -479,32 +481,28 @@ namespace dials { namespace algorithms {
               int H = bbox[3] - bbox[2];
               int D = bbox[5] - bbox[4];
 
-              // Reflection centroid in pixel coordinates
-              double x_cal = xyzpx[i][0];
-              double y_cal = xyzpx[i][1];
-              double z_cal = xyzpx[i][2];
-
               // Allocate output reference profile and mask (shoebox shape)
               af::c_grid<3> out_acc(D, H, W);
               af::versa<double, af::c_grid<3>> ref_profile(out_acc, 0.0);
               af::versa<bool, af::c_grid<3>> ref_m(out_acc, false);
 
-              // For each voxel in the shoebox, apply affine map and trilinear interp
+              // For each voxel in the shoebox, apply linearized gc() and
+              // trilinear interp from reference
               for (int d = 0; d < D; ++d) {
-                double dz = (bbox[4] + d) - z_cal;
-                double gk = m22 * dz + t2;
+                double dz = (bbox[4] + d + 0.5) - xyzpx[i][2];
+                double gk = g22 * dz + gc2;
                 int ik = static_cast<int>(std::floor(gk));
                 double fk = gk - ik;
                 bool k_ok = ik >= 0 && ik + 1 < n_grid;
 
                 for (int h = 0; h < H; ++h) {
-                  double dy = (bbox[2] + h) - y_cal;
+                  double dy = (bbox[2] + h + 0.5) - xyzpx[i][1];
                   for (int w = 0; w < W; ++w) {
-                    double dx = (bbox[0] + w) - x_cal;
+                    double dx = (bbox[0] + w + 0.5) - xyzpx[i][0];
 
                     // Affine map: pixel offset -> grid coordinates
-                    double gi = m00 * dx + m01 * dy + t0;
-                    double gj = m10 * dx + m11 * dy + t1;
+                    double gi = g00 * dx + g01 * dy + gc0;
+                    double gj = g10 * dx + g11 * dy + gc1;
 
                     int ii = static_cast<int>(std::floor(gi));
                     int ij = static_cast<int>(std::floor(gj));
@@ -867,112 +865,7 @@ namespace dials { namespace algorithms {
       return pixels_valid;
     }
 
-    /**
-     * Cached Jacobian data for one sampler cell, used by the affine mapping
-     * path to trilinear-interpolate the 11x11x11 reference profile directly.
-     */
-    struct CellJacobianCache {
-      // G2_cell_inv: inverse of 2x2 spatial Jacobian in grid units
-      double g_inv_00, g_inv_01, g_inv_10, g_inv_11;
-      // Inverse e3 Jacobian in grid units: 1 / (zeta_cell * osc / step_c3)
-      double e3_inv_grid;
-      // Cell's CoordinateSystem (for from_beam_vector and from_rotation_angle_fast)
-      CoordinateSystem cs_cell;
-      bool valid;
-      CellJacobianCache()
-          : g_inv_00(0),
-            g_inv_01(0),
-            g_inv_10(0),
-            g_inv_11(0),
-            e3_inv_grid(0),
-            cs_cell(vec3<double>(0, 0, 1),
-                    vec3<double>(0, 0, -1),
-                    vec3<double>(0.01, 0, -1),
-                    0),
-            valid(false) {}
-    };
-
-    /**
-     * Build a CellJacobianCache for the given sampler cell.
-     *
-     * Computes the inverse of the 2x2 spatial Jacobian (in grid units)
-     * and the inverse e3 Jacobian at the cell centroid position, plus the
-     * cell's CoordinateSystem for translating reflection positions.
-     */
-    CellJacobianCache build_cell_jacobian_cache(std::size_t cell_id,
-                                                std::size_t panel) const {
-      const vec3<double> s0 = spec_.beam()->get_s0();
-      const vec3<double> m2 = spec_.goniometer().get_rotation_axis();
-      const Scan& scan = spec_.scan();
-      const auto& det_panel = spec_.detector()[panel];
-      const double3 step_size = spec_.step_size();
-
-      // Nominal centroid from sampler
-      vec3<double> cell_coord = sampler_->coord(cell_id);
-      double x_px = cell_coord[0];
-      double y_px = cell_coord[1];
-      double z_frame = cell_coord[2];
-
-      // Nominal s1 and phi
-      vec3<double> s1_nom = det_panel.get_pixel_lab_coord(vec2<double>(x_px, y_px));
-      s1_nom = s1_nom.normalize() * s0.length();
-      double phi_nom = scan.get_angle_from_array_index(z_frame);
-
-      // Coordinate system at cell centroid
-      CoordinateSystem cs(m2, s0, s1_nom, phi_nom);
-
-      // Compute 2x2 spatial Jacobian at cell centroid, in grid units
-      // J2_cell: d(c1,c2)/d(x_px,y_px), then G2 = diag(1/step) * J2
-      vec3<double> p = det_panel.get_pixel_lab_coord(vec2<double>(x_px, y_px));
-      double r = p.length();
-      vec3<double> p_hat = p / r;
-      vec3<double> d_fast = det_panel.get_fast_axis();
-      vec3<double> d_slow = det_panel.get_slow_axis();
-      vec2<double> px = det_panel.get_pixel_size();
-
-      // Project panel axes perpendicular to beam direction
-      vec3<double> f_perp = d_fast - p_hat * (p_hat * d_fast);
-      vec3<double> s_perp = d_slow - p_hat * (p_hat * d_slow);
-
-      double s1_len = cs.s1().length();
-      double scale = s1_len / r;
-      vec3<double> e1_s = cs.e1_axis() / s1_len;
-      vec3<double> e2_s = cs.e2_axis() / s1_len;
-
-      // J2_cell entries
-      double j11 = scale * px[0] * (e1_s * f_perp);
-      double j12 = scale * px[1] * (e1_s * s_perp);
-      double j21 = scale * px[0] * (e2_s * f_perp);
-      double j22 = scale * px[1] * (e2_s * s_perp);
-
-      // G2 = diag(1/step_c1, 1/step_c2) * J2
-      double g11 = j11 / step_size[2];  // step_size[2] = step_c1
-      double g12 = j12 / step_size[2];
-      double g21 = j21 / step_size[1];  // step_size[1] = step_c2
-      double g22 = j22 / step_size[1];
-
-      // Invert 2x2
-      double det = g11 * g22 - g12 * g21;
-      DIALS_ASSERT(std::abs(det) > 1e-30);
-
-      CellJacobianCache cache;
-      cache.g_inv_00 = g22 / det;
-      cache.g_inv_01 = -g12 / det;
-      cache.g_inv_10 = -g21 / det;
-      cache.g_inv_11 = g11 / det;
-
-      // e3 inverse: 1 / (zeta_cell * osc / step_c3)
-      double osc = scan.get_oscillation()[1];
-      cache.e3_inv_grid = step_size[0] / (cs.zeta() * osc);
-      cache.cs_cell = cs;
-      cache.valid = true;
-      return cache;
-    }
-
     TransformSpec spec_;
-
-    // Cell-cache: per-cell Jacobian caches for affine mapping
-    mutable std::vector<CellJacobianCache> jac_cache_;
   };
 
 }}  // namespace dials::algorithms
