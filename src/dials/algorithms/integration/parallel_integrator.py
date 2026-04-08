@@ -1284,18 +1284,19 @@ class ReferenceCalculatorProcessor:
                 pickle.dump(self._profiles, outfile)
 
         # Print the profiles to the debug log
-        for i in range(len(self._profiles)):
-            logger.debug("")
-            logger.debug("Reference Profiles for experiment %d", i)
-            logger.debug("")
-            reference = self._profiles[i].reference()
-            for j in range(len(reference)):
-                data = reference.data(j)
-                logger.debug("Profile %d", j)
-                if len(data) > 0:
-                    logger.debug(pprint.profile3d(data))
-                else:
-                    logger.debug("** NO PROFILE **")
+        if logger.isEnabledFor(logging.DEBUG):
+            for i in range(len(self._profiles)):
+                logger.debug("")
+                logger.debug("Reference Profiles for experiment %d", i)
+                logger.debug("")
+                reference = self._profiles[i].reference()
+                for j in range(len(reference)):
+                    data = reference.data(j)
+                    logger.debug("Profile %d", j)
+                    if len(data) > 0:
+                        logger.debug(pprint.profile3d(data))
+                    else:
+                        logger.debug("** NO PROFILE **")
 
     def reflections(self):
         return self._reflections

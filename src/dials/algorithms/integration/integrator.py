@@ -1106,16 +1106,17 @@ class Integrator:
                         pickle.dump(reference_debug, outfile)
 
                 # Print profiles
-                for i in range(len(finalized_profile_fitter)):
-                    m = finalized_profile_fitter[i]
-                    logger.debug("")
-                    logger.debug("Profiles for experiment %d", i)
-                    for j in range(len(m)):
-                        logger.debug("Profile %d", j)
-                        try:
-                            logger.debug(pprint.profile3d(m.data(j)))
-                        except Exception:
-                            logger.debug("** NO PROFILE **")
+                if logger.isEnabledFor(logging.DEBUG):
+                    for i in range(len(finalized_profile_fitter)):
+                        m = finalized_profile_fitter[i]
+                        logger.debug("")
+                        logger.debug("Profiles for experiment %d", i)
+                        for j in range(len(m)):
+                            logger.debug("Profile %d", j)
+                            try:
+                                logger.debug(pprint.profile3d(m.data(j)))
+                            except Exception:
+                                logger.debug("** NO PROFILE **")
 
                 # Print the modeller report
                 self.profile_model_report = ProfileModelReport(
