@@ -208,6 +208,8 @@ namespace dials { namespace algorithms {
                 n_sigma,
                 grid_size) {
       DIALS_ASSERT(sampler_ != 0);
+      cube_cache_.resize(sampler_->size());
+      cube_valid_.resize(sampler_->size(), false);
     }
 
     std::shared_ptr<BeamBase> beam() const {
@@ -340,6 +342,7 @@ namespace dials { namespace algorithms {
       af::shared<bool> success;
       switch (fit_method_) {
       case ReciprocalSpace:
+      case CellCache:
         success = fit_reciprocal_space(reflections);
         break;
       case DetectorSpace:
@@ -358,6 +361,7 @@ namespace dials { namespace algorithms {
     void validate(af::reflection_table reflections) const {
       switch (fit_method_) {
       case ReciprocalSpace:
+      case CellCache:
         fit_reciprocal_space(reflections);
         break;
       case DetectorSpace:
@@ -409,64 +413,118 @@ namespace dials { namespace algorithms {
         // Check if we want to use this reflection
         if (integrate) {
           try {
-            // Get the reference profiles
+            // Get the sampler cell index
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
-            data_const_reference p = data(index).const_ref();
-            mask_const_reference mask1 = mask(index).const_ref();
 
-            // Create the coordinate system
-            vec3<double> m2 = spec_.goniometer().get_rotation_axis();
-            vec3<double> s0 = spec_.beam()->get_s0();
-            CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
+            if (fit_method_ == CellCache) {
+              // --- CELL-CACHE PATH ---
+              // Skip reflections with no learned profile for this cell
+              if (!valid(index)) continue;
 
-            // Create the data array
-            af::versa<double, af::c_grid<3>> data(sbox[i].data.accessor());
-            std::copy(sbox[i].data.begin(), sbox[i].data.end(), data.begin());
+              // Lazy-init the cube for this cell
+              if (!cube_valid_[index]) {
+                cube_cache_[index] = build_cell_cube(index, sbox[i].panel);
+                cube_valid_[index] = true;
+              }
+              const CellCube& cc = cube_cache_[index];
 
-            // Create the background array
-            af::versa<double, af::c_grid<3>> background(sbox[i].background.accessor());
-            std::copy(
-              sbox[i].background.begin(), sbox[i].background.end(), background.begin());
+              // Compute sub-pixel offset from cell centroid
+              vec3<double> cell_coord = sampler_->coord(index);
+              double dx = xyzpx[i][0] - cell_coord[0];
+              double dy = xyzpx[i][1] - cell_coord[1];
+              double dz = xyzpx[i][2] - cell_coord[2];
+              // Clamp to cube margin range
+              dx = std::max(-1.0, std::min(1.0, dx));
+              dy = std::max(-1.0, std::min(1.0, dy));
+              dz = std::max(-1.0, std::min(1.0, dz));
 
-            // Create the mask array
-            af::versa<bool, af::c_grid<3>> mask(sbox[i].mask.accessor());
-            std::transform(sbox[i].mask.begin(),
-                           sbox[i].mask.end(),
-                           mask.begin(),
-                           detail::check_mask_code(Valid | Foreground));
+              // Extract reference sub-volume via trilinear interpolation
+              ExtractedRef ref = extract_from_cube(cc, dx, dy, dz, sbox[i].bbox);
 
-            // Compute the transform
-            TransformForward<double> transform(spec_,
-                                               cs,
-                                               sbox[i].bbox,
-                                               sbox[i].panel,
-                                               data.const_ref(),
-                                               background.const_ref(),
-                                               mask.const_ref());
+              // Build combined mask (reference mask AND shoebox foreground mask)
+              af::versa<bool, af::c_grid<3>> m(ref.mask.accessor());
+              for (std::size_t j = 0; j < m.size(); ++j) {
+                m[j] =
+                  ref.mask[j]
+                  && ((sbox[i].mask[j] & (Valid | Foreground)) == (Valid | Foreground));
+              }
 
-            // Get the transformed shoebox
-            data_const_reference c = transform.profile().const_ref();
-            data_const_reference b = transform.background().const_ref();
-            mask_const_reference mask2 = transform.mask().const_ref();
-            af::versa<bool, af::c_grid<3>> m(mask2.accessor());
-            DIALS_ASSERT(mask1.size() == mask2.size());
-            for (std::size_t j = 0; j < m.size(); ++j) {
-              m[j] = mask1[j] && mask2[j];
+              // IRLS fit using raw shoebox data and extracted detector-space reference
+              ProfileFitter<double> fit(sbox[i].data.const_ref(),
+                                        sbox[i].background.const_ref(),
+                                        m.const_ref(),
+                                        ref.profile.const_ref(),
+                                        1e-3,
+                                        100);
+
+              // Store results
+              intensity_val[i] = fit.intensity()[0];
+              intensity_var[i] = fit.variance()[0];
+              reference_cor[i] = fit.correlation();
+              flags[i] |= af::IntegratedPrf;
+              success[i] = true;
+
+            } else {
+              // --- EXISTING RECIPROCAL-SPACE PATH ---
+              data_const_reference p = data(index).const_ref();
+              mask_const_reference mask1 = mask(index).const_ref();
+
+              // Create the coordinate system
+              vec3<double> m2 = spec_.goniometer().get_rotation_axis();
+              vec3<double> s0 = spec_.beam()->get_s0();
+              CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
+
+              // Create the data array
+              af::versa<double, af::c_grid<3>> data(sbox[i].data.accessor());
+              std::copy(sbox[i].data.begin(), sbox[i].data.end(), data.begin());
+
+              // Create the background array
+              af::versa<double, af::c_grid<3>> background(
+                sbox[i].background.accessor());
+              std::copy(sbox[i].background.begin(),
+                        sbox[i].background.end(),
+                        background.begin());
+
+              // Create the mask array
+              af::versa<bool, af::c_grid<3>> mask(sbox[i].mask.accessor());
+              std::transform(sbox[i].mask.begin(),
+                             sbox[i].mask.end(),
+                             mask.begin(),
+                             detail::check_mask_code(Valid | Foreground));
+
+              // Compute the transform
+              TransformForward<double> transform(spec_,
+                                                 cs,
+                                                 sbox[i].bbox,
+                                                 sbox[i].panel,
+                                                 data.const_ref(),
+                                                 background.const_ref(),
+                                                 mask.const_ref());
+
+              // Get the transformed shoebox
+              data_const_reference c = transform.profile().const_ref();
+              data_const_reference b = transform.background().const_ref();
+              mask_const_reference mask2 = transform.mask().const_ref();
+              af::versa<bool, af::c_grid<3>> m(mask2.accessor());
+              DIALS_ASSERT(mask1.size() == mask2.size());
+              for (std::size_t j = 0; j < m.size(); ++j) {
+                m[j] = mask1[j] && mask2[j];
+              }
+
+              // Do the profile fitting
+              ProfileFitter<double> fit(c, b, m.const_ref(), p, 1e-3, 100);
+              // DIALS_ASSERT(fit.niter() < 100);
+
+              // Set the data in the reflection
+              intensity_val[i] = fit.intensity()[0];
+              intensity_var[i] = fit.variance()[0];
+              reference_cor[i] = fit.correlation();
+              // reference_rmsd[i] = fit.rmsd();
+
+              // Set the integrated flag
+              flags[i] |= af::IntegratedPrf;
+              success[i] = true;
             }
-
-            // Do the profile fitting
-            ProfileFitter<double> fit(c, b, m.const_ref(), p, 1e-3, 100);
-            // DIALS_ASSERT(fit.niter() < 100);
-
-            // Set the data in the reflection
-            intensity_val[i] = fit.intensity()[0];
-            intensity_var[i] = fit.variance()[0];
-            reference_cor[i] = fit.correlation();
-            // reference_rmsd[i] = fit.rmsd();
-
-            // Set the integrated flag
-            flags[i] |= af::IntegratedPrf;
-            success[i] = true;
 
           } catch (dials::error const& e) {
             /* std::cout << e.what() << std::endl; */
@@ -973,6 +1031,10 @@ namespace dials { namespace algorithms {
     }
 
     TransformSpec spec_;
+
+    // Cell-cache: per-cell precomputed detector-space reference cubes
+    mutable std::vector<CellCube> cube_cache_;
+    mutable std::vector<bool> cube_valid_;
   };
 
 }}  // namespace dials::algorithms
