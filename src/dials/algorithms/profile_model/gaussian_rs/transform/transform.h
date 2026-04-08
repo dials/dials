@@ -343,6 +343,16 @@ namespace dials { namespace algorithms { namespace profile_model {
         // frame to the grid point.
         af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
         std::vector<Match> match_buf;
+        // Per-pixel valid-frame list: hoisted out of the match loop.
+        // mask(k,j,i) is invariant across matches for a fixed (j,i) pixel,
+        // so we precompute which k frames pass the mask and cache their
+        // image base values to eliminate the branch from the hot inner loop.
+        struct ValidFrame {
+          int k;
+          FloatType base_value;  // image(k,j,i) — multiplied by fraction per match
+        };
+        std::vector<ValidFrame> valid_frames;
+        valid_frames.reserve(shoebox_size_[0]);
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
           if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
             // This y-coordinate is outside the bounds of the panel
@@ -352,6 +362,13 @@ namespace dials { namespace algorithms { namespace profile_model {
             if (x0_ + i < 0 | x0_ + i >= panel.get_image_size()[0]) {
               // This x-coordinate is outside the bounds of the panel
               continue;
+            }
+            // Precompute valid frames for this (j,i) pixel — invariant across matches.
+            valid_frames.clear();
+            for (int k = 0; k < shoebox_size_[0]; ++k) {
+              if (mask(k, j, i)) {
+                valid_frames.push_back({k, image(k, j, i)});
+              }
             }
             vert4 input(gc_array(j, i),
                         gc_array(j, i + 1),
@@ -363,12 +380,11 @@ namespace dials { namespace algorithms { namespace profile_model {
               int index = match_buf[m].out;
               int ii = index % grid_size_[2];
               int jj = index / grid_size_[2];
-              for (int k = 0; k < shoebox_size_[0]; ++k) {
-                if (mask(k, j, i)) {
-                  FloatType value = image(k, j, i) * fraction;
-                  for (int kk = 0; kk < grid_size_[0]; ++kk) {
-                    profile_(kk, jj, ii) += value * zfraction(k, kk);
-                  }
+              for (int vi = 0; vi < (int)valid_frames.size(); ++vi) {
+                int k = valid_frames[vi].k;
+                FloatType value = valid_frames[vi].base_value * fraction;
+                for (int kk = 0; kk < grid_size_[0]; ++kk) {
+                  profile_(kk, jj, ii) += value * zfraction(k, kk);
                 }
               }
             }
@@ -446,6 +462,17 @@ namespace dials { namespace algorithms { namespace profile_model {
         // frame to the grid point.
         af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
         std::vector<Match> match_buf;
+        // Per-pixel valid-frame list: hoisted out of the match loop.
+        // mask(k,j,i) is invariant across matches for a fixed (j,i) pixel,
+        // so we precompute which k frames pass the mask and cache their
+        // image/background base values to eliminate the branch from the hot inner loop.
+        struct ValidFrame {
+          int k;
+          FloatType base_ivalue;  // image(k,j,i) — multiplied by fraction per match
+          FloatType base_bvalue;  // bkgrd(k,j,i) — multiplied by fraction per match
+        };
+        std::vector<ValidFrame> valid_frames;
+        valid_frames.reserve(shoebox_size_[0]);
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
           if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
             // This y-coordinate is outside the bounds of the panel
@@ -455,6 +482,13 @@ namespace dials { namespace algorithms { namespace profile_model {
             if (x0_ + i < 0 | x0_ + i >= panel.get_image_size()[0]) {
               // This x-coordinate is outside the bounds of the panel
               continue;
+            }
+            // Precompute valid frames for this (j,i) pixel — invariant across matches.
+            valid_frames.clear();
+            for (int k = 0; k < shoebox_size_[0]; ++k) {
+              if (mask(k, j, i)) {
+                valid_frames.push_back({k, image(k, j, i), bkgrd(k, j, i)});
+              }
             }
             // The corners of the image pixel mapped to transformed grid coordinates
             vert4 input(gc_array(j, i),
@@ -467,15 +501,14 @@ namespace dials { namespace algorithms { namespace profile_model {
               int index = match_buf[m].out;
               int jj = index / grid_size_[2];
               int ii = index % grid_size_[2];
-              for (int k = 0; k < shoebox_size_[0]; ++k) {
-                if (mask(k, j, i)) {
-                  FloatType ivalue = image(k, j, i) * fraction;
-                  FloatType bvalue = bkgrd(k, j, i) * fraction;
-                  for (int kk = 0; kk < grid_size_[0]; ++kk) {
-                    FloatType zf = zfraction(k, kk);
-                    profile_(kk, jj, ii) += ivalue * zf;
-                    background_(kk, jj, ii) += bvalue * zf;
-                  }
+              for (int vi = 0; vi < (int)valid_frames.size(); ++vi) {
+                int k = valid_frames[vi].k;
+                FloatType ivalue = valid_frames[vi].base_ivalue * fraction;
+                FloatType bvalue = valid_frames[vi].base_bvalue * fraction;
+                for (int kk = 0; kk < grid_size_[0]; ++kk) {
+                  FloatType zf = zfraction(k, kk);
+                  profile_(kk, jj, ii) += ivalue * zf;
+                  background_(kk, jj, ii) += bvalue * zf;
                 }
               }
             }
