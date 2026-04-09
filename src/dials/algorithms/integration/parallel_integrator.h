@@ -788,7 +788,7 @@ namespace dials { namespace algorithms {
       }
 
       // sort the indices by the final frame number
-      std::sort(indices_.begin(), indices_.end(), sort_by_frame(bbox));
+      std::stable_sort(indices_.begin(), indices_.end(), sort_by_frame(bbox));
       DIALS_ASSERT(bbox[indices_.front()][5] - zstart >= 1);
       DIALS_ASSERT(bbox[indices_.back()][5] - zstart <= n);
 
