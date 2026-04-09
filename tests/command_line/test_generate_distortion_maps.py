@@ -6,7 +6,6 @@ import random
 import shutil
 import subprocess
 
-import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 import pytest
@@ -477,15 +476,16 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     )
 
     # Visually inspect the mm corrected positions
-    fig, ax = plt.subplots()
-    intersections_x, intersections_y = intersections_mm.parts()
-    ax.scatter(intersections_x, intersections_y)
-    ax.yaxis.set_inverted(True)
-    ax.set_xlim(0, 2048 * panel.get_pixel_size()[0])
-    ax.set_ylim(0, 2048 * panel.get_pixel_size()[1])
-    plt.gca().set_aspect("equal", adjustable="box")
-    plt.title("mm corrected intersections")
-    plt.savefig(tmp_path / "mm_intersections.png")
+    # import matplotlib.pyplot as plt
+    # fig, ax = plt.subplots()
+    # intersections_x, intersections_y = intersections_mm.parts()
+    # ax.scatter(intersections_x, intersections_y)
+    # ax.yaxis.set_inverted(True)
+    # ax.set_xlim(0, 2048 * panel.get_pixel_size()[0])
+    # ax.set_ylim(0, 2048 * panel.get_pixel_size()[1])
+    # plt.gca().set_aspect("equal", adjustable="box")
+    # plt.title("mm corrected intersections")
+    # plt.savefig(tmp_path / "mm_intersections.png")
 
     # Load the experiment and extract the correction maps
     experiments = ExperimentList.from_file(tmp_path / "imported.expt")
@@ -505,32 +505,32 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # In the pixel-to-millimetre transform, the dx and dy values are first
     # *subtracted* from the pixel positions and then the result is converted
     # to millimetre via the parallax correction.
-    corrections_f = []
-    corrections_s = []
-    for spot in intersections_px:
-        index = (int(spot[1]), int(spot[0]))
-        corrections_f.append(dx[*index])
-        corrections_s.append(dy[*index])
-    corrections_f = flex.double(corrections_f)
-    corrections_s = flex.double(corrections_s)
-
-    corrected_intersections_f = intersections_f - corrections_f
-    corrected_intersections_s = intersections_s - corrections_s
-
-    fig, ax = plt.subplots()
-    ax.scatter(intersections_f, intersections_s)
-    ax.scatter(corrected_intersections_f, corrected_intersections_s)
-    ax.quiver(
-        corrected_intersections_f,
-        corrected_intersections_s,
-        corrections_f,
-        corrections_s,
-        angles="xy",
-        scale_units="xy",
-        scale=1,
-        color="red",
-    )
-    ax.yaxis.set_inverted(True)
-    plt.gca().set_aspect("equal", adjustable="box")
-    plt.title("pixel intersections before/after correction")
-    plt.savefig(tmp_path / "pixel_intersections.png")
+    # corrections_f = []
+    # corrections_s = []
+    # for spot in intersections_px:
+    #    index = (int(spot[1]), int(spot[0]))
+    #    corrections_f.append(dx[*index])
+    #    corrections_s.append(dy[*index])
+    # corrections_f = flex.double(corrections_f)
+    # corrections_s = flex.double(corrections_s)
+    #
+    # corrected_intersections_f = intersections_f - corrections_f
+    # corrected_intersections_s = intersections_s - corrections_s
+    #
+    # fig, ax = plt.subplots()
+    # ax.scatter(intersections_f, intersections_s)
+    # ax.scatter(corrected_intersections_f, corrected_intersections_s)
+    # ax.quiver(
+    #    corrected_intersections_f,
+    #    corrected_intersections_s,
+    #    corrections_f,
+    #    corrections_s,
+    #    angles="xy",
+    #    scale_units="xy",
+    #    scale=1,
+    #    color="red",
+    # )
+    # ax.yaxis.set_inverted(True)
+    # plt.gca().set_aspect("equal", adjustable="box")
+    # plt.title("pixel intersections before/after correction")
+    # plt.savefig(tmp_path / "pixel_intersections.png")
