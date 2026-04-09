@@ -228,20 +228,7 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
     dx0t = dx[0].matrix_transpose()
     row0 = dx0t.matrix_copy_column(0)
 
-    # The distortion is an ellipse pinched in by 5% (l2 = 0.95) horizontally.
-    # To correct for this we expand by a factor of 1/0.95. Check that is the
-    # case (for the first pixel at least)
-    vec_centre_to_first_px = matrix.col(
-        d[0].get_pixel_lab_coord((0.5, 0.5))
-    ) - matrix.col(d[0].get_lab_coord(centre_xy))
-    dist_centre_to_first_px = vec_centre_to_first_px.dot(
-        matrix.col(d[0].get_fast_axis())
-    )
-    corr_mm = (1 - 1 / 0.95) * dist_centre_to_first_px
-    corr_px = corr_mm / d[0].get_pixel_size()[1]
-    assert row0[0] == pytest.approx(corr_px)
-
-    # Test (1) from above list for panel 0
+    # Test (1) from the above list for panel 0
     for i in range(1, d[0].get_image_size()[0]):
         assert row0 == pytest.approx(dx0t.matrix_copy_column(i))
 
@@ -256,11 +243,29 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
         -1.0 * dx[1].matrix_transpose().matrix_copy_column(0).reversed()
     )
 
-    # Test (1) for panel 2 as well, which then covers everything needed
-    row0 = dx[2].matrix_transpose().matrix_copy_column(0)
-    dx2t = dx[2].matrix_transpose()
+    # Test (1) for panel 1 as well
+    dx1t = dx[1].matrix_transpose()
+    row0 = dx1t.matrix_copy_column(0)
     for i in range(1, d[0].get_image_size()[0]):
-        assert row0 == pytest.approx(dx2t.matrix_copy_column(i))
+        assert row0 == pytest.approx(dx1t.matrix_copy_column(i))
+
+    # The distortion is an ellipse pinched in by 5% (l2 = 0.95) horizontally.
+    # Check that the distorted distance is 95% of the canonical distance for
+    # the upper left pixel of the first panel.
+    vec_centre_to_first_px = matrix.col(
+        d[0].get_pixel_lab_coord((0.5, 0.5))
+    ) - matrix.col(d[0].get_lab_coord(centre_xy))
+    vec_distortion = matrix.col(
+        (
+            dx[0][0, 0] * d[0].get_pixel_size()[0],
+            dy[0][0, 0] * d[0].get_pixel_size()[1],
+            0.0,
+        )
+    )
+    fast = matrix.col(d[0].get_fast_axis())
+    assert (vec_centre_to_first_px + vec_distortion).dot(
+        fast
+    ) == 0.95 * vec_centre_to_first_px.dot(fast)
 
 
 def create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2):
