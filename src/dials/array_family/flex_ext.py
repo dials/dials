@@ -1104,11 +1104,13 @@ class _:
         ntotal = (x1 - x0) * (y1 - y0) * (z1 - z0)
         assert ntotal.all_gt(0)
         sbox = self["shoebox"]
-        nvalid = sbox.count_mask_values(MaskCode.Valid)
-        nbackg = sbox.count_mask_values(MaskCode.Background)
-        nforeg = sbox.count_mask_values(MaskCode.Foreground)
-        nvalbg = sbox.count_mask_values(MaskCode.Background | MaskCode.Valid)
-        nvalfg = sbox.count_mask_values(MaskCode.Foreground | MaskCode.Valid)
+        nvalid, nbackg, nforeg, nvalbg, nvalfg = sbox.count_mask_values_5way(
+            MaskCode.Valid,
+            MaskCode.Background,
+            MaskCode.Foreground,
+            MaskCode.Background | MaskCode.Valid,
+            MaskCode.Foreground | MaskCode.Valid,
+        )
         ninvbg = nbackg - nvalbg
         ninvfg = nforeg - nvalfg
         assert ninvbg.all_ge(0)

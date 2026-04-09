@@ -450,6 +450,42 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Count mask pixels matching 5 codes simultaneously in a single pass.
+   * Returns a 5-tuple of int arrays: (nvalid, nbackg, nforeg, nvalbg, nvalfg)
+   * corresponding to codes (v0, v1, v2, v3, v4).
+   * Replaces 5 separate count_mask_values calls with one traversal per shoebox.
+   */
+  template <typename FloatType>
+  boost::python::tuple count_mask_values_5way(const const_ref<Shoebox<FloatType> >& a,
+                                              int v0,
+                                              int v1,
+                                              int v2,
+                                              int v3,
+                                              int v4) {
+    shared<int> c0(a.size(), 0), c1(a.size(), 0), c2(a.size(), 0), c3(a.size(), 0),
+      c4(a.size(), 0);
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      const af::versa<int, af::c_grid<3> >& mask = a[i].mask;
+      const std::size_t n = mask.size();
+      int r0 = 0, r1 = 0, r2 = 0, r3 = 0, r4 = 0;
+      for (std::size_t j = 0; j < n; ++j) {
+        int p = mask[j];
+        r0 += (p & v0) == v0;
+        r1 += (p & v1) == v1;
+        r2 += (p & v2) == v2;
+        r3 += (p & v3) == v3;
+        r4 += (p & v4) == v4;
+      }
+      c0[i] = r0;
+      c1[i] = r1;
+      c2[i] = r2;
+      c3[i] = r3;
+      c4[i] = r4;
+    }
+    return boost::python::make_tuple(c0, c1, c2, c3, c4);
+  }
+
+  /**
    * Get the maximum index of each shoebox
    */
   template <typename FloatType>
@@ -1047,6 +1083,7 @@ namespace dials { namespace af { namespace boost_python {
         .def("panels", &panels<FloatType>)
         .def("bounding_boxes", &bounding_boxes<FloatType>)
         .def("count_mask_values", &count_mask_values<FloatType>)
+        .def("count_mask_values_5way", &count_mask_values_5way<FloatType>)
         .def("is_bbox_within_image_volume",
              &is_bbox_within_image_volume<FloatType>,
              (boost::python::arg("image_size"), boost::python::arg("scan_range")))
