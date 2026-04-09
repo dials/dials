@@ -160,7 +160,8 @@ namespace dials { namespace algorithms { namespace profile_model {
       enum_<GaussianRSProfileModeller::FitMethod>("FitMethod")
         .value("reciprocal_space", GaussianRSProfileModeller::ReciprocalSpace)
         .value("detector_space", GaussianRSProfileModeller::DetectorSpace)
-        .value("cell_cache", GaussianRSProfileModeller::CellCache);
+        .value("cell_cache", GaussianRSProfileModeller::CellCache)
+        .value("cell_cache_scatter", GaussianRSProfileModeller::CellCacheScatter);
 
       /* register_ptr_to_python< std::shared_ptr<GaussianRSProfileModeller> >(); */
       /* implicitly_convertible< */

@@ -50,7 +50,12 @@ namespace dials { namespace algorithms {
       SphericalGrid = 4,
     };
 
-    enum FitMethod { ReciprocalSpace = 1, DetectorSpace = 2, CellCache = 3 };
+    enum FitMethod {
+      ReciprocalSpace = 1,
+      DetectorSpace = 2,
+      CellCache = 3,
+      CellCacheScatter = 4
+    };
 
     GaussianRSProfileModellerBase(const std::shared_ptr<BeamBase> beam,
                                   const Detector& detector,
@@ -343,6 +348,7 @@ namespace dials { namespace algorithms {
       switch (fit_method_) {
       case ReciprocalSpace:
       case CellCache:
+      case CellCacheScatter:
         success = fit_reciprocal_space(reflections);
         break;
       case DetectorSpace:
@@ -362,6 +368,7 @@ namespace dials { namespace algorithms {
       switch (fit_method_) {
       case ReciprocalSpace:
       case CellCache:
+      case CellCacheScatter:
         fit_reciprocal_space(reflections);
         break;
       case DetectorSpace:
@@ -688,6 +695,223 @@ namespace dials { namespace algorithms {
               // IRLS profile fit on the grid. `ref` is already normalised
               // over its valid cells during learning and must not be
               // re-normalised here.
+              ProfileFitter<double> fit(data_grid.const_ref(),
+                                        bg_grid.const_ref(),
+                                        combined_mask.const_ref(),
+                                        ref,
+                                        1e-3,
+                                        100);
+
+              intensity_val[i] = fit.intensity()[0];
+              intensity_var[i] = fit.variance()[0];
+              reference_cor[i] = fit.correlation();
+              flags[i] |= af::IntegratedPrf;
+              success[i] = true;
+
+            } else if (fit_method_ == CellCacheScatter) {
+              // --- CELL-CACHE SCATTER PATH: forward pixel loop, bilinear scatter ---
+              if (!valid(index)) continue;
+
+              // Reference profile and mask (11x11x11, layout: (e2, e1, e3))
+              data_const_reference ref = data(index).const_ref();
+              mask_const_reference ref_mask = mask(index).const_ref();
+              const int n_grid = static_cast<int>(2 * spec_.half_grid_size() + 1);
+
+              // Construct CoordinateSystem at reflection position
+              vec3<double> m2 = spec_.goniometer().get_rotation_axis();
+              vec3<double> s0 = spec_.beam()->get_s0();
+              CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
+
+              // Detector geometry
+              const Panel& panel = spec_.detector()[sbox[i].panel];
+              vec3<double> d_fast = panel.get_fast_axis();
+              vec3<double> d_slow = panel.get_slow_axis();
+              vec2<double> px = panel.get_pixel_size();
+
+              // Lab position and beam direction at reflection centroid
+              vec3<double> p =
+                panel.get_pixel_lab_coord(vec2<double>(xyzpx[i][0], xyzpx[i][1]));
+              double r = p.length();
+              vec3<double> p_hat = p / r;
+
+              // Kabsch basis vectors scaled by 1/|s1|
+              double s1_len = cs.s1().length();
+              vec3<double> e1_s = cs.e1_axis() / s1_len;
+              vec3<double> e2_s = cs.e2_axis() / s1_len;
+
+              // Project panel axes perpendicular to beam direction
+              vec3<double> f_perp = d_fast - p_hat * (p_hat * d_fast);
+              vec3<double> s_perp = d_slow - p_hat * (p_hat * d_slow);
+
+              // Scale factor
+              double scale = s1_len / r;
+
+              // 2x2 spatial Jacobian: d(c1,c2)/d(x_px,y_px)
+              double j11 = scale * px[0] * (e1_s * f_perp);
+              double j12 = scale * px[1] * (e1_s * s_perp);
+              double j21 = scale * px[0] * (e2_s * f_perp);
+              double j22 = scale * px[1] * (e2_s * s_perp);
+
+              // Convert to grid units: divide by step size
+              // step_size() returns (step_e3, step_e2, step_e1)
+              double g00 = j11 / spec_.step_size()[2];  // dc1_grid/dx
+              double g01 = j12 / spec_.step_size()[2];  // dc1_grid/dy
+              double g10 = j21 / spec_.step_size()[1];  // dc2_grid/dx
+              double g11 = j22 / spec_.step_size()[1];  // dc2_grid/dy
+
+              // e3 (frame) direction
+              double osc_rad = spec_.scan().get_oscillation()[1];
+              double g22 = cs.zeta() * osc_rad / spec_.step_size()[0];
+
+              // Grid center: reflection centroid maps to grid center
+              double gc0 = spec_.grid_centre()[2];  // e1 grid center
+              double gc1 = spec_.grid_centre()[1];  // e2 grid center
+
+              // Shoebox dimensions
+              int6 bbox = sbox[i].bbox;
+              int W = bbox[1] - bbox[0];
+              int H = bbox[3] - bbox[2];
+              int D = bbox[5] - bbox[4];
+
+              // Determinant of 2x2 spatial block — needed only for DET_EPS guard.
+              double det2 = g00 * g11 - g01 * g10;
+
+              const double DET_EPS = 1e-6;
+              if (std::abs(det2) < DET_EPS || std::abs(g22) < DET_EPS) {
+                // Ill-conditioned geometry; skip this reflection.
+                continue;
+              }
+
+              // Allocate grid-space buffers (n_grid x n_grid x n_grid,
+              // (jj=e2, ii=e1, kk=e3) layout matching `ref`).
+              af::c_grid<3> grid_acc(n_grid, n_grid, n_grid);
+              af::versa<double, af::c_grid<3>> data_grid(grid_acc, 0.0);
+              af::versa<double, af::c_grid<3>> bg_grid(grid_acc, 0.0);
+              af::versa<bool, af::c_grid<3>> combined_mask(grid_acc, false);
+
+              // Weight accumulator: total scattered mass per grid cell (fg-only).
+              af::versa<double, af::c_grid<3>> weight_grid(grid_acc, 0.0);
+
+              // Build per-frame z_fraction matrix via MapFramesForward.
+              // zfraction(k, kk) is the fraction of frame-k's angular mass
+              // landing in e3 grid cell kk.
+              MapFramesForward<double> map_fwd(spec_.scan().get_array_range()[0],
+                                               spec_.scan().get_oscillation()[0],
+                                               spec_.scan().get_oscillation()[1],
+                                               spec_.sigma_m(),
+                                               spec_.n_sigma(),
+                                               spec_.half_grid_size());
+              af::versa<double, af::c_grid<2>> zfraction_arr =
+                map_fwd(vec2<int>(bbox[4], bbox[5]), cs.phi(), cs.zeta());
+              af::const_ref<double, af::c_grid<2>> zfraction =
+                zfraction_arr.const_ref();
+
+              const int need = Valid | Foreground;
+
+              // Bounds check helper (hoisted: does not depend on pixel position).
+              auto in_bounds = [&](int jj, int ii) -> bool {
+                return jj >= 0 && jj < n_grid && ii >= 0 && ii < n_grid;
+              };
+
+              // Neighbor struct (hoisted: type definition independent of pixel).
+              struct Neighbor {
+                int jj;
+                int ii;
+                double w;
+              };
+
+              // Forward pixel scatter loop: for each shoebox pixel (j_px, i_px),
+              // scatter its data into the 4 bilinearly-weighted grid cells.
+              for (int j_px = 0; j_px < H; ++j_px) {
+                for (int i_px = 0; i_px < W; ++i_px) {
+                  // Pixel center offset from reflection centroid (pixels).
+                  double dx_px = (bbox[0] + i_px + 0.5) - xyzpx[i][0];
+                  double dy_px = (bbox[2] + j_px + 0.5) - xyzpx[i][1];
+
+                  // Forward Jacobian: pixel offset -> grid coordinate offset.
+                  // gi is along e1 (ii axis), gj is along e2 (jj axis).
+                  double dgi = g00 * dx_px + g01 * dy_px;
+                  double dgj = g10 * dx_px + g11 * dy_px;
+                  double gi = gc0 + dgi;  // continuous e1 grid coord
+                  double gj = gc1 + dgj;  // continuous e2 grid coord
+
+                  // Bilinear floor/fraction with half-cell center shift.
+                  // Reference profile cell ii spans grid coords [ii, ii+1) with center
+                  // at ii + 0.5. Subtract 0.5 so a pixel at grid coord ii+0.5 lands
+                  // fully in cell ii (fi = 0.0) rather than being split with cell ii+1.
+                  double gi_c = gi - 0.5;
+                  double gj_c = gj - 0.5;
+                  int ii0 = static_cast<int>(std::floor(gi_c));
+                  int jj0 = static_cast<int>(std::floor(gj_c));
+                  double fi = gi_c - ii0;
+                  double fj = gj_c - jj0;
+
+                  // 4 bilinear weights: (w_jj, w_ii) -> weight
+                  double w00 = (1.0 - fj) * (1.0 - fi);  // (jj0,   ii0)
+                  double w01 = (1.0 - fj) * fi;          // (jj0,   ii0+1)
+                  double w10 = fj * (1.0 - fi);          // (jj0+1, ii0)
+                  double w11 = fj * fi;                  // (jj0+1, ii0+1)
+
+                  // For each of the 4 spatial neighbors, scatter via
+                  // z_fraction into e3 grid cells.  We loop over all frames k
+                  // then all e3 cells kk (innermost = contiguous memory).
+                  Neighbor neighbors[4] = {
+                    {jj0, ii0, w00},
+                    {jj0, ii0 + 1, w01},
+                    {jj0 + 1, ii0, w10},
+                    {jj0 + 1, ii0 + 1, w11},
+                  };
+
+                  for (int nb = 0; nb < 4; ++nb) {
+                    int jj = neighbors[nb].jj;
+                    int ii = neighbors[nb].ii;
+                    double w_spatial = neighbors[nb].w;
+                    if (!in_bounds(jj, ii)) continue;
+
+                    for (int k = 0; k < D; ++k) {
+                      bool fg_ok = ((sbox[i].mask(k, j_px, i_px) & need) == need);
+                      double data_val =
+                        static_cast<double>(sbox[i].data(k, j_px, i_px));
+                      double bg_val =
+                        static_cast<double>(sbox[i].background(k, j_px, i_px));
+
+                      for (int kk = 0; kk < n_grid; ++kk) {
+                        double zf = zfraction(k, kk);
+                        if (zf < 1e-9) continue;
+                        double wz = w_spatial * zf;
+                        if (fg_ok) {
+                          data_grid(jj, ii, kk) += data_val * wz;
+                          bg_grid(jj, ii, kk) += bg_val * wz;
+                          weight_grid(jj, ii, kk) += wz;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
+              // Finalize combined_mask: cell is valid if the reference mask
+              // is set AND at least one foreground-valid pixel scattered to it.
+              for (int jj = 0; jj < n_grid; ++jj) {
+                for (int ii = 0; ii < n_grid; ++ii) {
+                  for (int kk = 0; kk < n_grid; ++kk) {
+                    combined_mask(jj, ii, kk) =
+                      ref_mask(jj, ii, kk) && (weight_grid(jj, ii, kk) > 0.0);
+                  }
+                }
+              }
+
+              // Partiality guard: require a minimum number of valid cells.
+              std::size_t num_valid = 0;
+              for (std::size_t t = 0; t < combined_mask.size(); ++t) {
+                if (combined_mask[t]) ++num_valid;
+              }
+              const std::size_t MIN_VALID_CELLS = 50;
+              if (num_valid < MIN_VALID_CELLS) {
+                continue;
+              }
+
+              // IRLS profile fit on the grid.
               ProfileFitter<double> fit(data_grid.const_ref(),
                                         bg_grid.const_ref(),
                                         combined_mask.const_ref(),
