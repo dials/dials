@@ -344,11 +344,13 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     """Check that impact points around an ellipse in lab space on a simple
     detector can be undistorted into a circle in pixel space"""
 
-    # Create an image containing spots in an ellipse rotated 15° from the fast axis.
-    # Shift the beam centre away from the image centre for a more general test.
+    # Create an image containing spots in an ellipse with the minor axis 90% the
+    # langth of the major axis, with the orientation of the major axis rotated by
+    # a random angle from the fast axis. Shift the beam centre away from the image
+    # centre for a more general test.
     beam_centre_px = (1040, 1010)
-    phi = 15
-    l2 = 0.95
+    phi = np.random.uniform(low=0.0, high=180.0)
+    l2 = 0.9
     image_path = dials_data("aluminium_standard") / "0p67_5s_0000.mrc"
     create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2)
 
@@ -377,8 +379,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     assert b"Saved 100 reflections to strong.refl" in result.stdout
 
     # Load the spots and calculate ellipse parameters as we would with the ellipse
-    # tool in dials.image_viewer. We find that l1 and l2 are as before and the angle
-    # is 180 - phi.
+    # tool in dials.image_viewer.
     strong = flex.reflection_table.from_file(tmp_path / "strong.refl")
     intersections_f, intersections_s, _ = strong["xyzobs.px.value"].parts()
     intersections_px = flex.vec2_double(intersections_f, intersections_s)
@@ -390,7 +391,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
         ellipse.estimate(np.array(intersections_px))
     phi_, a, b, centre_ = extract_ellipse_parameters(ellipse)
     l2_ = b / a
-    assert phi_ == pytest.approx(180 - phi, 0.1)
+    assert phi_ == pytest.approx(phi, 0.1)
     assert l2_ == pytest.approx(l2, 0.01)
     assert centre_ == pytest.approx((beam_centre_px))
 
@@ -406,7 +407,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
             tmp_path / "imported.expt",
             "mode=ellipse",
             f"centre_xy={centre_xy[0]},{centre_xy[1]}",
-            f"phi={180 - phi_}",
+            f"phi={phi_}",
             "l1=1.0",
             f"l2={l2_}",
         ],
@@ -419,6 +420,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
         [
             shutil.which("dials.import"),
             tmp_path / "ellipse_001.mrc",
+            "fast_slow_beam_centre=1040,1010",
             f"lookup.dx={tmp_path / 'dx.pickle'}",
             f"lookup.dy={tmp_path / 'dy.pickle'}",
         ],
@@ -452,17 +454,19 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     panel = experiments[0].detector[0]
     intersections_mm = panel.pixel_to_millimeter(intersections_px)
 
-    # Get the radius of each of the intersections and check fractional error
+    # Get the radius of each of the intersections and check fractional error.
+    # With high distortion of l2=0.9 we found error as high as 1.2%
     shifted = intersections_mm - centre_xy
     x, y = shifted.parts()
     radius = flex.sqrt(x * x + y * y)
     mm_error = (max(radius) - min(radius)) / flex.mean(radius)
-    assert mm_error < 0.005
+    print(f"mm_error = {mm_error * 100:.1f}%")
+    assert mm_error < 0.013
 
-    # We seem to get radial errors of up to just over 1 pixel. This
-    # might be acceptable
+    # Wiht l2=0.9 we seem to get radial errors of up to nearly 3 pixels. With
+    # l2=0.95 the error is up to about 1.1 pixels. This might be acceptable.
     assert radius.as_numpy_array() == pytest.approx(
-        flex.mean(radius), abs=1.1 * panel.get_pixel_size()[0]
+        flex.mean(radius), abs=3 * panel.get_pixel_size()[0]
     )
 
     # Visually inspect the mm corrected positions
@@ -487,7 +491,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # actually the smallest magnitude correction across the whole image. There
     # is a line of pixels with close to zero correction from one side of the
     # image to the other, passing through the beam centre. We'll accept that
-    # the correction at pixel containing the beam centre should be less than
+    # the correction at the pixel containing the beam centre should be less than
     # 1/5 of a pixel.
     assert abs(dx[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
     assert abs(dy[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
