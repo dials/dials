@@ -64,13 +64,13 @@ class ExtractPixelsFromImage:
         self.compute_mean_background = compute_mean_background
         self.imageset = imageset
         self.image_mask = mask
-        self.imageset_mask = None
         self.is_stills = is_stills
 
     def update_imageset(self, imageset):
         """
         In the case of stills processing, update the imageset while all other object attributes
-        remain the same.
+        remain the same. The per-frame dynamic mask (imageset.get_mask) is recomputed on each
+        __call__ because the trusted-range overload component varies between stills.
 
         :param imageset: Next imageset to be processed with the cached spot-finding objects.
         """
@@ -82,18 +82,18 @@ class ExtractPixelsFromImage:
 
         :param index: The index of the image
         """
-        # In the case of stills processing. The mask from the imageset is constant for all
-        # frames. This only needs to be performed once
-        if self.imageset_mask is None or not self.is_stills:
-            self.imageset_mask = self.imageset.get_mask(index)
-            assert len(self.image_mask) == len(self.imageset_mask)
-            assert len(self.image_mask) == len(self.imageset.get_detector())
-            self.mask = tuple(
-                m1 & m2 for m1, m2 in zip(self.imageset_mask, self.image_mask)
-            )
-            logger.debug(
-                f"Number of masked pixels: {sum(m.count(False) for m in self.mask)}",
-            )
+        # Get the per-frame dynamic mask. This combines:
+        #   - static components: external lookup mask + detector untrusted rectangles
+        #   - dynamic component: trusted-range overloads (different saturated pixels each still)
+        # The trusted-range component requires reading raw pixel data and must be recomputed
+        # for every frame; it cannot be cached across stills.
+        imageset_mask = self.imageset.get_mask(index)
+        assert len(self.image_mask) == len(imageset_mask)
+        assert len(self.image_mask) == len(self.imageset.get_detector())
+        mask = tuple(m1 & m2 for m1, m2 in zip(imageset_mask, self.image_mask))
+        logger.debug(
+            f"Number of masked pixels: {sum(m.count(False) for m in mask)}",
+        )
 
         # Get the frame number
         if isinstance(self.imageset, ImageSequence):
@@ -113,7 +113,7 @@ class ExtractPixelsFromImage:
         # Add the images to the pixel lists
         num_strong = 0
         average_background = 0
-        for i_panel, (im, mk) in enumerate(zip(image, self.mask)):
+        for i_panel, (im, mk) in enumerate(zip(image, mask)):
             if self.imageset.is_marked_for_rejection(index):
                 threshold_mask = flex.bool(im.accessor(), False)
             elif self.region_of_interest is not None:
