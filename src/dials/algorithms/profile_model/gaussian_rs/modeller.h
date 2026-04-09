@@ -16,6 +16,7 @@
 #include <cmath>
 #include <memory>
 #include <fstream>
+#include <vector>
 #include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
 #include <dials/algorithms/profile_model/modeller/empirical_modeller.h>
 #include <dials/algorithms/profile_model/modeller/single_sampler.h>
@@ -27,6 +28,7 @@
 namespace dials { namespace algorithms {
 
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
+  using dials::algorithms::profile_model::gaussian_rs::transform::MapFramesForward;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformForward;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverse;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformSpec;
@@ -481,13 +483,15 @@ namespace dials { namespace algorithms {
               int H = bbox[3] - bbox[2];
               int D = bbox[5] - bbox[4];
 
-              // --- Reverse interpolation with adaptive supersampling ---
-              // Invert the 3x3 block-diagonal Jacobian G once per reflection.
+              // --- Hybrid reverse interpolation: bilinear spatial +
+              //     MapFramesForward z_fraction along e3 ---
+              // Invert the 2x2 spatial block of the Jacobian G once per
+              // reflection.  The e3 direction is handled separately via the
+              // Kabsch-2010 z_fraction matrix, so we no longer need inv22.
               double det2 = g00 * g11 - g01 * g10;
-              double det_G = std::abs(det2) * std::abs(g22);
 
               const double DET_EPS = 1e-6;
-              if (det_G < DET_EPS) {
+              if (std::abs(det2) < DET_EPS || std::abs(g22) < DET_EPS) {
                 // Ill-conditioned (zeta ~ 0 or degenerate spatial block);
                 // skip this reflection rather than falling through.
                 continue;
@@ -497,7 +501,6 @@ namespace dials { namespace algorithms {
               double inv01 = -g01 / det2;
               double inv10 = -g10 / det2;
               double inv11 = g00 / det2;
-              double inv22 = 1.0 / g22;
 
               // Allocate grid-space buffers (11x11x11, (jj, ii, kk) layout
               // matching `ref`).
@@ -506,193 +509,170 @@ namespace dials { namespace algorithms {
               af::versa<double, af::c_grid<3>> bg_grid(grid_acc, 0.0);
               af::versa<bool, af::c_grid<3>> combined_mask(grid_acc, false);
 
-              // Anisotropic supersampling: separate factors for the spatial
-              // 2D block and the 1D e3 (frame) direction.  The 2D spatial
-              // density is |det2| (grid cells per pixel^2) and the e3
-              // density is |g22| (grid cells per frame).
+              // Build the per-frame z_fraction matrix via MapFramesForward.
+              // zfraction(k, kk) is the fraction of frame-k's angular mass
+              // that lands in e3 grid cell kk; summing over k gives the
+              // Kabsch partiality for cell kk.  This replaces the expensive
+              // quad_to_grid polygon clipping used by TransformForward and
+              // provides the e3 weighting we'd otherwise get from a dense
+              // sub-sampling loop.
+              MapFramesForward<double> map_fwd(spec_.scan().get_array_range()[0],
+                                               spec_.scan().get_oscillation()[0],
+                                               spec_.scan().get_oscillation()[1],
+                                               spec_.sigma_m(),
+                                               spec_.n_sigma(),
+                                               spec_.half_grid_size());
+              af::versa<double, af::c_grid<2>> zfraction_arr =
+                map_fwd(vec2<int>(bbox[4], bbox[5]), cs.phi(), cs.zeta());
+              af::const_ref<double, af::c_grid<2>> zfraction =
+                zfraction_arr.const_ref();
+
+              // Spatial supersampling only: 2D density is |det2| (grid
+              // cells per pixel^2).  The e3 axis is now handled analytically
+              // by z_fraction, so there is no sub-sampling in that direction.
               double sp_density = std::abs(det2);
-              double e3_density = std::abs(g22);
-
               int N_sp = std::max(1, (int)std::ceil(std::sqrt(1.0 / sp_density)));
-              int N_e3 = std::max(1, (int)std::ceil(1.0 / e3_density));
               double inv_Nsp = 1.0 / N_sp;
-              double inv_Ne3 = 1.0 / N_e3;
 
-              // Guard against pathological shapes that would require too
-              // many sub-samples to evaluate cheaply.
-              const int MAX_TOTAL_SAMPLES = 64;
-              if (N_sp * N_sp * N_e3 > MAX_TOTAL_SAMPLES) {
+              // Guard against pathological spatial shapes.
+              const int MAX_SPATIAL_SAMPLES = 64;
+              if (N_sp * N_sp > MAX_SPATIAL_SAMPLES) {
                 continue;
               }
 
               const int need = Valid | Foreground;
 
-              // Walk the 1331 reference-grid cells, reverse-mapping to
-              // shoebox voxel coordinates. Iterate jj -> ii -> kk so the
-              // innermost axis walks contiguous memory for (e2, e1, e3).
+              // Per-frame bilinear stack buffers (length D, one entry per
+              // shoebox frame).  Re-used across (jj, ii) cells.
+              std::vector<double> V_data(D, 0.0);
+              std::vector<double> V_bg(D, 0.0);
+              std::vector<bool> V_fg_ok(D, true);
+
+              // Walk the 121 spatial (jj, ii) cells.  For each one we
+              // compute a bilinear interpolation at the reverse-mapped
+              // shoebox column (vx, vy) for every frame k in the shoebox,
+              // producing the per-frame stack vectors.  Then we collapse
+              // the stack into e3 grid cells via the z_fraction weights.
               for (int jj = 0; jj < n_grid; ++jj) {
                 for (int ii = 0; ii < n_grid; ++ii) {
+                  std::fill(V_data.begin(), V_data.end(), 0.0);
+                  std::fill(V_bg.begin(), V_bg.end(), 0.0);
+                  std::fill(V_fg_ok.begin(), V_fg_ok.end(), true);
+                  int n_hit_spatial = 0;
+
+                  // Spatial supersampling (2D only).
+                  for (int sa = 0; sa < N_sp; ++sa) {
+                    double dgj = (jj + (sa + 0.5) * inv_Nsp) - gc1;
+                    for (int sb = 0; sb < N_sp; ++sb) {
+                      double dgi = (ii + (sb + 0.5) * inv_Nsp) - gc0;
+
+                      // Inverse spatial map: grid offset -> pixel offset.
+                      double dx = inv00 * dgi + inv01 * dgj;
+                      double dy = inv10 * dgi + inv11 * dgj;
+                      double x = xyzpx[i][0] + dx;
+                      double y = xyzpx[i][1] + dy;
+
+                      // Shoebox voxel coordinates (continuous, with the
+                      // -0.5 pixel-centre convention).
+                      double vx = x - bbox[0] - 0.5;
+                      double vy = y - bbox[2] - 0.5;
+
+                      int iw = static_cast<int>(std::floor(vx));
+                      int ih = static_cast<int>(std::floor(vy));
+                      double fw = vx - iw;
+                      double fh = vy - ih;
+
+                      // Symmetric edge clamp (same as pure-trilinear path).
+                      if (iw < 0) {
+                        iw = 0;
+                        fw = 0.0;
+                      }
+                      if (ih < 0) {
+                        ih = 0;
+                        fh = 0.0;
+                      }
+                      if (iw >= W - 1) {
+                        iw = W - 2;
+                        fw = 1.0;
+                      }
+                      if (ih >= H - 1) {
+                        ih = H - 2;
+                        fh = 1.0;
+                      }
+
+                      // Bilinear weights.
+                      double w00 = (1.0 - fh) * (1.0 - fw);
+                      double w01 = (1.0 - fh) * fw;
+                      double w10 = fh * (1.0 - fw);
+                      double w11 = fh * fw;
+
+                      // Bilinear interp at (vx, vy) for every frame k.
+                      for (int k = 0; k < D; ++k) {
+                        V_data[k] +=
+                          w00 * static_cast<double>(sbox[i].data(k, ih, iw))
+                          + w01 * static_cast<double>(sbox[i].data(k, ih, iw + 1))
+                          + w10 * static_cast<double>(sbox[i].data(k, ih + 1, iw))
+                          + w11 * static_cast<double>(sbox[i].data(k, ih + 1, iw + 1));
+                        V_bg[k] +=
+                          w00 * static_cast<double>(sbox[i].background(k, ih, iw))
+                          + w01 * static_cast<double>(sbox[i].background(k, ih, iw + 1))
+                          + w10 * static_cast<double>(sbox[i].background(k, ih + 1, iw))
+                          + w11
+                              * static_cast<double>(
+                                sbox[i].background(k, ih + 1, iw + 1));
+                        bool fg_ok =
+                          ((sbox[i].mask(k, ih, iw) & need) == need)
+                          && ((sbox[i].mask(k, ih, iw + 1) & need) == need)
+                          && ((sbox[i].mask(k, ih + 1, iw) & need) == need)
+                          && ((sbox[i].mask(k, ih + 1, iw + 1) & need) == need);
+                        V_fg_ok[k] = V_fg_ok[k] && fg_ok;
+                      }
+                      ++n_hit_spatial;
+                    }
+                  }
+
+                  if (n_hit_spatial == 0) continue;
+
+                  // Average over spatial supersamples.
+                  double inv_nh = 1.0 / static_cast<double>(n_hit_spatial);
+                  for (int k = 0; k < D; ++k) {
+                    V_data[k] *= inv_nh;
+                    V_bg[k] *= inv_nh;
+                  }
+
+                  // Spatial cell-volume scaling: 1/|det2| ONLY (NOT 1/det_G).
+                  // z_fraction is already a normalised fraction-of-mass and
+                  // therefore accounts for the e3 axis volume on its own.
+                  double inv_det2 = 1.0 / std::abs(det2);
+
+                  // Collapse the per-frame stack into e3 grid cells via
+                  // the z_fraction weights.
                   for (int kk = 0; kk < n_grid; ++kk) {
-                    double sum_d = 0.0;
-                    double sum_b = 0.0;
-                    int n_hit = 0;
-                    bool fg_all = true;
+                    double accum_d = 0.0;
+                    double accum_b = 0.0;
+                    for (int k = 0; k < D; ++k) {
+                      double zf = zfraction(k, kk);
+                      accum_d += V_data[k] * zf;
+                      accum_b += V_bg[k] * zf;
+                    }
+                    data_grid(jj, ii, kk) = accum_d * inv_det2;
+                    bg_grid(jj, ii, kk) = accum_b * inv_det2;
 
-                    for (int sa = 0; sa < N_sp; ++sa) {
-                      double dgj = (jj + (sa + 0.5) * inv_Nsp) - gc1;
-                      for (int sb = 0; sb < N_sp; ++sb) {
-                        double dgi = (ii + (sb + 0.5) * inv_Nsp) - gc0;
-                        for (int sc = 0; sc < N_e3; ++sc) {
-                          double dgk = (kk + (sc + 0.5) * inv_Ne3) - gc2;
-
-                          // Inverse map: grid offset -> pixel offset.
-                          double dx = inv00 * dgi + inv01 * dgj;
-                          double dy = inv10 * dgi + inv11 * dgj;
-                          double dz = inv22 * dgk;
-
-                          // Detector coordinates (fast, slow, frame).
-                          double x = xyzpx[i][0] + dx;
-                          double y = xyzpx[i][1] + dy;
-                          double z = xyzpx[i][2] + dz;
-
-                          // Shoebox voxel coordinates (continuous, with the
-                          // -0.5 pixel-centre convention).
-                          double vx = x - bbox[0] - 0.5;
-                          double vy = y - bbox[2] - 0.5;
-                          double vz = z - bbox[4] - 0.5;
-
-                          int iw = static_cast<int>(std::floor(vx));
-                          int ih = static_cast<int>(std::floor(vy));
-                          int id = static_cast<int>(std::floor(vz));
-                          double fw = vx - iw;
-                          double fh = vy - ih;
-                          double fd = vz - id;
-
-                          // Symmetric edge clamp: samples in the half-pixel
-                          // margin at either edge are flat-extrapolated to the
-                          // nearest in-range pixel pair.
-                          // Lower edge: vx in [-0.5, 0) -> iw=-1, clamp to
-                          //   iw=0, fw=0 (returns data[0]).
-                          // Upper edge: vx in [W-1, W-0.5) -> iw=W-1, clamp
-                          //   to iw=W-2, fw=1 (returns data[W-1]).
-                          if (iw < 0) {
-                            iw = 0;
-                            fw = 0.0;
-                          }
-                          if (ih < 0) {
-                            ih = 0;
-                            fh = 0.0;
-                          }
-                          if (id < 0) {
-                            id = 0;
-                            fd = 0.0;
-                          }
-                          if (iw >= W - 1) {
-                            iw = W - 2;
-                            fw = 1.0;
-                          }
-                          if (ih >= H - 1) {
-                            ih = H - 2;
-                            fh = 1.0;
-                          }
-                          if (id >= D - 1) {
-                            id = D - 2;
-                            fd = 1.0;
-                          }
-
-                          // Trilinear weights.
-                          double w000 = (1 - fd) * (1 - fh) * (1 - fw);
-                          double w001 = (1 - fd) * (1 - fh) * fw;
-                          double w010 = (1 - fd) * fh * (1 - fw);
-                          double w011 = (1 - fd) * fh * fw;
-                          double w100 = fd * (1 - fh) * (1 - fw);
-                          double w101 = fd * (1 - fh) * fw;
-                          double w110 = fd * fh * (1 - fw);
-                          double w111 = fd * fh * fw;
-
-                          // Trilinear interpolation of data and background
-                          // (accumulate in double; shoebox storage is float).
-                          double val_d =
-                            w000 * static_cast<double>(sbox[i].data(id, ih, iw))
-                            + w001 * static_cast<double>(sbox[i].data(id, ih, iw + 1))
-                            + w010 * static_cast<double>(sbox[i].data(id, ih + 1, iw))
-                            + w011
-                                * static_cast<double>(sbox[i].data(id, ih + 1, iw + 1))
-                            + w100 * static_cast<double>(sbox[i].data(id + 1, ih, iw))
-                            + w101
-                                * static_cast<double>(sbox[i].data(id + 1, ih, iw + 1))
-                            + w110
-                                * static_cast<double>(sbox[i].data(id + 1, ih + 1, iw))
-                            + w111
-                                * static_cast<double>(
-                                  sbox[i].data(id + 1, ih + 1, iw + 1));
-
-                          double val_b =
-                            w000 * static_cast<double>(sbox[i].background(id, ih, iw))
-                            + w001
-                                * static_cast<double>(
-                                  sbox[i].background(id, ih, iw + 1))
-                            + w010
-                                * static_cast<double>(
-                                  sbox[i].background(id, ih + 1, iw))
-                            + w011
-                                * static_cast<double>(
-                                  sbox[i].background(id, ih + 1, iw + 1))
-                            + w100
-                                * static_cast<double>(
-                                  sbox[i].background(id + 1, ih, iw))
-                            + w101
-                                * static_cast<double>(
-                                  sbox[i].background(id + 1, ih, iw + 1))
-                            + w110
-                                * static_cast<double>(
-                                  sbox[i].background(id + 1, ih + 1, iw))
-                            + w111
-                                * static_cast<double>(
-                                  sbox[i].background(id + 1, ih + 1, iw + 1));
-
-                          // Mask: require (Valid | Foreground) at all 8
-                          // corners.
-                          bool fg_ok =
-                            ((sbox[i].mask(id, ih, iw) & need) == need)
-                            && ((sbox[i].mask(id, ih, iw + 1) & need) == need)
-                            && ((sbox[i].mask(id, ih + 1, iw) & need) == need)
-                            && ((sbox[i].mask(id, ih + 1, iw + 1) & need) == need)
-                            && ((sbox[i].mask(id + 1, ih, iw) & need) == need)
-                            && ((sbox[i].mask(id + 1, ih, iw + 1) & need) == need)
-                            && ((sbox[i].mask(id + 1, ih + 1, iw) & need) == need)
-                            && ((sbox[i].mask(id + 1, ih + 1, iw + 1) & need) == need);
-
-                          sum_d += val_d;
-                          sum_b += val_b;
-                          ++n_hit;
-                          fg_all = fg_all && fg_ok;
+                    // Mask: cell is valid only if the reference mask is true
+                    // here AND every frame with a non-trivial z_fraction
+                    // contribution has a fully-foreground bilinear stencil.
+                    bool ok = ref_mask(jj, ii, kk);
+                    if (ok) {
+                      for (int k = 0; k < D; ++k) {
+                        if (zfraction(k, kk) > 1e-6 && !V_fg_ok[k]) {
+                          ok = false;
+                          break;
                         }
                       }
                     }
-
-                    if (n_hit > 0) {
-                      // Average over in-bounds sub-samples only (see design
-                      // section 6, edge case 7).
-                      data_grid(jj, ii, kk) = sum_d / n_hit;
-                      bg_grid(jj, ii, kk) = sum_b / n_hit;
-                      combined_mask(jj, ii, kk) = fg_all && ref_mask(jj, ii, kk);
-                    } else {
-                      data_grid(jj, ii, kk) = 0.0;
-                      bg_grid(jj, ii, kk) = 0.0;
-                      combined_mask(jj, ii, kk) = false;
-                    }
+                    combined_mask(jj, ii, kk) = ok;
                   }
                 }
-              }
-
-              // Rescale cell-averaged densities by the grid-cell volume
-              // (1 / det_G) so both data and background are in per-cell
-              // integrated counts (see design section 5).
-              double inv_det_G = 1.0 / det_G;
-              for (std::size_t t = 0; t < data_grid.size(); ++t) {
-                data_grid[t] *= inv_det_G;
-                bg_grid[t] *= inv_det_G;
               }
 
               // Partiality guard: require a minimum number of valid cells.
