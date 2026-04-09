@@ -469,7 +469,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     print(f"mm_error = {mm_error * 100:.1f}%")
     assert mm_error < 0.013
 
-    # Wiht l2=0.9 we seem to get radial errors of up to around 3 pixels. With
+    # With l2=0.9 we seem to get radial errors of up to around 3 pixels. With
     # l2=0.95 the error is up to about 1.1 pixels. This might be acceptable.
     assert radius.as_numpy_array() == pytest.approx(
         flex.mean(radius), abs=3.1 * panel.get_pixel_size()[0]
