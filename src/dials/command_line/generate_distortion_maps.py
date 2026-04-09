@@ -52,7 +52,7 @@ scope = phil.parse(
     .help = "Options for correcting for elliptical distortion of images."
   {
     phi = 45.0
-      .type = float
+      .type = float(value_min=0, value_max=180)
       .help = "Acute angle of the first axis of the ellipse from the fast"
               "axis of the first panel of the detector"
     l1 = 1.0
