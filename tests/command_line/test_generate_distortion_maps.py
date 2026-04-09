@@ -6,6 +6,7 @@ import random
 import shutil
 import subprocess
 
+import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 import pytest
@@ -476,8 +477,6 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     )
 
     # Visually inspect the mm corrected positions
-    import matplotlib.pyplot as plt
-
     fig, ax = plt.subplots()
     intersections_x, intersections_y = intersections_mm.parts()
     ax.scatter(intersections_x, intersections_y)
@@ -485,8 +484,8 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     ax.set_xlim(0, 2048 * panel.get_pixel_size()[0])
     ax.set_ylim(0, 2048 * panel.get_pixel_size()[1])
     plt.gca().set_aspect("equal", adjustable="box")
-    plt.title("mm corrected positions")
-    plt.show()
+    plt.title("mm corrected intersections")
+    plt.savefig(tmp_path / "mm_intersections.png")
 
     # Load the experiment and extract the correction maps
     experiments = ExperimentList.from_file(tmp_path / "imported.expt")
@@ -518,8 +517,6 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     corrected_intersections_f = intersections_f - corrections_f
     corrected_intersections_s = intersections_s - corrections_s
 
-    from matplotlib import pyplot as plt
-
     fig, ax = plt.subplots()
     ax.scatter(intersections_f, intersections_s)
     ax.scatter(corrected_intersections_f, corrected_intersections_s)
@@ -536,4 +533,4 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     ax.yaxis.set_inverted(True)
     plt.gca().set_aspect("equal", adjustable="box")
     plt.title("pixel intersections before/after correction")
-    plt.show()
+    plt.savefig(tmp_path / "pixel_intersections.png")
