@@ -301,7 +301,9 @@ namespace dials { namespace algorithms {
             // --- SCATTER LEARNING PATH: forward pixel scatter into grid ---
             // Mirror of the CellCacheScatter branch in fit_reciprocal_space(),
             // but without ProfileFitter, bg_grid, ref_mask, or MIN_VALID_CELLS.
-            // add() normalizes by sum_data internally, so no 1/|det2| rescale needed.
+            // No 1/|det2| rescale: scatter is mass-preserving by construction
+            // (gather needs it; scatter does not). add() also normalizes to unit
+            // sum, making absolute scale irrelevant.
 
             const int n_grid = static_cast<int>(2 * spec_.half_grid_size() + 1);
 
@@ -447,16 +449,18 @@ namespace dials { namespace algorithms {
                   {jj0 + 1, ii0 + 1, w11},
                 };
 
-                for (int nb = 0; nb < 4; ++nb) {
-                  int jj = neighbors[nb].jj;
-                  int ii = neighbors[nb].ii;
-                  double w_spatial = neighbors[nb].w;
-                  if (!in_bounds(jj, ii)) continue;
+                // Evaluate fg_ok once per (j_px, i_px, k) — it is the same for
+                // all 4 bilinear neighbors. Loop order: [k] → fg_ok → [nb] → [kk].
+                for (int k = 0; k < D; ++k) {
+                  bool fg_ok = ((sbox[i].mask(k, j_px, i_px) & need) == need);
+                  if (!fg_ok) continue;
+                  double data_val = data(k, j_px, i_px);
 
-                  for (int k = 0; k < D; ++k) {
-                    bool fg_ok = ((sbox[i].mask(k, j_px, i_px) & need) == need);
-                    if (!fg_ok) continue;
-                    double data_val = data(k, j_px, i_px);
+                  for (int nb = 0; nb < 4; ++nb) {
+                    int jj = neighbors[nb].jj;
+                    int ii = neighbors[nb].ii;
+                    double w_spatial = neighbors[nb].w;
+                    if (!in_bounds(jj, ii)) continue;
 
                     for (int kk = 0; kk < n_grid; ++kk) {
                       double zf = zfraction(k, kk);
@@ -471,7 +475,10 @@ namespace dials { namespace algorithms {
               }
             }
 
-            // No combined_mask needed: add() gates on sum_data > 0 internally.
+            // No combined_mask needed: the learned profile's cell mask defaults to
+            // all-true (empirical_modeller.h:68), so the fitting path's ref_mask
+            // AND-gate is a no-op by design — harmless, not an oversight. add()
+            // also gates on sum_data > 0 internally as a secondary safety net.
             // No MIN_VALID_CELLS guard: check1() already ensures partiality > 0.99
             // (fully recorded), and add() is a no-op if sum_data <= 0.
 
