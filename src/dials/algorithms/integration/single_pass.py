@@ -167,6 +167,12 @@ class SinglePassExecutor(Executor):
         reflections.compute_centroid(self.experiments)
         reflections.compute_summed_intensity()
 
+        # Unset integrated_sum for dont_integrate reflections.  The two-pass
+        # path's ReflectionLookup (integrator.h:400) excludes these from all
+        # job assignments so they never reach compute_summed_intensity at all.
+        di_mask = reflections.get_flags(reflections.flags.dont_integrate)
+        reflections.unset_flags(di_mask, reflections.flags.integrated_sum)
+
         # Step 8: num_pixels.* accounting (lines 928-935)
         reflections["num_pixels.valid"] = sbox.count_mask_values(MaskCode.Valid)
         reflections["num_pixels.background"] = sbox.count_mask_values(
