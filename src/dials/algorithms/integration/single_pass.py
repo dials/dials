@@ -259,6 +259,139 @@ class SinglePassExecutor(Executor):
         return self.profile_fitter
 
 
+class SinglePassBlockTask:
+    """Per-worker task for nproc>1 single-pass integration.
+
+    Builds a local profile model, runs the frame loop over the extended range,
+    finalizes all model cells, fits all reflections, then filters to the core
+    range.  Returns a dials.algorithms.integration.Result.
+    """
+
+    def __init__(
+        self,
+        index,
+        experiments,
+        reflections,
+        extended_range,
+        core_range,
+        num_scan_points,
+    ):
+        self.index = index
+        self.experiments = experiments
+        self.reflections = reflections
+        self.extended_range = extended_range  # (frame0, frame1)
+        self.core_range = core_range  # (frame0, frame1)
+        self.num_scan_points = num_scan_points
+
+    def __call__(self):
+        from time import time
+
+        import dials.algorithms.integration
+        from dials.algorithms.integration.processor import ShoeboxProcessor
+        from dials.algorithms.integration.validation import (
+            ValidatedMultiExpProfileModeller,
+        )
+        from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
+        from dials.array_family import flex
+        from dials.model.data import make_image
+
+        start_time = time()
+
+        # Build local profile modeller (same pattern as ChunkDriver._build_validated_modeller)
+        pf = MultiExpProfileModeller()
+        for expr in self.experiments:
+            pf.add(_make_modeller(expr, self.num_scan_points))
+        profile_fitter = ValidatedMultiExpProfileModeller([pf])
+
+        # Compute partiality (needed by modeller's check1 filter)
+        self.reflections.compute_partiality(self.experiments)
+
+        # Create executor
+        executor = SinglePassBlockExecutor(self.experiments, profile_fitter)  # noqa: F821
+
+        # Slice imageset to extended range (same pattern as processor.Task.__call__)
+        imageset = self.experiments[0].imageset
+        try:
+            allowed_range = imageset.get_array_range()
+        except Exception:
+            allowed_range = 0, len(imageset)
+        index0 = self.extended_range[0] - allowed_range[0]
+        index1 = self.extended_range[1] - allowed_range[0]
+        imageset = imageset[index0:index1]
+        try:
+            frame0, frame1 = imageset.get_array_range()
+        except Exception:
+            frame0, frame1 = (0, len(imageset))
+
+        # Initialize executor
+        executor.initialize(frame0, frame1, self.reflections)
+
+        # Allocate shoeboxes (not allocated yet)
+        self.reflections["shoebox"] = flex.shoebox(
+            self.reflections["panel"],
+            self.reflections["bbox"],
+            allocate=False,
+            flatten=False,
+        )
+
+        # Create ShoeboxProcessor with save=True to keep shoeboxes for fitting
+        n_panels = len(imageset.get_detector())
+        proc = ShoeboxProcessor(self.reflections, n_panels, frame0, frame1, True)
+
+        # Frame loop
+        for i in range(len(imageset)):
+            image = imageset.get_corrected_data(i)
+            mask = imageset.get_mask(i)
+            proc.next(make_image(image, mask), executor)
+            del image, mask
+        assert proc.finished(), "ShoeboxProcessor did not finish"
+
+        # Finalize the ENTIRE local model (all cells, even empty ones)
+        modeller = profile_fitter.modellers[0][0]  # GaussianRSProfileModeller
+        for cell_idx in range(modeller.size()):
+            modeller.finalize_cell(cell_idx)
+
+        # Fit ALL reflections using the raw MultiExpProfileModeller
+        self.reflections.compute_fitted_intensity(profile_fitter.modellers[0])
+
+        # Deallocate shoeboxes
+        del self.reflections["shoebox"]
+
+        # Boundary sentinel fixup (same as ChunkDriver.run() lines 423-429)
+        prf_var = self.reflections["intensity.prf.variance"]
+        prf_flag = self.reflections.get_flags(self.reflections.flags.integrated_prf)
+        never_fitted = (prf_var == 0.0) & ~prf_flag
+        prf_var.set_selected(never_fitted, -1.0)
+        self.reflections.set_flags(
+            never_fitted, self.reflections.flags.failed_during_profile_fitting
+        )
+
+        # Filter to core range using xyzcal.px z coordinate
+        scan_range = self.experiments[0].scan.get_array_range()
+        xyz = self.reflections["xyzcal.px"]
+        z_vals = xyz.parts()[2]
+        core_lo, core_hi = self.core_range
+        if core_hi == scan_range[1]:
+            # Last worker: take all reflections at or above core_lo
+            keep = z_vals >= core_lo
+        else:
+            keep = (z_vals >= core_lo) & (z_vals < core_hi)
+        self.reflections = self.reflections.select(keep)
+
+        # Finalize executor
+        executor.finalize()
+
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            data=profile_fitter,
+            read_time=0,
+            extract_time=proc.extract_time(),
+            process_time=proc.process_time(),
+            total_time=time() - start_time,
+        )
+
+
 def _build_sampler(experiments, num_scan_points: int):
     """Construct GridSampler matching production defaults (scan_step=5)."""
     from dials.algorithms.profile_model.modeller import GridSampler
