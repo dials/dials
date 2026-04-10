@@ -1206,17 +1206,22 @@ class Integrator:
         if nproc < 1:
             nproc = 1
 
+        use_parallel = False
         if nproc > 1:
             from dials.algorithms.integration.single_pass import (
                 run_single_pass_parallel,
             )
 
-            self.reflections, combined_modeller = run_single_pass_parallel(
+            result, combined_modeller = run_single_pass_parallel(
                 self.experiments, self.reflections, self.params, nproc
             )
-            combined_modeller.finalize()
-            finalized_fitter = combined_modeller.finalized_model()
-        else:
+            if result is not None:
+                use_parallel = True
+                self.reflections = result
+                combined_modeller.finalize()
+                finalized_fitter = combined_modeller.finalized_model()
+
+        if not use_parallel:
             from dials.algorithms.integration.single_pass import ChunkDriver
 
             driver = ChunkDriver(self.experiments, self.reflections, self.params)

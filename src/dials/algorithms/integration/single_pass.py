@@ -394,8 +394,7 @@ class SinglePassBlockTask:
             pf.add(_make_modeller(expr, self.num_scan_points))
         profile_fitter = ValidatedMultiExpProfileModeller([pf])
 
-        # Compute partiality (needed by modeller's check1 filter)
-        self.reflections.compute_partiality(self.experiments)
+        # Partiality is computed by run_single_pass_parallel() before dispatch.
 
         # Pre-create fitting output columns (needed for sentinel check below;
         # compute_fitted_intensity creates them but leaves unfitted reflections
@@ -771,9 +770,12 @@ def run_single_pass_parallel(experiments, reflections, params, nproc):
 
     overlap = model_overlap + bbox_overlap
 
-    # Clamp nproc if scan is too short
+    # Clamp nproc if scan is too short; return None to signal caller
+    # should fall back to the serial ChunkDriver path
     if nproc * 2 > total_frames:
         nproc = max(1, total_frames // 2)
+    if nproc < 2:
+        return None, None
 
     # 4. Compute core ranges (evenly divide total_frames)
     core_size = total_frames // nproc
@@ -842,6 +844,8 @@ def run_single_pass_parallel(experiments, reflections, params, nproc):
     )
 
     # 9. Assemble results
+    if not results:
+        return None, None
     results.sort(key=lambda r: r.index)
 
     # Combine reflections
