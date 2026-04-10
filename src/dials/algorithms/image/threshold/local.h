@@ -1420,12 +1420,8 @@ namespace dials { namespace algorithms {
         std::size_t right_chunk = i1 / w;
 
         if (left_chunk == right_chunk) {
-          // Window entirely within one chunk - compute min directly
-          char min_val = input[i0 * stride];
-          for (std::size_t j = i0 + 1; j <= i1; ++j) {
-            min_val = std::min(min_val, input[j * stride]);
-          }
-          output[i * stride] = min_val;
+          // Window within single chunk: use g/h buffers (O(1) instead of O(w))
+          output[i * stride] = std::min(h_buffer[i0], g_buffer[i1]);
         } else {
           // Window spans multiple chunks - use g/h
           char min_val = std::min(h_buffer[i0], g_buffer[i1]);
