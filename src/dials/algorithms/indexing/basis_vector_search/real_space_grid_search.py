@@ -4,6 +4,7 @@ import logging
 import math
 
 import numpy as np
+
 from libtbx import phil
 from rstbx.array_family import (
     flex,  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
@@ -81,9 +82,7 @@ class RealSpaceGridSearch(Strategy):
             [d.dvec for d in SST.angles], dtype=np.float64
         )  # (N_dir, 3)
         unique_dims = sorted(set(target_unit_cell.parameters()[:3]))
-        self._sv_array = np.vstack(
-            [directions * l for l in unique_dims]
-        )  # (N_sv, 3)
+        self._sv_array = np.vstack([directions * l for l in unique_dims])  # (N_sv, 3)
         self._sv_flex = flex.vec3_double(list(map(tuple, self._sv_array)))
 
     @property
