@@ -1214,6 +1214,13 @@ class Integrator:
         if nproc < 1:
             nproc = 1
 
+        # Apply two-pass job-list splitting if legacy boundary mode
+        if self.params.integrator_single_pass_boundary == "legacy":
+            logger.info(" Applying two-pass job-list splitting (legacy boundary mode)")
+            self.reflections = _apply_legacy_split(
+                self.experiments, self.reflections, self.params, nproc
+            )
+
         use_parallel = False
         if nproc > 1:
             from dials.algorithms.integration.single_pass import (
@@ -1261,7 +1268,7 @@ class Integrator:
         """
         Integrate the data
         """
-        if self.params.integrator_single_pass:
+        if self.params.integrator_single_pass_enable:
             return self.integrate_single_pass()
 
         # Ensure we get the same random sample each time
@@ -1701,6 +1708,32 @@ class Integrator3DThreaded:
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
         return tabulate(rows, headers="firstrow")
+
+
+def _apply_legacy_split(experiments, reflections, params, nproc):
+    """Apply two-pass job-list splitting at boundaries.
+
+    Constructs the same overlapping-block job structure as the standard
+    two-pass integrator and splits reflections whose bboxes straddle job
+    boundaries into partial rows.  This makes single-pass output
+    bit-comparable to two-pass at boundaries.
+    """
+    from dials.algorithms.integration.processor import _Manager
+
+    mgr = _Manager(experiments, reflections, params.integration)
+    mgr.params.mp.nproc = nproc
+    mgr.compute_jobs()
+    num_before = len(mgr.reflections)
+    mgr.split_reflections()
+    num_after = len(mgr.reflections)
+    if num_after > num_before:
+        logger.info(
+            " Split %d reflections at job boundaries (%d -> %d)",
+            num_after - num_before,
+            num_before,
+            num_after,
+        )
+    return mgr.reflections
 
 
 def create_integrator(params, experiments, reflections):
