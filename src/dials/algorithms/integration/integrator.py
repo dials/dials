@@ -183,6 +183,12 @@ def generate_phil_scope():
         .help = "The integrator to use."
         .expert_level=3
 
+      single_pass = False
+        .type = bool
+        .help = "Use the experimental single-pass modeller-integrator (Phase 3 MVP). "
+                "Requires len(experiments) == 1 and profile validation off. "
+                "Two-pass fallback: integration.single_pass=False (default)."
+
       profile {
 
         fitting = True
@@ -380,6 +386,7 @@ class Parameters:
         self.profile = Parameters.Profile()
         self.debug_reference_filename = "reference_profiles.pickle"
         self.debug_reference_output = False
+        self.integrator_single_pass = False
 
     @staticmethod
     def from_phil(params):
@@ -427,6 +434,7 @@ class Parameters:
         result.integration.debug.separate_files = params.debug.separate_files
         result.integration.summation = params.summation
         result.integration.integrator = params.integrator
+        result.integrator_single_pass = params.single_pass
 
         result.debug_reference_filename = params.debug.reference.filename
         result.debug_reference_output = params.debug.reference.output
