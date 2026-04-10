@@ -1195,18 +1195,34 @@ class Integrator:
         # Initialize reflections (computes bbox, zeta, d, filters)
         self.initialize_reflections(self.experiments, self.params, self.reflections)
 
-        # Run the single-pass driver
-        from dials.algorithms.integration.single_pass import ChunkDriver
+        # Resolve nproc
+        import libtbx
 
-        driver = ChunkDriver(self.experiments, self.reflections, self.params)
-        self.reflections = driver.run()
+        nproc = self.params.integration.mp.nproc
+        if nproc is libtbx.Auto:
+            from dials.util.system import CPU_COUNT
 
-        # Finalize the profile modeller and build report.
-        # ValidatedMultiExpProfileModeller.finalize() copies, accumulates, and
-        # finalizes; finalized_model() returns the inner MultiExpProfileModeller
-        # which has valid()/coord()/data() that ProfileModelReport needs.
-        driver._profile_fitter.finalize()
-        finalized_fitter = driver._profile_fitter.finalized_model()
+            nproc = CPU_COUNT
+        if nproc < 1:
+            nproc = 1
+
+        if nproc > 1:
+            from dials.algorithms.integration.single_pass import (
+                run_single_pass_parallel,
+            )
+
+            self.reflections, combined_modeller = run_single_pass_parallel(
+                self.experiments, self.reflections, self.params, nproc
+            )
+            combined_modeller.finalize()
+            finalized_fitter = combined_modeller.finalized_model()
+        else:
+            from dials.algorithms.integration.single_pass import ChunkDriver
+
+            driver = ChunkDriver(self.experiments, self.reflections, self.params)
+            self.reflections = driver.run()
+            driver._profile_fitter.finalize()
+            finalized_fitter = driver._profile_fitter.finalized_model()
         reference = self.reflections.select(
             self.reflections.get_flags(self.reflections.flags.reference_spot)
         )

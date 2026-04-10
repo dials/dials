@@ -725,3 +725,144 @@ class ChunkDriver:
             cell_lo,
             cell_hi - 1,
         )
+
+
+def run_single_pass_parallel(experiments, reflections, params, nproc):
+    """Run single-pass integration in parallel with block splitting.
+
+    Computes overlapping frame ranges for each worker, dispatches
+    SinglePassBlockTask instances via multiprocessing, and assembles
+    the combined reflections and profile modeller.
+
+    Args:
+        experiments: ExperimentList (single experiment)
+        reflections: reflection_table with bbox, xyzcal.px, etc.
+        params: Parameters object (from integrator.py)
+        nproc: int, number of worker processes
+
+    Returns:
+        (combined_reflections, combined_modeller)
+        where combined_modeller is a ValidatedMultiExpProfileModeller
+        accumulated from all workers.
+    """
+    from dials.algorithms.integration.processor import execute_parallel_task
+    from dials.util.log import rehandle_cached_records
+    from dials.util.mp import multi_node_parallel_map
+
+    # 1. Extract scan parameters
+    scan = experiments[0].scan
+    scan_lo, scan_hi = scan.get_array_range()
+    total_frames = scan_hi - scan_lo
+
+    # 2. Compute slice geometry (same as ChunkDriver)
+    sw = ChunkDriver.SLICE_WIDTH_FRAMES
+    num_scan_points = (total_frames + sw - 1) // sw
+
+    # 3. Compute overlap
+    # Model overlap: one full z-slice (GridSampler's +/-1 z-fanout)
+    model_overlap = sw
+
+    # Bbox overlap: 99th percentile of bbox z-widths
+    bbox = reflections["bbox"]
+    z0_col, z1_col = bbox.parts()[4], bbox.parts()[5]
+    frame_widths = z1_col - z0_col
+    sorted_widths = sorted(frame_widths)
+    bbox_overlap = int(sorted_widths[int(0.99 * len(sorted_widths))])
+
+    overlap = model_overlap + bbox_overlap
+
+    # Clamp nproc if scan is too short
+    if nproc * 2 > total_frames:
+        nproc = max(1, total_frames // 2)
+
+    # 4. Compute core ranges (evenly divide total_frames)
+    core_size = total_frames // nproc
+    remainder = total_frames % nproc
+    core_ranges = []
+    start = scan_lo
+    for i in range(nproc):
+        size = core_size + (1 if i < remainder else 0)
+        core_ranges.append((start, start + size))
+        start += size
+
+    # 5. Compute extended ranges (core +/- overlap, clipped to scan bounds)
+    extended_ranges = []
+    for core_lo, core_hi in core_ranges:
+        ext_lo = max(scan_lo, core_lo - overlap)
+        ext_hi = min(scan_hi, core_hi + overlap)
+        extended_ranges.append((ext_lo, ext_hi))
+
+    # 6. Compute partiality (needed before worker selection)
+    reflections.compute_partiality(experiments)
+
+    # 7. Select reflections per worker and create tasks
+    tasks = []
+    bbox = reflections["bbox"]
+    z0_col, z1_col = bbox.parts()[4], bbox.parts()[5]
+    for i in range(nproc):
+        ext_lo, ext_hi = extended_ranges[i]
+        core_lo, core_hi = core_ranges[i]
+        # Strict containment: bbox fully within extended range
+        sel = (z0_col >= ext_lo) & (z1_col <= ext_hi)
+        worker_refls = reflections.select(sel)
+        if len(worker_refls) == 0:
+            continue
+        task = SinglePassBlockTask(
+            index=i,
+            experiments=experiments,
+            reflections=worker_refls,
+            extended_range=(ext_lo, ext_hi),
+            core_range=(core_lo, core_hi),
+            num_scan_points=num_scan_points,
+        )
+        tasks.append(task)
+
+    logger.info(
+        " Parallel single-pass: %d workers, %d frames, overlap=%d",
+        len(tasks),
+        total_frames,
+        overlap,
+    )
+
+    # 8. Dispatch via multi_node_parallel_map
+    results = []
+
+    def process_output(result_pair):
+        rehandle_cached_records(result_pair[1])
+        results.append(result_pair[0])
+
+    multi_node_parallel_map(
+        func=execute_parallel_task,
+        iterable=tasks,
+        njobs=1,
+        nproc=nproc,
+        callback=process_output,
+        cluster_method="multiprocessing",
+        preserve_order=True,
+    )
+
+    # 9. Assemble results
+    results.sort(key=lambda r: r.index)
+
+    # Combine reflections
+    combined = results[0].reflections
+    for r in results[1:]:
+        combined.extend(r.reflections)
+
+    # Accumulate modellers for report
+    combined_modeller = None
+    for r in results:
+        if r.data is None:
+            continue
+        if combined_modeller is None:
+            combined_modeller = r.data
+        else:
+            combined_modeller.accumulate(r.data)
+
+    logger.info(
+        " Parallel single-pass complete: %d reflections from %d workers",
+        len(combined),
+        len(results),
+    )
+
+    return combined, combined_modeller
