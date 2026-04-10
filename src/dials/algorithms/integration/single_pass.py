@@ -435,11 +435,21 @@ class SinglePassBlockTask:
         proc = ShoeboxProcessor(self.reflections, n_panels, frame0, frame1, True)
 
         # Frame loop
-        for i in range(len(imageset)):
+        import sys
+
+        n_frames = len(imageset)
+        log_interval = max(1, n_frames // 10)
+        for i in range(n_frames):
             image = imageset.get_corrected_data(i)
             mask = imageset.get_mask(i)
             proc.next(make_image(image, mask), executor)
             del image, mask
+            if (i + 1) % log_interval == 0 or i + 1 == n_frames:
+                print(
+                    f" Worker {self.index}: {i + 1}/{n_frames} frames",
+                    file=sys.stderr,
+                    flush=True,
+                )
         assert proc.finished(), "ShoeboxProcessor did not finish"
 
         # Finalize populated model cells (empty cells have uninitialized data
@@ -647,13 +657,17 @@ class ChunkDriver:
         proc = ShoeboxProcessor(self.master, n_panels, scan_lo, scan_hi, False)
 
         # Process all frames sequentially — each frame read exactly once
-        for i in range(scan_hi - scan_lo):
+        total = scan_hi - scan_lo
+        log_interval = max(1, total // 10)
+        for i in range(total):
             image = imageset.get_corrected_data(i)
             mask = imageset.get_mask(i)
             proc.next(make_image(image, mask), executor)
             del image, mask
             # Eagerly finalize slices whose contributions are complete
             self._maybe_finalize_slices(scan_lo + i + 1)
+            if (i + 1) % log_interval == 0 or i + 1 == total:
+                logger.info(" Processed %d/%d frames", i + 1, total)
 
         assert proc.finished(), "ShoeboxProcessor did not finish"
         del self.master["shoebox"]
@@ -847,10 +861,12 @@ def run_single_pass_parallel(experiments, reflections, params, nproc):
 
     # 8. Dispatch via multi_node_parallel_map
     results = []
+    n_tasks = len(tasks)
 
     def process_output(result_pair):
         rehandle_cached_records(result_pair[1])
         results.append(result_pair[0])
+        logger.info(" Worker %d/%d complete", len(results), n_tasks)
 
     multi_node_parallel_map(
         func=execute_parallel_task,
