@@ -307,7 +307,9 @@ class ChunkDriver:
     """
 
     SLICE_WIDTH_FRAMES: int = 5  # matches production scan_step=5 default
-    SLICES_PER_CHUNK: int = 3
+    SLICES_PER_CHUNK: int = (
+        5  # must cover max bbox half-width (~11 frames = 2.2 slices) + fanout
+    )
 
     def __init__(self, experiments, master_reflections, params) -> None:
         assert len(experiments) == 1, "single-pass MVP: single experiment only"
@@ -349,6 +351,22 @@ class ChunkDriver:
         imageset = self.experiments[0].imageset
         scan_lo, scan_hi = self._scan_lo, self._scan_hi
         n_panels = len(imageset.get_detector())
+
+        # Compute partiality — required by profile modeller's check1 filter
+        self.master.compute_partiality(self.experiments)
+
+        # Pre-create fitting output columns so pending-queue drain_by_slice
+        # can write back via set_selected (Python KeyError if column absent).
+        # The C++ set_selected_rows_index auto-creates for inline-fit, but
+        # the Python path in PendingFitQueue needs them to exist already.
+        n = len(self.master)
+        for col in (
+            "intensity.prf.value",
+            "intensity.prf.variance",
+            "profile.correlation",
+        ):
+            if col not in self.master:
+                self.master[col] = flex.double(n, 0.0)
 
         # Tag each master row with its position so pending-queue writes can
         # target the correct master row after ShoeboxProcessor sub-tables

@@ -1201,12 +1201,17 @@ class Integrator:
         driver = ChunkDriver(self.experiments, self.reflections, self.params)
         self.reflections = driver.run()
 
-        # Build profile model report using reference subset
+        # Finalize the profile modeller and build report.
+        # ValidatedMultiExpProfileModeller.finalize() copies, accumulates, and
+        # finalizes; finalized_model() returns the inner MultiExpProfileModeller
+        # which has valid()/coord()/data() that ProfileModelReport needs.
+        driver._profile_fitter.finalize()
+        finalized_fitter = driver._profile_fitter.finalized_model()
         reference = self.reflections.select(
             self.reflections.get_flags(self.reflections.flags.reference_spot)
         )
         self.profile_model_report = ProfileModelReport(
-            self.experiments, driver._profile_fitter, reference
+            self.experiments, finalized_fitter, reference
         )
         logger.info("")
         logger.info(self.profile_model_report.as_str(prefix=" "))
