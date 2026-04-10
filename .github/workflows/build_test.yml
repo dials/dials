@@ -77,7 +77,7 @@ jobs:
           verbose: true
           emoji: false
           job-summary: true
-          custom-arguments: modules/dials --regression
+          custom-arguments: modules/dials
           click-to-expand: true
 
   build_libtbx:
@@ -161,7 +161,7 @@ jobs:
           verbose: true
           emoji: false
           job-summary: true
-          custom-arguments: dials-CI/modules/dials --regression
+          custom-arguments: dials-CI/modules/dials
           click-to-expand: true
           custom-pytest: dials-CI/build/bin/libtbx.python -mpytest
 

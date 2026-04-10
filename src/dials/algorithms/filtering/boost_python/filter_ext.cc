@@ -20,7 +20,7 @@ namespace dials { namespace algorithms { namespace filter { namespace boost_pyth
   using scitbx::af::flex_bool;
 
   af::shared<bool> by_detector_mask_multipanel_wrapper(
-    const af::const_ref<std::size_t> &panel,
+    const af::const_ref<std::size_t>& panel,
     const af::const_ref<int6> bboxes,
     boost::python::tuple mask_tuple,
     int2 scan_range) {
@@ -40,11 +40,11 @@ namespace dials { namespace algorithms { namespace filter { namespace boost_pyth
         (bool (*)(vec3<double>, vec3<double>, vec3<double>, double))&is_zeta_valid,
         (arg("m2"), arg("s0"), arg("s1"), arg("zeta_min")));
     def("is_zeta_valid",
-        (bool (*)(const CoordinateSystem &, double))&is_zeta_valid,
+        (bool (*)(const CoordinateSystem&, double))&is_zeta_valid,
         (arg("cs"), arg("zeta_min")));
     def("is_zeta_valid",
         (bool (*)(
-          const Goniometer &, const BeamBase &, vec3<double>, double))&is_zeta_valid,
+          const Goniometer&, const BeamBase&, vec3<double>, double))&is_zeta_valid,
         (arg("g"), arg("b"), arg("s1"), arg("zeta_min")));
   }
 
@@ -54,11 +54,11 @@ namespace dials { namespace algorithms { namespace filter { namespace boost_pyth
           vec3<double>, vec3<double>, vec3<double>, double))&is_xds_small_angle_valid,
         (arg("m2"), arg("s0"), arg("s1"), arg("delta_m")));
     def("is_xds_small_angle_valid",
-        (bool (*)(const CoordinateSystem &, double))&is_xds_small_angle_valid,
+        (bool (*)(const CoordinateSystem&, double))&is_xds_small_angle_valid,
         (arg("cs"), arg("delta_m")));
     def("is_xds_small_angle_valid",
-        (bool (*)(const Goniometer &,
-                  const BeamBase &,
+        (bool (*)(const Goniometer&,
+                  const BeamBase&,
                   vec3<double>,
                   double))&is_xds_small_angle_valid,
         (arg("g"), arg("b"), arg("s1"), arg("delta_m")));
@@ -69,13 +69,12 @@ namespace dials { namespace algorithms { namespace filter { namespace boost_pyth
         (bool (*)(vec3<double>, vec3<double>, vec3<double>, double))&is_xds_angle_valid,
         (arg("m2"), arg("s0"), arg("s1"), arg("delta_m")));
     def("is_xds_angle_valid",
-        (bool (*)(const CoordinateSystem &, double))&is_xds_angle_valid,
+        (bool (*)(const CoordinateSystem&, double))&is_xds_angle_valid,
         (arg("cs"), arg("delta_m")));
-    def(
-      "is_xds_angle_valid",
-      (bool (*)(
-        const Goniometer &, const BeamBase &, vec3<double>, double))&is_xds_angle_valid,
-      (arg("g"), arg("b"), arg("s1"), arg("delta_m")));
+    def("is_xds_angle_valid",
+        (bool (*)(
+          const Goniometer&, const BeamBase&, vec3<double>, double))&is_xds_angle_valid,
+        (arg("g"), arg("b"), arg("s1"), arg("delta_m")));
   }
 
   void export_filter_list() {
@@ -85,10 +84,10 @@ namespace dials { namespace algorithms { namespace filter { namespace boost_pyth
         (arg("g"), arg("b"), arg("r"), arg("delta_m")));
     def("by_xds_angle", &by_xds_angle, (arg("g"), arg("b"), arg("r"), arg("delta_m")));
     def("by_bbox_volume",
-        (af::shared<bool> (*)(const af::const_ref<int6> &, std::size_t))&by_bbox_volume,
+        (af::shared<bool> (*)(const af::const_ref<int6>&, std::size_t))&by_bbox_volume,
         (arg("bbox"), arg("num")));
     def("by_bbox_volume",
-        (af::shared<bool> (*)(const af::const_ref<int6> &))&by_bbox_volume,
+        (af::shared<bool> (*)(const af::const_ref<int6>&))&by_bbox_volume,
         (arg("bbox")));
 
     def("is_bbox_outside_image_range", &is_bbox_outside_image_range);

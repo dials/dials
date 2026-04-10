@@ -22,7 +22,7 @@ namespace dials { namespace algorithms {
    * @return The distance transform
    */
   template <typename InputType, typename OutputType>
-  void manhattan_distance(const af::const_ref<InputType, af::c_grid<2> > &src,
+  void manhattan_distance(const af::const_ref<InputType, af::c_grid<2> >& src,
                           InputType value,
                           af::ref<OutputType, af::c_grid<2> > dst) {
     // Initialise stuff
@@ -64,7 +64,7 @@ namespace dials { namespace algorithms {
    * @param dst: The destination array
    */
   template <typename InputType, typename OutputType>
-  void chebyshev_distance(const af::const_ref<InputType, af::c_grid<2> > &src,
+  void chebyshev_distance(const af::const_ref<InputType, af::c_grid<2> >& src,
                           InputType value,
                           af::ref<OutputType, af::c_grid<2> > dst) {
     // Initialise stuff

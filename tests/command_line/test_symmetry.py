@@ -34,7 +34,7 @@ from dials.util.phil import parse
 def test_symmetry_laue_only(dials_data, tmp_path):
     """Simple test to check that dials.symmetry completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),
@@ -118,7 +118,7 @@ def test_symmetry_basis_changes_for_C2(tmp_path):
 def test_symmetry_with_absences(dials_data, tmp_path, option):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     cmd = [
         shutil.which("dials.symmetry"),
         lcyst_data / "20_integrated_experiments.json",
@@ -140,7 +140,7 @@ def test_symmetry_with_absences(dials_data, tmp_path, option):
 def test_symmetry_with_laue_group_override(dials_data, tmp_path):
     """Simple test to check that dials.symmetry, with overridden laue group, completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),
@@ -168,7 +168,7 @@ def test_symmetry_with_laue_group_override(dials_data, tmp_path):
 @pytest.mark.parametrize("method", ["direct", "fourier"])
 def test_symmetry_absences_only(dials_data, tmp_path, method):
     """Test the command line script with real data. Proteinase K in P41"""
-    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    location = dials_data("vmxi_proteinase_k_sweeps")
 
     command = [
         shutil.which("dials.symmetry"),
@@ -524,7 +524,7 @@ def test_few_reflections(dials_data, run_in_tmp_path):
     params = dials_symmetry.phil_scope.fetch(source=parse("")).extract()
 
     # Use the integrated data from the first ten images of the first sweep.
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     experiments = ExperimentList.from_file(data_dir / "11_integrated.expt")
     reflections = [flex.reflection_table.from_file(data_dir / "11_integrated.refl")]
 
@@ -540,7 +540,7 @@ def test_x4wide(dials_data, tmp_path):
     Expected space group is P 43 21 2 (or its enantiomorphic equivalent, P 41 21 2)
     See also https://www.rcsb.org/structure/3QF8
     """
-    x4wide = dials_data("x4wide_processed", pathlib=True)
+    x4wide = dials_data("x4wide_processed")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),

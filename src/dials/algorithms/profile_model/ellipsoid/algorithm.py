@@ -468,7 +468,7 @@ def run_ellipsoid_refinement(
             LL_tolerance=LL_tolerance,
             max_cell_volume_change_fraction=max_cell_volume_change_fraction,
         )
-        if capture_progress:
+        if capture_progress and refinerc:
             # Save some data for plotting later.
             output_data["refiner_output"]["history"].append(refinerc.history)
             output_data["refiner_output"]["correlation"] = refinerc.correlation()

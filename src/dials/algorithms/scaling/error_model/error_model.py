@@ -308,7 +308,7 @@ class ErrorModelBinner:
             sel2 = Ih > minimum
             sel = sel1 & sel2
             # isel = sel.iselection()
-            n_in_bin = np.count_nonzero(sel)  # isel.size()
+            n_in_bin = int(np.count_nonzero(sel))  # isel.size()
             if n_in_bin < min_per_bin:  # need more in this bin
                 m = n_cumul + min_per_bin
                 if m < n:  # still some refl left to use
@@ -318,7 +318,7 @@ class ErrorModelBinner:
                     minimum = self.binning_info["bin_boundaries"][i + 1]
                     sel = sel1 & (Ih > minimum)
                     # isel = sel.iselection()
-                    n_in_bin = np.count_nonzero(sel)  # isel.size()
+                    n_in_bin = int(np.count_nonzero(sel))  # isel.size()
             self.binning_info["refl_per_bin"] = np.append(
                 self.binning_info["refl_per_bin"], [n_in_bin]
             )

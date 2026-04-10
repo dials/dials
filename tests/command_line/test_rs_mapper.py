@@ -13,8 +13,7 @@ def test_rs_mapper(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.rs_mapper"),
-            dials_data("centroid_test_data", pathlib=True)
-            / "imported_experiments.json",
+            dials_data("centroid_test_data") / "imported_experiments.json",
             'map_file="junk.ccp4"',
         ],
         cwd=tmp_path,
@@ -37,7 +36,7 @@ def test_rs_mapper(dials_data, tmp_path):
 
 
 def test_multi_panel(dials_data, tmp_path):
-    data_dir = dials_data("image_examples", pathlib=True)
+    data_dir = dials_data("image_examples")
     image = data_dir / "DLS_I23_germ_13KeV_0001.cbf"
 
     result = subprocess.run(
@@ -69,7 +68,7 @@ def test_masked(dials_data, tmp_path):
     subprocess.run(
         [
             shutil.which("dials.import"),
-            dials_data("image_examples", pathlib=True) / "dectris_eiger_master.h5",
+            dials_data("image_examples") / "dectris_eiger_master.h5",
         ],
         cwd=tmp_path,
         capture_output=True,

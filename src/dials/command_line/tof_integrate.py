@@ -84,6 +84,11 @@ mask = *ellipse seed_skewness
     .type = choice
     .help = "Foreground/background mask method: "
             "seed_skewness: https://doi.org/10.1107/S0021889803021939"
+ellipse_mask{
+    scale = 1.0
+    .type = float (value_min=0.5)
+    .help = "Number of standard deviations to use when generating the ellipse mask"
+}
 
 
 corrections{
@@ -259,8 +264,12 @@ def get_corrections_data(
 
 
 def calculate_shoebox_masks(
-    experiment: Experiment, reflections: flex.reflection_table, method: str, nproc: int
+    experiment: Experiment,
+    reflections: flex.reflection_table,
+    params: libtbx.phil.scope_extract,
 ) -> flex.reflection_table:
+    nproc = params.mp.nproc
+    method = params.mask
     if method == "seed_skewness":
         logger.info("    Calculating seed skewness foreground/background mask")
         tof_calculate_seed_skewness_shoebox_mask(
@@ -268,7 +277,8 @@ def calculate_shoebox_masks(
         )
     else:
         logger.info("    Calculating ellipse foreground/background mask")
-        tof_calculate_ellipse_shoebox_mask(reflections, experiment, nproc)
+        scale = params.ellipse_mask.scale
+        tof_calculate_ellipse_shoebox_mask(reflections, experiment, nproc, scale)
 
     return reflections
 
@@ -288,6 +298,7 @@ def integrate_reflection_table_for_experiment(
 
     logger.info(f"    Integrating using {params.method}")
 
+    show_profile_failures = logger.getEffectiveLevel() == logging.DEBUG
     if params.method == "profile1d":
         alpha = params.profile1d.init_alpha
         beta = params.profile1d.init_beta
@@ -298,7 +309,16 @@ def integrate_reflection_table_for_experiment(
         max_beta = params.profile1d.max_beta
         n_restarts = params.profile1d.n_restarts
         profile1d_params = TOFProfile1DParams(
-            A, alpha, min_alpha, max_alpha, beta, min_beta, max_beta, n_restarts, True
+            A,
+            alpha,
+            min_alpha,
+            max_alpha,
+            beta,
+            min_beta,
+            max_beta,
+            n_restarts,
+            True,
+            show_profile_failures,
         )
     elif params.method == "profile3d":
         alpha = params.profile3d.init_alpha
@@ -319,6 +339,7 @@ def integrate_reflection_table_for_experiment(
             n_restarts,
             True,
             use_central_diff,
+            show_profile_failures,
         )
 
     if apply_lorentz:
@@ -779,9 +800,7 @@ def run_integrate(
             expt_reflections, expt, expt_data, False
         )
 
-        expt_reflections = calculate_shoebox_masks(
-            expt, expt_reflections, params.mask, params.mp.nproc
-        )
+        expt_reflections = calculate_shoebox_masks(expt, expt_reflections, params)
         expt_reflections.is_overloaded(experiments)
         expt_reflections.contains_invalid_pixels()
 

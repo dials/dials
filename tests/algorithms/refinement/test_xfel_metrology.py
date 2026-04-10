@@ -22,7 +22,7 @@ def test_joint_refinement(dials_data, tmp_path):
     if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
         pytest.skip("Skipping test as SparseLevMar engine not available")
 
-    data_dir = dials_data("cspad_metrology", pathlib=True)
+    data_dir = dials_data("cspad_metrology")
 
     # Do refinement and load the history
     result = subprocess.run(
@@ -61,7 +61,7 @@ def test_constrained_refinement(dials_data, tmp_path):
     if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
         pytest.skip("Skipping test as SparseLevMar engine not available")
 
-    data_dir = dials_data("cspad_metrology", pathlib=True)
+    data_dir = dials_data("cspad_metrology")
 
     # Load experiments and reflections
     refl = flex.reflection_table.from_file(data_dir / "benchmark_level2d.pickle")

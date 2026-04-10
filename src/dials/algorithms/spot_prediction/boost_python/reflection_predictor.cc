@@ -22,11 +22,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<Predictor>("ScanStaticReflectionPredictor", no_init)
       .def(init<const std::shared_ptr<BeamBase>,
-                const Detector &,
-                const Goniometer &,
-                const Scan &,
-                const cctbx::uctbx::unit_cell &,
-                const cctbx::sgtbx::space_group_type &,
+                const Detector&,
+                const Goniometer&,
+                const Scan&,
+                const cctbx::uctbx::unit_cell&,
+                const cctbx::sgtbx::space_group_type&,
                 double,
                 double,
                 double>())
@@ -43,10 +43,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<Predictor>("ScanVaryingReflectionPredictor", no_init)
       .def(init<const std::shared_ptr<BeamBase>,
-                const Detector &,
-                const Goniometer &,
-                const Scan &,
-                const cctbx::sgtbx::space_group_type &,
+                const Detector&,
+                const Goniometer&,
+                const Scan&,
+                const cctbx::sgtbx::space_group_type&,
                 double,
                 std::size_t,
                 double>())
@@ -64,23 +64,23 @@ namespace dials { namespace algorithms { namespace boost_python {
     af::reflection_table (Predictor::*predict_all)() const = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed)(
-      const af::const_ref<cctbx::miller::index<> > &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&) = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel)(
-      const af::const_ref<cctbx::miller::index<> > &, std::size_t) =
+      const af::const_ref<cctbx::miller::index<> >&, std::size_t) =
       &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel_list)(
-      const af::const_ref<cctbx::miller::index<> > &,
-      const af::const_ref<std::size_t> &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&,
+      const af::const_ref<std::size_t>&) = &Predictor::operator();
 
     class_<Predictor>("StillsDeltaPsiReflectionPredictor", no_init)
       .def(init<const std::shared_ptr<BeamBase>,
-                const Detector &,
+                const Detector&,
                 mat3<double>,
-                const cctbx::uctbx::unit_cell &,
-                const cctbx::sgtbx::space_group_type &,
-                const double &>())
+                const cctbx::uctbx::unit_cell&,
+                const cctbx::sgtbx::space_group_type&,
+                const double&>())
       .def("__call__", predict_all)
       .def("for_ub", &Predictor::for_ub)
       .def("__call__", predict_observed)
@@ -96,25 +96,25 @@ namespace dials { namespace algorithms { namespace boost_python {
     af::reflection_table (Predictor::*predict_all)() const = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed)(
-      const af::const_ref<cctbx::miller::index<> > &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&) = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel)(
-      const af::const_ref<cctbx::miller::index<> > &, std::size_t) =
+      const af::const_ref<cctbx::miller::index<> >&, std::size_t) =
       &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel_list)(
-      const af::const_ref<cctbx::miller::index<> > &,
-      const af::const_ref<std::size_t> &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&,
+      const af::const_ref<std::size_t>&) = &Predictor::operator();
 
     class_<Predictor>("NaveStillsReflectionPredictor", no_init)
       .def(init<const std::shared_ptr<BeamBase>,
-                const Detector &,
+                const Detector&,
                 mat3<double>,
-                const cctbx::uctbx::unit_cell &,
-                const cctbx::sgtbx::space_group_type &,
-                const double &,
-                const double &,
-                const double &>())
+                const cctbx::uctbx::unit_cell&,
+                const cctbx::sgtbx::space_group_type&,
+                const double&,
+                const double&,
+                const double&>())
       .def("__call__", predict_all)
       .def("for_ub", &Predictor::for_ub)
       .def("__call__", predict_observed)
@@ -130,23 +130,23 @@ namespace dials { namespace algorithms { namespace boost_python {
     af::reflection_table (Predictor::*predict_all)() const = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed)(
-      const af::const_ref<cctbx::miller::index<> > &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&) = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel)(
-      const af::const_ref<cctbx::miller::index<> > &, std::size_t) =
+      const af::const_ref<cctbx::miller::index<> >&, std::size_t) =
       &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel_list)(
-      const af::const_ref<cctbx::miller::index<> > &,
-      const af::const_ref<std::size_t> &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&,
+      const af::const_ref<std::size_t>&) = &Predictor::operator();
 
     class_<Predictor>("SphericalRelpStillsReflectionPredictor", no_init)
       .def(init<const std::shared_ptr<BeamBase>,
-                const Detector &,
+                const Detector&,
                 mat3<double>,
-                const cctbx::uctbx::unit_cell &,
-                const cctbx::sgtbx::space_group_type &,
-                const double &>())
+                const cctbx::uctbx::unit_cell&,
+                const cctbx::sgtbx::space_group_type&,
+                const double&>())
       .def("__call__", predict_all)
       .def("for_ub", &Predictor::for_ub)
       .def("__call__", predict_observed)
@@ -156,14 +156,14 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("for_reflection_table", &Predictor::for_reflection_table_with_individual_ub);
   }
 
-  static LaueReflectionPredictor *make_LaueReflectionPredictor(
-    const PolychromaticBeam &beam,
-    const Detector &detector,
+  static LaueReflectionPredictor* make_LaueReflectionPredictor(
+    const PolychromaticBeam& beam,
+    const Detector& detector,
     boost::python::object goniometer,
     mat3<double> ub,
-    const cctbx::uctbx::unit_cell &unit_cell,
-    const cctbx::sgtbx::space_group_type &sg_type,
-    const double &dmin) {
+    const cctbx::uctbx::unit_cell& unit_cell,
+    const cctbx::sgtbx::space_group_type& sg_type,
+    const double& dmin) {
     if (goniometer == boost::python::object()) {
       return new LaueReflectionPredictor(
         beam, detector, boost::none, ub, unit_cell, sg_type, dmin);
@@ -191,15 +191,15 @@ namespace dials { namespace algorithms { namespace boost_python {
     af::reflection_table (Predictor::*predict_all)() const = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed)(
-      const af::const_ref<cctbx::miller::index<> > &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&) = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel)(
-      const af::const_ref<cctbx::miller::index<> > &, std::size_t) =
+      const af::const_ref<cctbx::miller::index<> >&, std::size_t) =
       &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel_list)(
-      const af::const_ref<cctbx::miller::index<> > &,
-      const af::const_ref<std::size_t> &) = &Predictor::operator();
+      const af::const_ref<cctbx::miller::index<> >&,
+      const af::const_ref<std::size_t>&) = &Predictor::operator();
 
     class_<Predictor>("LaueReflectionPredictor", no_init)
       .def("__init__",

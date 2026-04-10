@@ -1097,8 +1097,8 @@ conda activate {dist_root}/conda_base
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(dials)
 
-if (CMAKE_UNITY_BUILD AND MSVC)
-    # Windows can fail in this scenario because too many objects
+if (MSVC)
+    # Windows can fail because of too many objects
     add_compile_options(/bigobj)
 endif()
 
@@ -1160,7 +1160,6 @@ def configure_build(config_flags):
         "xfel",
         "dials",
         "xia2",
-        "prime",
         "--skip_phenix_dispatchers",
         "--use_environment",
     ] + config_flags

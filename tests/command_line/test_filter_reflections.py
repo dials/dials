@@ -126,7 +126,7 @@ def test_filter_reflections_printing_analysis(reflections, tmp_path):
 def test_filter_reflections(
     experiment, reflections, args, expected, dials_data, tmp_path
 ):
-    dataset = dials_data("centroid_test_data", pathlib=True)
+    dataset = dials_data("centroid_test_data")
     result = subprocess.run(
         [
             shutil.which("dials.filter_reflections"),

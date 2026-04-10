@@ -8,7 +8,7 @@ from dials.util import export_bitmaps
 
 def test_imageset_as_flex_image(dials_data):
     expts = ExperimentListFactory.from_filenames(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid_000*.cbf")
+        dials_data("centroid_test_data").glob("centroid_000*.cbf")
     )
     imageset = expts[0].imageset
     flex_images = list(

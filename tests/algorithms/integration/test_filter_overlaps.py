@@ -27,10 +27,10 @@ def test_for_overlaps(dials_data):
 
     # test data
     refl_path = str(
-        dials_data("trypsin_multi_lattice", pathlib=True) / "refined.refl",
+        dials_data("trypsin_multi_lattice") / "refined.refl",
     )
     expt_path = str(
-        dials_data("trypsin_multi_lattice", pathlib=True) / "refined.expt",
+        dials_data("trypsin_multi_lattice") / "refined.expt",
     )
 
     importer = Importer(

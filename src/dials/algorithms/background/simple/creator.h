@@ -66,7 +66,7 @@ namespace dials { namespace algorithms { namespace background {
      * @return Success True/False per shoebox
      */
     template <typename FloatType>
-    af::shared<bool> operator()(const af::const_ref<Shoebox<FloatType> > &shoeboxes,
+    af::shared<bool> operator()(const af::const_ref<Shoebox<FloatType> >& shoeboxes,
                                 af::ref<double> mse,
                                 af::ref<double> dispersion) const {
       af::shared<bool> result(shoeboxes.size(), true);
@@ -75,11 +75,11 @@ namespace dials { namespace algorithms { namespace background {
           af::tiny<FloatType, 2> r = this->operator()(shoeboxes[i]);
           mse[i] = r[0];
           dispersion[i] = r[1];
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           result[i] = false;
           mse[i] = 0.0;
           dispersion[i] = 0.0;
-        } catch (std::runtime_error const &) {
+        } catch (std::runtime_error const&) {
           result[i] = false;
           mse[i] = 0.0;
           dispersion[i] = 0.0;
@@ -120,9 +120,9 @@ namespace dials { namespace algorithms { namespace background {
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch (scitbx::error const &) {
+        } catch (scitbx::error const&) {
           success[i] = false;
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           success[i] = false;
         }
       }
@@ -147,7 +147,7 @@ namespace dials { namespace algorithms { namespace background {
      */
     template <typename FloatType>
     af::tiny<FloatType, 2> operator()(
-      const af::const_ref<FloatType, af::c_grid<3> > &data_in,
+      const af::const_ref<FloatType, af::c_grid<3> >& data_in,
       af::ref<int, af::c_grid<3> > mask,
       af::ref<FloatType, af::c_grid<3> > background) const {
       // Copy the array to a double

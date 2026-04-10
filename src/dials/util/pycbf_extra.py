@@ -45,7 +45,7 @@ def get_image(cbf_handle, category="array_data", column="data", row=0, element=0
     if "bnry" in cbf_handle.get_typeofvalue():
         # Read the image data into an array
         image_string = cbf_handle.get_integerarray_as_string()
-        image = np.fromstring(image_string, np.int32)
+        image = np.frombuffer(image_string, np.int32)
 
         # Get the size of the image data (either 2d or 3d)
         image_size = cbf_handle.get_image_size(element)

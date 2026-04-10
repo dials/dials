@@ -9,7 +9,7 @@ from dials.util.table_as_hdf5_file import HDF5TableFile
 
 
 def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
-    data = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True) / "scaled_20_25.refl"
+    data = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl"
     table = flex.reflection_table.from_file(data)
 
     os.environ["DIALS_USE_H5"] = "1"

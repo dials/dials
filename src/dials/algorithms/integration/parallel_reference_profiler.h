@@ -60,10 +60,10 @@ namespace dials { namespace algorithms {
      * @param min_trusted The minimum trusted value
      * @param max_trusted The maximum trusted value
      */
-    ReflectionReferenceProfiler(const MaskCalculatorIface &compute_mask,
-                                const BackgroundCalculatorIface &compute_background,
-                                ReferenceCalculatorIface &compute_reference,
-                                const Buffer &buffer,
+    ReflectionReferenceProfiler(const MaskCalculatorIface& compute_mask,
+                                const BackgroundCalculatorIface& compute_background,
+                                ReferenceCalculatorIface& compute_reference,
+                                const Buffer& buffer,
                                 int zstart,
                                 double min_trusted,
                                 double max_trusted,
@@ -94,7 +94,7 @@ namespace dials { namespace algorithms {
      */
     void operator()(std::size_t index,
                     af::ref<af::Reflection> reflection_list,
-                    const AdjacencyList &adjacency_list) const {
+                    const AdjacencyList& adjacency_list) const {
       af::Reflection reflection;
       std::vector<af::Reflection> adjacent_reflections;
 
@@ -119,7 +119,7 @@ namespace dials { namespace algorithms {
       // Compute the background
       try {
         compute_background_(reflection);
-      } catch (dials::error const &) {
+      } catch (dials::error const&) {
         finalize_shoebox(reflection, adjacent_reflections, min_trusted_, max_trusted_);
         return;
       }
@@ -133,7 +133,7 @@ namespace dials { namespace algorithms {
       // Compute the profile fitted intensity
       try {
         compute_reference_(reflection);
-      } catch (dials::error const &) {
+      } catch (dials::error const&) {
         // pass
       }
 
@@ -154,10 +154,10 @@ namespace dials { namespace algorithms {
      * @param adjacent_reflections The adjacent reflections
      */
     void get_reflection(std::size_t index,
-                        const af::const_ref<af::Reflection> &reflection_list,
-                        const AdjacencyList &adjacency_list,
-                        af::Reflection &reflection,
-                        std::vector<af::Reflection> &adjacent_reflections) const {
+                        const af::const_ref<af::Reflection>& reflection_list,
+                        const AdjacencyList& adjacency_list,
+                        af::Reflection& reflection,
+                        std::vector<af::Reflection>& adjacent_reflections) const {
       DIALS_ASSERT(index < reflection_list.size());
 
       // Get the lock
@@ -184,7 +184,7 @@ namespace dials { namespace algorithms {
      */
     void set_reflection(std::size_t index,
                         af::ref<af::Reflection> reflection_list,
-                        const af::Reflection &reflection) const {
+                        const af::Reflection& reflection) const {
       DIALS_ASSERT(index < reflection_list.size());
       boost::lock_guard<boost::mutex> guard(mutex_);
       reflection_list[index] = reflection;
@@ -195,8 +195,8 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      * @param adjacent_reflections The adjacent reflections
      */
-    void finalize_shoebox(af::Reflection &reflection,
-                          std::vector<af::Reflection> &adjacent_reflections,
+    void finalize_shoebox(af::Reflection& reflection,
+                          std::vector<af::Reflection>& adjacent_reflections,
                           double min_trusted,
                           double max_trusted) const {
       // Inspect the pixels
@@ -210,13 +210,13 @@ namespace dials { namespace algorithms {
      * Inspect the pixel and mask values
      * @param reflection The reflection
      */
-    void inspect_pixels(af::Reflection &reflection,
+    void inspect_pixels(af::Reflection& reflection,
                         double min_trusted,
                         double max_trusted) const {
       typedef Shoebox<>::float_type float_type;
 
       // Get the shoebox
-      Shoebox<> &sbox = reflection.get<Shoebox<> >("shoebox");
+      Shoebox<>& sbox = reflection.get<Shoebox<> >("shoebox");
       std::size_t flags = reflection.get<std::size_t>("flags");
 
       // Get the pixel data
@@ -287,8 +287,8 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      * @param adjacent_reflections The adjacent reflections
      */
-    void delete_shoebox(af::Reflection &reflection,
-                        std::vector<af::Reflection> &adjacent_reflections) const {
+    void delete_shoebox(af::Reflection& reflection,
+                        std::vector<af::Reflection>& adjacent_reflections) const {
       // Erase the shoebox from the reflection
       if (!debug_) {
         reflection.erase("shoebox");
@@ -301,8 +301,8 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data from the buffer
      */
-    void extract_shoebox(const Buffer &buffer,
-                         af::Reflection &reflection,
+    void extract_shoebox(const Buffer& buffer,
+                         af::Reflection& reflection,
                          int zstart,
                          double min_trusted,
                          double max_trusted) const {
@@ -358,7 +358,7 @@ namespace dials { namespace algorithms {
     /**
      * Compute the centroid
      */
-    void compute_centroid(af::Reflection &reflection) const {
+    void compute_centroid(af::Reflection& reflection) const {
       using dials::model::Centroid;
 
       // Get the shoebox and compute centroid
@@ -373,7 +373,7 @@ namespace dials { namespace algorithms {
     /**
      * Compute the summed intensity
      */
-    void compute_summed_intensity(af::Reflection &reflection) const {
+    void compute_summed_intensity(af::Reflection& reflection) const {
       using dials::model::Intensity;
 
       // Get flags and reset
@@ -400,10 +400,10 @@ namespace dials { namespace algorithms {
       reflection["flags"] = flags;
     }
 
-    const MaskCalculatorIface &compute_mask_;
-    const BackgroundCalculatorIface &compute_background_;
-    ReferenceCalculatorIface &compute_reference_;
-    const Buffer &buffer_;
+    const MaskCalculatorIface& compute_mask_;
+    const BackgroundCalculatorIface& compute_background_;
+    ReferenceCalculatorIface& compute_reference_;
+    const Buffer& buffer_;
     int zstart_;
     double min_trusted_;
     double max_trusted_;
@@ -431,10 +431,10 @@ namespace dials { namespace algorithms {
      */
     ParallelReferenceProfiler(af::reflection_table reflections,
                               ImageSequence imageset,
-                              const MaskCalculatorIface &compute_mask,
-                              const BackgroundCalculatorIface &compute_background,
-                              ReferenceCalculatorIface &compute_reference,
-                              const Logger &logger,
+                              const MaskCalculatorIface& compute_mask,
+                              const BackgroundCalculatorIface& compute_background,
+                              ReferenceCalculatorIface& compute_reference,
+                              const Logger& logger,
                               std::size_t nthreads,
                               std::size_t buffer_size,
                               bool use_dynamic_mask,
@@ -604,17 +604,17 @@ namespace dials { namespace algorithms {
      * 5. For each complete reflection post a reflection integration job to the
      *    thread pool.
      */
-    void process(const Lookup &lookup,
-                 const ReflectionReferenceProfiler &parallel_reference_profiler,
-                 Buffer &buffer,
+    void process(const Lookup& lookup,
+                 const ReflectionReferenceProfiler& parallel_reference_profiler,
+                 Buffer& buffer,
                  af::ref<af::Reflection> reflections,
-                 const AdjacencyList &overlaps,
+                 const AdjacencyList& overlaps,
                  ImageSequence imageset,
                  af::const_ref<int6> bbox,
                  af::const_ref<std::size_t> flags,
                  std::size_t nthreads,
                  bool use_dynamic_mask,
-                 const Logger &logger) const {
+                 const Logger& logger) const {
       using dials::util::ThreadPool;
 
       // Create the thread pool

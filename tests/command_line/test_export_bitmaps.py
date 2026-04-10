@@ -24,7 +24,7 @@ def test_export_single_bitmap(
 ):
     export_bitmaps.run(
         [
-            str(dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"),
+            str(dials_data("centroid_test_data") / "centroid_0001.cbf"),
             f"resolution_rings.show={show_resolution_rings}",
             f"ice_rings.show={show_ice_rings}",
             f"output.directory={tmp_path}",
@@ -36,7 +36,7 @@ def test_export_single_bitmap(
 def test_export_multiple_bitmaps(dials_data, tmp_path):
     export_bitmaps.run(
         [
-            str(dials_data("centroid_test_data", pathlib=True) / "experiments.json"),
+            str(dials_data("centroid_test_data") / "experiments.json"),
             "prefix=variance_",
             "binning=2",
             "display=variance",
@@ -54,7 +54,7 @@ def test_export_multiple_bitmaps(dials_data, tmp_path):
 def test_export_bitmap_with_prefix_and_no_padding(dials_data, tmp_path):
     export_bitmaps.run(
         [
-            str(dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"),
+            str(dials_data("centroid_test_data") / "centroid_0001.cbf"),
             "prefix=img_",
             "padding=0",
             f"output.directory={tmp_path}",
@@ -66,7 +66,7 @@ def test_export_bitmap_with_prefix_and_no_padding(dials_data, tmp_path):
 def test_export_bitmap_with_prefix_and_extra_padding(dials_data, tmp_path):
     export_bitmaps.run(
         [
-            str(dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"),
+            str(dials_data("centroid_test_data") / "centroid_0001.cbf"),
             "prefix=img_",
             "padding=5",
             f"output.directory={tmp_path}",
@@ -78,7 +78,7 @@ def test_export_bitmap_with_prefix_and_extra_padding(dials_data, tmp_path):
 def test_export_bitmap_with_specified_output_filename(dials_data, tmp_path):
     export_bitmaps.run(
         [
-            str(dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"),
+            str(dials_data("centroid_test_data") / "centroid_0001.cbf"),
             "output.file=kittens.png",
             f"output.directory={tmp_path}",
         ],
@@ -93,9 +93,7 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
         # setting output filename not allowed with >1 image
         export_bitmaps.run(
             [
-                str(
-                    dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-                ),
+                str(dials_data("centroid_test_data") / "experiments.json"),
                 "output.file=kittens.png",
                 f"output.directory={tmp_path}",
             ],
@@ -104,7 +102,7 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
 
 @pytest.mark.parametrize("set_imageset_index", [True, False])
 def test_export_single_cbf(dials_data, tmp_path, set_imageset_index):
-    image = str(dials_data("centroid_test_data", pathlib=True) / "centroid_0002.cbf")
+    image = str(dials_data("centroid_test_data") / "centroid_0002.cbf")
     cmd = [image, f"output.directory={tmp_path}"]
     if set_imageset_index:
         cmd.append("imageset_index=1")
@@ -113,9 +111,7 @@ def test_export_single_cbf(dials_data, tmp_path, set_imageset_index):
 
 
 def test_export_still_image(dials_data: Path, tmp_path):
-    image = str(
-        dials_data("image_examples", pathlib=True) / "DLS_I24_stills-still_0001.cbf.bz2"
-    )
+    image = str(dials_data("image_examples") / "DLS_I24_stills-still_0001.cbf.bz2")
 
     export_bitmaps.run(
         [
@@ -134,7 +130,7 @@ def test_export_still_image(dials_data: Path, tmp_path):
     ],
 )
 def test_export_multi_panel(dials_data, tmp_path, show_resolution_rings):
-    data_dir = dials_data("image_examples", pathlib=True)
+    data_dir = dials_data("image_examples")
     image = str(data_dir / "DLS_I23_germ_13KeV_0001.cbf")
 
     for binning in (1, 4):
@@ -154,7 +150,7 @@ def test_export_restricted_multiimage(dials_data, tmp_path):
     "Test exporting a subset of an imageset"
     export_bitmaps.run(
         [
-            str(dials_data("centroid_test_data", pathlib=True) / "experiments.json"),
+            str(dials_data("centroid_test_data") / "experiments.json"),
             "imageset_index=2",
             f"output.directory={tmp_path}",
         ],

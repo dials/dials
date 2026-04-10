@@ -57,11 +57,11 @@ class _:
     # the modified algorithms. If these are modified on the instance level, then
     # only the instance will have the modified algorithms and new instances will
     # have the defaults
-    background_algorithm = functools.partial(
-        dials.extensions.glm_background_ext.GLMBackgroundExt, None
+    background_algorithm = staticmethod(
+        functools.partial(dials.extensions.glm_background_ext.GLMBackgroundExt, None)
     )
-    centroid_algorithm = functools.partial(
-        dials.extensions.simple_centroid_ext.SimpleCentroidExt, None
+    centroid_algorithm = staticmethod(
+        functools.partial(dials.extensions.simple_centroid_ext.SimpleCentroidExt, None)
     )
 
     @staticmethod

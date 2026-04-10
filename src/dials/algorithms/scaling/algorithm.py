@@ -231,6 +231,8 @@ class ScalingAlgorithm:
         )
         logger.info("\nScaling models have been initialised for all experiments.")
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
+        if len(self.experiments) == 1 and self.experiments[0].scaling_model.id_ == "KB":
+            raise RuntimeError("Invalid model option (KB) for scaling a single dataset")
 
         self.experiments = set_image_ranges_in_scaling_models(self.experiments)
 

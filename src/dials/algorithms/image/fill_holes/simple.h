@@ -34,7 +34,7 @@ namespace dials { namespace algorithms {
      * Struct to provide pixel node comparison
      */
     struct CompareSimpleFillNode {
-      bool operator()(const SimpleFillNode &a, const SimpleFillNode &b) const {
+      bool operator()(const SimpleFillNode& a, const SimpleFillNode& b) const {
         return a.d < b.d;
       }
     };
@@ -47,8 +47,8 @@ namespace dials { namespace algorithms {
    * @returns The filled image
    */
   inline af::versa<double, af::c_grid<2> > simple_fill(
-    const af::const_ref<double, af::c_grid<2> > &data,
-    const af::const_ref<bool, af::c_grid<2> > &mask) {
+    const af::const_ref<double, af::c_grid<2> >& data,
+    const af::const_ref<bool, af::c_grid<2> >& mask) {
     // Check the input
     DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
     std::size_t height = data.accessor()[0];
@@ -114,8 +114,8 @@ namespace dials { namespace algorithms {
    * @returns The filled image
    */
   inline af::versa<double, af::c_grid<2> > diffusion_fill(
-    const af::const_ref<double, af::c_grid<2> > &data,
-    const af::const_ref<bool, af::c_grid<2> > &mask,
+    const af::const_ref<double, af::c_grid<2> >& data,
+    const af::const_ref<bool, af::c_grid<2> >& mask,
     std::size_t niter) {
     // Check input
     DIALS_ASSERT(niter > 0);

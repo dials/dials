@@ -9,8 +9,8 @@ from dials.command_line import detect_blanks
 
 
 def test_strong(dials_data, capsys, run_in_tmp_path):
-    expts_file = dials_data("insulin_processed", pathlib=True) / "imported.expt"
-    refl_file = dials_data("insulin_processed", pathlib=True) / "strong.refl"
+    expts_file = dials_data("insulin_processed") / "imported.expt"
+    refl_file = dials_data("insulin_processed") / "strong.refl"
     refl = flex.reflection_table.from_file(refl_file)
     z = refl["xyzobs.px.value"].parts()[2]
     refl_subset = refl.select((z < 10) | (z > 20))
@@ -30,8 +30,8 @@ def test_strong(dials_data, capsys, run_in_tmp_path):
 
 
 def test_integrated(dials_data, capsys, run_in_tmp_path):
-    expts_file = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
-    refl_file = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
+    expts_file = dials_data("insulin_processed") / "integrated.expt"
+    refl_file = dials_data("insulin_processed") / "integrated.refl"
     refl = flex.reflection_table.from_file(refl_file)
     z = refl["xyzobs.px.value"].parts()[2]
     sel = z < 40
@@ -72,7 +72,7 @@ Potential blank images: 41 -> 45
 
 
 def test_passing_still_images_raises_sysexit(dials_data, run_in_tmp_path):
-    path = dials_data("vmxi_thaumatin_grid_index", pathlib=True)
+    path = dials_data("vmxi_thaumatin_grid_index")
 
     expts_file = path / "split_07602.expt"
     refl_file = path / "split_07602.refl"

@@ -9,14 +9,10 @@ from dials.array_family import flex
 
 
 def test_tof_integration(dials_data, tmp_path):
-    image_file = join(
-        dials_data("isis_sxd_example_data", pathlib=True), "sxd_nacl_run.nxs"
-    )
+    image_file = join(dials_data("isis_sxd_example_data"), "sxd_nacl_run.nxs")
 
     # Update .expt file with correct image path
-    init_expt_path = join(
-        dials_data("isis_sxd_nacl_processed", pathlib=True), "refined.expt"
-    )
+    init_expt_path = join(dials_data("isis_sxd_nacl_processed"), "refined.expt")
     expt_path = join(tmp_path, "refined.expt")
     with open(init_expt_path, "rb") as g:
         expt_json = json.load(g)
@@ -26,7 +22,7 @@ def test_tof_integration(dials_data, tmp_path):
         json.dump(expt_json, g)
 
     reflections = flex.reflection_table.from_msgpack_file(
-        join(dials_data("isis_sxd_nacl_processed", pathlib=True), "refined.refl")
+        join(dials_data("isis_sxd_nacl_processed"), "refined.refl")
     )
 
     # Reduce number of reflections

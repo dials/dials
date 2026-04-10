@@ -163,7 +163,7 @@ void tst_single_thread_pool() {
   std::cout << "OK" << std::endl;
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const* argv[]) {
   tst_basic_functionality();
   tst_concurrent_execution();
   tst_multiple_post_wait_cycles();

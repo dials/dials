@@ -11,10 +11,10 @@ from dials.array_family import flex
 @pytest.fixture
 def centroid_test_data(dials_data):
     reflections = flex.reflection_table.from_file(
-        dials_data("centroid_test_data", pathlib=True) / "strong.pickle"
+        dials_data("centroid_test_data") / "strong.pickle"
     )
     experiments = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "imported_experiments.json"
+        dials_data("centroid_test_data") / "imported_experiments.json"
     )
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)

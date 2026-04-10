@@ -67,7 +67,7 @@ def test_spots_xds(tmp_path):
 
 
 def test_export_xds(dials_data, tmp_path):
-    experiment = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    experiment = dials_data("centroid_test_data") / "experiments.json"
     result = subprocess.run(
         [shutil.which("dials.find_spots"), "nproc=1", experiment],
         cwd=tmp_path,
@@ -114,8 +114,7 @@ def test_export_imported_experiments(dials_data, tmp_path):
         [
             shutil.which("dials.export"),
             "format=xds",
-            dials_data("centroid_test_data", pathlib=True)
-            / "imported_experiments.json",
+            dials_data("centroid_test_data") / "imported_experiments.json",
         ],
         cwd=tmp_path,
         capture_output=True,

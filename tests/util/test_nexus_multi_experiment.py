@@ -182,7 +182,7 @@ def run_single(experiments1, filename):
     ],
 )
 def test_nexus_dump_and_reload(dials_data, tmp_path, filename):
-    data_dir = dials_data("misc_regression", pathlib=True)
+    data_dir = dials_data("misc_regression")
     filename_in = str(data_dir / f"{filename}.expt")
     filename_out = str(tmp_path / f"{filename}.nxs")
     experiments = ExperimentListFactory.from_json_file(filename_in)

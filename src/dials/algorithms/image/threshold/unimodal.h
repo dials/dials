@@ -30,7 +30,7 @@ namespace dials { namespace algorithms {
    * @param histo The histogram
    * @returns The threshold value
    */
-  inline std::size_t maximum_deviation(const af::const_ref<double> &histo) {
+  inline std::size_t maximum_deviation(const af::const_ref<double>& histo) {
     // Get x, y at peak and at end of tail.
     std::size_t i0 = max_index(histo);
     std::size_t i1 = histo.size() - 1;
@@ -65,7 +65,7 @@ namespace dials { namespace algorithms {
    * @returns The probability distribution of values
    */
   inline af::shared<double> probability_distribution(
-    const af::const_ref<int, af::c_grid<2> > &image,
+    const af::const_ref<int, af::c_grid<2> >& image,
     int2 range) {
     // Get the histogram range
     int minh = range[0];

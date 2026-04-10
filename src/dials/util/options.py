@@ -234,7 +234,7 @@ class Importer:
                 message=str(exception),
                 traceback=traceback.format_exc(),
                 type=type,
-                exception=exception,
+                exception=exception.__class__.__name__,
             )
         )
 

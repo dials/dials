@@ -13,7 +13,7 @@ def test1(dials_data, tmp_path):
     fixing, constraints, SparseLevMar, and sauter_poon outlier rejection. See
     README in the regression folder for more details.
     """
-    data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
+    data_dir = dials_data("iterative_cspad_refinement")
 
     result = subprocess.run(
         [

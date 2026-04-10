@@ -53,7 +53,7 @@ namespace dials { namespace algorithms { namespace polygon {
      * @param output_size The output size
      * @returns The grid indices (x0, x1, y0, y1)
      */
-    inline int4 quad_grid_range(const vert4 &input, af::c_grid<2> output_size) {
+    inline int4 quad_grid_range(const vert4& input, af::c_grid<2> output_size) {
       // Get the range of new grid points
       double4 ix(input[0][0], input[1][0], input[2][0], input[3][0]);
       double4 iy(input[0][1], input[1][1], input[2][1], input[3][1]);
@@ -75,7 +75,7 @@ namespace dials { namespace algorithms { namespace polygon {
      * @param input The input polygon
      * @returns The area
      */
-    inline double reverse_quad_inplace_if_backward(vert4 &input) {
+    inline double reverse_quad_inplace_if_backward(vert4& input) {
       double area = simple_area(input);
       DIALS_ASSERT(area != 0.0);
       if (area < 0.0) {
@@ -93,7 +93,7 @@ namespace dials { namespace algorithms { namespace polygon {
      * @param j The slow grid index
      * @returns The area
      */
-    inline double quad_grid_intersection_area(const vert4 &a, int i, int j) {
+    inline double quad_grid_intersection_area(const vert4& a, int i, int j) {
       vert4 b(vec2<double>(i, j),
               vec2<double>(i + 1, j),
               vec2<double>(i + 1, j + 1),
@@ -161,7 +161,7 @@ namespace dials { namespace algorithms { namespace polygon {
      * @returns The matches between grid points
      */
     inline af::shared<Match> irregular_grid_to_grid(
-      const af::const_ref<vec2<double>, af::c_grid<2> > &inputxy,
+      const af::const_ref<vec2<double>, af::c_grid<2> >& inputxy,
       af::tiny<std::size_t, 2> output_size) {
       af::shared<Match> matches;
       DIALS_ASSERT(inputxy.accessor().all_gt(0) && output_size.all_gt(0));
@@ -184,7 +184,7 @@ namespace dials { namespace algorithms { namespace polygon {
      * @returns The matches between grid points
      */
     inline af::shared<Match> grid_to_irregular_grid(
-      const af::const_ref<vec2<double>, af::c_grid<2> > &outputxy,
+      const af::const_ref<vec2<double>, af::c_grid<2> >& outputxy,
       af::tiny<std::size_t, 2> input_size) {
       af::shared<Match> matches;
       DIALS_ASSERT(outputxy.accessor().all_gt(0) && input_size.all_gt(0));
@@ -209,8 +209,8 @@ namespace dials { namespace algorithms { namespace polygon {
      * @returns The output grid
      */
     inline af::versa<double, af::c_grid<2> > regrid_irregular_grid_to_grid(
-      const af::const_ref<double, af::c_grid<2> > &input,
-      const af::const_ref<vec2<double>, af::c_grid<2> > &inputxy,
+      const af::const_ref<double, af::c_grid<2> >& input,
+      const af::const_ref<vec2<double>, af::c_grid<2> >& inputxy,
       af::tiny<std::size_t, 2> output_size) {
       DIALS_ASSERT(inputxy.accessor()[0] == input.accessor()[0] + 1);
       DIALS_ASSERT(inputxy.accessor()[1] == input.accessor()[1] + 1);
@@ -218,7 +218,7 @@ namespace dials { namespace algorithms { namespace polygon {
       af::versa<double, af::c_grid<2> > result(accessor, 0.0);
       af::shared<Match> matches = irregular_grid_to_grid(inputxy, output_size);
       for (std::size_t i = 0; i < matches.size(); ++i) {
-        Match &m = matches[i];
+        Match& m = matches[i];
         result[m.out] += input[m.in] * m.fraction;
       }
       return result;
@@ -231,13 +231,13 @@ namespace dials { namespace algorithms { namespace polygon {
      * @returns The output grid
      */
     inline af::versa<double, af::c_grid<2> > regrid_grid_to_irregular_grid(
-      const af::const_ref<double, af::c_grid<2> > &input,
-      const af::const_ref<vec2<double>, af::c_grid<2> > &outputxy) {
+      const af::const_ref<double, af::c_grid<2> >& input,
+      const af::const_ref<vec2<double>, af::c_grid<2> >& outputxy) {
       af::c_grid<2> accessor(outputxy.accessor()[0] - 1, outputxy.accessor()[1] - 1);
       af::versa<double, af::c_grid<2> > result(accessor, 0.0);
       af::shared<Match> matches = grid_to_irregular_grid(outputxy, input.accessor());
       for (std::size_t i = 0; i < matches.size(); ++i) {
-        Match &m = matches[i];
+        Match& m = matches[i];
         result[m.out] += input[m.in] * m.fraction;
       }
       return result;

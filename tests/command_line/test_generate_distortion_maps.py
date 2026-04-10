@@ -64,7 +64,7 @@ def test_translate(dials_data, run_in_tmp_path):
     """Test as written in https://github.com/dials/dials/issues/471. This
     is pretty slow!"""
 
-    data_dir = dials_data("centroid_test_data", pathlib=True)
+    data_dir = dials_data("centroid_test_data")
     image_path = data_dir / "centroid_0001.cbf"
 
     # Generate distortion maps
@@ -248,9 +248,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     detector can be undistorted into a circle in pixel space"""
 
     # Use a single-panel 3D ED image for this
-    image_path = (
-        dials_data("image_examples", pathlib=True) / "TIMEPIX_SU_516-stdgoni_0001.img"
-    )
+    image_path = dials_data("image_examples") / "TIMEPIX_SU_516-stdgoni_0001.img"
     result = subprocess.run(
         [
             shutil.which("dials.import"),

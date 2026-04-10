@@ -46,7 +46,7 @@ namespace dials { namespace model {
        * @param rhs The other position
        * @returns True/False. They are the same
        */
-      bool operator==(const PositionData &rhs) const {
+      bool operator==(const PositionData& rhs) const {
         const double eps = 1e-7;
         return (
           (std::abs(px[0] - rhs.px[0]) < eps) && (std::abs(px[1] - rhs.px[1]) < eps)
@@ -59,7 +59,7 @@ namespace dials { namespace model {
        * @param rhs The other position
        * @returns True/False. They are the same
        */
-      bool operator!=(const PositionData &rhs) const {
+      bool operator!=(const PositionData& rhs) const {
         return !(*this == rhs);
       }
     };
@@ -92,7 +92,7 @@ namespace dials { namespace model {
      */
     Prediction(MillerIndex miller_index_,
                vec3<double> beam_vector_,
-               const PositionData &position_,
+               const PositionData& position_,
                std::size_t panel_,
                bool entering_,
                int crystal_)
@@ -144,7 +144,7 @@ namespace dials { namespace model {
      * @param rhs The other position
      * @returns True/False. They are the same
      */
-    bool operator==(const Prediction &rhs) const {
+    bool operator==(const Prediction& rhs) const {
       const double eps = 1e-7;
       return ((miller_index == rhs.miller_index)
               && (std::abs(beam_vector[0] - rhs.beam_vector[0]) < eps)
@@ -159,7 +159,7 @@ namespace dials { namespace model {
      * @param rhs The other position
      * @returns True/False. They are the same
      */
-    bool operator!=(const Prediction &rhs) const {
+    bool operator!=(const Prediction& rhs) const {
       return !(*this == rhs);
     }
   };

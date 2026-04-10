@@ -1,0 +1,1 @@
+Add scale multiplier to ToF ellipse mask in tof_integrate to allow the user to set the number of stds when defining the ellipse.
