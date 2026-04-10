@@ -1173,10 +1173,63 @@ class Integrator:
                 profile_fitter = finalized_profile_fitter
         return profile_fitter
 
+    def integrate_single_pass(self):
+        """Single-pass integration: model + fit in one scan traversal."""
+        import random
+
+        random.seed(0)
+
+        # Init reports
+        self.profile_model_report = None
+        self.integration_report = None
+
+        # Preflights
+        assert len(self.experiments) == 1, "single-pass MVP: single experiment only"
+
+        # Heading
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info(heading("Single-pass integration"))
+        logger.info("")
+
+        # Initialize reflections (computes bbox, zeta, d, filters)
+        self.initialize_reflections(self.experiments, self.params, self.reflections)
+
+        # Run the single-pass driver
+        from dials.algorithms.integration.single_pass import ChunkDriver
+
+        driver = ChunkDriver(self.experiments, self.reflections, self.params)
+        self.reflections = driver.run()
+
+        # Build profile model report using reference subset
+        reference = self.reflections.select(
+            self.reflections.get_flags(self.reflections.flags.reference_spot)
+        )
+        self.profile_model_report = ProfileModelReport(
+            self.experiments, driver._profile_fitter, reference
+        )
+        logger.info("")
+        logger.info(self.profile_model_report.as_str(prefix=" "))
+
+        # Integration report
+        self.integration_report = IntegrationReport(self.experiments, self.reflections)
+        logger.info("")
+        logger.info(self.integration_report.as_str(prefix=" "))
+
+        # Finalize (computes corrections for rotation data)
+        self.reflections, self.experiments = self.finalize_reflections(
+            self.reflections, self.experiments, self.params
+        )
+
+        return self.reflections
+
     def integrate(self):
         """
         Integrate the data
         """
+        if self.params.integrator_single_pass:
+            return self.integrate_single_pass()
+
         # Ensure we get the same random sample each time
         random.seed(0)
 
