@@ -12,8 +12,6 @@ from collections.abc import Iterable
 from copy import deepcopy
 
 import numpy as np
-from scipy.signal import find_peaks
-from scipy.spatial import cKDTree
 
 import libtbx
 from dxtbx import flumpy
@@ -928,6 +926,8 @@ class TOFSpotFinder(SpotFinder):
         the first peak * threshold_multiplier, only the reflection with the
         largest bounding box is retained.
         """
+        from scipy.signal import find_peaks
+        from scipy.spatial import cKDTree
 
         def find(parent, i):
             if parent[i] != i:
