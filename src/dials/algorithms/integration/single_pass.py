@@ -449,8 +449,20 @@ class SinglePassBlockTask:
             if modeller.n_reflections(cell_idx) > 0:
                 modeller.finalize_cell(cell_idx)
 
+        # Guard: reflections with xyzcal.px.z outside scan range crash
+        # GridSampler.nearest() (hard assert). Mark them dont_integrate so
+        # compute_fitted_intensity skips them; the sentinel fixup below gives
+        # them variance=-1 and failed_during_profile_fitting, matching two-pass.
+        scan_range = self.experiments[0].scan.get_array_range()
+        z_vals = self.reflections["xyzcal.px"].parts()[2]
+        oob = (z_vals < scan_range[0]) | (z_vals >= scan_range[1])
+        self.reflections.set_flags(oob, self.reflections.flags.dont_integrate)
+
         # Fit ALL reflections using the raw MultiExpProfileModeller
         self.reflections.compute_fitted_intensity(profile_fitter.modellers[0])
+
+        # Clear the temporary dont_integrate guard so it doesn't pollute flags
+        self.reflections.unset_flags(oob, self.reflections.flags.dont_integrate)
 
         # Deallocate shoeboxes
         del self.reflections["shoebox"]
@@ -464,16 +476,21 @@ class SinglePassBlockTask:
             never_fitted, self.reflections.flags.failed_during_profile_fitting
         )
 
-        # Filter to core range using xyzcal.px z coordinate
-        scan_range = self.experiments[0].scan.get_array_range()
+        # Filter to core range using xyzcal.px z coordinate.
+        # First worker also claims reflections with z < scan_lo (scan-start
+        # partials whose predicted centroid is before frame 0).
         xyz = self.reflections["xyzcal.px"]
         z_vals = xyz.parts()[2]
         core_lo, core_hi = self.core_range
+        orphan = (
+            z_vals < scan_range[0]
+            if core_lo == scan_range[0]
+            else flex.bool(len(z_vals), False)
+        )
         if core_hi == scan_range[1]:
-            # Last worker: take all reflections at or above core_lo
-            keep = z_vals >= core_lo
+            keep = (z_vals >= core_lo) | orphan
         else:
-            keep = (z_vals >= core_lo) & (z_vals < core_hi)
+            keep = ((z_vals >= core_lo) & (z_vals < core_hi)) | orphan
         self.reflections = self.reflections.select(keep)
 
         # Finalize executor
