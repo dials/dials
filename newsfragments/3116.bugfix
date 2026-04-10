@@ -1,1 +1,0 @@
-Change ``memory_limit`` function to limit according to available memory rather than system total memory.

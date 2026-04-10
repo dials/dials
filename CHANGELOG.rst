@@ -1,3 +1,31 @@
+DIALS 3.28.0 (2026-04-10)
+=========================
+
+Features
+--------
+
+- ``dials.cosym``: Reduce peak memory usage and runtime for large datasets (>100 crystals). (`#3062 <https://github.com/dials/dials/issues/3062>`_)
+- Improve performance of dose analysis/pychef for large datasets in multiplex. (`#3120 <https://github.com/dials/dials/issues/3120>`_)
+- Add scale multiplier to ToF ellipse mask in tof_integrate, to allow the user to set the number of stds when defining the ellipse. (`#3138 <https://github.com/dials/dials/issues/3138>`_)
+- Enable ``dials.rs_mapper`` to be used with ToF data. (`#3140 <https://github.com/dials/dials/issues/3140>`_)
+
+
+Bugfixes
+--------
+
+- Refstat algorithm: allow partial matching of systematic absences when listing possible space groups. Other improvements to output format. (`#3090 <https://github.com/dials/dials/issues/3090>`_)
+- Change ``memory_limit`` function to limit according to available memory, rather than system total memory. (`#3116 <https://github.com/dials/dials/issues/3116>`_)
+- ``dials.scale``: Provide clean error message if attempting to scale a single dataset with ``model=KB``. (`#3118 <https://github.com/dials/dials/issues/3118>`_)
+- ``dials.generate_distortion_maps``: For ``mode=translate``, do not require access to image data, to query the size of the images. (`#3130 <https://github.com/dials/dials/issues/3130>`_)
+- ``dials.correlation_matrix``: Fix crash if start of cluster after index of inf reachability. (`#3135 <https://github.com/dials/dials/issues/3135>`_)
+
+
+Misc
+----
+
+- `#3114 <https://github.com/dials/dials/issues/3114>`_, `#3122 <https://github.com/dials/dials/issues/3122>`_, `#3123 <https://github.com/dials/dials/issues/3123>`_
+
+
 DIALS 3.27.1 (2026-03-30)
 =========================
 
