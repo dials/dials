@@ -34,6 +34,7 @@ namespace dials { namespace algorithms {
         : data_(n),
           mask_(n),
           n_reflections_(n, 0),
+          per_cell_finalized_(af::shared<bool>(n, false)),
           accessor_(af::c_grid<3>(datasize[0], datasize[1], datasize[2])),
           threshold_(threshold),
           finalized_(false) {
@@ -63,6 +64,7 @@ namespace dials { namespace algorithms {
           std::size_t index = indices[j];
           double weight = weights[j];
           DIALS_ASSERT(index < data_.size());
+          DIALS_ASSERT(per_cell_finalized_[index] == false);
           if (data_[index].size() == 0) {
             data_[index] = data_type(accessor_, 0);
             mask_[index] = mask_type(accessor_, true);
@@ -89,6 +91,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(finalized_ == false);
       DIALS_ASSERT(profile.accessor().all_eq(accessor_));
       DIALS_ASSERT(index < data_.size());
+      DIALS_ASSERT(per_cell_finalized_[index] == false);
       double sum_data = sum(profile);
       if (sum_data > 0) {
         if (data_[index].size() == 0) {
@@ -158,11 +161,24 @@ namespace dials { namespace algorithms {
     void finalize() {
       DIALS_ASSERT(finalized_ == false);
       for (std::size_t i = 0; i < data_.size(); ++i) {
-        if (data_[i].size() != 0) {
+        if (data_[i].size() != 0 && !per_cell_finalized_[i]) {
           finalize(i);
         }
       }
       finalized_ = true;
+    }
+
+    /**
+     * Finalize a single cell by index (for single-pass chunked integration).
+     * May be called before global finalize(); raises on double-finalization.
+     * @param index The index of the cell to finalize
+     */
+    void finalize_cell(std::size_t index) {
+      DIALS_ASSERT(index < data_.size());
+      DIALS_ASSERT(finalized_ == false);
+      DIALS_ASSERT(per_cell_finalized_[index] == false);
+      finalize(index);
+      per_cell_finalized_[index] = true;
     }
 
     /**
@@ -323,6 +339,7 @@ namespace dials { namespace algorithms {
     af::shared<data_type> data_;
     af::shared<mask_type> mask_;
     af::shared<std::size_t> n_reflections_;
+    af::shared<bool> per_cell_finalized_;
     af::c_grid<3> accessor_;
     double threshold_;
     bool finalized_;
