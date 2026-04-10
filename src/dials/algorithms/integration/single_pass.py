@@ -150,35 +150,6 @@ class SinglePassExecutor(Executor):
         return self.profile_fitter
 
 
-def _process_chunk(experiments, chunk_reflections, imageset_slice, executor):
-    """Run ShoeboxProcessor over imageset_slice, dispatching to executor per frame.
-    Lifted from Phase 2 prototype process_chunk() (lines 33-61)."""
-    from dials.algorithms.integration.processor import ShoeboxProcessor
-    from dials.array_family import flex
-    from dials.model.data import make_image
-
-    frame0, frame1 = imageset_slice.get_array_range()
-    executor.initialize(frame0, frame1, chunk_reflections)
-    chunk_reflections["shoebox"] = flex.shoebox(
-        chunk_reflections["panel"],
-        chunk_reflections["bbox"],
-        allocate=False,
-        flatten=False,
-    )
-    proc = ShoeboxProcessor(
-        chunk_reflections, len(imageset_slice.get_detector()), frame0, frame1, False
-    )
-    for i in range(len(imageset_slice)):
-        image = imageset_slice.get_corrected_data(i)
-        mask = imageset_slice.get_mask(i)
-        proc.next(make_image(image, mask), executor)
-        del image, mask
-    assert proc.finished(), "ShoeboxProcessor did not finish"
-    del chunk_reflections["shoebox"]
-    executor.finalize()
-    return chunk_reflections, executor.data()
-
-
 def _build_sampler(experiments, num_scan_points: int):
     """Construct GridSampler matching production defaults (scan_step=5)."""
     from dials.algorithms.profile_model.modeller import GridSampler
@@ -225,11 +196,11 @@ def _make_modeller(expr, num_scan_points: int):
 
 
 class ChunkDriver:
-    """Drives the single-pass chunked integration loop.
+    """Drives the single-pass integration loop.
 
-    Chunk N covers nominal frames [5N, 5N+15) = z-slices {N, N+1, N+2}.
-    After chunk N completes, z-slice N is finalized (Task 4 wires the real logic).
-    Chunks advance 1 slice per iteration (sliding window). MVP: single experiment.
+    Each frame is read exactly once; each reflection processed exactly once.
+    Slice finalization is triggered eagerly as the frame cursor advances.
+    MVP: single experiment.
     """
 
     SLICE_WIDTH_FRAMES: int = 5  # matches production scan_step=5 default
@@ -254,6 +225,7 @@ class ChunkDriver:
         )
         self._readiness_tracker = SliceReadinessTracker(num_scan_points, 3 * 3)
         self._pending_queue = PendingFitQueue()
+        self._next_finalize = 0
 
     def _build_validated_modeller(self, experiments, num_scan_points: int):
         from dials.algorithms.integration.validation import (
@@ -267,76 +239,80 @@ class ChunkDriver:
         return ValidatedMultiExpProfileModeller([pf])
 
     def run(self):
-        """Run all chunks; return updated master reflection table."""
+        from dials.algorithms.integration.processor import ShoeboxProcessor
         from dials.array_family import flex
+        from dials.model.data import make_image
 
-        scan_lo, sw, num_slices = (
-            self._scan_lo,
-            self.SLICE_WIDTH_FRAMES,
-            self._num_scan_points,
-        )
         imageset = self.experiments[0].imageset
-        allowed_lo, _hi = imageset.get_array_range()
-        total_dispatched = chunks_processed = 0
+        scan_lo, scan_hi = self._scan_lo, self._scan_hi
+        n_panels = len(imageset.get_detector())
 
-        for chunk_idx in range(num_slices):
-            nominal_lo = scan_lo + sw * chunk_idx
-            frame_lo = max(nominal_lo, self._scan_lo)
-            frame_hi = min(nominal_lo + sw * self.SLICES_PER_CHUNK, self._scan_hi)
-            if frame_lo >= frame_hi:
-                continue
+        # Single executor for the full scan
+        executor = SinglePassExecutor(
+            self.experiments,
+            self._profile_fitter,
+            self._sampler,
+            self._readiness_tracker,
+            self._pending_queue,
+        )
 
-            bboxes = self.master["bbox"]
-            bbox_lo = flex.int([bb[4] for bb in bboxes])
-            bbox_hi = flex.int([bb[5] for bb in bboxes])
-            chunk_reflections = self.master.select(
-                (bbox_lo < frame_hi) & (bbox_hi > frame_lo)
-            )
+        # Initialize and allocate shoeboxes for the full scan
+        executor.initialize(scan_lo, scan_hi, self.master)
+        self.master["shoebox"] = flex.shoebox(
+            self.master["panel"],
+            self.master["bbox"],
+            allocate=False,
+            flatten=False,
+        )
+        proc = ShoeboxProcessor(self.master, n_panels, scan_lo, scan_hi, False)
 
-            if len(chunk_reflections) == 0:
-                continue
+        # Process all frames sequentially — each frame read exactly once
+        for i in range(scan_hi - scan_lo):
+            image = imageset.get_corrected_data(i)
+            mask = imageset.get_mask(i)
+            proc.next(make_image(image, mask), executor)
+            del image, mask
+            # Eagerly finalize slices whose contributions are complete
+            self._maybe_finalize_slices(scan_lo + i + 1)
 
-            # Use actual bbox extents (not nominal range) as the imageset slice bounds.
-            # ShoeboxProcessor asserts bbox[4] >= frame0, so frame0 must be the
-            # minimum bbox start of all selected reflections.
-            chunk_bboxes = chunk_reflections["bbox"]
-            actual_lo = min(bb[4] for bb in chunk_bboxes)
-            actual_hi = max(bb[5] for bb in chunk_bboxes)
+        assert proc.finished(), "ShoeboxProcessor did not finish"
+        del self.master["shoebox"]
+        executor.finalize()
 
-            logger.info(
-                " Chunk %d: frames [%d, %d), %d reflections",
-                chunk_idx,
-                actual_lo,
-                actual_hi,
-                len(chunk_reflections),
-            )
-            total_dispatched += len(chunk_reflections)
-            imageset_slice = imageset[actual_lo - allowed_lo : actual_hi - allowed_lo]
-            executor = SinglePassExecutor(
-                self.experiments,
-                self._profile_fitter,
-                self._sampler,
-                self._readiness_tracker,
-                self._pending_queue,
-            )
-            _process_chunk(
-                self.experiments, chunk_reflections, imageset_slice, executor
-            )
-            chunks_processed += 1
-            self._finalize_slice(chunk_idx)
-
-        # Post-loop: finalize trailing slices; flush pending queue (stubs in Task 3)
-        for slice_idx in range(
-            max(0, num_slices - self.SLICES_PER_CHUNK + 1), num_slices
-        ):
-            self._finalize_slice(slice_idx)
+        # Finalize remaining slices (tail of scan) and flush pending queue
+        self._finalize_remaining_slices()
         self._pending_queue.flush_all(self._profile_fitter, self.master)
+
         logger.info(
-            " Single-pass complete: %d chunks, %d reflection-frame dispatches",
-            chunks_processed,
-            total_dispatched,
+            " Single-pass complete: %d frames, %d reflections",
+            scan_hi - scan_lo,
+            len(self.master),
         )
         return self.master
+
+    def _maybe_finalize_slices(self, current_frame):
+        """Eagerly finalize slices whose modelling contributions are all complete.
+
+        Slice k needs contributions from reflections with nearest() in slices
+        {k-1, k, k+1}. Conservative trigger: finalize slice k when
+        current_frame >= scan_lo + sw * (k + SLICES_PER_CHUNK).
+        +3 accounts for: reflections in slice k+1 have xyzcal up to 5(k+2),
+        bboxes extend ~5 frames max, completing by frame 5(k+3).
+        """
+        sw = self.SLICE_WIDTH_FRAMES
+        max_safe_k = (current_frame - self._scan_lo) // sw - self.SLICES_PER_CHUNK
+        while (
+            self._next_finalize <= max_safe_k
+            and self._next_finalize < self._num_scan_points
+        ):
+            self._finalize_slice(self._next_finalize)
+            self._next_finalize += 1
+
+    def _finalize_remaining_slices(self):
+        """Finalize all not-yet-finalized slices (tail of scan)."""
+        while self._next_finalize < self._num_scan_points:
+            self._finalize_slice(self._next_finalize)
+            self._next_finalize += 1
 
     def _finalize_slice(self, slice_idx: int) -> None:
         """Task 3 stub: mark slice finalized in tracker.
