@@ -999,6 +999,12 @@ namespace dials { namespace algorithms {
       // Allocate the buffer
       std::size_t element_size = sizeof(Data<double>);
       buffer_.resize(element_size * image_size[0] * image_size[1]);
+
+      // Pre-allocate VGW erosion buffers (reused across erosion calls)
+      std::size_t max_dim =
+        std::max((std::size_t)image_size[0], (std::size_t)image_size[1]);
+      vgw_g_buffer_.resize(max_dim);
+      vgw_h_buffer_.resize(max_dim);
     }
 
     /**
@@ -1312,6 +1318,80 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Van Herk-Gil-Werman 1D morphological erosion (binary AND with sliding window).
+     *
+     * @param input Source boolean array (encoded as char: 1=true, 0=false)
+     * @param output Destination boolean array (same encoding)
+     * @param length Number of elements to process
+     * @param radius Half-window size d (full window = 2*d - 1)
+     * @param g_buffer Pre-allocated forward cumulative min buffer (size >= length)
+     * @param h_buffer Pre-allocated backward cumulative min buffer (size >= length)
+     */
+    void vgw_erosion_1d(const char* input,
+                        char* output,
+                        std::size_t length,
+                        int radius,
+                        char* g_buffer,
+                        char* h_buffer) {
+      // Handle edge cases
+      if (radius <= 0 || length == 0) {
+        std::copy(input, input + length, output);
+        return;
+      }
+
+      std::size_t w = 2 * radius - 1;  // Window size
+
+      // Process chunks: compute forward min (g) and backward min (h)
+      for (std::size_t chunk_start = 0; chunk_start < length; chunk_start += w) {
+        std::size_t chunk_end = std::min(chunk_start + w, length);
+
+        // Forward pass: g[i] = min(input[chunk_start..i])
+        g_buffer[chunk_start] = input[chunk_start];
+        for (std::size_t i = chunk_start + 1; i < chunk_end; ++i) {
+          g_buffer[i] = std::min(g_buffer[i - 1], input[i]);
+        }
+
+        // Backward pass: h[i] = min(input[i..chunk_end-1])
+        h_buffer[chunk_end - 1] = input[chunk_end - 1];
+        for (std::size_t i = chunk_end - 1; i > chunk_start; --i) {
+          h_buffer[i - 1] = std::min(h_buffer[i], input[i - 1]);
+        }
+      }
+
+      // Compute output: for each pixel, combine g/h from relevant chunks
+      for (std::size_t i = 0; i < length; ++i) {
+        // Window bounds: [i0, i1] where i0 = max(0, i-radius+1), i1 = min(length-1,
+        // i+radius-1)
+        std::size_t i0 = (i >= (std::size_t)(radius - 1)) ? (i - radius + 1) : 0;
+        std::size_t i1 = std::min(i + radius - 1, length - 1);
+
+        // Determine which chunks i0 and i1 fall into
+        std::size_t left_chunk = i0 / w;
+        std::size_t right_chunk = i1 / w;
+
+        if (left_chunk == right_chunk) {
+          // Window entirely within one chunk - compute min directly
+          char min_val = input[i0];
+          for (std::size_t j = i0 + 1; j <= i1; ++j) {
+            min_val = std::min(min_val, input[j]);
+          }
+          output[i] = min_val;
+        } else {
+          // Window spans multiple chunks - use g/h
+          char min_val = std::min(h_buffer[i0], g_buffer[i1]);
+
+          // Include mins of any complete intermediate chunks
+          for (std::size_t c = left_chunk + 1; c < right_chunk; ++c) {
+            std::size_t chunk_pos = c * w;
+            min_val = std::min(min_val, g_buffer[chunk_pos + w - 1]);
+          }
+
+          output[i] = min_val;
+        }
+      }
+    }
+
+    /**
      * Compute the threshold
      * @param src - The input array
      * @param mask - The mask array
@@ -1551,6 +1631,8 @@ namespace dials { namespace algorithms {
     double threshold_;
     int min_count_;
     std::vector<char> buffer_;
+    std::vector<char> vgw_g_buffer_;  // Forward cumulative min buffer
+    std::vector<char> vgw_h_buffer_;  // Backward cumulative min buffer
   };
 
 }}  // namespace dials::algorithms
