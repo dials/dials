@@ -259,6 +259,97 @@ class SinglePassExecutor(Executor):
         return self.profile_fitter
 
 
+class SinglePassBlockExecutor(Executor):
+    """Executor for block-parallel single-pass integration (nproc>1).
+
+    Unlike SinglePassExecutor, this class does NOT route reflections to
+    inline-fit or pending queue during process().  It only performs steps 1-9
+    (mask, bg, centroid, sumint, model) and defers all profile fitting to after
+    the frame loop (handled by SinglePassBlockTask).
+
+    No sampler, readiness_tracker, or pending_queue dependencies.
+    """
+
+    __getstate_manages_dict__ = 1
+
+    def __init__(
+        self,
+        experiments,
+        profile_fitter,
+        valid_foreground_threshold: float = 0.75,
+    ) -> None:
+        self.experiments = experiments
+        self.profile_fitter = profile_fitter
+        self.valid_foreground_threshold = valid_foreground_threshold
+        super().__init__()
+
+    def initialize(self, frame0: int, frame1: int, reflections) -> None:
+        """Mirrors SinglePassExecutor.initialize(): find overlaps + log."""
+        reflections.find_overlaps(self.experiments)
+        logger.info(
+            " Block executor: frames %d -> %d, %d reflections",
+            frame0,
+            frame1,
+            len(reflections),
+        )
+
+    def process(self, frame: int, reflections) -> None:
+        """Process one frame batch: steps 1-9 only (no profile fitting).
+
+        Identical to SinglePassExecutor.process() lines 152-192 minus the
+        _handle_fit() call.  Profile fitting is deferred to after the frame
+        loop in SinglePassBlockTask.__call__().
+        """
+        # Steps 1-3: overload / shoebox mask / invalid-pixel flags
+        reflections.is_overloaded(self.experiments)
+        reflections.compute_mask(self.experiments)
+        reflections.contains_invalid_pixels()
+
+        # Step 4: fraction_valid gate -> dont_integrate
+        sbox = reflections["shoebox"]
+        nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
+        nforeg = sbox.count_mask_values(MaskCode.Foreground)
+        reflections.set_flags(
+            nvalfg.as_double() / nforeg.as_double() < self.valid_foreground_threshold,
+            reflections.flags.dont_integrate,
+        )
+
+        # Steps 5-7: background, centroid, summed intensity (full batch)
+        reflections.compute_background(self.experiments)
+        reflections.compute_centroid(self.experiments)
+        reflections.compute_summed_intensity()
+
+        # Unset integrated_sum for dont_integrate reflections.
+        di_mask = reflections.get_flags(reflections.flags.dont_integrate)
+        reflections.unset_flags(di_mask, reflections.flags.integrated_sum)
+
+        # Step 8: num_pixels.* accounting
+        reflections["num_pixels.valid"] = sbox.count_mask_values(MaskCode.Valid)
+        reflections["num_pixels.background"] = sbox.count_mask_values(
+            MaskCode.Valid | MaskCode.Background
+        )
+        reflections["num_pixels.background_used"] = sbox.count_mask_values(
+            MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+        )
+        reflections["num_pixels.foreground"] = nvalfg
+
+        # Step 9: reference subset -> modelling only (no fitting here)
+        ref_subset = reflections.select(
+            reflections.get_flags(reflections.flags.reference_spot)
+        )
+        if len(ref_subset) > 0:
+            self.profile_fitter.model(ref_subset)
+
+    def finalize(self) -> None:
+        pass
+
+    def data(self):
+        return self.profile_fitter
+
+    def __getinitargs__(self):
+        return (self.experiments, self.profile_fitter, self.valid_foreground_threshold)
+
+
 def _build_sampler(experiments, num_scan_points: int):
     """Construct GridSampler matching production defaults (scan_step=5)."""
     from dials.algorithms.profile_model.modeller import GridSampler
