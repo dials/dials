@@ -999,6 +999,12 @@ namespace dials { namespace algorithms {
       // Allocate the buffer
       std::size_t element_size = sizeof(Data<double>);
       buffer_.resize(element_size * image_size[0] * image_size[1]);
+
+      // Pre-allocate scratch buffers for erode_dispersion_mask
+      std::size_t npix = (std::size_t)image_size[0] * (std::size_t)image_size[1];
+      erode_row_buf_.resize(npix);
+      erode_transposed_.resize(npix);
+      erode_col_buf_.resize(npix);
     }
 
     /**
@@ -1265,7 +1271,9 @@ namespace dials { namespace algorithms {
       int d = std::min(kernel_size_[0], kernel_size_[1]);
 
       // Row pass: sliding-AND with window [i-(d-1), i+(d-1)]
-      std::vector<char> row_eroded(ysize * xsize, 1);
+      // Use pre-allocated member buffer (avoids per-frame heap allocation).
+      std::vector<char>& row_eroded = erode_row_buf_;
+      std::fill(row_eroded.begin(), row_eroded.end(), 1);
       for (std::size_t j = 0; j < ysize; ++j) {
         const std::size_t row_off = j * xsize;
         for (std::size_t i = 0; i < xsize; ++i) {
@@ -1282,15 +1290,29 @@ namespace dials { namespace algorithms {
         }
       }
 
-      // Column pass: sliding-AND of row_eroded with window [j-(d-1), j+(d-1)]
-      std::vector<char> eroded(ysize * xsize, 1);
+      // Transpose row_eroded into column-major order so the column pass can
+      // read contiguous memory instead of striding across rows.
+      // transposed[i * ysize + j] == row_eroded[j * xsize + i]
+      std::vector<char>& transposed = erode_transposed_;
+      for (std::size_t j = 0; j < ysize; ++j) {
+        for (std::size_t i = 0; i < xsize; ++i) {
+          transposed[i * ysize + j] = row_eroded[j * xsize + i];
+        }
+      }
+
+      // Column pass: sliding-AND of transposed data with window [j-(d-1), j+(d-1)].
+      // Reading transposed[col_off + jj] is now sequential (stride 1).
+      // Use pre-allocated member buffer for the eroded result.
+      std::vector<char>& eroded = erode_col_buf_;
+      std::fill(eroded.begin(), eroded.end(), 1);
       for (std::size_t i = 0; i < xsize; ++i) {
+        const std::size_t col_off = i * ysize;
         for (std::size_t j = 0; j < ysize; ++j) {
           std::size_t j0 = (j >= (std::size_t)(d - 1)) ? j - (d - 1) : 0;
           std::size_t j1 = std::min(j + (std::size_t)(d - 1), ysize - 1);
           char val = 1;
           for (std::size_t jj = j0; jj <= j1; ++jj) {
-            if (!row_eroded[jj * xsize + i]) {
+            if (!transposed[col_off + jj]) {
               val = 0;
               break;
             }
@@ -1551,6 +1573,11 @@ namespace dials { namespace algorithms {
     double threshold_;
     int min_count_;
     std::vector<char> buffer_;
+    // Pre-allocated scratch buffers for erode_dispersion_mask (avoid per-frame heap
+    // allocs)
+    std::vector<char> erode_row_buf_;
+    std::vector<char> erode_transposed_;
+    std::vector<char> erode_col_buf_;
   };
 
 }}  // namespace dials::algorithms
