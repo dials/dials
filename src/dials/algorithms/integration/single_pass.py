@@ -409,6 +409,19 @@ class ChunkDriver:
         self._finalize_remaining_slices()
         self._pending_queue.flush_all(self._profile_fitter.modellers[0], self.master)
 
+        # Reconcile boundary reflections with baseline behavior.
+        # fit_reciprocal_space() sets var=-1.0 as default before attempting fit;
+        # boundary reflections throw dials::error in GridSampler::nearest(),
+        # leaving var=-1.0 and setting failed_during_profile_fitting.
+        # Our _handle_fit() skips these entirely, so replicate the sentinel here.
+        prf_var = self.master["intensity.prf.variance"]
+        prf_flag = self.master.get_flags(self.master.flags.integrated_prf)
+        never_fitted = (prf_var == 0.0) & ~prf_flag
+        prf_var.set_selected(never_fitted, -1.0)
+        self.master.set_flags(
+            never_fitted, self.master.flags.failed_during_profile_fitting
+        )
+
         # Clean up the internal tracking column
         del self.master["_master_idx"]
 
