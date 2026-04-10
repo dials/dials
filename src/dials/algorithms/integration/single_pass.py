@@ -12,7 +12,11 @@ logger = logging.getLogger(__name__)
 
 class SliceReadinessTracker:
     """Tracks finalized profile-model z-slices.
-    Task 3 stub: is_cell_ready() always returns False. Task 4 replaces."""
+
+    A cell is ready for fitting once its slice has been finalized via
+    mark_slice_finalized().  Zero cross-cell coupling: finalizing slice k
+    leaves other slices in their pre-finalized (additive) state.
+    """
 
     def __init__(self, num_slices: int, cells_per_slice: int) -> None:
         self.num_slices = num_slices
@@ -27,23 +31,82 @@ class SliceReadinessTracker:
 
 
 class PendingFitQueue:
-    """Holds reflections pending profile-model cell finalization.
-    Task 3 stub: enqueue/drain are no-ops. Task 4 replaces."""
+    """Holds reflections whose profile-model cells are not yet finalized.
 
-    def __init__(self) -> None:
-        self._by_cell: dict[int, list] = {}  # cell_idx -> list of row entries
+    Keyed by nearest-cell slice index.  Each entry stores a deep copy of the
+    sub-table row (with shoebox intact) and the master row index.  The deep
+    copy is essential: ShoeboxProcessor deallocates shoeboxes after
+    process() returns, so we must capture them inside _handle_fit() before
+    returning.
+    """
 
-    def enqueue(self, reflections, nearest_cells) -> None:
-        pass  # Task 4
+    def __init__(self, cells_per_slice: int = 9) -> None:
+        self._by_slice: dict[int, list] = {}  # slice_idx -> [(master_idx, 1-row table)]
+        self._cells_per_slice = cells_per_slice
 
-    def drain_by_slice(self, slice_idx, profile_fitter, master_table) -> None:
-        pass  # Task 4
+    def enqueue(self, pending_subtable, nearest_cells, cells_per_slice: int) -> None:
+        """Store pending reflections keyed by their nearest cell's slice index.
+
+        pending_subtable is a deep-copied reflection_table with shoeboxes.
+        nearest_cells is a list/array of cell indices (one per row).
+        """
+        master_indices = list(pending_subtable["_master_idx"])
+        for i in range(len(pending_subtable)):
+            cell = nearest_cells[i]
+            slice_idx = cell // cells_per_slice
+            if slice_idx not in self._by_slice:
+                self._by_slice[slice_idx] = []
+            # Store the master index and a 1-row sub-table
+            row = pending_subtable[i : i + 1]
+            self._by_slice[slice_idx].append((master_indices[i], row))
+
+    def drain_by_slice(self, slice_idx: int, profile_fitter, master_table) -> None:
+        """Fit all pending reflections for this slice and write results to master.
+
+        profile_fitter must be the raw MultiExpProfileModeller (not the
+        ValidatedMultiExpProfileModeller): compute_fitted_intensity calls
+        .fit() which exists on MultiExpProfileModeller but NOT on
+        ValidatedMultiExpProfileModeller.
+        """
+        from dials.array_family import flex
+
+        entries = self._by_slice.pop(slice_idx, [])
+        if not entries:
+            return
+
+        # Concatenate all pending rows for this slice into one table
+        combined = entries[0][1]
+        master_idxs = [entries[0][0]]
+        for master_idx, row_table in entries[1:]:
+            combined.extend(row_table)
+            master_idxs.append(master_idx)
+
+        # Fit the combined table (profile_fitter is the raw MultiExpProfileModeller)
+        combined.compute_fitted_intensity(profile_fitter)
+
+        # Write fit results back to master table
+        idx_array = flex.size_t(master_idxs)
+        for col in [
+            "intensity.prf.value",
+            "intensity.prf.variance",
+            "profile.correlation",
+        ]:
+            if col in combined:
+                master_table[col].set_selected(idx_array, combined[col])
+
+        # Propagate IntegratedPrf flag
+        prf_flag = combined.get_flags(combined.flags.integrated_prf)
+        for i in range(len(idx_array)):
+            if prf_flag[i]:
+                master_table["flags"][idx_array[i]] |= combined.flags.integrated_prf
 
     def flush_all(self, profile_fitter, master_table) -> None:
-        pass  # Task 4
+        """Drain all remaining entries (for tail slices)."""
+        for slice_idx in sorted(self._by_slice.keys()):
+            self.drain_by_slice(slice_idx, profile_fitter, master_table)
 
     def is_empty(self) -> bool:
-        return len(self._by_cell) == 0
+        return len(self._by_slice) == 0
 
 
 class SinglePassExecutor(Executor):
@@ -122,7 +185,7 @@ class SinglePassExecutor(Executor):
         if len(ref_subset) > 0:
             self.profile_fitter.model(ref_subset)
 
-        # Step 11: fitting (Task 3 stub: all reflections, inline, unconditional)
+        # Step 11: route reflections to inline-fit or pending queue
         self._handle_fit(frame, reflections)
 
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
@@ -136,12 +199,52 @@ class SinglePassExecutor(Executor):
         )
 
     def _handle_fit(self, frame: int, reflections) -> None:
-        """Task 3 stub: fit all reflections inline unconditionally.
-        Task 4 splits into inline-fit vs pending-queue based on cell readiness.
-        Uses modellers[0] (the raw MultiExpProfileModeller) because
-        compute_fitted_intensity requires an object with a .fit() method;
-        ValidatedMultiExpProfileModeller delegates modelling but not fitting."""
-        reflections.compute_fitted_intensity(self.profile_fitter.modellers[0])
+        """Split reflections into inline-fit (cell ready) vs pending (cell not ready).
+
+        For ready reflections: fit immediately via compute_fitted_intensity.
+        For pending reflections: deep-copy with shoeboxes and enqueue.
+        Must complete before returning — ShoeboxProcessor deallocates shoeboxes after.
+
+        OPEN-F guard: reflections with z outside scan_range cause GridSampler.nearest()
+        to assert-fail.  These 19 boundary reflections are skipped (they are also
+        filtered by check1 in production and never reach fitting there).
+        """
+        from dials.array_family import flex
+
+        scan_range = self.experiments[0].scan.get_array_range()
+        xyz = reflections["xyzcal.px"]
+        ready_mask = flex.bool(len(reflections), False)
+        nearest_cells = flex.int(len(reflections), -1)  # -1 = boundary/error
+
+        for i in range(len(reflections)):
+            z = xyz[i][2]
+            # Guard: GridSampler.nearest() asserts z in [scan_lo, scan_hi)
+            if z < scan_range[0] or z >= scan_range[1]:
+                continue  # boundary reflection — skip routing, let it fall unfitted
+            cell = self.sampler.nearest(0, xyz[i])
+            nearest_cells[i] = cell
+            if self.readiness_tracker.is_cell_ready(cell):
+                ready_mask[i] = True
+
+        # Inline-fit the ready subset
+        if ready_mask.count(True) > 0:
+            ready_subset = reflections.select(ready_mask)
+            ready_subset.compute_fitted_intensity(self.profile_fitter.modellers[0])
+            # Write fit results back to the sub-table; ShoeboxProcessor propagates
+            # these to master via set_selected_rows_index after process() returns.
+            reflections.set_selected(ready_mask, ready_subset)
+
+        # Enqueue the pending subset — deep copy preserves shoebox data before
+        # ShoeboxProcessor deallocates them on return from process().
+        pending_mask = ~ready_mask & (nearest_cells >= 0)
+        if pending_mask.count(True) > 0:
+            pending_subset = reflections.select(pending_mask).copy()  # deep copy!
+            pending_cells = nearest_cells.select(pending_mask)
+            self.pending_queue.enqueue(
+                pending_subset,
+                list(pending_cells),
+                self.readiness_tracker.cells_per_slice,
+            )
 
     def finalize(self) -> None:
         pass
@@ -224,7 +327,7 @@ class ChunkDriver:
             experiments, num_scan_points
         )
         self._readiness_tracker = SliceReadinessTracker(num_scan_points, 3 * 3)
-        self._pending_queue = PendingFitQueue()
+        self._pending_queue = PendingFitQueue(cells_per_slice=3 * 3)
         self._next_finalize = 0
 
     def _build_validated_modeller(self, experiments, num_scan_points: int):
@@ -246,6 +349,11 @@ class ChunkDriver:
         imageset = self.experiments[0].imageset
         scan_lo, scan_hi = self._scan_lo, self._scan_hi
         n_panels = len(imageset.get_detector())
+
+        # Tag each master row with its position so pending-queue writes can
+        # target the correct master row after ShoeboxProcessor sub-tables
+        # have been round-tripped through select_rows_index/set_selected_rows_index.
+        self.master["_master_idx"] = flex.int(range(len(self.master)))
 
         # Single executor for the full scan
         executor = SinglePassExecutor(
@@ -281,7 +389,10 @@ class ChunkDriver:
 
         # Finalize remaining slices (tail of scan) and flush pending queue
         self._finalize_remaining_slices()
-        self._pending_queue.flush_all(self._profile_fitter, self.master)
+        self._pending_queue.flush_all(self._profile_fitter.modellers[0], self.master)
+
+        # Clean up the internal tracking column
+        del self.master["_master_idx"]
 
         logger.info(
             " Single-pass complete: %d frames, %d reflections",
@@ -315,6 +426,35 @@ class ChunkDriver:
             self._next_finalize += 1
 
     def _finalize_slice(self, slice_idx: int) -> None:
-        """Task 3 stub: mark slice finalized in tracker.
-        Task 4 adds: finalize_cell() per cell, then drain pending_queue."""
+        """Finalize all cells in the slice, then drain the pending queue.
+
+        ValidatedMultiExpProfileModeller.modellers[0] is the MultiExpProfileModeller.
+        MultiExpProfileModeller[0] is the GaussianRSProfileModeller for experiment 0.
+        finalize_cell(j) normalizes data_[j] in-place; does NOT set the global
+        finalized_ flag, so remaining cells stay writable.
+        """
+        cells_per_slice = self._readiness_tracker.cells_per_slice
+        cell_lo = cells_per_slice * slice_idx
+        cell_hi = cells_per_slice * (slice_idx + 1)
+
+        # Access the underlying GaussianRSProfileModeller
+        modeller = self._profile_fitter.modellers[0][0]
+
+        for cell_idx in range(cell_lo, min(cell_hi, modeller.size())):
+            modeller.finalize_cell(cell_idx)
+
         self._readiness_tracker.mark_slice_finalized(slice_idx)
+
+        # Drain pending reflections for this slice — fit them now that cells
+        # are finalized.  Pass the raw MultiExpProfileModeller so that
+        # compute_fitted_intensity can call .fit() on it.
+        self._pending_queue.drain_by_slice(
+            slice_idx, self._profile_fitter.modellers[0], self.master
+        )
+
+        logger.debug(
+            " Finalized slice %d (cells %d-%d)",
+            slice_idx,
+            cell_lo,
+            cell_hi - 1,
+        )
