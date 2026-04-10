@@ -31,6 +31,7 @@ class DispersionExtendedSpotFinderThresholdExt:
         :param params: The input parameters
         """
         self.params = params
+        self._algorithm = None
 
     def compute_threshold(self, image, mask, **kwargs):
         r"""
@@ -52,15 +53,16 @@ class DispersionExtendedSpotFinderThresholdExt:
                 params.spotfinder.threshold.dispersion.global_threshold,
             )
 
-        self._algorithm = DispersionExtendedThresholdStrategy(
-            kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
-            gain=params.spotfinder.threshold.dispersion.gain,
-            mask=params.spotfinder.lookup.mask,
-            n_sigma_b=params.spotfinder.threshold.dispersion.sigma_background,
-            n_sigma_s=params.spotfinder.threshold.dispersion.sigma_strong,
-            min_count=params.spotfinder.threshold.dispersion.min_local,
-            global_threshold=params.spotfinder.threshold.dispersion.global_threshold,
-        )
+        if self._algorithm is None:
+            self._algorithm = DispersionExtendedThresholdStrategy(
+                kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
+                gain=params.spotfinder.threshold.dispersion.gain,
+                mask=params.spotfinder.lookup.mask,
+                n_sigma_b=params.spotfinder.threshold.dispersion.sigma_background,
+                n_sigma_s=params.spotfinder.threshold.dispersion.sigma_strong,
+                min_count=params.spotfinder.threshold.dispersion.min_local,
+                global_threshold=params.spotfinder.threshold.dispersion.global_threshold,
+            )
 
         return self._algorithm(image, mask)
 
