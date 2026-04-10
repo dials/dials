@@ -996,9 +996,10 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(min_count_ <= num_kernel && min_count_ > 1);
       }
 
-      // Allocate the buffer
+      // Allocate the buffer (ring-buffer sized: largest ring across both passes)
       std::size_t element_size = sizeof(Data<double>);
-      buffer_.resize(element_size * image_size[0] * image_size[1]);
+      int R_max = 2 * kernel_size[0] + 6;
+      buffer_.resize(element_size * R_max * image_size[1]);
 
       // Pre-allocate scratch buffers for erode_dispersion_mask
       std::size_t npix = (std::size_t)image_size[0] * (std::size_t)image_size[1];
@@ -1798,6 +1799,315 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Fused SAT + final threshold pass.  Builds the SAT (using dst as the
+     * inclusion mask) one row at a time into a ring buffer and emits the
+     * final threshold decision for each row as soon as the required SAT
+     * rows are available.
+     *
+     * @param src  The input image array
+     * @param mask The mask array
+     * @param dst  The eroded dispersion mask (input) / final result (output)
+     */
+    template <typename T>
+    void compute_sat_and_final_threshold(
+      const af::const_ref<T, af::c_grid<2> >& src,
+      const af::const_ref<bool, af::c_grid<2> >& mask,
+      af::ref<bool, af::c_grid<2> > dst) {
+      // Largest value to consider
+      const T BIG = (1 << 24);
+
+      // Get the size of the image
+      std::size_t ysize = src.accessor()[0];
+      std::size_t xsize = src.accessor()[1];
+
+      // The kernel size (wider than dispersion pass)
+      int kxsize = kernel_size_[1] + 2;
+      int kysize = kernel_size_[0] + 2;
+
+      // Ring buffer parameters
+      const int R = 2 * kysize + 2;
+
+      // Cast buffer to ring-buffer of Data<T> rows
+      Data<T>* ring = reinterpret_cast<Data<T>*>(&buffer_[0]);
+
+      // --- Main loop: build SAT row j, then emit final threshold for row j - kysize
+      // ---
+      for (std::size_t j = 0; j < ysize; ++j) {
+        // Compute SAT row j into ring slot j % R
+        // N.B. the SAT uses dst (eroded dispersion mask) as the inclusion mask
+        std::size_t ring_off = (j % R) * xsize;
+        int m = 0;
+        T x = 0;
+        T y = 0;
+        for (std::size_t i = 0; i < xsize; ++i) {
+          std::size_t k = j * xsize + i;
+          int mm = (dst[k] && src[k] < BIG) ? 1 : 0;
+          m += mm;
+          x += mm * src[k];
+          y += mm * src[k] * src[k];
+          if (j == 0) {
+            ring[ring_off + i].m = m;
+            ring[ring_off + i].x = x;
+            ring[ring_off + i].y = y;
+          } else {
+            std::size_t prev_off = ((j - 1) % R) * xsize;
+            ring[ring_off + i].m = ring[prev_off + i].m + m;
+            ring[ring_off + i].x = ring[prev_off + i].x + x;
+            ring[ring_off + i].y = ring[prev_off + i].y + y;
+          }
+        }
+
+        // Emit final threshold for row emit_row = j - kysize
+        int emit_row = (int)j - kysize;
+        if (emit_row >= 0) {
+          int j0 = emit_row - kysize - 1;
+          int j1 = emit_row + kysize;
+          j1 = j1 < (int)ysize ? j1 : (int)ysize - 1;
+          std::size_t rk1 = (j1 % R) * xsize;
+          std::size_t rk0 = j0 >= 0 ? (j0 % R) * xsize : 0;
+
+          for (std::size_t i = 0; i < xsize; ++i) {
+            std::size_t k = emit_row * xsize + i;
+            int i0 = i - kxsize - 1, i1 = i + kxsize;
+            i1 = i1 < (int)xsize ? i1 : (int)xsize - 1;
+
+            double dm = 0, dx = 0;
+            if (i0 >= 0 && j0 >= 0) {
+              const Data<T>& d00 = ring[rk0 + i0];
+              const Data<T>& d10 = ring[rk1 + i0];
+              const Data<T>& d01 = ring[rk0 + i1];
+              dm += d00.m - (d10.m + d01.m);
+              dx += d00.x - (d10.x + d01.x);
+            } else if (i0 >= 0) {
+              const Data<T>& d10 = ring[rk1 + i0];
+              dm -= d10.m;
+              dx -= d10.x;
+            } else if (j0 >= 0) {
+              const Data<T>& d01 = ring[rk0 + i1];
+              dm -= d01.m;
+              dx -= d01.x;
+            }
+            const Data<T>& d11 = ring[rk1 + i1];
+            dm += d11.m;
+            dx += d11.x;
+
+            // Read dispersion_mask BEFORE writing dst[k]
+            if (mask[k] && dm >= 0 && dx >= 0) {
+              bool dispersion_mask = !dst[k];
+              bool global_mask = src[k] > threshold_;
+              double mean = (dm >= 2 ? (dx / dm) : 0);
+              bool local_mask = src[k] >= (mean + nsig_s_ * std::sqrt(mean));
+              dst[k] = dispersion_mask && global_mask && local_mask;
+            } else {
+              dst[k] = false;
+            }
+          }
+        }
+      }
+
+      // --- Drain loop: emit remaining rows that had no SAT row written after them ---
+      for (int emit_row = (int)ysize - kysize; emit_row < (int)ysize; ++emit_row) {
+        if (emit_row < 0) continue;
+        int j0 = emit_row - kysize - 1;
+        int j1 = emit_row + kysize;
+        j1 = j1 < (int)ysize ? j1 : (int)ysize - 1;
+        std::size_t rk1 = (j1 % R) * xsize;
+        std::size_t rk0 = j0 >= 0 ? (j0 % R) * xsize : 0;
+
+        for (std::size_t i = 0; i < xsize; ++i) {
+          std::size_t k = emit_row * xsize + i;
+          int i0 = i - kxsize - 1, i1 = i + kxsize;
+          i1 = i1 < (int)xsize ? i1 : (int)xsize - 1;
+
+          double dm = 0, dx = 0;
+          if (i0 >= 0 && j0 >= 0) {
+            const Data<T>& d00 = ring[rk0 + i0];
+            const Data<T>& d10 = ring[rk1 + i0];
+            const Data<T>& d01 = ring[rk0 + i1];
+            dm += d00.m - (d10.m + d01.m);
+            dx += d00.x - (d10.x + d01.x);
+          } else if (i0 >= 0) {
+            const Data<T>& d10 = ring[rk1 + i0];
+            dm -= d10.m;
+            dx -= d10.x;
+          } else if (j0 >= 0) {
+            const Data<T>& d01 = ring[rk0 + i1];
+            dm -= d01.m;
+            dx -= d01.x;
+          }
+          const Data<T>& d11 = ring[rk1 + i1];
+          dm += d11.m;
+          dx += d11.x;
+
+          // Read dispersion_mask BEFORE writing dst[k]
+          if (mask[k] && dm >= 0 && dx >= 0) {
+            bool dispersion_mask = !dst[k];
+            bool global_mask = src[k] > threshold_;
+            double mean = (dm >= 2 ? (dx / dm) : 0);
+            bool local_mask = src[k] >= (mean + nsig_s_ * std::sqrt(mean));
+            dst[k] = dispersion_mask && global_mask && local_mask;
+          } else {
+            dst[k] = false;
+          }
+        }
+      }
+    }
+
+    /**
+     * Fused SAT + final threshold pass (gain variant).
+     *
+     * @param src  The input image array
+     * @param mask The mask array
+     * @param gain The gain array
+     * @param dst  The eroded dispersion mask (input) / final result (output)
+     */
+    template <typename T>
+    void compute_sat_and_final_threshold(
+      const af::const_ref<T, af::c_grid<2> >& src,
+      const af::const_ref<bool, af::c_grid<2> >& mask,
+      const af::const_ref<double, af::c_grid<2> >& gain,
+      af::ref<bool, af::c_grid<2> > dst) {
+      // Largest value to consider
+      const T BIG = (1 << 24);
+
+      // Get the size of the image
+      std::size_t ysize = src.accessor()[0];
+      std::size_t xsize = src.accessor()[1];
+
+      // The kernel size (wider than dispersion pass)
+      int kxsize = kernel_size_[1] + 2;
+      int kysize = kernel_size_[0] + 2;
+
+      // Ring buffer parameters
+      const int R = 2 * kysize + 2;
+
+      // Cast buffer to ring-buffer of Data<T> rows
+      Data<T>* ring = reinterpret_cast<Data<T>*>(&buffer_[0]);
+
+      // --- Main loop: build SAT row j, then emit final threshold for row j - kysize
+      // ---
+      for (std::size_t j = 0; j < ysize; ++j) {
+        // Compute SAT row j into ring slot j % R
+        // N.B. the SAT uses dst (eroded dispersion mask) as the inclusion mask
+        std::size_t ring_off = (j % R) * xsize;
+        int m = 0;
+        T x = 0;
+        T y = 0;
+        for (std::size_t i = 0; i < xsize; ++i) {
+          std::size_t k = j * xsize + i;
+          int mm = (dst[k] && src[k] < BIG) ? 1 : 0;
+          m += mm;
+          x += mm * src[k];
+          y += mm * src[k] * src[k];
+          if (j == 0) {
+            ring[ring_off + i].m = m;
+            ring[ring_off + i].x = x;
+            ring[ring_off + i].y = y;
+          } else {
+            std::size_t prev_off = ((j - 1) % R) * xsize;
+            ring[ring_off + i].m = ring[prev_off + i].m + m;
+            ring[ring_off + i].x = ring[prev_off + i].x + x;
+            ring[ring_off + i].y = ring[prev_off + i].y + y;
+          }
+        }
+
+        // Emit final threshold for row emit_row = j - kysize
+        int emit_row = (int)j - kysize;
+        if (emit_row >= 0) {
+          int j0 = emit_row - kysize - 1;
+          int j1 = emit_row + kysize;
+          j1 = j1 < (int)ysize ? j1 : (int)ysize - 1;
+          std::size_t rk1 = (j1 % R) * xsize;
+          std::size_t rk0 = j0 >= 0 ? (j0 % R) * xsize : 0;
+
+          for (std::size_t i = 0; i < xsize; ++i) {
+            std::size_t k = emit_row * xsize + i;
+            int i0 = i - kxsize - 1, i1 = i + kxsize;
+            i1 = i1 < (int)xsize ? i1 : (int)xsize - 1;
+
+            double dm = 0, dx = 0;
+            if (i0 >= 0 && j0 >= 0) {
+              const Data<T>& d00 = ring[rk0 + i0];
+              const Data<T>& d10 = ring[rk1 + i0];
+              const Data<T>& d01 = ring[rk0 + i1];
+              dm += d00.m - (d10.m + d01.m);
+              dx += d00.x - (d10.x + d01.x);
+            } else if (i0 >= 0) {
+              const Data<T>& d10 = ring[rk1 + i0];
+              dm -= d10.m;
+              dx -= d10.x;
+            } else if (j0 >= 0) {
+              const Data<T>& d01 = ring[rk0 + i1];
+              dm -= d01.m;
+              dx -= d01.x;
+            }
+            const Data<T>& d11 = ring[rk1 + i1];
+            dm += d11.m;
+            dx += d11.x;
+
+            // Read dispersion_mask BEFORE writing dst[k]
+            if (mask[k] && dm >= 0 && dx >= 0) {
+              bool dispersion_mask = !dst[k];
+              bool global_mask = src[k] > threshold_;
+              double mean = (dm >= 2 ? (dx / dm) : 0);
+              bool local_mask = src[k] >= (mean + nsig_s_ * std::sqrt(gain[k] * mean));
+              dst[k] = dispersion_mask && global_mask && local_mask;
+            } else {
+              dst[k] = false;
+            }
+          }
+        }
+      }
+
+      // --- Drain loop: emit remaining rows that had no SAT row written after them ---
+      for (int emit_row = (int)ysize - kysize; emit_row < (int)ysize; ++emit_row) {
+        if (emit_row < 0) continue;
+        int j0 = emit_row - kysize - 1;
+        int j1 = emit_row + kysize;
+        j1 = j1 < (int)ysize ? j1 : (int)ysize - 1;
+        std::size_t rk1 = (j1 % R) * xsize;
+        std::size_t rk0 = j0 >= 0 ? (j0 % R) * xsize : 0;
+
+        for (std::size_t i = 0; i < xsize; ++i) {
+          std::size_t k = emit_row * xsize + i;
+          int i0 = i - kxsize - 1, i1 = i + kxsize;
+          i1 = i1 < (int)xsize ? i1 : (int)xsize - 1;
+
+          double dm = 0, dx = 0;
+          if (i0 >= 0 && j0 >= 0) {
+            const Data<T>& d00 = ring[rk0 + i0];
+            const Data<T>& d10 = ring[rk1 + i0];
+            const Data<T>& d01 = ring[rk0 + i1];
+            dm += d00.m - (d10.m + d01.m);
+            dx += d00.x - (d10.x + d01.x);
+          } else if (i0 >= 0) {
+            const Data<T>& d10 = ring[rk1 + i0];
+            dm -= d10.m;
+            dx -= d10.x;
+          } else if (j0 >= 0) {
+            const Data<T>& d01 = ring[rk0 + i1];
+            dm -= d01.m;
+            dx -= d01.x;
+          }
+          const Data<T>& d11 = ring[rk1 + i1];
+          dm += d11.m;
+          dx += d11.x;
+
+          // Read dispersion_mask BEFORE writing dst[k]
+          if (mask[k] && dm >= 0 && dx >= 0) {
+            bool dispersion_mask = !dst[k];
+            bool global_mask = src[k] > threshold_;
+            double mean = (dm >= 2 ? (dx / dm) : 0);
+            bool local_mask = src[k] >= (mean + nsig_s_ * std::sqrt(gain[k] * mean));
+            dst[k] = dispersion_mask && global_mask && local_mask;
+          } else {
+            dst[k] = false;
+          }
+        }
+      }
+    }
+
+    /**
      * Compute the threshold for the given image and mask.
      * @param src - The input image array.
      * @param mask - The mask array.
@@ -1812,12 +2122,6 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(src.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(src.accessor().all_eq(dst.accessor()));
 
-      // Get the table
-      DIALS_ASSERT(sizeof(T) <= sizeof(double));
-
-      // Cast the buffer to the table type
-      af::ref<Data<T> > table(reinterpret_cast<Data<T>*>(&buffer_[0]), buffer_.size());
-
       // Fused SAT + dispersion threshold using sliding-window ring buffer.
       // This output is in dst which contains a mask where 1 is valid background
       // and 0 is invalid pixels and stuff above the dispersion threshold
@@ -1827,12 +2131,8 @@ namespace dials { namespace algorithms {
       // dst from "pixels that are not background" to "pixels that are background"
       erode_dispersion_mask(mask, dst);
 
-      // Compute the summed area table again now excluding the threshold pixels
-      // (which are set to false in dst)
-      compute_sat(table, src, dst);
-
-      // Compute the final threshold
-      compute_final_threshold(table, src, mask, dst);
+      // Fused SAT + final threshold using sliding-window ring buffer
+      compute_sat_and_final_threshold(src, mask, dst);
     }
 
     /**
@@ -1853,23 +2153,14 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(src.accessor().all_eq(gain.accessor()));
       DIALS_ASSERT(src.accessor().all_eq(dst.accessor()));
 
-      // Get the table
-      DIALS_ASSERT(sizeof(T) <= sizeof(double));
-
-      // Cast the buffer to the table type
-      af::ref<Data<T> > table((Data<T>*)&buffer_[0], buffer_.size());
-
       // Fused SAT + dispersion threshold using sliding-window ring buffer
       compute_sat_and_dispersion_threshold(src, mask, gain, dst);
 
       // Erode the dispersion mask
       erode_dispersion_mask(mask, dst);
 
-      // Compute the summed area table again now excluding the threshold pixels
-      compute_sat(table, src, dst);
-
-      // Compute the final threshold
-      compute_final_threshold(table, src, mask, gain, dst);
+      // Fused SAT + final threshold using sliding-window ring buffer
+      compute_sat_and_final_threshold(src, mask, gain, dst);
     }
 
   private:
