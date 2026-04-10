@@ -442,10 +442,12 @@ class SinglePassBlockTask:
             del image, mask
         assert proc.finished(), "ShoeboxProcessor did not finish"
 
-        # Finalize the ENTIRE local model (all cells, even empty ones)
+        # Finalize populated model cells (empty cells have uninitialized data
+        # arrays and will assert-fail in finalize_cell)
         modeller = profile_fitter.modellers[0][0]  # GaussianRSProfileModeller
         for cell_idx in range(modeller.size()):
-            modeller.finalize_cell(cell_idx)
+            if modeller.n_reflections(cell_idx) > 0:
+                modeller.finalize_cell(cell_idx)
 
         # Fit ALL reflections using the raw MultiExpProfileModeller
         self.reflections.compute_fitted_intensity(profile_fitter.modellers[0])
