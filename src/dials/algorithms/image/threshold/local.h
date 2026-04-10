@@ -1255,19 +1255,56 @@ namespace dials { namespace algorithms {
      */
     void erode_dispersion_mask(const af::const_ref<bool, af::c_grid<2> >& mask,
                                af::ref<bool, af::c_grid<2> > dst) {
-      // The distance array
-      af::versa<int, af::c_grid<2> > distance(dst.accessor(), 0);
+      std::size_t ysize = dst.accessor()[0];
+      std::size_t xsize = dst.accessor()[1];
 
-      // Compute the chebyshev distance to the nearest valid background pixel
-      chebyshev_distance(dst, false, distance.ref());
+      // The erosion radius: a pixel survives erosion only if all pixels within
+      // a (2d-1)x(2d-1) square around it are true. For the L-inf (Chebyshev)
+      // metric this separable rectangular erosion is equivalent to the previous
+      // chebyshev_distance approach.
+      int d = std::min(kernel_size_[0], kernel_size_[1]);
 
-      // The erosion distance
-      std::size_t erosion_distance = std::min(kernel_size_[0], kernel_size_[1]);
+      // Row pass: sliding-AND with window [i-(d-1), i+(d-1)]
+      std::vector<char> row_eroded(ysize * xsize, 1);
+      for (std::size_t j = 0; j < ysize; ++j) {
+        const std::size_t row_off = j * xsize;
+        for (std::size_t i = 0; i < xsize; ++i) {
+          std::size_t i0 = (i >= (std::size_t)(d - 1)) ? i - (d - 1) : 0;
+          std::size_t i1 = std::min(i + (std::size_t)(d - 1), xsize - 1);
+          char val = 1;
+          for (std::size_t ii = i0; ii <= i1; ++ii) {
+            if (!dst[row_off + ii]) {
+              val = 0;
+              break;
+            }
+          }
+          row_eroded[row_off + i] = val;
+        }
+      }
 
-      // Compute the eroded mask
+      // Column pass: sliding-AND of row_eroded with window [j-(d-1), j+(d-1)]
+      std::vector<char> eroded(ysize * xsize, 1);
+      for (std::size_t i = 0; i < xsize; ++i) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          std::size_t j0 = (j >= (std::size_t)(d - 1)) ? j - (d - 1) : 0;
+          std::size_t j1 = std::min(j + (std::size_t)(d - 1), ysize - 1);
+          char val = 1;
+          for (std::size_t jj = j0; jj <= j1; ++jj) {
+            if (!row_eroded[jj * xsize + i]) {
+              val = 0;
+              break;
+            }
+          }
+          eroded[j * xsize + i] = val;
+        }
+      }
+
+      // Apply the same combination as the original: a pixel that was true in
+      // dst AND survives erosion (all neighbours true) maps to false; everything
+      // else that is valid in mask maps to true.
       for (std::size_t k = 0; k < dst.size(); ++k) {
         if (mask[k]) {
-          dst[k] = !(dst[k] && distance[k] >= erosion_distance);
+          dst[k] = !(dst[k] && eroded[k]);
         } else {
           dst[k] = false;
         }
