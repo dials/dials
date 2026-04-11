@@ -999,6 +999,14 @@ namespace dials { namespace algorithms {
       // Allocate the buffer
       std::size_t element_size = sizeof(Data<double>);
       buffer_.resize(element_size * image_size[0] * image_size[1]);
+
+      // Precompute sqrt lookup table for dispersion/final threshold passes
+      // m ranges from min_count (typically 2) to num_kernel
+      // (kernel_size[0]*kernel_size[1])
+      sqrt_table_.resize(num_kernel + 1);
+      for (int m = 0; m <= num_kernel; ++m) {
+        sqrt_table_[m] = std::sqrt(2.0 * (m - 1));
+      }
     }
 
     /**
@@ -1108,7 +1116,7 @@ namespace dials { namespace algorithms {
             dst[k] = true;
           } else if (m >= min_count_ && x >= 0) {
             double a = m * y - x * x - x * (m - 1);
-            double c = x * nsig_b_ * std::sqrt(2 * (m - 1));
+            double c = x * nsig_b_ * sqrt_table_[static_cast<int>(m)];
             dst[k] = (a > c);
           }
         }
@@ -1185,7 +1193,8 @@ namespace dials { namespace algorithms {
             dst[k] = true;
           } else if (m >= min_count_ && x >= 0) {
             double a = m * y - x * x;
-            double c = gain[k] * x * (m - 1 + nsig_b_ * std::sqrt(2 * (m - 1)));
+            double c =
+              gain[k] * x * (m - 1 + nsig_b_ * sqrt_table_[static_cast<int>(m)]);
             dst[k] = (a > c);
           }
         }
@@ -1551,6 +1560,8 @@ namespace dials { namespace algorithms {
     double threshold_;
     int min_count_;
     std::vector<char> buffer_;
+    std::vector<double>
+      sqrt_table_;  // Precomputed sqrt(2*(m-1)) for m in [0, num_kernel]
   };
 
 }}  // namespace dials::algorithms
