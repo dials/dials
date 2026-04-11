@@ -999,12 +999,6 @@ namespace dials { namespace algorithms {
       // Allocate the buffer
       std::size_t element_size = sizeof(Data<double>);
       buffer_.resize(element_size * image_size[0] * image_size[1]);
-
-      // Pre-allocate VGW erosion buffers (reused across erosion calls)
-      std::size_t max_dim =
-        std::max((std::size_t)image_size[0], (std::size_t)image_size[1]);
-      vgw_g_buffer_.resize(max_dim);
-      vgw_h_buffer_.resize(max_dim);
     }
 
     /**
@@ -1261,8 +1255,6 @@ namespace dials { namespace algorithms {
      */
     void erode_dispersion_mask(const af::const_ref<bool, af::c_grid<2> >& mask,
                                af::ref<bool, af::c_grid<2> > dst) {
-      auto debug_t0 = std::chrono::high_resolution_clock::now();
-
       std::size_t ysize = dst.accessor()[0];
       std::size_t xsize = dst.accessor()[1];
 
@@ -1272,46 +1264,40 @@ namespace dials { namespace algorithms {
       // chebyshev_distance approach.
       int d = std::min(kernel_size_[0], kernel_size_[1]);
 
-      auto debug_t1 = std::chrono::high_resolution_clock::now();
-
-      // Convert dst (bool) to char for processing (1=true, 0=false)
-      std::vector<char> dst_char(ysize * xsize);
-      for (std::size_t k = 0; k < dst.size(); ++k) {
-        dst_char[k] = dst[k] ? 1 : 0;
-      }
-
-      auto debug_t2 = std::chrono::high_resolution_clock::now();
-
-      // Row pass: erode each row independently using VGW algorithm
-      std::vector<char> row_eroded(ysize * xsize);
+      // Row pass: sliding-AND with window [i-(d-1), i+(d-1)]
+      std::vector<char> row_eroded(ysize * xsize, 1);
       for (std::size_t j = 0; j < ysize; ++j) {
-        vgw_erosion_1d(dst_char.data() + j * xsize,
-                       row_eroded.data() + j * xsize,
-                       xsize,
-                       d,
-                       vgw_g_buffer_.data(),
-                       vgw_h_buffer_.data());
+        const std::size_t row_off = j * xsize;
+        for (std::size_t i = 0; i < xsize; ++i) {
+          std::size_t i0 = (i >= (std::size_t)(d - 1)) ? i - (d - 1) : 0;
+          std::size_t i1 = std::min(i + (std::size_t)(d - 1), xsize - 1);
+          char val = 1;
+          for (std::size_t ii = i0; ii <= i1; ++ii) {
+            if (!dst[row_off + ii]) {
+              val = 0;
+              break;
+            }
+          }
+          row_eroded[row_off + i] = val;
+        }
       }
 
-      auto debug_t3 = std::chrono::high_resolution_clock::now();
-
-      // Column pass: erode each column independently using VGW algorithm
-      std::vector<char> eroded(ysize * xsize);
-
-      auto debug_t4 = std::chrono::high_resolution_clock::now();
-
-      // Column pass: process columns in-place with strided access
+      // Column pass: sliding-AND of row_eroded with window [j-(d-1), j+(d-1)]
+      std::vector<char> eroded(ysize * xsize, 1);
       for (std::size_t i = 0; i < xsize; ++i) {
-        vgw_erosion_1d(row_eroded.data() + i,  // Start at column i
-                       eroded.data() + i,      // Output to column i
-                       ysize,                  // Column height
-                       d,                      // Erosion radius
-                       vgw_g_buffer_.data(),
-                       vgw_h_buffer_.data(),
-                       xsize);  // Stride = image width
+        for (std::size_t j = 0; j < ysize; ++j) {
+          std::size_t j0 = (j >= (std::size_t)(d - 1)) ? j - (d - 1) : 0;
+          std::size_t j1 = std::min(j + (std::size_t)(d - 1), ysize - 1);
+          char val = 1;
+          for (std::size_t jj = j0; jj <= j1; ++jj) {
+            if (!row_eroded[jj * xsize + i]) {
+              val = 0;
+              break;
+            }
+          }
+          eroded[j * xsize + i] = val;
+        }
       }
-
-      auto debug_t5 = std::chrono::high_resolution_clock::now();
 
       // Apply the same combination as the original: a pixel that was true in
       // dst AND survives erosion (all neighbours true) maps to false; everything
@@ -1321,118 +1307,6 @@ namespace dials { namespace algorithms {
           dst[k] = !(dst[k] && eroded[k]);
         } else {
           dst[k] = false;
-        }
-      }
-
-      auto debug_t6 = std::chrono::high_resolution_clock::now();
-
-      // One-time detailed breakdown
-      static bool printed_breakdown = false;
-      if (!printed_breakdown) {
-        printed_breakdown = true;
-        std::cerr << "\n=== VGW Erosion Detailed Breakdown (first frame) ===\n";
-        std::cerr << "Image size: " << ysize << "x" << xsize << " = " << (ysize * xsize)
-                  << " pixels\n";
-        std::cerr << "Erosion radius d=" << d << ", window size=" << (2 * d - 1)
-                  << "\n";
-        std::cerr
-          << "Setup:            "
-          << std::chrono::duration<double, std::milli>(debug_t1 - debug_t0).count()
-          << " ms\n";
-        std::cerr
-          << "Bool->char copy:  "
-          << std::chrono::duration<double, std::milli>(debug_t2 - debug_t1).count()
-          << " ms\n";
-        std::cerr
-          << "Row pass (" << ysize << " rows):    "
-          << std::chrono::duration<double, std::milli>(debug_t3 - debug_t2).count()
-          << " ms\n";
-        std::cerr
-          << "Col pass (" << xsize << " cols):    "
-          << std::chrono::duration<double, std::milli>(debug_t5 - debug_t4).count()
-          << " ms (strided access)\n";
-        std::cerr
-          << "Final merge:      "
-          << std::chrono::duration<double, std::milli>(debug_t6 - debug_t5).count()
-          << " ms\n";
-        std::cerr
-          << "TOTAL:            "
-          << std::chrono::duration<double, std::milli>(debug_t6 - debug_t0).count()
-          << " ms\n";
-      }
-    }
-
-    /**
-     * Van Herk-Gil-Werman 1D morphological erosion (binary AND with sliding window).
-     *
-     * @param input Source boolean array (encoded as char: 1=true, 0=false)
-     * @param output Destination boolean array (same encoding)
-     * @param length Number of elements to process
-     * @param radius Half-window size d (full window = 2*d - 1)
-     * @param g_buffer Pre-allocated forward cumulative min buffer (size >= length)
-     * @param h_buffer Pre-allocated backward cumulative min buffer (size >= length)
-     * @param stride Memory stride between elements (default=1 for contiguous, use image
-     * width for column access)
-     */
-    void vgw_erosion_1d(const char* input,
-                        char* output,
-                        std::size_t length,
-                        int radius,
-                        char* g_buffer,
-                        char* h_buffer,
-                        std::size_t stride = 1) {
-      // Handle edge cases
-      if (radius <= 0 || length == 0) {
-        for (std::size_t i = 0; i < length; ++i) {
-          output[i * stride] = input[i * stride];
-        }
-        return;
-      }
-
-      std::size_t w = 2 * radius - 1;  // Window size
-
-      // Process chunks: compute forward min (g) and backward min (h)
-      for (std::size_t chunk_start = 0; chunk_start < length; chunk_start += w) {
-        std::size_t chunk_end = std::min(chunk_start + w, length);
-
-        // Forward pass: g[i] = min(input[chunk_start..i])
-        g_buffer[chunk_start] = input[chunk_start * stride];
-        for (std::size_t i = chunk_start + 1; i < chunk_end; ++i) {
-          g_buffer[i] = std::min(g_buffer[i - 1], input[i * stride]);
-        }
-
-        // Backward pass: h[i] = min(input[i..chunk_end-1])
-        h_buffer[chunk_end - 1] = input[(chunk_end - 1) * stride];
-        for (std::size_t i = chunk_end - 1; i > chunk_start; --i) {
-          h_buffer[i - 1] = std::min(h_buffer[i], input[(i - 1) * stride]);
-        }
-      }
-
-      // Compute output: for each pixel, combine g/h from relevant chunks
-      for (std::size_t i = 0; i < length; ++i) {
-        // Window bounds: [i0, i1] where i0 = max(0, i-radius+1), i1 = min(length-1,
-        // i+radius-1)
-        std::size_t i0 = (i >= (std::size_t)(radius - 1)) ? (i - radius + 1) : 0;
-        std::size_t i1 = std::min(i + radius - 1, length - 1);
-
-        // Determine which chunks i0 and i1 fall into
-        std::size_t left_chunk = i0 / w;
-        std::size_t right_chunk = i1 / w;
-
-        if (left_chunk == right_chunk) {
-          // Window within single chunk: use g/h buffers (O(1) instead of O(w))
-          output[i * stride] = std::min(h_buffer[i0], g_buffer[i1]);
-        } else {
-          // Window spans multiple chunks - use g/h
-          char min_val = std::min(h_buffer[i0], g_buffer[i1]);
-
-          // Include mins of any complete intermediate chunks
-          for (std::size_t c = left_chunk + 1; c < right_chunk; ++c) {
-            std::size_t chunk_pos = c * w;
-            min_val = std::min(min_val, g_buffer[chunk_pos + w - 1]);
-          }
-
-          output[i * stride] = min_val;
         }
       }
     }
@@ -1677,8 +1551,6 @@ namespace dials { namespace algorithms {
     double threshold_;
     int min_count_;
     std::vector<char> buffer_;
-    std::vector<char> vgw_g_buffer_;  // Forward cumulative min buffer
-    std::vector<char> vgw_h_buffer_;  // Backward cumulative min buffer
   };
 
 }}  // namespace dials::algorithms
