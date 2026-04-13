@@ -36,12 +36,12 @@ def groups_cache(fn):
 
     def wrapped_calc(group_info: sgtbx.space_group_info, bravais_t: str):
         cache = MultiClassCache(bravais_t)
-        info_str = group_info.type().lookup_symbol()
+        group = group_info.group()
         try:
-            result = cache[info_str]
+            result = cache[group]
         except KeyError:
             result = fn(group_info, bravais_t)
-            cache[info_str] = result
+            cache[group] = result
         return result
 
     return wrapped_calc
