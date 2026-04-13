@@ -222,10 +222,9 @@ namespace dials { namespace model {
       return result;
     }
 
-    /** @return True/False whether the shoeboxes are allocated */
-    bool is_allocated() const {
+    /** @return True/False whether the shoebox data and mask are allocated */
+    bool is_data_allocated() const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
-      DIALS_ASSERT(data.accessor().all_eq(background.accessor()));
       if (data.size() == 0) {
         return false;
       } else {
@@ -233,6 +232,20 @@ namespace dials { namespace model {
           DIALS_ASSERT(data.accessor().all_eq(size_flat()));
         } else {
           DIALS_ASSERT(data.accessor().all_eq(size()));
+        }
+      }
+      return true;
+    }
+
+    /** @return True/False whether the shoebox background is allocated */
+    bool is_background_allocated() const {
+      if (background.size() == 0) {
+        return false;
+      } else {
+        if (flat) {
+          DIALS_ASSERT(background.accessor().all_eq(size_flat()));
+        } else {
+          DIALS_ASSERT(background.accessor().all_eq(size()));
         }
       }
       return true;

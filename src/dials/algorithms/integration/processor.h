@@ -85,7 +85,8 @@ namespace dials { namespace algorithms {
       flatten_ = shoebox[0].flat;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
         DIALS_ASSERT(shoebox[i].flat == flatten_);
-        DIALS_ASSERT(shoebox[i].is_allocated() == false);
+        DIALS_ASSERT(shoebox[i].is_data_allocated() == false);
+        DIALS_ASSERT(shoebox[i].is_background_allocated() == false);
         DIALS_ASSERT(shoebox[i].bbox[1] > shoebox[i].bbox[0]);
         DIALS_ASSERT(shoebox[i].bbox[3] > shoebox[i].bbox[2]);
         DIALS_ASSERT(shoebox[i].bbox[5] > shoebox[i].bbox[4]);
@@ -142,7 +143,8 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(ind[i] < shoebox.size());
           Shoebox<>& sbox = shoebox[ind[i]];
           if (frame_ == sbox.bbox[4]) {
-            DIALS_ASSERT(sbox.is_allocated() == false);
+            DIALS_ASSERT(sbox.is_data_allocated() == false);
+            DIALS_ASSERT(sbox.is_background_allocated() == false);
             sbox.allocate_data();
             sbox.allocate_background();
           }
@@ -253,7 +255,8 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(ind[i] < shoebox.size());
           Shoebox<>& sbox = shoebox[ind[i]];
           if (frame_ == sbox.bbox[4]) {
-            DIALS_ASSERT(sbox.is_allocated() == false);
+            DIALS_ASSERT(sbox.is_data_allocated() == false);
+            DIALS_ASSERT(sbox.is_background_allocated() == false);
             sbox.allocate_data();
             sbox.allocate_background();
           }

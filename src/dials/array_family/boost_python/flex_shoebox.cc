@@ -148,7 +148,7 @@ namespace dials { namespace af { namespace boost_python {
       // Set all the mask and data points
       for (std::size_t i = 0; i < labels.size(); ++i) {
         int l = labels[i];
-        if (result_[l].is_allocated()) {
+        if (result_[l].is_data_allocated()) {
           FloatType v = values[i];
           vec3<int> c = coords[i];
           int ii = c[2] - result_[l].bbox[0];
@@ -410,13 +410,25 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
-   * Check if the arrays are allocated
+   * Check if the data and mask arrays are allocated
    */
   template <typename FloatType>
-  shared<bool> is_allocated(const const_ref<Shoebox<FloatType> >& a) {
+  shared<bool> is_data_allocated(const const_ref<Shoebox<FloatType> >& a) {
     shared<bool> result(a.size(), af::init_functor_null<bool>());
     for (std::size_t i = 0; i < a.size(); ++i) {
-      result[i] = a[i].is_allocated();
+      result[i] = a[i].is_data_allocated();
+    }
+    return result;
+  }
+
+  /**
+   * Check if the background arrays are allocated
+   */
+  template <typename FloatType>
+  shared<bool> is_background_allocated(const const_ref<Shoebox<FloatType> >& a) {
+    shared<bool> result(a.size(), af::init_functor_null<bool>());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].is_background_allocated();
     }
     return result;
   }
@@ -1055,7 +1067,8 @@ namespace dials { namespace af { namespace boost_python {
         .def("allocate_data_with_value", &allocate_data_with_value<FloatType>)
         .def("deallocate", &deallocate<FloatType>)
         .def("is_consistent", &is_consistent<FloatType>)
-        .def("is_allocated", &is_allocated<FloatType>)
+        .def("is_data_allocated", &is_data_allocated<FloatType>)
+        .def("is_background_allocated", &is_background_allocated<FloatType>)
         .def("panels", &panels<FloatType>)
         .def("bounding_boxes", &bounding_boxes<FloatType>)
         .def("count_mask_values", &count_mask_values<FloatType>)
