@@ -668,7 +668,8 @@ namespace dials { namespace algorithms {
       std::size_t panel = reflection.get<std::size_t>("panel");
       int6 bbox = reflection.get<int6>("bbox");
       Shoebox<> shoebox(panel, bbox);
-      shoebox.allocate();
+      shoebox.allocate_data();
+      shoebox.allocate_background();
       af::ref<float, af::c_grid<3> > data = shoebox.data.ref();
       af::ref<int, af::c_grid<3> > mask = shoebox.mask.ref();
       int x0 = bbox[0];

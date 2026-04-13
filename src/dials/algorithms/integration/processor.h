@@ -143,7 +143,8 @@ namespace dials { namespace algorithms {
           Shoebox<>& sbox = shoebox[ind[i]];
           if (frame_ == sbox.bbox[4]) {
             DIALS_ASSERT(sbox.is_allocated() == false);
-            sbox.allocate();
+            sbox.allocate_data();
+            sbox.allocate_background();
           }
           int6 b = sbox.bbox;
           sbox_data_type sdata = sbox.data.ref();
@@ -253,7 +254,8 @@ namespace dials { namespace algorithms {
           Shoebox<>& sbox = shoebox[ind[i]];
           if (frame_ == sbox.bbox[4]) {
             DIALS_ASSERT(sbox.is_allocated() == false);
-            sbox.allocate();
+            sbox.allocate_data();
+            sbox.allocate_background();
           }
           int6 b = sbox.bbox;
           sbox_data_type sdata = sbox.data.ref();

@@ -194,7 +194,7 @@ def simple_gaussian_spots(params):
     p.finished("Generating %d reflections" % params.nrefl)
     intensity = flex.double(params.nrefl)
     shoebox = flex.shoebox(panel, bbox)
-    shoebox.allocate_with_value(MaskCode.Valid)
+    shoebox.allocate_data_with_value(MaskCode.Valid)
 
     p = ProgressBar(title="Generating shoeboxes")
 

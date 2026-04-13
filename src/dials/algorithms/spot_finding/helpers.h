@@ -111,7 +111,8 @@ namespace dials { namespace algorithms {
 
       // Allocate all the arrays
       for (std::size_t i = 0; i < result.size(); ++i) {
-        result[i].allocate();
+        result[i].allocate_data();
+        result[i].allocate_background();
       }
 
       // Set all the mask and data points

@@ -125,7 +125,7 @@ namespace dials { namespace model {
     /**
      * Allocate the mask and data from the bounding box
      */
-    void allocate_with_value(int maskcode) {
+    void allocate_data_with_value(int maskcode) {
       std::size_t zs = flat ? 1 : zsize();
       af::c_grid<3> accessor(zs, ysize(), xsize());
       data = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
@@ -136,12 +136,21 @@ namespace dials { namespace model {
     /**
      * Allocate the mask and data with mask code valid.
      */
-    void allocate() {
-      allocate_with_value(0);
+    void allocate_data() {
+      allocate_data_with_value(0);
     }
 
     /**
-     * Deallocate the mask and data arrays
+     * Allocate the background from the bounding box
+     */
+    void allocate_background() {
+      std::size_t zs = flat ? 1 : zsize();
+      af::c_grid<3> accessor(zs, ysize(), xsize());
+      background = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
+    }
+
+    /**
+     * Deallocate the data, mask and background arrays
      */
     void deallocate() {
       af::c_grid<3> accessor(0, 0, 0);
