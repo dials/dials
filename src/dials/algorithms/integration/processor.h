@@ -206,11 +206,11 @@ namespace dials { namespace algorithms {
       if (process_indices.size() > 0) {
         double start_time = timestamp();
         af::const_ref<std::size_t> ind = process_indices.const_ref();
-        af::reflection_table reflections = select_rows_index(data_, ind);
-        // allocate background here
+        // allocate background only for the selected reflections
         for (std::size_t i = 0; i < ind.size(); ++i) {
           shoebox[ind[i]].allocate_background();
         }
+        af::reflection_table reflections = select_rows_index(data_, ind);
         executor.process(frame_, reflections);
         set_selected_rows_index(data_, ind, reflections);
         if (!save_) {
