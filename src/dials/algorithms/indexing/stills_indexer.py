@@ -740,34 +740,19 @@ class StillsIndexer(Indexer):
             m.miller_index = item["miller_index"]
             matches.append(m)
 
-        import iotbx.phil
-        from rstbx.phil.phil_preferences import indexing_api_defs
-
-        hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
-
-        from rstbx.indexing_api.outlier_procedure import OutlierPlotPDF
-
-        # comment this in if PDF graph is desired:
-        # hardcoded_phil.indexing.outlier_detection.pdf = "outlier.pdf"
-        # new code for outlier rejection inline here
-        if hardcoded_phil.indexing.outlier_detection.pdf is not None:
-            hardcoded_phil.__inject__(
-                "writer", OutlierPlotPDF(hardcoded_phil.indexing.outlier_detection.pdf)
-            )
-
         # execute Sauter and Poon (2010) algorithm
         from rstbx.indexing_api import outlier_detection
 
         od = outlier_detection.find_outliers_from_matches(
             matches,
             verbose=self.all_params.refinement.reflections.outlier.sauter_poon.verbose,
-            horizon_phil=hardcoded_phil,
+            horizon_phil=self.hardcoded_phil,
         )
 
-        if hardcoded_phil.indexing.outlier_detection.pdf is not None:
-            od.make_graphs(canvas=hardcoded_phil.writer.R.c, left_margin=0.5)
-            hardcoded_phil.writer.R.c.showPage()
-            hardcoded_phil.writer.R.c.save()
+        if self.hardcoded_phil.indexing.outlier_detection.pdf is not None:
+            od.make_graphs(canvas=self.hardcoded_phil.writer.R.c, left_margin=0.5)
+            self.hardcoded_phil.writer.R.c.showPage()
+            self.hardcoded_phil.writer.R.c.save()
 
         return od.get_cache_status()
 
