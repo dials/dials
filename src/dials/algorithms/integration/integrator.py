@@ -184,7 +184,7 @@ def generate_phil_scope():
         .expert_level=3
 
       single_pass {
-        enable = False
+        enable = True
           .type = bool
           .help = "Use the experimental single-pass modeller-integrator. "
                   "Two-pass fallback: integration.single_pass.enable=False (default)."
