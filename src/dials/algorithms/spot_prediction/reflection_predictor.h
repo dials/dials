@@ -361,10 +361,7 @@ namespace dials { namespace algorithms {
         if (rays[i].entering == entering) {
           p.s1.push_back(rays[i].s1);
           double frame = scan_.get_array_index_from_angle(rays[i].angle);
-          // Inline Panel::get_ray_intersection to avoid try/catch overhead in
-          // the hot refinement loop. Semantics are identical: v[2] > 0 is the
-          // same predicate that DXTBX_ASSERT checked; flags=0 on miss matches
-          // the old catch branch. See exception_elimination_investigation.md.
+          // Inline Panel::get_ray_intersection to avoid try/catch overhead.
           const Panel& pnl = detector_[panel];
           vec3<double> v = pnl.get_D_matrix() * rays[i].s1;
           if (v[2] > 0) {
