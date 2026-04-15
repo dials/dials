@@ -79,7 +79,7 @@ phil_scope = parse(
         .type = choice
         .help = "Select the profile grid method"
 
-      fit_method = *reciprocal_space detector_space cell_cache cell_cache_scatter
+      fit_method = reciprocal_space detector_space cell_cache *cell_cache_scatter
         .type = choice
         .help = "The fitting method"
 
