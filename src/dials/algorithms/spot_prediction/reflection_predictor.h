@@ -356,8 +356,6 @@ namespace dials { namespace algorithms {
       p.hkl.push_back(h);
       p.enter.push_back(entering);
       p.panel.push_back(panel);
-      // Fetch D matrix once; throws early if panel is invalid rather than
-      // silently producing (0,0,0) sentinels.
       const Panel& pnl = detector_[panel];
       const mat3<double>& D = pnl.get_D_matrix();
       af::small<Ray, 2> rays = predict_rays_(h, ub);
@@ -365,7 +363,8 @@ namespace dials { namespace algorithms {
         if (rays[i].entering == entering) {
           p.s1.push_back(rays[i].s1);
           double frame = scan_.get_array_index_from_angle(rays[i].angle);
-          // v[2] > 0 is the same predicate as DXTBX_ASSERT in get_ray_intersection
+          // Here we inline the logic from Panel::get_ray_intersection
+          // to avoid try/catch overhead.
           vec3<double> v = D * rays[i].s1;
           if (v[2] > 0) {
             vec2<double> mm(v[0] / v[2], v[1] / v[2]);
