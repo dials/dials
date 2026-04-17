@@ -162,7 +162,7 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     # The PlaneLinearTransformationMaps applies a matrix as a distortion of
     # corrected positions into an ellipse. Therefore we need the
     # circle-to-ellipse transform matrix
-    M = circle_to_ellipse_transform(phi, l1, l2)
+    M = ellipse_to_circle_transform(phi, l1, l2)
 
     distortion_map_x = []
     distortion_map_y = []

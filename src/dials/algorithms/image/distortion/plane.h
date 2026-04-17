@@ -36,8 +36,8 @@ namespace dials { namespace algorithms {
             matrix * vec2<double>(x, y);  // distorted by transformation matrix
 
           // store correction in units of the pixel size
-          dx_(j, i) = (distort[0] - x) / panel.get_pixel_size()[0];
-          dy_(j, i) = (distort[1] - y) / panel.get_pixel_size()[1];
+          dx_(j, i) = (x - distort[0]) / panel.get_pixel_size()[0];
+          dy_(j, i) = (y - distort[1]) / panel.get_pixel_size()[1];
         }
       }
     };
