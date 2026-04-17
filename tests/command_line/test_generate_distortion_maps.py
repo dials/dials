@@ -357,8 +357,9 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     # Create an image containing spots in an ellipse with the minor axis 90% the
     # langth of the major axis, with the orientation of the major axis rotated by
     # a random angle from the fast axis. Shift the beam centre away from the image
-    # centre for a more general test.
-    beam_centre_px = (1040, 1010)
+    # centre for a more general test. Put it in the centre of a pixel so that the
+    # correction at that pixel should be zero.
+    beam_centre_px = (1040.5, 1010.5)
     phi = np.random.uniform(low=0.0, high=180.0)
     print(f"ellipse angle: φ={phi:.1f}°")
     l2 = 0.9
@@ -497,14 +498,10 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     dx = experiments[0].imageset.external_lookup.dx.data.tile(0).data()
     dy = experiments[0].imageset.external_lookup.dy.data.tile(0).data()
 
-    # Check that the correction at the beam centre is very small. It isn't
-    # actually the smallest magnitude correction across the whole image. There
-    # is a line of pixels with close to zero correction from one side of the
-    # image to the other, passing through the beam centre. We'll accept that
-    # the correction at the pixel containing the beam centre should be less than
-    # 1/5 of a pixel.
-    assert abs(dx[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
-    assert abs(dy[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
+    # Check that the correction at the beam centre is close to zero. This
+    # is true because the beam centre is in the centre of a pixel.
+    assert pytest.approx(dx[int(beam_centre_px[1]), int(beam_centre_px[0])]) == 0.0
+    assert pytest.approx(dy[int(beam_centre_px[1]), int(beam_centre_px[0])]) == 0.0
 
     # For each intersection get the correction encoded by the distortion maps.
     # In the pixel-to-millimetre transform, the dx and dy values are first
@@ -549,8 +546,9 @@ def test_undistort_an_ellipse_precise(dials_data, tmp_path):
     # Create an image containing spots in an ellipse with the minor axis 90% the
     # langth of the major axis, with the orientation of the major axis rotated by
     # a random angle from the fast axis. Shift the beam centre away from the image
-    # centre for a more general test.
-    beam_centre_px = (1040, 1010)
+    # centre for a more general test. Put it in the centre of a pixel so that the
+    # correction at that pixel should be zero.
+    beam_centre_px = (1040.5, 1010.5)
     phi = np.random.uniform(low=0.0, high=180.0)
     print(f"ellipse angle: φ={phi:.1f}°")
     l2 = 0.9
@@ -650,14 +648,10 @@ def test_undistort_an_ellipse_precise(dials_data, tmp_path):
     dx = experiments[0].imageset.external_lookup.dx.data.tile(0).data()
     dy = experiments[0].imageset.external_lookup.dy.data.tile(0).data()
 
-    # Check that the correction at the beam centre is very small. It isn't
-    # actually the smallest magnitude correction across the whole image. There
-    # is a line of pixels with close to zero correction from one side of the
-    # image to the other, passing through the beam centre. We'll accept that
-    # the correction at the pixel containing the beam centre should be less than
-    # 1/5 of a pixel.
-    assert abs(dx[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
-    assert abs(dy[int(beam_centre_px[1]), int(beam_centre_px[0])]) < 0.2
+    # Check that the correction at the beam centre is close to zero. This
+    # is true because the beam centre is in the centre of a pixel.
+    assert pytest.approx(dx[int(beam_centre_px[1]), int(beam_centre_px[0])]) == 0.0
+    assert pytest.approx(dy[int(beam_centre_px[1]), int(beam_centre_px[0])]) == 0.0
 
     # For each intersection get the correction encoded by the distortion maps.
     # In the pixel-to-millimetre transform, the dx and dy values are first
