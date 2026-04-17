@@ -268,19 +268,7 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
     ) == 0.95 * vec_centre_to_first_px.dot(fast)
 
 
-def create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2):
-    """Helper function to write an image consisting of 100 points around an ellipse"""
-
-    subprocess.run(
-        [
-            shutil.which("dials.import"),
-            image_path,
-            f"fast_slow_beam_centre={beam_centre_px[0]},{beam_centre_px[1]}",
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    experiments = ExperimentList.from_file(tmp_path / "imported.expt")
+def create_ellipse_intersections(experiments, phi, l2):
     beam = experiments[0].beam
     panel = experiments[0].detector[0]
 
@@ -327,6 +315,23 @@ def create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2
     intersections_px = flex.vec2_double(
         (panel.get_ray_intersection_px(ray) for ray in rays)
     )
+    return intersections_px
+
+
+def create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2):
+    """Helper function to write an image consisting of 100 points around an ellipse"""
+
+    subprocess.run(
+        [
+            shutil.which("dials.import"),
+            image_path,
+            f"fast_slow_beam_centre={beam_centre_px[0]},{beam_centre_px[1]}",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    experiments = ExperimentList.from_file(tmp_path / "imported.expt")
+    intersections_px = create_ellipse_intersections(experiments, phi, l2)
 
     # Now write out a new image consisting only of the points around the ellipse
     with mrcfile.open(image_path, permissive=True) as mrc_in:
