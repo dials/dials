@@ -354,8 +354,8 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     """Check that impact points around an ellipse in lab space on a simple
     detector can be undistorted into a circle in pixel space"""
 
-    # Create an image containing spots in an ellipse with the minor axis 90% the
-    # langth of the major axis, with the orientation of the major axis rotated by
+    # Create an image containing spots in an ellipse with the minor axis 80% the
+    # length of the major axis, with the orientation of the major axis rotated by
     # a random angle from the fast axis. Shift the beam centre away from the image
     # centre for a more general test. Put it in the centre of a pixel so that the
     # correction at that pixel should be zero.
@@ -467,18 +467,17 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     intersections_mm = panel.pixel_to_millimeter(intersections_px)
 
     # Get the radius of each of the intersections and check fractional error.
-    # With high distortion of l2=0.9 we found error as high as 1.2%
+    # This seems to be less than 0.3% for l2=0.8
     shifted = intersections_mm - centre_xy
     x, y = shifted.parts()
     radius = flex.sqrt(x * x + y * y)
     mm_error = (max(radius) - min(radius)) / flex.mean(radius)
     print(f"mm_error = {mm_error * 100:.1f}%")
-    assert mm_error < 0.013
+    assert mm_error < 0.003
 
-    # With l2=0.9 we seem to get radial errors of up to around 3 pixels. With
-    # l2=0.95 the error is up to about 1.1 pixels. This might be acceptable.
+    # We will accept a radial error of up to 1 pixel
     assert radius.as_numpy_array() == pytest.approx(
-        flex.mean(radius), abs=3.1 * panel.get_pixel_size()[0]
+        flex.mean(radius), abs=panel.get_pixel_size()[0]
     )
 
     # Visually inspect the mm corrected positions
@@ -617,18 +616,17 @@ def test_undistort_an_ellipse_precise(dials_data, tmp_path):
     intersections_mm = panel.pixel_to_millimeter(intersections_px)
 
     # Get the radius of each of the intersections and check fractional error.
-    # With high distortion of l2=0.9 we found error as high as 1.2%
+    # This seems to be less than 0.1% for l2=0.8
     shifted = intersections_mm - centre_xy
     x, y = shifted.parts()
     radius = flex.sqrt(x * x + y * y)
     mm_error = (max(radius) - min(radius)) / flex.mean(radius)
     print(f"mm_error = {mm_error * 100:.1f}%")
-    assert mm_error < 0.013
+    assert mm_error < 0.001
 
-    # With l2=0.9 we seem to get radial errors of up to around 3 pixels. With
-    # l2=0.95 the error is up to about 1.1 pixels. This might be acceptable.
+    # For the precise test, we will accept a radial error of up to 0.2 pixels
     assert radius.as_numpy_array() == pytest.approx(
-        flex.mean(radius), abs=3.1 * panel.get_pixel_size()[0]
+        flex.mean(radius), abs=0.2 * panel.get_pixel_size()[0]
     )
 
     # Visually inspect the mm corrected positions
