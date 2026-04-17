@@ -209,20 +209,20 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
     # All together expect the 4 dx maps to look something like this (indicative
     # values only):
     #
-    # /-----------\ /-----------\
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # \-----------/ \-----------/
-    # /-----------\ /-----------\
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # | 3  2  1  0| |-0 -1 -2 -3|
-    # \-----------/ \-----------/
+    # /------------\ /------------\
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # \------------/ \------------/
+    # /------------\ /------------\
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # | 6  4  2  0 | | 0 -2 -4 -6 |
+    # \------------/ \------------/
 
     # So the fundamental data is all in the first row of first panel's map
     dx0t = dx[0].matrix_transpose()
@@ -250,7 +250,11 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
         assert row0 == pytest.approx(dx1t.matrix_copy_column(i))
 
     # The distortion is an ellipse pinched in by 5% (l2 = 0.95) horizontally.
-    # Check that the distorted distance is 95% of the canonical distance for
+    # The values in the correction map are _subtracted_ from the pixel positions
+    # to correct for the distortion, which therefore pushes the pixel positions
+    # outward horizontally to make the ellipse more circular.
+    #
+    # Check that the naive distance is 95% of the corrected distance for
     # the upper left pixel of the first panel.
     vec_centre_to_first_px = matrix.col(
         d[0].get_pixel_lab_coord((0.5, 0.5))
@@ -262,10 +266,11 @@ def test_elliptical_distortion_simple(run_in_tmp_path):
             0.0,
         )
     )
+    vec_corrected = vec_centre_to_first_px - vec_distortion
     fast = matrix.col(d[0].get_fast_axis())
-    assert (vec_centre_to_first_px + vec_distortion).dot(
-        fast
-    ) == 0.95 * vec_centre_to_first_px.dot(fast)
+    assert vec_centre_to_first_px.dot(fast) == pytest.approx(
+        0.95 * vec_corrected.dot(fast)
+    )
 
 
 def create_ellipse_intersections(experiments, phi, l2):
