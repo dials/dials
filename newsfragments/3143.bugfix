@@ -1,0 +1,2 @@
+``dials.generate_distortion_maps``: correct various problems with elliptical distortion maps
+``dials.image_viewer``: correct angle of ellipses fitted with the ellipse tool
