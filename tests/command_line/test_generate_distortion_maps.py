@@ -362,7 +362,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     beam_centre_px = (1040.5, 1010.5)
     phi = np.random.uniform(low=0.0, high=180.0)
     print(f"ellipse angle: φ={phi:.1f}°")
-    l2 = 0.9
+    l2 = 0.8
     image_path = dials_data("aluminium_standard") / "0p67_5s_0000.mrc"
     create_distorted_ellipse_image(image_path, tmp_path, beam_centre_px, phi, l2)
 
@@ -551,7 +551,7 @@ def test_undistort_an_ellipse_precise(dials_data, tmp_path):
     beam_centre_px = (1040.5, 1010.5)
     phi = np.random.uniform(low=0.0, high=180.0)
     print(f"ellipse angle: φ={phi:.1f}°")
-    l2 = 0.9
+    l2 = 0.8
     image_path = dials_data("aluminium_standard") / "0p67_5s_0000.mrc"
     subprocess.run(
         [

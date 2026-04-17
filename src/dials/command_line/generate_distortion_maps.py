@@ -159,9 +159,10 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow
 
     # The provided parameters describe an ellipse visible in the image.
-    # The PlaneLinearTransformationMaps applies a matrix as a distortion of
-    # corrected positions into an ellipse. Therefore we need the
-    # circle-to-ellipse transform matrix
+    # The distortion is present in the pixel coordinates of the image.
+    # PlaneLinearTransformationMaps applies a matrix to the pixel array
+    # to "undo" the elliptical distortion. Therefore we need the
+    # ellipse-to-circle transform matrix.
     M = ellipse_to_circle_transform(phi, l1, l2)
 
     distortion_map_x = []
