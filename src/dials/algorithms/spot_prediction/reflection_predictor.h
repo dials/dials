@@ -841,28 +841,42 @@ namespace dials { namespace algorithms {
                         const miller_index& h,
                         const Ray& ray,
                         int panel) const {
-      try {
-        // Get the impact on the detector
-        Detector::coord_type impact = detector_.get_ray_intersection(ray.s1);
-        std::size_t panel = impact.first;
-        vec2<double> mm = impact.second;
-        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
-
-        // Get the frame
-        double frame = scan_.get_array_index_from_angle(ray.angle);
-
-        // Get the frames that a reflection with this angle will be observed at
-        p.hkl.push_back(h);
-        p.enter.push_back(ray.entering);
-        p.s1.push_back(ray.s1);
-        p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], ray.angle));
-        p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
-        p.panel.push_back(panel);
-        p.flags.push_back(af::Predicted);
-
-      } catch (dxtbx::error const&) {
-        // do nothing
+      // Inline Detector::get_ray_intersection to avoid try/catch overhead in
+      // the hot refinement loop. Each panel is tested with the same v[2] > 0
+      // predicate used in Panel::get_ray_intersection; the panel with the
+      // largest valid w component is selected, matching the original semantics.
+      // Returns without pushing if no panel is hit (replaces the old try/catch
+      // do-nothing branch).
+      std::size_t hit_panel = 0;
+      vec2<double> mm(0, 0);
+      double w_max = 0;
+      bool found = false;
+      for (std::size_t i = 0; i < detector_.size(); ++i) {
+        // D matrix is per-panel; no hoist across the panel loop is possible.
+        vec3<double> v = detector_[i].get_D_matrix() * ray.s1;
+        if (v[2] > w_max) {
+          vec2<double> xy(v[0] / v[2], v[1] / v[2]);
+          if (detector_[i].is_coord_valid_mm(xy)) {
+            hit_panel = i;
+            mm = xy;
+            w_max = v[2];
+            found = true;
+          }
+        }
       }
+      if (!found) {
+        return;
+      }
+
+      vec2<double> px = detector_[hit_panel].millimeter_to_pixel(mm);
+      double frame = scan_.get_array_index_from_angle(ray.angle);
+      p.hkl.push_back(h);
+      p.enter.push_back(ray.entering);
+      p.s1.push_back(ray.s1);
+      p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], ray.angle));
+      p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
+      p.panel.push_back(hit_panel);
+      p.flags.push_back(af::Predicted);
     }
 
     /**
