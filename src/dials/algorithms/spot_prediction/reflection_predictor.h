@@ -852,7 +852,6 @@ namespace dials { namespace algorithms {
       double w_max = 0;
       bool found = false;
       for (std::size_t i = 0; i < detector_.size(); ++i) {
-        // D matrix is per-panel; no hoist across the panel loop is possible.
         vec3<double> v = detector_[i].get_D_matrix() * ray.s1;
         if (v[2] > w_max) {
           vec2<double> xy(v[0] / v[2], v[1] / v[2]);
@@ -870,6 +869,7 @@ namespace dials { namespace algorithms {
 
       vec2<double> px = detector_[hit_panel].millimeter_to_pixel(mm);
       double frame = scan_.get_array_index_from_angle(ray.angle);
+
       p.hkl.push_back(h);
       p.enter.push_back(ray.entering);
       p.s1.push_back(ray.s1);
