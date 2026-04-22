@@ -60,7 +60,7 @@ def generate_reflections(experiments):
 
 def test1(dials_data):
     # use a experiments that contains a CS-PAD detector description
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "cspad-single-image.expt"
 
     # load models

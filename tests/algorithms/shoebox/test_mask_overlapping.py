@@ -47,12 +47,8 @@ def predict_reflections(sequence, crystal):
 
 def test(dials_data):
     # Load the sequence and crystal
-    sequence = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
-    crystal = load.crystal(
-        str(dials_data("centroid_test_data", pathlib=True) / "crystal.json")
-    )
+    sequence = load.imageset(dials_data("centroid_test_data") / "sweep.json")
+    crystal = load.crystal(str(dials_data("centroid_test_data") / "crystal.json"))
 
     # Get models from the sequence
     detector = sequence.get_detector()

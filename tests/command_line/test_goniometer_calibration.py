@@ -5,7 +5,7 @@ import subprocess
 
 
 def test_goniometer_calibration(dials_data, tmp_path):
-    data_dir = dials_data("misc_regression", pathlib=True)
+    data_dir = dials_data("misc_regression")
     o0_k0_p0 = str(data_dir / "gonio-calib_o0_k0_p0.expt")
     o0_k0_p48 = str(data_dir / "gonio-calib_o0_k0_p48.expt")
     o0_k48_p48 = str(data_dir / "gonio-calib_o0_k48_p48.expt")

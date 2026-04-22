@@ -13,7 +13,7 @@ def test_run(dials_data):
     )
 
     # The directory path
-    data_dir = Path(dials_data("misc_regression", pathlib=True))
+    data_dir = Path(dials_data("misc_regression"))
 
     # The input files
     reflection_filename = str(data_dir / "mosflm-outlier-rejection.refl")

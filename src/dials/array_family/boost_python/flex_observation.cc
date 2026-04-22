@@ -36,8 +36,8 @@ namespace dials { namespace af { namespace boost_python {
   using scitbx::vec3;
 
   /** Initialise an observation list from panels */
-  static af::flex<Observation>::type *init_from_panel(
-    const af::const_ref<std::size_t> &panel) {
+  static af::flex<Observation>::type* init_from_panel(
+    const af::const_ref<std::size_t>& panel) {
     af::shared<Observation> result(panel.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel[i];
@@ -46,8 +46,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from centroids */
-  static af::flex<Observation>::type *init_from_centroid(
-    const af::const_ref<Centroid> &centroid) {
+  static af::flex<Observation>::type* init_from_centroid(
+    const af::const_ref<Centroid>& centroid) {
     af::shared<Observation> result(centroid.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].centroid = centroid[i];
@@ -56,8 +56,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from intensities */
-  static af::flex<Observation>::type *init_from_intensity(
-    const af::const_ref<Intensity> &intensity) {
+  static af::flex<Observation>::type* init_from_intensity(
+    const af::const_ref<Intensity>& intensity) {
     af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].intensity = intensity[i];
@@ -66,9 +66,9 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from centroids and intensities */
-  static af::flex<Observation>::type *init_from_centroid_and_intensity(
-    const af::const_ref<Centroid> &centroid,
-    const af::const_ref<Intensity> &intensity) {
+  static af::flex<Observation>::type* init_from_centroid_and_intensity(
+    const af::const_ref<Centroid>& centroid,
+    const af::const_ref<Intensity>& intensity) {
     DIALS_ASSERT(centroid.size() == intensity.size());
     af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -79,9 +79,9 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from panels and centroids */
-  static af::flex<Observation>::type *init_from_panel_and_centroid(
-    const af::const_ref<std::size_t> &panel,
-    const af::const_ref<Centroid> &centroid) {
+  static af::flex<Observation>::type* init_from_panel_and_centroid(
+    const af::const_ref<std::size_t>& panel,
+    const af::const_ref<Centroid>& centroid) {
     DIALS_ASSERT(panel.size() == centroid.size());
     af::shared<Observation> result(centroid.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -92,9 +92,9 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from panels and intensities */
-  static af::flex<Observation>::type *init_from_panel_and_intensity(
-    const af::const_ref<std::size_t> &panel,
-    const af::const_ref<Intensity> &intensity) {
+  static af::flex<Observation>::type* init_from_panel_and_intensity(
+    const af::const_ref<std::size_t>& panel,
+    const af::const_ref<Intensity>& intensity) {
     DIALS_ASSERT(panel.size() == intensity.size());
     af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -105,10 +105,10 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from panels, centroids and intensities */
-  static af::flex<Observation>::type *init_from_panel_centroid_and_intensity(
-    const af::const_ref<std::size_t> &panel,
-    const af::const_ref<Centroid> &centroid,
-    const af::const_ref<Intensity> &intensity) {
+  static af::flex<Observation>::type* init_from_panel_centroid_and_intensity(
+    const af::const_ref<std::size_t>& panel,
+    const af::const_ref<Centroid>& centroid,
+    const af::const_ref<Intensity>& intensity) {
     DIALS_ASSERT(centroid.size() == intensity.size());
     DIALS_ASSERT(panel.size() == intensity.size());
     af::shared<Observation> result(intensity.size(), Observation());
@@ -121,9 +121,9 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from panel and centroids */
-  static af::flex<Observation>::type *init_from_single_panel_and_centroid(
+  static af::flex<Observation>::type* init_from_single_panel_and_centroid(
     std::size_t panel,
-    const af::const_ref<Centroid> &centroid) {
+    const af::const_ref<Centroid>& centroid) {
     af::shared<Observation> result(centroid.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel;
@@ -133,9 +133,9 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from panel and intensities */
-  static af::flex<Observation>::type *init_from_single_panel_and_intensity(
+  static af::flex<Observation>::type* init_from_single_panel_and_intensity(
     std::size_t panel,
-    const af::const_ref<Intensity> &intensity) {
+    const af::const_ref<Intensity>& intensity) {
     af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel;
@@ -145,10 +145,10 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** Initialise an observation list from panel, centroids and intensities */
-  static af::flex<Observation>::type *init_from_single_panel_centroid_and_intensity(
+  static af::flex<Observation>::type* init_from_single_panel_centroid_and_intensity(
     std::size_t panel,
-    const af::const_ref<Centroid> &centroid,
-    const af::const_ref<Intensity> &intensity) {
+    const af::const_ref<Centroid>& centroid,
+    const af::const_ref<Intensity>& intensity) {
     DIALS_ASSERT(centroid.size() == intensity.size());
     af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -161,7 +161,7 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns An array of panel numbers */
   static af::shared<std::size_t> observation_get_panels(
-    const af::const_ref<Observation> &obj) {
+    const af::const_ref<Observation>& obj) {
     af::shared<std::size_t> result(obj.size(), af::init_functor_null<std::size_t>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].panel;
@@ -171,7 +171,7 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns An array of centroids */
   static af::shared<Centroid> observation_get_centroids(
-    const af::const_ref<Observation> &obj) {
+    const af::const_ref<Observation>& obj) {
     af::shared<Centroid> result(obj.size(), Centroid());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].centroid;
@@ -181,7 +181,7 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns An array of intensities */
   static af::shared<Intensity> observation_get_intensities(
-    const af::const_ref<Observation> &obj) {
+    const af::const_ref<Observation>& obj) {
     af::shared<Intensity> result(obj.size(), Intensity());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].intensity;
@@ -191,7 +191,7 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns An array of panel numbers */
   static void observation_set_panels(af::ref<Observation> obj,
-                                     const af::const_ref<std::size_t> &panel) {
+                                     const af::const_ref<std::size_t>& panel) {
     DIALS_ASSERT(obj.size() == panel.size());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       obj[i].panel = panel[i];
@@ -200,7 +200,7 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns An array of centroids */
   static void observation_set_centroids(af::ref<Observation> obj,
-                                        const af::const_ref<Centroid> &centroid) {
+                                        const af::const_ref<Centroid>& centroid) {
     DIALS_ASSERT(obj.size() == centroid.size());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       obj[i].centroid = centroid[i];
@@ -209,7 +209,7 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns An array of intensities */
   static void observation_set_intensities(af::ref<Observation> obj,
-                                          const af::const_ref<Intensity> &intensity) {
+                                          const af::const_ref<Intensity>& intensity) {
     DIALS_ASSERT(obj.size() == intensity.size());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       obj[i].intensity = intensity[i];
@@ -218,17 +218,17 @@ namespace dials { namespace af { namespace boost_python {
 
   /** Update the millimeter centroid positions of all observations */
   void observation_update_centroid_mm(af::ref<Observation> obj,
-                                      const Detector &d,
-                                      const Scan &s) {
+                                      const Detector& d,
+                                      const Scan& s) {
     for (std::size_t i = 0; i < obj.size(); ++i) {
       obj[i].update_centroid_mm(d, s);
     }
   }
 
   /** @returns The resolution of each observation */
-  af::shared<double> observation_resolution(const af::const_ref<Observation> &obj,
-                                            const BeamBase &b,
-                                            const Detector &d) {
+  af::shared<double> observation_resolution(const af::const_ref<Observation>& obj,
+                                            const BeamBase& b,
+                                            const Detector& d) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       result[i] = obj[i].resolution(b, d);
@@ -249,7 +249,7 @@ namespace dials { namespace af { namespace boost_python {
     }
 
     /** Convert a single observation to string */
-    observation_to_string &operator<<(const Observation &val) {
+    observation_to_string& operator<<(const Observation& val) {
       *this << val.panel << val.centroid.px.position[0] << val.centroid.px.position[1]
             << val.centroid.px.position[2] << val.centroid.px.variance[0]
             << val.centroid.px.variance[1] << val.centroid.px.variance[2]
@@ -273,14 +273,14 @@ namespace dials { namespace af { namespace boost_python {
     using pickle_double_buffered::from_string::operator>>;
 
     /** Initialise with the string */
-    observation_from_string(const char *str_ptr)
+    observation_from_string(const char* str_ptr)
         : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
       DIALS_ASSERT(version == 1);
     }
 
     /** Convert a string to a single observation instance */
-    observation_from_string &operator>>(Observation &val) {
+    observation_from_string& operator>>(Observation& val) {
       *this >> val.panel >> val.centroid.px.position[0] >> val.centroid.px.position[1]
         >> val.centroid.px.position[2] >> val.centroid.px.variance[0]
         >> val.centroid.px.variance[1] >> val.centroid.px.variance[2]

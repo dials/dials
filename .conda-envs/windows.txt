@@ -14,7 +14,6 @@ h5py>=3.1.0
 hatchling
 hdf5
 hdf5plugin
-iota
 jinja2
 libboost-devel
 libboost-python-devel
@@ -23,8 +22,8 @@ mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy<2.3.0
-nxmx
+numpy
+nxmx>=0.0.6
 optuna
 ordered-set
 pandas
@@ -43,12 +42,14 @@ pytest-xdist
 python-dateutil>=2.7.0
 reportlab
 requests
+scikit-image
 scikit-learn
 scipy
 scons
 setuptools
 six
 sphinx>=4
+sphinx-design
 sqlite
 tabulate
 tqdm

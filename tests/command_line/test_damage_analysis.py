@@ -13,7 +13,7 @@ from dials.command_line.damage_analysis import PychefRunner, phil_scope, run
 
 
 def test_damage_analysis_on_scaled_data(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = str(location / "scaled_20_25.refl")
     expts = str(location / "scaled_20_25.expt")
 
@@ -30,7 +30,7 @@ def test_damage_analysis_on_scaled_data(dials_data, run_in_tmp_path):
 
 
 def test_damage_analysis_damage_series(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -63,7 +63,7 @@ def test_damage_analysis_damage_series(dials_data, run_in_tmp_path):
 
 def test_setup_from_dials_data(dials_data):
     """Test dials.damage_analysis on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
     table = flex.reflection_table.from_file(refls)
@@ -87,7 +87,7 @@ def test_setup_from_dials_data(dials_data):
 
 
 def test_damage_analysis_on_scaled_mtz(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = str(location / "scaled_20_25.refl")
     expts = str(location / "scaled_20_25.expt")
 
@@ -109,7 +109,7 @@ def test_damage_analysis_on_scaled_mtz(dials_data, run_in_tmp_path):
 
 def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmp_path):
     """Test dials.damage_analysis on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -146,7 +146,7 @@ def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmp_path):
 def test_damage_analysis_input_handling(dials_data, run_in_tmp_path):
     """Test that errors are handled if more than one refl file, no refl/expt
     file or unscaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = str(location / "scaled_20_25.refl")
     expts = str(location / "scaled_20_25.expt")
 
@@ -167,7 +167,7 @@ def test_damage_analysis_input_handling(dials_data, run_in_tmp_path):
 
 
 def test_damage_analysis_fails_on_unscaled_data(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     refls = str(location / "20_integrated.pickle")
     expts = str(location / "20_integrated_experiments.json")
 

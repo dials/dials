@@ -114,9 +114,9 @@ def generate_phil_scope():
                   "number of blocks may be set to 1. If force is True then the"
                   "block size is always calculated."
 
-        max_memory_usage = 0.90
+        max_memory_usage = 0.80
           .type = float(value_min=0.0,value_max=1.0)
-          .help = "The maximum percentage of available memory to use for"
+          .help = "The maximum fraction of available memory to use for"
                   "allocating shoebox arrays."
 
       }
@@ -1291,10 +1291,13 @@ class Integrator:
                 # Need to do a memory check and decide whether to split table.
                 # Split if its size in memory exceeds the fraction of available memory
                 # specified by the PHIL parameter integration.block.max_memory_usage.
+                max_memory_usage = self.params.integration.block.max_memory_usage
+                if max_memory_usage is None:
+                    max_memory_usage = 1.0
                 tables = _iterative_table_split(
                     [self.reflections],
                     self.experiments,
-                    MEMORY_LIMIT * self.params.integration.block.max_memory_usage,
+                    MEMORY_LIMIT * max_memory_usage,
                 )
 
             if len(tables) == 1:
@@ -1637,14 +1640,14 @@ def create_integrator(params, experiments, reflections):
     BackgroundAlgorithm = dials.extensions.Background.load(
         params.integration.background.algorithm
     )
-    flex.reflection_table.background_algorithm = functools.partial(
-        BackgroundAlgorithm, params
+    flex.reflection_table.background_algorithm = staticmethod(
+        functools.partial(BackgroundAlgorithm, params)
     )
     CentroidAlgorithm = dials.extensions.Centroid.load(
         params.integration.centroid.algorithm
     )
-    flex.reflection_table.centroid_algorithm = functools.partial(
-        CentroidAlgorithm, params
+    flex.reflection_table.centroid_algorithm = staticmethod(
+        functools.partial(CentroidAlgorithm, params)
     )
 
     # Get the classes we need

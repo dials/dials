@@ -354,10 +354,7 @@ def do_import(filename, load_models=True):
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
-            raise Abort(f"Could not load {filename}")
-
-    if len(experiments) == 0:
-        raise Abort(f"Could not load {filename}")
+            pass
 
     from dxtbx.imageset import ImageSetFactory
 
@@ -789,7 +786,17 @@ class Script:
                     copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
                 )
 
-                if rank == 0:
+                if any(os.path.splitext(p)[1].lower() == ".loc" for p in all_paths):
+                    import psana
+
+                    if getattr(psana, "xtc_version", None) == 2:
+                        root = 2  # psana2 uses ranks 0 and 1
+                    else:
+                        root = 0
+                else:
+                    root = 0
+
+                if rank == root:
                     # server process
                     num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
@@ -806,20 +813,21 @@ class Script:
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
-                    for rankreq in range(size - 1):
-                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                    for rankreq in range(root + 1, size):
+                        rank = comm.recv(source=rankreq)
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                else:
+                elif rank > root:
                     # client process
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
-                        comm.send(rank, dest=0)
+                        comm.send(rank, dest=root)
                         print("Rank %d waiting for response" % rank)
-                        item = comm.recv(source=0)
+                        item = comm.recv(source=root)
+                        print(f"receiving item: {rank=} {item=}")
                         if item == "endrun":
                             print("Rank %d received endrun" % rank)
                             break

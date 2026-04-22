@@ -28,27 +28,27 @@ namespace dials { namespace algorithms {
     typedef int type;
   };
   template <>
-  int get_minimum_bound<0, int6>(const int6 &b) {
+  int get_minimum_bound<0, int6>(const int6& b) {
     return b[0];
   }
   template <>
-  int get_maximum_bound<0, int6>(const int6 &b) {
+  int get_maximum_bound<0, int6>(const int6& b) {
     return b[1];
   }
   template <>
-  int get_minimum_bound<1, int6>(const int6 &b) {
+  int get_minimum_bound<1, int6>(const int6& b) {
     return b[2];
   }
   template <>
-  int get_maximum_bound<1, int6>(const int6 &b) {
+  int get_maximum_bound<1, int6>(const int6& b) {
     return b[3];
   }
   template <>
-  int get_minimum_bound<2, int6>(const int6 &b) {
+  int get_minimum_bound<2, int6>(const int6& b) {
     return b[4];
   }
   template <>
-  int get_maximum_bound<2, int6>(const int6 &b) {
+  int get_maximum_bound<2, int6>(const int6& b) {
     return b[5];
   }
 
@@ -68,7 +68,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @param bbox The list of bounding boxes
    * @returns An adjacency list
    */
-  inline AdjacencyList find_overlapping(const af::const_ref<int6> &bboxes) {
+  inline AdjacencyList find_overlapping(const af::const_ref<int6>& bboxes) {
     // Ensure we have a valid number of bboxes
     DIALS_ASSERT(bboxes.size() > 0);
 
@@ -92,7 +92,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     // Struct to help sort data
     struct sort_by_panel {
       const af::const_ref<std::size_t> p_;
-      sort_by_panel(const af::const_ref<std::size_t> &p) : p_(p) {}
+      sort_by_panel(const af::const_ref<std::size_t>& p) : p_(p) {}
       bool operator()(std::size_t a, std::size_t b) {
         return p_[a] < p_[b];
       }
@@ -110,8 +110,8 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @returns An adjacency list
    */
   inline AdjacencyList find_overlapping_multi_panel(
-    const af::const_ref<int6> &bbox,
-    const af::const_ref<std::size_t> &panel) {
+    const af::const_ref<int6>& bbox,
+    const af::const_ref<std::size_t>& panel) {
     DIALS_ASSERT(panel.size() > 0);
     DIALS_ASSERT(panel.size() == bbox.size());
 
@@ -165,16 +165,16 @@ namespace dials { namespace algorithms { namespace shoebox {
     OverlapFinder() {}
 
     struct sort_by_group {
-      const std::vector<std::size_t> &g_;
-      sort_by_group(const std::vector<std::size_t> &g) : g_(g) {}
+      const std::vector<std::size_t>& g_;
+      sort_by_group(const std::vector<std::size_t>& g) : g_(g) {}
       bool operator()(std::size_t a, std::size_t b) {
         return g_[a] < g_[b];
       }
     };
 
-    AdjacencyList operator()(const af::const_ref<std::size_t> &id,
-                             const af::const_ref<std::size_t> &panel,
-                             const af::const_ref<int6> &bbox) const {
+    AdjacencyList operator()(const af::const_ref<std::size_t>& id,
+                             const af::const_ref<std::size_t>& panel,
+                             const af::const_ref<int6>& bbox) const {
       DIALS_ASSERT(panel.size() > 0);
       DIALS_ASSERT(panel.size() == bbox.size());
       DIALS_ASSERT(panel.size() == id.size());

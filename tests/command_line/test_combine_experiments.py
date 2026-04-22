@@ -23,7 +23,7 @@ from dials.command_line.combine_experiments import (
 
 
 def test(dials_data, tmp_path):
-    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = dials_data("polyhedra_narrow_wedges")
 
     input_range = list(range(2, 49))
     for i in (8, 10, 15, 16, 34, 39, 45):
@@ -230,7 +230,7 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflect
 
     Need to use an integrated dataset for this option.
     """
-    data_dir = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    data_dir = dials_data("multi_crystal_proteinase_k")
 
     input_range = [2, 3, 4, 5, 10]
     if with_identifiers:
@@ -300,7 +300,7 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflect
 @pytest.fixture
 def narrow_wedge_input_with_identifiers(dials_data, tmp_path):
     """Make a fixture to avoid multiple runs of assign identifiers."""
-    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = dials_data("polyhedra_narrow_wedges")
     input_range = [9, 11, 12, 31]
     for n, i in enumerate(input_range):
         command = [
@@ -332,7 +332,7 @@ def test_min_max_reflections_per_experiment(dials_data, tmp_path, min_refl, max_
         ("100", "150"): 5,
     }
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     input_phil = (
         f" input.experiments={data_dir}/multi_stills_combined.json\n"
         + f" input.reflections={data_dir}/multi_stills_combined.pickle\n"
@@ -370,7 +370,7 @@ def test_combine_nsubset(
     if with_identifiers:
         phil_input = narrow_wedge_input_with_identifiers
     else:
-        data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+        data_dir = dials_data("polyhedra_narrow_wedges")
         input_range = [9, 11, 12, 31]
         phil_input = "\n".join(
             (
@@ -410,7 +410,7 @@ def test_combine_nsubset(
 def test_failed_tolerance_error(dials_data, monkeypatch):
     """Test that we get a sensible error message on tolerance failures"""
     # Select some experiments to use for combining
-    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = dials_data("polyhedra_narrow_wedges")
     jsons = os.path.join(
         data_dir,
         "sweep_{:03d}_{}",
@@ -443,7 +443,7 @@ def test_failed_tolerance_error(dials_data, monkeypatch):
 
 
 def test_combine_imagesets(dials_data, tmp_path):
-    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    data = dials_data("l_cysteine_dials_output")
     list_of_elists = [
         load.experiment_list(f, check_format=False)
         for f in sorted(data.glob("*_integrated_experiments.json"))
@@ -466,7 +466,7 @@ def test_combine_imagesets(dials_data, tmp_path):
 
 
 def test_sort_by_imageset_path_and_image_index(dials_data, tmp_path):
-    data_dir = dials_data("lysozyme_JF16M_4img", pathlib=True)
+    data_dir = dials_data("lysozyme_JF16M_4img")
     input_phil = (
         f" input.experiments={data_dir}/lyso009a_0087.JF07T32V01_master_4img_imported.expt\n"
     ).format(data_dir)

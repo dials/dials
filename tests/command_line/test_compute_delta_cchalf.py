@@ -18,7 +18,7 @@ def check_cchalf_result(fileobj):
 
 
 def test_suitable_exit_on_bad_input(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refl = location / "scaled_35.refl"
     expt = location / "scaled_35.expt"
 
@@ -33,7 +33,7 @@ def test_suitable_exit_on_bad_input(dials_data, run_in_tmp_path):
 
 def test_compute_delta_cchalf_scaled_data(dials_data, tmp_path):
     """Test dials.compute_delta_cchalf on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -58,7 +58,7 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmp_path):
 
 def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmp_path):
     """Test dials.compute_delta_cchalf on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -85,7 +85,7 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmp_path):
 def test_compute_delta_cchalf(dials_data):
     """Test compute delta cchalf on an integrated mtz."""
 
-    data_dir = dials_data("misc_regression", pathlib=True)
+    data_dir = dials_data("misc_regression")
     filename = str(data_dir / "delta-cchalf-test_XDS_ASCII.mtz")
     params = phil_scope.extract()
     params.nbins = 1

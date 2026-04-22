@@ -8,8 +8,8 @@ def test_run(dials_data, tmp_path):
     subprocess.run(
         (
             shutil.which("dials.plot_reflections"),
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "integrated.refl",
+            dials_data("centroid_test_data") / "experiments.json",
+            dials_data("centroid_test_data") / "integrated.refl",
             "scan_range=0,5",
         ),
         cwd=tmp_path,

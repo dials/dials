@@ -77,8 +77,8 @@ namespace dials { namespace algorithms { namespace background {
      * @param mask The image mask
      */
     template <typename T>
-    void add(const af::const_ref<T, af::c_grid<2> > &data,
-             const af::const_ref<bool, af::c_grid<2> > &mask) {
+    void add(const af::const_ref<T, af::c_grid<2> >& data,
+             const af::const_ref<bool, af::c_grid<2> >& mask) {
       // Check stuff is ok
       DIALS_ASSERT(data.accessor()[0] == height_);
       DIALS_ASSERT(data.accessor()[1] == width_);

@@ -22,7 +22,7 @@ from . import mock_reflection_file_object, mock_two_reflection_file_object
 
 
 def test_cannot_read_headerless_h5(dials_data):
-    data_h5 = dials_data("vmxi_thaumatin", pathlib=True) / "image_15799_data_000001.h5"
+    data_h5 = dials_data("vmxi_thaumatin") / "image_15799_data_000001.h5"
     parser = ArgumentParser(read_experiments_from_images=True)
     with pytest.raises(Sorry):
         parser.parse_args([str(data_h5)])

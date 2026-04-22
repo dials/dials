@@ -47,10 +47,10 @@ namespace dials { namespace algorithms {
   using scitbx::constants::Planck;
 
   void integrate_reflection_table(
-    dials::af::reflection_table &reflection_table,
-    Experiment &experiment,
-    ImageSequence &data,
-    const bool &apply_lorentz_correction,
+    dials::af::reflection_table& reflection_table,
+    Experiment& experiment,
+    ImageSequence& data,
+    const bool& apply_lorentz_correction,
     int n_threads,
     boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
     boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
@@ -341,11 +341,11 @@ namespace dials { namespace algorithms {
   }
 
   void integrate_reflection_table(
-    dials::af::reflection_table &reflection_table,
-    Experiment &experiment,
-    ImageSequence &data,
-    const dials_scaling::TOFIncidentSpectrumParams &incident_params,
-    const bool &apply_lorentz_correction,
+    dials::af::reflection_table& reflection_table,
+    Experiment& experiment,
+    ImageSequence& data,
+    const dials_scaling::TOFIncidentSpectrumParams& incident_params,
+    const bool& apply_lorentz_correction,
     int n_threads,
     boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
     boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
@@ -724,12 +724,12 @@ namespace dials { namespace algorithms {
   }
 
   void integrate_reflection_table(
-    dials::af::reflection_table &reflection_table,
-    Experiment &experiment,
-    ImageSequence &data,
-    const dials_scaling::TOFIncidentSpectrumParams &incident_params,
-    const dials_scaling::TOFAbsorptionParams &corrections_data,
-    const bool &apply_lorentz_correction,
+    dials::af::reflection_table& reflection_table,
+    Experiment& experiment,
+    ImageSequence& data,
+    const dials_scaling::TOFIncidentSpectrumParams& incident_params,
+    const dials_scaling::TOFAbsorptionParams& corrections_data,
+    const bool& apply_lorentz_correction,
     int n_threads,
     boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
     boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
@@ -1145,14 +1145,14 @@ namespace dials { namespace algorithms {
   }
 
   boost::python::tuple calculate_line_profile_for_reflection(
-    dials::af::reflection_table &reflection,
-    Experiment &experiment,
-    ImageSequence &data,
+    dials::af::reflection_table& reflection,
+    Experiment& experiment,
+    ImageSequence& data,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
-    const bool &apply_lorentz_correction) {
+    const bool& apply_lorentz_correction) {
     /*
      * Calculates raw_projected_intensity, projected_intensity,
      * projected_background, sum_intensity, sum_variance
@@ -1326,16 +1326,16 @@ namespace dials { namespace algorithms {
   }
 
   boost::python::tuple calculate_line_profile_for_reflection_3d(
-    dials::af::reflection_table &reflection,
-    Experiment &experiment,
-    ImageSequence &data,
+    dials::af::reflection_table& reflection,
+    Experiment& experiment,
+    ImageSequence& data,
     scitbx::af::shared<vec3<double>> coords,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
-    const bool &apply_lorentz_correction,
-    TOFProfile3DParams &profile_params_3d) {
+    const bool& apply_lorentz_correction,
+    TOFProfile3DParams& profile_params_3d) {
     /*
      * Calculates raw_projected_intensity, projected_intensity,
      * projected_background, sum_intensity, sum_variance
@@ -1542,16 +1542,16 @@ namespace dials { namespace algorithms {
   }
 
   boost::python::tuple calculate_line_profile_for_reflection(
-    dials::af::reflection_table &reflection,
-    Experiment &experiment,
-    ImageSequence &data,
+    dials::af::reflection_table& reflection,
+    Experiment& experiment,
+    ImageSequence& data,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
-    const bool &apply_lorentz_correction,
-    TOFProfile1DParams &profile_params_1d) {
+    const bool& apply_lorentz_correction,
+    TOFProfile1DParams& profile_params_1d) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -1590,15 +1590,15 @@ namespace dials { namespace algorithms {
   }
 
   boost::python::tuple calculate_line_profile_for_reflection(
-    dials::af::reflection_table &reflection,
-    Experiment &experiment,
-    ImageSequence &data,
-    const dials_scaling::TOFIncidentSpectrumParams &incident_params,
+    dials::af::reflection_table& reflection,
+    Experiment& experiment,
+    ImageSequence& data,
+    const dials_scaling::TOFIncidentSpectrumParams& incident_params,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
-    const bool &apply_lorentz_correction) {
+    const bool& apply_lorentz_correction) {
     /*
      * Calculates raw_projected_intensity, projected_intensity,
      * projected_background, sum_intensity, sum_variance
@@ -1859,17 +1859,17 @@ namespace dials { namespace algorithms {
   }
 
   boost::python::tuple calculate_line_profile_for_reflection(
-    dials::af::reflection_table &reflection,
-    Experiment &experiment,
-    ImageSequence &data,
-    const dials_scaling::TOFIncidentSpectrumParams &incident_params,
+    dials::af::reflection_table& reflection,
+    Experiment& experiment,
+    ImageSequence& data,
+    const dials_scaling::TOFIncidentSpectrumParams& incident_params,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
-    const bool &apply_lorentz_correction,
-    TOFProfile1DParams &profile_params_1d) {
+    const bool& apply_lorentz_correction,
+    TOFProfile1DParams& profile_params_1d) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -1908,16 +1908,16 @@ namespace dials { namespace algorithms {
   }
 
   boost::python::tuple calculate_line_profile_for_reflection(
-    dials::af::reflection_table &reflection,
-    Experiment &experiment,
-    ImageSequence &data,
-    const dials_scaling::TOFIncidentSpectrumParams &incident_params,
-    const dials_scaling::TOFAbsorptionParams &corrections_data,
+    dials::af::reflection_table& reflection,
+    Experiment& experiment,
+    ImageSequence& data,
+    const dials_scaling::TOFIncidentSpectrumParams& incident_params,
+    const dials_scaling::TOFAbsorptionParams& corrections_data,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
-    const bool &apply_lorentz_correction) {
+    const bool& apply_lorentz_correction) {
     /*
      * Calculates raw_projected_intensity, projected_intensity,
      * projected_background, sum_intensity, sum_variance
@@ -2214,18 +2214,18 @@ namespace dials { namespace algorithms {
   }
 
   boost::python::tuple calculate_line_profile_for_reflection(
-    dials::af::reflection_table &reflection,
-    Experiment &experiment,
-    ImageSequence &data,
-    const dials_scaling::TOFIncidentSpectrumParams &incident_params,
-    const dials_scaling::TOFAbsorptionParams &corrections_data,
+    dials::af::reflection_table& reflection,
+    Experiment& experiment,
+    ImageSequence& data,
+    const dials_scaling::TOFIncidentSpectrumParams& incident_params,
+    const dials_scaling::TOFAbsorptionParams& corrections_data,
     scitbx::af::shared<double> raw_projected_intensity_out,
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
-    const bool &apply_lorentz_correction,
-    TOFProfile1DParams &profile_params_1d) {
+    const bool& apply_lorentz_correction,
+    TOFProfile1DParams& profile_params_1d) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance

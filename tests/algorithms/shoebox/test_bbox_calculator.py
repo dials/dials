@@ -16,9 +16,7 @@ from dials.algorithms.profile_model.gaussian_rs import (
 
 @pytest.fixture
 def setup(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
+    sequence = load.imageset(dials_data("centroid_test_data") / "sweep.json")
 
     fixture = {}
 

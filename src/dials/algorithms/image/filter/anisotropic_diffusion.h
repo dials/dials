@@ -25,7 +25,7 @@ namespace dials { namespace algorithms {
    * @return The filtered image
    */
   inline af::versa<double, af::c_grid<2> > anisotropic_diffusion(
-    const af::const_ref<double, af::c_grid<2> > &data,
+    const af::const_ref<double, af::c_grid<2> >& data,
     std::size_t niter,
     double kappa,
     double gamma) {
@@ -95,8 +95,8 @@ namespace dials { namespace algorithms {
    * @return The filtered image
    */
   inline af::versa<double, af::c_grid<2> > masked_anisotropic_diffusion(
-    const af::const_ref<double, af::c_grid<2> > &data,
-    const af::const_ref<bool, af::c_grid<2> > &mask,
+    const af::const_ref<double, af::c_grid<2> >& data,
+    const af::const_ref<bool, af::c_grid<2> >& mask,
     std::size_t niter,
     double kappa,
     double gamma) {

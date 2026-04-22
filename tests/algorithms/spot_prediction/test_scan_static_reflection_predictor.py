@@ -13,7 +13,7 @@ from dials.array_family import flex
 class Data:
     def __init__(self, dials_data):
         self.experiments = ExperimentListFactory.from_json_file(
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+            dials_data("centroid_test_data") / "experiments.json"
         )
         assert len(self.experiments) == 1
         self.experiments[0].imageset.set_beam(self.experiments[0].beam)
@@ -22,7 +22,7 @@ class Data:
         self.experiments[0].imageset.set_scan(self.experiments[0].scan)
 
         reflection_filename = str(
-            dials_data("misc_regression", pathlib=True) / "prediction-expected.refl"
+            dials_data("misc_regression") / "prediction-expected.refl"
         )
         self.reflections = flex.reflection_table.from_file(reflection_filename)
 

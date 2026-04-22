@@ -864,11 +864,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     mat3<double> sigma_A_;
   };
 
-  vec2<double> rse(const mat3<double> &R,
-                   const vec2<double> &mbar,
-                   const vec2<double> &xobs,
+  vec2<double> rse(const mat3<double>& R,
+                   const vec2<double>& mbar,
+                   const vec2<double>& xobs,
                    const float norm_s0,
-                   const Detector &detector) {
+                   const Detector& detector) {
     // double norm_s0 = 1.0;
     vec3<double> s1;
     vec3<double> s3;

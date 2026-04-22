@@ -42,8 +42,7 @@ def test(dials_data):
         from dxtbx.model.experiment_list import ExperimentListFactory
 
         experiments = ExperimentListFactory.from_json_file(
-            dials_data("refinement_test_data", pathlib=True)
-            / "multi_stills_combined.json",
+            dials_data("refinement_test_data") / "multi_stills_combined.json",
             check_format=False,
         )
         crystal = experiments[0].crystal

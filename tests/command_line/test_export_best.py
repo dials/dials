@@ -7,8 +7,8 @@ import subprocess
 def test_export_best(dials_data, tmp_path):
     # make sure the raw image data is available as it is required for export_best
     _ = dials_data("insulin")
-    integrated_expt = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
-    integrated_refl = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
+    integrated_expt = dials_data("insulin_processed") / "integrated.expt"
+    integrated_refl = dials_data("insulin_processed") / "integrated.refl"
     result = subprocess.run(
         [shutil.which("dials.export_best"), integrated_expt, integrated_refl],
         cwd=tmp_path,

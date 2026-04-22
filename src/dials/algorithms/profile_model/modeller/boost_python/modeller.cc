@@ -90,7 +90,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   };
 
   struct MultiExpProfileModellerPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getstate(const MultiExpProfileModeller &obj) {
+    static boost::python::tuple getstate(const MultiExpProfileModeller& obj) {
       boost::python::list result;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         result.append(obj[i]);
@@ -98,7 +98,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       return boost::python::make_tuple(result);
     }
 
-    static void setstate(MultiExpProfileModeller &obj, boost::python::tuple state) {
+    static void setstate(MultiExpProfileModeller& obj, boost::python::tuple state) {
       DIALS_ASSERT(boost::python::len(state) == 1);
       boost::python::list result = extract<boost::python::list>(state[0]);
       for (std::size_t i = 0; i < boost::python::len(result); ++i) {

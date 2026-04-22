@@ -7,7 +7,7 @@ from dials.array_family import flex
 
 
 def test_import_integrate_hkl(dials_data, tmp_path):
-    data = dials_data("centroid_test_data", pathlib=True)
+    data = dials_data("centroid_test_data")
     result = subprocess.run(
         [shutil.which("dials.import_xds"), data / "INTEGRATE.HKL"],
         cwd=tmp_path,
@@ -30,7 +30,7 @@ def test_import_integrate_hkl(dials_data, tmp_path):
 def test_import_spot_xds(dials_data, tmp_path):
     ## Make sure we can run this in a folder which just contains SPOT.XDS, as this
     ## is relied on by xia2 running XDS.
-    shutil.copy(dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS", tmp_path)
+    shutil.copy(dials_data("centroid_test_data") / "SPOT.XDS", tmp_path)
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
@@ -58,7 +58,7 @@ def test_import_spot_xds_with_filtering(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
-            dials_data("centroid_test_data", pathlib=True) / "SPOT.XDS",
+            dials_data("centroid_test_data") / "SPOT.XDS",
             "remove_invalid=True",
         ],
         cwd=tmp_path,
@@ -81,7 +81,7 @@ def test_from_xds_files(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
-            dials_data("centroid_test_data", pathlib=True),
+            dials_data("centroid_test_data"),
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -97,7 +97,7 @@ def test_from_xds_files_new(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import_xds"),
-            dials_data("insulin_processed_xds_1", pathlib=True),
+            dials_data("insulin_processed_xds_1"),
         ],
         cwd=tmp_path,
         capture_output=True,

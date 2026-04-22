@@ -12,7 +12,7 @@ from dials.util.reciprocal_lattice import Render3d
 
 @pytest.fixture
 def multi_sequence_data(dials_data):
-    data_dir = dials_data("indexing_test_data", pathlib=True)
+    data_dir = dials_data("indexing_test_data")
     experiments = load.experiment_list(
         data_dir / "multi_sweep-experiments.json",
         check_format=False,
@@ -26,11 +26,11 @@ def multi_sequence_data(dials_data):
 @pytest.fixture
 def centroid_test_data(dials_data):
     experiments = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+        dials_data("centroid_test_data") / "experiments.json",
         check_format=False,
     )
     reflections = flex.reflection_table.from_file(
-        dials_data("centroid_test_data", pathlib=True) / "integrated.pickle"
+        dials_data("centroid_test_data") / "integrated.pickle"
     )
     return {"reflections": reflections, "experiments": experiments}
 

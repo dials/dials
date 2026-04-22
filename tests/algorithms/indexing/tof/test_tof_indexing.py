@@ -15,16 +15,12 @@ def test_tof_indexing(dials_data, tmp_path):
     Run indexing methods expected to work with ToF data
     """
 
-    image_file = join(
-        dials_data("isis_sxd_example_data", pathlib=True), "sxd_nacl_run.nxs"
-    )
+    image_file = join(dials_data("isis_sxd_example_data"), "sxd_nacl_run.nxs")
     experiments = ExperimentListFactory.from_filenames([image_file])
     experiments_file = join(tmp_path, "imported.expt")
     experiments.as_file(experiments_file)
 
-    reflections_file = join(
-        dials_data("isis_sxd_nacl_processed", pathlib=True), "strong.refl"
-    )
+    reflections_file = join(dials_data("isis_sxd_nacl_processed"), "strong.refl")
 
     # Filter reflections
     reflections = reflection_table.from_msgpack_file(reflections_file)

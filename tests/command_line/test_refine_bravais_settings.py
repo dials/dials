@@ -147,7 +147,7 @@ def test_refine_bravais_settings_trypsin(dials_data: Path, tmp_path):
 
 
 def test_refine_bravais_settings_554(dials_data, tmp_path):
-    data_dir = dials_data("misc_regression", pathlib=True)
+    data_dir = dials_data("misc_regression")
     reflections_path = str(data_dir / "dials-554_indexed.refl")
     experiments_path = str(data_dir / "dials-554_indexed.expt")
     result = subprocess.run(
@@ -212,7 +212,7 @@ def test_setting_c2_vs_i2(
     dials_data,
     tmp_path,
 ):
-    data_dir = dials_data("mpro_x0305_processed", pathlib=True)
+    data_dir = dials_data("mpro_x0305_processed")
     refl_path = data_dir / "indexed.refl"
     experiments_path = data_dir / "indexed.expt"
     result = subprocess.run(
@@ -262,7 +262,7 @@ def test_setting_c2_vs_i2(
 
 
 def test_refine_bravais_settings_non_primitive_input(dials_data, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     refl_path = data_dir / "indexed.refl"
     expt_path = data_dir / "indexed.expt"
     result = subprocess.run(

@@ -5,7 +5,7 @@ import subprocess
 
 
 def test_align_crystal(dials_data, tmp_path):
-    path = str(dials_data("experiment_test_data", pathlib=True))
+    path = str(dials_data("experiment_test_data"))
     result = subprocess.run(
         [shutil.which("dials.align_crystal"), f"{path}/kappa_experiments.json"],
         cwd=tmp_path,

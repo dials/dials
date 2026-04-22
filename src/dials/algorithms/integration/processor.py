@@ -3,7 +3,10 @@ from __future__ import annotations
 import itertools
 import logging
 import math
+import os
 from time import time
+
+import psutil
 
 import boost_adaptbx.boost.python
 import libtbx
@@ -777,27 +780,40 @@ class _Manager:
 
         # Obtain information about system memory
         available_memory = MEMORY_LIMIT
-        available_limit = available_memory * self.params.block.max_memory_usage
+        available_limit = available_memory
+        if self.params.block.max_memory_usage is not None:
+            available_limit *= self.params.block.max_memory_usage
 
         # Get the maximum shoebox memory to estimate memory use for one process
-        memory_required_per_process = flex.max(
+        required_shoebox_memory = flex.max(
             self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
         )
+
+        # Get the current memory usage
+        current_memory_usage = psutil.Process(os.getpid()).memory_info().rss
+
+        memory_required_per_process = required_shoebox_memory + current_memory_usage
 
         # Compile a memory report
         report = ["Memory situation report:"]
 
         def _report(description, numbytes):
-            report.append(f"  {description:<50}: {numbytes / 1e9:5.1f} GB")
+            report.append(f"  {description:<50}: {numbytes / 1e6:5.1f} MB")
 
         _report("Available system memory", available_memory)
         _report("Maximum memory for processing", available_limit)
+        _report("Current memory usage", current_memory_usage)
+        _report("Memory required for shoeboxes", required_shoebox_memory)
         _report("Memory required per process", memory_required_per_process)
 
         output_level = logging.INFO
 
         # Limit the number of parallel processes by amount of available memory
-        if self.params.mp.method == "multiprocessing" and self.params.mp.nproc > 1:
+        if (
+            self.params.mp.method == "multiprocessing"
+            and self.params.mp.nproc > 1
+            and self.params.block.max_memory_usage is not None
+        ):
             # Compute expected memory usage and warn if not enough
             njobs = available_limit / memory_required_per_process
             if njobs >= self.params.mp.nproc:

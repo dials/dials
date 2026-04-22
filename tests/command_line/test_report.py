@@ -9,7 +9,7 @@ import subprocess
 
 def test_report_integrated_data(dials_data, tmp_path):
     """Simple test to check that dials.report completes when given integrated data."""
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     result = subprocess.run(
         [
             shutil.which("dials.report"),
@@ -25,7 +25,7 @@ def test_report_integrated_data(dials_data, tmp_path):
 
 def test_report_scaled_data(dials_data, tmp_path):
     """Test that dials.report works on scaled data."""
-    data_dir = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    data_dir = dials_data("l_cysteine_4_sweeps_scaled")
     result = subprocess.run(
         [
             shutil.which("dials.report"),
