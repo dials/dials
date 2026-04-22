@@ -1,0 +1,1 @@
+Provide more useful error to user when trying to run `dials.export format=mtz` for ToF Laue data.
