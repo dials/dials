@@ -119,7 +119,7 @@ def test_reflections():
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
-    print("Uniq in P1: %s" % (len(data)))
+    print("Uniq in P 1: %s" % (len(data)))
     xr = refstat.registry()
     timex = 10
     t = time.time()
@@ -169,19 +169,19 @@ d--  (  658):            87.07(  0.53) -
     assert pytest.approx(sa.mean_sig, 0.001) == 10.450
     assert sa.ref_count == 11372
 
-    expected_output = """Inconsistent eq: 30, r_int: 4.264, w: -0.025(0.47)/224 -0.054, s: 190.118(49.62)/231 3.832
+    expected_output = """Inconsistent equivalents: 30, r_int: 4.264, weak: -0.025(0.47)/224 -0.054, strong: 190.118(49.62)/231 3.832
 P 1 21/n 1: 40
-Inconsistent eq: 775, r_int: 48.289, w: 96.537(19.86)/975 4.861, s: 142.917(41.86)/1011 3.414
+Inconsistent equivalents: 775, r_int: 48.289, weak: 96.537(19.86)/975 4.861, strong: 142.917(41.86)/1011 3.414
 P c n n: 40
-Inconsistent eq: 775, r_int: 48.289, w: 81.558(21.44)/543 3.804, s: 168.369(46.87)/544 3.593
+Inconsistent equivalents: 775, r_int: 48.289, weak: 81.558(21.44)/543 3.804, strong: 168.369(46.87)/544 3.593
 P m n n: 60
-Inconsistent eq: 775, r_int: 48.289, w: 55.842(11.51)/984 4.852, s: 183.298(44.96)/1002 4.077
+Inconsistent equivalents: 775, r_int: 48.289, weak: 55.842(11.51)/984 4.852, strong: 183.298(44.96)/1002 4.077
 P b n a: 60
-Inconsistent eq: 775, r_int: 48.289, w: 90.476(19.73)/982 4.586, s: 149.169(42.03)/1004 3.549
+Inconsistent equivalents: 775, r_int: 48.289, weak: 90.476(19.73)/982 4.586, strong: 149.169(42.03)/1004 3.549
 P c n b: 60
-Inconsistent eq: 775, r_int: 48.289, w: 70.926(21.21)/550 3.345, s: 139.000(36.46)/1436 3.813
+Inconsistent equivalents: 775, r_int: 48.289, weak: 70.926(21.21)/550 3.345, strong: 139.000(36.46)/1436 3.813
 P m n b: 80
-Inconsistent eq: 775, r_int: 48.289, w: 60.224(13.59)/687 4.431, s: 151.839(39.52)/1299 3.842
+Inconsistent equivalents: 775, r_int: 48.289, weak: 60.224(13.59)/687 4.431, strong: 151.839(39.52)/1299 3.842
 P b n m: 80"""
     matches = sa.get_all_matching_space_groups()
     lines = []
@@ -196,7 +196,7 @@ P b n m: 80"""
         sI = weak_stats.strong_I_sum / weak_stats.strong_count
         sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
         lines.append(
-            "Inconsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
+            "Inconsistent equivalents: %s, r_int: %.3f, weak: %.3f(%.2f)/%s %.3f, strong: %.3f(%.2f)/%s %.3f"
             % (
                 merge_stats.inconsistent_count,
                 merge_stats.r_int * 100,
@@ -218,6 +218,11 @@ P b n m: 80"""
 
 
 def test_refstat_symmetry_analysis_check_file(tmp_path):
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
     result = subprocess.run(
         (
             shutil.which("dev.dials.refstat_symmetry_analysis"),
@@ -225,14 +230,29 @@ def test_refstat_symmetry_analysis_check_file(tmp_path):
         ),
         cwd=tmp_path,
         capture_output=True,
-        text=True,
+        text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
+        encoding="utf-8",
     )
-    assert not result.check_returncode()
-    assert result.stdout.strip().endswith("Matches: P 1 21/n 1")
+    assert result.returncode == 0
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 1 21/n 1    | ✔         |            40 |        30 |  4.264 |     224 |         -0.05 |       231 |            3.83 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+""")
 
 
 def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
     quartz = dials_data("quartz_processed")
+
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
     result = subprocess.run(
         (
             shutil.which("dev.dials.refstat_symmetry_analysis"),
@@ -241,7 +261,19 @@ def test_refstat_symmetry_analysis_dials_input(dials_data, tmp_path):
         ),
         cwd=tmp_path,
         capture_output=True,
-        text=True,
+        text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
+        encoding="utf-8",
     )
-    assert not result.check_returncode()
-    assert result.stdout.strip().endswith("Matches: P 31, P 32, P 31 2 1, P 32 2 1")
+    assert result.returncode == 0
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 31          |           |            50 |        59 | 14.944 |      12 |           1.1 |         6 |           16.28 |
+| P 32          |           |            50 |        59 | 14.944 |      12 |           1.1 |         6 |           16.28 |
+| P 31 2 1      |           |            50 |        48 | 16.691 |      12 |           1.1 |        13 |           19.47 |
+| P 32 2 1      |           |            50 |        48 | 16.691 |      12 |           1.1 |        13 |           19.47 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+""")

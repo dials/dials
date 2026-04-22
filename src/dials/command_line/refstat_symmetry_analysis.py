@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -21,6 +20,7 @@ from dials.algorithms.symmetry import (
 )
 from dials.array_family import flex
 from dials.command_line.symmetry import phil_scope as symmetry_phil_scope
+from dials.util import tabulate
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -50,6 +50,11 @@ phil_scope = libtbx.phil.parse(
         .type = path
         .help="Path to an .ins or .res file to calculate statistics for a"
               "particular example"
+
+    explore = False
+        .type = bool
+        .help = "If set True, do not check any files, but print information about"
+                "the symmetry elements and extinctions for a few example space groups."
 
     sigma_level = 5.0
         .type = float
@@ -84,7 +89,7 @@ def basics():
 
     sgs = ["I 41/a m d", "P 1 21/c 1", "C 1 2/c 1", "P n a 21", "P 43 3 2"]
     extinctions = [xr.show_extinctions_for(sgn) for sgn in sgs]
-    return val + "\n".join(extinctions)
+    return val + "\n" + "\n".join(extinctions)
 
 
 def get_cs_hkl(file_base):
@@ -127,12 +132,20 @@ def get_miller_array(cell, hkl_file):
     return reflections_server.get_miller_arrays(None)[0]
 
 
+def format_sg_name(name):
+    toks = name.split()
+    if len(toks) == 4:
+        if toks[1] == "1" and toks[3] == "1":
+            return "%s%s" % (toks[0], toks[2])
+    return "".join(toks)
+
+
 def check_reflections(miller_array, centering="P", sigma_level=5.0):
     miller_array = miller_array.merge_equivalents(algorithm="gaussian").array()
     data = miller_array.data()
     sigmas = miller_array.sigmas()
-    logger.info("Uniq in P1: %s" % (len(data)))
-    timex = 10
+    logger.info("Uniq in P 1: %s" % (len(data)))
+    timex = 1
     t = time.time()
     for r in range(timex):
         xr.process(miller_array.indices(), data, sigmas)
@@ -150,52 +163,65 @@ def check_reflections(miller_array, centering="P", sigma_level=5.0):
     xr.reset()
 
     sa = refstat.extinctions(miller_array, sigma_level=sigma_level)
-    sa.analyse(scale_I_to=10000)
+    sa.analyse(scale_I_to=1)
     logger.info(sa.show_stats())
     logger.info("Mean I(sig): %.3f(%.2f)/%s" % (sa.meanI, sa.mean_sig, sa.ref_count))
     matches = sa.get_all_matching_space_groups(centering=centering)
-
-    for sg, mp in matches:
-        t = refstat.merge_test(miller_array.indices(), data, sigmas)
+    filtered_matches = sa.get_filtered_matching_space_groups(matches=matches)
+    # merge_test object
+    t = refstat.merge_test(miller_array.indices(), data, sigmas)
+    rows = []
+    matches = {sg.name: mp for sg, mp in matches}
+    # Loop through the filtered matches
+    for sg in filtered_matches:
+        mp = matches[sg.name]
         weak_stats = t.sysabs_test(sg, sa.scale)
-        wI = weak_stats.weak_I_sum / weak_stats.weak_count
-        wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
-        if wI > 5 * wIs:
-            continue
+        if weak_stats.weak_count:
+            wI = weak_stats.weak_I_sum / weak_stats.weak_count
+            wIs = (weak_stats.weak_sig_sq_sum / weak_stats.weak_count) ** 0.5
+            if wI > 5 * wIs:
+                continue
+        else:
+            wI, wIs = 0, 0
+        if weak_stats.strong_count:
+            sI = weak_stats.strong_I_sum / weak_stats.strong_count
+            sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
+        else:
+            sI, sIs = 0, 0
         merge_stats = t.merge_test(sg)
-        sI = weak_stats.strong_I_sum / weak_stats.strong_count
-        sIs = (weak_stats.strong_sig_sq_sum / weak_stats.strong_count) ** 0.5
-        logger.info(
-            "Inconsistent eq: %s, r_int: %.3f, w: %.3f(%.2f)/%s %.3f, s: %.3f(%.2f)/%s %.3f"
-            % (
+        rows.append(
+            [
+                sg.name,
+                "✔" if sg.is_centric() else "",
+                f"{int(mp * 100)}",
                 merge_stats.inconsistent_count,
-                merge_stats.r_int * 100,
-                wI,
-                wIs,
+                f"{merge_stats.r_int * 100:.3f}",
                 weak_stats.weak_count,
-                wI / wIs,
-                sI,
-                sIs,
+                f"{wI / wIs if wIs else 0:.2f}",
                 weak_stats.strong_count,
-                sI / sIs,
+                f"{sI / sIs if sIs else 0:.2f}",
+            ]
+        )
+    if rows:
+        logger.info(
+            tabulate(
+                rows,
+                headers=[
+                    "Space group",
+                    "Centric",
+                    "Matches (%)",
+                    "Incons.\nequiv.",
+                    "Rint",
+                    "#Weak",
+                    "Weak I/σ(I)",
+                    "#Strong",
+                    "Strong I/σ(I)",
+                ],
             )
         )
-        logger.info("%s: %s" % (sg.name, int(mp * 100)))
-
-    logger.info(
-        "Matches: %s"
-        % (
-            ", ".join(
-                [
-                    sg.name
-                    for sg in sa.get_filtered_matching_space_groups(matches=matches)
-                ]
-            )
-        )
-    )
 
 
-def check_samples(samples_dir):
+def check_samples(samples_dir, sigma_level=5.0):
     samples_dir = Path(samples_dir)
     test_list = [
         samples_dir / "THPP" / "thpp",
@@ -205,7 +231,7 @@ def check_samples(samples_dir):
         try:
             logger.info("Testing: %s" % sample_base)
             ma, centering = load_miller_array_and_centering_from_hkl(sample_base)
-            check_reflections(ma, centering)
+            check_reflections(ma, centering, sigma_level=sigma_level)
         except Exception as e:
             import traceback
 
@@ -249,7 +275,7 @@ def check_dir(root_, sigma_level=5.0):
                 if not original_sg_name:
                     continue
                 logger.info("Original space group: %s" % (original_sg_name))
-                matches, filtred_matches = get_matches(
+                matches, filtered_matches = get_matches(
                     cs, hkl_path, original_sg_name[0]
                 )
                 if matches is None:
@@ -259,12 +285,12 @@ def check_dir(root_, sigma_level=5.0):
                         stats["P1"] += 1
                     continue
 
-                filtred_matches_names = [sg.name for sg in filtred_matches]
-                if original_sg_name in filtred_matches_names:
+                filtered_matches_names = [sg.name for sg in filtered_matches]
+                if original_sg_name in filtered_matches_names:
                     stats["100"] += 1
                 else:
                     stats["+"] += 1
-                logger.info("Matches: %s" % (", ".join(filtred_matches_names)))
+                logger.info("Matches: %s" % (", ".join(filtered_matches_names)))
 
             except Exception as e:
                 import traceback
@@ -387,7 +413,13 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     # Run analysis in the various modes
-    if params.input.experiments and params.input.reflections:
+    if params.explore:
+        logger.info(
+            "Exploring symmetry elements and extinctions for example space groups"
+        )
+        logger.info(basics())
+
+    elif params.input.experiments and params.input.reflections:
         reflections, experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
@@ -403,23 +435,25 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     elif params.check_file and os.path.exists(params.check_file):
         check_base = os.path.splitext(params.check_file)[0]
         logger.info("Testing: %s" % check_base)
-        ma, centering = load_miller_array_and_centering_from_hkl(check_base)
+        try:
+            ma, centering = load_miller_array_and_centering_from_hkl(check_base)
+        except Exception as e:
+            import traceback
+
+            logger.info(traceback.format_exc())
+            logger.info("Failed to test %s: %s " % (check_base, str(e)))
+            return
         check_reflections(ma, centering, sigma_level=params.sigma_level)
-        sys.exit(0)
 
     elif params.sample_dir and os.path.exists(params.sample_dir):
         check_samples(params.sample_dir, sigma_level=params.sigma_level)
-        sys.exit(0)
 
     elif params.check_dir and os.path.exists(params.check_dir):
         stats = check_dir(params.check_dir, sigma_level=params.sigma_level)
         logger.info(stats)
-        sys.exit(0)
 
-    elif [params.sample_dir, params.check_dir, params.check_file].count(None) == 3:
+    else:
         parser.print_help()
-        logger.info("No test paths provided. Only performing a basic test.")
-        logger.info(basics())
 
 
 if __name__ == "__main__":

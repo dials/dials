@@ -1291,10 +1291,13 @@ class Integrator:
                 # Need to do a memory check and decide whether to split table.
                 # Split if its size in memory exceeds the fraction of available memory
                 # specified by the PHIL parameter integration.block.max_memory_usage.
+                max_memory_usage = self.params.integration.block.max_memory_usage
+                if max_memory_usage is None:
+                    max_memory_usage = 1.0
                 tables = _iterative_table_split(
                     [self.reflections],
                     self.experiments,
-                    MEMORY_LIMIT * self.params.integration.block.max_memory_usage,
+                    MEMORY_LIMIT * max_memory_usage,
                 )
 
             if len(tables) == 1:

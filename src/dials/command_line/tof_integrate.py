@@ -84,6 +84,11 @@ mask = *ellipse seed_skewness
     .type = choice
     .help = "Foreground/background mask method: "
             "seed_skewness: https://doi.org/10.1107/S0021889803021939"
+ellipse_mask{
+    scale = 1.0
+    .type = float (value_min=0.5)
+    .help = "Number of standard deviations to use when generating the ellipse mask"
+}
 
 
 corrections{
@@ -259,8 +264,12 @@ def get_corrections_data(
 
 
 def calculate_shoebox_masks(
-    experiment: Experiment, reflections: flex.reflection_table, method: str, nproc: int
+    experiment: Experiment,
+    reflections: flex.reflection_table,
+    params: libtbx.phil.scope_extract,
 ) -> flex.reflection_table:
+    nproc = params.mp.nproc
+    method = params.mask
     if method == "seed_skewness":
         logger.info("    Calculating seed skewness foreground/background mask")
         tof_calculate_seed_skewness_shoebox_mask(
@@ -268,7 +277,8 @@ def calculate_shoebox_masks(
         )
     else:
         logger.info("    Calculating ellipse foreground/background mask")
-        tof_calculate_ellipse_shoebox_mask(reflections, experiment, nproc)
+        scale = params.ellipse_mask.scale
+        tof_calculate_ellipse_shoebox_mask(reflections, experiment, nproc, scale)
 
     return reflections
 
@@ -790,9 +800,7 @@ def run_integrate(
             expt_reflections, expt, expt_data, False
         )
 
-        expt_reflections = calculate_shoebox_masks(
-            expt, expt_reflections, params.mask, params.mp.nproc
-        )
+        expt_reflections = calculate_shoebox_masks(expt, expt_reflections, params)
         expt_reflections.is_overloaded(experiments)
         expt_reflections.contains_invalid_pixels()
 
