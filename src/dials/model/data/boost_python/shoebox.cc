@@ -185,8 +185,9 @@ namespace dials { namespace model { namespace boost_python {
         make_setter(&shoebox_type::bbox, return_value_policy<return_by_value>()))
       .def_readwrite("panel", &shoebox_type::panel)
       .def_readwrite("flat", &shoebox_type::flat)
-      .def("allocate", &shoebox_type::allocate)
-      .def("allocate", &shoebox_type::allocate_with_value)
+      .def("allocate_data", &shoebox_type::allocate_data)
+      .def("allocate_data_with_value", &shoebox_type::allocate_data_with_value)
+      .def("allocate_background", &shoebox_type::allocate_background)
       .def("deallocate", &shoebox_type::deallocate)
       .def("xoffset", &shoebox_type::xoffset)
       .def("yoffset", &shoebox_type::yoffset)
@@ -198,7 +199,8 @@ namespace dials { namespace model { namespace boost_python {
       .def("size", &shoebox_type::size)
       .def("size_flat", &shoebox_type::size_flat)
       .def("is_consistent", &shoebox_type::is_consistent)
-      .def("is_allocated", &shoebox_type::is_allocated)
+      .def("is_data_allocated", &shoebox_type::is_data_allocated)
+      .def("is_background_allocated", &shoebox_type::is_background_allocated)
       .def("is_bbox_within_image_volume",
            &shoebox_type::is_bbox_within_image_volume,
            (arg("image_size"), arg("scan_range")))
