@@ -1,0 +1,1 @@
+Vectorize real-space grid search scoring and candidate orientation matrix filtering using numpy to reduce per-still indexing overhead. Also fixes an incorrect radians/degrees comparison in one candidate orientation filter.
