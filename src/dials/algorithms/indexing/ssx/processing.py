@@ -318,9 +318,13 @@ def _join_indexing_results(
         output_experiments = ExperimentList()
         indexed_reflections = flex.reflection_table()
         for res in results:
+            identifier = res.unindexed_experiment.identifier
+            scan = identifiers_to_scans[identifier]
+            if use_gonio:
+                res.unindexed_experiment.scan = scan
+                res.unindexed_experiment.goniometer = use_gonio
+            output_experiments.append(res.unindexed_experiment)
             if res.n_indexed:
-                identifier = res.unindexed_experiment.identifier
-                scan = identifiers_to_scans[identifier]
                 for expt in res.experiments:
                     expt.scan = scan
                     expt.imageset = original_isets[res.imageset_no]
@@ -329,7 +333,6 @@ def _join_indexing_results(
                     )
                     if use_gonio:
                         expt.goniometer = use_gonio
-                output_experiments.append(res.unindexed_experiment)
                 output_experiments.extend(res.experiments)
                 table = res.reflection_table
                 ids_map = dict(table.experiment_identifiers())
@@ -340,8 +343,6 @@ def _join_indexing_results(
                     table.experiment_identifiers()[k + n_tot] = v
                 n_tot += len(ids_map.keys())
                 indexed_reflections.extend(table)
-            else:
-                output_experiments.append(res.unindexed_experiment)
         return output_experiments, indexed_reflections
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
