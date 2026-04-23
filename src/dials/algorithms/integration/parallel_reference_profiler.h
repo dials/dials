@@ -221,7 +221,7 @@ namespace dials { namespace algorithms {
 
       // Get the pixel data
       af::const_ref<float_type, af::c_grid<3> > data = sbox.data.const_ref();
-      af::const_ref<int, af::c_grid<3> > mask = sbox.mask.const_ref();
+      af::const_ref<uint8_t, af::c_grid<3> > mask = sbox.mask.const_ref();
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
 
       // Check pixel values
@@ -229,13 +229,13 @@ namespace dials { namespace algorithms {
       std::size_t n_background = 0;
       std::size_t n_background_used = 0;
       std::size_t n_foreground = 0;
-      std::size_t mask_code1 = Valid;
-      std::size_t mask_code2 = Valid | Background;
-      std::size_t mask_code3 = Valid | Background | BackgroundUsed;
-      std::size_t mask_code4 = Valid | Foreground;
+      uint8_t mask_code1 = Valid;
+      uint8_t mask_code2 = Valid | Background;
+      uint8_t mask_code3 = Valid | Background | BackgroundUsed;
+      uint8_t mask_code4 = Valid | Foreground;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         double d = data[i];
-        int m = mask[i];
+        uint8_t m = mask[i];
 
         if (d > max_trusted) {
           flags |= af::Overloaded;
@@ -312,7 +312,7 @@ namespace dials { namespace algorithms {
       Shoebox<> shoebox(panel, bbox);
       shoebox.allocate();
       af::ref<float, af::c_grid<3> > data = shoebox.data.ref();
-      af::ref<int, af::c_grid<3> > mask = shoebox.mask.ref();
+      af::ref<uint8_t, af::c_grid<3> > mask = shoebox.mask.ref();
       int x0 = bbox[0];
       int x1 = bbox[1];
       int y0 = bbox[2];
@@ -342,7 +342,7 @@ namespace dials { namespace algorithms {
             if (jj >= 0 && ii >= 0 && jj < data_buffer.accessor()[0]
                 && ii < data_buffer.accessor()[1]) {
               double d = data_buffer(jj, ii);
-              int m = (d >= min_trusted && d <= max_trusted) ? Valid : 0;
+              uint8_t m = (d >= min_trusted && d <= max_trusted) ? Valid : 0;
               data(k, j, i) = d;
               mask(k, j, i) = m;
             } else {

@@ -69,7 +69,7 @@ namespace dials { namespace model {
     int6 bbox;                                        ///< The bounding box
     bool flat;                                        ///< Is the shoebox flat
     af::versa<FloatType, af::c_grid<3> > data;        ///< The shoebox data
-    af::versa<int, af::c_grid<3> > mask;              ///< The shoebox mask
+    af::versa<uint8_t, af::c_grid<3> > mask;          ///< The shoebox mask
     af::versa<FloatType, af::c_grid<3> > background;  ///< The shoebox background
 
     /**
@@ -125,11 +125,11 @@ namespace dials { namespace model {
     /**
      * Allocate the mask and data from the bounding box
      */
-    void allocate_with_value(int maskcode) {
+    void allocate_with_value(uint8_t maskcode) {
       std::size_t zs = flat ? 1 : zsize();
       af::c_grid<3> accessor(zs, ysize(), xsize());
       data = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
-      mask = af::versa<int, af::c_grid<3> >(accessor, maskcode);
+      mask = af::versa<uint8_t, af::c_grid<3> >(accessor, maskcode);
       background = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
     }
 
@@ -146,7 +146,7 @@ namespace dials { namespace model {
     void deallocate() {
       af::c_grid<3> accessor(0, 0, 0);
       data = af::versa<FloatType, af::c_grid<3> >(accessor);
-      mask = af::versa<int, af::c_grid<3> >(accessor);
+      mask = af::versa<uint8_t, af::c_grid<3> >(accessor);
       background = af::versa<FloatType, af::c_grid<3> >(accessor);
     }
 
@@ -269,7 +269,7 @@ namespace dials { namespace model {
      * @param code The code
      * @returns The number of pixels with that code
      */
-    int count_mask_values(int code) const {
+    int count_mask_values(uint8_t code) const {
       int count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if ((mask[i] & code) == code) {
@@ -308,7 +308,7 @@ namespace dials { namespace model {
      * @param code The mask code
      * @returns The centroid
      */
-    Centroid centroid_masked(int code) const {
+    Centroid centroid_masked(uint8_t code) const {
       typedef CentroidMaskedImage3d<FloatType> Centroider;
 
       // Calculate the foreground mask
@@ -389,7 +389,7 @@ namespace dials { namespace model {
      * Perform a centroid minus the background
      * @return The centroid
      */
-    Centroid centroid_masked_minus_background(int code) const {
+    Centroid centroid_masked_minus_background(uint8_t code) const {
       typedef CentroidMaskedImage3d<FloatType> Centroider;
 
       // Calculate the foreground mask and data

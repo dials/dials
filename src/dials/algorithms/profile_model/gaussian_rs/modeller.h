@@ -131,19 +131,19 @@ namespace dials { namespace algorithms {
   namespace detail {
 
     struct check_mask_code {
-      int mask_code;
-      check_mask_code(int code) : mask_code(code) {}
-      bool operator()(int a) const {
+      uint8_t mask_code;
+      check_mask_code(uint8_t code) : mask_code(code) {}
+      bool operator()(uint8_t a) const {
         return ((a & mask_code) == mask_code);
       }
     };
 
     struct check_either_mask_code {
-      int mask_code1;
-      int mask_code2;
-      check_either_mask_code(int code1, int code2)
+      uint8_t mask_code1;
+      uint8_t mask_code2;
+      check_either_mask_code(uint8_t code1, uint8_t code2)
           : mask_code1(code1), mask_code2(code2) {}
-      bool operator()(int a) const {
+      bool operator()(uint8_t a) const {
         return ((a & mask_code1) == mask_code1) || ((a & mask_code2) == mask_code2);
       }
     };

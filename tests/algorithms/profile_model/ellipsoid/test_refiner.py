@@ -162,7 +162,7 @@ def refinerdata_testdata(testdata):
     )
 
     shoebox_data = flex.float(flex.grid(1, 11, 11))
-    shoebox_mask = flex.int(flex.grid(1, 11, 11))
+    shoebox_mask = flex.uint8(flex.grid(1, 11, 11))
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (
@@ -536,7 +536,7 @@ def test_RefinerData(testdata):
     )
 
     shoebox_data = flex.float(flex.grid(1, 11, 11))
-    shoebox_mask = flex.int(flex.grid(1, 11, 11))
+    shoebox_mask = flex.uint8(flex.grid(1, 11, 11))
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (

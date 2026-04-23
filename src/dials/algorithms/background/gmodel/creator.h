@@ -111,7 +111,7 @@ namespace dials { namespace algorithms {
         // Extract from image volume
         af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
         af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-        af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
+        af::versa<uint8_t, af::c_grid<3> > mask = v.extract_mask(b, i);
 
         // Compute the background
         try {
@@ -138,7 +138,7 @@ namespace dials { namespace algorithms {
                    int6 bbox,
                    const af::const_ref<T, af::c_grid<3> >& data,
                    af::ref<T, af::c_grid<3> > background,
-                   af::ref<int, af::c_grid<3> > mask) const {
+                   af::ref<uint8_t, af::c_grid<3> > mask) const {
       if (robust_) {
         return compute_robust(panel, bbox, data, background, mask);
       } else {
@@ -155,12 +155,12 @@ namespace dials { namespace algorithms {
                               int6 bbox,
                               const af::const_ref<T, af::c_grid<3> >& data,
                               af::ref<T, af::c_grid<3> > background,
-                              af::ref<int, af::c_grid<3> > mask) const {
+                              af::ref<uint8_t, af::c_grid<3> > mask) const {
       af::versa<double, af::c_grid<3> > model = model_->extract(panel, bbox);
       double sum1 = 0;
       double sum2 = 0;
       double count = 0;
-      int mask_code = Valid | Background;
+      uint8_t mask_code = Valid | Background;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           sum1 += data[i];
@@ -190,13 +190,13 @@ namespace dials { namespace algorithms {
                           int6 bbox,
                           const af::const_ref<T, af::c_grid<3> >& data,
                           af::ref<T, af::c_grid<3> > background,
-                          af::ref<int, af::c_grid<3> > mask) const {
+                          af::ref<uint8_t, af::c_grid<3> > mask) const {
       af::versa<double, af::c_grid<3> > model = model_->extract(panel, bbox);
 
       // Compute number of background pixels
       std::size_t num_background = 0;
       double sum_model = 0.0;
-      int mask_code = Valid | Background;
+      uint8_t mask_code = Valid | Background;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           num_background++;
