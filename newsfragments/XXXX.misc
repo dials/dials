@@ -1,1 +1,0 @@
-Cache Indexer objects across stills frames in stills_process.py to avoid repeated PHIL parsing and internal solver setup overhead, and eliminate expensive copy.deepcopy calls on the parameter scope.
