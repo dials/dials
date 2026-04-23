@@ -293,7 +293,7 @@ def index_all_concurrent(
 
     # prepare tables for output
     indexed_experiments, indexed_reflections = _join_indexing_results(
-        results, experiments, original_isets, identifiers_to_scans
+        results, experiments, original_isets, identifiers_to_scans, retain=True
     )
 
     results_summary = _add_results_to_summary_dict(results_summary, results)
@@ -306,15 +306,46 @@ def _join_indexing_results(
     experiments,
     original_isets,
     identifiers_to_scans,
+    retain=False,
 ) -> tuple[ExperimentList, flex.reflection_table]:
-    indexed_experiments = ExperimentList()
-    indexed_reflections = flex.reflection_table()
-
     use_gonio = None
     if len(experiments.goniometers()):  # need a placeholder gonio
         use_gonio = experiments.goniometers()[0]
-
     n_tot = 0
+
+    if retain:
+        # need to insert indexed crystals into existing structure
+        output_experiments = ExperimentList()
+        indexed_reflections = flex.reflection_table()
+        for res in results:
+            if res.n_indexed:
+                identifier = res.unindexed_experiment.identifier
+                scan = identifiers_to_scans[identifier]
+                for expt in res.experiments:
+                    expt.scan = scan
+                    expt.imageset = original_isets[res.imageset_no]
+                    res.reflection_table["imageset_id"] = flex.int(
+                        res.reflection_table.size(), res.imageset_no
+                    )
+                    if use_gonio:
+                        expt.goniometer = use_gonio
+                output_experiments.append(res.unindexed_experiment)
+                output_experiments.extend(res.experiments)
+                table = res.reflection_table
+                ids_map = dict(table.experiment_identifiers())
+                for k in table.experiment_identifiers().keys():
+                    del table.experiment_identifiers()[k]
+                table["id"] += n_tot
+                for k, v in ids_map.items():
+                    table.experiment_identifiers()[k + n_tot] = v
+                n_tot += len(ids_map.keys())
+                indexed_reflections.extend(table)
+            else:
+                output_experiments.append(res.unindexed_experiment)
+        return output_experiments, indexed_reflections
+    indexed_experiments = ExperimentList()
+    indexed_reflections = flex.reflection_table()
+
     for res in results:
         if res.n_indexed:
             identifier = res.unindexed_experiment.identifier

@@ -83,6 +83,9 @@ min_spots = 10
     .type = int
     .expert_level = 2
     .help = "Images with fewer than this number of strong spots will not be indexed"
+retain_experiments = False
+    .type = bool
+    .help = "Keep all input experiment models in output (i.e. output contains indexed and unindexed experiments)"
 output.html = dials.ssx_index.html
     .type = str
 output.json = None
@@ -174,6 +177,7 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
             space_group=expt.crystal.get_space_group(),
         )
         for expt in indexed_experiments
+        if expt.crystal
     ]
     if crystal_symmetries:
         cluster_plots, _ = report_on_crystal_clusters(
