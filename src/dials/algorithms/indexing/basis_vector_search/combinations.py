@@ -5,6 +5,7 @@ import math
 from itertools import combinations as iter_combinations
 
 import numpy as np
+
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.uctbx.reduction_base import iteration_limit_exceeded
 from dxtbx.model import Crystal
