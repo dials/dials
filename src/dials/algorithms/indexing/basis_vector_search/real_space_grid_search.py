@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import math
 
+import numpy as np
+
 from libtbx import phil
 from rstbx.array_family import (
     flex,  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
@@ -72,6 +74,16 @@ class RealSpaceGridSearch(Strategy):
                 "Target unit cell must be provided for real_space_grid_search"
             )
         self._target_unit_cell = target_unit_cell
+        # Precompute search vector array and flex object once — both are constant for
+        # this instance (depend only on target_unit_cell and characteristic_grid).
+        SST = SimpleSamplerTool(self._params.characteristic_grid)
+        SST.construct_hemisphere_grid(SST.incr)
+        directions = np.array(
+            [d.dvec for d in SST.angles], dtype=np.float64
+        )  # (N_dir, 3)
+        unique_dims = sorted(set(target_unit_cell.parameters()[:3]))
+        self._sv_array = np.vstack([directions * l for l in unique_dims])  # (N_sv, 3)
+        self._sv_flex = flex.vec3_double(list(map(tuple, self._sv_array)))
 
     @property
     def search_directions(self):
@@ -117,13 +129,11 @@ class RealSpaceGridSearch(Strategy):
         Returns:
             A tuple containing the list of search vectors and their scores.
         """
-        vectors = flex.vec3_double()
-        scores = flex.double()
-        for i, v in enumerate(self.search_vectors):
-            f = self.compute_functional(v.elems, reciprocal_lattice_vectors)
-            vectors.append(v.elems)
-            scores.append(f)
-        return vectors, scores
+        rlv_array = np.array(reciprocal_lattice_vectors, dtype=np.float64)  # (N_rlv, 3)
+        dots = 2 * math.pi * (self._sv_array @ rlv_array.T)  # (N_sv, N_rlv)
+        scores_np = np.cos(dots).sum(axis=1)  # (N_sv,)
+        scores = flex.double(scores_np.tolist())
+        return self._sv_flex, scores
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
