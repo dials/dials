@@ -11,6 +11,7 @@ import tarfile
 import time
 from io import BytesIO
 
+import libtbx
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
@@ -929,6 +930,8 @@ class Processor:
 
             self.setup_filenames(composite_tag)
 
+        self.spot_finder_factory = None
+
     def setup_filenames(self, tag):
         # before processing, set output paths according to the templates
         if (
@@ -1151,6 +1154,27 @@ class Processor:
 The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
                             )
 
+    def get_spot_finder_factory(self, experiments):
+        from dials.algorithms.spot_finding.factory import SpotFinderFactory
+
+        if self.params.spotfinder.filter.min_spot_size is libtbx.Auto:
+            detector = experiments[0].imageset.get_detector()
+            if detector[0].get_type() == "SENSOR_PAD":
+                # smaller default value for pixel array detectors
+                self.params.spotfinder.filter.min_spot_size = 3
+            else:
+                self.params.spotfinder.filter.min_spot_size = 6
+            logger.info(
+                "Setting spotfinder.filter.min_spot_size=%i",
+                self.params.spotfinder.filter.min_spot_size,
+            )
+
+        # Get the spot-finder from the input parameters
+        logger.info("Configuring spot finder from input parameters")
+        return SpotFinderFactory.from_parameters(
+            experiments=experiments, params=self.params, is_stills=True
+        )
+
     def find_spots(self, experiments):
         st = time.time()
 
@@ -1159,9 +1183,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("*" * 80)
 
         # Find the strong spots
-        observed = flex.reflection_table.from_observations(
-            experiments, self.params, is_stills=True
-        )
+        if self.spot_finder_factory is None:
+            self.spot_finder_factory = self.get_spot_finder_factory(experiments)
+        observed = self.spot_finder_factory.find_spots(experiments)
 
         # Reset z coordinates for dials.image_viewer; see Issues #226 for details
         xyzobs = observed["xyzobs.px.value"]
