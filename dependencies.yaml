@@ -1,0 +1,111 @@
+# # Conda dependencies for DIALS on all platforms.
+#
+# This file is interpreted by bootstrap. it uses a HIGHLY limited subset of
+# yaml and conda-build selector preprocessing. As such, the file itself is not
+# YAML without at minimum preprocessing, and may need full conda-build
+# templating to be parseable as yaml directly.
+#
+# ## Splitting Dependencies
+#
+# Dependencies are now split here into the categories of build, host, run, as
+# per https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#requirements-section
+#
+# Briefly,
+# - `build` is for build and development tools
+# - `host` is complicated, but can broadly be considered "build-time"
+#   dependencies that are expected to be present on the targeted platform.
+#   Please see above conda-build documentation for details, but if you are
+#   unsure where a dependency goes, it's probably safest to put it here.
+# - `run` are dependencies not used at build-time, but are required for
+#   running. Most pure-python packages go here.
+# - `test` are dependencies only used to run tests.
+#
+# ## Filtering dependencies by platform and target
+#
+# Before use (by bootstrap OR conda), this file is passed through a
+# preprocessor. This handles all lines of the form `#[expr]`, and each
+# line is filtered out on a line-by-line basis if the expression
+# evaluates to false.
+#
+# Only the last `# [expression]` is stripped and evaluated, which allows
+# passing further selection expressions through for onward processing.
+#
+# Expression values supported:
+# - Platform e.g. `osx`, `win` or `linux`
+# - `bootstrap`: Whether we are targeting bootstrap.py. This allows us
+#   to have advanced conda-build syntax (e.g. jinja templates) while
+#   ignoring these when generating the bootstrap dependency list.
+# - `prebuilt_cctbx`: Whether we are building cctbx. This is true for
+#   bootstrap with CMake and for conda-build builds.
+# - Compound expressions with `and` e.g. `osx and bootstrap`. This will
+#   work with `not`-expressions, but nothing more complex.
+#
+
+build:
+  - {{ compiler('cxx') }} # [not bootstrap]
+  - {{ stdlib('c') }} #[not bootstrap]
+  - alabaster # Used for doc builds # [bootstrap]
+  - biopython # Used for doc builds #[bootstrap]
+  - cmake # [prebuilt_cctbx]
+  - conda # [bootstrap]
+  - cross-python_{{ target_platform }} # [build_platform != target_platform] # [not bootstrap]
+  - cxx-compiler #[bootstrap]
+  - docutils #[bootstrap]
+  - mamba # [bootstrap]
+  - ninja # [prebuilt_cctbx]
+  - pre-commit #[bootstrap]
+  - python # [build_platform != target_platform] # [not bootstrap]
+  - requests # Used for doc builds to update release list for sphinx # [bootstrap]
+  - setuptools
+  - sphinx >=4 #[bootstrap]
+
+host:
+  - cctbx-base >=2025 #[prebuilt_cctbx]
+  - dxtbx ={{ version_xy }} #[not bootstrap]
+  - eigen
+  - hatchling
+  - libboost-devel
+  - libboost-python-devel
+  - libcxx # [bootstrap and osx]
+  - libglu # [linux and not prebuilt_cctbx]
+  - mesa-libgl-devel-cos7-x86_64 # [linux and not prebuilt_cctbx]
+  - msgpack-cxx
+  - pip
+  - pthread-stubs # [bootstrap and osx]
+  - python
+
+run:
+  - {{ pin_compatible('cctbx-base') }} #[not bootstrap]
+  - {{ pin_compatible('dxtbx', max_pin='x.x', lower_bound=version_xy) }} #[not bootstrap]
+  - colorlog # Not used in conda-forge - a missed dependency? # [bootstrap]
+  - ffbidx >=1.1.3 #[linux]
+  - gemmi >=0.7
+  - h5py >=3.1.0
+  - jinja2
+  - matplotlib-base >=3.0.2
+  - msgpack-python
+  - numpy
+  - optuna
+  - ordered-set
+  - pandas
+  - pillow >=5.4.1
+  - psutil
+  - pycbf #[prebuilt_cctbx]
+  - pyopengl # Shouldn't be necessary with prebuilt_cctbx but they don't include this
+  - python
+  - python.app # [bootstrap and osx]
+  - reportlab
+  - scikit-learn
+  - scipy
+  - tabulate
+  - tqdm
+  - wxpython >=4.2.2
+
+test:
+  - dials-data >=2.4.123
+  - pip
+  - pytest
+  - pytest-forked
+  - pytest-mock
+  - pytest-nunit # [win]
+  - pytest-xdist
