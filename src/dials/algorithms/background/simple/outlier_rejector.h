@@ -21,7 +21,7 @@ namespace dials { namespace algorithms { namespace background {
     virtual ~OutlierRejector() {}
 
     virtual void mark(const af::const_ref<double, af::c_grid<3> >& data,
-                      af::ref<int, af::c_grid<3> > mask) const = 0;
+                      af::ref<uint8_t, af::c_grid<3> > mask) const = 0;
   };
 
 }}}  // namespace dials::algorithms::background

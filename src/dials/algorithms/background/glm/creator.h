@@ -124,7 +124,7 @@ namespace dials { namespace algorithms {
         // Extract from image volume
         af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
         af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-        af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
+        af::versa<uint8_t, af::c_grid<3> > mask = v.extract_mask(b, i);
 
         // Compute the background
         try {
@@ -149,7 +149,7 @@ namespace dials { namespace algorithms {
     template <typename T>
     void compute(const af::const_ref<T, af::c_grid<3> >& data,
                  af::ref<T, af::c_grid<3> > background,
-                 af::ref<int, af::c_grid<3> > mask) const {
+                 af::ref<uint8_t, af::c_grid<3> > mask) const {
       switch (model_) {
       case Constant2d:
         compute_constant_2d(data, background, mask);
@@ -175,11 +175,11 @@ namespace dials { namespace algorithms {
     template <typename T>
     void compute_constant_2d(const af::const_ref<T, af::c_grid<3> >& data,
                              af::ref<T, af::c_grid<3> > background,
-                             af::ref<int, af::c_grid<3> > mask) const {
+                             af::ref<uint8_t, af::c_grid<3> > mask) const {
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
         // Compute number of background pixels
         std::size_t num_background = 0;
-        int mask_code = Valid | Background;
+        uint8_t mask_code = Valid | Background;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
             if ((mask(k, j, i) & mask_code) == mask_code
@@ -239,10 +239,10 @@ namespace dials { namespace algorithms {
     template <typename T>
     void compute_constant_3d(const af::const_ref<T, af::c_grid<3> >& data,
                              af::ref<T, af::c_grid<3> > background,
-                             af::ref<int, af::c_grid<3> > mask) const {
+                             af::ref<uint8_t, af::c_grid<3> > mask) const {
       // Compute number of background pixels
       std::size_t num_background = 0;
-      int mask_code = Valid | Background;
+      uint8_t mask_code = Valid | Background;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code && ((mask[i] & Overlapped) == 0)) {
           num_background++;
@@ -292,11 +292,11 @@ namespace dials { namespace algorithms {
     template <typename T>
     void compute_loglinear_2d(const af::const_ref<T, af::c_grid<3> >& data,
                               af::ref<T, af::c_grid<3> > background,
-                              af::ref<int, af::c_grid<3> > mask) const {
+                              af::ref<uint8_t, af::c_grid<3> > mask) const {
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
         // Compute number of background pixels
         std::size_t num_background = 0;
-        int mask_code = Valid | Background;
+        uint8_t mask_code = Valid | Background;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
             if ((mask(k, j, i) & mask_code) == mask_code
@@ -393,10 +393,10 @@ namespace dials { namespace algorithms {
     template <typename T>
     void compute_loglinear_3d(const af::const_ref<T, af::c_grid<3> >& data,
                               af::ref<T, af::c_grid<3> > background,
-                              af::ref<int, af::c_grid<3> > mask) const {
+                              af::ref<uint8_t, af::c_grid<3> > mask) const {
       // Compute number of background pixels
       std::size_t num_background = 0;
-      int mask_code = Valid | Background;
+      uint8_t mask_code = Valid | Background;
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {

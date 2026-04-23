@@ -52,7 +52,7 @@ scope = phil.parse(
     .help = "Options for correcting for elliptical distortion of images."
   {
     phi = 45.0
-      .type = float
+      .type = float(value_min=0, value_max=180)
       .help = "Acute angle of the first axis of the ellipse from the fast"
               "axis of the first panel of the detector"
     l1 = 1.0
@@ -121,7 +121,10 @@ def ellipse_to_circle_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     a21 = l2_inv * sphi
     a22 = l2_inv * cphi
 
-    return matrix.sqr((a11, a12, a21, a22))
+    M = matrix.sqr((a11, a12, a21, a22))
+
+    # We have to rotate the result (https://github.com/dials/dials/issues/3124#issuecomment-4109235695)
+    return matrix.sqr((cphi, sphi, -sphi, cphi)) * M
 
 
 def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
@@ -140,7 +143,10 @@ def circle_to_ellipse_transform(phi: float, l1: float, l2: float) -> matrix.sqr:
     a21 = -l1 * sphi
     a22 = l2 * cphi
 
-    return matrix.sqr((a11, a12, a21, a22))
+    M = matrix.sqr((a11, a12, a21, a22))
+
+    # We have to rotate the result (https://github.com/dials/dials/issues/3124#issuecomment-4109235695)
+    return M * matrix.sqr((cphi, -sphi, sphi, cphi))
 
 
 def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
@@ -155,8 +161,12 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     topleft = matrix.col(p0.get_pixel_lab_coord((0, 0)))
     mid = topleft + centre_xy[0] * fast + centre_xy[1] * slow
 
-    # Get matrix that describes the elliptical distortion
-    M = circle_to_ellipse_transform(phi, l1, l2)
+    # The provided parameters describe an ellipse visible in the image.
+    # The distortion is present in the pixel coordinates of the image.
+    # PlaneLinearTransformationMaps applies a matrix to the pixel array
+    # to "undo" the elliptical distortion. Therefore we need the
+    # ellipse-to-circle transform matrix.
+    M = ellipse_to_circle_transform(phi, l1, l2)
 
     distortion_map_x = []
     distortion_map_y = []

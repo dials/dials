@@ -356,6 +356,12 @@ def export_mtz(params, experiments, reflections):
 
     from dials.util.export_mtz import export_mtz
 
+    # Temporary guard to provide a more useful error to the user for time-of-flight data
+    if experiments.all_tof():
+        raise NotImplementedError(
+            "Time-of-flight Laue data cannot be exported as .mtz. Run with format=shelx to export as .hkl"
+        )
+
     # Handle case where user has passed data before integration
     if (
         "intensity.sum.value" not in reflections[0]

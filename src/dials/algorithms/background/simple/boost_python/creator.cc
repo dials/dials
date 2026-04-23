@@ -42,7 +42,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
   template <typename FloatType>
   af::tiny<FloatType, 2> call_4(const SimpleBackgroundCreator& self,
                                 const af::const_ref<FloatType, af::c_grid<3> >& data,
-                                af::ref<int, af::c_grid<3> > mask,
+                                af::ref<uint8_t, af::c_grid<3> > mask,
                                 af::ref<FloatType, af::c_grid<3> > background) {
     return self(data, mask, background);
   }

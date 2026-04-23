@@ -1,0 +1,1 @@
+``dials.integrate``: reduced the memory footprint by changing the ``Shoebox`` mask array to use one byte per pixel.
