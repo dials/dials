@@ -1,0 +1,1 @@
+Cache the static geometry mask and spotfinding algorithm objects across stills frames, making the static/dynamic mask boundary explicit in ExtractPixelsFromImage.
