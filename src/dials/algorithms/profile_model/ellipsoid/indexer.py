@@ -54,9 +54,8 @@ def _index(reflection_table, experiment, fail_on_bad_index=False):
 
         # Print warning if reindexing
         if tuple(h) != miller_index[i]:
-            logger.warn(
-                "Reindexing (% 3d, % 3d, % 3d) -> (% 3d, % 3d, % 3d)"
-                % (miller_index[i] + tuple(h))
+            logger.warning(
+                f"Reindexing ({miller_index[i][0]:3d}, {miller_index[i][1]:3d}, {miller_index[i][2]:3d}) -> ({h[0][0]:3d}, {h[1][0]:3d}, {h[2][0]:3d})"
             )
             num_reindexed += 1
             miller_index[i] = matrix.col(flumpy.from_numpy(h))
