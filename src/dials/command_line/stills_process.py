@@ -929,6 +929,15 @@ class Processor:
 
             self.setup_filenames(composite_tag)
 
+        self.idxr_known_crystal_models = None
+        self.idxr = None
+        if self.params.indexing.stills.method_list:
+            self.idxr_method_list = dict.fromkeys(
+                self.params.indexing.stills.method_list
+            )
+        else:
+            self.idxr_method_list = None
+
     def setup_filenames(self, tag):
         # before processing, set output paths according to the templates
         if (
@@ -1193,15 +1202,48 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def index(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
 
+        def update_indexer(
+            indexer, experiments, reflections, known_crystal_models=None
+        ):
+            # Mimics the per-frame initialization done by Indexer.from_parameters()
+            # without paying for full object construction on every still.
+            for experiment in experiments:
+                experiment.imageset.set_scan(None)
+                experiment.imageset.set_goniometer(None)
+                experiment.scan = None
+                experiment.goniometer = None
+            indexer.known_orientations = known_crystal_models
+            indexer.experiments = experiments
+            indexer.reflections = reflections
+            if "flags" in reflections:
+                strong_sel = indexer.reflections.get_flags(
+                    indexer.reflections.flags.strong
+                )
+                if strong_sel.count(True) > 0:
+                    indexer.reflections = indexer.reflections.select(strong_sel)
+            if "flags" not in indexer.reflections or strong_sel.count(True) == 0:
+                # backwards compatibility for testing
+                indexer.reflections.set_flags(
+                    flex.size_t_range(len(indexer.reflections)),
+                    indexer.reflections.flags.strong,
+                )
+            indexer.setup_indexing()
+            return indexer
+
         st = time.time()
 
         logger.info("*" * 80)
         logger.info("Indexing Strong Spots")
         logger.info("*" * 80)
 
-        params = copy.deepcopy(self.params)
         # don't do scan-varying refinement during indexing
-        params.refinement.parameterisation.scan_varying = False
+        scan_varying = self.params.refinement.parameterisation.scan_varying
+        self.params.refinement.parameterisation.scan_varying = False
+        # max_refine=5 for stills was previously applied inside Indexer.from_parameters
+        # when the value was libtbx.Auto. Hoisted here so it is visible and restored.
+        # Note: this overrides any user-supplied max_refine value for stills.
+        max_refine = self.params.indexing.basis_vector_combinations.max_refine
+        self.params.indexing.basis_vector_combinations.max_refine = 5
 
         if hasattr(self, "known_crystal_models"):
             known_crystal_models = self.known_crystal_models
@@ -1235,13 +1277,21 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         indexing_succeeded = False
         if known_crystal_models:
             try:
-                idxr = Indexer.from_parameters(
-                    reflections,
-                    experiments,
-                    known_crystal_models=known_crystal_models,
-                    params=params,
-                )
-                idxr.index()
+                if self.idxr_known_crystal_models is None:
+                    self.idxr_known_crystal_models = Indexer.from_parameters(
+                        reflections,
+                        experiments,
+                        known_crystal_models=known_crystal_models,
+                        params=self.params,
+                    )
+                else:
+                    self.idxr_known_crystal_models = update_indexer(
+                        self.idxr_known_crystal_models,
+                        experiments,
+                        reflections,
+                        known_crystal_models=known_crystal_models,
+                    )
+                self.idxr_known_crystal_models.index()
                 logger.info("indexed from known orientation")
                 indexing_succeeded = True
             except Exception:
@@ -1269,24 +1319,36 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         flex.random_permutation(len(all_reflections))
                     )[: int(len(all_reflections) * i / 100)]
                 try:
-                    if params.indexing.stills.method_list is None:
-                        idxr = Indexer.from_parameters(
-                            reflections,
-                            experiments,
-                            params=params,
-                        )
-                        idxr.index()
+                    if self.params.indexing.stills.method_list is None:
+                        if self.idxr is None:
+                            self.idxr = Indexer.from_parameters(
+                                reflections,
+                                experiments,
+                                params=self.params,
+                            )
+                        else:
+                            self.idxr = update_indexer(
+                                self.idxr, experiments, reflections
+                            )
+                        self.idxr.index()
                     else:
                         ml_indexing_error = None
-                        for method in params.indexing.stills.method_list:
-                            params.indexing.method = method
-                            try:
-                                idxr = Indexer.from_parameters(
+                        for method in self.params.indexing.stills.method_list:
+                            self.params.indexing.method = method
+                            if self.idxr_method_list[method] is None:
+                                self.idxr_method_list[method] = Indexer.from_parameters(
                                     reflections,
                                     experiments,
-                                    params=params,
+                                    params=self.params,
                                 )
-                                idxr.index()
+                            else:
+                                self.idxr_method_list[method] = update_indexer(
+                                    self.idxr_method_list[method],
+                                    experiments,
+                                    reflections,
+                                )
+                            try:
+                                self.idxr_method_list[method].index()
                             except Exception as e_ml:
                                 logger.info("Couldn't index using method %s", method)
                                 ml_indexing_error = e_ml
@@ -1304,8 +1366,16 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             if subset_indexing_error:
                 raise subset_indexing_error
 
-        indexed = idxr.refined_reflections
-        experiments = idxr.refined_experiments
+        if known_crystal_models and indexing_succeeded:
+            indexed = self.idxr_known_crystal_models.refined_reflections
+            experiments = self.idxr_known_crystal_models.refined_experiments
+        elif self.params.indexing.stills.method_list is None:
+            indexed = self.idxr.refined_reflections
+            experiments = self.idxr.refined_experiments
+        else:
+            # "method" is retained from the subsampling for loop.
+            indexed = self.idxr_method_list[method].refined_reflections
+            experiments = self.idxr_method_list[method].refined_experiments
 
         if known_crystal_models is not None:
             filtered_sel = flex.bool(len(indexed), True)
@@ -1330,6 +1400,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
+        # Restore params fields mutated for stills indexing.
+        self.params.refinement.parameterisation.scan_varying = scan_varying
+        self.params.indexing.basis_vector_combinations.max_refine = max_refine
         return experiments, indexed
 
     def refine(self, experiments, centroids):
