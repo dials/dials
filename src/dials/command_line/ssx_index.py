@@ -85,7 +85,11 @@ min_spots = 10
     .help = "Images with fewer than this number of strong spots will not be indexed"
 retain_experiments = False
     .type = bool
-    .help = "Keep all input experiment models in output (i.e. output contains indexed and unindexed experiments)"
+    .expert_level = 3
+    .help = "Keep all input experiment models and input reflections in the output."
+            "i.e. the output contains indexed and unindexed experiments and reflections"
+            "This is an experimental mode, follow on programs may not be able to handle"
+            "these files as input."
 output.html = dials.ssx_index.html
     .type = str
 output.json = None
@@ -169,7 +173,12 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     n_images = reduce(
         lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0
     )
-    logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
+    n_indexed = 0
+    if indexed_reflections.size():
+        n_indexed = indexed_reflections.get_flags(
+            indexed_reflections.flags.indexed
+        ).count(True)
+    logger.info(f"{n_indexed} spots indexed on {n_images} images\n")
 
     crystal_symmetries = [
         crystal.symmetry(
