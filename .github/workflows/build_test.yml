@@ -190,7 +190,7 @@ jobs:
         run: |
           source dials_env.sh
           set -x
-          conda install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
+          mamba install -yp ./conda_base bash distro git-lfs mpi4py openmpi pandas
           GIT_LFS_SKIP_SMUDGE=1 git clone https://gitlab.com/cctbx/xfel_regression.git modules/xfel_regression
           libtbx.configure xfel xfel_regression
           libtbx.refresh
