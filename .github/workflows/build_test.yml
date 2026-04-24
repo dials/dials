@@ -101,7 +101,7 @@ jobs:
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
             --libtbx
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
-      - name: Pin cctbx_project to upstream conda-pack-direct branch (test build with Option B fix)
+      - name: Get cctbx_project temp fix
         run: |
           pushd modules/cctbx_project
           git merge origin/conda-pack-direct --ff-only
