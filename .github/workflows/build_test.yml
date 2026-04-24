@@ -101,6 +101,12 @@ jobs:
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
             --libtbx
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
+      - name: Pin cctbx_project to upstream conda-pack-direct branch (test build with Option B fix)
+        run: |
+          cd modules/cctbx_project
+          git fetch origin conda-pack-direct
+          git checkout -B conda-pack-direct FETCH_HEAD
+          git log -1 --oneline
       - name: Build
         run: python modules/dials/installer/bootstrap.py build --libtbx
       - name: Create Installer
