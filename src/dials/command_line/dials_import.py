@@ -21,7 +21,7 @@ from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments, lookup_phil_scope
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.import")
@@ -159,31 +159,7 @@ phil_scope = libtbx.phil.parse(
 
   include scope dials.util.options.geometry_phil_scope
 
-  lookup {
-    mask = None
-      .type = str
-      .help = "Apply a mask to the imported data"
-
-    gain = None
-      .type = str
-      .help = "Apply a gain to the imported data"
-
-    pedestal = None
-      .type = str
-      .help = "Apply a pedestal to the imported data"
-
-    dx = None
-      .type = str
-      .help = "Apply an x geometry offset"
-              "If both dx and dy are set then"
-              "OffsetParallaxCorrectedPxMmStrategy will be used"
-
-    dy = None
-      .type = str
-      .help = "Apply an y geometry offset"
-              "If both dx and dy are set then"
-              "OffsetParallaxCorrectedPxMmStrategy will be used"
-  }
+  include scope dials.util.options.lookup_phil_scope
 """,
     process_includes=True,
 )
@@ -490,7 +466,7 @@ class MetaDataUpdater:
         Transform the metadata
         """
         # Import the lookup data
-        lookup = self.import_lookup_data(self.params)
+        lookup = import_lookup_data(self.params)
 
         # Create the experiments
         experiments = ExperimentList()
@@ -498,7 +474,7 @@ class MetaDataUpdater:
         # Loop through imagesets
         for imageset in imageset_list:
             # Set the external lookups
-            imageset = self.update_lookup(imageset, lookup)
+            imageset = update_lookup(imageset, lookup)
 
             # Update the geometry
             for updater in self.update_geometry:
@@ -632,7 +608,7 @@ class MetaDataUpdater:
                         scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
                         format_kwargs=iset_params[i],
                     )
-                    sequence = self.update_lookup(sequence, lookup)  # for mask etc
+                    sequence = update_lookup(sequence, lookup)  # for mask etc
                     for j in range(len(sequence)):
                         subset = sequence[j : j + 1]
                         new_experiments.append(
@@ -656,112 +632,114 @@ class MetaDataUpdater:
         # Return the experiments
         return experiments
 
-    def update_lookup(self, imageset, lookup):
-        from dxtbx.format.image import ImageBool, ImageDouble
 
-        if lookup.size is not None:
-            d = imageset.get_detector()
-            assert len(lookup.size) == len(d), "Incompatible size"
-            for s, p in zip(lookup.size, d):
-                assert s == p.get_image_size()[::-1], "Incompatible size"
-            if lookup.mask.filename is not None:
-                imageset.external_lookup.mask.filename = lookup.mask.filename
-                imageset.external_lookup.mask.data = ImageBool(lookup.mask.data)
-            if lookup.gain.filename is not None:
-                imageset.external_lookup.gain.filename = lookup.gain.filename
-                imageset.external_lookup.gain.data = ImageDouble(lookup.gain.data)
-            if lookup.dark.filename is not None:
-                imageset.external_lookup.pedestal.filename = lookup.dark.filename
-                imageset.external_lookup.pedestal.data = ImageDouble(lookup.dark.data)
-            if lookup.dx.filename is not None:
-                imageset.external_lookup.dx.filename = lookup.dx.filename
-                imageset.external_lookup.dx.data = ImageDouble(lookup.dx.data)
-            if lookup.dy.filename is not None:
-                imageset.external_lookup.dy.filename = lookup.dy.filename
-                imageset.external_lookup.dy.data = ImageDouble(lookup.dy.data)
-        return imageset
+def update_lookup(imageset, lookup):
+    from dxtbx.format.image import ImageBool, ImageDouble
 
-    def import_lookup_data(self, params):
-        """
-        Get the lookup data
-        """
-        # Check the lookup inputs
-        mask_filename = None
-        gain_filename = None
-        dark_filename = None
-        dx_filename = None
-        dy_filename = None
-        mask = None
-        gain = None
-        dark = None
-        dx = None
-        dy = None
-        lookup_size = None
-        if params.lookup.mask is not None:
-            mask_filename = params.lookup.mask
-            with open(mask_filename, "rb") as fh:
-                mask = _pickle_load(fh)
-            if not isinstance(mask, tuple):
-                mask = (mask,)
-            lookup_size = [m.all() for m in mask]
-        if params.lookup.gain is not None:
-            gain_filename = params.lookup.gain
-            with open(gain_filename, "rb") as fh:
-                gain = _pickle_load(fh)
-            if not isinstance(gain, tuple):
-                gain = (gain,)
-            if lookup_size is None:
-                lookup_size = [g.all() for g in gain]
-            else:
-                assert len(gain) == len(lookup_size), "Incompatible size"
-                for s, g in zip(lookup_size, gain):
-                    assert s == g.all(), "Incompatible size"
-        if params.lookup.pedestal is not None:
-            dark_filename = params.lookup.pedestal
-            with open(dark_filename, "rb") as fh:
-                dark = _pickle_load(fh)
-            if not isinstance(dark, tuple):
-                dark = (dark,)
-            if lookup_size is None:
-                lookup_size = [d.all() for d in dark]
-            else:
-                assert len(dark) == len(lookup_size), "Incompatible size"
-                for s, d in zip(lookup_size, dark):
-                    assert s == d.all(), "Incompatible size"
-        if params.lookup.dx is not None:
-            dx_filename = params.lookup.dx
-            with open(dx_filename, "rb") as fh:
-                dx = _pickle_load(fh)
-            if not isinstance(dx, tuple):
-                dx = (dx,)
-            if lookup_size is None:
-                lookup_size = [d.all() for d in dx]
-            else:
-                assert len(dx) == len(lookup_size), "Incompatible size"
-                for s, d in zip(lookup_size, dx):
-                    assert s == d.all(), "Incompatible size"
-        if params.lookup.dy is not None:
-            dy_filename = params.lookup.dy
-            with open(dx_filename, "rb") as fh:
-                dy = _pickle_load(fh)
-            if not isinstance(dy, tuple):
-                dy = (dy,)
-            if lookup_size is None:
-                lookup_size = [d.all() for d in dy]
-            else:
-                assert len(dy) == len(lookup_size), "Incompatible size"
-                for s, d in zip(lookup_size, dy):
-                    assert s == d.all(), "Incompatible size"
-        Lookup = namedtuple("Lookup", ["size", "mask", "gain", "dark", "dx", "dy"])
-        Item = namedtuple("Item", ["data", "filename"])
-        return Lookup(
-            size=lookup_size,
-            mask=Item(data=mask, filename=mask_filename),
-            gain=Item(data=gain, filename=gain_filename),
-            dark=Item(data=dark, filename=dark_filename),
-            dx=Item(data=dx, filename=dx_filename),
-            dy=Item(data=dy, filename=dy_filename),
-        )
+    if lookup.size is not None:
+        d = imageset.get_detector()
+        assert len(lookup.size) == len(d), "Incompatible size"
+        for s, p in zip(lookup.size, d):
+            assert s == p.get_image_size()[::-1], "Incompatible size"
+        if lookup.mask.filename is not None:
+            imageset.external_lookup.mask.filename = lookup.mask.filename
+            imageset.external_lookup.mask.data = ImageBool(lookup.mask.data)
+        if lookup.gain.filename is not None:
+            imageset.external_lookup.gain.filename = lookup.gain.filename
+            imageset.external_lookup.gain.data = ImageDouble(lookup.gain.data)
+        if lookup.dark.filename is not None:
+            imageset.external_lookup.pedestal.filename = lookup.dark.filename
+            imageset.external_lookup.pedestal.data = ImageDouble(lookup.dark.data)
+        if lookup.dx.filename is not None:
+            imageset.external_lookup.dx.filename = lookup.dx.filename
+            imageset.external_lookup.dx.data = ImageDouble(lookup.dx.data)
+        if lookup.dy.filename is not None:
+            imageset.external_lookup.dy.filename = lookup.dy.filename
+            imageset.external_lookup.dy.data = ImageDouble(lookup.dy.data)
+    return imageset
+
+
+def import_lookup_data(params):
+    """
+    Get the lookup data
+    """
+    # Check the lookup inputs
+    mask_filename = None
+    gain_filename = None
+    dark_filename = None
+    dx_filename = None
+    dy_filename = None
+    mask = None
+    gain = None
+    dark = None
+    dx = None
+    dy = None
+    lookup_size = None
+    if params.lookup.mask is not None:
+        mask_filename = params.lookup.mask
+        with open(mask_filename, "rb") as fh:
+            mask = _pickle_load(fh)
+        if not isinstance(mask, tuple):
+            mask = (mask,)
+        lookup_size = [m.all() for m in mask]
+    if params.lookup.gain is not None:
+        gain_filename = params.lookup.gain
+        with open(gain_filename, "rb") as fh:
+            gain = _pickle_load(fh)
+        if not isinstance(gain, tuple):
+            gain = (gain,)
+        if lookup_size is None:
+            lookup_size = [g.all() for g in gain]
+        else:
+            assert len(gain) == len(lookup_size), "Incompatible size"
+            for s, g in zip(lookup_size, gain):
+                assert s == g.all(), "Incompatible size"
+    if params.lookup.pedestal is not None:
+        dark_filename = params.lookup.pedestal
+        with open(dark_filename, "rb") as fh:
+            dark = _pickle_load(fh)
+        if not isinstance(dark, tuple):
+            dark = (dark,)
+        if lookup_size is None:
+            lookup_size = [d.all() for d in dark]
+        else:
+            assert len(dark) == len(lookup_size), "Incompatible size"
+            for s, d in zip(lookup_size, dark):
+                assert s == d.all(), "Incompatible size"
+    if params.lookup.dx is not None:
+        dx_filename = params.lookup.dx
+        with open(dx_filename, "rb") as fh:
+            dx = _pickle_load(fh)
+        if not isinstance(dx, tuple):
+            dx = (dx,)
+        if lookup_size is None:
+            lookup_size = [d.all() for d in dx]
+        else:
+            assert len(dx) == len(lookup_size), "Incompatible size"
+            for s, d in zip(lookup_size, dx):
+                assert s == d.all(), "Incompatible size"
+    if params.lookup.dy is not None:
+        dy_filename = params.lookup.dy
+        with open(dx_filename, "rb") as fh:
+            dy = _pickle_load(fh)
+        if not isinstance(dy, tuple):
+            dy = (dy,)
+        if lookup_size is None:
+            lookup_size = [d.all() for d in dy]
+        else:
+            assert len(dy) == len(lookup_size), "Incompatible size"
+            for s, d in zip(lookup_size, dy):
+                assert s == d.all(), "Incompatible size"
+    Lookup = namedtuple("Lookup", ["size", "mask", "gain", "dark", "dx", "dy"])
+    Item = namedtuple("Item", ["data", "filename"])
+    return Lookup(
+        size=lookup_size,
+        mask=Item(data=mask, filename=mask_filename),
+        gain=Item(data=gain, filename=gain_filename),
+        dark=Item(data=dark, filename=dark_filename),
+        dx=Item(data=dx, filename=dx_filename),
+        dy=Item(data=dy, filename=dy_filename),
+    )
 
 
 def print_sequence_diff(sequence1, sequence2, params):
