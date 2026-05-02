@@ -151,7 +151,6 @@ namespace dials { namespace algorithms { namespace profile_model {
                           double frame,
                           std::size_t panel,
                           bool adjacent = false) const {
-        DIALS_ASSERT(shoebox.is_consistent());
         if (shoebox.flat) {
           single_flat(shoebox, s1, frame, panel);
         } else {

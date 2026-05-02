@@ -350,7 +350,8 @@ namespace dials { namespace af { namespace boost_python {
         bbox_new[j][5] = z + 1;
         indices[j] = i;
         Shoebox<> s2(panel[i], bbox_new[j]);
-        s2.allocate();
+        s2.allocate_data();
+        s2.allocate_background();
         DIALS_ASSERT(s2.is_consistent());
         std::size_t last = first + s2.data.size();
         std::copy(s1.data.begin() + first, s1.data.begin() + last, s2.data.begin());

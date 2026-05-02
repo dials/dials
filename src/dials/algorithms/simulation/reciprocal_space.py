@@ -202,7 +202,7 @@ class Simulator:
         # Create a load of shoeboxes
         Command.start(f"Creating shoeboxes for {len(refl)} reflections")
         refl["shoebox"] = flex.shoebox(refl["panel"], refl["bbox"])
-        refl["shoebox"].allocate_with_value(MaskCode.Valid)
+        refl["shoebox"].allocate_data_with_value(MaskCode.Valid)
         Command.end(f"Created shoeboxes for {len(refl)} reflections")
 
         # Get the function object to mask the foreground
