@@ -445,7 +445,7 @@ class UCSettingsPanel(wx.Panel):
             # Slow axis needs the opposite sign to fast to match the detector
             # coordinate convention (spinner slow = −px moves origin in +slow dir).
             delta_s = +center_mm[1]
-            delta_n = +(detector[0].get_distance() - distance)
+            delta_n = detector[0].get_distance() + distance
 
             new_origin = (
                 h_origin + h_fast * delta_f + h_slow * delta_s + h_normal * delta_n
