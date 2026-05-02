@@ -55,6 +55,12 @@ class FFT1D(Strategy):
                 reflections, using at most 0.029 radians.
         """
         super().__init__(max_cell, params=params, *args, **kwargs)
+        import iotbx.phil
+        from rstbx.phil.phil_preferences import indexing_api_defs
+
+        self._hardcoded_phil = iotbx.phil.parse(
+            input_string=indexing_api_defs
+        ).extract()
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
@@ -67,12 +73,7 @@ class FFT1D(Strategy):
             A tuple containing the list of basis vectors and a flex.bool array
             identifying which reflections were used in indexing.
         """
-        import iotbx.phil
-        from rstbx.phil.phil_preferences import indexing_api_defs
-
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
-
-        hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
 
         # Spot_positions: Centroid positions for spotfinder spots, in pixels
         # Return value: Corrected for parallax, converted to mm
@@ -88,7 +89,7 @@ class FFT1D(Strategy):
         DPS = DPS_primitive_lattice(
             max_cell=self._max_cell,
             recommended_grid_sampling_rad=self._params.characteristic_grid,
-            horizon_phil=hardcoded_phil,
+            horizon_phil=self._hardcoded_phil,
         )
 
         # transform input into what Nick needs
