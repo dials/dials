@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import math
 
 import wx
@@ -333,6 +334,15 @@ class UCSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
         sizer.Add(box)
 
+        # Save .expt row: text box (filename) + Save button
+        save_box = wx.BoxSizer(wx.HORIZONTAL)
+        self.save_expt_ctrl = wx.TextCtrl(self, value="modified.expt")
+        save_box.Add(self.save_expt_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        self.save_expt_button = wx.Button(self, -1, "Save .expt")
+        save_box.Add(self.save_expt_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        self.Bind(wx.EVT_BUTTON, self.OnSaveExpt, self.save_expt_button)
+        sizer.Add(save_box)
+
         origin_box = wx.BoxSizer(wx.HORIZONTAL)
         self.origin = wx.StaticText(self, label="")
         origin_box.Add(self.origin, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -386,6 +396,47 @@ class UCSettingsPanel(wx.Panel):
 
     def OnClear(self, event):
         self.__del__()
+
+    def _compute_panel_origin(self, panel, distance, center):
+        """Return (fast, slow, new_origin) for a panel adjusted by spinner values.
+
+        panel    -- a dxtbx detector panel
+        distance -- desired detector distance in mm (from the distance spinner)
+        center   -- [fast_shift_px, slow_shift_px] (from the centering spinners)
+
+        The fast and slow axes are left unchanged.  The origin is shifted along
+        the fast/slow directions by the beam-centre correction and along the
+        panel normal by the distance delta.
+        """
+        fast = col(panel.get_fast_axis())
+        slow = col(panel.get_slow_axis())
+        norm = col(panel.get_normal())
+        x = -panel.pixel_to_millimeter(center)[0]
+        y = -panel.pixel_to_millimeter(center)[1]
+        z = -(panel.get_distance() - distance)
+        origin = (fast * x + slow * y + norm * z) + col(panel.get_origin())
+        return fast, slow, origin
+
+    def OnSaveExpt(self, event):
+        """Save a copy of the first ExperimentList with updated detector geometry."""
+        spot_frame = self.GetParent().GetParent()
+        experiments = copy.deepcopy(spot_frame.experiments[0])
+
+        distance = float(self.distance_ctrl.GetValue())
+        center = [
+            float(self.spinner_fast.GetValue()),
+            float(self.spinner_slow.GetValue()),
+        ]
+
+        for expt in experiments:
+            detector = expt.detector
+            for i, panel in enumerate(detector):
+                fast, slow, origin = self._compute_panel_origin(panel, distance, center)
+                panel.set_frame(fast.elems, slow.elems, origin.elems)
+
+        path = self.save_expt_ctrl.GetValue().strip() or "modified.expt"
+        experiments.as_file(path)
+        print(f"Wrote {path}")
 
     def _draw_rings_layer(self, dc, data, map_rel):
         """Draw a points layer.
@@ -531,11 +582,7 @@ class UCSettingsPanel(wx.Panel):
             )
 
         panel = detector[0]
-        fast = col(panel.get_fast_axis())
-        slow = col(panel.get_slow_axis())
-        norm = col(panel.get_normal())
-        x = -panel.pixel_to_millimeter(self._center)[0]
-        y = -panel.pixel_to_millimeter(self._center)[1]
-        z = -(panel.get_distance() - distance)
-        origin = (fast * x + slow * y + norm * z) + col(panel.get_origin())
+        fast, slow, origin = self._compute_panel_origin(
+            panel, distance, self._center
+        )
         self.origin.SetLabel("Panel 0 origin: {:f}, {:f}, {:f}".format(*origin.elems))
