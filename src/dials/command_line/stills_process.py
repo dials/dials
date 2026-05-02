@@ -22,7 +22,7 @@ from libtbx.utils import Abort, Sorry
 
 import dials.util
 from dials.array_family import flex
-from dials.command_line.dials_import import import_lookup_data, update_lookup
+from dials.command_line.dials_import import MetaDataUpdater
 from dials.util import log
 
 logger = logging.getLogger("dials.command_line.stills_process")
@@ -405,9 +405,9 @@ def _apply_lookup_to_imageset(imageset, params, lookup_cache):
         return imageset
     gain_key = os.path.abspath(params.lookup.gain)
     if gain_key not in lookup_cache:
-        lookup_cache[gain_key] = import_lookup_data(params)
+        lookup_cache[gain_key] = MetaDataUpdater.import_lookup_data(params)
     try:
-        imageset = update_lookup(imageset, lookup_cache[gain_key])
+        imageset = MetaDataUpdater.update_lookup(imageset, lookup_cache[gain_key])
     except AssertionError:
         _imageset_label = (
             " ".join(imageset.paths()) if hasattr(imageset, "paths") else str(imageset)
@@ -649,7 +649,7 @@ class Script:
         # This avoids reading the gain file once per image in the do_work loops.
         if params.lookup.gain is not None:
             _gain_key = os.path.abspath(params.lookup.gain)
-            _initial_lookup = import_lookup_data(params)
+            _initial_lookup = MetaDataUpdater.import_lookup_data(params)
             self._lookup_cache[_gain_key] = _initial_lookup
 
         # Import stuff
