@@ -430,9 +430,27 @@ class UCSettingsPanel(wx.Panel):
 
         for expt in experiments:
             detector = expt.detector
-            for i, panel in enumerate(detector):
-                fast, slow, origin = self._compute_panel_origin(panel, distance, center)
-                panel.set_frame(fast.elems, slow.elems, origin.elems)
+            hi = detector.hierarchy()
+            h_fast = col(hi.get_fast_axis())
+            h_slow = col(hi.get_slow_axis())
+            h_normal = h_fast.cross(h_slow)
+            h_origin = col(hi.get_origin())
+
+            # Parallax correction near the beam centre is ~0, so plain
+            # pixel × pixel_size is sufficient (no pixel_to_millimeter needed).
+            pixel_size = detector[0].get_pixel_size()  # (fast_mm, slow_mm)
+            center_mm = [center[0] * pixel_size[0], center[1] * pixel_size[1]]
+
+            delta_f = -center_mm[0]
+            # Slow axis needs the opposite sign to fast to match the detector
+            # coordinate convention (spinner slow = −px moves origin in +slow dir).
+            delta_s = +center_mm[1]
+            delta_n = +(detector[0].get_distance() - distance)
+
+            new_origin = (
+                h_origin + h_fast * delta_f + h_slow * delta_s + h_normal * delta_n
+            )
+            hi.set_frame(h_fast.elems, h_slow.elems, new_origin.elems)
 
         path = self.save_expt_ctrl.GetValue().strip() or "modified.expt"
         experiments.as_file(path)
@@ -582,7 +600,5 @@ class UCSettingsPanel(wx.Panel):
             )
 
         panel = detector[0]
-        fast, slow, origin = self._compute_panel_origin(
-            panel, distance, self._center
-        )
+        fast, slow, origin = self._compute_panel_origin(panel, distance, self._center)
         self.origin.SetLabel("Panel 0 origin: {:f}, {:f}, {:f}".format(*origin.elems))
