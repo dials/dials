@@ -17,14 +17,13 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.util import ersatz_uuid4
 from libtbx.phil import parse
 from libtbx.utils import Abort, Sorry
 
 import dials.util
 from dials.array_family import flex
 from dials.util import log
-
-from dxtbx.util import ersatz_uuid4
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
@@ -1046,14 +1045,14 @@ class Processor:
         self.debug_start(tag)
 
         for experiment in experiments:
-           if experiment.identifier == "":
-               experiment.identifier = ersatz_uuid4()
-               fmt = experiment.imageset.get_format_class().get_instance(
-                   experiment.imageset.paths()[0]
-               )
-               if self.params.output.psana_identifiers:
-                   ts = fmt.get_psana_timestamp(experiment.imageset.indices()[0])
-                   experiment.identifier = ts + "_" + experiment.identifier
+            if experiment.identifier == "":
+                experiment.identifier = ersatz_uuid4()
+            if self.params.output.psana_identifiers:
+                fmt = experiment.imageset.get_format_class().get_instance(
+                    experiment.imageset.paths()[0]
+                )
+                ts = fmt.get_psana_timestamp(experiment.imageset.indices()[0])
+                experiment.identifier = ts + "_" + experiment.identifier
 
         if self.params.output.experiments_filename:
             if self.params.output.composite_output:
