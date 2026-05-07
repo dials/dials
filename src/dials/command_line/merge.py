@@ -33,7 +33,16 @@ from dials.util.options import ArgumentParser, reflections_and_experiments_from_
 from dials.util.version import dials_version
 
 help_message = """
-Merge scaled dials data.
+
+This program merges scaled dials data to produce a merged MTZ file.
+
+A truncation procedure is run as part of merging, to convert intensity estimates to
+positive structure factor amplitudes (French & Wilson (1978) algorithm).
+
+R-free flags are generated for the output MTZ. A number of options can be used to
+control this process, including the use of a reference dataset.
+
+A html output report is generated with merging statistic tables and plots.
 
 Examples::
 
