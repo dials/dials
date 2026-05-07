@@ -1,0 +1,2 @@
+Dials.stills_process: add explicit garbage collection to prevent memory
+problems in large jobs with subsampling.
