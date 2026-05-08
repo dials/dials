@@ -571,6 +571,8 @@ def test_small_molecule(dials_data, tmp_path):
             quartz / "integrated.expt",
             quartz / "integrated.refl",
             "small_molecule=True",
+            "normalisation=ml_iso",  # stability
+            "laue_group=P321",  # fix laue group to avoid differences across platforms (https://github.com/dials/dials/issues/3171)
         ),
         cwd=tmp_path,
         capture_output=True,
@@ -584,10 +586,10 @@ def test_small_molecule(dials_data, tmp_path):
 | Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
 |               |           |               |    equiv. |        |         |               |           |                 |
 |---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
-| P 31          |           |            50 |        61 | 14.891 |      12 |           1.1 |         4 |           14.4  |
-| P 32          |           |            50 |        61 | 14.891 |      12 |           1.1 |         4 |           14.4  |
-| P 31 2 1      |           |            50 |        47 | 16.219 |      12 |           1.1 |        10 |           20.32 |
-| P 32 2 1      |           |            50 |        47 | 16.219 |      12 |           1.1 |        10 |           20.32 |
+| P 31          |           |            50 |        64 | 15.422 |      12 |           1.1 |         6 |           16.28 |
+| P 32          |           |            50 |        64 | 15.422 |      12 |           1.1 |         6 |           16.28 |
+| P 31 2 1      |           |            50 |        48 | 16.906 |      12 |           1.1 |        13 |           19.47 |
+| P 32 2 1      |           |            50 |        48 | 16.906 |      12 |           1.1 |        13 |           19.47 |
 +---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
 Selected results in Laue group P -3 m 1: P 31 2 1, P 32 2 1
 Saving reindexed experiments to symmetrized.expt in space group P 31 2 1
