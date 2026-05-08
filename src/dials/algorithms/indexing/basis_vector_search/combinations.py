@@ -26,6 +26,8 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
     # nearer the beginning of the input list will appear before combinations
     # comprising vectors towards the end of the list
     n = len(basis_vectors)
+    if n < 3:
+        return []
     # hardcoded limit on number of vectors, fixes issue #72
     # https://github.com/dials/dials/issues/72
     n = min(n, 100)
