@@ -210,6 +210,7 @@ class MMCIFOutputFile:
         # _diffrn_detector.type = (full name of detector e.g. DECTRIS PILATUS3 2M)
         # One date is required, so if multiple just use the first date.
         cif_block["_diffrn_detector.diffrn_id"] = 1
+        cif_block["_diffrn_detector.id"] = 1
         if epochs:  # some still expts have scans, but some don't
             min_epoch = min(epochs)
             date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
@@ -379,6 +380,75 @@ class MMCIFOutputFile:
             merged_data = result.as_cif_block()
             merged_block.update(merged_data)
             cif_block.update(merged_block)
+
+        # Write the necessary metadata to link the scans to the detector/dataset
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_detector_element.detector_id",
+                "_diffrn_detector_element.id",
+            )
+        )
+        cif_loop.add_row((1, 1))
+        cif_block.add_loop(cif_loop)
+        detector_axis_cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_detector_axis.detector_id",
+                "_diffrn_detector_axis.axis_id",
+            )
+        )
+        diffrn_frame_cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_data_frame.detector_element_id",
+                "_diffrn_data_frame.id",
+            )
+        )
+
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_scan_axis.scan_id",
+                "_diffrn_scan_axis.axis_id",
+                "_diffrn_scan_axis.angle_start",
+                "_diffrn_scan_axis.angle_increment",
+            )
+        )
+        scan_loop = iotbx.cif.model.loop(
+            header=[
+                "_diffrn_scan.id",
+                "_diffrn_scan.frame_id_start",
+                "_diffrn_scan.frame_id_end",
+                "_diffrn_scan.frames",
+            ]
+        )
+
+        for i, exp in enumerate(experiments):
+            scan = exp.scan
+            image_range = scan.get_image_range()
+            start, increment = scan.get_oscillation(deg=True)
+            scan_loop.add_row(
+                (
+                    i + 1,
+                    f"scan_{i + 1}_frame_start",
+                    f"scan_{i + 1}_frame_end",
+                    image_range[1] - image_range[0] + 1,
+                )
+            )
+            # for h, v in zip(header, vals):
+            #    cif_block[h] = v
+            cif_loop.add_row(
+                (
+                    i + 1,
+                    i + 1,
+                    start,
+                    increment,
+                )
+            )
+            diffrn_frame_cif_loop.add_row((1, f"scan_{i + 1}_frame_start"))
+            diffrn_frame_cif_loop.add_row((1, f"scan_{i + 1}_frame_end"))
+            detector_axis_cif_loop.add_row((1, i + 1))
+        cif_block.add_loop(diffrn_frame_cif_loop)
+        cif_block.add_loop(detector_axis_cif_loop)
+        cif_block.add_loop(scan_loop)
+        cif_block.add_loop(cif_loop)
 
         # Write the crystal information
         # if v5, that's all so return
