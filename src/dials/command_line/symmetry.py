@@ -25,6 +25,7 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 )
 from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
+from dials.algorithms.symmetry.refstat import check_reflections
 from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
 from dials.util import log, tabulate
@@ -101,12 +102,23 @@ systematic_absences {
   method = *direct fourier
     .type = choice
     .help = "Use fourier analysis or direct analysis of I/sigma to determine"
-            "likelihood of systematic absences"
+            "likelihood of systematic absences due to screw axes"
 
   significance_level = 0.95
     .type = float(value_min=0, value_max=1)
     .help = "Significance to use when testing whether axial reflections are "
             "different to zero (absences and reflections in reflecting condition)."
+
+  small_molecule = False
+    .type = bool
+    .help = "If True, then after the specific check for screw axes, perform an "
+            "extended test that will check absences due to all elements, including "
+            "glide planes."
+
+  sigma_level = 5.0
+    .type = float
+    .help = "Sigma level to use to identify systematic absences in the extended "
+            "small_molecule=True test."
 
 }
 
@@ -204,12 +216,18 @@ def symmetry(experiments, reflection_tables, params=None):
         # Get the best space group.
         best_subsym = result.best_solution.subgroup["best_subsym"]
         best_space_group = best_subsym.space_group().build_derived_acentric_group()
-        logger.info(
-            tabulate(
-                [[str(best_subsym.space_group_info()), str(best_space_group.info())]],
-                ["Patterson group", "Corresponding MX group"],
+        if not params.systematic_absences.small_molecule:
+            logger.info(
+                tabulate(
+                    [
+                        [
+                            str(best_subsym.space_group_info()),
+                            str(best_space_group.info()),
+                        ]
+                    ],
+                    ["Patterson group", "Corresponding MX group"],
+                )
             )
-        )
         # Reindex the input data
         _, refls_for_sym = _reindex_experiments_reflections(
             experiments, refls_for_sym, best_space_group, cb_op_inp_best
@@ -238,7 +256,10 @@ def symmetry(experiments, reflection_tables, params=None):
         space_group = experiments[0].crystal.get_space_group()
         laue_group = str(space_group.build_derived_patterson_group().info())
         logger.info("Laue group: %s", laue_group)
-        if laue_group in ("I m -3", "I m m m"):
+        if (
+            laue_group in ("I m -3", "I m m m")
+            and not params.systematic_absences.small_molecule
+        ):
             if laue_group == "I m -3":
                 logger.info(
                     """Space groups I 2 3 & I 21 3 cannot be distinguished with systematic absence
@@ -251,7 +272,10 @@ Using space group I 2 3, space group I 21 3 is equally likely.\n"""
 analysis, due to lattice centering.
 Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 )
-        elif laue_group not in laue_groups_for_absence_analysis:
+        elif (
+            laue_group not in laue_groups_for_absence_analysis
+            and not params.systematic_absences.small_molecule
+        ):
             logger.info("No absences to check for this laue group\n")
         else:
             if not refls_for_sym:
@@ -280,7 +304,7 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
             else:
                 joint_reflections = refls_for_sym[0]
 
-            merged_reflections = prepare_merged_reflection_table(
+            reflections, merged_reflections = prepare_merged_reflection_table(
                 experiments,
                 joint_reflections,
                 d_min,
@@ -292,6 +316,16 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 float(params.systematic_absences.significance_level),
                 method=params.systematic_absences.method,
             )
+
+            if params.systematic_absences.small_molecule:
+                logger.info(
+                    "Performing full systematic absences check for small_molecule=True"
+                )
+                check_reflections(
+                    experiments,
+                    reflections,
+                    params,
+                )
 
     logger.info(
         "Saving reindexed experiments to %s in space group %s",
