@@ -85,6 +85,8 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(num_images == img_tof.size());
 
     dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
+    dials::af::shared<std::size_t> refl_flags =
+      reflection_table.get<std::size_t>("flags");
     dials::af::const_ref<int6> bboxes = reflection_table["bbox"];
 
     // Arrays to store ouput of integration
@@ -105,6 +107,9 @@ namespace dials { namespace algorithms {
 
     auto worker = [&](std::size_t start, std::size_t end) {
       for (std::size_t i = start; i < end; ++i) {
+        if (refl_flags[i] & dials::af::DontIntegrate) {
+          continue;
+        }
         Shoebox<> shoebox = shoeboxes[i];
         int6 bbox = bboxes[i];
         int panel = shoebox.panel;
@@ -438,6 +443,8 @@ namespace dials { namespace algorithms {
     }
 
     dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
+    dials::af::shared<std::size_t> refl_flags =
+      reflection_table.get<std::size_t>("flags");
     dials::af::const_ref<int6> bboxes = reflection_table["bbox"];
 
     // Arrays to store ouput of integration
@@ -458,6 +465,9 @@ namespace dials { namespace algorithms {
 
     auto worker = [&](std::size_t start, std::size_t end) {
       for (std::size_t i = start; i < end; ++i) {
+        if (refl_flags[i] & dials::af::DontIntegrate) {
+          continue;
+        }
         Shoebox<> shoebox = shoeboxes[i];
         Shoebox<> i_shoebox = i_shoeboxes[i];
         Shoebox<> e_shoebox = e_shoeboxes[i];
@@ -824,6 +834,8 @@ namespace dials { namespace algorithms {
     }
 
     dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
+    dials::af::shared<std::size_t> refl_flags =
+      reflection_table.get<std::size_t>("flags");
     dials::af::const_ref<int6> bboxes = reflection_table["bbox"];
 
     // Arrays to store ouput of integration
@@ -844,6 +856,9 @@ namespace dials { namespace algorithms {
 
     auto worker = [&](std::size_t start, std::size_t end) {
       for (std::size_t i = start; i < end; ++i) {
+        if (refl_flags[i] & dials::af::DontIntegrate) {
+          continue;
+        }
         Shoebox<> shoebox = shoeboxes[i];
         Shoebox<> i_shoebox = i_shoeboxes[i];
         Shoebox<> e_shoebox = e_shoeboxes[i];

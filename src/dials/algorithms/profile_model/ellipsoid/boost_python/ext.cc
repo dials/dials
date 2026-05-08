@@ -121,7 +121,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     vec3<double> sp = panel.get_pixel_lab_coord(p1).normalize() * s0_length;
     mat3<double> R = compute_change_of_basis_operation(s0, sp);
 
-    const af::versa<int, af::c_grid<3>> mask = sbox.mask;
+    const af::versa<uint8_t, af::c_grid<3>> mask = sbox.mask;
     const af::const_ref<float_type, af::c_grid<3>> data = sbox.data.const_ref();
     const af::versa<float_type, af::c_grid<3>> bgrd = sbox.background;
     int i0 = sbox.bbox[0];
@@ -736,7 +736,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat2<double> Sbar_inv = Sbar.inverse();
 
       // Get the mask array
-      af::ref<int, af::c_grid<3>> mask = sbox.mask.ref();
+      af::ref<uint8_t, af::c_grid<3>> mask = sbox.mask.ref();
 
       // Get the bounding box
       int x0 = sbox.bbox[0];

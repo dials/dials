@@ -56,7 +56,7 @@ def test(dials_data):
     # Get the reflections and overlaps
     reflections, adjacency_list = predict_reflections(sequence, crystal)
     reflections["shoebox"] = flex.shoebox(reflections["panel"], reflections["bbox"])
-    reflections["shoebox"].allocate_with_value(shoebox.MaskCode.Valid)
+    reflections["shoebox"].allocate_data_with_value(shoebox.MaskCode.Valid)
 
     # If the adjacency list is given, then create the reflection mask
     assert len(detector) == 1

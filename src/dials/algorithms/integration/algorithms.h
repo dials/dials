@@ -805,9 +805,9 @@ namespace dials { namespace algorithms {
      * @param mask The mask array
      * @returns True/False if the shoebox is overlapping
      */
-    bool is_overlapping(const af::const_ref<int, af::c_grid<3> >& mask) const {
+    bool is_overlapping(const af::const_ref<uint8_t, af::c_grid<3> >& mask) const {
       bool result = false;
-      int mask_code = Valid | Foreground | Overlapped;
+      uint8_t mask_code = Valid | Foreground | Overlapped;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           result = true;

@@ -33,6 +33,14 @@ def test_run(dials_data):
     assert len(rtable) == len(shoeboxes)
     assert len(rtable) == len(masks)
 
+    # Convert masks from flex.int to flex.uint8
+    new_masks = []
+    for mask in masks:
+        m = flex.uint8(list(mask))
+        m.reshape(mask.accessor())
+        new_masks.append(m)
+    masks = new_masks
+
     # Compute the background for each reflection and check against the values
     # read from the mosflm.lp file. Currently this fails for 1 strange
     # reflection whose pixel values in the mosflm file do not match those
@@ -51,7 +59,7 @@ def test_run(dials_data):
         data.reshape(flex.grid(1, *data.all()))
         mask.reshape(flex.grid(1, *mask.all()))
         outlier_rejector(data, mask)
-        mask2 = (mask.as_1d() & int(MaskCode.BackgroundUsed)) != 0
+        mask2 = (mask.as_1d().as_int() & int(MaskCode.BackgroundUsed)) != 0
         mask2.reshape(flex.grid(*mask.all()))
         model = linear_modeller.create(data, mask2)
         assert len(model.params()) == 3

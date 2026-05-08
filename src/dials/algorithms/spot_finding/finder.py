@@ -300,7 +300,7 @@ def pixel_list_to_shoeboxes(
     logger.info(f"\nExtracted {len(shoeboxes)} spots")
 
     # Get the unallocated spots and print some info
-    selection = shoeboxes.is_allocated()
+    selection = shoeboxes.is_data_allocated() & shoeboxes.is_background_allocated()
     shoeboxes = shoeboxes.select(selection)
     ntoosmall = (spotsizes < min_spot_size).count(True)
     ntoolarge = (spotsizes > max_spot_size).count(True)

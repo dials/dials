@@ -307,7 +307,8 @@ class BackgroundGradientFilter:
 
         rlist = flex.reflection_table()
         rlist["shoebox"] = shoeboxes
-        rlist["shoebox"].allocate()
+        rlist["shoebox"].allocate_data()
+        rlist["shoebox"].allocate_background()
         rlist["panel"] = shoeboxes.panels()
         rlist["bbox"] = shoeboxes.bounding_boxes()
 

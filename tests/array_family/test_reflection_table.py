@@ -787,7 +787,8 @@ def test_extract_shoeboxes():
         reflections.append({"panel": random.randint(0, 1), "bbox": bbox})
 
     reflections["shoebox"] = flex.shoebox(reflections["panel"], reflections["bbox"])
-    reflections["shoebox"].allocate()
+    reflections["shoebox"].allocate_data()
+    reflections["shoebox"].allocate_background()
 
     class FakeImageSet:
         def __init__(self):
@@ -969,7 +970,8 @@ def test_split_partials_with_shoebox():
         v2 = random.randint(0, 100)
         v3 = random.uniform(0, 100)
         sbox = Shoebox(0, (x0, x1, y0, y1, z0, z1))
-        sbox.allocate()
+        sbox.allocate_data()
+        sbox.allocate_background()
         assert sbox.is_consistent()
         w = x1 - x0
         h = y1 - y0
@@ -989,7 +991,8 @@ def test_split_partials_with_shoebox():
         )
         for z in range(z0, z1):
             sbox = Shoebox(0, (x0, x1, y0, y1, z, z + 1))
-            sbox.allocate()
+            sbox.allocate_data()
+            sbox.allocate_background()
             assert sbox.is_consistent()
             w = x1 - x0
             h = y1 - y0
@@ -1095,7 +1098,8 @@ def test_find_overlapping():
 
 def gen_shoebox():
     shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
-    shoebox.allocate()
+    shoebox.allocate_data()
+    shoebox.allocate_background()
     for k in range(1):
         for j in range(3):
             for i in range(4):
