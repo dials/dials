@@ -125,23 +125,31 @@ namespace dials { namespace model {
     /**
      * Allocate the mask and data from the bounding box
      */
-    void allocate_with_value(uint8_t maskcode) {
+    void allocate_data_with_value(uint8_t maskcode) {
       std::size_t zs = flat ? 1 : zsize();
       af::c_grid<3> accessor(zs, ysize(), xsize());
       data = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
       mask = af::versa<uint8_t, af::c_grid<3> >(accessor, maskcode);
-      background = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
     }
 
     /**
      * Allocate the mask and data with mask code valid.
      */
-    void allocate() {
-      allocate_with_value(0);
+    void allocate_data() {
+      allocate_data_with_value(0);
     }
 
     /**
-     * Deallocate the mask and data arrays
+     * Allocate the background from the bounding box
+     */
+    void allocate_background() {
+      std::size_t zs = flat ? 1 : zsize();
+      af::c_grid<3> accessor(zs, ysize(), xsize());
+      background = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
+    }
+
+    /**
+     * Deallocate the data, mask and background arrays
      */
     void deallocate() {
       af::c_grid<3> accessor(0, 0, 0);
@@ -213,10 +221,9 @@ namespace dials { namespace model {
       return result;
     }
 
-    /** @return True/False whether the shoeboxes are allocated */
-    bool is_allocated() const {
+    /** @return True/False whether the shoebox data and mask are allocated */
+    bool is_data_allocated() const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
-      DIALS_ASSERT(data.accessor().all_eq(background.accessor()));
       if (data.size() == 0) {
         return false;
       } else {
@@ -224,6 +231,20 @@ namespace dials { namespace model {
           DIALS_ASSERT(data.accessor().all_eq(size_flat()));
         } else {
           DIALS_ASSERT(data.accessor().all_eq(size()));
+        }
+      }
+      return true;
+    }
+
+    /** @return True/False whether the shoebox background is allocated */
+    bool is_background_allocated() const {
+      if (background.size() == 0) {
+        return false;
+      } else {
+        if (flat) {
+          DIALS_ASSERT(background.accessor().all_eq(size_flat()));
+        } else {
+          DIALS_ASSERT(background.accessor().all_eq(size()));
         }
       }
       return true;

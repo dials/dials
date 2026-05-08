@@ -35,7 +35,8 @@ def generate_shoebox(bbox, centre, intensity, mask=False):
 
     shoebox = Shoebox()
     shoebox.bbox = bbox
-    shoebox.allocate()
+    shoebox.allocate_data()
+    shoebox.allocate_background()
     for i in range(len(shoebox.mask)):
         shoebox.mask[i] = MaskCode.Valid | MaskCode.Foreground
     shoebox.data = gaussian(
@@ -112,7 +113,8 @@ def test_allocate():
         z1 = random.randint(1, 10) + z0
 
         shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
-        shoebox.allocate()
+        shoebox.allocate_data()
+        shoebox.allocate_background()
         assert shoebox.data.all() == (z1 - z0, y1 - y0, x1 - x0)
         assert shoebox.mask.all() == (z1 - z0, y1 - y0, x1 - x0)
         shoebox.deallocate()
@@ -165,7 +167,8 @@ def test_consistent():
         try:
             shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
             assert not shoebox.is_consistent()
-            shoebox.allocate()
+            shoebox.allocate_data()
+            shoebox.allocate_background()
             assert shoebox.is_consistent()
             shoebox.data = flex.real(flex.grid(20, 20, 20))
             assert not shoebox.is_consistent()
@@ -239,7 +242,8 @@ def test_count_mask_values():
         z1 = random.randint(1, 10) + z0
 
         shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
-        shoebox.allocate()
+        shoebox.allocate_data()
+        shoebox.allocate_background()
         maxnum = len(shoebox.mask)
         num = random.randint(1, maxnum)
         indices = random.sample(list(range(maxnum)), num)
