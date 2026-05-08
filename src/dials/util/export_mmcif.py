@@ -43,7 +43,7 @@ class MMCIFOutputFile:
         self._cif = iotbx.cif.model.cif()
         self.params = params
         self._v5_next_fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
-        self._v5_0_fmt = "%2i %6i %-2i %-2i %-2i %6i %5.3f %5.3f"
+        self._v5_0_fmt = "%2i %6i %-2i %-2i %-2i %5.3f %5.3f"
 
     def write(self, experiments, reflections):
         """
@@ -256,7 +256,6 @@ class MMCIFOutputFile:
             "_diffrn_refln.index_h",
             "_diffrn_refln.index_k",
             "_diffrn_refln.index_l",
-            "_diffrn_refln.pdbx_image_id",
             "_diffrn_refln.pdbx_detector_x",
             "_diffrn_refln.pdbx_detector_y",
         )
@@ -388,20 +387,15 @@ class MMCIFOutputFile:
                 hkl.iround()
                 for hkl in reflections["miller_index"].as_vec3_double().parts()
             )
-            # Det_x, det_y, det_z are expected to be calculated positions
+            # Det_x, det_y are expected to be calculated positions
             # according to the dictionary definition.
-            # But make sure that we are within the
-            # allowed bounds (lower bound 0) for image_id
-            det_x, det_y, det_z = reflections["xyzcal.px"].parts()
-            det_z.set_selected(det_z < 0, 0)
-            image_id = flex.ceil(det_z).iround()
+            det_x, det_y, _ = reflections["xyzcal.px"].parts()
             loop_values = [
                 flex.int(len(reflections), 1),  # diffn id
                 flex.size_t_range(1, len(reflections) + 1),  # refln id
                 h,
                 k,
                 l,
-                image_id,
                 det_x,
                 det_y,
             ] + [reflections[name] for name in variables_present]
