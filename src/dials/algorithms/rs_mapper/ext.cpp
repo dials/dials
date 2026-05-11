@@ -148,7 +148,7 @@ namespace recviewer { namespace ext {
 
       for (std::size_t frame = 0; frame < nframes; ++frame) {
         double tof = img_tof[frame] * 1e-6;  // (s)
-        Image<double> image_data = imageset.get_corrected_data(frame);
+        Image<float> image_data = imageset.get_corrected_data(frame);
 
         DIALS_ASSERT(image_data.n_tiles() == detector.size());
 
