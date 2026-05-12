@@ -21,7 +21,7 @@ see `Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290`_.
 
 In DIALS, the algorithms for intensity-based clustering are contained in :doc:`dials.correlation_matrix <../programs/dials_correlation_matrix>`.
 This program performs a standalone intensity-based clustering analysis on the input data.
-For full scaling/merging of multi-crystal data, use :doc:`xia2.multiplex <../programs/xia2_multiplex>`.
+For full scaling/merging of multi-crystal data, use :doc:`xia2.multiplex <../programs/xia2_multiplex>`. A tutorial_ is also available.
 
 This tutorial will use :doc:`dials.correlation_matrix <../programs/dials_correlation_matrix>` to analyse
 data from bovine, porcine and human insulin (🐮🐷💁‍♀️). While broadly isomorphous, insulin derived from these three species differ subtly by
