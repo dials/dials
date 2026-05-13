@@ -53,6 +53,7 @@ Utilities:
    dials_missing_reflections
    dials_filter_reflections
    dials_import_xds
+   dials_correlation_matrix
 
 Printable command line reference:
 
