@@ -192,24 +192,23 @@ Intensity-based Clustering
 
 Now, we will look at the clustering output in more depth to understand how ``dials.correlation_matrix`` successfully
 separated these three sub-groups of 🐮, 🐷, and 💁‍♀️. First, open ``dials.correlation_matrix.html`` and click
-on the ``Data correlation matrices`` tab. You will see four tabs:
+on the ``Intensity clustering`` tab. You will then see three more tabs:
 
-================================== =====================================================================================
-Clustering Output Tab              Overview
-================================== =====================================================================================
-Correlation coefficient clustering Hierarchical clustering of pairwise CC between all datasets.
-Cos angle clustering               Hierarchical clustering of pairwise cosine angles between dimension reduced datasets.
-Cosym cluster plots                Coordinate clustering of dimension reduced datasets.
-Principal component analysis       PCA analysis of dimension reduced datasets.
-================================== =====================================================================================
+=============================================== =====================================================================================
+Clustering Output Tab                           Overview
+=============================================== =====================================================================================
+Hierarchical correlation coefficient clustering Hierarchical clustering of pairwise CC between all datasets.
+Cosym coordinate clustering                     Dimension reduction of pairwise CCs and cluster resulting coordinates using OPTICS.
+Hierarchical cos angle clustering               Hierarchical clustering of pairwise cosine angles between cosym coordinates.
+=============================================== =====================================================================================
 
 Intensity-based clustering in DIALS is a multi-step process. For more technical details, see `Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290`_.
 The below flowchart summarises the flow of data between the three methods of cluster classification: coordinate, correlation and cosine angle.
 
 .. image:: https://dials.github.io/images/intensity_based_clustering/clustering_flowchart.png
 
-Correlation Coefficient Clustering
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Hierarchical Correlation Coefficient Clustering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The correlation coefficient clustering displays the result of calculating the pairwise correlation coefficients
 on all datasets. In the heat map, yellow corresponds to a higher correlation, while red is a lower correlation.
 Note that these colours are relative, with the scale bar showing what the pairwise correlations actually are.
@@ -218,20 +217,13 @@ the bottom being more similar than groups that join at the top.
 
 .. image:: https://dials.github.io/images/intensity_based_clustering/cc-matrix.png
 
-Cos Angle Clustering
-~~~~~~~~~~~~~~~~~~~~
 
-
-Cosine angle clustering is a hierarchical clustering approach similar to correlation coefficient clustering, however the input data are the pairwise angular differences between datasets, after application of the cosym procedure. The minimisation performed during the cosym procedure results in systematic differences being separated in angle (`Diederichs, K. (2017) Acta Cryst. D73, 286-293`_), therefore clustering based on anglular differences groups will group datasets with low systematic differences. It is presented in an analogous way to the correlation clustering, where the heatmap is representing the cosine of the angular difference.
-
-.. image:: https://dials.github.io/images/intensity_based_clustering/cos-matrix.png
-
-Cosym Cluster Plots
-~~~~~~~~~~~~~~~~~~~
-
-This section gives some further insight into how the cos angle clustering functions (called *cosym* as it utilises
-the same maths as ``dials.cosym``). The first graph displays the pairwise correlation coefficients as a histogram.
-This can be helpful to visualise if multiple clusters may be present (shown by multiple gaussian-like distributions).
+Cosym Coordinate Clustering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This section describes the coordinate-based clustering approach as well as providing diagnostic graphs for all steps of the algorithm
+(called *cosym* as it utilises the same maths as ``dials.cosym``). Within the ``cosym cluster plots`` tab, there are four graphs.
+The first graph displays the pairwise correlation coefficients as a histogram. This can be helpful to visualise if multiple clusters
+may be present (shown by multiple gaussian-like distributions).
 
 .. image:: https://dials.github.io/images/intensity_based_clustering/rij-hist.png
 
@@ -239,7 +231,10 @@ The next plot shows the dimension reduction of the pairwise correlation matrix. 
 corresponds to the difference between the pairwise correlation matrix and the reduced dimension coordinates. When this
 value is close to 0, it means that all the information in the high-dimensional correlation matrix is captured by the
 reduced dimension coordinates. ``dials.correlation_matrix`` identifies the elbow point in this plot and defines that as
-the ideal dimension to use.
+the ideal dimension to use. This dimension reduction is useful, as large datasets quickly become very high dimension. In this example,
+we have 36 datasets, so the pairwise correlation matrix is 36 x 36, i.e. a 36-dimensional problem. Reducing the dimensions is easier both
+visually, and computationally. This dimension reduction also has the property of separating random and systematic differences, which can 
+provide useful insight to the data (`Diederichs, K. (2017) Acta Cryst. D73, 286-293`_). 
 
 .. image:: https://dials.github.io/images/intensity_based_clustering/dims.png
 
@@ -258,10 +253,7 @@ are rotated to align with these principal components.
 
 .. image:: https://dials.github.io/images/intensity_based_clustering/coords.png
 
-Principal Component Analysis
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-For analyses where more than 2 dimensions are used during the cosine clustering (such as this 3D example), it may be
-interesting to examine the graphs in this section. Here, the coordinate plot from the previous tab is shown for all
+To visualise higher dimensions, go to the ``principal component analysis`` tab. Here, the coordinate plot from the previous tab is shown for all
 combinations of principal components (up to a maximum of 6). There are some neat features here that are useful to explore.
 
 The initial plot is zoomed out.
@@ -276,6 +268,17 @@ You can also select the lasso tool and highlight only specific data points. The 
 visualise specific points over multiple dimensions.
 
 .. image:: https://dials.github.io/images/intensity_based_clustering/pca-lasso.png
+
+Hierarchical Cos Angle Clustering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cosine angle clustering is a hierarchical clustering approach similar to correlation coefficient clustering, however the input data are the
+pairwise angular differences between datasets, after application of the cosym procedure. The minimisation performed during the cosym procedure
+results in systematic differences being separated in angle (`Diederichs, K. (2017) Acta Cryst. D73, 286-293`_), therefore clustering based on anglular
+differences will group datasets with low systematic differences. It is presented in an analogous way to the correlation clustering, where the
+heatmap is representing the cosine of the angular difference.
+
+.. image:: https://dials.github.io/images/intensity_based_clustering/cos-matrix.png
 
 Automation
 ~~~~~~~~~~
