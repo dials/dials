@@ -940,6 +940,7 @@ class CorrelationMatrix:
                 plot_dims(
                     self._dimension_optimisation_data["dimensions"],
                     self._dimension_optimisation_data["functional"],
+                    self.cosym_analysis.target.dim,
                 )
             )
 
