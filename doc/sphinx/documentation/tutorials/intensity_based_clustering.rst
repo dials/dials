@@ -221,16 +221,8 @@ the bottom being more similar than groups that join at the top.
 Cos Angle Clustering
 ~~~~~~~~~~~~~~~~~~~~
 
-Cosine angle clustering is an extension of the correlation coefficient clustering. Firstly, a lower dimension
-representation of the pairwise correlation matrix is calculated. In this (relatively small) example,
-the pairwise correlation matrix is 36 x 36, which means that each dataset could be represented as a set
-of coordinates in 36-dimensional space. This is too many dimensions for efficient maths. By representing
-each dataset in 3D space (i.e. reducing the pairwise correlation matrix to a 36 x 3 matrix) the data is
-easier to deal with. Exactly why 3 dimensions were chosen is explored below. It has been shown that this dimension reduction analysis
-separates the effect of random and systematic differences (`Diederichs, K. (2017) Acta Cryst. D73, 286-293`_).
-While correlation clustering shows differences caused by both random and systematic errors, pairwise cosine angles
-between datasets in reduced dimensional space show only systematic differences between datasets. It is presented in an
-analogous way to the correlation clustering, where the heatmap is representing cosine angles. 
+
+Cosine angle clustering is a hierarchical clustering approach similar to correlation coefficient clustering, however the input data are the pairwise angular differences between datasets, after application of the cosym procedure. The minimisation performed during the cosym procedure results in systematic differences being separated in angle (`Diederichs, K. (2017) Acta Cryst. D73, 286-293`_), therefore clustering based on anglular differences groups will group datasets with low systematic differences. It is presented in an analogous way to the correlation clustering, where the heatmap is representing the cosine of the angular difference.
 
 .. image:: https://dials.github.io/images/intensity_based_clustering/cos-matrix.png
 
