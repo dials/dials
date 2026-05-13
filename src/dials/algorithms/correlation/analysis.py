@@ -921,8 +921,18 @@ class CorrelationMatrix:
 
         self.rij_graphs = OrderedDict()
 
+        bins = (
+            int((self.correlation_matrix.max() - self.correlation_matrix.min()) / 0.005)
+            * 2
+        )
+
         self.rij_graphs.update(
-            plot_rij_histogram(self.correlation_matrix, key="cosym_rij_histogram_sg")
+            plot_rij_histogram(
+                self.correlation_matrix,
+                key="cosym_rij_histogram_sg",
+                min_x=self.correlation_matrix.min(),
+                bins=bins,
+            )
         )
 
         if self._dimension_optimisation_data:
