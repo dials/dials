@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 
+from libtbx import Auto
 from libtbx.phil import parse
+from scitbx import matrix
 
 from dials.array_family import flex
 from dials.model.experiment.profile import ProfileModelExt
@@ -500,6 +502,23 @@ class Model(ProfileModelExt):
         :param scan: The scan model
         """
         from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
+
+        if sigma_b_multiplier is Auto:
+            # Calculate number of pixels per sigma_b at 2θ=0°
+            us0 = matrix.col(beam.get_unit_s0())
+            us1 = us0.rotate_around_origin(us0.ortho(), self._sigma_b)
+            panel_id = detector.get_panel_intersection(us0)
+            if panel_id < 0:
+                # No direct beam intersection, so choose panel most closely normal to the beam
+                angles = [
+                    matrix.col(p.get_normal()).accute_angle(us0) for p in detector
+                ]
+                panel_id = min(range(len(angles)), key=lambda i: angles[i])
+            beam_centre = matrix.col(detector[panel_id].get_ray_intersection_px(us0))
+            intersection = matrix.col(detector[panel_id].get_ray_intersection_px(us1))
+            px_distance = (intersection - beam_centre).length()
+            logger.info(f"px_distance: {px_distance}")
+        sigma_b_multiplier = 2.0
 
         # Check the input
         assert sigma_b_multiplier >= 1.0
