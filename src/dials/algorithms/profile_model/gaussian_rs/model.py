@@ -517,7 +517,7 @@ class Model(ProfileModelExt):
             beam_centre = matrix.col(detector[panel_id].get_ray_intersection_px(us0))
             intersection = matrix.col(detector[panel_id].get_ray_intersection_px(us1))
             px_distance = (intersection - beam_centre).length()
-            logger.info(f"px_distance: {px_distance}")
+            logger.info("px_distance: ", px_distance)
         sigma_b_multiplier = 2.0
 
         # Check the input
