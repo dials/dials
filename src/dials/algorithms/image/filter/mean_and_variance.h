@@ -68,7 +68,7 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   af::versa<FloatType, af::c_grid<2> > mean_filter_masked(
-    const af::const_ref<FloatType, af::c_grid<2> >& image,
+    const af::const_ref<float, af::c_grid<2> >& image,
     af::ref<int, af::c_grid<2> > mask,
     int2 size,
     int min_count,
@@ -126,7 +126,7 @@ namespace dials { namespace algorithms {
      * @params image The image to filter
      * @param size The size of the filter kernel (2 * size + 1)
      */
-    MeanAndVarianceFilter(const af::const_ref<FloatType, af::c_grid<2> >& image,
+    MeanAndVarianceFilter(const af::const_ref<float, af::c_grid<2> >& image,
                           int2 size) {
       // Check the input is valid
       DIALS_ASSERT(size.all_gt(0));
@@ -221,7 +221,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the filter kernel (2 * size + 1)
      * @param min_count The minimum counts to use
      */
-    MeanAndVarianceFilterMasked(const af::const_ref<FloatType, af::c_grid<2> >& image,
+    MeanAndVarianceFilterMasked(const af::const_ref<float, af::c_grid<2> >& image,
                                 const af::const_ref<int, af::c_grid<2> >& mask,
                                 int2 size,
                                 int min_count)
@@ -250,8 +250,8 @@ namespace dials { namespace algorithms {
       summed_mask_ = summed_area<int>(mask, size);
 
       // Ensure that all masked pixels are zero in the image and update the mask
-      af::versa<FloatType, af::c_grid<2> > temp(image.accessor(),
-                                                af::init_functor_null<FloatType>());
+      af::versa<float, af::c_grid<2> > temp(image.accessor(),
+                                            af::init_functor_null<FloatType>());
       af::versa<FloatType, af::c_grid<2> > image_sq(image.accessor(),
                                                     af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < image.size(); ++i) {

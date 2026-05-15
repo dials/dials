@@ -659,7 +659,7 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionThresholdDebug(const af::const_ref<double, af::c_grid<2> >& image,
+    DispersionThresholdDebug(const af::const_ref<float, af::c_grid<2> >& image,
                              const af::const_ref<bool, af::c_grid<2> >& mask,
                              int2 size,
                              double nsig_b,
@@ -680,7 +680,7 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionThresholdDebug(const af::const_ref<double, af::c_grid<2> >& image,
+    DispersionThresholdDebug(const af::const_ref<float, af::c_grid<2> >& image,
                              const af::const_ref<bool, af::c_grid<2> >& mask,
                              const af::const_ref<double, af::c_grid<2> >& gain,
                              int2 size,
@@ -727,7 +727,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    void init(const af::const_ref<double, af::c_grid<2> >& image,
+    void init(const af::const_ref<float, af::c_grid<2> >& image,
               const af::const_ref<bool, af::c_grid<2> >& mask,
               const af::const_ref<double, af::c_grid<2> >& gain,
               int2 size,
@@ -798,7 +798,7 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionExtendedThresholdDebug(const af::const_ref<double, af::c_grid<2> >& image,
+    DispersionExtendedThresholdDebug(const af::const_ref<float, af::c_grid<2> >& image,
                                      const af::const_ref<bool, af::c_grid<2> >& mask,
                                      int2 size,
                                      double nsig_b,
@@ -819,7 +819,7 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionExtendedThresholdDebug(const af::const_ref<double, af::c_grid<2> >& image,
+    DispersionExtendedThresholdDebug(const af::const_ref<float, af::c_grid<2> >& image,
                                      const af::const_ref<bool, af::c_grid<2> >& mask,
                                      const af::const_ref<double, af::c_grid<2> >& gain,
                                      int2 size,
@@ -866,7 +866,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    void init(const af::const_ref<double, af::c_grid<2> >& image,
+    void init(const af::const_ref<float, af::c_grid<2> >& image,
               const af::const_ref<bool, af::c_grid<2> >& mask,
               const af::const_ref<double, af::c_grid<2> >& gain,
               int2 size,
@@ -1008,7 +1008,7 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void compute_sat(af::ref<Data<T> > table,
-                     const af::const_ref<T, af::c_grid<2> >& src,
+                     const af::const_ref<float, af::c_grid<2> >& src,
                      const af::const_ref<bool, af::c_grid<2> >& mask) {
       // Largest value to consider
       const T BIG = (1 << 24);  // About 16m counts
@@ -1048,7 +1048,7 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void compute_dispersion_threshold(af::ref<Data<T> > table,
-                                      const af::const_ref<T, af::c_grid<2> >& src,
+                                      const af::const_ref<float, af::c_grid<2> >& src,
                                       const af::const_ref<bool, af::c_grid<2> >& mask,
                                       af::ref<bool, af::c_grid<2> > dst) {
       // Get the size of the image
@@ -1124,7 +1124,7 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void compute_dispersion_threshold(af::ref<Data<T> > table,
-                                      const af::const_ref<T, af::c_grid<2> >& src,
+                                      const af::const_ref<float, af::c_grid<2> >& src,
                                       const af::const_ref<bool, af::c_grid<2> >& mask,
                                       const af::const_ref<double, af::c_grid<2> >& gain,
                                       af::ref<bool, af::c_grid<2> > dst) {
@@ -1282,7 +1282,7 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void compute_final_threshold(af::ref<Data<T> > table,
-                                 const af::const_ref<T, af::c_grid<2> >& src,
+                                 const af::const_ref<float, af::c_grid<2> >& src,
                                  const af::const_ref<bool, af::c_grid<2> >& mask,
                                  af::ref<bool, af::c_grid<2> > dst) {
       // Get the size of the image
@@ -1356,7 +1356,7 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void compute_final_threshold(af::ref<Data<T> > table,
-                                 const af::const_ref<T, af::c_grid<2> >& src,
+                                 const af::const_ref<float, af::c_grid<2> >& src,
                                  const af::const_ref<bool, af::c_grid<2> >& mask,
                                  const af::const_ref<double, af::c_grid<2> >& gain,
                                  af::ref<bool, af::c_grid<2> > dst) {
@@ -1430,7 +1430,7 @@ namespace dials { namespace algorithms {
      * @param dst - The destination array.
      */
     template <typename T>
-    void threshold(const af::const_ref<T, af::c_grid<2> >& src,
+    void threshold(const af::const_ref<float, af::c_grid<2> >& src,
                    const af::const_ref<bool, af::c_grid<2> >& mask,
                    af::ref<bool, af::c_grid<2> > dst) {
       // check the input
@@ -1472,7 +1472,7 @@ namespace dials { namespace algorithms {
      * @param dst - The destination array.
      */
     template <typename T>
-    void threshold_w_gain(const af::const_ref<T, af::c_grid<2> >& src,
+    void threshold_w_gain(const af::const_ref<float, af::c_grid<2> >& src,
                           const af::const_ref<bool, af::c_grid<2> >& mask,
                           const af::const_ref<double, af::c_grid<2> >& gain,
                           af::ref<bool, af::c_grid<2> > dst) {

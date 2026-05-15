@@ -484,9 +484,10 @@ class Task:
                     )
 
             read_time += time() - st
-            processor.next(make_image(image, mask), self.executor)
+            imdata = make_image(image, mask)
             del image
             del mask
+            processor.next(imdata, self.executor)
         assert processor.finished(), "Data processor is not finished"
 
         # Optionally save the shoeboxes
