@@ -52,11 +52,14 @@ namespace dials { namespace model { namespace boost_python {
     DIALS_ASSERT(len(data) > 0);
     extract<af::flex<int>::type> get_int(data[0]);
     extract<af::flex<double>::type> get_double(data[0]);
+    extract<af::flex<float>::type> get_float(data[0]);
     object result;
     if (get_int.check()) {
       result = object(make_from_tuple<int>(data, mask));
     } else if (get_double.check()) {
       result = object(make_from_tuple<double>(data, mask));
+    } else if (get_float.check()) {
+      result = object(make_from_tuple<float>(data, mask));
     } else {
       throw DIALS_ERROR("Unknown Image Data Type");
     }
@@ -74,9 +77,11 @@ namespace dials { namespace model { namespace boost_python {
   void export_image() {
     wrap_image<int>("ImageInt");
     wrap_image<double>("ImageDouble");
+    wrap_image<float>("ImageFloat");
 
     def("make_image", &make_from_single<int>);
     def("make_image", &make_from_single<double>);
+    def("make_image", &make_from_single<float>);
     def("make_image", &make_from_tuple2);
   }
 
