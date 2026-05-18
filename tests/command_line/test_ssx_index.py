@@ -47,7 +47,7 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     assert data["filtered_images"] == [4]
 
 
-def test_ssx_index_retain_experiments(dials_data, tmp_path):
+def test_ssx_index_retain_unindexed_experiments(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed")
     expts = ssx / "imported_no_ref_5.expt"
     refls = ssx / "strong_5.refl"
@@ -57,7 +57,7 @@ def test_ssx_index_retain_experiments(dials_data, tmp_path):
         shutil.which("dials.ssx_index"),
         expts,
         refls,
-        "retain_experiments=True",
+        "retain_unindexed_experiments=True",
     ]
     result = subprocess.run(
         args,

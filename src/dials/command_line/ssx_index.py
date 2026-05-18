@@ -83,13 +83,14 @@ min_spots = 10
     .type = int
     .expert_level = 2
     .help = "Images with fewer than this number of strong spots will not be indexed"
-retain_experiments = False
+retain_unindexed_experiments = False
     .type = bool
     .expert_level = 3
     .help = "Keep all input experiment models and input reflections in the output."
             "i.e. the output contains indexed and unindexed experiments and reflections"
-            "This is an experimental mode, follow on programs may not be able to handle"
-            "these files as input."
+            "This is an experimental mode that can be used to view the output of SSX indexing"
+            "in the image viewer, but follow on programs may not be able to handle"
+            "these files as input as not all experiments have a crystal model or data."
 output.html = dials.ssx_index.html
     .type = str
 output.json = None
