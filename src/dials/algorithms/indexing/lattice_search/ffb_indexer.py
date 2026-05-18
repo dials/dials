@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 
 import numpy
 
@@ -95,6 +96,9 @@ class FfbIndexer(Strategy):
 
     phil_scope = iotbx.phil.parse(ffbidx_phil_str)
 
+    _ffb_indexer = None
+    _lock = threading.Lock()
+
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
     ):
@@ -134,18 +138,21 @@ class FfbIndexer(Strategy):
         )
 
         # Create fast feedback indexer object (on default CUDA device)
-        try:
-            self.indexer = ffbidx.Indexer(
-                max_output_cells=params.max_output_cells,
-                max_spots=params.max_spots,
-                num_candidate_vectors=params.num_candidate_vectors,
-                redundant_computations=params.redundant_computations,
-            )
-        except RuntimeError as e:
-            raise DialsIndexError(
-                "The ffbidx package is not correctly configured for this system. See (https://github.com/paulscherrerinstitute/fast-feedback-indexer). Error: "
-                + str(e)
-            )
+        if FfbIndexer._ffb_indexer is None:
+            try:
+                with FfbIndexer._lock:
+                    FfbIndexer._ffb_indexer = ffbidx.Indexer(
+                        max_output_cells=params.max_output_cells,
+                        max_spots=params.max_spots,
+                        num_candidate_vectors=params.num_candidate_vectors,
+                        redundant_computations=params.redundant_computations,
+                    )
+            except RuntimeError as e:
+                raise DialsIndexError(
+                    "The ffbidx package is not correctly configured for this system. See (https://github.com/paulscherrerinstitute/fast-feedback-indexer). Error: "
+                    + str(e)
+                )
+        self.indexer = FfbIndexer._ffb_indexer
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
