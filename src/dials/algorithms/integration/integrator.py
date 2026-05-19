@@ -1238,10 +1238,16 @@ class Integrator:
                     for j, experiment in enumerate(experiments):
                         if experiment.imageset == imageset:
                             subset.extend(reflections.select(reflections["id"] == j))
-                if not imageset.get_scan() or imageset.get_scan().is_still():
+                # Use the experiment's scan (not the imageset's) to handle
+                # rotation-sweep slices processed as stills (experiment.scan=None).
+                expt_scan = next(
+                    (e.scan for e in experiments if e.imageset == imageset),
+                    imageset.get_scan(),
+                )
+                if not expt_scan or expt_scan.is_still():
                     frame0, frame1 = (0, len(imageset))
                 else:
-                    frame0, frame1 = imageset.get_scan().get_array_range()
+                    frame0, frame1 = expt_scan.get_array_range()
                 flatten = self.params.integration.integrator == "flat3d"
                 max_needed = max(
                     max_memory_needed(subset, frame0, frame1, flatten),

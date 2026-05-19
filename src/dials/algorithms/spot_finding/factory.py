@@ -443,14 +443,17 @@ class SpotFinderFactory:
         if params.spotfinder.force_2d and params.output.shoeboxes is False:
             no_shoeboxes_2d = True
         elif experiments is not None and params.output.shoeboxes is False:
-            no_shoeboxes_2d = False
-            all_stills = True
-            for experiment in experiments:
-                if isinstance(experiment.imageset, ImageSequence):
-                    all_stills = False
-                    break
-            if all_stills:
+            if is_stills:
                 no_shoeboxes_2d = True
+            else:
+                no_shoeboxes_2d = False
+                all_stills = True
+                for experiment in experiments:
+                    if isinstance(experiment.imageset, ImageSequence):
+                        all_stills = False
+                        break
+                if all_stills:
+                    no_shoeboxes_2d = True
         else:
             no_shoeboxes_2d = False
 

@@ -56,8 +56,6 @@ class ReflectionPredictor:
         :param margin: The margin of hkl to predict
         :param force_static: force scan varying prediction to be static
         """
-        from dxtbx.imageset import ImageSequence
-
         from dials.algorithms.spot_prediction import (
             ScanStaticReflectionPredictor,
             ScanVaryingReflectionPredictor,
@@ -87,7 +85,7 @@ class ReflectionPredictor:
             )
 
         # Select the predictor class
-        if isinstance(experiment.imageset, ImageSequence):
+        if experiment.scan is not None and not experiment.scan.is_still():
             xl_nsp = experiment.crystal.num_scan_points
             bm_nsp = experiment.beam.num_scan_points
             gn_nsp = experiment.goniometer.num_scan_points
