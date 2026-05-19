@@ -489,20 +489,22 @@ def extend_with_bookkeeping(src_expts, src_refls, dest_expts, dest_refls):
 def _frame_index(expt):
     """Return the 0-based frame index of expt within its source file.
 
-    The per-frame slice's ``indices()`` retains its index into the parent
-    ImageSetData even when the synthetic per-frame Scan is rebuilt to (1, 1)
-    by ``do_import`` (which it must, so the integrator's array_range assertion
-    holds). So ``indices()`` is the only reliable source of frame number.
+    Two representations are possible:
+    - Per-frame imageset from do_import: indices() == [i] (single entry), scan=None.
+      Use indices()[0] directly.
+    - Full shared imageset from _rebuild_shared_imageset_output (after JSON round-trip):
+      indices() spans all frames from that file; the experiment-level scan carries the
+      per-frame position as Scan((fi+1, fi+1)).  Use scan.get_array_range()[0] - 1.
     """
     from dxtbx.imageset import ImageSequence
 
     iset = expt.imageset
     if isinstance(iset, ImageSequence):
         idxs = iset.indices()
-        if len(idxs) > 0:
+        if len(idxs) == 1:
             return idxs[0]
     if expt.scan is not None:
-        return expt.scan.get_array_range()[0]
+        return expt.scan.get_array_range()[0] - 1
     return 0
 
 
@@ -981,6 +983,9 @@ class Script:
                     imageset.clear_cache()
                 if finalize:
                     processor.finalize()
+                    # Output is already on disk; return None so easy_mp doesn't
+                    # try to pickle C++ threshold/indexer objects in the result queue.
+                    return None
                 return processor
 
             iterable = list(zip(tags, range(len(split_experiments))))
@@ -1052,6 +1057,9 @@ class Script:
                     processor.process_experiments(tag, experiments)
                 if finalize:
                     processor.finalize()
+                    # Output is already on disk; return None so easy_mp doesn't
+                    # try to pickle C++ threshold/indexer objects in the result queue.
+                    return None
                 return processor
 
             iterable = list(zip(tags, all_paths))
@@ -2225,7 +2233,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         self.all_integrated_experiments
                     ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
-                    ) = self.all_int_pickles = self.all_integrated_reflections = []
+                    ) = self.all_int_pickles = self.all_int_pickle_filenames = []
 
             # Dedupe shared models before writing. Safe for both combine_all_ranks
             # paths and for per-rank output; the rebuild is a no-op for rotation
