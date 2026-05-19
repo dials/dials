@@ -489,35 +489,47 @@ def extend_with_bookkeeping(src_expts, src_refls, dest_expts, dest_refls):
 def _frame_index(expt):
     """Return the 0-based frame index of expt within its source file.
 
-    Priority: imageset sub-scan → experiment scan → 0 (fallback).
-    The fallback occurs only for rotation-data-as-stills after Change-4a scan
-    nulling when the imageset is also an ImageSet (no scan). SSX/XFEL stills
-    (the primary use case) always have a valid imageset scan.
+    The per-frame slice's ``indices()`` retains its index into the parent
+    ImageSetData even when the synthetic per-frame Scan is rebuilt to (1, 1)
+    by ``do_import`` (which it must, so the integrator's array_range assertion
+    holds). So ``indices()`` is the only reliable source of frame number.
     """
     from dxtbx.imageset import ImageSequence
 
     iset = expt.imageset
-    if isinstance(iset, ImageSequence) and iset.get_scan() is not None:
-        return iset.get_scan().get_array_range()[0]
+    if isinstance(iset, ImageSequence):
+        idxs = iset.indices()
+        if len(idxs) > 0:
+            return idxs[0]
     if expt.scan is not None:
         return expt.scan.get_array_range()[0]
     return 0
 
 
 def _rebuild_shared_imageset_output(experiments):
-    """Reconstruct experiments with one shared ImageSequence per source file.
+    """Reconstruct experiments with shared models per source file.
 
-    Experiment ORDER is preserved to keep the reflection table ``id`` column valid.
-    Explicitly re-assigns shared_beam/shared_detector to restore Python object
-    identity after MPI pickling (pickling breaks identity, causing the JSON
-    serializer to emit N entries instead of one).
+    For stills-as-ImageSequence input only — returns unchanged for rotation data
+    or non-ImageSequence imagesets. Produces one ImageSequence / beam / detector
+    per source file, and shares one ``Scan((fi+1, fi+1))`` Python object across
+    all experiments from the same frame (so multi-lattice frames contribute one
+    scan entry, not N). Order is preserved to keep reflection-table ``id`` valid.
     """
     from collections import defaultdict
 
+    from dxtbx.format.Registry import get_format_class_for_file
     from dxtbx.imageset import ImageSequence
     from dxtbx.model import Scan
 
-    # First pass: build one shared ImageSequence per source file.
+    if len(experiments) == 0:
+        return experiments
+    first_iset = experiments[0].imageset
+    if not isinstance(first_iset, ImageSequence):
+        return experiments
+    first_scan = first_iset.get_scan()
+    if first_scan is None or not first_scan.is_still():
+        return experiments
+
     by_file = defaultdict(list)
     for expt in experiments:
         path = expt.imageset.paths()[0]
@@ -526,6 +538,7 @@ def _rebuild_shared_imageset_output(experiments):
     file_to_full_seq = {}
     file_to_shared_beam = {}
     file_to_shared_detector = {}
+    file_to_frame_scans = {}  # path -> {frame_index: shared Scan instance}
 
     for path, expts in by_file.items():
         frame_indices = [_frame_index(e) for e in expts]
@@ -533,37 +546,46 @@ def _rebuild_shared_imageset_output(experiments):
         max_f = max(frame_indices)
         shared_beam = expts[0].beam
         shared_detector = expts[0].detector
-        first_iset = expts[0].imageset
-        # Use positional args — the C++ ImageSequence binding may not accept kwargs.
-        full_scan = Scan((min_f + 1, max_f + 1), (0.0, 0.0))  # zero-osc → is_still()
+        # Each per-frame slice's ``data()`` is partial (size 1) — too small to span
+        # an arbitrary [min_f, max_f] range. Re-open the source file to recover the
+        # full ImageSetData. This metadata-only call is cheap and happens once per
+        # source file at finalize time.
+        parent_iset = get_format_class_for_file(path).get_imageset(
+            [path], as_imageset=True
+        )
+        full_scan = Scan((min_f + 1, max_f + 1), (0.0, 0.0))
         full_seq = ImageSequence(
-            first_iset.data(),
+            parent_iset.data(),
             flex.size_t(range(min_f, max_f + 1)),
             shared_beam,
             shared_detector,
-            None,       # goniometer
+            None,
             full_scan,
         )
         file_to_full_seq[path] = full_seq
         file_to_shared_beam[path] = shared_beam
         file_to_shared_detector[path] = shared_detector
+        # Multi-lattice experiments from the same frame share one Scan instance,
+        # so JSON output has K scans (= unique indexed frames), not M (= lattices).
+        file_to_frame_scans[path] = {
+            fi: Scan((fi + 1, fi + 1), (0.0, 0.0)) for fi in set(frame_indices)
+        }
 
-    # Second pass: reconstruct in ORIGINAL ORDER to keep refl-table ``id`` valid.
     new_experiments = ExperimentList()
     for expt in experiments:
         path = expt.imageset.paths()[0]
         fi = _frame_index(expt)
         new_experiments.append(
             Experiment(
-                imageset=file_to_full_seq[path],       # ONE shared object per file
-                beam=file_to_shared_beam[path],         # ONE shared object per file
-                detector=file_to_shared_detector[path], # ONE shared object per file
+                imageset=file_to_full_seq[path],
+                beam=file_to_shared_beam[path],
+                detector=file_to_shared_detector[path],
                 goniometer=None,
-                scan=Scan((fi + 1, fi + 1), (0.0, 0.0)),  # per-frame, is_still()=True
+                scan=file_to_frame_scans[path][fi],
                 crystal=expt.crystal,
                 profile=expt.profile,
                 scaling_model=expt.scaling_model,
-                identifier=expt.identifier,  # preserves indexed↔integrated linkage
+                identifier=expt.identifier,
             )
         )
     return new_experiments
@@ -2205,20 +2227,21 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
 
-            # Rebuild shared imagesets before writing if combine_all_ranks requested.
-            if self.params.output.combine_all_ranks:
-                for attr in (
-                    "all_imported_experiments",
-                    "all_indexed_experiments",
-                    "all_integrated_experiments",
-                ):
-                    expts = getattr(self, attr, None)
-                    if expts:
-                        setattr(self, attr, _rebuild_shared_imageset_output(expts))
-                if self.params.dispatch.coset and self.all_coset_experiments:
-                    self.all_coset_experiments = _rebuild_shared_imageset_output(
-                        self.all_coset_experiments
-                    )
+            # Dedupe shared models before writing. Safe for both combine_all_ranks
+            # paths and for per-rank output; the rebuild is a no-op for rotation
+            # data (its stills guard returns the input unchanged).
+            for attr in (
+                "all_imported_experiments",
+                "all_indexed_experiments",
+                "all_integrated_experiments",
+            ):
+                expts = getattr(self, attr, None)
+                if expts:
+                    setattr(self, attr, _rebuild_shared_imageset_output(expts))
+            if self.params.dispatch.coset and self.all_coset_experiments:
+                self.all_coset_experiments = _rebuild_shared_imageset_output(
+                    self.all_coset_experiments
+                )
 
             # Dump composite files to disk
             if (
