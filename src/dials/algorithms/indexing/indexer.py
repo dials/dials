@@ -863,7 +863,7 @@ class Indexer:
                     sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel))
                 )
             x_px, y_px = xy_cal_px.parts()
-            if expt.scan is not None:
+            if expt.scan is not None and not expt.scan.is_still():
                 if expt.scan.has_property("time_of_flight"):
                     tof = expt.scan.get_property("time_of_flight")
                     frames = list(range(len(tof)))
@@ -876,7 +876,7 @@ class Indexer:
                 else:
                     z_px = z
             else:
-                # must be a still image, z centroid not meaningful
+                # still image (scan is None or zero-oscillation): z centroid not meaningful
                 z_px = z
             xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
             reflections["xyzcal.px"].set_selected(imgset_sel, xyzcal_px)

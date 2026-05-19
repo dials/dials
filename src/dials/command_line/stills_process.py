@@ -122,6 +122,14 @@ def _control_phil_str():
               concatenated list of all the successful events examined by that process. \
               If False, output a separate experiment/reflection file per image (generates a \
               lot of files).
+    combine_all_ranks = False
+      .type = bool
+      .help = If True, combine output from all MPI ranks (or multiprocessing workers) into a \
+              single file with shared imageset, beam, and detector per source file. For MPI, \
+              mp.composite_stride is automatically set to the total comm size so rank 0 is the \
+              sole aggregator. For multiprocessing, per-worker composite files are merged after \
+              all workers finish. Requires composite_output = True. For very large MPI runs, \
+              prefer mp.composite_stride = k (k < n_ranks) to bound per-aggregator memory.
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
@@ -350,30 +358,297 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 
 def do_import(filename, load_models=True):
     logger.info("Loading %s", os.path.basename(filename))
-    experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
-    if len(experiments) == 0:
+
+    # For multi-image formats (NXmx, XTC, etc.) force as_sequence=True so the
+    # returned ImageSequence has shared-identity beam/detector Python objects.
+    # Shared identity is required for JSON serializer deduplication and for the
+    # spotfinder static-mask cache.
+    from dxtbx.format.FormatMultiImage import FormatMultiImage
+    from dxtbx.format.Registry import get_format_class_for_file
+
+    format_class = get_format_class_for_file(filename)
+    if format_class is not None and issubclass(format_class, FormatMultiImage):
+        imageset = None
         try:
-            experiments = ExperimentListFactory.from_json_file(filename)
-        except ValueError:
-            pass
+            imageset = format_class.get_imageset([filename], as_sequence=True)
+        except RuntimeError:
+            # Stills data: FormatNXmx.get_scan() returns None for zero-oscillation
+            # data, and the C++ ImageSequence constructor requires a non-null scan.
+            # Load as ImageSet, then wrap in an ImageSequence with a synthetic
+            # zero-oscillation scan so shared beam/detector identity is preserved.
+            iset = format_class.get_imageset([filename], as_imageset=True)
+            n = len(iset)
+            from dxtbx.imageset import ImageSequence
+            from dxtbx.model import Scan
+
+            imageset = ImageSequence(
+                iset.data(),
+                flex.size_t(range(n)),
+                iset.get_beam(0),
+                iset.get_detector(0),
+                None,  # goniometer — stills have no rotation axis
+                Scan((1, n), (0.0, 0.0)),  # zero-oscillation → is_still()=True
+            )
+        except (TypeError, ValueError) as e:
+            logger.warning(
+                "get_imageset(as_sequence=True) failed for %s (%s); "
+                "falling back to from_filenames()",
+                filename,
+                e,
+            )
+            experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
+
+        if imageset is not None:
+            logger.info("Imageset type: %s", type(imageset).__name__)
+            experiments = ExperimentList(
+                [
+                    Experiment(
+                        imageset=imageset,
+                        beam=imageset.get_beam(),
+                        detector=imageset.get_detector(),
+                        goniometer=imageset.get_goniometer(),
+                        scan=imageset.get_scan(),
+                    )
+                ]
+            )
+    else:
+        experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
+        if len(experiments) == 0:
+            try:
+                experiments = ExperimentListFactory.from_json_file(filename)
+            except ValueError:
+                pass
 
     all_experiments = ExperimentList()
+    from dxtbx.imageset import ImageSequence
+    from dxtbx.model import Scan
     for experiment in experiments:
         imageset = experiment.imageset
         for i in range(len(imageset)):
+            per_frame_iset = imageset[i : i + 1]
+            _scan = per_frame_iset.get_scan()
+            # For zero-oscillation stills, the slice carries the absolute frame
+            # range from the parent scan (e.g. (3913, 3913)), which conflicts with
+            # the integrator's expectation that imageset.get_array_range() match
+            # the 0-based z coordinates in stills reflections. Rebuild the slice
+            # with a fresh single-image still scan so its array_range is (0, 1).
+            # Beam/detector are shared via the underlying ImageSetData, so JSON
+            # deduplication and spotfinder caching still work.
+            if (
+                _scan is not None
+                and _scan.is_still()
+                and isinstance(per_frame_iset, ImageSequence)
+            ):
+                per_frame_iset = ImageSequence(
+                    per_frame_iset.data(),
+                    per_frame_iset.indices(),
+                    per_frame_iset.get_beam(),
+                    per_frame_iset.get_detector(),
+                    per_frame_iset.get_goniometer(),
+                    Scan((1, 1), (0.0, 0.0)),
+                )
+                # Null the experiment's scan/goniometer so downstream code
+                # (indexer, refiner) sees scan=None as expected for stills.
+                _scan = None
             expt = Experiment(
-                imageset=imageset[i : i + 1],
+                imageset=per_frame_iset,
                 detector=experiment.detector,
                 beam=imageset.get_beam(i),
-                scan=imageset[i : i + 1].get_scan(),
+                scan=_scan,
                 goniometer=experiment.goniometer,
                 crystal=experiment.crystal,
             )
             if load_models:
                 expt.load_models()
+                # load_models() reads scan/goniometer back from the imageset's
+                # still scan; re-null so downstream code sees scan=None for stills.
+                if expt.scan is not None and expt.scan.is_still():
+                    expt.scan = None
+                    expt.goniometer = None
             all_experiments.append(expt)
 
     return all_experiments
+
+
+def extend_with_bookkeeping(src_expts, src_refls, dest_expts, dest_refls):
+    """Merge src into dest, remapping reflection id and experiment_identifiers."""
+    n = len(dest_refls.experiment_identifiers())
+    if len(src_refls):
+        src_refls["id"] += n
+        idents = src_refls.experiment_identifiers()
+        keys = list(idents.keys())
+        values = list(idents.values())
+        for key in keys:
+            del idents[key]
+        for i, key in enumerate(keys):
+            idents[key + n] = values[i]
+    dest_expts.extend(src_expts)
+    dest_refls.extend(src_refls)
+
+
+def _frame_index(expt):
+    """Return the 0-based frame index of expt within its source file.
+
+    Priority: imageset sub-scan → experiment scan → 0 (fallback).
+    The fallback occurs only for rotation-data-as-stills after Change-4a scan
+    nulling when the imageset is also an ImageSet (no scan). SSX/XFEL stills
+    (the primary use case) always have a valid imageset scan.
+    """
+    from dxtbx.imageset import ImageSequence
+
+    iset = expt.imageset
+    if isinstance(iset, ImageSequence) and iset.get_scan() is not None:
+        return iset.get_scan().get_array_range()[0]
+    if expt.scan is not None:
+        return expt.scan.get_array_range()[0]
+    return 0
+
+
+def _rebuild_shared_imageset_output(experiments):
+    """Reconstruct experiments with one shared ImageSequence per source file.
+
+    Experiment ORDER is preserved to keep the reflection table ``id`` column valid.
+    Explicitly re-assigns shared_beam/shared_detector to restore Python object
+    identity after MPI pickling (pickling breaks identity, causing the JSON
+    serializer to emit N entries instead of one).
+    """
+    from collections import defaultdict
+
+    from dxtbx.imageset import ImageSequence
+    from dxtbx.model import Scan
+
+    # First pass: build one shared ImageSequence per source file.
+    by_file = defaultdict(list)
+    for expt in experiments:
+        path = expt.imageset.paths()[0]
+        by_file[path].append(expt)
+
+    file_to_full_seq = {}
+    file_to_shared_beam = {}
+    file_to_shared_detector = {}
+
+    for path, expts in by_file.items():
+        frame_indices = [_frame_index(e) for e in expts]
+        min_f = min(frame_indices)
+        max_f = max(frame_indices)
+        shared_beam = expts[0].beam
+        shared_detector = expts[0].detector
+        first_iset = expts[0].imageset
+        # Use positional args — the C++ ImageSequence binding may not accept kwargs.
+        full_scan = Scan((min_f + 1, max_f + 1), (0.0, 0.0))  # zero-osc → is_still()
+        full_seq = ImageSequence(
+            first_iset.data(),
+            flex.size_t(range(min_f, max_f + 1)),
+            shared_beam,
+            shared_detector,
+            None,       # goniometer
+            full_scan,
+        )
+        file_to_full_seq[path] = full_seq
+        file_to_shared_beam[path] = shared_beam
+        file_to_shared_detector[path] = shared_detector
+
+    # Second pass: reconstruct in ORIGINAL ORDER to keep refl-table ``id`` valid.
+    new_experiments = ExperimentList()
+    for expt in experiments:
+        path = expt.imageset.paths()[0]
+        fi = _frame_index(expt)
+        new_experiments.append(
+            Experiment(
+                imageset=file_to_full_seq[path],       # ONE shared object per file
+                beam=file_to_shared_beam[path],         # ONE shared object per file
+                detector=file_to_shared_detector[path], # ONE shared object per file
+                goniometer=None,
+                scan=Scan((fi + 1, fi + 1), (0.0, 0.0)),  # per-frame, is_still()=True
+                crystal=expt.crystal,
+                profile=expt.profile,
+                scaling_model=expt.scaling_model,
+                identifier=expt.identifier,  # preserves indexed↔integrated linkage
+            )
+        )
+    return new_experiments
+
+
+def _combine_multiprocessing_outputs(params, nproc):
+    """Merge per-worker composite files into one combined file with shared imageset.
+
+    Workers write composite files named ``template % composite_tag`` where
+    ``composite_tag = "%04d" % worker_rank``.  This function loads all worker files
+    for each output stage, combines them with ID remapping, rebuilds shared
+    imageset/beam/detector, writes the result using worker-0's filename, then
+    deletes the intermediate per-worker files for workers 1..N-1.
+    """
+    output_dir = params.output.output_dir or "."
+
+    def _worker_path(template, tag):
+        if not template or "%s" not in template:
+            return None
+        path = os.path.join(output_dir, template % ("idx-" + tag))
+        return path if os.path.exists(path) else None
+
+    # (stage_name, expt_template, refl_template)
+    stages = [
+        ("imported", params.output.experiments_filename, None),
+        ("strong", None, params.output.strong_filename),
+        ("indexed", params.output.refined_experiments_filename, params.output.indexed_filename),
+        (
+            "integrated",
+            params.output.integrated_experiments_filename,
+            params.output.integrated_filename,
+        ),
+    ]
+    if getattr(params.dispatch, "coset", False):
+        stages.append(
+            (
+                "coset",
+                params.output.coset_experiments_filename,
+                params.output.coset_filename,
+            )
+        )
+
+    for stage, expt_template, refl_template in stages:
+        combined_expts = ExperimentList()
+        combined_refls = flex.reflection_table()
+        worker_expt_files = []
+        worker_refl_files = []
+
+        for i in range(nproc):
+            tag = "%04d" % i
+            ep = _worker_path(expt_template, tag) if expt_template else None
+            rp = _worker_path(refl_template, tag) if refl_template else None
+
+            src_expts = (
+                ExperimentListFactory.from_json_file(ep) if ep else ExperimentList()
+            )
+            src_refls = (
+                flex.reflection_table.from_file(rp) if rp else flex.reflection_table()
+            )
+
+            extend_with_bookkeeping(src_expts, src_refls, combined_expts, combined_refls)
+            if ep:
+                worker_expt_files.append(ep)
+            if rp:
+                worker_refl_files.append(rp)
+
+        if not len(combined_expts) and not len(combined_refls):
+            continue
+
+        if len(combined_expts):
+            combined_expts = _rebuild_shared_imageset_output(combined_expts)
+
+        # Write final combined file reusing worker-0's filename (overwrite).
+        tag0 = "idx-%04d" % 0
+        if expt_template and "%s" in expt_template:
+            combined_expts.as_json(os.path.join(output_dir, expt_template % tag0))
+        if refl_template and "%s" in refl_template:
+            combined_refls.as_file(os.path.join(output_dir, refl_template % tag0))
+
+        # Delete intermediate per-worker files (worker 0 was already overwritten).
+        for f in worker_expt_files[1:] + worker_refl_files[1:]:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
 
 
 def sync_geometry(src, dest):
@@ -489,6 +764,11 @@ class Script:
             else:
                 transmitted_info = None
             params, options, all_paths = comm.bcast(transmitted_info, root=0)
+
+        if params.output.combine_all_ranks and not params.output.composite_output:
+            sys.exit(
+                "ERROR: output.combine_all_ranks=True requires output.composite_output=True"
+            )
 
         if params.output.logging_option == "suppressed":
             logging.getLogger("dials.algorithms.indexing.nave_parameters").setLevel(
@@ -646,6 +926,15 @@ class Script:
                         assert len(experiments) == 1
                         experiment = experiments[0]
                         experiment.load_models()
+                        # load_models() overwrites scan/goniometer from the imageset,
+                        # which for stills holds the synthetic zero-oscillation Scan.
+                        # Re-null these so downstream code sees scan=None for stills.
+                        if (
+                            experiment.scan is not None
+                            and experiment.scan.is_still()
+                        ):
+                            experiment.scan = None
+                            experiment.goniometer = None
                         imageset = experiment.imageset
                         update_geometry(imageset)
                         experiment.beam = imageset.get_beam()
@@ -858,6 +1147,13 @@ class Script:
                         if error is None:
                             continue
                         print(error)
+
+                if (
+                    params.output.composite_output
+                    and params.output.combine_all_ranks
+                    and params.mp.nproc > 1
+                ):
+                    _combine_multiprocessing_outputs(params, nproc=params.mp.nproc)
 
         # Total Time
         logger.info("")
@@ -1797,6 +2093,21 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def finalize(self):
         """Perform any final operations"""
         if self.params.output.composite_output:
+            if self.params.output.combine_all_ranks and self.params.mp.method == "mpi":
+                from libtbx.mpi4py import MPI
+
+                nranks = MPI.COMM_WORLD.Get_size()
+                if (
+                    self.params.mp.composite_stride is not None
+                    and self.params.mp.composite_stride < nranks
+                ):
+                    logger.warning(
+                        "combine_all_ranks=True overrides mp.composite_stride=%d to %d",
+                        self.params.mp.composite_stride,
+                        nranks,
+                    )
+                self.params.mp.composite_stride = nranks
+
             if self.params.mp.composite_stride is not None:
                 assert self.params.mp.method == "mpi"
                 stride = self.params.mp.composite_stride
@@ -1826,21 +2137,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
                         logger.info("Rank %d received data from rank %d", rank, sender)
-
-                        def extend_with_bookkeeping(
-                            src_expts, src_refls, dest_expts, dest_refls
-                        ):
-                            n = len(dest_refls.experiment_identifiers())
-                            src_refls["id"] += n
-                            idents = src_refls.experiment_identifiers()
-                            keys = idents.keys()
-                            values = idents.values()
-                            for key in keys:
-                                del idents[key]
-                            for i, key in enumerate(keys):
-                                idents[key + n] = values[i]
-                            dest_expts.extend(src_expts)
-                            dest_refls.extend(src_refls)
 
                         if len(imported_experiments) > 0:
                             extend_with_bookkeeping(
@@ -1908,6 +2204,21 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
+
+            # Rebuild shared imagesets before writing if combine_all_ranks requested.
+            if self.params.output.combine_all_ranks:
+                for attr in (
+                    "all_imported_experiments",
+                    "all_indexed_experiments",
+                    "all_integrated_experiments",
+                ):
+                    expts = getattr(self, attr, None)
+                    if expts:
+                        setattr(self, attr, _rebuild_shared_imageset_output(expts))
+                if self.params.dispatch.coset and self.all_coset_experiments:
+                    self.all_coset_experiments = _rebuild_shared_imageset_output(
+                        self.all_coset_experiments
+                    )
 
             # Dump composite files to disk
             if (
