@@ -356,6 +356,26 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 )
 
 
+def _make_stills_sequence(data, indices, beam, detector, frame_range):
+    """Build an ImageSequence with a zero-oscillation Scan for stills data.
+
+    Shared by ``do_import`` (per-frame slice rebuild and as_sequence fallback)
+    and ``_rebuild_shared_imageset_output`` (multi-frame shared sequence).
+    Goniometer is always None — callers must only use this for still data.
+    """
+    from dxtbx.imageset import ImageSequence
+    from dxtbx.model import Scan
+
+    return ImageSequence(
+        data,
+        indices,
+        beam,
+        detector,
+        None,
+        Scan(frame_range, (0.0, 0.0)),
+    )
+
+
 def do_import(filename, load_models=True):
     logger.info("Loading %s", os.path.basename(filename))
 
@@ -378,16 +398,12 @@ def do_import(filename, load_models=True):
             # zero-oscillation scan so shared beam/detector identity is preserved.
             iset = format_class.get_imageset([filename], as_imageset=True)
             n = len(iset)
-            from dxtbx.imageset import ImageSequence
-            from dxtbx.model import Scan
-
-            imageset = ImageSequence(
+            imageset = _make_stills_sequence(
                 iset.data(),
                 flex.size_t(range(n)),
                 iset.get_beam(0),
                 iset.get_detector(0),
-                None,  # goniometer — stills have no rotation axis
-                Scan((1, n), (0.0, 0.0)),  # zero-oscillation → is_still()=True
+                (1, n),
             )
         except (TypeError, ValueError) as e:
             logger.warning(
@@ -421,7 +437,6 @@ def do_import(filename, load_models=True):
 
     all_experiments = ExperimentList()
     from dxtbx.imageset import ImageSequence
-    from dxtbx.model import Scan
     for experiment in experiments:
         imageset = experiment.imageset
         for i in range(len(imageset)):
@@ -439,13 +454,12 @@ def do_import(filename, load_models=True):
                 and _scan.is_still()
                 and isinstance(per_frame_iset, ImageSequence)
             ):
-                per_frame_iset = ImageSequence(
+                per_frame_iset = _make_stills_sequence(
                     per_frame_iset.data(),
                     per_frame_iset.indices(),
                     per_frame_iset.get_beam(),
                     per_frame_iset.get_detector(),
-                    per_frame_iset.get_goniometer(),
-                    Scan((1, 1), (0.0, 0.0)),
+                    (1, 1),
                 )
                 # Null the experiment's scan/goniometer so downstream code
                 # (indexer, refiner) sees scan=None as expected for stills.
@@ -555,14 +569,12 @@ def _rebuild_shared_imageset_output(experiments):
         parent_iset = get_format_class_for_file(path).get_imageset(
             [path], as_imageset=True
         )
-        full_scan = Scan((min_f + 1, max_f + 1), (0.0, 0.0))
-        full_seq = ImageSequence(
+        full_seq = _make_stills_sequence(
             parent_iset.data(),
             flex.size_t(range(min_f, max_f + 1)),
             shared_beam,
             shared_detector,
-            None,
-            full_scan,
+            (min_f + 1, max_f + 1),
         )
         file_to_full_seq[path] = full_seq
         file_to_shared_beam[path] = shared_beam
