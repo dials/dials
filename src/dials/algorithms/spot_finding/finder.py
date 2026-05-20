@@ -157,12 +157,10 @@ class ExtractPixelsFromImage:
                 num_image += len(im)
             max_strong = int(math.ceil(self.max_strong_pixel_fraction * num_image))
             if num_strong > max_strong:
-                raise RuntimeError(
-                    f"""
+                raise RuntimeError(f"""
           The number of strong pixels found ({num_strong}) is greater than the
           maximum allowed ({max_strong}). Try changing spot finding parameters
-        """
-                )
+        """)
 
         # Print some info
         if self.compute_mean_background:
@@ -742,9 +740,9 @@ class SpotFinder:
                     if experiment.identifier:
                         table.experiment_identifiers()[j] = experiment.identifier
             missed = table["id"] == -1
-            assert missed.count(True) == 0, (
-                f"Failed to remap {missed.count(True)} experiment IDs"
-            )
+            assert (
+                missed.count(True) == 0
+            ), f"Failed to remap {missed.count(True)} experiment IDs"
 
             reflections.extend(table)
             # Write a hot pixel mask

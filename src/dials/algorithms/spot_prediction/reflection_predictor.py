@@ -9,8 +9,7 @@ from dials.util import Sorry
 logger = logging.getLogger(__name__)
 
 # The phil parameters
-phil_scope = parse(
-    """
+phil_scope = parse("""
 
   prediction {
 
@@ -34,8 +33,7 @@ phil_scope = parse(
       .type = float(value_min=0)
       .help = "The padding in degrees"
   }
-"""
-)
+""")
 
 
 class ReflectionPredictor:

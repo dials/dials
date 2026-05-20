@@ -412,7 +412,9 @@ def do_import(filename, load_models=True):
                 filename,
                 e,
             )
-            experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
+            experiments = ExperimentListFactory.from_filenames(
+                [filename], load_models=False
+            )
 
         if imageset is not None:
             logger.info("Imageset type: %s", type(imageset).__name__)
@@ -428,7 +430,9 @@ def do_import(filename, load_models=True):
                 ]
             )
     else:
-        experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
+        experiments = ExperimentListFactory.from_filenames(
+            [filename], load_models=False
+        )
         if len(experiments) == 0:
             try:
                 experiments = ExperimentListFactory.from_json_file(filename)
@@ -437,6 +441,7 @@ def do_import(filename, load_models=True):
 
     all_experiments = ExperimentList()
     from dxtbx.imageset import ImageSequence
+
     for experiment in experiments:
         imageset = experiment.imageset
         for i in range(len(imageset)):
@@ -628,7 +633,11 @@ def _combine_multiprocessing_outputs(params, nproc):
     stages = [
         ("imported", params.output.experiments_filename, None),
         ("strong", None, params.output.strong_filename),
-        ("indexed", params.output.refined_experiments_filename, params.output.indexed_filename),
+        (
+            "indexed",
+            params.output.refined_experiments_filename,
+            params.output.indexed_filename,
+        ),
         (
             "integrated",
             params.output.integrated_experiments_filename,
@@ -662,7 +671,9 @@ def _combine_multiprocessing_outputs(params, nproc):
                 flex.reflection_table.from_file(rp) if rp else flex.reflection_table()
             )
 
-            extend_with_bookkeeping(src_expts, src_refls, combined_expts, combined_refls)
+            extend_with_bookkeeping(
+                src_expts, src_refls, combined_expts, combined_refls
+            )
             if ep:
                 worker_expt_files.append(ep)
             if rp:
@@ -967,10 +978,7 @@ class Script:
                         # load_models() overwrites scan/goniometer from the imageset,
                         # which for stills holds the synthetic zero-oscillation Scan.
                         # Re-null these so downstream code sees scan=None for stills.
-                        if (
-                            experiment.scan is not None
-                            and experiment.scan.is_still()
-                        ):
+                        if experiment.scan is not None and experiment.scan.is_still():
                             experiment.scan = None
                             experiment.goniometer = None
                         imageset = experiment.imageset
@@ -1252,7 +1260,9 @@ class Processor:
         self.idxr = None
         self.idxr_known_crystal_models = None
         if self.params.indexing.stills.method_list:
-            self.idxr_method_list = dict.fromkeys(self.params.indexing.stills.method_list)
+            self.idxr_method_list = dict.fromkeys(
+                self.params.indexing.stills.method_list
+            )
         else:
             self.idxr_method_list = None
 
@@ -1556,7 +1566,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def index(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
 
-        def update_indexer(indexer, experiments, reflections, known_crystal_models=None):
+        def update_indexer(
+            indexer, experiments, reflections, known_crystal_models=None
+        ):
             # Reinitialize per-frame state without paying for full object construction.
             # experiment.scan and .goniometer are already set correctly by index() preamble.
             indexer.known_orientations = known_crystal_models
@@ -2101,13 +2113,10 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             reference.del_selected(~mask)
             logger.info(" removing %d unindexed reflections", mask.count(True))
         if len(reference) == 0:
-            raise Sorry(
-                """
+            raise Sorry("""
         Invalid input for reference reflections.
         Expected > %d indexed spots, got %d
-      """
-                % (0, len(reference))
-            )
+      """ % (0, len(reference)))
         mask = reference["miller_index"] == (0, 0, 0)
         if mask.count(True) > 0:
             rubbish.extend(reference.select(mask))
@@ -2115,13 +2124,10 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             logger.info(" removing %d reflections with hkl (0,0,0)", mask.count(True))
         mask = reference["id"] < 0
         if mask.count(True) > 0:
-            raise Sorry(
-                """
+            raise Sorry("""
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
-      """
-                % mask.count(True)
-            )
+      """ % mask.count(True))
         logger.info(" using %d indexed reflections", len(reference))
         logger.info(" found %d junk reflections", len(rubbish))
         logger.info(" time taken: %g", time.time() - st)

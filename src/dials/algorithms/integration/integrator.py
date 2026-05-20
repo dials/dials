@@ -588,9 +588,9 @@ def _finalize_stills(reflections, experiments, params):
                 )
 
         # apply detector gain to summation variances
-        integrated["intensity.sum.variance"] *= (
-            params.integration.summation.detector_gain
-        )
+        integrated[
+            "intensity.sum.variance"
+        ] *= params.integration.summation.detector_gain
     if "background.sum.value" in integrated:
         if (integrated["background.sum.variance"] < 0).count(True) > 0:
             raise Sorry(
@@ -603,9 +603,9 @@ def _finalize_stills(reflections, experiments, params):
             )
             integrated = integrated.select(integrated["background.sum.variance"] > 0)
         # apply detector gain to background summation variances
-        integrated["background.sum.variance"] *= (
-            params.integration.summation.detector_gain
-        )
+        integrated[
+            "background.sum.variance"
+        ] *= params.integration.summation.detector_gain
 
     reflections = integrated
 
@@ -1629,12 +1629,10 @@ def create_integrator(params, experiments, reflections):
     # Check each experiment has an imageset
     for exp in experiments:
         if exp.imageset is None:
-            raise Sorry(
-                """
+            raise Sorry("""
       One or more experiment does not contain an imageset. Access to the
       image data is crucial for integration.
-    """
-            )
+    """)
 
     # Read the mask in if necessary
     if params.integration.lookup.mask and isinstance(
