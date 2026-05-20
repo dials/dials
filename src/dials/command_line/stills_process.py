@@ -457,7 +457,7 @@ def do_import(filename, load_models=True):
                 per_frame_iset = _make_stills_sequence(
                     per_frame_iset.data(),
                     per_frame_iset.indices(),
-                    per_frame_iset.get_beam(),
+                    imageset.get_beam(i),
                     per_frame_iset.get_detector(),
                     (1, 1),
                 )
@@ -560,15 +560,17 @@ def _rebuild_shared_imageset_output(experiments):
         frame_indices = [_frame_index(e) for e in expts]
         min_f = min(frame_indices)
         max_f = max(frame_indices)
-        shared_beam = expts[0].beam
         shared_detector = expts[0].detector
+        # In-memory path: per-frame slice has _xfel_beam when XFEL NXmx data
+        xfel_beam = getattr(expts[0].imageset, "_xfel_beam", None)
         # Each per-frame slice's ``data()`` is partial (size 1) — too small to span
         # an arbitrary [min_f, max_f] range. Re-open the source file to recover the
-        # full ImageSetData. This metadata-only call is cheap and happens once per
-        # source file at finalize time.
-        parent_iset = get_format_class_for_file(path).get_imageset(
-            [path], as_imageset=True
-        )
+        # full ImageSetData. Drop as_imageset=True so FormatXFEL mixin returns
+        # XFELImageSequence with _xfel_beam set (covers post-JSON-round-trip path).
+        parent_iset = get_format_class_for_file(path).get_imageset([path])
+        if xfel_beam is None:
+            xfel_beam = getattr(parent_iset, "_xfel_beam", None)
+        shared_beam = xfel_beam if xfel_beam is not None else expts[0].beam
         full_seq = _make_stills_sequence(
             parent_iset.data(),
             flex.size_t(range(min_f, max_f + 1)),
