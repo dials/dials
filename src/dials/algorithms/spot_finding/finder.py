@@ -781,10 +781,10 @@ class SpotFinder:
         :return: The observed spots
         """
         # XFEL imagesets have per-frame variable wavelength → resolution-dependent masks
-        # differ per frame, so caching is suppressed.
-        from dxtbx.imageset import XFELImageSequence as _XFELImageSequence
-
-        _is_xfel = isinstance(imageset, _XFELImageSequence)
+        # differ per frame, so caching is suppressed. Detected via scan 'wavelength'
+        # property (per-frame imagesets carry monochromatic beams, not XFELBeam).
+        _scan = imageset.get_scan()
+        _is_xfel = _scan is not None and _scan.has_property("wavelength")
 
         # Static mask (lookup + untrusted rectangles): recompute only when not stills
         # or first call. For XFEL, recompute every frame.

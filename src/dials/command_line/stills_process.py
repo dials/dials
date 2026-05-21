@@ -466,6 +466,15 @@ def do_import(filename, load_models=True):
                     per_frame_iset.get_detector(),
                     (1, 1),
                 )
+                # XFEL: stamp per-frame wavelength onto the per-frame scan so
+                # that the spotfinder can detect XFEL data via has_property("wavelength").
+                from dxtbx.model.beam import XFELBeam as _XFELBeam
+
+                if isinstance(imageset.get_beam(), _XFELBeam):
+                    per_frame_iset.get_scan().set_property(
+                        "wavelength",
+                        flex.double([imageset.get_beam(i).get_wavelength()]),
+                    )
                 # Null the experiment's scan/goniometer so downstream code
                 # (indexer, refiner) sees scan=None as expected for stills.
                 _scan = None
@@ -566,16 +575,13 @@ def _rebuild_shared_imageset_output(experiments):
         min_f = min(frame_indices)
         max_f = max(frame_indices)
         shared_detector = expts[0].detector
-        # In-memory path: per-frame slice has _xfel_beam when XFEL NXmx data
-        xfel_beam = getattr(expts[0].imageset, "_xfel_beam", None)
-        # Each per-frame slice's ``data()`` is partial (size 1) — too small to span
-        # an arbitrary [min_f, max_f] range. Re-open the source file to recover the
-        # full ImageSetData. Drop as_imageset=True so FormatXFEL mixin returns
-        # XFELImageSequence with _xfel_beam set (covers post-JSON-round-trip path).
+        # Re-open the source file: each per-frame slice's data() is size-1,
+        # too small to span [min_f, max_f]. FormatXFEL mixin returns an
+        # ImageSequence with XFELBeam + scan 'wavelength' property; other formats
+        # return an ImageSequence or ImageSet with a monochromatic Beam.
         parent_iset = get_format_class_for_file(path).get_imageset([path])
-        if xfel_beam is None:
-            xfel_beam = getattr(parent_iset, "_xfel_beam", None)
-        shared_beam = xfel_beam if xfel_beam is not None else expts[0].beam
+        shared_beam = parent_iset.get_beam()  # XFELBeam for XFEL, Beam otherwise
+        parent_scan = parent_iset.get_scan()
         full_seq = _make_stills_sequence(
             parent_iset.data(),
             flex.size_t(range(min_f, max_f + 1)),
@@ -588,9 +594,13 @@ def _rebuild_shared_imageset_output(experiments):
         file_to_shared_detector[path] = shared_detector
         # Multi-lattice experiments from the same frame share one Scan instance,
         # so JSON output has K scans (= unique indexed frames), not M (= lattices).
-        file_to_frame_scans[path] = {
-            fi: Scan((fi + 1, fi + 1), (0.0, 0.0)) for fi in set(frame_indices)
-        }
+        file_to_frame_scans[path] = {}
+        for fi in set(frame_indices):
+            frame_scan = Scan((fi + 1, fi + 1), (0.0, 0.0))
+            if parent_scan is not None and parent_scan.has_property("wavelength"):
+                wls = parent_scan.get_property("wavelength")
+                frame_scan.set_property("wavelength", flex.double([float(wls[fi])]))
+            file_to_frame_scans[path][fi] = frame_scan
 
     new_experiments = ExperimentList()
     for expt in experiments:
