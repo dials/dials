@@ -2287,7 +2287,8 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 and self.params.output.experiments_filename
             ):
                 self.all_imported_experiments.as_json(
-                    self.params.output.experiments_filename
+                    self.params.output.experiments_filename,
+                    compact_stills_scans=True,
                 )
 
             if (
@@ -2303,7 +2304,8 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 and self.params.output.refined_experiments_filename
             ):
                 self.all_indexed_experiments.as_json(
-                    self.params.output.refined_experiments_filename
+                    self.params.output.refined_experiments_filename,
+                    compact_stills_scans=True,
                 )
 
             if (
@@ -2319,7 +2321,8 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 and self.params.output.integrated_experiments_filename
             ):
                 self.all_integrated_experiments.as_json(
-                    self.params.output.integrated_experiments_filename
+                    self.params.output.integrated_experiments_filename,
+                    compact_stills_scans=True,
                 )
 
             if (
@@ -2337,7 +2340,8 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     and self.params.output.coset_experiments_filename
                 ):
                     self.all_coset_experiments.as_json(
-                        self.params.output.coset_experiments_filename
+                        self.params.output.coset_experiments_filename,
+                        compact_stills_scans=True,
                     )
 
                 if (
