@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from dxtbx.model import BeamFactory, CrystalFactory, DetectorFactory, Experiment, Scan
+from dxtbx.format import Format
+from dxtbx.imageset import ImageSequence, ImageSetData
+from dxtbx.model import BeamFactory, CrystalFactory, DetectorFactory, Experiment, Goniometer, Scan
 
 
 @pytest.fixture
@@ -112,5 +114,14 @@ def test_experiment():
 
     detector = DetectorFactory.from_dict(detector_dict)
 
-    expt = Experiment(beam=beam, crystal=crystal, scan=scan, detector=detector)
+    n_images = scan.get_image_range()[1] - scan.get_image_range()[0] + 1
+    isetdata = ImageSetData(reader=Format.Reader(None, ["dummy.cbf"] * n_images), masker=None)
+    imageset = ImageSequence(
+        isetdata,
+        beam=beam,
+        detector=detector,
+        goniometer=Goniometer(),
+        scan=scan,
+    )
+    expt = Experiment(imageset=imageset)
     return expt
