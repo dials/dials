@@ -132,5 +132,5 @@ def test_experiment():
         goniometer=Goniometer(),
         scan=scan,
     )
-    expt = Experiment(imageset=imageset)
+    expt = Experiment(imageset=imageset, crystal=crystal)
     return expt
