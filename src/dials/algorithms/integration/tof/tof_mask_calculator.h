@@ -43,7 +43,8 @@ namespace dials { namespace algorithms {
                                   Eigen::Vector3d& mean,
                                   Eigen::Matrix3d& eigenvectors,
                                   Eigen::Vector3d& axes_lengths,
-                                  bool calculate_mean) {
+                                  bool calculate_mean,
+                                  double scale) {
     if (points.size() != values.size() || points.empty()) {
       throw std::invalid_argument(
         "Points and values must have the same size and cannot be empty.");
@@ -87,7 +88,7 @@ namespace dials { namespace algorithms {
     Eigen::VectorXd eigenvalues = eigensolver.eigenvalues();
     eigenvectors = eigensolver.eigenvectors();
     axes_lengths =
-      eigenvalues.cwiseSqrt();  // Semi-axis lengths are sqrt of eigenvalues
+      eigenvalues.cwiseSqrt() * scale;  // Semi-axis lengths are sqrt of eigenvalues
   }
 
   bool point_inside_ellipsoid(const Eigen::Vector3d& point,
@@ -190,7 +191,8 @@ namespace dials { namespace algorithms {
     return skewness;
   }
 
-  af::ref<int, af::c_grid<3>> fill_holes_in_mask(af::ref<int, af::c_grid<3>>& mask) {
+  af::ref<uint8_t, af::c_grid<3>> fill_holes_in_mask(
+    af::ref<uint8_t, af::c_grid<3>>& mask) {
     /*
      * Flood fill to ensure no holes in mask
      */
@@ -328,7 +330,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = start; i < end; ++i) {
         // Get shoebox data
         Shoebox<> shoebox = shoeboxes[i];
-        af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3>> mask = shoebox.mask.ref();
         af::ref<float, af::c_grid<3>> data = shoebox.data.ref();
         std::size_t zsize = data.accessor()[0];
         std::size_t ysize = data.accessor()[1];
@@ -394,9 +396,9 @@ namespace dials { namespace algorithms {
           for (std::size_t y = 0; y < ysize; ++y) {
             for (std::size_t x = 0; x < xsize; ++x) {
               std::size_t idx = z * (ysize * xsize) + y * xsize + x;
-              int mask_value = selected_pixels.find(idx) != selected_pixels.end()
-                                 ? Foreground
-                                 : Background;
+              uint8_t mask_value = selected_pixels.find(idx) != selected_pixels.end()
+                                     ? Foreground
+                                     : Background;
               mask(z, y, x) &= ~(Foreground | Background);
               mask(z, y, x) |= mask_value;
             }
@@ -422,10 +424,12 @@ namespace dials { namespace algorithms {
 
   void tof_calculate_ellipse_shoebox_mask(af::reflection_table& reflection_table,
                                           Experiment& experiment,
-                                          int n_threads = 1) {
+                                          int n_threads = 1,
+                                          double scale = 1) {
     /**
      * Updates the masks of shoeboxes in reflection_table based on weighted
      * ellipses in reciprocal space
+     * @param scale: Number of stds to define the ellipse
      */
 
     af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
@@ -463,7 +467,7 @@ namespace dials { namespace algorithms {
          */
 
         Shoebox<> shoebox = shoeboxes[i];
-        af::ref<int, af::c_grid<3>> mask = shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3>> mask = shoebox.mask.ref();
         int panel = shoebox.panel;
         int6 bbox = bboxes[i];
         vec3<double> rlp = rlps[i];
@@ -487,15 +491,16 @@ namespace dials { namespace algorithms {
         Eigen::Matrix3d eigenvectors;
         Eigen::Vector3d axes_lengths;
         compute_weighted_ellipsoid(
-          shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths, false);
+          shoebox_rlps, shoebox_values, mean, eigenvectors, axes_lengths, false, scale);
         int count = 0;
         for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
           for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
             for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
-              int mask_value = point_inside_ellipsoid(
-                                 shoebox_rlps[count], mean, eigenvectors, axes_lengths)
-                                 ? Foreground
-                                 : Background;
+              uint8_t mask_value =
+                point_inside_ellipsoid(
+                  shoebox_rlps[count], mean, eigenvectors, axes_lengths)
+                  ? Foreground
+                  : Background;
               mask(z, y, x) &= ~(Foreground | Background);
               mask(z, y, x) |= mask_value;
               count++;

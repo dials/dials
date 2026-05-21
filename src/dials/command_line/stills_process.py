@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import copy
+import gc
 import glob
 import logging
 import os
@@ -1027,6 +1028,12 @@ class Processor:
             self.debug_file_handle.write(self.debug_str % (ts, state, string))
 
     def process_experiments(self, tag, experiments):
+        # Note d.sp is often rather memory constrained in large parallel
+        # jobs with many processes per compute node. In one configuration we
+        # noted the accumulation of ~10MB dead memory per run of the stills
+        # indexer. Therefore we trigger garbage collection every image.
+        gc.collect()
+
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
         self.tag = tag

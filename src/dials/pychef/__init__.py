@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import numpy as np
+
 from cctbx.array_family import flex
+from dxtbx import flumpy
 from iotbx.data_plots import table_data
 from libtbx import phil
 
@@ -458,14 +461,21 @@ class Statistics:
 
 def batches_to_dose(batches, params):
     if len(params.batch):
-        dose = flex.double(batches.size(), -1)
+        batches = flumpy.to_numpy(batches)
+        mapping = {}
         for batch in params.batch:
             start = batch.dose_start
             step = batch.dose_step
             for i in range(batch.range[0], batch.range[1] + 1):
-                # inclusive range
-                dose.set_selected(batches == i, start + step * (i - batch.range[0]))
-        dose = dose.iround()
+                mapping[i] = start + step * (i - batch.range[0])
+
+        # Get unique values (sorted) + inverse indices (index into unique vals of original)
+        unique_vals, inverse = np.unique(batches, return_inverse=True)
+        # Build a small lookup table aligned with unique_vals
+        lookup = np.array([mapping[v] for v in unique_vals])
+        # Apply the mapping
+        dose = lookup[inverse]
+        dose = flumpy.from_numpy(dose)
     elif params.remove_gaps:
         dose = remove_batch_gaps(batches)
     else:

@@ -47,7 +47,7 @@ def linkage_matrix_to_dict(linkage_matrix: np.ndarray) -> OrderedDict:
     return link_dict
 
 
-def plot_dims(dims: list, funcs: list) -> dict:
+def plot_dims(dims: list, funcs: list, chosen_dim: int) -> dict:
     """
     Prepares a plotly-style plot of the dimension optimisation procedure.
     Args:
@@ -63,13 +63,41 @@ def plot_dims(dims: list, funcs: list) -> dict:
                     "x": dims,
                     "y": funcs,
                     "type": "line",
-                    "name": "Dimension Functionals",
-                }
+                    "name": "Residual of rij",
+                },
+                {
+                    "x": [None],
+                    "y": [None],
+                    "mode": "lines",
+                    "line": {"color": "black", "dash": "dash"},
+                    "name": f"Chosen dimension = {chosen_dim}",
+                    "hoverinfo": "skip",
+                },
             ],
             "layout": {
                 "title": "Residual for each tested dimension",
                 "xaxis": {"title": "Dimension"},
                 "yaxis": {"title": "Functional"},
+                "legend": {
+                    "x": 0.98,
+                    "y": 0.98,
+                    "xref": "paper",
+                    "yref": "paper",
+                    "xanchor": "right",
+                    "yanchor": "top",
+                },
+                "shapes": [
+                    {
+                        "type": "line",
+                        "x0": chosen_dim,
+                        "x1": chosen_dim,
+                        "y0": 0,
+                        "y1": 1,
+                        "xref": "x",
+                        "yref": "paper",
+                        "line": {"color": "black", "dash": "dash"},
+                    }
+                ],
             },
             "help": """\
 A line graph showing the residual remaining in the minimisation for

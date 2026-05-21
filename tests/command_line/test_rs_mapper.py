@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from os.path import join
 
+import numpy as np
 import pytest
 
+from dxtbx import flumpy
+from dxtbx.model.experiment_list import ExperimentListFactory
 from iotbx import ccp4_map
 from scitbx.array_family import flex
+
+from dials.algorithms.rs_mapper import normalize_voxels, process_tof_experiment_list
 
 
 def test_rs_mapper(dials_data, tmp_path):
@@ -102,3 +108,43 @@ def test_masked(dials_data, tmp_path):
     assert masked.header_max < unmasked.header_max
     assert masked.header_max == pytest.approx(289.11111)
     assert unmasked.header_max == pytest.approx(65535.0)
+
+
+def test_process_tof_experiment_list(dials_data):
+    grid_size = 192
+    grid = flex.double(flex.grid(grid_size, grid_size, grid_size), 0)
+    counts = flex.int(flex.grid(grid_size, grid_size, grid_size), 0)
+    max_resolution = 2
+    nproc = 1
+    image_file = join(dials_data("isis_sxd_example_data"), "sxd_nacl_run.nxs")
+    experiments = ExperimentListFactory.from_filenames([image_file])
+
+    record_all_counts = False
+    process_tof_experiment_list(
+        experiments, max_resolution, grid, counts, nproc, record_all_counts
+    )
+    normalize_voxels(grid, counts)
+    arr = flumpy.to_numpy(grid)
+    arr_counts = flumpy.to_numpy(counts)
+    assert np.sum(arr) == pytest.approx(91542.09445706864)
+    assert np.max(arr) == pytest.approx(1064.0)
+    assert np.min(arr) == pytest.approx(0.0)
+    assert np.sum(arr_counts) == pytest.approx(28547112)
+    assert np.max(arr_counts) == pytest.approx(2258)
+    assert np.min(arr_counts) == pytest.approx(0.0)
+
+    record_all_counts = True
+    grid = flex.double(flex.grid(grid_size, grid_size, grid_size), 0)
+    counts = flex.int(flex.grid(grid_size, grid_size, grid_size), 0)
+    process_tof_experiment_list(
+        experiments, max_resolution, grid, counts, nproc, record_all_counts
+    )
+    normalize_voxels(grid, counts)
+    arr = flumpy.to_numpy(grid)
+    arr_counts = flumpy.to_numpy(counts)
+    assert np.sum(arr) == pytest.approx(88440.4449734628)
+    assert np.max(arr) == pytest.approx(568.0)
+    assert np.min(arr) == pytest.approx(0.0)
+    assert np.sum(arr_counts) == pytest.approx(33258685)
+    assert np.max(arr_counts) == pytest.approx(2258)
+    assert np.min(arr_counts) == pytest.approx(0.0)

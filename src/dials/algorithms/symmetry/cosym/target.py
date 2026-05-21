@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import concurrent.futures
 import copy
-import itertools
 import logging
 
 import numpy as np
-import pandas as pd
 from ordered_set import OrderedSet
 from scipy import sparse
 
@@ -17,6 +15,7 @@ from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
 from dials.algorithms.scaling.scaling_library import ExtendedDatasetStatistics
+from dials_cosym_ext import matcher
 
 logger = logging.getLogger(__name__)
 
@@ -31,95 +30,114 @@ def _lattice_lower_upper_index(lattices, lattice_id):
     return lower_index, upper_index
 
 
+class LightArray:
+    ## Conforms to a subset of the miller array interface.
+    def __init__(self, data, sigmas):
+        self._data = data
+        self._sigmas = sigmas
+
+    def data(self):
+        return self._data
+
+    def sigmas(self):
+        return self._sigmas
+
+    def size(self):
+        return self._sigmas.size()
+
+
 def _compute_rij_matrix_one_row_block(
     i,
     lattices,
     data,
-    indices,
     sym_ops,
     patterson_group,
-    weights=True,
+    weights=True,  # use sigma weights or not for CC1/2 calculation
     min_pairs=3,
 ):
-    cs = data.crystal_symmetry()
-    n_lattices = len(lattices)
-    rij_cache = {}
+    ## Calculate the upper half-triangle of the rij matrix for row-block i.
 
+    n_lattices = len(lattices)
+    space_group_type = data.space_group().type()
     NN = n_lattices * len(sym_ops)
 
+    ## Lists to aggregate data for matrix output.
     rij_row = []
     rij_col = []
     rij_data = []
-    wij = None
-    if weights:
-        wij_row = []
-        wij_col = []
-        wij_data = []
+    wij_row = []
+    wij_col = []
+    wij_data = []
 
     i_lower, i_upper = _lattice_lower_upper_index(lattices, i)
     intensities_i = data.data()[i_lower:i_upper]
     sigmas_i = data.sigmas()[i_lower:i_upper]
     cb_ops = [sgtbx.change_of_basis_op(cb_op_k) for cb_op_k in sym_ops]
+    original_indices_i = data.indices()[i_lower:i_upper]
 
-    for j in range(n_lattices):
+    for j in range(i, n_lattices):  # only calculating a half-triangle of rij
         j_lower, j_upper = _lattice_lower_upper_index(lattices, j)
         intensities_j = data.data()[j_lower:j_upper]
         sigmas_j = data.sigmas()[j_lower:j_upper]
-        for k, cb_op_k in enumerate(cb_ops):
-            indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+        original_indices_j = data.indices()[j_lower:j_upper]
+        rij_cache = {}
 
+        for k, cb_op_k in enumerate(cb_ops):
+            ## We initialise the miller index matcher per k, which creates a lookup map
+            ## for dataset i reindexed by operator k. Then it is quicker to generate the
+            ## matching indices in repeated lookups. Delay the construction until we
+            ## require it, as if the data is in the cache we might not need it and it is
+            ## relatively expensive.
+            matcher_k = None
+            cb_op_k_inverse = cb_op_k.inverse()
             for kk, cb_op_kk in enumerate(cb_ops):
-                if i == j and k == kk:
-                    # don't include correlation of dataset with itself
+                if i == j and k <= kk:
+                    # don't include correlation of dataset with itself (i==j, k==kk)
+                    # also make sure we're only filling a half-triangle for i==j
                     continue
 
                 ik = i + (n_lattices * k)
                 jk = j + (n_lattices * kk)
 
-                key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
+                key = str(cb_op_k_inverse * cb_op_kk)
                 if key in rij_cache:
                     cc, n, n_pairs = rij_cache[key]
                 else:
-                    indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
+                    # only do expensive calculations at this point, as we may have
+                    # been able to use the cache for the given combination of cb ops.
+                    if not matcher_k:
+                        indices_i = cb_op_k.apply(original_indices_i)
+                        miller.map_to_asu(space_group_type, False, indices_i)
+                        matcher_k = matcher(indices_i, patterson_group)
 
-                    matches = miller.match_indices(indices_i, indices_j)
-                    pairs = matches.pairs()
-                    isel_i = pairs.column(0)
-                    isel_j = pairs.column(1)
-                    isel_i = isel_i.select(
-                        patterson_group.epsilon(indices_i.select(isel_i)) == 1
+                    indices_j = cb_op_kk.apply(original_indices_j)
+                    miller.map_to_asu(space_group_type, False, indices_j)
+                    isel_i, isel_j = matcher_k.match(indices_j)
+
+                    ma_j = LightArray(
+                        intensities_j.select(isel_j), sigmas_j.select(isel_j)
                     )
-                    isel_j = isel_j.select(
-                        patterson_group.epsilon(indices_j.select(isel_j)) == 1
-                    )
-                    ms = miller.set(
-                        crystal_symmetry=cs, indices=indices_j.select(isel_j)
-                    )
-                    ma_j = miller.array(
-                        miller_set=ms,
-                        data=intensities_j.select(isel_j),
-                        sigmas=sigmas_j.select(isel_j),
-                    )
-                    ms = miller.set(
-                        crystal_symmetry=cs, indices=indices_i.select(isel_i)
-                    )
-                    ma_i = miller.array(
-                        miller_set=ms,
-                        data=intensities_i.select(isel_i),
-                        sigmas=sigmas_i.select(isel_i),
+                    ma_i = LightArray(
+                        intensities_i.select(isel_i), sigmas_i.select(isel_i)
                     )
                     n_pairs = ma_i.size()
                     if ma_i.size() < min_pairs:
                         n, cc = (None, None)
                     else:
-                        corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
-                            ma_i, ma_j, assume_index_matching=True
-                        )[0]
-                        if neff:
-                            cc = corr
-                            n = neff
+                        if weights:
+                            corr, neff = ExtendedDatasetStatistics.weighted_cchalf(
+                                ma_i, ma_j, assume_index_matching=True
+                            )[0]
+                            if neff:
+                                cc = corr
+                                n = neff
+                            else:
+                                n, cc = (None, None)
                         else:
-                            n, cc = (None, None)
+                            cc = flex.linear_correlation(
+                                ma_i.data(), ma_j.data()
+                            ).coefficient()
+                            n = n_pairs
 
                     rij_cache[key] = (cc, n, n_pairs)
 
@@ -129,23 +147,16 @@ def _compute_rij_matrix_one_row_block(
                     or (min_pairs is not None and n_pairs < min_pairs)
                 ):
                     continue
-                if weights:
-                    wij_row.append(ik)
-                    wij_col.append(jk)
-                    wij_data.append(n)
+
+                wij_row.append(ik)
+                wij_col.append(jk)
+                wij_data.append(n)
                 rij_row.append(ik)
                 rij_col.append(jk)
                 rij_data.append(cc)
 
-    if weights and not any(wij_data):
-        raise RuntimeError(
-            f"Unable to calculate any correlations for dataset index {i} ({len(intensities_i)} reflections)."
-            + "\nIncreasing min_reflections may overcome this problem."
-        )
     rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
-    if weights:
-        wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
-
+    wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
     return rij, wij
 
 
@@ -242,10 +253,9 @@ class Target:
         logger.debug(
             "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
-        if cc_weights == "sigma":
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij_ccweights()
-        else:
-            self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
+        self.rij_matrix, self.wij_matrix = self._compute_rij_wij(
+            cc_weights=(cc_weights == "sigma"), nproc=self._nproc
+        )
 
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
@@ -286,57 +296,83 @@ class Target:
 
         return operators
 
-    def _compute_rij_wij_ccweights(self):
-        # Use flex-based methods for calculating matrices.
-        # Pre-calculate miller indices after application of each cb_op. Only calculate
-        # this once per cb_op instead of on-the-fly every time we need it.
-        indices = {}
-        epsilons = {}
-        space_group_type = self._data.space_group().type()
-        for cb_op in self.sym_ops:
-            cb_op = sgtbx.change_of_basis_op(cb_op)
-            indices_reindexed = cb_op.apply(self._data.indices())
-            miller.map_to_asu(space_group_type, False, indices_reindexed)
-            cb_op_str = cb_op.as_xyz()
-            indices[cb_op_str] = indices_reindexed
-            epsilons[cb_op_str] = self._patterson_group.epsilon(indices_reindexed)
-
+    def _compute_rij_wij(
+        self, use_cache: bool = False, cc_weights: bool = False, nproc: int = 1
+    ):
+        # Note, use_cache is a historical parameter retained for compatibility
+        # with cctbx.xfel code.
         rij_matrix = None
         wij_matrix = None
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self._nproc) as pool:
-            # note we use weights=True to help us work out where we have calculated rij,
-            # even if the weights phil option is None
-            futures = [
-                pool.submit(
-                    _compute_rij_matrix_one_row_block,
+        def accumulate(target, value):
+            return value if target is None else target + value
+
+        logger.info(
+            f"Calculating rij matrix elements in {len(self._lattices)} row-blocks"
+        )
+        if nproc == 1:  # don't create a process pool
+            for i, _ in enumerate(self._lattices):
+                rij, wij = _compute_rij_matrix_one_row_block(
                     i,
                     self._lattices,
                     self._data,
-                    indices,
                     self.sym_ops,
                     self._patterson_group,
-                    weights=True,
+                    weights=cc_weights,
                     min_pairs=self._min_pairs,
                 )
-                for i, _ in enumerate(self._lattices)
-            ]
-            for future in concurrent.futures.as_completed(futures):
-                rij, wij = future.result()
-                if rij_matrix is None:
-                    rij_matrix = rij
-                else:
-                    rij_matrix += rij
-                if wij is not None:
-                    if wij_matrix is None:
-                        wij_matrix = wij
-                    else:
-                        wij_matrix += wij
+                logger.info(f"Calculated rij matrix for row-block {i + 1}")
+                rij_matrix = accumulate(rij_matrix, rij)
+                wij_matrix = accumulate(wij_matrix, wij)
+        else:
+            n = 0
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=min(nproc, len(self._lattices))
+            ) as pool:
+                futures = [
+                    pool.submit(
+                        _compute_rij_matrix_one_row_block,
+                        i,
+                        self._lattices,
+                        self._data,
+                        self.sym_ops,
+                        self._patterson_group,
+                        weights=cc_weights,
+                        min_pairs=self._min_pairs,
+                    )
+                    for i, _ in enumerate(self._lattices)
+                ]
+                for future in concurrent.futures.as_completed(futures):
+                    rij, wij = future.result()
+                    n += 1
+                    logger.info(f"Calculated rij matrix for row-block {n}")
+                    rij_matrix = accumulate(rij_matrix, rij)
+                    wij_matrix = accumulate(wij_matrix, wij)
 
         rij_matrix = rij_matrix.toarray().astype(np.float64)
+        rij_matrix += rij_matrix.T
+        wij_matrix = wij_matrix.toarray().astype(np.float64)
+        wij_matrix += wij_matrix.T
+
+        ## Check if we have a dataset where no correlations could be calculated.
+        zero_rows = np.where(np.all(wij_matrix == 0, axis=1))[0]
+        if zero_rows.any():
+            # only a problem if zero for all rows for dataset i
+            Nlatt = len(self._lattices)
+            Nsym = len(self.sym_ops)
+            for i in range(Nlatt):
+                all_rows = [i + j * Nlatt for j in range(Nsym)]
+                if all(k in zero_rows for k in all_rows):
+                    i_lower, i_upper = _lattice_lower_upper_index(self._lattices, i)
+                    if not i_upper:
+                        i_upper = len(self._data.data())
+                    n = i_upper - i_lower
+                    logger.warning(
+                        f"Unable to calculate any correlations for datasets with index {i} ({n} reflections)."
+                        + "\nIncreasing min_reflections or the resolution limit may overcome this problem."
+                    )
+
         if self._weights:
-            ## use the counts as weights
-            wij_matrix = wij_matrix.toarray().astype(np.float64)
             if self._weights == "standard_error":
                 # N.B. using effective n due to sigma weighting, which can be below 2
                 # but approches 1 in the limit, so rather say efective sample size
@@ -345,6 +381,7 @@ class Target:
                 se = (1 - np.square(rij_matrix[sel])) / np.sqrt(wij_matrix[sel] - 1)
                 wij_matrix = np.zeros_like(rij_matrix)
                 wij_matrix[sel] = 1 / se
+            ## else uses the counts as weights
             # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
             scale = int(np.count_nonzero(wij_matrix)) / np.sum(wij_matrix)
             wij_matrix *= scale
@@ -356,146 +393,10 @@ class Target:
             ## evaluation.
             ## at this point, wij matrix contains neff values where it was possible to calculate
             ## a pairwise correlation.
-            wij_matrix = wij_matrix.toarray().astype(np.float64)
             sel = np.where(wij_matrix > 0)
             wij_matrix[sel] = 1
 
         return rij_matrix, wij_matrix
-
-    def _compute_rij_wij(self, use_cache=True):
-        """Compute the rij_wij matrix.
-
-        Rij is a symmetric matrix of size (n x m, n x m), where n is the number of
-        datasets and m is the number of symmetry operations.
-
-        It is composed of (m, m) blocks of size (n, n), where each block contains the
-        correlation coefficients between cb_op_k applied to datasets 1..N with
-        cb_op_kk applied to datasets 1.. N.
-
-        If `use_cache=True`, then an optimisation is made to reflect the fact some elements
-        of the matrix are equivalent, i.e.:
-            CC[(a, cb_op_k), (b, cb_op_kk)] == CC[(a,), (b, cb_op_k.inverse() * cb_op_kk)]
-
-        """
-        n_lattices = len(self._lattices)
-        n_sym_ops = len(self.sym_ops)
-
-        # Pre-calculate miller indices after application of each cb_op. Only calculate
-        # this once per cb_op instead of on-the-fly every time we need it.
-        indices = {}
-        epsilons = {}
-        space_group_type = self._data.space_group().type()
-        for cb_op in self.sym_ops:
-            cb_op = sgtbx.change_of_basis_op(cb_op)
-            indices_reindexed = cb_op.apply(self._data.indices())
-            miller.map_to_asu(space_group_type, False, indices_reindexed)
-            cb_op_str = cb_op.as_xyz()
-            indices[cb_op_str] = np.array(
-                [
-                    h.iround().as_numpy_array()
-                    for h in indices_reindexed.as_vec3_double().parts()
-                ]
-            ).transpose()
-            epsilons[cb_op_str] = self._patterson_group.epsilon(
-                indices_reindexed
-            ).as_numpy_array()
-        intensities = self._data.data().as_numpy_array()
-
-        # Map indices to an array of flat 1d indices which can later be used for
-        # matching pairs of indices
-        offset = -np.min(np.concatenate(list(indices.values())), axis=0)
-        dims = np.max(np.concatenate(list(indices.values())), axis=0) + offset + 1
-        for cb_op, hkl in indices.items():
-            indices[cb_op] = np.ravel_multi_index((hkl + offset).T, dims)
-
-        # Create an empty 2D array of shape (m * n, L), where m is the number of sym
-        # ops, n is the number of lattices, and L is the number of unique miller indices
-        all_intensities = np.empty((n_sym_ops * n_lattices, np.prod(dims)))
-
-        # Populate all_intensities with intensity values, filling absent intensities
-        # with np.nan
-        all_intensities.fill(np.nan)
-        slices = np.append(self._lattices, intensities.size)
-        slices = list(map(slice, slices[:-1], slices[1:]))
-        for i, (mil_ind, eps) in enumerate(zip(indices.values(), epsilons.values())):
-            for j, selection in enumerate(slices):
-                # map (i, j) to a column in all_intensities
-                column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
-                epsilon_equals_one = eps[selection] == 1
-                valid_mil_ind = mil_ind[selection][epsilon_equals_one]
-                valid_intensities = intensities[selection][epsilon_equals_one]
-                all_intensities[column, valid_mil_ind] = valid_intensities
-
-        # Ideally we would use `np.ma.corrcoef` here, but it is broken, so use
-        # pd.DataFrame.corr() instead (see numpy/numpy#15601)
-        rij = (
-            pd.DataFrame(all_intensities)
-            .T.dropna(how="all")
-            .corr(min_periods=self._min_pairs)
-            .values
-        )
-        # Set any NaN correlation coefficients to zero
-        rij = np.nan_to_num(rij)
-        # Cosym does not make use of the on-diagonal correlation coefficients
-        np.fill_diagonal(rij, 0)
-
-        ## First, populate a weights matrix of the number of pairs i.e. counts
-        ## if we are not going to use weights, this helps us select where we
-        ## calculated values, so that we can set them to constant weights
-        wij = np.zeros_like(rij)
-        right_up = np.triu_indices_from(wij, k=1)
-
-        # For each correlation coefficient, set the weight equal to the size of
-        # the sample used to calculate that coefficient
-        pairwise_combos = itertools.combinations(np.isfinite(all_intensities), 2)
-
-        def sample_size(x, y) -> int:
-            pairs = int(np.count_nonzero(x & y))
-            if pairs < self._min_pairs:
-                return 0
-            else:
-                return pairs
-
-        wij[right_up] = list(itertools.starmap(sample_size, pairwise_combos))
-
-        if self._weights:
-            ## the weights are currently the pairwise sample sizes
-            if self._weights == "standard_error":
-                # Set each weights as the reciprocal of the standard error on the
-                # corresponding correlation coefficient
-                # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                with np.errstate(divide="ignore", invalid="ignore"):
-                    reciprocal_se = np.sqrt((wij[right_up] - 2)) / (
-                        1 - np.square(rij[right_up])
-                    )
-
-                wij[right_up] = np.where(wij[right_up] > 2, reciprocal_se, 0)
-
-            # Symmetrise the wij matrix
-            wij += wij.T
-
-            for i in range(wij.shape[0]):
-                if not any(wij[i, :]):
-                    while i > n_lattices:
-                        i -= n_lattices
-                    n_refl = sum(self._lattice_ids == i)
-                    raise RuntimeError(
-                        f"Unable to calculate any correlations for dataset index {i} ({n_refl} reflections)."
-                        + "\nIncreasing min_reflections may overcome this problem."
-                    )
-            # rescale the weights matrix such that the sum of wij_matrix == the number of non-zero entries
-            scale = int(np.count_nonzero(wij)) / np.sum(wij)
-            wij *= scale
-        else:
-            ## we are not going to use weights, so set them to constant weights
-            ## as we still needs zeros to avoid inclusion of uncalculate values in
-            ## the functional evaluation.
-            sel = np.where(wij > 0)
-            wij[sel] = 1
-            # Symmetrise the wij matrix
-            wij += wij.T
-
-        return rij, wij
 
     def compute_functional(self, x: np.ndarray) -> float:
         """Compute the target function at coordinates `x`.

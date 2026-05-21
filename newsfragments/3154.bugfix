@@ -1,0 +1,1 @@
+``dials.ssx_integrate``: Fix crash due to text formatting incompatibility with newer numpy versions

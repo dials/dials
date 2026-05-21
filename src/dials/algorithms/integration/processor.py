@@ -780,7 +780,9 @@ class _Manager:
 
         # Obtain information about system memory
         available_memory = MEMORY_LIMIT
-        available_limit = available_memory * self.params.block.max_memory_usage
+        available_limit = available_memory
+        if self.params.block.max_memory_usage is not None:
+            available_limit *= self.params.block.max_memory_usage
 
         # Get the maximum shoebox memory to estimate memory use for one process
         required_shoebox_memory = flex.max(
@@ -807,7 +809,11 @@ class _Manager:
         output_level = logging.INFO
 
         # Limit the number of parallel processes by amount of available memory
-        if self.params.mp.method == "multiprocessing" and self.params.mp.nproc > 1:
+        if (
+            self.params.mp.method == "multiprocessing"
+            and self.params.mp.nproc > 1
+            and self.params.block.max_memory_usage is not None
+        ):
             # Compute expected memory usage and warn if not enough
             njobs = available_limit / memory_required_per_process
             if njobs >= self.params.mp.nproc:

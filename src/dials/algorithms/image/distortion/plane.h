@@ -30,14 +30,15 @@ namespace dials { namespace algorithms {
         for (std::size_t i = 0; i < xsize; ++i) {
           vec3<double> lab = panel.get_pixel_lab_coord(vec2<double>(i + 0.5, j + 0.5));
           vec3<double> offset = lab - mid;
-          double x = offset * fast;  // undistorted X coordinate (mm)
-          double y = offset * slow;  // undistorted Y coordinate (mm)
-          vec2<double> distort =
-            matrix * vec2<double>(x, y);  // distorted by transformation matrix
+          double x = offset * fast;  // Ideal X coordinate (mm)
+          double y = offset * slow;  // Ideal Y coordinate (mm)
+          // Transform this point by the matrix that encodes the
+          // linear transformation that "undoes" the observed distortion.
+          vec2<double> transformed = matrix * vec2<double>(x, y);
 
-          // store correction in units of the pixel size
-          dx_(j, i) = (x - distort[0]) / panel.get_pixel_size()[0];
-          dy_(j, i) = (y - distort[1]) / panel.get_pixel_size()[1];
+          // Store correction in units of the pixel size
+          dx_(j, i) = (x - transformed[0]) / panel.get_pixel_size()[0];
+          dy_(j, i) = (y - transformed[1]) / panel.get_pixel_size()[1];
         }
       }
     };

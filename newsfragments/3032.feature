@@ -1,2 +1,0 @@
-``dials.index``: two new parameters, ``xy_rmsd_threshold`` and ``n_indexed_threshold`` are introduced to exclude obvious bad indexing solutions.
-The default ``xy_rmsd_threshold`` is 6.0 pixels for rotation data and 2.0 pixels for stills, while ``n_indexed_threshold=5`` in either case.
