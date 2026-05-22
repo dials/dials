@@ -146,6 +146,11 @@ def _copy_experiments_for_refining(experiments):
             # assign the new copy to the experiment
             setattr(new_exp, model, id_memo[id(original)])
 
+        # XFEL stills carry a shared XFELBeam with no fixed wavelength;
+        # refinement needs a monochromatic beam, resolved per frame from the
+        # scan 'wavelength' property. A no-op for ordinary beams.
+        new_exp.beam = new_exp.get_monochromatic_beam()
+
         # Collect this together
         out_list.append(new_exp)
 

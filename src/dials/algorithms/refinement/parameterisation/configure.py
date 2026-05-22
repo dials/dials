@@ -491,8 +491,13 @@ def _parameterise_crystals(options, experiments, analysis):
         ]
         goniometer, scan = assoc_models[0]
         if goniometer is None:
-            # There should be no associated goniometer and scan models
-            if any(g or s for (g, s) in assoc_models):
+            # There should be no associated goniometer and no rotation scan.
+            # Still experiments may carry a zero-oscillation scan, which does
+            # not make the crystal a scan experiment.
+            if any(
+                g is not None or (s is not None and not s.is_still())
+                for (g, s) in assoc_models
+            ):
                 raise DialsRefineConfigError(
                     "A crystal model appears in a mixture of scan and still "
                     "experiments, which is not supported"
