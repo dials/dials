@@ -6,7 +6,7 @@
 **2026-05-21 (bug fixes):** Per-frame scan rebuild in `do_import` extended to all `ImageSequence` slices (not only XFEL stills) — rotation CBF frames processed via `convert_sequences_to_stills` also carry absolute scan ranges that would confuse the integrator. `FormatXTC.understand()` fixed to `return bool(ds)` instead of `True`. `Format.get_imageset` goniometer assertion relaxed for still sequences. `test_pseudo_scan` fixed and strengthened with round-trip assertions.  
 **2026-05-22 (image_viewer):** Reflection overlays (spots, centres of mass, predictions, hkl, integrated shoeboxes) now draw correctly on all frames of composite still output in `dials.image_viewer`. Two independent root causes fixed; per-frame beam corrected for XFEL. Commit `875d1a8cc`. See "image_viewer changes" section below.  
 **2026-05-22 (combine_experiments):** `dials.combine_experiments` now works with stills-as-ImageSequence output. Four fixes across both repos; see "combine_experiments changes" section below.
-**2026-05-22 (frame ordering):** `stills_process` composite output now writes experiments (and paired reflections) in ascending frame order. New helper `_sort_experiments_by_frame()` sorts by `(source path, frame index)` and remaps reflection-table `id` and `experiment_identifiers` to match. Called in both the multiprocessing path (`_combine_multiprocessing_outputs`, after `_rebuild_shared_imageset_output`) and the MPI composite-stride path (`finalize`, after the rebuild loop, for all four stages). Previously, experiments were written in worker/rank encounter order.
+**2026-05-22 (frame ordering):** `stills_process` and `dials.combine_experiments` composite output now writes experiments (and paired reflections) in ascending frame order. New helper `_sort_experiments_by_frame()` sorts by `(source path, frame index)` and remaps reflection-table `id` and `experiment_identifiers` to match. Called in both the multiprocessing path (`_combine_multiprocessing_outputs`, after `_rebuild_shared_imageset_output`) and the MPI composite-stride path (`finalize`, after the rebuild loop, for all four stages). Previously, experiments were written in worker/rank encounter order.
 
 ---
 
@@ -260,7 +260,7 @@ PRs 2 and 3 depend on PR 1 (stable imageset identity is what makes caching valid
 | File | What's there |
 |------|-------------|
 | `src/dials/util/combine_experiments.py` | `CombineWithReference.__call__` scan logic — stills keep per-frame scan |
-| `src/dials/command_line/combine_experiments.py` | `_save_only_experiments`, `_save_experiments_and_reflections` — `compact_stills_scans=True` on write |
+| `src/dials/command_line/combine_experiments.py` | `_save_only_experiments`, `_save_experiments_and_reflections` — `compact_stills_scans=True` on write; `_sort_experiments_and_reflections` rewired to sort stills automatically |
 
 ### dials/util/image_viewer
 | File | What's there |

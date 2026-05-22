@@ -422,19 +422,69 @@ def _consolidate_stills_imagesets(experiments, reflections=None):
 
 
 def _sort_experiments_and_reflections(expts, refls):
-    print("Sorting %d experiments by imageset path and image index" % (len(expts)))
-    assert {len(iset) for iset in expts.imagesets()} == {1}
-    keys = [(expt.imageset.paths()[0], expt.imageset.indices()[0]) for expt in expts]
-    indices = [i[0] for i in sorted(enumerate(keys), key=lambda x: x[1])]
+    """Sort experiments and reflections by (source path, frame index).
 
-    expts = ExperimentList([expts[indices[i]] for i in range(len(expts))])
+    Works for both per-frame imagesets (imageset.indices()[0]) and shared
+    ImageSequences produced by _consolidate_stills_imagesets (uses the
+    per-experiment scan's image_range).  Remaps reflection-table 'id',
+    'experiment_identifiers', and 'imageset_id' to stay consistent with
+    the new experiment order.
+    """
+    from dxtbx.imageset import ImageSequence
+
+    def _sort_key(expt):
+        iset = expt.imageset
+        path = iset.paths()[0]
+        if isinstance(iset, ImageSequence) and len(iset) > 1:
+            fi = expt.scan.get_image_range()[0] if expt.scan is not None else 0
+        else:
+            fi = iset.indices()[0]
+        return (path, fi)
+
+    perm = sorted(range(len(expts)), key=lambda i: _sort_key(expts[i]))
+    if perm == list(range(len(expts))):
+        return expts, refls
+
+    old_imagesets = list(expts.imagesets())
+    sorted_expts = ExperimentList([expts[perm[i]] for i in range(len(perm))])
+    new_imagesets = list(sorted_expts.imagesets())
+    iset_remap = {
+        old_id: new_id
+        for new_id, iset in enumerate(new_imagesets)
+        for old_id, old_iset in enumerate(old_imagesets)
+        if iset is old_iset
+    }
+
     if refls:
-        refls = flex.reflection_table.concat(
-            [refls.select(refls["id"] == indices[i]) for i in range(len(expts))]
-        )
-    print("Sorted")
-
-    return expts, refls
+        old_idents = dict(refls.experiment_identifiers())
+        new_blocks = []
+        for new_id, old_id in enumerate(perm):
+            block = refls.select(refls["id"] == old_id)
+            if len(block):
+                block["id"] = flex.int(len(block), new_id)
+                new_blocks.append(block)
+        if new_blocks:
+            sorted_refls = flex.reflection_table.concat(new_blocks)
+            idents = sorted_refls.experiment_identifiers()
+            for k in list(idents.keys()):
+                del idents[k]
+            for new_id, old_id in enumerate(perm):
+                if old_id in old_idents:
+                    idents[new_id] = old_idents[old_id]
+            if "imageset_id" in sorted_refls and any(
+                o != n for o, n in iset_remap.items()
+            ):
+                old_iset_id = sorted_refls["imageset_id"].deep_copy()
+                new_iset_id = old_iset_id.deep_copy()
+                for old_id, new_id in iset_remap.items():
+                    if old_id != new_id:
+                        new_iset_id.set_selected(old_iset_id == old_id, new_id)
+                sorted_refls["imageset_id"] = new_iset_id
+        else:
+            sorted_refls = refls
+    else:
+        sorted_refls = refls
+    return sorted_expts, sorted_refls
 
 
 @dials.util.show_mail_handle_errors()
@@ -495,7 +545,12 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
         expts = combine_experiments_no_reflections(params, experiment_lists)
         refls = None
     expts, refls = _consolidate_stills_imagesets(expts, refls)
-    if params.output.sort_by_imageset_path_and_image_index:
+    _is_stills = (
+        bool(expts)
+        and expts[0].scan is not None
+        and expts[0].scan.is_still()
+    )
+    if _is_stills or params.output.sort_by_imageset_path_and_image_index:
         expts, refls = _sort_experiments_and_reflections(expts, refls)
     save_combined_experiments(
         expts,
