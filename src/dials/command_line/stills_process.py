@@ -447,18 +447,14 @@ def do_import(filename, load_models=True):
         for i in range(len(imageset)):
             per_frame_iset = imageset[i : i + 1]
             _scan = per_frame_iset.get_scan()
-            # For zero-oscillation stills, the slice carries the absolute frame
-            # range from the parent scan (e.g. (3913, 3913)), which conflicts with
-            # the integrator's expectation that imageset.get_array_range() match
-            # the 0-based z coordinates in stills reflections. Rebuild the slice
-            # with a fresh single-image still scan so its array_range is (0, 1).
-            # Beam/detector are shared via the underlying ImageSetData, so JSON
-            # deduplication and spotfinder caching still work.
-            if (
-                _scan is not None
-                and _scan.is_still()
-                and isinstance(per_frame_iset, ImageSequence)
-            ):
+            # Any ImageSequence per-frame slice carries the absolute frame range
+            # from the parent scan (e.g. image_range=(2,2) → array_range=(1,2)
+            # for frame 2 of a CBF sequence, or (3913,3913) for XFEL). The
+            # integrator and stills pipeline expect array_range=(0,1). Rebuild
+            # every ImageSequence slice with a fresh single-image still scan so
+            # its array_range is (0, 1). This also handles convert_sequences_to_stills
+            # rotation data, restoring the old imageset_from_anyset() behavior.
+            if isinstance(per_frame_iset, ImageSequence) and _scan is not None:
                 per_frame_iset = _make_stills_sequence(
                     per_frame_iset.data(),
                     per_frame_iset.indices(),

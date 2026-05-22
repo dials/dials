@@ -253,3 +253,11 @@ def test_pseudo_scan(dials_data, tmp_path):
         tmp_path / "idx-0000_refined.expt", check_format=False
     )
     assert len(experiments) == 2
+    # Verify stills geometry survived the round-trip: no goniometer, still scan.
+    assert all(e.goniometer is None for e in experiments)
+    assert all(e.scan is not None and e.scan.is_still() for e in experiments)
+    # The shared output imageset is an ImageSequence (not ImageSet) — consistent
+    # with the in-process representation and the compact_stills_scans contract.
+    from dxtbx.imageset import ImageSequence
+
+    assert all(isinstance(e.imageset, ImageSequence) for e in experiments)
