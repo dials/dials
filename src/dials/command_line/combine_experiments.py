@@ -277,7 +277,7 @@ def _save_only_experiments(
     for elist, ename in zip(output_experiments_list, expt_names_list):
         if max_batch_size is None:
             logger.info(f"Saving combined experiments to {ename}")
-            elist.as_file(ename, compact_stills_scans=True)
+            elist.as_file(ename)
         else:
             for i, indices in enumerate(
                 _split_equal_parts_of_length(
@@ -289,7 +289,7 @@ def _save_only_experiments(
                     batch_expts.append(elist[sub_idx])
                 exp_filename = os.path.splitext(ename)[0] + "_%03d.expt" % i
                 logger.info(f"Saving combined experiments to {exp_filename}")
-                batch_expts.as_file(exp_filename, compact_stills_scans=True)
+                batch_expts.as_file(exp_filename)
 
 
 def _save_experiments_and_reflections(
@@ -307,7 +307,7 @@ def _save_experiments_and_reflections(
     ):
         if max_batch_size is None:
             logger.info(f"Saving combined experiments to {ename}")
-            elist.as_file(ename, compact_stills_scans=True)
+            elist.as_file(ename)
             logger.info(f"Saving combined reflections to {rname}")
             table.as_file(rname)
         else:
@@ -332,7 +332,7 @@ def _save_experiments_and_reflections(
                 exp_filename = os.path.splitext(ename)[0] + "_%03d.expt" % i
                 ref_filename = os.path.splitext(rname)[0] + "_%03d.refl" % i
                 logger.info(f"Saving combined experiments to {exp_filename}")
-                batch_expts.as_file(exp_filename, compact_stills_scans=True)
+                batch_expts.as_file(exp_filename)
                 logger.info(f"Saving combined reflections to {ref_filename}")
                 batch_refls.as_file(ref_filename)
 

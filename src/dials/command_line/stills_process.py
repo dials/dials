@@ -609,22 +609,24 @@ def _rebuild_shared_imageset_output(experiments):
 
     for path, expts in by_file.items():
         frame_indices = [_frame_index(e) for e in expts]
-        min_f = min(frame_indices)
-        max_f = max(frame_indices)
+        sorted_frames = sorted(set(frame_indices))
         shared_detector = expts[0].detector
         # Re-open the source file: each per-frame slice's data() is size-1,
-        # too small to span [min_f, max_f]. FormatXFEL mixin returns an
-        # ImageSequence with XFELBeam + scan 'wavelength' property; other formats
-        # return an ImageSequence or ImageSet with a monochromatic Beam.
+        # too small to span the full integrated range. FormatXFEL mixin returns
+        # an ImageSequence with XFELBeam + scan 'wavelength' property; other
+        # formats return an ImageSequence or ImageSet with a monochromatic Beam.
         parent_iset = get_format_class_for_file(path).get_imageset([path])
         shared_beam = parent_iset.get_beam()  # XFELBeam for XFEL, Beam otherwise
         parent_scan = parent_iset.get_scan()
+        # Use only the integrated frame indices (sparse). The compact scan (1, N)
+        # pairs with the sparse physical indices; per-experiment scans carry the
+        # absolute frame positions used for reflection lookup.
         full_seq = _make_stills_sequence(
             parent_iset.data(),
-            flex.size_t(range(min_f, max_f + 1)),
+            flex.size_t(sorted_frames),
             shared_beam,
             shared_detector,
-            (min_f + 1, max_f + 1),
+            (1, len(sorted_frames)),
         )
         file_to_full_seq[path] = full_seq
         file_to_shared_beam[path] = shared_beam
@@ -2350,7 +2352,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             ):
                 self.all_imported_experiments.as_json(
                     self.params.output.experiments_filename,
-                    compact_stills_scans=True,
                 )
 
             if (
@@ -2367,7 +2368,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             ):
                 self.all_indexed_experiments.as_json(
                     self.params.output.refined_experiments_filename,
-                    compact_stills_scans=True,
                 )
 
             if (
@@ -2384,7 +2384,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             ):
                 self.all_integrated_experiments.as_json(
                     self.params.output.integrated_experiments_filename,
-                    compact_stills_scans=True,
                 )
 
             if (
@@ -2403,7 +2402,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 ):
                     self.all_coset_experiments.as_json(
                         self.params.output.coset_experiments_filename,
-                        compact_stills_scans=True,
                     )
 
                 if (

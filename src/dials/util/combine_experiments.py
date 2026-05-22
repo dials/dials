@@ -148,8 +148,8 @@ class CombineWithReference:
         if self.ref_scan:
             # For stills, each experiment carries its own wavelength in the scan
             # properties. Replacing with the reference scan would clobber those
-            # per-frame wavelengths. Keep the experiment's own scan; the compact
-            # serialisation (compact_stills_scans=True) will consolidate on write.
+            # per-frame wavelengths. Keep the experiment's own scan; serialisation
+            # automatically consolidates stills scans on write.
             if (
                 self.ref_scan.is_still()
                 and experiment.scan is not None

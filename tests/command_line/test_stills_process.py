@@ -257,7 +257,7 @@ def test_pseudo_scan(dials_data, tmp_path):
     assert all(e.goniometer is None for e in experiments)
     assert all(e.scan is not None and e.scan.is_still() for e in experiments)
     # The shared output imageset is an ImageSequence (not ImageSet) — consistent
-    # with the in-process representation and the compact_stills_scans contract.
+    # with the in-process representation and the stills scan consolidation contract.
     from dxtbx.imageset import ImageSequence
 
     assert all(isinstance(e.imageset, ImageSequence) for e in experiments)
