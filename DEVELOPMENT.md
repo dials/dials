@@ -519,7 +519,7 @@ else:
 
 ## dials.refine: per-frame beam for composite stills (2026-05-22)
 
-**Commits:** dxtbx `cd5d39e8`, dials `272a1b469`
+**Commits:** dxtbx `cd5d39e8`, dials `272a1b469`, cctbx_project `a34f7ddc`
 
 `dials.refine` crashed on composite stills `.expt` output from this branch:
 
