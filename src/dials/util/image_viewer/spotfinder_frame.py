@@ -1729,12 +1729,16 @@ class SpotFrame(XrayFrame):
             i_frame = self.images.selected.index
         imageset = self.images.selected.image_set
         if self.viewing_still_scans:
-            # A composite still ImageSequence is a contiguous slice [min_f, max_f]
-            # of the source file, but its scan loses that offset on JSON round-trip
-            # (it returns starting at array index 0). The per-experiment scans keep
-            # the true absolute frame index, so derive the offset from them:
-            # chooser position k displays absolute frame min_f + k.
-            i_frame += self._still_scan_frame_offset(imageset)
+            # A sparse composite ImageSequence has one physical image per integrated
+            # frame; chooser position k → the k-th sorted integrated frame. Derive
+            # the mapping from per-experiment scans (authoritative after round-trip).
+            # Fall back to offset-based mapping for old contiguous imagesets where
+            # the number of imageset indices exceeds the number of integrated frames.
+            frame_list = self._still_scan_frame_list(imageset)
+            if frame_list and len(frame_list) == len(imageset.indices()):
+                i_frame = frame_list[i_frame]
+            else:
+                i_frame += self._still_scan_frame_offset(imageset)
         elif imageset.get_scan() is not None:
             i_frame += imageset.get_scan().get_array_range()[0]
 
@@ -1794,6 +1798,35 @@ class SpotFrame(XrayFrame):
                     if expt.scan is not None
                 ]
             cache[key] = min(frames) if frames else 0
+        return cache[key]
+
+    def _still_scan_frame_list(self, imageset):
+        """Sorted list of absolute frame indices for experiments sharing this imageset.
+
+        The k-th entry is the absolute frame number (scan array_range[0]) for
+        chooser position k in a sparse composite ImageSequence, where each chooser
+        position corresponds to exactly one integrated frame.
+        """
+        cache = getattr(self, "_still_scan_frame_list_cache", None)
+        if cache is None:
+            cache = {}
+            self._still_scan_frame_list_cache = cache
+        key = id(imageset)
+        if key not in cache:
+            frames = sorted({
+                expt.scan.get_array_range()[0]
+                for elist in self.experiments
+                for expt in elist
+                if expt.scan is not None and expt.imageset is imageset
+            })
+            if not frames:
+                frames = sorted({
+                    expt.scan.get_array_range()[0]
+                    for elist in self.experiments
+                    for expt in elist
+                    if expt.scan is not None
+                })
+            cache[key] = frames
         return cache[key]
 
     def _identifiers_for_frame(self, i_frame):
