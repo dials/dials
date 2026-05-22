@@ -2,11 +2,13 @@
 
 **Branch:** `stills_process_imagesequence` in both dials and dxtbx  
 **Status as of 2026-05-21:** Architecture refactored per upstream dxtbx maintainer review (Waterman, McDonagh). `XFELImageSequence` removed; per-frame wavelengths moved to scan properties table. `XFELBeam` retained as lightweight guard/marker type (no wavelength array). Build passes; all smoke tests pass.  
-**2026-05-21 (scan consolidation):** `ExperimentList.to_dict/as_json` gains `compact_stills_scans=True` option; stills composite output now writes one consolidated scan JSON object instead of N, saving ~8 % of file size (−266 KB on a 764-experiment test case).  
+**2026-05-21 (scan consolidation):** `ExperimentList.to_dict/as_json` consolidates stills scans automatically; stills composite output writes one consolidated scan JSON object instead of N, saving ~8 % of file size (−266 KB on a 764-experiment test case). The `compact_stills_scans` option was later removed (2026-05-22) and consolidation made unconditional.  
 **2026-05-21 (bug fixes):** Per-frame scan rebuild in `do_import` extended to all `ImageSequence` slices (not only XFEL stills) — rotation CBF frames processed via `convert_sequences_to_stills` also carry absolute scan ranges that would confuse the integrator. `FormatXTC.understand()` fixed to `return bool(ds)` instead of `True`. `Format.get_imageset` goniometer assertion relaxed for still sequences. `test_pseudo_scan` fixed and strengthened with round-trip assertions.  
 **2026-05-22 (image_viewer):** Reflection overlays (spots, centres of mass, predictions, hkl, integrated shoeboxes) now draw correctly on all frames of composite still output in `dials.image_viewer`. Two independent root causes fixed; per-frame beam corrected for XFEL. Commit `875d1a8cc`. See "image_viewer changes" section below.  
 **2026-05-22 (combine_experiments):** `dials.combine_experiments` now works with stills-as-ImageSequence output. Four fixes across both repos; see "combine_experiments changes" section below.
-**2026-05-22 (frame ordering):** `stills_process` and `dials.combine_experiments` composite output now writes experiments (and paired reflections) in ascending frame order. New helper `_sort_experiments_by_frame()` sorts by `(source path, frame index)` and remaps reflection-table `id` and `experiment_identifiers` to match. Called in both the multiprocessing path (`_combine_multiprocessing_outputs`, after `_rebuild_shared_imageset_output`) and the MPI composite-stride path (`finalize`, after the rebuild loop, for all four stages). Previously, experiments were written in worker/rank encounter order.
+**2026-05-22 (frame ordering):** `stills_process` and `dials.combine_experiments` composite output now writes experiments (and paired reflections) in ascending frame order. New helper `_sort_experiments_by_frame()` sorts by `(source path, frame index)` and remaps reflection-table `id` and `experiment_identifiers` to match. Called in both the multiprocessing path (`_combine_multiprocessing_outputs`, after `_rebuild_shared_imageset_output`) and the MPI composite-stride path (`finalize`, after the rebuild loop, for all four stages). Previously, experiments were written in worker/rank encounter order.  
+**2026-05-22 (scan consolidation made unconditional):** Removed `compact_stills_scans` parameter from `ExperimentList.to_dict()` and `as_json()`. Consolidation now runs automatically whenever all experiments are single-frame stills (oscillation == 0); rotation data is unaffected by the guard. Eliminates the need for ~200+ downstream call sites across dials/cctbx_project to opt in. Paired cleanup in dials drops the 8 now-redundant `compact_stills_scans=True` kwargs from `stills_process` and `combine_experiments`. dxtbx commit `e2d34c52`; dials commit `dd8bfea5c`.  
+**2026-05-22 (sparse imageset / image_viewer frame filter):** `_rebuild_shared_imageset_output` now builds the shared `ImageSequence` with only the integrated frame indices (`sorted(set(frame_indices))`) and a compact scan `(1, N)`, instead of a contiguous range `[min_f, max_f]`. This means `image_viewer` only shows frames that were successfully integrated. Three code paths had to be updated to support non-contiguous `single_file_indices` for still scan sequences: the C++ `ImageSequence` constructor (`imageset.h`), `FormatMultiImage.get_imageset()`, and `ExperimentListDict._make_sequence()` (bypasses `ImageSetFactory.make_sequence()` when `single_file_indices` is in the JSON). dxtbx commit `eea48ad7`. The `image_viewer` frame mapping for `viewing_still_scans` was updated to use `_still_scan_frame_list(imageset)[idx]` (a sorted list of absolute frame numbers from per-experiment scans) instead of `idx + offset`; falls back to offset for old-style contiguous `.expt` files. dials commit `a7b272a4f`.
 
 ---
 
@@ -150,12 +152,13 @@ object even though scans differ only in `image_range` (one integer) and
 `wavelength` (one float). For a 764-experiment file this costs 285 KB (8.5 %
 of a 3.3 MB file) for data that could be stored in two compact arrays.
 
-### Solution: `compact_stills_scans=True`
+### Solution: automatic stills scan consolidation
 
 **Write side — `ExperimentList.to_dict/as_json` in `src/dxtbx/model/__init__.py`**
 
-When `compact_stills_scans=True` and every scan is a single-frame still
-(`image_range[0] == image_range[1]`, oscillation width == 0):
+Whenever every scan in the experiment list is a single-frame still
+(`image_range[0] == image_range[1]`, oscillation width == 0), consolidation
+runs automatically (no flag required):
 
 - The N scan dicts are replaced by **one** consolidated object:
   ```json
@@ -167,6 +170,8 @@ When `compact_stills_scans=True` and every scan is a single-frame still
 - All-zero property arrays (epochs, exposure_time, oscillation,
   oscillation_width) are omitted; they are reconstructed as zeros on load.
 - Each experiment gains `"scan_point": i` and `"scan": 0`.
+- Rotation data (oscillation width > 0) is never consolidated — the guard
+  condition fails and the standard per-scan format is written unchanged.
 
 **Read side — `ExperimentListDict._expand_consolidated_scans()` in `src/dxtbx/model/experiment_list.py`**
 
@@ -174,10 +179,6 @@ Called in `__init__` before `_extract_models` runs. Expands the consolidated
 object back to N per-frame scan dicts (no-op for files without
 `__stills_consolidated`). The rest of `decode()` sees the standard format
 unchanged.
-
-**Caller — `src/dials/command_line/stills_process.py`**
-
-All four composite output `as_json()` calls pass `compact_stills_scans=True`.
 
 ### Numbers (764-experiment test case)
 
@@ -190,8 +191,7 @@ All four composite output `as_json()` calls pass `compact_stills_scans=True`.
 ### Backward compatibility
 
 - New reader + old file: **transparent** (`_expand_consolidated_scans` exits immediately).
-- Old reader + new file: **fails** (`ScanFactory.from_dict` gets a dict with no `image_range`). Safe because `compact_stills_scans=False` is the default; old readers are never exposed to the new format unless the writer explicitly opts in.
-- Rollout: deploy dxtbx change (reader) before flipping the writer flag in stills_process.
+- Old reader + new file: **fails** (`ScanFactory.from_dict` gets a dict with no `image_range`). The dxtbx reader (`_expand_consolidated_scans`) must land before any code that writes stills experiments reaches users.
 
 ### Remaining file-size opportunities
 
@@ -219,8 +219,8 @@ All four composite output `as_json()` calls pass `compact_stills_scans=True`.
 
 ## How it would ship (if the prototype validates)
 
-1. **dxtbx PR** — `XFELBeam` C++ model (lightweight guard type) + `ImageSequence.get_beam(index)` Python override + `FormatXFEL` mixin + `FormatNXmxXFEL`/`FormatXTCXFEL` + `BeamFactory.make_xfel_beam()` + `CachedWavelengthBeamFactory.get_wavelengths()` + `compact_stills_scans` scan consolidation (`ExperimentList.to_dict/as_json` + `ExperimentListDict._expand_consolidated_scans`). Must land first.
-2. **dials PR 1 (correctness)** — `do_import()` pivot + scan-based stills detection everywhere + `_rebuild_shared_imageset_output()` + `_combine_multiprocessing_outputs()` + `compact_stills_scans=True` in composite output.
+1. **dxtbx PR** — `XFELBeam` C++ model (lightweight guard type) + `ImageSequence.get_beam(index)` Python override + `FormatXFEL` mixin + `FormatNXmxXFEL`/`FormatXTCXFEL` + `BeamFactory.make_xfel_beam()` + `CachedWavelengthBeamFactory.get_wavelengths()` + automatic stills scan consolidation in `ExperimentList.to_dict/as_json` + `ExperimentListDict._expand_consolidated_scans`. Must land first.
+2. **dials PR 1 (correctness)** — `do_import()` pivot + scan-based stills detection everywhere + `_rebuild_shared_imageset_output()` + `_combine_multiprocessing_outputs()`. Stills scan consolidation is now automatic (no call-site flag needed).
 3. **dials PR 2 (spotfinder caching)** — `ExtractPixelsFromImage` static/dynamic split + `update_imageset()` + `ExtractSpots`/`SpotFinder` caching.
 4. **dials PR 3 (indexer caching)** — `Processor` indexer cache + `update_indexer()` + `hardcoded_phil` move + deepcopy removal.
 
@@ -236,14 +236,15 @@ PRs 2 and 3 depend on PR 1 (stable imageset identity is what makes caching valid
 | `src/dxtbx/model/beam.h` | `XFELBeam` C++ class (lightweight guard, no wavelength array) |
 | `src/dxtbx/model/boost_python/beam.cc` | Python bindings + pickle + to_dict/from_dict |
 | `src/dxtbx/model/beam.py` | `BeamFactory.make_xfel_beam(direction, ...)`, routing in `from_dict()` |
-| `src/dxtbx/model/__init__.py` | `get_monochromatic_beam(wavelength)` injection on `XFELBeam`; `ExperimentList.to_dict/as_json` `compact_stills_scans` flag |
+| `src/dxtbx/model/__init__.py` | `get_monochromatic_beam(wavelength)` injection on `XFELBeam`; `ExperimentList.to_dict/as_json` automatic stills scan consolidation |
+| `src/dxtbx/imageset.h` | `ImageSequence` C++ constructor — sequential-indices assertion conditioned on `!scan->is_still()` |
 | `src/dxtbx/imageset.py` | `ImageSequence.get_beam(index)` override (XFELBeam dispatch) |
 | `src/dxtbx/format/FormatXFEL.py` | `FormatXFEL` mixin — builds ImageSequence with XFELBeam + scan wavelength property; wavelength subset fix for composite output |
-| `src/dxtbx/format/FormatMultiImage.py` | `get_imageset` model-fill guards (`and format_instance is not None`) — fixes crash when `check_format=False` and goniometer=None |
+| `src/dxtbx/format/FormatMultiImage.py` | `get_imageset` model-fill guards; sequential-indices assertion conditioned on `not scan.is_still()` for sequences |
 | `src/dxtbx/format/FormatNXmx.py` | `FormatNXmxXFEL` class |
 | `src/dxtbx/format/FormatXTC.py` | `FormatXTCXFEL` class |
 | `src/dxtbx/nexus/__init__.py` | `CachedWavelengthBeamFactory.get_wavelengths()` |
-| `src/dxtbx/model/experiment_list.py` | `ExperimentListDict._expand_consolidated_scans()` — expands compact scan format on load; `decode()` preserves imageset scan with wavelength property |
+| `src/dxtbx/model/experiment_list.py` | `_expand_consolidated_scans()` — expands compact scan format on load; `decode()` preserves imageset scan with wavelength property; `_make_sequence()` bypasses `make_sequence()` when `single_file_indices` stored in JSON (supports sparse round-trip) |
 
 ### dials
 | File | What's there |
@@ -260,7 +261,7 @@ PRs 2 and 3 depend on PR 1 (stable imageset identity is what makes caching valid
 | File | What's there |
 |------|-------------|
 | `src/dials/util/combine_experiments.py` | `CombineWithReference.__call__` scan logic — stills keep per-frame scan |
-| `src/dials/command_line/combine_experiments.py` | `_save_only_experiments`, `_save_experiments_and_reflections` — `compact_stills_scans=True` on write; `_sort_experiments_and_reflections` rewired to sort stills automatically |
+| `src/dials/command_line/combine_experiments.py` | `_save_only_experiments`, `_save_experiments_and_reflections` — stills scan consolidation automatic on write; `_sort_experiments_and_reflections` rewired to sort stills automatically |
 
 ### dials/format conversion scripts
 | File | What's there |
@@ -285,7 +286,7 @@ dials.expt_sequence_to_set integrated.expt integrated.refl \
 ### dials/util/image_viewer
 | File | What's there |
 |------|-------------|
-| `src/dials/util/image_viewer/spotfinder_frame.py` | `_identifiers_for_frame` (order-independent dict); `_still_scan_frame_offset` (derives imageset start offset from per-experiment scans); `get_spotfinder_data` frame-offset fix; fixed per-overlay colours for `viewing_still_scans` |
+| `src/dials/util/image_viewer/spotfinder_frame.py` | `_identifiers_for_frame` (order-independent dict); `_still_scan_frame_offset` (derives imageset start offset from per-experiment scans); `_still_scan_frame_list` (sorted absolute frame list for sparse imageset mapping); `get_spotfinder_data` frame-offset/list fix; fixed per-overlay colours for `viewing_still_scans` |
 | `src/dials/util/image_viewer/slip_viewer/frame.py` | `chooser_wrapper.get_beam()` → `image_set.get_beam(self.index)` (per-frame beam); `get_beam_center_px` and resolution-rings use same pattern |
 
 ---
@@ -421,10 +422,9 @@ wavelengths were lost.
 
 **Fix:** `CombineWithReference.__call__` in `dials/util/combine_experiments.py`: when both
 `ref_scan.is_still()` and `experiment.scan.is_still()`, the experiment keeps its own scan.
-Rotation scan behaviour is unchanged. The `compact_stills_scans=True` option is now passed
-to all four `as_file` call sites in `_save_only_experiments` and
-`_save_experiments_and_reflections`, so the N per-frame scans are consolidated into one
-compact JSON object on write (safe no-op for rotation data).
+Rotation scan behaviour is unchanged. The N per-frame scans are automatically consolidated
+into one compact JSON object on write by `ExperimentList.to_dict()` (safe no-op for
+rotation data).
 
 ### Correct invocation
 
@@ -439,3 +439,72 @@ dials.combine_experiments *_integrated.expt *_integrated.refl \
 stills — each experiment retains its own scan. The compact output gives ONE scan JSON object
 with all per-frame wavelengths, matching the structure written by `stills_process`.
 Do **not** use this option expecting it to copy experiment 0's scan verbatim for stills.
+
+---
+
+## Sparse imageset / image_viewer frame filter (2026-05-22)
+
+**Commits:** dxtbx `eea48ad7`, dials `dd8bfea5c` (stills_process), `a7b272a4f` (image_viewer)
+
+`dials.image_viewer` was showing all frames from `min_f` to `max_f` in the composite
+output, including frames that were not successfully integrated. Root cause:
+`_rebuild_shared_imageset_output` built the shared `ImageSequence` with
+`indices = range(min_f, max_f + 1)` — a contiguous slice covering every frame in the
+range, regardless of integration success.
+
+### Fix: sparse imageset indices
+
+`_rebuild_shared_imageset_output` now uses:
+```python
+sorted_frames = sorted(set(frame_indices))  # only integrated frames
+full_seq = _make_stills_sequence(
+    parent_iset.data(),
+    flex.size_t(sorted_frames),
+    shared_beam,
+    shared_detector,
+    (1, len(sorted_frames)),              # compact scan
+)
+```
+
+The shared imageset has exactly N entries (one per unique integrated frame), so
+`image_viewer` sees only N chooser positions — one per integrated frame.
+
+### Three assertions blocking sparse `ImageSequence` round-trip
+
+`single_file_indices` is already written to the JSON for single-file readers. Three
+code paths required changes to accept non-contiguous indices:
+
+**1. C++ `ImageSequence` constructor (`imageset.h` ~line 1278)**  
+The sequential-indices loop is now conditioned on `!scan->is_still()`. Still scans
+(oscillation width == 0) have independent shots; rotation scans still require sequential.
+
+**2. `FormatMultiImage.get_imageset()` (`FormatMultiImage.py` ~line 286)**  
+The Python-level sequential assertion is similarly conditioned on `not (scan is not None
+and scan.is_still())`.
+
+**3. `ExperimentListDict._make_sequence()` (`experiment_list.py` ~line 628)**  
+When `single_file_indices` is stored in the JSON, `_make_sequence` now bypasses
+`ImageSetFactory.make_sequence()` entirely and calls `format_class.get_imageset()`
+directly. `make_sequence()` recomputes a contiguous range from the scan's `image_range`
+and asserts `array_range == scan.get_array_range()`, both of which fail for a sparse
+imageset with compact scan `(1, N)`.
+
+**Backward compatibility:** old `.expt` files with contiguous `single_file_indices`
+take the same new bypass path and produce an identical result. Template-based files
+(no `single_file_indices` in JSON) still go through `make_sequence()` unchanged.
+
+### image_viewer frame mapping fix
+
+With a sparse imageset, chooser position `k` → the `k`-th integrated frame
+(in ascending absolute frame order). The old `i_frame = idx + offset` mapping
+assumed contiguous frames. New helper `_still_scan_frame_list(imageset)` returns
+the sorted list of `expt.scan.get_array_range()[0]` values for experiments sharing
+the imageset (cached per imageset by `id()`). `get_spotfinder_data` uses:
+
+```python
+frame_list = self._still_scan_frame_list(imageset)
+if frame_list and len(frame_list) == len(imageset.indices()):
+    i_frame = frame_list[i_frame]   # sparse: direct lookup
+else:
+    i_frame += self._still_scan_frame_offset(imageset)  # fallback for old files
+```
