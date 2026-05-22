@@ -127,10 +127,17 @@ def test_experiment():
     )
     imageset = ImageSequence(
         isetdata,
+        scan=scan,
         beam=beam,
         detector=detector,
         goniometer=Goniometer(),
-        scan=scan,
     )
-    expt = Experiment(imageset=imageset, crystal=crystal)
+    expt = Experiment(
+        imageset=imageset,
+        beam=imageset.get_beam(),
+        detector=imageset.get_detector(),
+        goniometer=imageset.get_goniometer(),
+        scan=imageset.get_scan(),
+        crystal=crystal,
+    )
     return expt
