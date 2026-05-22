@@ -262,6 +262,26 @@ PRs 2 and 3 depend on PR 1 (stable imageset identity is what makes caching valid
 | `src/dials/util/combine_experiments.py` | `CombineWithReference.__call__` scan logic — stills keep per-frame scan |
 | `src/dials/command_line/combine_experiments.py` | `_save_only_experiments`, `_save_experiments_and_reflections` — `compact_stills_scans=True` on write; `_sort_experiments_and_reflections` rewired to sort stills automatically |
 
+### dials/format conversion scripts
+| File | What's there |
+|------|-------------|
+| `src/dials/command_line/expt_set_to_sequence.py` | Converts old per-frame ImageSet `.expt` → new ImageSequence format. Groups experiments by source file, deduplicates detector, builds XFELBeam, writes consolidated scan. Sorts experiments by `(src, fi)` ascending; remaps `.refl` `id` column and `experiment_identifiers` to match. Default output: `sequence.expt` / `sequence.refl`. |
+| `src/dials/command_line/expt_sequence_to_set.py` | Converts new ImageSequence `.expt` → old per-frame ImageSet format. Expands consolidated scan, creates one ImageSet + monochromatic Beam + Detector copy per experiment. Experiment order is preserved so no `.refl` remapping is needed (refl is copied to output filename unchanged). Default output: `imageset.expt` / `imageset.refl`. |
+
+**Usage:**
+
+```bash
+# Old → new (with refl remapping)
+dials.expt_set_to_sequence integrated.expt integrated.refl \
+    output.experiments_filename=sequence.expt \
+    output.reflections_filename=sequence.refl
+
+# New → old
+dials.expt_sequence_to_set integrated.expt integrated.refl \
+    output.experiments_filename=imageset.expt \
+    output.reflections_filename=imageset.refl
+```
+
 ### dials/util/image_viewer
 | File | What's there |
 |------|-------------|
