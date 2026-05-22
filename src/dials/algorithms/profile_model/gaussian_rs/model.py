@@ -5,6 +5,7 @@ import logging
 from libtbx import Auto
 from libtbx.phil import parse
 from scitbx import matrix
+from scitbx.math import five_number_summary
 
 from dials.array_family import flex
 from dials.model.experiment.profile import ProfileModelExt
@@ -524,6 +525,20 @@ class Model(ProfileModelExt):
         # Check the input
         assert sigma_b_multiplier >= 1.0
 
+        # Compute the size in reciprocal space. No sigma_b multiplier at this point
+        delta_b = self._n_sigma * self._sigma_b
+        delta_m = self._n_sigma * self._sigma_m
+
+        # Create the bbox calculator
+        calculate = BBoxCalculator(
+            crystal, beam, detector, goniometer, scan, delta_b, delta_m
+        )
+
+        # Calculate the bounding boxes of all the reflections
+        bbox_tight = calculate(
+            reflections["s1"], reflections["xyzcal.px"].parts()[2], reflections["panel"]
+        )
+
         # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
         # the region of background in the shoebox
         delta_b = self._n_sigma * self._sigma_b * sigma_b_multiplier
@@ -537,6 +552,30 @@ class Model(ProfileModelExt):
         # Calculate the bounding boxes of all the reflections
         bbox = calculate(
             reflections["s1"], reflections["xyzcal.px"].parts()[2], reflections["panel"]
+        )
+
+        # Comparison between tight and expanded bounding boxes
+        x1t, x2t, y1t, y2t, z1t, z2t = bbox_tight.parts()
+        x1, x2, y1, y2, z1, z2 = bbox.parts()
+
+        vol_tight = (x2t - x1t) * (y2t - y1t) * (z2t - z1t)
+        vol_expanded = (x2 - x1) * (y2 - y1) * (z2 - z1)
+
+        background_volume = vol_expanded - vol_tight
+        x_margin = (x2 - x1) - (x2t - x1t)
+        y_margin = (y2 - y1) - (y2t - y1t)
+
+        logger.info("Five number summaries of bbox sizes:")
+        logger.info(
+            "Added background volume: {}, {}, {}, {}, {}".format(
+                *five_number_summary(background_volume)
+            )
+        )
+        logger.info(
+            "x margin: {}, {}, {}, {}, {}".format(*five_number_summary(x_margin))
+        )
+        logger.info(
+            "y margin: {}, {}, {}, {}, {}".format(*five_number_summary(y_margin))
         )
 
         # Return the bounding boxes
