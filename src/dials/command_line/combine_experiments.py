@@ -337,6 +337,90 @@ def _save_experiments_and_reflections(
                 batch_refls.as_file(ref_filename)
 
 
+def _consolidate_stills_imagesets(experiments, reflections=None):
+    """Merge experiments from the same source file into one shared ImageSequence.
+
+    When N per-worker .expt files are combined, each file contributes its own
+    ImageSequence Python object even when all files reference the same source
+    data file. This causes to_dict() to write N imageset entries. Group by
+    source path and re-create one shared ImageSequence per unique path.
+
+    Preserves experiment order (so reflection-table 'id' stays valid).
+    Does not re-open source files.
+    """
+    from collections import defaultdict
+
+    from dxtbx.imageset import ImageSequence
+    from dxtbx.model import Scan
+    from dxtbx.model.experiment_list import Experiment
+
+    if not experiments:
+        return experiments, reflections
+    first_iset = experiments[0].imageset
+    if not isinstance(first_iset, ImageSequence):
+        return experiments, reflections
+    if first_iset.get_scan() is None or not first_iset.get_scan().is_still():
+        return experiments, reflections
+
+    by_path = defaultdict(list)
+    for expt in experiments:
+        by_path[expt.imageset.paths()[0]].append(expt)
+
+    # Nothing to do if every path group already shares one Python object
+    if all(len({id(e.imageset) for e in grp}) == 1 for grp in by_path.values()):
+        return experiments, reflections
+
+    old_imagesets = list(experiments.imagesets())
+
+    from dxtbx.format.Registry import get_format_class_for_file
+
+    path_to_iset = {}
+    for path, grp in by_path.items():
+        all_fi = sorted(set().union(*(set(e.imageset.indices()) for e in grp)))
+        min_fi, max_fi = all_fi[0], all_fi[-1]
+        # The per-worker imageset data() is sized for that worker's frame subset;
+        # re-open the source file to get a full-file ImageSetData that can
+        # accommodate any frame index up to the file's total count.
+        parent_iset = get_format_class_for_file(path).get_imageset([path])
+        path_to_iset[path] = ImageSequence(
+            parent_iset.data(),
+            flex.size_t(range(min_fi, max_fi + 1)),
+            grp[0].beam,
+            grp[0].detector,
+            None,
+            Scan((min_fi + 1, max_fi + 1), (0.0, 0.0)),
+        )
+
+    new_experiments = ExperimentList()
+    for expt in experiments:
+        new_experiments.append(
+            Experiment(
+                imageset=path_to_iset[expt.imageset.paths()[0]],
+                beam=expt.beam,
+                detector=expt.detector,
+                goniometer=expt.goniometer,
+                scan=expt.scan,
+                crystal=expt.crystal,
+                profile=expt.profile,
+                scaling_model=expt.scaling_model,
+                identifier=expt.identifier,
+            )
+        )
+
+    if reflections is not None and "imageset_id" in reflections:
+        new_imagesets = list(new_experiments.imagesets())
+        old_to_new = {
+            old_imagesets.index(old_e.imageset): new_imagesets.index(new_e.imageset)
+            for old_e, new_e in zip(experiments, new_experiments)
+        }
+        new_iset_id = reflections["imageset_id"].deep_copy()
+        for old_id, new_id in old_to_new.items():
+            new_iset_id.set_selected(reflections["imageset_id"] == old_id, new_id)
+        reflections["imageset_id"] = new_iset_id
+
+    return new_experiments, reflections
+
+
 def _sort_experiments_and_reflections(expts, refls):
     print("Sorting %d experiments by imageset path and image index" % (len(expts)))
     assert {len(iset) for iset in expts.imagesets()} == {1}
@@ -410,6 +494,7 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
     else:
         expts = combine_experiments_no_reflections(params, experiment_lists)
         refls = None
+    expts, refls = _consolidate_stills_imagesets(expts, refls)
     if params.output.sort_by_imageset_path_and_image_index:
         expts, refls = _sort_experiments_and_reflections(expts, refls)
     save_combined_experiments(
