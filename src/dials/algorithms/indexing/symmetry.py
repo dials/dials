@@ -24,25 +24,17 @@ def metric_supergroup(group):
 
 
 def groups_cache(fn):
-    class MultiClassCache:
-        "A set of caches for different bravais types"
-
-        instances = {}
-
-        def __new__(cls, classname):
-            if classname not in cls.instances:
-                cls.instances[classname] = {}
-            return cls.instances[classname]
+    _cache = {}
 
     def wrapped_calc(group_info: sgtbx.space_group_info, bravais_t: str):
-        cache = MultiClassCache(bravais_t)
-        info_str = group_info.type().lookup_symbol()
+        group = group_info.group()
+        key = (bravais_t, group)
         try:
-            result = cache[info_str]
+            return _cache[key]
         except KeyError:
             result = fn(group_info, bravais_t)
-            cache[info_str] = result
-        return result
+            _cache[key] = result
+            return result
 
     return wrapped_calc
 
