@@ -1543,7 +1543,7 @@ class SpotFrame(XrayFrame):
                                 # distinct id, so per-id colouring would change
                                 # frame to frame. Use one fixed colour for all
                                 # integrated shoeboxes instead.
-                                my_attrs["color"] = "#984ea3"
+                                my_attrs["color"] = "red"
                             else:
                                 my_attrs["color"] = self.prediction_colours[
                                     reflection["id"]
@@ -1670,7 +1670,7 @@ class SpotFrame(XrayFrame):
 
                             if self.settings.show_predictions:
                                 pred_colour = (
-                                    "#4daf4a"
+                                    "red"
                                     if self.viewing_still_scans
                                     else self.prediction_colours[i_expt]
                                 )
