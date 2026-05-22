@@ -12,7 +12,7 @@
 
 **2026-05-22 (sparse imageset / image_viewer frame filter):** `_rebuild_shared_imageset_output` now builds the shared `ImageSequence` with only the integrated frame indices (`sorted(set(frame_indices))`) and a compact scan `(1, N)`, instead of a contiguous range `[min_f, max_f]`. This means `image_viewer` only shows frames that were successfully integrated. Three code paths had to be updated to support non-contiguous `single_file_indices` for still scan sequences: the C++ `ImageSequence` constructor (`imageset.h`), `FormatMultiImage.get_imageset()`, and `ExperimentListDict._make_sequence()` (bypasses `ImageSetFactory.make_sequence()` when `single_file_indices` is in the JSON). dxtbx commit `eea48ad7`. The `image_viewer` frame mapping for `viewing_still_scans` was updated to use `_still_scan_frame_list(imageset)[idx]` (a sorted list of absolute frame numbers from per-experiment scans) instead of `idx + offset`; falls back to offset for old-style contiguous `.expt` files. dials commit `a7b272a4f`.
 
-**2026-05-22 (dials.refine):** `dials.refine` now runs on composite stills `.expt` output. `StillsReflectionManager` crashed on `XFELBeam.get_s0()`. New `Experiment.get_monochromatic_beam()` accessor combines the shared `XFELBeam` with the per-frame scan `"wavelength"` into a monochromatic `Beam`; refinement resolves it once at `_copy_experiments_for_refining` so no refinement-internal code changed, and `ExperimentList.to_dict()` re-consolidates the per-frame beams back to one `XFELBeam` on write. A second, independent bug also fixed: `_parameterise_crystals` treated the zero-oscillation still scan as a rotation experiment, raising a false "mixture of scan and still experiments" error. dxtbx commit `cd5d39e8`; dials commit `272a1b469`. See "dials.refine" section below.
+**2026-05-22 (dials.refine):** `dials.refine` now runs on composite stills `.expt` output. `StillsReflectionManager` crashed on `XFELBeam.get_s0()`. New `Experiment.get_monochromatic_beam()` accessor combines the shared `XFELBeam` with the per-frame scan `"wavelength"` into a monochromatic `Beam`; refinement resolves it once at `_copy_experiments_for_refining` so no refinement-internal code changed, and `ExperimentList.to_dict()` re-consolidates the per-frame beams back to one `XFELBeam` on write. A second, independent bug also fixed: `_parameterise_crystals` treated the zero-oscillation still scan as a rotation experiment, raising a false "mixture of scan and still experiments" error. Non-refinement tools (e.g. `cctbx.xfel.detector_residuals`) that load composite stills resolve beams with a one-line loop at load. dxtbx commit `cd5d39e8`; dials commit `272a1b469`; cctbx_project commit `a34f7ddc`. See "dials.refine" section below.
 
 ---
 
@@ -564,13 +564,19 @@ geometry the guard fails and all N beams are written — no data loss.
 through which experiments enter the refiner (and leave it, via
 `Refiner.get_experiments()`). After the existing model-copy loop it now sets
 `new_exp.beam = new_exp.get_monochromatic_beam()`. Every refinement-internal
-consumer — `StillsReflectionManager`, `StillsReflectionPredictor`, the prediction
-parameterisations, residual helpers — then sees an ordinary monochromatic `Beam`
-and required no change. Refined output flows back through the same helper and is
-re-consolidated to one `XFELBeam` by `to_dict()`. A no-op for non-XFEL data.
+consumer — `StillsReflectionManager`, `StillsReflectionPredictor`,
+`BeamParameterisation`, the prediction parameterisations, residual helpers — then
+sees an ordinary monochromatic `Beam` and required no change. Refined output flows
+back through the same helper and is re-consolidated to one `XFELBeam` by
+`to_dict()`. A no-op for non-XFEL data.
 
-This deliberately avoids editing ~4 individual `expt.beam.get_s0()` call sites
-across refinement; the chokepoint is the only dials edit needed for the s0 crash.
+This deliberately avoids editing the many individual `expt.beam.get_s0()` call
+sites across refinement (reflection manager, predictor factories, beam
+parameterisation, prediction parameters, residual helpers) — each was confirmed to
+crash when tried piecemeal. `decode()` is left unchanged: `Experiment.beam` loaded
+from a `.expt` file is still the shared `XFELBeam`, so the on-disk file keeps its
+single `XFELBeam` and `combine_experiments reference_from_experiment.beam=0` stays
+a true no-op. Only the refinement *copy* carries monochromatic beams.
 
 ### Fix 3: a still scan is not a rotation experiment (dials)
 
@@ -583,13 +589,35 @@ experiment only when `not scan.is_still()`. This is another instance of the
 scan-based stills-detection contract change; the site had simply not been exercised
 until refinement ran against this branch's output.
 
+### Fix 4: non-refinement tools resolve their beams at load (cctbx_project)
+
+The refinement chokepoint only covers `dials.refine`. Other tools that load a
+composite stills `.expt` and call `expt.beam.get_s0()` directly hit the same crash.
+`cctbx.xfel.detector_residuals` does so both via the shared `StillsReflectionPredictor`
+factory and in four direct sites (beam centre, two-theta, per-reflection energy).
+The fix is one line right after the experiments are loaded:
+
+```python
+for expt in experiments:
+    expt.beam = expt.get_monochromatic_beam()
+```
+
+A no-op for ordinary beams. It is safe for any tool: if the tool writes a `.expt`,
+`ExperimentList.to_dict()` re-consolidates the per-frame beams back to one
+`XFELBeam` on the way out, and tools that load fresh (`combine_experiments`) still
+see the shared `XFELBeam` because `decode()` is unchanged. `detector_residuals.run()`
+applies this immediately after `flatten_experiments`. Any other cctbx.xfel tool that
+hits "XFELBeam has no fixed s0" needs the same one line.
+
 ### Verified
 
-726-experiment filtered XFEL `.expt`: `dials.refine refine_level0.phil` completes;
-output `refined_level0.expt` has exactly one `"__id__": "xfel"` beam, the scan stays
-`__stills_consolidated` with the 726-value per-frame `wavelength` array, and reload
-gives `Experiment.beam` back as an `XFELBeam` that resolves correctly via
-`get_monochromatic_beam()`.
+726-experiment filtered XFEL `.expt`:
+- `dials.refine refine_level0.phil` completes; output `refined_level0.expt` has
+  exactly one `"__id__": "xfel"` beam, the scan stays `__stills_consolidated` with
+  the 726-value per-frame `wavelength` array, and reload gives `Experiment.beam`
+  back as an `XFELBeam` that resolves correctly via `get_monochromatic_beam()`.
+- `cctbx.xfel.detector_residuals hierarchy=1` completes and prints full residual
+  statistics by panel group.
 
 ### Known limitation
 
