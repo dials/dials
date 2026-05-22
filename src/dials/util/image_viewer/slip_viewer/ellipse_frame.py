@@ -21,7 +21,11 @@ def extract_ellipse_parameters(ellipse: EllipseModel):
         a, b = ellipse.axis_lengths
         theta = ellipse.theta
 
-    phi = float(np.degrees(theta))
+    # theta is the angle from the fast axis to the major axis in a right-handed direction
+    # from fast to slow. As images are usually viewed with slow along -Y , we subtract from
+    # pi in order to make phi the angle from the fast axis to the major axis in a right-handed
+    # direction (anticlockwise) when viewing the image.
+    phi = float(np.degrees(np.pi - theta))
     a = float(a)
     b = float(b)
     centre_xy = (float(xc), float(yc))

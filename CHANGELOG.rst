@@ -1,3 +1,20 @@
+DIALS 3.28.1 (2026-05-22)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.generate_distortion_maps``: correct various problems with elliptical distortion maps
+  ``dials.image_viewer``: correct angle of ellipses fitted with the ellipse tool (`#3143 <https://github.com/dials/dials/issues/3143>`_)
+- ``dials.ssx_integrate``: Fix crash due to text formatting incompatibility with newer numpy versions (`#3154 <https://github.com/dials/dials/issues/3154>`_)
+
+
+Misc
+----
+
+- `#3151 <https://github.com/dials/dials/issues/3151>`_
+
+
 DIALS 3.28.0 (2026-04-10)
 =========================
 
