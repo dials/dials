@@ -532,6 +532,47 @@ def _frame_index(expt):
     return 0
 
 
+def _sort_experiments_by_frame(expts, refls):
+    """Sort experiments (and paired reflections) by (source path, frame index).
+
+    Uses _frame_index so it works for both per-frame imagesets and shared
+    imagesets produced by _rebuild_shared_imageset_output.  Remaps the
+    reflection-table 'id' column and experiment_identifiers dict to match the
+    new experiment positions.  Returns the inputs unchanged if already sorted
+    or if expts is empty.
+    """
+    if not expts:
+        return expts, refls
+    perm = sorted(
+        range(len(expts)),
+        key=lambda i: (expts[i].imageset.paths()[0], _frame_index(expts[i])),
+    )
+    if perm == list(range(len(expts))):
+        return expts, refls
+    sorted_expts = ExperimentList([expts[perm[i]] for i in range(len(perm))])
+    if refls is not None and len(refls):
+        old_idents = dict(refls.experiment_identifiers())
+        new_blocks = []
+        for new_id, old_id in enumerate(perm):
+            block = refls.select(refls["id"] == old_id)
+            if len(block):
+                block["id"] = flex.int(len(block), new_id)
+                new_blocks.append(block)
+        if new_blocks:
+            sorted_refls = flex.reflection_table.concat(new_blocks)
+            idents = sorted_refls.experiment_identifiers()
+            for k in list(idents.keys()):
+                del idents[k]
+            for new_id, old_id in enumerate(perm):
+                if old_id in old_idents:
+                    idents[new_id] = old_idents[old_id]
+        else:
+            sorted_refls = refls
+    else:
+        sorted_refls = refls
+    return sorted_expts, sorted_refls
+
+
 def _rebuild_shared_imageset_output(experiments):
     """Reconstruct experiments with shared models per source file.
 
@@ -690,6 +731,9 @@ def _combine_multiprocessing_outputs(params, nproc):
 
         if len(combined_expts):
             combined_expts = _rebuild_shared_imageset_output(combined_expts)
+            combined_expts, combined_refls = _sort_experiments_by_frame(
+                combined_expts, combined_refls
+            )
 
         # Write final combined file reusing worker-0's filename (overwrite).
         tag0 = "idx-%04d" % 0
@@ -2275,6 +2319,28 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             if self.params.dispatch.coset and self.all_coset_experiments:
                 self.all_coset_experiments = _rebuild_shared_imageset_output(
                     self.all_coset_experiments
+                )
+
+            # Sort all stages by (source path, frame index) before writing.
+            for expt_attr, refl_attr in (
+                ("all_imported_experiments", "all_strong_reflections"),
+                ("all_indexed_experiments", "all_indexed_reflections"),
+                ("all_integrated_experiments", "all_integrated_reflections"),
+            ):
+                expts = getattr(self, expt_attr, None)
+                refls = getattr(self, refl_attr, None)
+                if expts and isinstance(expts, ExperimentList) and len(expts):
+                    sorted_expts, sorted_refls = _sort_experiments_by_frame(
+                        expts, refls
+                    )
+                    setattr(self, expt_attr, sorted_expts)
+                    setattr(self, refl_attr, sorted_refls)
+            if self.params.dispatch.coset and self.all_coset_experiments:
+                (
+                    self.all_coset_experiments,
+                    self.all_coset_reflections,
+                ) = _sort_experiments_by_frame(
+                    self.all_coset_experiments, self.all_coset_reflections
                 )
 
             # Dump composite files to disk
