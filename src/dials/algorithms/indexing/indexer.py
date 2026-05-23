@@ -761,6 +761,19 @@ class Indexer:
         if "xyzcal.mm" in self.refined_reflections:
             self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
 
+        set_dom = self.all_params.indexing.stills.set_domain_size_ang_value
+        set_mos = self.all_params.indexing.stills.set_mosaic_half_deg_value
+        if set_dom is not None or set_mos is not None:
+            from dxtbx.model import MosaicCrystalSauter2014
+
+            for exp in self.refined_experiments:
+                if not isinstance(exp.crystal, MosaicCrystalSauter2014):
+                    exp.crystal = MosaicCrystalSauter2014(exp.crystal)
+                if set_dom is not None:
+                    exp.crystal.set_domain_size_ang(set_dom)
+                if set_mos is not None:
+                    exp.crystal.set_half_mosaicity_deg(set_mos)
+
     def _remove_id_from_reflections(self, model_id):
         sel = self.refined_reflections["id"] == model_id
         if sel.count(
