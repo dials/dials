@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import gemmi
+import numpy as np
+import reciprocalspaceship as rs
+
 from cctbx.array_family import flex
+from cctbx.sgtbx import space_group
+from cctbx.uctbx import unit_cell
 
 import dials_algorithms_indexing_ext as ext
 from dials.algorithms.indexing import DialsIndexError
@@ -169,3 +175,357 @@ class AssignIndicesLocal(AssignIndicesStrategy):
             reflections.set_flags(
                 reflections["miller_index"] != (0, 0, 0), reflections.flags.indexed
             )
+
+
+class AssignIndicesPolychromatic(AssignIndicesStrategy):
+    """
+    An object to assign Miller indices to a polychromatic Laue still image.
+    """
+
+    def __init__(self, lam_min, lam_max, lam_peak, d_min, spacegroup="1"):
+        """
+        Parameters:
+            s0 (np.ndarray): A 3-vector indicating the direction of the incoming beam wavevector.
+            s1 (np.ndarray): n x 3 array indicating the direction of the scattered beam wavevector.
+            cell (Union[Tuple, gemmi.UnitCell]): A tuple or list of unit cell params (a, b, c, alpha, beta, gamma) or a gemmi.UnitCell object.
+            R (np.ndarray): A 3x3 rotation matrix corresponding to the crystal orientation for the frame.
+            lam_min (float): The lower end of the wavelength range of the beam.
+            lam_max (float): The upper end of the wavelength range of the beam.
+            lam_peak (float): The wavelength with peak intensity.
+            d_min (float): The maximum resolution of the model.
+            spacegroup (str): Anything that the gemmi.SpaceGroup constructor understands.
+        """
+        super().__init__()
+
+        self.lam_min = lam_min
+        self.lam_max = lam_max
+        self.lam_peak = lam_peak
+        self.d_min = d_min
+
+    def __call__(self, reflections, experiments, d_min=None):
+        """
+        Runs indexing, wavelength assignment, and orientation refinement jointly.
+        """
+        # Get experiment variables
+        s0 = np.array(experiments[0].beam.get_s0())
+        s1 = reflections["s1"].as_numpy_array()
+        cryst = experiments[0].crystal
+        self.R = np.asarray(cryst.get_U()).reshape(3, 3)
+        cell_params = cryst.get_unit_cell().parameters()
+        self.cell = gemmi.UnitCell(*cell_params)
+        self.spacegroup = gemmi.SpaceGroup(
+            cryst.get_space_group().type().universal_hermann_mauguin_symbol()
+        )
+
+        self.s0 = s0 / np.linalg.norm(s0)
+        self.B = np.array(self.cell.frac.mat).T
+
+        # Initialize the full reciprocal grid
+        hmax, kmax, lmax = self.cell.get_hkl_limits(self.d_min)
+        Hall = (
+            np.mgrid[
+                -hmax : hmax + 1 : 1.0,
+                -kmax : kmax + 1 : 1.0,
+                -lmax : lmax + 1 : 1.0,
+            ]
+            .reshape((3, -1))
+            .T
+        )
+        Hall = Hall[np.any(Hall != 0, axis=1)]
+        d = self.cell.calculate_d_array(Hall)
+        Hall = Hall[d >= self.d_min]
+
+        # Remove any systematic absences in the space group
+        Hall = Hall[~rs.utils.is_absent(Hall, self.spacegroup)]
+        self.Hall = Hall
+
+        # Initialize class variables needed for assignment
+        self._s1 = s1 / np.linalg.norm(s1, axis=-1)[:, None]
+        self._qobs = self._s1 - self.s0
+        self._qpred = np.zeros_like(self._s1)
+        self._H = np.zeros_like(self._s1)
+        self._wav = np.zeros(len(self._H))
+        self._harmonics = np.zeros(len(self._s1), dtype=bool)
+        self._inliers = np.ones(len(self._s1), dtype=bool)
+
+        self.assign()
+        for j in range(5):
+            self.reset_inliers()
+            self.update_rotation()
+            self.assign()
+            self.reject_outliers()
+            self.update_rotation()
+            self.assign()
+
+        # Update s1 based on new wavelengths
+        np.divide(
+            self._s1, self._wav[:, None], out=self._s1, where=self._wav[:, None] != 0
+        )
+
+        # Reset crystal parameters based on new geometry
+        experiments[0].crystal.set_U(self.R.flatten())
+        experiments[0].crystal.set_A(self.RB.flatten())
+        experiments[0].crystal.set_B(self.B.flatten())
+        experiments[0].crystal.set_space_group(space_group(self.spacegroup.hall))
+        experiments[0].crystal.set_unit_cell(unit_cell(self.cell.parameters))
+
+        # Get wavelengths
+        spot_wavelengths = np.asarray(self._wav.tolist())
+
+        # Write data to reflections
+        reflections["s1"] = flex.vec3_double(self._s1)
+        reflections["miller_index"] = flex.miller_index(self._H.astype("int").tolist())
+        reflections["harmonics"] = flex.bool(self._harmonics.tolist())
+        reflections["wavelength"] = flex.double(spot_wavelengths)
+        reflections["id"] = flex.int([0] * len(reflections))
+
+        # Filter reflections by spectrum
+        all_wavelengths = reflections["wavelength"].as_numpy_array()
+        keep = np.logical_and(
+            all_wavelengths >= self.lam_min,
+            all_wavelengths <= self.lam_max,
+        )
+        reflections["id"].set_selected(flex.bool(~keep), -1)
+
+        # Set flags for indexed reflections
+        reflections.set_flags(
+            reflections["miller_index"] != (0, 0, 0), reflections.flags.indexed
+        )
+        reflections["id"].set_selected(reflections["miller_index"] == (0, 0, 0), -1)
+
+    @property
+    def RB(self):
+        """
+        Calculates the product RB.
+
+        Returns:
+            np.ndarray: The product of the rotation matrix (R) and the fractionalization matrix (B).
+        """
+        return self.R @ self.B
+
+    @property
+    def s1(self):
+        """
+        np.ndarray: The normalized direction of the scattered beam wavevector for inlying reflections.
+        """
+        return self._s1[self._inliers]
+
+    @property
+    def qobs(self):
+        """
+        np.ndarray: The observed q vectors for inlying reflections.
+        """
+        return self._qobs[self._inliers]
+
+    @property
+    def qpred(self):
+        """
+        np.ndarray: The predicted q vectors for inlying reflections.
+        """
+        return self._qpred[self._inliers]
+
+    @property
+    def H(self):
+        """
+        np.ndarray: The Miller indices for inlying reflections.
+        """
+        return self._H[self._inliers]
+
+    @property
+    def wav(self):
+        """
+        np.ndarray: The wavelengths associated with inlying reflections.
+        """
+        return self._wav[self._inliers]
+
+    @property
+    def harmonics(self):
+        """
+        np.ndarray: Boolean array indicating whether inlying reflections correspond to harmonic reflections.
+        """
+        return self._harmonics[self._inliers]
+
+    # <-- setters that operate on the currently inlying set
+    def set_qpred(self, qpred):
+        """
+        Set the predicted q vectors for inlying reflections.
+
+        Parameters:
+            qpred (np.ndarray): Predicted q vectors.
+        """
+        self._qpred[self._inliers] = qpred
+
+    def set_H(self, H):
+        """
+        Set the Miller indices for inlying reflections.
+
+        Parameters:
+            H (np.ndarray): Miller indices.
+        """
+        self._H[self._inliers] = H
+        self._H[~self._inliers] = 0.0
+
+    def set_wav(self, wav):
+        """
+        Set the wavelengths for inlying reflections.
+
+        Parameters:
+            wav (np.ndarray): Wavelengths.
+        """
+        self._wav[self._inliers] = wav
+        self._wav[~self._inliers] = 0.0
+
+    def set_inliers(self, inliers):
+        """
+        Set the inliers for the current set of reflections.
+
+        Parameters:
+            inliers (np.ndarray): Boolean array indicating inliers.
+        """
+        self._inliers[self._inliers] = inliers
+
+    def set_harmonics(self, harmonics):
+        """
+        Set whether inlying reflections correspond to harmonics.
+
+        Parameters:
+            harmonics (np.ndarray): Boolean array indicating harmonics.
+        """
+        self._harmonics[self._inliers] = harmonics
+
+    # --> setters that operate on the currently inlying set
+
+    def reset_inliers(self):
+        """Reset all reflections as inliers."""
+        self._inliers = np.ones(len(self._inliers), dtype=bool)
+
+    def reject_outliers(self, nstd=10.0):
+        """
+        Update the list of inliers based on robust statistical measures.
+
+        Parameters:
+            nstd (float): Number of standard deviations from the median to consider as inliers.
+
+        This method uses Minimum Covariance Determinant (MCD) to robustly estimate the covariance matrix
+        of the concatenated observed and predicted q vectors. It then considers inliers as the points
+        within a specified number of standard deviations from the median Mahalanobis distance.
+
+        The list of inliers is updated accordingly.
+        """
+        from sklearn.covariance import MinCovDet
+
+        X = np.concatenate((self.qobs, self.qpred * self.wav[:, None]), axis=-1)
+        dist = MinCovDet().fit(X).dist_
+        self.set_inliers(dist <= nstd**2.0)
+
+    def assign(self):
+        """
+        Assign miller indices to the inlier reflections.
+
+        This method updates the following attributes:
+        - self.H: Miller indices associated with the assigned reflections.
+        - self.wav: Wavelengths associated with the assigned reflections.
+        - self.qpred: Predicted scattering vectors associated with the assigned reflections.
+        - self.harmonics: Boolean array indicating whether the assigned reflections are harmonics.
+
+        The assignment is performed by solving the linear sum assignment problem using scipy.optimize.linear_sum_assignment.
+        The cost matrix is computed based on the angular distance between observed and predicted scattering vectors.
+
+        The feasible set of reflections is determined from the reciprocal lattice points within the specified geometry.
+        Reflections with duplicated scattering vectors are removed, and then the assignment is performed.
+
+        This method is essential for updating the information of assigned reflections, allowing subsequent steps in
+        Laue indexing procedures to utilize the assigned miller indices and associated parameters.
+        """
+        # Generate the feasible set of reflections from the current geometry
+        Hall = self.Hall
+        qall = (self.RB @ Hall.T).T
+        feasible = (
+            np.linalg.norm(qall + self.s0 / self.lam_min, axis=-1) < 1 / self.lam_min
+        ) & (np.linalg.norm(qall + self.s0 / self.lam_max, axis=-1) > 1 / self.lam_max)
+        Hall = Hall[feasible]
+        qall = qall[feasible]
+
+        # Keep track of harmonics in the feasible set
+        Raypred = hkl2ray(Hall)
+        _, idx, counts = np.unique(
+            Raypred, return_index=True, return_counts=True, axis=0
+        )
+        unique_rays, counts = np.unique(Raypred, return_counts=True, axis=0)
+        harmonic_rays = counts > 1
+
+        # Keep only harmonics closest to peak wavelength in feasible set
+        harmonics = np.zeros(len(Hall), dtype=bool)
+        to_keep = np.ones(len(Hall), dtype=bool)
+        for i, ray in enumerate(unique_rays[harmonic_rays]):
+            idh = np.where((Raypred == ray).all(axis=1))[0]
+            if len(idh) == 1:  # Not a harmonic
+                to_keep[idh] = True
+            else:
+                harmonics[idh] = True
+                qharm = qall[idh]
+                harmonic_wavelengths = (
+                    -2.0 * (self.s0 * qharm).sum(-1) / (qharm * qharm).sum(-1)
+                )
+                kept_harmonic = np.argmin(np.abs(harmonic_wavelengths - self.lam_peak))
+                to_keep[idh] = False
+                to_keep[idh[kept_harmonic]] = True
+
+        # Remove non-optimal harmonics from the feasible set
+        Hall = Hall[to_keep]
+        qall = qall[to_keep]
+        harmonics = harmonics[to_keep]
+
+        dmat = rs.utils.angle_between(self.qobs[..., None, :], qall[None, ..., :])
+        cost = dmat
+
+        from scipy.optimize import linear_sum_assignment
+
+        ido, idx = linear_sum_assignment(cost)
+
+        # Update appropriate variables
+        H = Hall[idx]
+        qpred = qall[idx]
+        harmonics = harmonics[idx]
+
+        # Set all attributes to match the current assignment
+        self.set_H(H)
+        self.set_qpred(qpred)
+        self.set_harmonics(harmonics)
+
+        # wav_pred = -2.*(self.s0 * qpred).sum(-1) / (qpred*qpred).sum(-1)
+        with np.errstate(divide="ignore"):
+            wav_obs = np.linalg.norm(self.qobs, axis=-1) / np.linalg.norm(
+                self.qpred, axis=-1
+            )
+        self.set_wav(wav_obs)
+
+    def update_rotation(self):
+        """Update the rotation matrix (self.R) based on the inlying reflections."""
+        from scipy.linalg import orthogonal_procrustes
+
+        misset, _ = orthogonal_procrustes(
+            self.qobs,
+            self.qpred * self.wav[:, None],
+        )
+        self.R = misset @ self.R
+
+
+def hkl2ray(hkl, wavelength=None):
+    """
+    Convert a miller index to the shortest member of its central ray.
+    Optionally, adjust its wavelength accordingly.
+
+    Parameters:
+        hkl (np.array): `n x 3` array of miller indices. The dtype must be interpretable as an integer.
+        wavelength (Optional[np.array]): Length `n` array of wavelengths corresponding to each miller index.
+
+    Returns:
+        reduced_hkl (np.array): The miller index of the shortest vector on the same central ray as the original hkl.
+        reduced_wavelength (Optional[np.array]): The wavelengths corresponding to reduced_hkl.
+    """
+    gcd = np.gcd.reduce(hkl.astype(int), axis=-1)
+    if wavelength is not None:
+        return hkl / gcd[..., None], wavelength * gcd
+    else:
+        return hkl / gcd[..., None]
