@@ -11,12 +11,12 @@ import tarfile
 import time
 from io import BytesIO
 
+import libtbx
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
     ExperimentListFactory,
 )
-import libtbx
 from libtbx.phil import parse
 from libtbx.utils import Abort, Sorry
 
@@ -737,19 +737,29 @@ def _combine_multiprocessing_outputs(params, nproc):
                 combined_expts, combined_refls
             )
 
-        # Write final combined file reusing worker-0's filename (overwrite).
+        # Write to a temporary path then rename atomically so a crash mid-write
+        # does not corrupt worker-0's file (the eventual output filename).
+        # Only after the rename succeeds do we delete worker-1..N-1.
         tag0 = "idx-%04d" % 0
         if expt_template and "%s" in expt_template:
-            combined_expts.as_json(os.path.join(output_dir, expt_template % tag0))
+            final_expt = os.path.join(output_dir, expt_template % tag0)
+            tmp_expt = final_expt + ".tmp"
+            combined_expts.as_json(tmp_expt)
+            os.replace(tmp_expt, final_expt)
         if refl_template and "%s" in refl_template:
-            combined_refls.as_file(os.path.join(output_dir, refl_template % tag0))
+            final_refl = os.path.join(output_dir, refl_template % tag0)
+            tmp_refl = final_refl + ".tmp"
+            combined_refls.as_file(tmp_refl)
+            os.replace(tmp_refl, final_refl)
 
-        # Delete intermediate per-worker files (worker 0 was already overwritten).
+        # Delete intermediate per-worker files (worker 0 is the combined output).
+        # Log cleanup failures rather than swallowing silently — they indicate
+        # filesystem trouble worth surfacing, not benign races.
         for f in worker_expt_files[1:] + worker_refl_files[1:]:
             try:
                 os.remove(f)
-            except OSError:
-                pass
+            except OSError as e:
+                logger.warning("Failed to remove intermediate file %s: %s", f, e)
 
 
 def sync_geometry(src, dest):
@@ -2165,10 +2175,13 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             reference.del_selected(~mask)
             logger.info(" removing %d unindexed reflections", mask.count(True))
         if len(reference) == 0:
-            raise Sorry("""
+            raise Sorry(
+                """
         Invalid input for reference reflections.
         Expected > %d indexed spots, got %d
-      """ % (0, len(reference)))
+      """
+                % (0, len(reference))
+            )
         mask = reference["miller_index"] == (0, 0, 0)
         if mask.count(True) > 0:
             rubbish.extend(reference.select(mask))
@@ -2176,10 +2189,13 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             logger.info(" removing %d reflections with hkl (0,0,0)", mask.count(True))
         mask = reference["id"] < 0
         if mask.count(True) > 0:
-            raise Sorry("""
+            raise Sorry(
+                """
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
-      """ % mask.count(True))
+      """
+                % mask.count(True)
+            )
         logger.info(" using %d indexed reflections", len(reference))
         logger.info(" found %d junk reflections", len(rubbish))
         logger.info(" time taken: %g", time.time() - st)
