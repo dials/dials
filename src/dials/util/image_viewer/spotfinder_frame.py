@@ -1582,10 +1582,14 @@ class SpotFrame(XrayFrame):
                     if self.settings.show_ctr_mass and "xyzobs.px.value" in reflection:
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
-                        if self.viewing_stills or self.viewing_still_scans or (
-                            i_frame
-                            <= centroid[2]
-                            <= (i_frame + self.params.stack_images)
+                        if (
+                            self.viewing_stills
+                            or self.viewing_still_scans
+                            or (
+                                i_frame
+                                <= centroid[2]
+                                <= (i_frame + self.params.stack_images)
+                            )
                         ):
                             x, y = self.map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
@@ -1674,9 +1678,7 @@ class SpotFrame(XrayFrame):
                                     if self.viewing_still_scans
                                     else self.prediction_colours[i_expt]
                                 )
-                                predictions_data.append(
-                                    (x, y, {"colour": pred_colour})
-                                )
+                                predictions_data.append((x, y, {"colour": pred_colour}))
 
                             if (
                                 self.settings.show_miller_indices
@@ -1771,41 +1773,15 @@ class SpotFrame(XrayFrame):
         idx = getattr(self.images.selected, "index", 0)
         return self.imagesets[0].get_beam(idx)
 
-    def _still_scan_frame_offset(self, imageset):
-        """Absolute frame index of the first image of a composite still ImageSequence.
-
-        The shared still ImageSequence is a contiguous slice of the source file;
-        chooser position 0 shows this frame. Derived from the per-experiment scans
-        because the imageset's own scan loses the offset on JSON round-trip.
-        """
-        cache = getattr(self, "_still_scan_offset_cache", None)
-        if cache is None:
-            cache = {}
-            self._still_scan_offset_cache = cache
-        key = id(imageset)
-        if key not in cache:
-            frames = [
-                expt.scan.get_array_range()[0]
-                for elist in self.experiments
-                for expt in elist
-                if expt.scan is not None and expt.imageset is imageset
-            ]
-            if not frames:
-                frames = [
-                    expt.scan.get_array_range()[0]
-                    for elist in self.experiments
-                    for expt in elist
-                    if expt.scan is not None
-                ]
-            cache[key] = min(frames) if frames else 0
-        return cache[key]
-
     def _still_scan_frame_list(self, imageset):
         """Sorted list of absolute frame indices for experiments sharing this imageset.
 
         The k-th entry is the absolute frame number (scan array_range[0]) for
         chooser position k in a sparse composite ImageSequence, where each chooser
         position corresponds to exactly one integrated frame.
+
+        Derived from the per-experiment scans because the imageset's own scan
+        loses the absolute offset on JSON round-trip.
         """
         cache = getattr(self, "_still_scan_frame_list_cache", None)
         if cache is None:
@@ -1813,21 +1789,30 @@ class SpotFrame(XrayFrame):
             self._still_scan_frame_list_cache = cache
         key = id(imageset)
         if key not in cache:
-            frames = sorted({
-                expt.scan.get_array_range()[0]
-                for elist in self.experiments
-                for expt in elist
-                if expt.scan is not None and expt.imageset is imageset
-            })
-            if not frames:
-                frames = sorted({
+            frames = sorted(
+                {
                     expt.scan.get_array_range()[0]
                     for elist in self.experiments
                     for expt in elist
-                    if expt.scan is not None
-                })
+                    if expt.scan is not None and expt.imageset is imageset
+                }
+            )
+            if not frames:
+                frames = sorted(
+                    {
+                        expt.scan.get_array_range()[0]
+                        for elist in self.experiments
+                        for expt in elist
+                        if expt.scan is not None
+                    }
+                )
             cache[key] = frames
         return cache[key]
+
+    def _still_scan_frame_offset(self, imageset):
+        """Absolute frame index of the first image of a composite still ImageSequence."""
+        frame_list = self._still_scan_frame_list(imageset)
+        return frame_list[0] if frame_list else 0
 
     def _identifiers_for_frame(self, i_frame):
         """Return experiment identifiers whose per-experiment scan starts at frame i_frame.
@@ -1842,9 +1827,9 @@ class SpotFrame(XrayFrame):
             for expt in elist:
                 if expt.scan is None:
                     continue
-                frame_map.setdefault(
-                    expt.scan.get_array_range()[0], []
-                ).append(expt.identifier)
+                frame_map.setdefault(expt.scan.get_array_range()[0], []).append(
+                    expt.identifier
+                )
         return frame_map.get(i_frame, [])
 
     def predict(self):
