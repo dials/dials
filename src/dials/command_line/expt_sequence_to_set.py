@@ -24,10 +24,17 @@ import logging
 import shutil
 import sys
 
+from libtbx.phil import parse
+
 import dials.util
 from dials.util import log
 from dials.util.options import ArgumentParser
-from libtbx.phil import parse
+from dials.util.stills_imageset_convert import (
+    expand_consolidated_scan as _expand_consolidated_scan,
+)
+from dials.util.stills_imageset_convert import (
+    per_frame_scan_map as _per_frame_scan_map,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,33 +56,6 @@ phil_scope = parse(
   }
 """
 )
-
-
-def _expand_consolidated_scan(scan_list):
-    """Return (frame_numbers, wavelengths) from a __stills_consolidated scan list.
-
-    Returns (None, None) if the scan list is absent or not consolidated.
-    """
-    if not scan_list or not scan_list[0].get("__stills_consolidated"):
-        return None, None
-    con = scan_list[0]
-    fns = con["frame_numbers"]
-    wls = con.get("properties", {}).get("wavelength", [None] * len(fns))
-    return fns, wls
-
-
-def _per_frame_scan_map(scan_list):
-    """Build {scan_index: (fi, wl)} from non-consolidated per-frame scans.
-
-    fi = 0-based HDF5 frame index = image_range[0] - 1.
-    wl = wavelength from scan properties, or None.
-    """
-    result = {}
-    for i, s in enumerate(scan_list):
-        fi = s["image_range"][0] - 1
-        wls = s.get("properties", {}).get("wavelength", [])
-        result[i] = (fi, wls[0] if wls else None)
-    return result
 
 
 def convert_expt(input_path, output_path):

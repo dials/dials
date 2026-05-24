@@ -27,10 +27,20 @@ import logging
 import sys
 from collections import OrderedDict
 
+from libtbx.phil import parse
+
 import dials.util
 from dials.util import log
 from dials.util.options import ArgumentParser
-from libtbx.phil import parse
+from dials.util.stills_imageset_convert import (
+    build_consolidated_scan,
+)
+from dials.util.stills_imageset_convert import (
+    frame_index as _frame_index,
+)
+from dials.util.stills_imageset_convert import (
+    source_file as _source_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,18 +62,6 @@ phil_scope = parse(
   }
 """
 )
-
-
-def _source_file(iset):
-    if iset.get("template"):
-        return iset["template"]
-    images = iset.get("images", [])
-    return images[0] if images else ""
-
-
-def _frame_index(iset):
-    sfi = iset.get("single_file_indices", [])
-    return sfi[0] if sfi else 0
 
 
 def convert_expt(input_path, output_path):
@@ -181,13 +179,7 @@ def convert_expt(input_path, output_path):
         exp.pop("goniometer", None)
         new_experiments.append(exp)
 
-    consolidated_scan = {
-        "__stills_consolidated": True,
-        "batch_offset": 0,
-        "frame_numbers": frame_numbers,
-        "properties": {"wavelength": wavelengths},
-        "valid_image_ranges": {},
-    }
+    consolidated_scan = build_consolidated_scan(frame_numbers, wavelengths)
 
     d["experiment"] = new_experiments
     d["imageset"] = new_imagesets
