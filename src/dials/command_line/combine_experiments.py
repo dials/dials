@@ -376,19 +376,22 @@ def _consolidate_stills_imagesets(experiments, reflections=None):
 
     path_to_iset = {}
     for path, grp in by_path.items():
-        all_fi = sorted(set().union(*(set(e.imageset.indices()) for e in grp)))
-        min_fi, max_fi = all_fi[0], all_fi[-1]
+        # Use only the integrated frame indices (sparse), matching the sparse
+        # layout produced by stills_process._rebuild_shared_imageset_output so
+        # downstream consumers (image_viewer's frame-list lookup, etc.) see a
+        # consistent imageset structure regardless of which tool produced it.
+        sorted_frames = sorted(set().union(*(set(e.imageset.indices()) for e in grp)))
         # The per-worker imageset data() is sized for that worker's frame subset;
         # re-open the source file to get a full-file ImageSetData that can
         # accommodate any frame index up to the file's total count.
         parent_iset = get_format_class_for_file(path).get_imageset([path])
         path_to_iset[path] = ImageSequence(
             parent_iset.data(),
-            flex.size_t(range(min_fi, max_fi + 1)),
+            flex.size_t(sorted_frames),
             grp[0].beam,
             grp[0].detector,
             None,
-            Scan((min_fi + 1, max_fi + 1), (0.0, 0.0)),
+            Scan((1, len(sorted_frames)), (0.0, 0.0)),
         )
 
     new_experiments = ExperimentList()
@@ -545,11 +548,7 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
         expts = combine_experiments_no_reflections(params, experiment_lists)
         refls = None
     expts, refls = _consolidate_stills_imagesets(expts, refls)
-    _is_stills = (
-        bool(expts)
-        and expts[0].scan is not None
-        and expts[0].scan.is_still()
-    )
+    _is_stills = bool(expts) and expts[0].is_still()
     if _is_stills or params.output.sort_by_imageset_path_and_image_index:
         expts, refls = _sort_experiments_and_reflections(expts, refls)
     save_combined_experiments(
