@@ -72,8 +72,20 @@ class CombineWithReference:
 
     def __call__(self, experiment):
         if self.tolerance:
+            # For XFEL stills, per-frame wavelengths live in the scan
+            # "wavelength" property — they are not a beam attribute. After
+            # decode()'s XFELBeam → monochromatic Beam auto-resolve, each
+            # experiment's beam carries its own frame wavelength, so a
+            # strict wavelength_tolerance would always fail. Relax it to
+            # infinity when both reference and current experiment are
+            # stills; geometry (direction, polarization) is still checked.
+            wavelength_tolerance = self.tolerance.beam.wavelength
+            ref_is_still = self.ref_scan is not None and self.ref_scan.is_still()
+            cur_is_still = experiment.scan is not None and experiment.scan.is_still()
+            if ref_is_still and cur_is_still:
+                wavelength_tolerance = float("inf")
             compare_beam = BeamComparison(
-                wavelength_tolerance=self.tolerance.beam.wavelength,
+                wavelength_tolerance=wavelength_tolerance,
                 direction_tolerance=self.tolerance.beam.direction,
                 polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
                 polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,

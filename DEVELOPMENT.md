@@ -14,6 +14,10 @@
 
 **2026-05-22 (dials.refine):** `dials.refine` now runs on composite stills `.expt` output. `StillsReflectionManager` crashed on `XFELBeam.get_s0()`. New `Experiment.get_monochromatic_beam()` accessor combines the shared `XFELBeam` with the per-frame scan `"wavelength"` into a monochromatic `Beam`; refinement resolves it once at `_copy_experiments_for_refining` so no refinement-internal code changed, and `ExperimentList.to_dict()` re-consolidates the per-frame beams back to one `XFELBeam` on write. A second, independent bug also fixed: `_parameterise_crystals` treated the zero-oscillation still scan as a rotation experiment, raising a false "mixture of scan and still experiments" error. Non-refinement tools (e.g. `cctbx.xfel.detector_residuals`) that load composite stills resolve beams with a one-line loop at load. dxtbx commit `cd5d39e8`; dials commit `272a1b469`; cctbx_project commit `a34f7ddc`. See "dials.refine" section below.
 
+**2026-05-24 (review hardening):** Branch review pass; P0 correctness + P1 blast-radius reductions. P0: (a) `Indexer.refined_experiments` is now nulled at the start of `index()`, so a frame that fails on a cached `Indexer` no longer silently inherits the previous frame's refined result; (b) `BeamFactory.make_xfel_beam` and `FormatXFEL.get_imageset` now pass the source beam's polarization, flux, transmission, probe and sample-to-source distance through to the per-frame monochromatic `Beam`, fixing a Lorentz-polarization regression (LP correction was using the default `polarization_fraction=0.5` instead of LCLS's ~0.9); (c) `ExperimentList.decode()` auto-resolves `Experiment.beam` from `XFELBeam` to a per-frame monochromatic `Beam` after `_expand_consolidated_scans`, so downstream tools (`cctbx.xfel.detector_residuals`, `cctbx.xfel.merge`, `dials.show`, etc.) no longer need the per-tool one-line fix — the imageset's `XFELBeam` and the scan's `"wavelength"` property are preserved unchanged. P1: route all open-coded stills detection through `Experiment.is_still()`; fix `spot_finding/factory.py` contract miss; align `combine_experiments`' shared imageset to the sparse layout used by `stills_process`; factor the JSON consolidate/expand helpers shared by `expt_set_to_sequence` / `expt_sequence_to_set` into `dials.util.stills_imageset_convert`; collapse `_still_scan_frame_offset` onto `_still_scan_frame_list[0]`; rewrite `_combine_multiprocessing_outputs` with `*.tmp` + `os.replace` (atomic) and logged cleanup failures; `XFELBeam.get_num_scan_points` returns 0 instead of throwing; `XFELBeam.from_dict` default `polarization_fraction` aligned to 0.5 (matching the C++ ctor); `FormatNXmxXFEL.understand()` wrapped in try/except; `Format.py` goniometer guard restored to `assert` idiom; pinned-`ruff format` pass to undo unrelated black churn. See "Review hardening" section below.
+
+**2026-05-24 (split_experiments → combine_experiments round-trip):** `dials.split_experiments` was writing each single-experiment `.expt` with a monochromatic `Beam` rather than the canonical `XFELBeam`; round-tripping the splits back through `dials.combine_experiments reference_from_experiment.beam=0 detector=0 scan=0` then failed the beam tolerance check (per-frame wavelengths visibly differ). Two fixes: (a) `ExperimentList.to_dict()` beam re-consolidation no longer requires `len(beam_models) > 1` and is no longer nested under the scan-consolidation block — it fires whenever every experiment is a stills with a `"wavelength"` scan property, covering both the single-experiment-split case and the single-shared-beam-after-combine case. The `make_xfel_beam` call also now passes polarization/flux/transmission/probe/sample_to_source_distance through (matched the existing P0.2 load-side passthrough — without this, the write side silently dropped the LCLS ~0.999 polarization fraction); (b) `CombineWithReference.__call__` relaxes `wavelength_tolerance` to infinity when both `ref_scan` and `experiment.scan` are stills — after the decode auto-resolve every experiment's `Beam.wavelength` is its own per-frame value, so a strict tolerance was guaranteed to fail; geometry (direction, polarization) is still compared. Verified: 764-experiment composite split + combine reproduces the original consolidated file (beam, scan, imageset, detector match exactly; crystal differs only at ~1e-14 round-off). See "split_experiments round-trip" section below.
+
 ---
 
 ## What this branch does (one paragraph)
@@ -78,7 +82,7 @@ For multi-image formats: calls `format_class.get_imageset(as_sequence=True)` —
 
 **Output rebuilding:**
 - `_rebuild_shared_imageset_output()` (~line 530): Groups experiments by source file; re-opens source to recover full `ImageSetData`; creates one `Scan((fi+1, fi+1))` per unique indexed frame; multi-lattice frames from the same frame share one `Scan` object. Guards against rotation data (returns unchanged). This is what actually shrinks the file.
-- `_combine_multiprocessing_outputs()` (~line 615): Merges per-worker composites, calls `_rebuild_shared_imageset_output()`, rewrites as worker-0 file, deletes intermediates.
+- `_combine_multiprocessing_outputs()` (~line 615): Merges per-worker composites, calls `_rebuild_shared_imageset_output()`, writes the combined output via `*.tmp` + `os.replace` (atomic) so a crash mid-write cannot corrupt worker-0's filename; logs cleanup `OSError` on workers 1..N-1 rather than swallowing.
 - `combine_all_ranks` (new phil): Triggers merge at end. MPI path sets `composite_stride = comm.size` so rank 0 gets all frames.
 
 **Caching in `Processor`:**  
@@ -213,17 +217,28 @@ unchanged.
 | # | Question | Status |
 |---|----------|--------|
 | 1 | Should `XFELBeam` become a permanent supported dxtbx model? | Unresolved — needs group discussion; architecture now matches maintainer feedback |
-| 2 | Is scan-based stills detection the right contract everywhere? | Unresolved — widest blast radius |
-| 3 | Tests for `XFELBeam` / scan `"wavelength"` property / `ImageSequence.get_beam(i)` | Not written yet |
-| 4 | Downstream consumers (cctbx.xfel, merging) against new output | Not tested yet |
+| 2 | Is scan-based stills detection the right contract everywhere? | Resolved (2026-05-24) — all open-coded variants now route through `Experiment.is_still()` (the C++ accessor that already encodes the scan-is-still / scan-is-None / goniometer-is-None contract) |
+| 3 | Tests for `XFELBeam` / scan `"wavelength"` property / `ImageSequence.get_beam(i)` | Deferred — tests will be added once the approach is agreed upon and stable |
+| 4 | Downstream consumers (cctbx.xfel, merging) against new output | Mitigated (2026-05-24) — `ExperimentList.decode()` now auto-resolves `Experiment.beam` from `XFELBeam` → per-frame `Beam`, so most tools work transparently; still verify against cctbx.xfel.merge and the XFEL GUI |
 | 5 | `combine_all_ranks` output semantics | Not settled |
 | 6 | Performance benchmarking (file size + runtime) | Not done yet |
+| 7 | Dedicated `to_dict()` stills scan consolidation test | Not written yet — see below |
+
+**Deferred test — `to_dict()` stills scan consolidation:** build >1 experiments
+with real single-frame stills scans (`Scan((fi+1, fi+1))`, optional
+`"wavelength"` property); assert `to_dict()["scan"]` is a single
+`{"__stills_consolidated": true, ...}` object with correct
+`frame_numbers`/`properties`; assert a rotation scan and a degenerate default
+`Scan()` (image_range `(0, 0)`) are *not* consolidated; round-trip through
+`_expand_consolidated_scans` on load. The consolidation path is currently
+exercised only incidentally; `test_experimentlist_to_dict` uses placeholder
+`Scan()` objects that the guard deliberately excludes.
 
 ---
 
 ## How it would ship (if the prototype validates)
 
-1. **dxtbx PR** — `XFELBeam` C++ model (lightweight guard type) + `ImageSequence.get_beam(index)` Python override + `FormatXFEL` mixin + `FormatNXmxXFEL`/`FormatXTCXFEL` + `BeamFactory.make_xfel_beam()` + `CachedWavelengthBeamFactory.get_wavelengths()` + automatic stills scan consolidation in `ExperimentList.to_dict/as_json` + `ExperimentListDict._expand_consolidated_scans`. Must land first.
+1. **dxtbx PR** — `XFELBeam` C++ model (lightweight guard type, with `get_num_scan_points` returning 0 for transparent generic-code handling) + `ImageSequence.get_beam(index)` Python override + `FormatXFEL` mixin (with full polarization passthrough) + `FormatNXmxXFEL`/`FormatXTCXFEL` + `BeamFactory.make_xfel_beam()` (full polarization/flux/transmission/probe arguments) + `CachedWavelengthBeamFactory.get_wavelengths()` + automatic stills scan consolidation in `ExperimentList.to_dict/as_json` + `ExperimentListDict._expand_consolidated_scans` + `ExperimentList.decode()` auto-resolve of `Experiment.beam` from XFELBeam → per-frame monochromatic Beam (preserves imageset XFELBeam + scan wavelengths, so the resolve is transparent to downstream consumers). Must land first.
 2. **dials PR 1 (correctness)** — `do_import()` pivot + scan-based stills detection everywhere + `_rebuild_shared_imageset_output()` + `_combine_multiprocessing_outputs()`. Stills scan consolidation is now automatic (no call-site flag needed).
 3. **dials PR 2 (spotfinder caching)** — `ExtractPixelsFromImage` static/dynamic split + `update_imageset()` + `ExtractSpots`/`SpotFinder` caching.
 4. **dials PR 3 (indexer caching)** — `Processor` indexer cache + `update_indexer()` + `hardcoded_phil` move + deepcopy removal.
@@ -239,16 +254,16 @@ PRs 2 and 3 depend on PR 1 (stable imageset identity is what makes caching valid
 |------|-------------|
 | `src/dxtbx/model/beam.h` | `XFELBeam` C++ class (lightweight guard, no wavelength array) |
 | `src/dxtbx/model/boost_python/beam.cc` | Python bindings + pickle + to_dict/from_dict |
-| `src/dxtbx/model/beam.py` | `BeamFactory.make_xfel_beam(direction, ...)`, routing in `from_dict()` |
+| `src/dxtbx/model/beam.py` | `BeamFactory.make_xfel_beam(direction, divergence, sigma_divergence, polarization_normal, polarization_fraction, flux, transmission, probe, sample_to_source_distance)`, routing in `from_dict()` |
 | `src/dxtbx/model/__init__.py` | `get_monochromatic_beam(wavelength)` injection on `XFELBeam`; `Experiment.get_monochromatic_beam()` injection; `ExperimentList.to_dict/as_json` automatic stills scan consolidation + beam re-consolidation |
 | `src/dxtbx/imageset.h` | `ImageSequence` C++ constructor — sequential-indices assertion conditioned on `!scan->is_still()` |
 | `src/dxtbx/imageset.py` | `ImageSequence.get_beam(index)` override (XFELBeam dispatch) |
-| `src/dxtbx/format/FormatXFEL.py` | `FormatXFEL` mixin — builds ImageSequence with XFELBeam + scan wavelength property; wavelength subset fix for composite output |
+| `src/dxtbx/format/FormatXFEL.py` | `FormatXFEL` mixin — builds ImageSequence with XFELBeam + scan wavelength property; wavelength subset fix for composite output; passes source-beam polarization/flux/transmission/probe/sample_to_source_distance through to `BeamFactory.make_xfel_beam` |
 | `src/dxtbx/format/FormatMultiImage.py` | `get_imageset` model-fill guards; sequential-indices assertion conditioned on `not scan.is_still()` for sequences |
 | `src/dxtbx/format/FormatNXmx.py` | `FormatNXmxXFEL` class |
 | `src/dxtbx/format/FormatXTC.py` | `FormatXTCXFEL` class |
 | `src/dxtbx/nexus/__init__.py` | `CachedWavelengthBeamFactory.get_wavelengths()` |
-| `src/dxtbx/model/experiment_list.py` | `_expand_consolidated_scans()` — expands compact scan format on load; `decode()` preserves imageset scan with wavelength property; `_make_sequence()` bypasses `make_sequence()` when `single_file_indices` stored in JSON (supports sparse round-trip) |
+| `src/dxtbx/model/experiment_list.py` | `_expand_consolidated_scans()` — expands compact scan format on load; `decode()` preserves imageset scan with wavelength property; `decode()` auto-resolves `Experiment.beam` from `XFELBeam` → per-frame monochromatic `Beam` (imageset XFELBeam slot and scan wavelength property left intact); `_make_sequence()` bypasses `make_sequence()` when `single_file_indices` stored in JSON (supports sparse round-trip) |
 
 ### dials
 | File | What's there |
@@ -256,7 +271,8 @@ PRs 2 and 3 depend on PR 1 (stable imageset identity is what makes caching valid
 | `src/dials/command_line/stills_process.py` | Everything: do_import, helpers, caching, output rebuild |
 | `src/dials/algorithms/spot_finding/finder.py` | Static/dynamic mask split, update_imageset, SpotFinder cache |
 | `src/dials/algorithms/spot_finding/factory.py` | `is_stills` param for SpotFinderFactory |
-| `src/dials/algorithms/indexing/indexer.py` | Stills detection refactor, deleted ImageSet conversion |
+| `src/dials/algorithms/indexing/indexer.py` | Stills detection refactor, deleted ImageSet conversion; `index()` resets `self.refined_experiments` at entry (so a frame failure on the cached Indexer cannot inherit the previous frame's result); call sites routed through `Experiment.is_still()` |
+| `src/dials/util/stills_imageset_convert.py` | **New.** Shared `.expt` JSON helpers: `source_file`, `frame_index`, `build_consolidated_scan`, `expand_consolidated_scan`, `per_frame_scan_map`.  Used by `expt_set_to_sequence` / `expt_sequence_to_set` to eliminate the divergent third copy of the consolidate/expand logic |
 | `src/dials/algorithms/indexing/stills_indexer.py` | hardcoded_phil cache, deepcopy removal, experiment loop fix |
 | `src/dials/algorithms/integration/integrator.py` | Memory calc stills detection fix |
 | `src/dials/algorithms/spot_prediction/reflection_predictor.py` | Stills dispatch fix |
@@ -267,13 +283,13 @@ PRs 2 and 3 depend on PR 1 (stable imageset identity is what makes caching valid
 | File | What's there |
 |------|-------------|
 | `src/dials/util/combine_experiments.py` | `CombineWithReference.__call__` scan logic — stills keep per-frame scan |
-| `src/dials/command_line/combine_experiments.py` | `_save_only_experiments`, `_save_experiments_and_reflections` — stills scan consolidation automatic on write; `_sort_experiments_and_reflections` rewired to sort stills automatically |
+| `src/dials/command_line/combine_experiments.py` | `_save_only_experiments`, `_save_experiments_and_reflections` — stills scan consolidation automatic on write; `_sort_experiments_and_reflections` rewired to sort stills automatically; `_consolidate_stills_imagesets` now builds the shared `ImageSequence` with the sparse layout (`sorted(set(frame_indices))` + compact `Scan((1, N))`) to match `stills_process._rebuild_shared_imageset_output`, so image_viewer's sparse-mapping path applies uniformly |
 
 ### dials/format conversion scripts
 | File | What's there |
 |------|-------------|
-| `src/dials/command_line/expt_set_to_sequence.py` | Converts old per-frame ImageSet `.expt` → new ImageSequence format. Groups experiments by source file, deduplicates detector, builds XFELBeam, writes consolidated scan. Sorts experiments by `(src, fi)` ascending; remaps `.refl` `id` column and `experiment_identifiers` to match. Default output: `sequence.expt` / `sequence.refl`. |
-| `src/dials/command_line/expt_sequence_to_set.py` | Converts new ImageSequence `.expt` → old per-frame ImageSet format. Expands consolidated scan, creates one ImageSet + monochromatic Beam + Detector copy per experiment. Experiment order is preserved so no `.refl` remapping is needed (refl is copied to output filename unchanged). Default output: `imageset.expt` / `imageset.refl`. |
+| `src/dials/command_line/expt_set_to_sequence.py` | Converts old per-frame ImageSet `.expt` → new ImageSequence format. Groups experiments by source file, deduplicates detector, builds XFELBeam, writes consolidated scan. Sorts experiments by `(src, fi)` ascending; remaps `.refl` `id` column and `experiment_identifiers` to match. Default output: `sequence.expt` / `sequence.refl`. JSON-level helpers (consolidated-scan dict builder, `source_file`, `frame_index`) imported from `dials.util.stills_imageset_convert`. |
+| `src/dials/command_line/expt_sequence_to_set.py` | Converts new ImageSequence `.expt` → old per-frame ImageSet format. Expands consolidated scan, creates one ImageSet + monochromatic Beam + Detector copy per experiment. Experiment order is preserved so no `.refl` remapping is needed (refl is copied to output filename unchanged). Default output: `imageset.expt` / `imageset.refl`. Consolidated-scan reader (`expand_consolidated_scan`, `per_frame_scan_map`) imported from `dials.util.stills_imageset_convert`. |
 
 **Usage:**
 
@@ -292,7 +308,7 @@ dials.expt_sequence_to_set integrated.expt integrated.refl \
 ### dials/util/image_viewer
 | File | What's there |
 |------|-------------|
-| `src/dials/util/image_viewer/spotfinder_frame.py` | `_identifiers_for_frame` (order-independent dict); `_still_scan_frame_offset` (derives imageset start offset from per-experiment scans); `_still_scan_frame_list` (sorted absolute frame list for sparse imageset mapping); `get_spotfinder_data` frame-offset/list fix; fixed per-overlay colours for `viewing_still_scans` |
+| `src/dials/util/image_viewer/spotfinder_frame.py` | `_identifiers_for_frame` (order-independent dict); `_still_scan_frame_list` (sorted absolute frame list for sparse imageset mapping); `_still_scan_frame_offset` is now a one-line wrapper returning `frame_list[0]` (single `id()`-keyed cache); `get_spotfinder_data` frame-offset/list fix; fixed per-overlay colours for `viewing_still_scans` |
 | `src/dials/util/image_viewer/slip_viewer/frame.py` | `chooser_wrapper.get_beam()` → `image_set.get_beam(self.index)` (per-frame beam); `get_beam_center_px` and resolution-rings use same pattern |
 
 ---
@@ -604,10 +620,18 @@ for expt in experiments:
 
 A no-op for ordinary beams. It is safe for any tool: if the tool writes a `.expt`,
 `ExperimentList.to_dict()` re-consolidates the per-frame beams back to one
-`XFELBeam` on the way out, and tools that load fresh (`combine_experiments`) still
-see the shared `XFELBeam` because `decode()` is unchanged. `detector_residuals.run()`
-applies this immediately after `flatten_experiments`. Any other cctbx.xfel tool that
-hits "XFELBeam has no fixed s0" needs the same one line.
+`XFELBeam` on the way out. `detector_residuals.run()` applies this immediately
+after `flatten_experiments`.
+
+**Update (2026-05-24):** this per-tool one-liner is superseded for `.expt`-loaded
+experiments by the `ExperimentList.decode()` auto-resolve added in the review
+hardening pass — `decode()` now runs the same `expt.beam = expt.get_monochromatic_beam()`
+loop centrally, so any consumer that gets its experiments from
+`ExperimentListFactory.from_*` (i.e. by loading a `.expt` file) sees a regular
+`Beam` on `Experiment.beam` without modification.  The `cctbx_project` commit
+remains valid (still needed for in-memory pipelines that build experiments without
+going through `decode()`), but no further cctbx.xfel tools need patching to load
+composite stills.
 
 ### Verified
 
@@ -626,3 +650,246 @@ operates on the resolved monochromatic beam (a fresh object), and `to_dict()` wi
 write the N differing beams rather than re-consolidating. Beam refinement for XFEL
 stills needs separate design. `refine_level0.phil` fixes the beam (`beam.fix=*all`),
 so this does not affect the verified case.
+
+---
+
+## Review hardening (2026-05-24)
+
+**Commits:** dxtbx `64b7c062`, `16294afa`, `266edaf9`, `2498250f`; dials
+`054bb1fb1`, `6ee2a8f8e`, `3b4083a9f`, `c02872d72`, `5e4d11e15`, `61dfdab69`.
+
+A review pass on the branch checkpoint produced three P0 correctness fixes and
+seven P1 hardening / blast-radius reductions.
+
+### P0.1 Indexer fails-silently across cached frames (dials)
+
+`Processor` caches a single `Indexer` instance across frames (warm-start for
+`d_min`, geometry, etc.) and uses `update_indexer()` to reset per-frame inputs.
+`self.refined_experiments`, however, was nulled only in `Indexer.__init__`.
+Result: a frame whose indexing failed before the success block at the end of
+`index()` could not trigger the `if self.refined_experiments is None: raise
+DialsIndexRefineError(...)` guard — `self.refined_experiments` was still
+holding the previous frame's result, and the failure was silently promoted.
+
+**Fix:** null `self.refined_experiments` at the start of `index()`.  The other
+warm-start state (`self.d_min`, detector/crystal geometry) is left intact —
+the warm-start intent is for *inputs*, not for *outputs*.
+
+### P0.2 XFEL polarization regression (dxtbx)
+
+`BeamFactory.make_xfel_beam` accepted only `direction`, `divergence`,
+`sigma_divergence` — silently dropping the source beam's `polarization_normal`,
+`polarization_fraction`, `flux`, `transmission`, `probe`, and
+`sample_to_source_distance`.  `XFELBeam.get_monochromatic_beam(wl)` then
+constructed the per-frame `Beam` without those values either, so every
+per-frame beam used for indexing and integration carried
+`polarization_fraction=0.5` (the C++ default) rather than the instrument
+value (~0.9 for LCLS).  The Lorentz-polarization correction in integration
+uses this directly → systematically wrong intensities.
+
+**Fix:** extend `make_xfel_beam` to accept the full polarization tuple
+(delegating to the existing C++ `XFELBeam` full constructor); have
+`FormatXFEL.get_imageset` read the values from the source beam and pass them
+through; have `XFELBeam.get_monochromatic_beam` forward them when building
+the per-frame `Beam`.
+
+**Verified:** `make_xfel_beam(polarization_fraction=0.92)` → `to_dict`/`from_dict`
+→ `get_monochromatic_beam(1.5)` returns a `Beam` with `pf=0.92, wavelength=1.5`.
+
+### P0.3 Auto-resolve XFELBeam on Experiment.beam at load time (dxtbx)
+
+Previously, every downstream tool that loaded a composite stills `.expt` and
+called `expt.beam.get_s0()` needed a per-tool one-line fix to call
+`expt.beam = expt.get_monochromatic_beam()` first (see Fix 4 of the dials.refine
+section above).  The blast radius was unbounded across cctbx.xfel and any other
+consumer.
+
+**Fix:** `ExperimentList.decode()` now does the auto-resolve once at load time,
+right after `_expand_consolidated_scans` has restored the per-frame scans.
+For every `Experiment` whose `beam` is an `XFELBeam`, `expt.beam` is replaced
+with `expt.get_monochromatic_beam()` — a regular `Beam` with the correct
+per-frame wavelength.
+
+**Critically:** the imageset's `XFELBeam` and the scan's `"wavelength"`
+property are left untouched.  `imageset.get_beam(i)` still dispatches to
+`XFELBeam.get_monochromatic_beam` via the Python injection, so per-frame
+wavelength variations remain queryable from the imageset.  The write-side
+re-consolidation in `to_dict()` is unaffected: per-frame monochromatic beams
+post-refinement still get collapsed back to one `XFELBeam` on write.
+
+After this lands, the per-tool fix in `cctbx.xfel.detector_residuals.py` is
+redundant for `.expt`-loaded experiments (still needed for runtime-built
+experiments that bypass `decode()`).  The refinement chokepoint in
+`_copy_experiments_for_refining` is similarly redundant for the loaded case.
+
+### P1 hardening
+
+- **`Experiment.is_still()` routed everywhere.**  Six open-coded variants of
+  `expt.scan is None or expt.scan.is_still()` (and several `isinstance(...,
+  ImageSequence)` checks) are now routed through the existing
+  `Experiment.is_still()`.  Touches `indexer.py` (3 sites), `spot_finding/factory.py`
+  (fixed a contract miss: the `is_stills=False` fallback was still using the
+  isinstance check, inverting `no_shoeboxes_2d` for stills entering via
+  non-`stills_process` callers), `spot_prediction/reflection_predictor.py`,
+  `refinement/parameterisation/configure.py`, and
+  `command_line/combine_experiments.py`.
+- **`combine_experiments` sparse imageset layout.**  `_consolidate_stills_imagesets`
+  was building `ImageSequence` indices as a contiguous
+  `range(min_fi, max_fi+1)` with `Scan((min_fi+1, max_fi+1))`.  `stills_process`'
+  `_rebuild_shared_imageset_output` was later updated to a sparse layout
+  (`sorted(set(frame_indices))` + compact `Scan((1, N))`), but
+  `combine_experiments` was missed — so the two producers emitted different
+  imageset structures and the image_viewer `len(frame_list) ==
+  len(imageset.indices())` check silently fell back to offset mapping for
+  combine_experiments output.  `_consolidate_stills_imagesets` now uses the
+  sparse layout.
+- **Shared utility for `.expt` JSON conversion scripts.**  `expt_set_to_sequence`
+  and `expt_sequence_to_set` manipulate `.expt` JSON directly (not via
+  `ExperimentList`) and had their own copies of the helpers for reading and
+  writing the `__stills_consolidated` scan dict — a third implementation of the
+  consolidation logic.  Factored into `dials.util.stills_imageset_convert`:
+  `source_file`, `frame_index`, `build_consolidated_scan`,
+  `expand_consolidated_scan`, `per_frame_scan_map`.  Both scripts now import
+  from it.  Kept as standalone command-line entry points (users rely on them).
+- **`image_viewer` frame-helper duplication.**  Removed
+  `_still_scan_frame_offset` (a 24-line near-duplicate of
+  `_still_scan_frame_list`); kept the latter and have the offset accessor read
+  `frame_list[0]`.  Single `id()`-keyed cache instead of two.
+- **`_combine_multiprocessing_outputs` atomic write.**  Used to write the merged
+  result directly over worker-0's filename and `os.remove` the other workers'
+  files while swallowing `OSError`; a crash mid-write could corrupt worker-0 and
+  leave no recovery path.  Now writes to a `*.tmp` sibling and renames with
+  `os.replace` (atomic); `OSError` on cleanup of workers 1..N-1 is logged
+  rather than swallowed.
+- **`XFELBeam::get_num_scan_points()` returns 0.**  Throwing here forced generic
+  Experiment copy/compare/serialize code (which probes "is this scan-varying?"
+  as a benign check) to need XFEL-awareness.  Returning 0 matches the real
+  semantics — `XFELBeam` genuinely has no scan points.
+- **`XFELBeam.from_dict` default `polarization_fraction` 0.5.**  The Python
+  binding default was 0.999 while the C++ ctor and `make_xfel_beam` used 0.5;
+  align to 0.5.  This is the case where the field is absent from the dict
+  entirely — to_dict always writes it, so existing files round-trip unchanged.
+- **`FormatNXmxXFEL.understand()` guarded.**  The HDF5 open + wavelength check
+  is now in `try/except Exception: return False`, so an HDF5 error returns
+  "not my format" instead of aborting format detection.
+- **`Format.py` goniometer guard idiom.**  Restored to
+  `assert goniometer is not None or scan.is_still(), ...` from the
+  `if/raise AssertionError` form (matches the surrounding assert style).
+- **Pinned `ruff format` pass.**  An earlier `black` pass on the branch used
+  an older version than the repos' pinned pre-commit; rerunning the pinned
+  ruff-format / ruff-check brings the diff back to canonical style and
+  removes ~15 hunks of pure formatter churn that were polluting the diff.
+
+### Files changed (summary)
+
+| Repo | File | What's changed |
+|------|------|----------------|
+| dxtbx | `src/dxtbx/model/beam.py` | `make_xfel_beam` polarization passthrough |
+| dxtbx | `src/dxtbx/model/__init__.py` | `XFELBeam.get_monochromatic_beam` polarization passthrough |
+| dxtbx | `src/dxtbx/format/FormatXFEL.py` | source-beam polarization → XFELBeam |
+| dxtbx | `src/dxtbx/model/beam.h` | `get_num_scan_points` returns 0 |
+| dxtbx | `src/dxtbx/model/boost_python/beam.cc` | `from_dict` pf default 0.5 |
+| dxtbx | `src/dxtbx/model/experiment_list.py` | `decode()` auto-resolve XFELBeam → Beam |
+| dxtbx | `src/dxtbx/format/Format.py` | restore assert idiom |
+| dxtbx | `src/dxtbx/format/FormatNXmx.py` | `FormatNXmxXFEL.understand` try/except |
+| dials | `src/dials/algorithms/indexing/indexer.py` | reset `refined_experiments`; route through `is_still()` |
+| dials | `src/dials/algorithms/spot_finding/factory.py` | fix contract miss via `is_still()` |
+| dials | `src/dials/algorithms/spot_prediction/reflection_predictor.py` | route through `is_still()` |
+| dials | `src/dials/algorithms/refinement/parameterisation/configure.py` | route through `is_still()` |
+| dials | `src/dials/command_line/combine_experiments.py` | sparse layout + `is_still()` |
+| dials | `src/dials/util/stills_imageset_convert.py` | **new** — shared JSON helpers |
+| dials | `src/dials/command_line/expt_set_to_sequence.py` | use shared helpers |
+| dials | `src/dials/command_line/expt_sequence_to_set.py` | use shared helpers |
+| dials | `src/dials/util/image_viewer/spotfinder_frame.py` | collapse frame-offset helper |
+| dials | `src/dials/command_line/stills_process.py` | atomic combine write |
+
+---
+
+## split_experiments round-trip (2026-05-24)
+
+`dials.split_experiments combined.expt combined.refl` writes one
+`ExperimentList([experiment]).as_json(...)` per experiment. Loading the
+original 764-experiment composite via `decode()` gives each experiment a
+monochromatic `Beam` (after the auto-resolve added in the review hardening
+pass). When `as_json` then ran on a single-experiment list, the existing
+beam re-consolidation guards in `ExperimentList.to_dict()` blocked the
+collapse back to `XFELBeam`:
+
+```python
+if (
+    "wavelength" in consolidated_props          # requires scan consolidation
+    and len(beam_models) > 1                    # excludes 1-experiment writes
+    and all(type(b) is Beam for b in beam_models)
+):
+```
+
+Both guards excluded the 1-experiment case, and the outer block itself was
+gated on `len(scan_models) > 1`. The split file therefore serialized
+`__id__: monochromatic` with a wavelength on the beam, instead of
+`__id__: xfel` with the wavelength on the scan.
+
+Running `dials.combine_experiments split_*.expt split_*.refl
+reference_from_experiment.beam=0 detector=0 scan=0` then hit a separate
+failure: after decode's auto-resolve every loaded `Experiment.beam` carries
+its own per-frame wavelength, so `BeamComparison(wavelength_tolerance=1e-6)`
+fails for every experiment after experiment 0 (e.g. 1.308481 vs 1.307819).
+
+### Fix 1: write-side beam re-consolidation (dxtbx)
+
+`ExperimentList.to_dict()` in `src/dxtbx/model/__init__.py` now computes a
+single `all_stills` flag (every scan single-frame still, `frame > 0`,
+oscillation == 0). Scan consolidation still gates on `len(scan_models) > 1`
+(no JSON change for the rotation or 1-experiment-rotation cases). Beam
+re-consolidation moved out of the scan block and runs whenever:
+
+- `all_stills` holds, **and**
+- every scan carries a `"wavelength"` property (so the per-frame info is
+  preserved without the beam-side wavelength), **and**
+- every `beam_models` entry is `type(b) is Beam` and they share geometry
+  (`sample_to_source_direction`, `divergence`, `sigma_divergence`,
+  `polarization_normal`, `polarization_fraction`).
+
+The `BeamFactory.make_xfel_beam` call also now passes
+`polarization_normal`, `polarization_fraction`, `flux`, `transmission`,
+`probe`, `sample_to_source_distance` through (it previously only passed
+the geometric three, silently dropping the LCLS ~0.999 polarization at
+re-consolidation — analogous to the P0.2 load-side passthrough fix).
+
+### Fix 2: stills-aware beam comparison (dials)
+
+`CombineWithReference.__call__` in `src/dials/util/combine_experiments.py`
+relaxes `wavelength_tolerance` to `float("inf")` when both `self.ref_scan`
+and `experiment.scan` are stills. For stills the per-frame wavelength
+lives in the scan property, not on the beam — comparing beam wavelengths
+is meaningless and the strict 1e-6 default tolerance fails on any
+multi-frame XFEL stills input. Direction, polarization-normal and
+polarization-fraction tolerances are unchanged.
+
+### Verified
+
+`/global/cfs/cdirs/m4734/users/dwmoreau/refactor/test_cyt_sequence/test`:
+
+```bash
+dials.split_experiments ../idx-0000_integrated.expt ../idx-0000_integrated.refl
+dials.combine_experiments split_*.expt split_*.refl \
+    reference_from_experiment.beam=0 \
+    reference_from_experiment.detector=0 \
+    reference_from_experiment.scan=0
+```
+
+`combined.expt` matches `idx-0000_integrated.expt` on every model relevant
+to the round-trip: beam (one `__id__: xfel`, `polarization_fraction:
+0.999`), scan (one `__stills_consolidated` object with 764 `frame_numbers`
+and 764 `wavelength` entries — bit-identical to the original arrays), one
+detector (identical), one imageset (same template, same 764
+`single_file_indices`). Crystal vectors differ only at ~1e-14 round-off
+(re-serialization noise). Pre-existing: `CombineWithReference.__call__`
+does not propagate `experiment.profile` — orthogonal to this fix and not
+addressed here.
+
+### Files changed
+
+| Repo | File | What's changed |
+|------|------|----------------|
+| dxtbx | `src/dxtbx/model/__init__.py` | `to_dict()` beam re-consolidation decoupled from scan consolidation; runs for 1-experiment and 1-shared-beam stills writes; passes full polarization tuple to `make_xfel_beam` |
+| dials | `src/dials/util/combine_experiments.py` | `CombineWithReference.__call__` skips wavelength tolerance when both ref and current experiment are stills |
