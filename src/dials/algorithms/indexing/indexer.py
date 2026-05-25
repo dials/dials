@@ -70,7 +70,8 @@ max_cell_estimation
 }
 """
 
-phil_str = """\
+phil_str = (
+    """\
 indexing {
   nproc = 1
     .type = int(value_min=1)
@@ -300,7 +301,9 @@ indexing {
       .help=If specified, will set the mosaic half degree value and override the value determined from nave refinement
   }
 }
-""" % max_cell_phil_str
+"""
+    % max_cell_phil_str
+)
 
 phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
@@ -331,11 +334,7 @@ class Indexer:
             "auto",
             libtbx.Auto,
         ):
-            if (
-                self.experiments[0].goniometer is None
-                or self.experiments[0].scan is None
-                or self.experiments[0].scan.is_still()
-            ):
+            if self.experiments[0].is_still():
                 self.all_params.refinement.reflections.outlier.algorithm = "sauter_poon"
             else:
                 # different default to dials.refine
@@ -390,7 +389,7 @@ class Indexer:
             has_stills = False
             has_sequences = False
             for expt in experiments:
-                if expt.scan is None or expt.scan.is_still():
+                if expt.is_still():
                     has_stills = True
                 else:
                     has_sequences = True
@@ -498,6 +497,11 @@ class Indexer:
     def index(self):
         experiments = ExperimentList()
 
+        # Reset outputs so a failed re-entry on a cached Indexer does not
+        # silently inherit the previous frame's result (the
+        # "if self.refined_experiments is None" guard below).
+        self.refined_experiments = None
+
         had_refinement_error = False
         have_similar_crystal_models = False
 
@@ -508,9 +512,7 @@ class Indexer:
             if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
-                cutoff_fraction = (
-                    self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-                )
+                cutoff_fraction = self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
                 d_spacings = 1 / self.reflections["rlp"].norms()
                 d_min_indexed = flex.min(d_spacings.select(self.indexed_reflections))
                 min_reflections_for_indexing = cutoff_fraction * len(
@@ -862,7 +864,7 @@ class Indexer:
                     sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel))
                 )
             x_px, y_px = xy_cal_px.parts()
-            if expt.scan is not None and not expt.scan.is_still():
+            if not expt.is_still():
                 if expt.scan.has_property("time_of_flight"):
                     tof = expt.scan.get_property("time_of_flight")
                     frames = list(range(len(tof)))
@@ -943,9 +945,7 @@ class Indexer:
         params = self.params.max_cell_estimation
         if self.params.max_cell is libtbx.Auto:
             if self.params.known_symmetry.unit_cell is not None:
-                uc_params = (
-                    self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
-                )
+                uc_params = self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
                 self.params.max_cell = params.multiplier * max(uc_params[:3])
                 logger.info("Using max_cell: %.1f Angstrom", self.params.max_cell)
             else:
