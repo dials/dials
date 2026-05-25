@@ -7,6 +7,7 @@ import time
 
 import numpy as np
 
+from dxtbx.imageset import ImageSequence
 from iotbx.phil import parse
 
 import dials.extensions
@@ -445,13 +446,14 @@ class SpotFinderFactory:
             if is_stills:
                 no_shoeboxes_2d = True
             else:
-                # Stills are now ImageSequence-backed, so the old
-                # `isinstance(imageset, ImageSequence)` test no longer distinguishes
-                # stills from rotation sequences.  Use Experiment.is_still(), which
-                # correctly handles `scan is None`, `scan.is_still()`, and the
-                # `goniometer is None` cases.
-                all_stills = all(experiment.is_still() for experiment in experiments)
-                no_shoeboxes_2d = all_stills
+                no_shoeboxes_2d = False
+                all_stills = True
+                for experiment in experiments:
+                    if isinstance(experiment.imageset, ImageSequence):
+                        all_stills = False
+                        break
+                if all_stills:
+                    no_shoeboxes_2d = True
         else:
             no_shoeboxes_2d = False
 
