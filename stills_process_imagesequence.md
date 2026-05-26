@@ -331,68 +331,70 @@ Before these branches are pushed:
 ## 10. Testing: fixture alignment, not production weakening
 
 The DIALS test suite contains fixtures that pre-date this branch and construct
-`Experiment` objects in ways that no longer match the new contract — most often
-by leaving `expt.imageset = None` and supplying only `{beam, detector, crystal}`.
-The contract change in §4 (stills detection via scan, not imageset type) and the
+`Experiment` objects without an imageset — supplying only `{beam, detector,
+crystal}`. The contract change in §4 (stills detection via scan) and the
 auto-routed sort path added to `dials.combine_experiments` in §5 make
-`expt.imageset.paths()[0]` an unconditional call on the still-detection path, so
-fixtures whose experiments lack an imageset surface as `AttributeError: 'NoneType'
-object has no attribute 'paths'` at first contact with the new code.
+`expt.imageset.paths()[0]` an unconditional call on the still-detection path,
+so these fixtures surface as `AttributeError: 'NoneType' object has no
+attribute 'paths'` at first contact with the new code.
 
-The policy on this branch is: **update the fixture, not the production code.**
+The policy on this branch is **update the fixture, not the production code.**
 Weakening upstream call sites with `if iset is None: ...` guards would let
-genuinely malformed experiment data — produced by some future bug — propagate
-silently through the pipeline; the loud crash at the boundary is the correct
-behavior. The proper fix is to bring the fixture into alignment with the new
-contract that every experiment carries an imageset.
+genuinely malformed experiment data propagate silently through the pipeline;
+the loud crash at the boundary is the correct behavior. The proper fix is to
+bring the fixture into alignment with the new contract that every experiment
+carries an imageset.
 
-**Two fixtures have been updated to date:**
+**Fixtures updated:**
 
 - `tests/algorithms/profile_model/ellipsoid/conftest.py` — the `test_experiment`
-  fixture previously constructed `Experiment(beam=..., crystal=..., scan=...,
-  detector=...)` with no imageset. Rebuilt to construct a real `ImageSequence`
-  with a `Format.Reader` (dummy filename, N copies for N frames), then build
-  `Experiment` from the imageset's own models. Commit `ae871b468` (2026-05-21).
-
+  fixture, previously `Experiment(beam=..., crystal=..., scan=..., detector=...)`
+  with no imageset, is now rebuilt to construct a real `ImageSequence` with a
+  `Format.Reader` and to build `Experiment` from the imageset's own models.
+  Commit `ae871b468`.
 - `tests/command_line/test_combine_experiments.py::test_min_max_reflections_per_experiment`
-  — the test loads `multi_stills_combined.json` from `dials_data`, which is an
-  old-format file with no imagesets (the `"imageset"` section is empty;
-  experiments reference only beam/detector/crystal). The fixture file itself is
-  not editable (it ships with `dials_data`), so the rewrite happens at test
-  setup. A new helper `_attach_still_imagesets(json_path, tmp_path)` loads the
-  raw `.expt`, builds **one** shared zero-oscillation `ImageSequence` (dummy
-  reader) covering all N frames, then for each experiment attaches that shared
-  imageset and a single-frame per-experiment scan pointing at its frame
-  position. The rewritten `.expt` is written to `tmp_path` and that path is
-  what the `dials.combine_experiments` subprocess reads. Commit `963d588ea`
-  (2026-05-26).
+  — the test loads `multi_stills_combined.json` from `dials_data`, an
+  old-format file with no imagesets. Since the `dials_data` fixture itself is
+  not editable, a new test-setup helper rewrites the `.expt` into `tmp_path`,
+  attaching **one** shared zero-oscillation `ImageSequence` (dummy reader)
+  covering all N frames and a single-frame per-experiment scan per experiment.
+  The shared-object reuse satisfies the `id()` identity check in
+  `_consolidate_stills_imagesets`, matching the in-flight state §5a produces,
+  so the dummy file is never opened. Commit `963d588ea`.
 
-**The shared-imageset trick.** The natural reflex when each experiment "needs
-an imageset" is to build a per-experiment `ImageSequence`. That fails on this
-branch: `_consolidate_stills_imagesets` sees N distinct imageset Python objects
-all referencing the same source path, fails the `id()` identity check, and tries
-to re-open the source file via `get_format_class_for_file(path).get_imageset([path])`
-to build a consolidated sequence. With a dummy filename that crashes. Making
-**all** experiments share **one** `ImageSequence` Python object satisfies the
-identity check (line 370 of `combine_experiments.py`), so consolidation is a
-genuine no-op and the dummy file is never opened. This matches the in-flight
-state on this branch: `stills_process` itself produces composite output where
-all experiments share one shared `ImageSequence` per source file (§5a).
+In both cases the rewrites are test-side preprocessing: the test bodies,
+expected results, parametrize matrices, and the `dials_data` files themselves
+are unchanged. The same pattern applies to any future `None.x` failure on a
+model accessor in a still path — attach a shared `ImageSequence` with the
+right beam/detector/scan structure and feed the rewritten file to the code
+path under test.
 
-**What did not change:**
+### `test_sort_by_imageset_path_and_image_index` — policy question, not fixture alignment
 
-- The test bodies themselves — the subprocess invocation, the expected results
-  matrix, the `parametrize` cases, the `assert` statements — are unchanged. The
-  test still measures what it always measured (the min/max reflection filter on
-  the same crystallographic input).
-- No production code under `src/` was modified to accommodate the test. The
-  fix lives entirely under `tests/`.
-- The `dials_data` fixtures themselves are unmodified. The rewrite is a
-  test-side preprocessing step that produces a transient `.expt` in `tmp_path`.
+`test_combine_experiments.py::test_sort_by_imageset_path_and_image_index` (PR #3036,
+pre-branch) remains failing on this branch and is **intentionally left failing**
+pending a group decision. It recombines four lyso JF16M stills in shuffled order
+`(0, 2, 3, 1)` and asserts that without `sort_by_imageset_path_and_image_index`,
+input order is preserved; with the flag, the output sorts to `(0, 1, 2, 3)`.
 
-**The pattern for future test failures with this signature** (`AttributeError`
-on `iset.paths()` or any similar `None.x` on a model accessor in a still path)
-is the same: write a helper that takes the existing fixture, attaches a shared
-`ImageSequence` with the right beam/detector/scan structure, and feeds the
-rewritten file to whatever code path the test exercises. The test's intent and
-assertions stay intact; only the input is brought into line with the contract.
+This branch (§5a, §"2026-05-22 frame ordering") makes the `(source path,
+frame index)` sort *unconditional* for stills in `dials.combine_experiments` and
+`stills_process` composite output, so the first assertion now also sees
+`(0, 1, 2, 3)`. The motivation is `dials.image_viewer` overlay correctness on
+composite stills: the combine paths leave experiments in worker-encounter order,
+and several overlay code paths previously assumed ascending frame order. Sorting
+at write was the chokepoint fix.
+
+The fixture is well-formed and the assertion was correct under the pre-branch
+contract; this is a real disagreement between the test and the branch's chosen
+behavior. The group needs to decide:
+
+1. **Make ascending `(path, frame_index)` a hard guarantee for stills.** Update
+   the test's first assertion to `(0, 1, 2, 3)`; `sort_by_imageset_path_and_image_index`
+   becomes a no-op for stills, retained only for rotation data.
+2. **Gate the unconditional sort on a narrower predicate** than `expts[0].is_still()`
+   — e.g. only when the output came from `stills_process` (shared `ImageSequence`).
+   Manually-combined user inputs would retain caller-controlled order; `image_viewer`
+   still gets sorted input on the path it depends on.
+
+No code change is made in this branch until the group settles which contract holds.
