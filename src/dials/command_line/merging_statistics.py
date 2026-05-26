@@ -101,8 +101,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     except (ValueError, KeyError) as e:
         sys.exit(f"Error: {e}")
     else:
-        print(iobs)
-        stats, anom_stats = merging_stats_from_scaled_array(iobs, additional_stats=True)
+        stats, anom_stats = merging_stats_from_scaled_array(iobs, additional_stats=True, n_bins=8)
         from dials.report.plots import ResolutionPlotsAndStats
 
         logger.info(table_1_summary(stats, anom_stats))
@@ -120,8 +119,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         }
         d["resolution_plots"].update(plotter.make_all_plots())
         json_data = {"main": d}
-        generate_html_report(json_data, "dials.merging_stats.html")
-        print("done")
+        generate_html_report(json_data, "dials.merging_statistics.html")
 
 
 if __name__ == "__main__":

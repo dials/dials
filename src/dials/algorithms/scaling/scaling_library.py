@@ -393,12 +393,21 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         self.r_split_binned = None
         self.binner = None
         self.merged_half_datasets = None
+        self.weighted_cc_anom_binned = None
+        self.neff_binned_anom = None
+        self.weighted_cc_half_binned = None
+        self.neff_binned = None
+        self.weighted_r_split_binned = None
+        self.weighted_r_split = None
+        self.weighted_cc_half = None
+        self.neff_overall = None
         if not additional_stats:
             return
         i_obs = kwargs.get("i_obs")
         n_bins = kwargs.get("n_bins", 20)
         if not i_obs:
             return
+        
         i_obs_copy = i_obs.customized_copy()
         i_obs_copy.setup_binner(n_bins=n_bins)
         i_obs_copy2 = i_obs.customized_copy()
@@ -464,6 +473,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         if weighted_cc_half_binned is not None:
             self.weighted_cc_half_binned = weighted_cc_half_binned[1:-1]
             self.neff_binned = neff_binned[1:-1]
+            
         # now do weighted cc anom
         self.weighted_cc_anom, self.neff_overall_anom = weighted_anom_correlation(
             i_obs_copy2
@@ -474,8 +484,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         if weighted_cc_half_binned is not None:
             self.weighted_cc_anom_binned = weighted_cc_half_binned
             self.neff_binned_anom = neff_binned
-            print(list(self.weighted_cc_anom_binned))
-            print(list(self.neff_binned_anom))
+        
 
     def as_dict(self):
         d = super().as_dict()
@@ -566,7 +575,8 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 return [(None, 1)]
             v_o = flex.pow2(o.sigmas())
             v_c = flex.pow2(c.sigmas())
-            joint_w = 1.0 / (v_o + v_c)
+            tausq = 0.01 * np.median(np.array(v_o + v_c))
+            joint_w = 1.0 / (v_o + v_c + tausq)
             sumjw = flex.sum(joint_w)
             norm_jw = joint_w / sumjw
             xbar = flex.sum(o.data() * norm_jw)
@@ -585,10 +595,21 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
             neff = 1 / flex.sum(flex.pow2(norm_jw))
             if plot_label:
-                if n == 546:
+                if n == 1307:
                     print("norm_jw:")
-                    print(sorted(norm_jw, reverse=True))
-                    sel = norm_jw > 0.001
+                    sort_order = flex.sort_permutation(norm_jw, reverse=True)
+                    print(list(norm_jw.select(sort_order)[:10]))
+                    print("data")
+                    print(list(o.data().select(sort_order)[:10]))
+                    print(list(c.data().select(sort_order)[:10]))
+                    print("sigmas")
+                    print(list(o.sigmas().select(sort_order)[:10]))
+                    print(list(c.sigmas().select(sort_order)[:10]))
+                    print("indices")
+                    print(list(o.indices().select(sort_order)[:10]))
+                    #sel = sort_order[:10]
+                    #assert 0
+                    sel = norm_jw > 0.00001
                     plt.errorbar(
                         x=list(o.data().select(sel)),
                         y=list(c.data().select(sel)),
@@ -622,6 +643,8 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                     fmt="o",
                     markersize=0.5,
                 )
+                #plt.xlim([-30,30])
+                #plt.ylim([-30,30])
                 plt.plot(
                     [
                         min(min(o.data()), min(c.data())),
@@ -653,6 +676,8 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 plt.grid()
                 plt.xlabel(r"ΔI$_1$", fontsize=16)
                 plt.ylabel(r"ΔI$_2$", fontsize=16)
+                plt.xlim([-30,30])
+                plt.ylim([-30,30])
                 plt.savefig(f"{plot_label}_{n}_noerrorbar.png")
                 plt.cla()
             return [(sxy / ((sx * sy) ** 0.5), neff)]
@@ -679,6 +704,17 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=None):
     tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
     tmp_array = tmp_array.sort("packed_indices")
+    '''sel = tmp_array.indices() == (9, 1, 2)
+    print("9,1,2 data, sigmas")
+    print(", ".join(f"{i:3f}" for i in tmp_array.data().select(sel)))
+    print(", ".join(f"{i:3f}" for i in tmp_array.sigmas().select(sel)))
+    #print(list(i_obs.d_spacings().select(sel)))
+    print("-9,-1,-2 data, sigmas")
+    sel = tmp_array.indices() == (-9, -1, -2)
+    print(", ".join(f"{i:3f}" for i in tmp_array.data().select(sel)))
+    print(", ".join(f"{i:3f}" for i in tmp_array.sigmas().select(sel)))
+    #print(list(i_obs.d_spacings().select(sel)))
+    assert 0'''
     if not use_binning:
         seed = 0
         split = split_unmerged(
@@ -706,7 +742,7 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=Non
         cc, neff = ExtendedDatasetStatistics.weighted_cchalf(
             dano1, dano2, assume_index_matching=True, plot_label=plot_label
         )[0]
-        print(dano1.size(), cc, neff)
+        print(f"cc,neff: {cc} {neff}")
         return cc, neff
     tmp_array.setup_binner(n_bins=n_bins)
     ccs = []
