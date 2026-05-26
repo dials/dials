@@ -37,9 +37,7 @@ def _attach_still_imagesets(json_path, tmp_path):
     n = len(src)
     shared_beam = src[0].beam
     shared_detector = src[0].detector
-    isetdata = ImageSetData(
-        reader=Format.Reader(None, ["dummy.cbf"] * n), masker=None
-    )
+    isetdata = ImageSetData(reader=Format.Reader(None, ["dummy.cbf"] * n), masker=None)
     shared_imageset = ImageSequence(
         isetdata,
         scan=Scan(image_range=(1, n), oscillation=(0.0, 0.0)),
