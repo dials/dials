@@ -1661,8 +1661,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         # Direct mutation of self.params (no deepcopy); restored at end of method.
         scan_varying = self.params.refinement.parameterisation.scan_varying
         self.params.refinement.parameterisation.scan_varying = False
-        max_refine = self.params.indexing.basis_vector_combinations.max_refine
-        self.params.indexing.basis_vector_combinations.max_refine = 5
 
         # Null scan/goniometer for rotation-sweep frames processed as stills (legacy
         # path). XFEL and SSX stills already have scan.is_still()=True.
@@ -1828,7 +1826,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("Time Taken = %f seconds", time.time() - st)
         # Restore params fields mutated for stills indexing.
         self.params.refinement.parameterisation.scan_varying = scan_varying
-        self.params.indexing.basis_vector_combinations.max_refine = max_refine
         return experiments, indexed
 
     def refine(self, experiments, centroids):
