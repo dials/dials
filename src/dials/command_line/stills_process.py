@@ -165,7 +165,8 @@ def _control_phil_str():
     psana_identifiers = False
       .type = bool
       .expert_level = 3
-      .help = Add psana timestamps to the experiment identifiers
+      .help = Add psana timestamps to the experiment identifiers. This allows \
+              sorting of LCLS XFEL data for certain experiments.
   }
 
   mp {
