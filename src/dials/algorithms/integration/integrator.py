@@ -363,6 +363,16 @@ class Parameters:
     A stack of classes to represent the integration parameters
     """
 
+    class Bbox:
+        """
+        Bounding box parameters
+        """
+
+        def __init__(self):
+            self.sigma_b_multiplier = 2.0
+            self.min_added_volume = 4096
+            self.margin_range = (3, 16)
+
     class Filter:
         """
         Filter parameters
@@ -394,6 +404,7 @@ class Parameters:
         """
         self.modelling = processor.Parameters()
         self.integration = processor.Parameters()
+        self.bbox = Parameters.Bbox()
         self.filter = Parameters.Filter()
         self.profile = Parameters.Profile()
         self.debug_reference_filename = "reference_profiles.pickle"
@@ -449,8 +460,12 @@ class Parameters:
         result.debug_reference_filename = params.debug.reference.filename
         result.debug_reference_output = params.debug.reference.output
 
+        # Bbox parameters
+        result.bbox.sigma_b_multiplier = params.bbox.sigma_b_multiplier
+        result.bbox.min_added_volume = params.bbox.min_added_volume
+        result.bbox.margin_range = params.bbox.margin_range
+
         # Profile parameters
-        result.profile.sigma_b_multiplier = params.bbox.sigma_b_multiplier
         result.profile.valid_foreground_threshold = (
             params.profile.valid_foreground_threshold
         )
