@@ -214,6 +214,15 @@ namespace dials { namespace algorithms { namespace profile_model {
         .def("__len__", &BBoxMultiCalculator::size)
         .def("__call__", &BBoxMultiCalculator::operator());
 
+      def("inflate_bboxes",
+          &inflate_bboxes,
+          (arg("bbox"),
+           arg("margin_min") = 3,
+           arg("margin_max") = 16,
+           arg("min_added_volume") = 4096),
+          "Inflate x/y extents of bounding boxes by a margin targeting a minimum pixel "
+          "volume.");
+
       class_<MaskCalculatorIface, boost::noncopyable>("MaskCalculatorIface", no_init)
         .def("__call__",
              &MaskCalculatorIface::single,

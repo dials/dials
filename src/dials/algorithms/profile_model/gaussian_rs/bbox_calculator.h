@@ -395,6 +395,71 @@ namespace dials { namespace algorithms { namespace profile_model {
       std::vector<std::shared_ptr<BBoxCalculatorIface> > compute_;
     };
 
+    /**
+     * Inflate the x and y extents of an array of bounding boxes by a margin,
+     * targeting a minimum added total pixel volume per box, which will all
+     * be used as background pixels.
+     *
+     * For each bounding box the margin is chosen as the smallest integer in
+     * [margin_min, margin_max] such that the resulting added pixel volume is at
+     * least min_added_volume.  If even margin_max is insufficient to reach
+     * min_added_volume, the margin is capped at margin_max anyway (the margin
+     * bounds always win).
+     *
+     * Only the x and y extents are inflated; the z (frame) extent is unchanged.
+     *
+     * @param bbox              Input bounding boxes (minx,maxx,miny,maxy,minz,maxz)
+     * @param margin_min        Minimum number of pixels to add to each side (default 3)
+     * @param margin_max        Maximum number of pixels to add to each side (default
+     * 16)
+     * @param min_added_volume  Target minimum total pixel volume (default 4096)
+     * @returns                 New array of inflated bounding boxes
+     */
+    af::shared<int6> inflate_bboxes(const af::const_ref<int6>& bbox,
+                                    int margin_min = 3,
+                                    int margin_max = 16,
+                                    int min_added_volume = 4096) {
+      DIALS_ASSERT(margin_min >= 0);
+      DIALS_ASSERT(margin_max >= margin_min);
+      DIALS_ASSERT(min_added_volume > 0);
+
+      af::shared<int6> result(bbox.size(), af::init_functor_null<int6>());
+
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        const int6& b = bbox[i];
+
+        // Current extents
+        int nx = b[1] - b[0];  // width  in x
+        int ny = b[3] - b[2];  // height in y
+        int nz = b[5] - b[4];  // depth  in z (unchanged)
+
+        DIALS_ASSERT(nx > 0 && ny > 0 && nz > 0);
+
+        // Find the smallest margin in [margin_min, margin_max] that satisfies
+        // the target volume.
+        int target_volume = nx * ny * nz + min_added_volume;
+        int margin = margin_min;
+        for (int m = margin_min; m <= margin_max; ++m) {
+          int inflated_volume = (nx + 2 * m) * (ny + 2 * m) * nz;
+          if (inflated_volume >= target_volume) {
+            margin = m;
+            break;
+          }
+          // If we exhaust the range without hitting target_volume, margin_max is used.
+          margin = m;  // keeps updating so we end on margin_max if needed
+        }
+
+        result[i] =
+          int6(b[0] - margin, b[1] + margin, b[2] - margin, b[3] + margin, b[4], b[5]);
+
+        DIALS_ASSERT(result[i][1] > result[i][0]);
+        DIALS_ASSERT(result[i][3] > result[i][2]);
+        DIALS_ASSERT(result[i][5] > result[i][4]);
+      }
+
+      return result;
+    }
+
 }}}}  // namespace dials::algorithms::profile_model::gaussian_rs
 
 #endif  // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H
