@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections
 import copy
-import gc
 import glob
 import logging
 import os
@@ -12,6 +11,7 @@ import tarfile
 import time
 from io import BytesIO
 
+import libtbx
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
@@ -122,6 +122,14 @@ def _control_phil_str():
               concatenated list of all the successful events examined by that process. \
               If False, output a separate experiment/reflection file per image (generates a \
               lot of files).
+    combine_all_ranks = False
+      .type = bool
+      .help = If True, combine output from all MPI ranks (or multiprocessing workers) into a \
+              single file with shared imageset, beam, and detector per source file. For MPI, \
+              mp.composite_stride is automatically set to the total comm size so rank 0 is the \
+              sole aggregator. For multiprocessing, per-worker composite files are merged after \
+              all workers finish. Requires composite_output = True. For very large MPI runs, \
+              prefer mp.composite_stride = k (k < n_ranks) to bound per-aggregator memory.
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
@@ -348,38 +356,410 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 )
 
 
+def _make_stills_sequence(data, indices, beam, detector, frame_range):
+    """Build an ImageSequence with a zero-oscillation Scan for stills data.
+
+    Shared by ``do_import`` (per-frame slice rebuild and as_sequence fallback)
+    and ``_rebuild_shared_imageset_output`` (multi-frame shared sequence).
+    Goniometer is always None — callers must only use this for still data.
+    """
+    from dxtbx.imageset import ImageSequence
+    from dxtbx.model import Scan
+
+    return ImageSequence(
+        data,
+        indices,
+        beam,
+        detector,
+        None,
+        Scan(frame_range, (0.0, 0.0)),
+    )
+
+
 def do_import(filename, load_models=True):
     logger.info("Loading %s", os.path.basename(filename))
-    experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
-    if len(experiments) == 0:
-        try:
-            experiments = ExperimentListFactory.from_json_file(filename)
-        except ValueError:
-            pass
 
-    from dxtbx.imageset import ImageSetFactory
+    # For multi-image formats (NXmx, XTC, etc.) force as_sequence=True so the
+    # returned ImageSequence has shared-identity beam/detector Python objects.
+    # Shared identity is required for JSON serializer deduplication and for the
+    # spotfinder static-mask cache.
+    from dxtbx.format.FormatMultiImage import FormatMultiImage
+    from dxtbx.format.Registry import get_format_class_for_file
+
+    format_class = get_format_class_for_file(filename)
+    if format_class is not None and issubclass(format_class, FormatMultiImage):
+        imageset = None
+        try:
+            imageset = format_class.get_imageset([filename], as_sequence=True)
+        except RuntimeError:
+            # Stills data: FormatNXmx.get_scan() returns None for zero-oscillation
+            # data, and the C++ ImageSequence constructor requires a non-null scan.
+            # Load as ImageSet, then wrap in an ImageSequence with a synthetic
+            # zero-oscillation scan so shared beam/detector identity is preserved.
+            iset = format_class.get_imageset([filename], as_imageset=True)
+            n = len(iset)
+            imageset = _make_stills_sequence(
+                iset.data(),
+                flex.size_t(range(n)),
+                iset.get_beam(0),
+                iset.get_detector(0),
+                (1, n),
+            )
+        except (TypeError, ValueError) as e:
+            logger.warning(
+                "get_imageset(as_sequence=True) failed for %s (%s); "
+                "falling back to from_filenames()",
+                filename,
+                e,
+            )
+            experiments = ExperimentListFactory.from_filenames(
+                [filename], load_models=False
+            )
+
+        if imageset is not None:
+            logger.info("Imageset type: %s", type(imageset).__name__)
+            experiments = ExperimentList(
+                [
+                    Experiment(
+                        imageset=imageset,
+                        beam=imageset.get_beam(),
+                        detector=imageset.get_detector(),
+                        goniometer=imageset.get_goniometer(),
+                        scan=imageset.get_scan(),
+                    )
+                ]
+            )
+    else:
+        experiments = ExperimentListFactory.from_filenames(
+            [filename], load_models=False
+        )
+        if len(experiments) == 0:
+            try:
+                experiments = ExperimentListFactory.from_json_file(filename)
+            except ValueError:
+                pass
 
     all_experiments = ExperimentList()
+    from dxtbx.imageset import ImageSequence
+
     for experiment in experiments:
-        # Convert from ImageSequence to ImageSet, if needed
-        imageset = ImageSetFactory.imageset_from_anyset(experiment.imageset)
+        imageset = experiment.imageset
         for i in range(len(imageset)):
-            # Preserve original models if they were available (in the case of an image file
-            # they will not be, but in the case of a previously processed experiment list,
-            # then they may be available
+            per_frame_iset = imageset[i : i + 1]
+            _scan = per_frame_iset.get_scan()
+            # Any ImageSequence per-frame slice carries the absolute frame range
+            # from the parent scan (e.g. image_range=(2,2) → array_range=(1,2)
+            # for frame 2 of a CBF sequence, or (3913,3913) for XFEL). The
+            # integrator and stills pipeline expect array_range=(0,1). Rebuild
+            # every ImageSequence slice with a fresh single-image still scan so
+            # its array_range is (0, 1). This also handles convert_sequences_to_stills
+            # rotation data, restoring the old imageset_from_anyset() behavior.
+            if isinstance(per_frame_iset, ImageSequence) and _scan is not None:
+                per_frame_iset = _make_stills_sequence(
+                    per_frame_iset.data(),
+                    per_frame_iset.indices(),
+                    imageset.get_beam(i),
+                    per_frame_iset.get_detector(),
+                    (1, 1),
+                )
+                # XFEL: stamp per-frame wavelength onto the per-frame scan so
+                # that the spotfinder can detect XFEL data via has_property("wavelength").
+                from dxtbx.model.beam import XFELBeam as _XFELBeam
+
+                if isinstance(imageset.get_beam(), _XFELBeam):
+                    per_frame_iset.get_scan().set_property(
+                        "wavelength",
+                        flex.double([imageset.get_beam(i).get_wavelength()]),
+                    )
+                # Null the experiment's scan/goniometer so downstream code
+                # (indexer, refiner) sees scan=None as expected for stills.
+                _scan = None
             expt = Experiment(
-                imageset=imageset[i : i + 1],
+                imageset=per_frame_iset,
                 detector=experiment.detector,
-                beam=experiment.beam,
-                scan=experiment.scan,
+                beam=imageset.get_beam(i),
+                scan=_scan,
                 goniometer=experiment.goniometer,
                 crystal=experiment.crystal,
             )
             if load_models:
                 expt.load_models()
+                # load_models() reads scan/goniometer back from the imageset's
+                # still scan; re-null so downstream code sees scan=None for stills.
+                if expt.scan is not None and expt.scan.is_still():
+                    expt.scan = None
+                    expt.goniometer = None
             all_experiments.append(expt)
 
     return all_experiments
+
+
+def extend_with_bookkeeping(src_expts, src_refls, dest_expts, dest_refls):
+    """Merge src into dest, remapping reflection id and experiment_identifiers."""
+    n = len(dest_refls.experiment_identifiers())
+    if len(src_refls):
+        src_refls["id"] += n
+        idents = src_refls.experiment_identifiers()
+        keys = list(idents.keys())
+        values = list(idents.values())
+        for key in keys:
+            del idents[key]
+        for i, key in enumerate(keys):
+            idents[key + n] = values[i]
+    dest_expts.extend(src_expts)
+    dest_refls.extend(src_refls)
+
+
+def _frame_index(expt):
+    """Return the 0-based frame index of expt within its source file.
+
+    Two representations are possible:
+    - Per-frame imageset from do_import: indices() == [i] (single entry), scan=None.
+      Use indices()[0] directly.
+    - Full shared imageset from _rebuild_shared_imageset_output (after JSON round-trip):
+      indices() spans all frames from that file; the experiment-level scan carries the
+      per-frame position as Scan((fi+1, fi+1)).  Use scan.get_array_range()[0] - 1.
+    """
+    from dxtbx.imageset import ImageSequence
+
+    iset = expt.imageset
+    if isinstance(iset, ImageSequence):
+        idxs = iset.indices()
+        if len(idxs) == 1:
+            return idxs[0]
+    if expt.scan is not None:
+        return expt.scan.get_array_range()[0] - 1
+    return 0
+
+
+def _sort_experiments_by_frame(expts, refls):
+    """Sort experiments (and paired reflections) by (source path, frame index).
+
+    Uses _frame_index so it works for both per-frame imagesets and shared
+    imagesets produced by _rebuild_shared_imageset_output.  Remaps the
+    reflection-table 'id' column and experiment_identifiers dict to match the
+    new experiment positions.  Returns the inputs unchanged if already sorted
+    or if expts is empty.
+    """
+    if not expts:
+        return expts, refls
+    perm = sorted(
+        range(len(expts)),
+        key=lambda i: (expts[i].imageset.paths()[0], _frame_index(expts[i])),
+    )
+    if perm == list(range(len(expts))):
+        return expts, refls
+    sorted_expts = ExperimentList([expts[perm[i]] for i in range(len(perm))])
+    if refls is not None and len(refls):
+        old_idents = dict(refls.experiment_identifiers())
+        new_blocks = []
+        for new_id, old_id in enumerate(perm):
+            block = refls.select(refls["id"] == old_id)
+            if len(block):
+                block["id"] = flex.int(len(block), new_id)
+                new_blocks.append(block)
+        if new_blocks:
+            sorted_refls = flex.reflection_table.concat(new_blocks)
+            idents = sorted_refls.experiment_identifiers()
+            for k in list(idents.keys()):
+                del idents[k]
+            for new_id, old_id in enumerate(perm):
+                if old_id in old_idents:
+                    idents[new_id] = old_idents[old_id]
+        else:
+            sorted_refls = refls
+    else:
+        sorted_refls = refls
+    return sorted_expts, sorted_refls
+
+
+def _rebuild_shared_imageset_output(experiments):
+    """Reconstruct experiments with shared models per source file.
+
+    For stills-as-ImageSequence input only — returns unchanged for rotation data
+    or non-ImageSequence imagesets. Produces one ImageSequence / beam / detector
+    per source file, and shares one ``Scan((fi+1, fi+1))`` Python object across
+    all experiments from the same frame (so multi-lattice frames contribute one
+    scan entry, not N). Order is preserved to keep reflection-table ``id`` valid.
+    """
+    from collections import defaultdict
+
+    from dxtbx.format.Registry import get_format_class_for_file
+    from dxtbx.imageset import ImageSequence
+    from dxtbx.model import Scan
+
+    if len(experiments) == 0:
+        return experiments
+    first_iset = experiments[0].imageset
+    if not isinstance(first_iset, ImageSequence):
+        return experiments
+    first_scan = first_iset.get_scan()
+    if first_scan is None or not first_scan.is_still():
+        return experiments
+
+    by_file = defaultdict(list)
+    for expt in experiments:
+        path = expt.imageset.paths()[0]
+        by_file[path].append(expt)
+
+    file_to_full_seq = {}
+    file_to_shared_beam = {}
+    file_to_shared_detector = {}
+    file_to_frame_scans = {}  # path -> {frame_index: shared Scan instance}
+
+    for path, expts in by_file.items():
+        frame_indices = [_frame_index(e) for e in expts]
+        sorted_frames = sorted(set(frame_indices))
+        shared_detector = expts[0].detector
+        # Re-open the source file: each per-frame slice's data() is size-1,
+        # too small to span the full integrated range. FormatXFEL mixin returns
+        # an ImageSequence with XFELBeam + scan 'wavelength' property; other
+        # formats return an ImageSequence or ImageSet with a monochromatic Beam.
+        parent_iset = get_format_class_for_file(path).get_imageset([path])
+        shared_beam = parent_iset.get_beam()  # XFELBeam for XFEL, Beam otherwise
+        parent_scan = parent_iset.get_scan()
+        # Use only the integrated frame indices (sparse). The compact scan (1, N)
+        # pairs with the sparse physical indices; per-experiment scans carry the
+        # absolute frame positions used for reflection lookup.
+        full_seq = _make_stills_sequence(
+            parent_iset.data(),
+            flex.size_t(sorted_frames),
+            shared_beam,
+            shared_detector,
+            (1, len(sorted_frames)),
+        )
+        file_to_full_seq[path] = full_seq
+        file_to_shared_beam[path] = shared_beam
+        file_to_shared_detector[path] = shared_detector
+        # Multi-lattice experiments from the same frame share one Scan instance,
+        # so JSON output has K scans (= unique indexed frames), not M (= lattices).
+        file_to_frame_scans[path] = {}
+        for fi in set(frame_indices):
+            frame_scan = Scan((fi + 1, fi + 1), (0.0, 0.0))
+            if parent_scan is not None and parent_scan.has_property("wavelength"):
+                wls = parent_scan.get_property("wavelength")
+                frame_scan.set_property("wavelength", flex.double([float(wls[fi])]))
+            file_to_frame_scans[path][fi] = frame_scan
+
+    new_experiments = ExperimentList()
+    for expt in experiments:
+        path = expt.imageset.paths()[0]
+        fi = _frame_index(expt)
+        new_experiments.append(
+            Experiment(
+                imageset=file_to_full_seq[path],
+                beam=file_to_shared_beam[path],
+                detector=file_to_shared_detector[path],
+                goniometer=None,
+                scan=file_to_frame_scans[path][fi],
+                crystal=expt.crystal,
+                profile=expt.profile,
+                scaling_model=expt.scaling_model,
+                identifier=expt.identifier,
+            )
+        )
+    return new_experiments
+
+
+def _combine_multiprocessing_outputs(params, nproc):
+    """Merge per-worker composite files into one combined file with shared imageset.
+
+    Workers write composite files named ``template % composite_tag`` where
+    ``composite_tag = "%04d" % worker_rank``.  This function loads all worker files
+    for each output stage, combines them with ID remapping, rebuilds shared
+    imageset/beam/detector, writes the result using worker-0's filename, then
+    deletes the intermediate per-worker files for workers 1..N-1.
+    """
+    output_dir = params.output.output_dir or "."
+
+    def _worker_path(template, tag):
+        if not template or "%s" not in template:
+            return None
+        path = os.path.join(output_dir, template % ("idx-" + tag))
+        return path if os.path.exists(path) else None
+
+    # (stage_name, expt_template, refl_template)
+    stages = [
+        ("imported", params.output.experiments_filename, None),
+        ("strong", None, params.output.strong_filename),
+        (
+            "indexed",
+            params.output.refined_experiments_filename,
+            params.output.indexed_filename,
+        ),
+        (
+            "integrated",
+            params.output.integrated_experiments_filename,
+            params.output.integrated_filename,
+        ),
+    ]
+    if getattr(params.dispatch, "coset", False):
+        stages.append(
+            (
+                "coset",
+                params.output.coset_experiments_filename,
+                params.output.coset_filename,
+            )
+        )
+
+    for stage, expt_template, refl_template in stages:
+        combined_expts = ExperimentList()
+        combined_refls = flex.reflection_table()
+        worker_expt_files = []
+        worker_refl_files = []
+
+        for i in range(nproc):
+            tag = "%04d" % i
+            ep = _worker_path(expt_template, tag) if expt_template else None
+            rp = _worker_path(refl_template, tag) if refl_template else None
+
+            src_expts = (
+                ExperimentListFactory.from_json_file(ep) if ep else ExperimentList()
+            )
+            src_refls = (
+                flex.reflection_table.from_file(rp) if rp else flex.reflection_table()
+            )
+
+            extend_with_bookkeeping(
+                src_expts, src_refls, combined_expts, combined_refls
+            )
+            if ep:
+                worker_expt_files.append(ep)
+            if rp:
+                worker_refl_files.append(rp)
+
+        if not len(combined_expts) and not len(combined_refls):
+            continue
+
+        if len(combined_expts):
+            combined_expts = _rebuild_shared_imageset_output(combined_expts)
+            combined_expts, combined_refls = _sort_experiments_by_frame(
+                combined_expts, combined_refls
+            )
+
+        # Write to a temporary path then rename atomically so a crash mid-write
+        # does not corrupt worker-0's file (the eventual output filename).
+        # Only after the rename succeeds do we delete worker-1..N-1.
+        tag0 = "idx-%04d" % 0
+        if expt_template and "%s" in expt_template:
+            final_expt = os.path.join(output_dir, expt_template % tag0)
+            tmp_expt = final_expt + ".tmp"
+            combined_expts.as_json(tmp_expt)
+            os.replace(tmp_expt, final_expt)
+        if refl_template and "%s" in refl_template:
+            final_refl = os.path.join(output_dir, refl_template % tag0)
+            tmp_refl = final_refl + ".tmp"
+            combined_refls.as_file(tmp_refl)
+            os.replace(tmp_refl, final_refl)
+
+        # Delete intermediate per-worker files (worker 0 is the combined output).
+        # Log cleanup failures rather than swallowing silently — they indicate
+        # filesystem trouble worth surfacing, not benign races.
+        for f in worker_expt_files[1:] + worker_refl_files[1:]:
+            try:
+                os.remove(f)
+            except OSError as e:
+                logger.warning("Failed to remove intermediate file %s: %s", f, e)
 
 
 def sync_geometry(src, dest):
@@ -495,6 +875,11 @@ class Script:
             else:
                 transmitted_info = None
             params, options, all_paths = comm.bcast(transmitted_info, root=0)
+
+        if params.output.combine_all_ranks and not params.output.composite_output:
+            sys.exit(
+                "ERROR: output.combine_all_ranks=True requires output.composite_output=True"
+            )
 
         if params.output.logging_option == "suppressed":
             logging.getLogger("dials.algorithms.indexing.nave_parameters").setLevel(
@@ -652,6 +1037,12 @@ class Script:
                         assert len(experiments) == 1
                         experiment = experiments[0]
                         experiment.load_models()
+                        # load_models() overwrites scan/goniometer from the imageset,
+                        # which for stills holds the synthetic zero-oscillation Scan.
+                        # Re-null these so downstream code sees scan=None for stills.
+                        if experiment.scan is not None and experiment.scan.is_still():
+                            experiment.scan = None
+                            experiment.goniometer = None
                         imageset = experiment.imageset
                         update_geometry(imageset)
                         experiment.beam = imageset.get_beam()
@@ -676,6 +1067,9 @@ class Script:
                     imageset.clear_cache()
                 if finalize:
                     processor.finalize()
+                    # Output is already on disk; return None so easy_mp doesn't
+                    # try to pickle C++ threshold/indexer objects in the result queue.
+                    return None
                 return processor
 
             iterable = list(zip(tags, range(len(split_experiments))))
@@ -747,6 +1141,9 @@ class Script:
                     processor.process_experiments(tag, experiments)
                 if finalize:
                     processor.finalize()
+                    # Output is already on disk; return None so easy_mp doesn't
+                    # try to pickle C++ threshold/indexer objects in the result queue.
+                    return None
                 return processor
 
             iterable = list(zip(tags, all_paths))
@@ -865,6 +1262,13 @@ class Script:
                             continue
                         print(error)
 
+                if (
+                    params.output.composite_output
+                    and params.output.combine_all_ranks
+                    and params.mp.nproc > 1
+                ):
+                    _combine_multiprocessing_outputs(params, nproc=params.mp.nproc)
+
         # Total Time
         logger.info("")
         logger.info("Total Time Taken = %f seconds", time.time() - st)
@@ -913,6 +1317,16 @@ class Processor:
         self.debug_file_handle = None
         if write_newline:  # needed if the there was a crash
             self.debug_write("")
+
+        self.spot_finder_factory = None
+        self.idxr = None
+        self.idxr_known_crystal_models = None
+        if self.params.indexing.stills.method_list:
+            self.idxr_method_list = dict.fromkeys(
+                self.params.indexing.stills.method_list
+            )
+        else:
+            self.idxr_method_list = None
 
         if params.output.composite_output:
             assert composite_tag is not None
@@ -1028,12 +1442,6 @@ class Processor:
             self.debug_file_handle.write(self.debug_str % (ts, state, string))
 
     def process_experiments(self, tag, experiments):
-        # Note d.sp is often rather memory constrained in large parallel
-        # jobs with many processes per compute node. In one configuration we
-        # noted the accumulation of ~10MB dead memory per run of the stills
-        # indexer. Therefore we trigger garbage collection every image.
-        gc.collect()
-
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
         self.tag = tag
@@ -1158,6 +1566,25 @@ class Processor:
 The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
                             )
 
+    def get_spot_finder_factory(self, experiments):
+        from dials.algorithms.spot_finding.factory import SpotFinderFactory
+
+        if self.params.spotfinder.filter.min_spot_size is libtbx.Auto:
+            detector = experiments[0].imageset.get_detector()
+            if detector[0].get_type() == "SENSOR_PAD":
+                self.params.spotfinder.filter.min_spot_size = 3
+            else:
+                self.params.spotfinder.filter.min_spot_size = 6
+            logger.info(
+                "Setting spotfinder.filter.min_spot_size=%i",
+                self.params.spotfinder.filter.min_spot_size,
+            )
+
+        logger.info("Configuring spot finder from input parameters")
+        return SpotFinderFactory.from_parameters(
+            experiments=experiments, params=self.params, is_stills=True
+        )
+
     def find_spots(self, experiments):
         st = time.time()
 
@@ -1165,10 +1592,11 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("Finding Strong Spots")
         logger.info("*" * 80)
 
-        # Find the strong spots
-        observed = flex.reflection_table.from_observations(
-            experiments, self.params, is_stills=True
-        )
+        # Find the strong spots — cache the SpotFinder to preserve the static mask
+        # and ExtractPixelsFromImage across stills frames.
+        if self.spot_finder_factory is None:
+            self.spot_finder_factory = self.get_spot_finder_factory(experiments)
+        observed = self.spot_finder_factory.find_spots(experiments)
 
         # Reset z coordinates for dials.image_viewer; see Issues #226 for details
         xyzobs = observed["xyzobs.px.value"]
@@ -1200,15 +1628,46 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def index(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
 
+        def update_indexer(
+            indexer, experiments, reflections, known_crystal_models=None
+        ):
+            # Reinitialize per-frame state without paying for full object construction.
+            # experiment.scan and .goniometer are already set correctly by index() preamble.
+            indexer.known_orientations = known_crystal_models
+            indexer.experiments = experiments
+            indexer.reflections = reflections
+            has_strong_flags = False
+            if "flags" in reflections:
+                strong_sel = indexer.reflections.get_flags(
+                    indexer.reflections.flags.strong
+                )
+                if strong_sel.count(True) > 0:
+                    indexer.reflections = indexer.reflections.select(strong_sel)
+                    has_strong_flags = True
+            if not has_strong_flags:
+                indexer.reflections.set_flags(
+                    flex.size_t_range(len(indexer.reflections)),
+                    indexer.reflections.flags.strong,
+                )
+            indexer.setup_indexing()
+            return indexer
+
         st = time.time()
 
         logger.info("*" * 80)
         logger.info("Indexing Strong Spots")
         logger.info("*" * 80)
 
-        params = copy.deepcopy(self.params)
-        # don't do scan-varying refinement during indexing
-        params.refinement.parameterisation.scan_varying = False
+        # Direct mutation of self.params (no deepcopy); restored at end of method.
+        scan_varying = self.params.refinement.parameterisation.scan_varying
+        self.params.refinement.parameterisation.scan_varying = False
+
+        # Null scan/goniometer for rotation-sweep frames processed as stills (legacy
+        # path). XFEL and SSX stills already have scan.is_still()=True.
+        for experiment in experiments:
+            if experiment.scan is not None and not experiment.scan.is_still():
+                experiment.scan = None
+                experiment.goniometer = None
 
         if hasattr(self, "known_crystal_models"):
             known_crystal_models = self.known_crystal_models
@@ -1242,13 +1701,21 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         indexing_succeeded = False
         if known_crystal_models:
             try:
-                idxr = Indexer.from_parameters(
-                    reflections,
-                    experiments,
-                    known_crystal_models=known_crystal_models,
-                    params=params,
-                )
-                idxr.index()
+                if self.idxr_known_crystal_models is None:
+                    self.idxr_known_crystal_models = Indexer.from_parameters(
+                        reflections,
+                        experiments,
+                        known_crystal_models=known_crystal_models,
+                        params=self.params,
+                    )
+                else:
+                    self.idxr_known_crystal_models = update_indexer(
+                        self.idxr_known_crystal_models,
+                        experiments,
+                        reflections,
+                        known_crystal_models=known_crystal_models,
+                    )
+                self.idxr_known_crystal_models.index()
                 logger.info("indexed from known orientation")
                 indexing_succeeded = True
             except Exception:
@@ -1276,24 +1743,36 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         flex.random_permutation(len(all_reflections))
                     )[: int(len(all_reflections) * i / 100)]
                 try:
-                    if params.indexing.stills.method_list is None:
-                        idxr = Indexer.from_parameters(
-                            reflections,
-                            experiments,
-                            params=params,
-                        )
-                        idxr.index()
+                    if self.params.indexing.stills.method_list is None:
+                        if self.idxr is None:
+                            self.idxr = Indexer.from_parameters(
+                                reflections,
+                                experiments,
+                                params=self.params,
+                            )
+                        else:
+                            self.idxr = update_indexer(
+                                self.idxr, experiments, reflections
+                            )
+                        self.idxr.index()
                     else:
                         ml_indexing_error = None
-                        for method in params.indexing.stills.method_list:
-                            params.indexing.method = method
-                            try:
-                                idxr = Indexer.from_parameters(
+                        for method in self.params.indexing.stills.method_list:
+                            self.params.indexing.method = method
+                            if self.idxr_method_list[method] is None:
+                                self.idxr_method_list[method] = Indexer.from_parameters(
                                     reflections,
                                     experiments,
-                                    params=params,
+                                    params=self.params,
                                 )
-                                idxr.index()
+                            else:
+                                self.idxr_method_list[method] = update_indexer(
+                                    self.idxr_method_list[method],
+                                    experiments,
+                                    reflections,
+                                )
+                            try:
+                                self.idxr_method_list[method].index()
                             except Exception as e_ml:
                                 logger.info("Couldn't index using method %s", method)
                                 ml_indexing_error = e_ml
@@ -1311,8 +1790,16 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             if subset_indexing_error:
                 raise subset_indexing_error
 
-        indexed = idxr.refined_reflections
-        experiments = idxr.refined_experiments
+        if known_crystal_models and indexing_succeeded:
+            indexed = self.idxr_known_crystal_models.refined_reflections
+            experiments = self.idxr_known_crystal_models.refined_experiments
+        elif self.params.indexing.stills.method_list is None:
+            indexed = self.idxr.refined_reflections
+            experiments = self.idxr.refined_experiments
+        else:
+            # "method" is retained from the method_list for loop above.
+            indexed = self.idxr_method_list[method].refined_reflections
+            experiments = self.idxr_method_list[method].refined_experiments
 
         if known_crystal_models is not None:
             filtered_sel = flex.bool(len(indexed), True)
@@ -1337,6 +1824,8 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
+        # Restore params fields mutated for stills indexing.
+        self.params.refinement.parameterisation.scan_varying = scan_varying
         return experiments, indexed
 
     def refine(self, experiments, centroids):
@@ -1719,6 +2208,21 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def finalize(self):
         """Perform any final operations"""
         if self.params.output.composite_output:
+            if self.params.output.combine_all_ranks and self.params.mp.method == "mpi":
+                from libtbx.mpi4py import MPI
+
+                nranks = MPI.COMM_WORLD.Get_size()
+                if (
+                    self.params.mp.composite_stride is not None
+                    and self.params.mp.composite_stride < nranks
+                ):
+                    logger.warning(
+                        "combine_all_ranks=True overrides mp.composite_stride=%d to %d",
+                        self.params.mp.composite_stride,
+                        nranks,
+                    )
+                self.params.mp.composite_stride = nranks
+
             if self.params.mp.composite_stride is not None:
                 assert self.params.mp.method == "mpi"
                 stride = self.params.mp.composite_stride
@@ -1748,21 +2252,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
                         logger.info("Rank %d received data from rank %d", rank, sender)
-
-                        def extend_with_bookkeeping(
-                            src_expts, src_refls, dest_expts, dest_refls
-                        ):
-                            n = len(dest_refls.experiment_identifiers())
-                            src_refls["id"] += n
-                            idents = src_refls.experiment_identifiers()
-                            keys = idents.keys()
-                            values = idents.values()
-                            for key in keys:
-                                del idents[key]
-                            for i, key in enumerate(keys):
-                                idents[key + n] = values[i]
-                            dest_expts.extend(src_expts)
-                            dest_refls.extend(src_refls)
 
                         if len(imported_experiments) > 0:
                             extend_with_bookkeeping(
@@ -1829,7 +2318,45 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         self.all_integrated_experiments
                     ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
-                    ) = self.all_int_pickles = self.all_integrated_reflections = []
+                    ) = self.all_int_pickles = self.all_int_pickle_filenames = []
+
+            # Dedupe shared models before writing. Safe for both combine_all_ranks
+            # paths and for per-rank output; the rebuild is a no-op for rotation
+            # data (its stills guard returns the input unchanged).
+            for attr in (
+                "all_imported_experiments",
+                "all_indexed_experiments",
+                "all_integrated_experiments",
+            ):
+                expts = getattr(self, attr, None)
+                if expts:
+                    setattr(self, attr, _rebuild_shared_imageset_output(expts))
+            if self.params.dispatch.coset and self.all_coset_experiments:
+                self.all_coset_experiments = _rebuild_shared_imageset_output(
+                    self.all_coset_experiments
+                )
+
+            # Sort all stages by (source path, frame index) before writing.
+            for expt_attr, refl_attr in (
+                ("all_imported_experiments", "all_strong_reflections"),
+                ("all_indexed_experiments", "all_indexed_reflections"),
+                ("all_integrated_experiments", "all_integrated_reflections"),
+            ):
+                expts = getattr(self, expt_attr, None)
+                refls = getattr(self, refl_attr, None)
+                if expts and isinstance(expts, ExperimentList) and len(expts):
+                    sorted_expts, sorted_refls = _sort_experiments_by_frame(
+                        expts, refls
+                    )
+                    setattr(self, expt_attr, sorted_expts)
+                    setattr(self, refl_attr, sorted_refls)
+            if self.params.dispatch.coset and self.all_coset_experiments:
+                (
+                    self.all_coset_experiments,
+                    self.all_coset_reflections,
+                ) = _sort_experiments_by_frame(
+                    self.all_coset_experiments, self.all_coset_reflections
+                )
 
             # Dump composite files to disk
             if (
@@ -1837,7 +2364,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 and self.params.output.experiments_filename
             ):
                 self.all_imported_experiments.as_json(
-                    self.params.output.experiments_filename
+                    self.params.output.experiments_filename,
                 )
 
             if (
@@ -1853,7 +2380,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 and self.params.output.refined_experiments_filename
             ):
                 self.all_indexed_experiments.as_json(
-                    self.params.output.refined_experiments_filename
+                    self.params.output.refined_experiments_filename,
                 )
 
             if (
@@ -1869,7 +2396,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 and self.params.output.integrated_experiments_filename
             ):
                 self.all_integrated_experiments.as_json(
-                    self.params.output.integrated_experiments_filename
+                    self.params.output.integrated_experiments_filename,
                 )
 
             if (
@@ -1887,7 +2414,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     and self.params.output.coset_experiments_filename
                 ):
                     self.all_coset_experiments.as_json(
-                        self.params.output.coset_experiments_filename
+                        self.params.output.coset_experiments_filename,
                     )
 
                 if (

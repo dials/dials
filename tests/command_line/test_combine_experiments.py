@@ -11,7 +11,10 @@ import subprocess
 
 import pytest
 
-from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.format import Format
+from dxtbx.imageset import ImageSequence, ImageSetData
+from dxtbx.model import Scan
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from dxtbx.serialize import load
 
 from dials.array_family import flex
@@ -20,6 +23,38 @@ from dials.command_line.combine_experiments import (
     combine_experiments_no_reflections,
     phil_scope,
 )
+
+
+def _attach_still_imagesets(json_path, tmp_path):
+    """Load a stills .expt that has no imagesets and rebuild it with one
+    shared still ImageSequence backing all experiments (dummy reader, no
+    goniometer, zero-oscillation compact scan).  Each experiment carries a
+    single-frame per-experiment scan pointing at its frame within the shared
+    sequence.  Aligns the on-disk file with the contract that every experiment
+    carries an imageset.  Returns the path to the rewritten .expt.
+    """
+    src = ExperimentListFactory.from_json_file(json_path, check_format=False)
+    n = len(src)
+    shared_beam = src[0].beam
+    shared_detector = src[0].detector
+    isetdata = ImageSetData(reader=Format.Reader(None, ["dummy.cbf"] * n), masker=None)
+    shared_imageset = ImageSequence(
+        isetdata,
+        scan=Scan(image_range=(1, n), oscillation=(0.0, 0.0)),
+        beam=shared_beam,
+        detector=shared_detector,
+        goniometer=None,
+    )
+    out = ExperimentList()
+    for i, expt in enumerate(src):
+        new_expt = copy.copy(expt)
+        new_expt.imageset = shared_imageset
+        new_expt.scan = Scan(image_range=(i + 1, i + 1), oscillation=(0.0, 0.0))
+        new_expt.goniometer = None
+        out.append(new_expt)
+    out_path = tmp_path / "with_imagesets.expt"
+    out.as_json(out_path)
+    return str(out_path)
 
 
 def test(dials_data, tmp_path):
@@ -333,12 +368,15 @@ def test_min_max_reflections_per_experiment(dials_data, tmp_path, min_refl, max_
     }
 
     data_dir = dials_data("refinement_test_data")
+    experiments_path = _attach_still_imagesets(
+        f"{data_dir}/multi_stills_combined.json", tmp_path
+    )
     input_phil = (
-        f" input.experiments={data_dir}/multi_stills_combined.json\n"
+        f" input.experiments={experiments_path}\n"
         + f" input.reflections={data_dir}/multi_stills_combined.pickle\n"
         + f" output.min_reflections_per_experiment={min_refl}\n"
         + f" output.max_reflections_per_experiment={max_refl}\n"
-    ).format(data_dir, min_refl, max_refl)
+    )
     tmp_path.joinpath("input.phil").write_text(input_phil)
 
     result = subprocess.run(

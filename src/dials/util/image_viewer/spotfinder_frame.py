@@ -761,11 +761,10 @@ class SpotFrame(XrayFrame):
         return
 
     def draw_resolution_rings(self, unit_cell=None, space_group=None):
-        image = self.image_chooser.GetClientData(
-            self.image_chooser.GetSelection()
-        ).image_set
+        wrapper = self.image_chooser.GetClientData(self.image_chooser.GetSelection())
+        image = wrapper.image_set
         detector = image.get_detector()
-        beam = image.get_beam()
+        beam = wrapper.get_beam()
 
         d_min = detector.get_max_resolution(beam.get_s0())
         d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
@@ -1090,7 +1089,9 @@ class SpotFrame(XrayFrame):
                 if len(all_pix_data) > 1:
                     if not self.display_foreground_circles_patch:
                         for key, value in all_pix_data.items():
-                            base_color = self.prediction_colours[key][1:]
+                            base_color = self.prediction_colours[
+                                key % len(self.prediction_colours)
+                            ][1:]
                             # dim the color so it stands apart from the prediction
                             r = base_color[0:2]
                             g = base_color[2:4]
@@ -1114,7 +1115,9 @@ class SpotFrame(XrayFrame):
                         e1 = matrix.col((1.0, 0.0))
                         e2 = matrix.col((0.0, 1.0))
                         for key, value in all_foreground_circles.items():
-                            base_color = self.prediction_colours[key][1:]
+                            base_color = self.prediction_colours[
+                                key % len(self.prediction_colours)
+                            ][1:]
                             positions = [i["position"] for i in value]
                             good_radius = flex.mean(
                                 flex.double([i["radius"] for i in value])
@@ -1450,13 +1453,7 @@ class SpotFrame(XrayFrame):
                 if self.viewing_stills:
                     selected = ref_list
                 elif self.viewing_still_scans:
-                    identifiers = []
-                    for elist in self.experiments:
-                        for scan in elist.scans():
-                            if scan.get_array_range()[0] == i_frame:
-                                sel_expts = elist.where(scan=scan)
-                                for i in sel_expts:
-                                    identifiers.append(elist[i].identifier)
+                    identifiers = self._identifiers_for_frame(i_frame)
                     selected = ref_list.select_on_experiment_identifiers(identifiers)
                 else:
                     bbox_sel = ~((i_frame >= z1) | ((i_frame + n) < z0))
@@ -1474,7 +1471,11 @@ class SpotFrame(XrayFrame):
                         and n == 0
                     ):
                         shoebox = reflection["shoebox"]
-                        iz = i_frame - z0 if not self.viewing_stills else 0
+                        iz = (
+                            0
+                            if (self.viewing_stills or self.viewing_still_scans)
+                            else i_frame - z0
+                        )
                         if reflection["id"] not in all_pix_data:
                             all_pix_data[reflection["id"]] = []
 
@@ -1537,9 +1538,16 @@ class SpotFrame(XrayFrame):
                         my_attrs = dict(shoebox_dict)
                         # Reflections with *only* strong set should get default
                         if not (reflection["flags"] == ref_list.flags.strong):
-                            my_attrs["color"] = self.prediction_colours[
-                                reflection["id"]
-                            ]
+                            if self.viewing_still_scans:
+                                # Composite still output: every experiment has a
+                                # distinct id, so per-id colouring would change
+                                # frame to frame. Use one fixed colour for all
+                                # integrated shoeboxes instead.
+                                my_attrs["color"] = "red"
+                            else:
+                                my_attrs["color"] = self.prediction_colours[
+                                    reflection["id"]
+                                ]
                         lines = [
                             ((x0y0, x0y1), my_attrs),
                             ((x0y1, x1y1), my_attrs),
@@ -1559,7 +1567,11 @@ class SpotFrame(XrayFrame):
                         offset, j = divmod(offset, shoebox.all()[1])
                         offset, i = divmod(offset, shoebox.all()[0])
                         max_index = (i, j, k)
-                        if z0 + max_index[0] == i_frame or self.viewing_stills:
+                        if (
+                            z0 + max_index[0] == i_frame
+                            or self.viewing_stills
+                            or self.viewing_still_scans
+                        ):
                             x, y = self.map_coords(
                                 x0 + max_index[2] + 0.5,
                                 y0 + max_index[1] + 0.5,
@@ -1570,10 +1582,14 @@ class SpotFrame(XrayFrame):
                     if self.settings.show_ctr_mass and "xyzobs.px.value" in reflection:
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
-                        if self.viewing_stills or (
-                            i_frame
-                            <= centroid[2]
-                            <= (i_frame + self.params.stack_images)
+                        if (
+                            self.viewing_stills
+                            or self.viewing_still_scans
+                            or (
+                                i_frame
+                                <= centroid[2]
+                                <= (i_frame + self.params.stack_images)
+                            )
                         ):
                             x, y = self.map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
@@ -1601,6 +1617,12 @@ class SpotFrame(XrayFrame):
                     scan = self.pyslip.tiles.raw_image.get_scan()
                     frame_numbers = scan.get_array_index_from_angle(math.degrees(phi))
                 n = self.params.stack_images
+                # Build the frame-identifier set once before the per-experiment loop.
+                _frame_ids_set = (
+                    set(self._identifiers_for_frame(i_frame))
+                    if self.viewing_still_scans
+                    else None
+                )
                 for i_expt in set(ref_list["id"]):
                     expt_sel = ref_list["id"] == i_expt
                     frame_predictions_sel = (frame_numbers >= (i_frame)) & (
@@ -1615,18 +1637,18 @@ class SpotFrame(XrayFrame):
                             sel = flex.bool(ref_list.size(), False)
                             break
                         identifier = ref_list.experiment_identifiers()[i_expt]
-                        for expt_list in self.experiments:
-                            if identifier in expt_list.identifiers():
-                                idx = (
-                                    expt_list.identifiers() == identifier
-                                ).iselection()[0]
-                                scan = expt_list[idx].scan.get_array_range()
-                                if scan[0] == i_frame:
-                                    # this scan corresponds to this frame: good!
-                                    if not expt_list[idx].crystal:
-                                        sel = flex.bool(ref_list.size(), False)
+                        if identifier not in _frame_ids_set:
+                            sel = flex.bool(ref_list.size(), False)
+                        else:
+                            # identifier is for this frame; check for a crystal
+                            for expt_list in self.experiments:
+                                for expt in expt_list:
+                                    if expt.identifier == identifier:
+                                        if not expt.crystal:
+                                            sel = flex.bool(ref_list.size(), False)
+                                        break
                                 else:
-                                    sel = flex.bool(ref_list.size(), False)
+                                    continue
                                 break
                     selected = ref_list.select(sel)
                     for reflection in selected.rows():
@@ -1651,9 +1673,12 @@ class SpotFrame(XrayFrame):
                                 next
 
                             if self.settings.show_predictions:
-                                predictions_data.append(
-                                    (x, y, {"colour": self.prediction_colours[i_expt]})
+                                pred_colour = (
+                                    "red"
+                                    if self.viewing_still_scans
+                                    else self.prediction_colours[i_expt]
                                 )
+                                predictions_data.append((x, y, {"colour": pred_colour}))
 
                             if (
                                 self.settings.show_miller_indices
@@ -1705,7 +1730,18 @@ class SpotFrame(XrayFrame):
         else:
             i_frame = self.images.selected.index
         imageset = self.images.selected.image_set
-        if imageset.get_scan() is not None:
+        if self.viewing_still_scans:
+            # A sparse composite ImageSequence has one physical image per integrated
+            # frame; chooser position k → the k-th sorted integrated frame. Derive
+            # the mapping from per-experiment scans (authoritative after round-trip).
+            # Fall back to offset-based mapping for old contiguous imagesets where
+            # the number of imageset indices exceeds the number of integrated frames.
+            frame_list = self._still_scan_frame_list(imageset)
+            if frame_list and len(frame_list) == len(imageset.indices()):
+                i_frame = frame_list[i_frame]
+            else:
+                i_frame += self._still_scan_frame_offset(imageset)
+        elif imageset.get_scan() is not None:
             i_frame += imageset.get_scan().get_array_range()[0]
 
         refl_data = self._reflection_overlay_data(i_frame)
@@ -1734,7 +1770,67 @@ class SpotFrame(XrayFrame):
         return self.imagesets[0].get_detector()
 
     def get_beam(self):
-        return self.imagesets[0].get_beam()
+        idx = getattr(self.images.selected, "index", 0)
+        return self.imagesets[0].get_beam(idx)
+
+    def _still_scan_frame_list(self, imageset):
+        """Sorted list of absolute frame indices for experiments sharing this imageset.
+
+        The k-th entry is the absolute frame number (scan array_range[0]) for
+        chooser position k in a sparse composite ImageSequence, where each chooser
+        position corresponds to exactly one integrated frame.
+
+        Derived from the per-experiment scans because the imageset's own scan
+        loses the absolute offset on JSON round-trip.
+        """
+        cache = getattr(self, "_still_scan_frame_list_cache", None)
+        if cache is None:
+            cache = {}
+            self._still_scan_frame_list_cache = cache
+        key = id(imageset)
+        if key not in cache:
+            frames = sorted(
+                {
+                    expt.scan.get_array_range()[0]
+                    for elist in self.experiments
+                    for expt in elist
+                    if expt.scan is not None and expt.imageset is imageset
+                }
+            )
+            if not frames:
+                frames = sorted(
+                    {
+                        expt.scan.get_array_range()[0]
+                        for elist in self.experiments
+                        for expt in elist
+                        if expt.scan is not None
+                    }
+                )
+            cache[key] = frames
+        return cache[key]
+
+    def _still_scan_frame_offset(self, imageset):
+        """Absolute frame index of the first image of a composite still ImageSequence."""
+        frame_list = self._still_scan_frame_list(imageset)
+        return frame_list[0] if frame_list else 0
+
+    def _identifiers_for_frame(self, i_frame):
+        """Return experiment identifiers whose per-experiment scan starts at frame i_frame.
+
+        Builds an {absolute_frame_index: [identifiers]} map over all experiments
+        and looks it up. Makes no assumption about experiment ordering, so it is
+        correct for composite output combined across multiprocessing workers / MPI
+        ranks, where frames are interleaved rather than globally ascending.
+        """
+        frame_map = {}
+        for elist in self.experiments:
+            for expt in elist:
+                if expt.scan is None:
+                    continue
+                frame_map.setdefault(expt.scan.get_array_range()[0], []).append(
+                    expt.identifier
+                )
+        return frame_map.get(i_frame, [])
 
     def predict(self):
         predicted_all = []

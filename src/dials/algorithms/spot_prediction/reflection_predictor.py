@@ -9,8 +9,7 @@ from dials.util import Sorry
 logger = logging.getLogger(__name__)
 
 # The phil parameters
-phil_scope = parse(
-    """
+phil_scope = parse("""
 
   prediction {
 
@@ -34,8 +33,7 @@ phil_scope = parse(
       .type = float(value_min=0)
       .help = "The padding in degrees"
   }
-"""
-)
+""")
 
 
 class ReflectionPredictor:
@@ -56,8 +54,6 @@ class ReflectionPredictor:
         :param margin: The margin of hkl to predict
         :param force_static: force scan varying prediction to be static
         """
-        from dxtbx.imageset import ImageSequence
-
         from dials.algorithms.spot_prediction import (
             ScanStaticReflectionPredictor,
             ScanVaryingReflectionPredictor,
@@ -87,7 +83,7 @@ class ReflectionPredictor:
             )
 
         # Select the predictor class
-        if isinstance(experiment.imageset, ImageSequence):
+        if not experiment.is_still():
             xl_nsp = experiment.crystal.num_scan_points
             bm_nsp = experiment.beam.num_scan_points
             gn_nsp = experiment.goniometer.num_scan_points
