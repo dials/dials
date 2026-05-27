@@ -50,11 +50,6 @@ jobs:
         run: |
           python modules/dials/installer/bootstrap.py update base \
             --python "${{ env.PYTHON_TESTING_VERSION }}"
-      - name: Checkout dxtbx branch
-        run: |
-          pushd modules/dxtbx
-          git checkout dp2026/nonthrowing-intersection-dxtbx
-          popd
       - if: runner.os != 'Windows'
         run: echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
       - name: Build
@@ -106,11 +101,6 @@ jobs:
             --python "${{ env.PYTHON_MINIMUM_VERSION }}" \
             --libtbx
           echo "$(pwd)/conda_base/bin" >> $GITHUB_PATH
-      - name: Checkout dxtbx branch
-        run: |
-          pushd modules/dxtbx
-          git checkout dp2026/nonthrowing-intersection-dxtbx
-          popd
       - name: Build
         run: python modules/dials/installer/bootstrap.py build --libtbx
       - name: Create Installer
