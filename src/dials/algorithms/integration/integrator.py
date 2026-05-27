@@ -196,11 +196,6 @@ def generate_phil_scope():
                   "in order for a reflection to be integrated by profile fitting."
           .expert_level = 2
 
-        sigma_b_multiplier = 2.0
-          .type = float(value_min=1.0)
-          .help = "Background box expansion factor"
-          .expert_level = 3
-
         validation {
 
           number_of_partitions = 1
@@ -213,6 +208,28 @@ def generate_phil_scope():
             .help = "The minimum number of spots to use in each subsample."
 
         }
+
+      }
+
+      bbox
+        .expert_level = 3
+      {
+        background_region_method = sigma_b_multiplier *min_added_volume
+          .type = choice
+          .help = "The method to use for determining the background region."
+
+        sigma_b_multiplier = 2.0
+          .type = float(value_min=1.0)
+          .help = "Bounding box expansion factor"
+
+        min_added_volume = 4096
+          .type = int(value_min=1)
+          .help = "Target minimum added pixel volume for the background region of"
+                  "bounding boxes."
+
+        margin_range = 3,16
+          .type = ints(size=2, value_min=1)
+          .help = "The allowed range of margin values to use for bounding box expansion."
       }
 
       filter
@@ -433,7 +450,7 @@ class Parameters:
         result.debug_reference_output = params.debug.reference.output
 
         # Profile parameters
-        result.profile.sigma_b_multiplier = params.profile.sigma_b_multiplier
+        result.profile.sigma_b_multiplier = params.bbox.sigma_b_multiplier
         result.profile.valid_foreground_threshold = (
             params.profile.valid_foreground_threshold
         )
@@ -468,7 +485,7 @@ def _initialize_rotation(experiments, params, reflections):
     reflections.compute_zeta_multi(experiments)
     reflections.compute_d(experiments)
     reflections.compute_bbox(
-        experiments, sigma_b_multiplier=params.profile.sigma_b_multiplier
+        experiments, sigma_b_multiplier=params.bbox.sigma_b_multiplier
     )
 
     # Filter the reflections by zeta
@@ -489,7 +506,7 @@ def _initialize_stills(experiments, params, reflections):
     # Compute some reflection properties
     reflections.compute_d(experiments)
     reflections.compute_bbox(
-        experiments, sigma_b_multiplier=params.profile.sigma_b_multiplier
+        experiments, sigma_b_multiplier=params.bbox.sigma_b_multiplier
     )
 
     # Check the bounding boxes are all 1 frame in width
@@ -1459,7 +1476,7 @@ class Integrator3DThreaded:
         self.reflections.compute_d(self.experiments)
         self.reflections.compute_bbox(
             self.experiments,
-            sigma_b_multiplier=self.params.integration.profile.sigma_b_multiplier,
+            sigma_b_multiplier=self.params.integration.bbox.sigma_b_multiplier,
         )
 
         # Filter the reflections by zeta
