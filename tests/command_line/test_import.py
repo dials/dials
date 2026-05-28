@@ -4,7 +4,6 @@ import os
 import pathlib
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -28,9 +27,7 @@ def test_reference_individual(dials_data, tmp_path, use_beam, use_gonio, use_det
     expected_detector = {"True": "Fake panel", "False": "Panel"}
 
     # Find the image files
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     # Create an experiment with some faked geometry items
     fake_phil = """
@@ -93,9 +90,7 @@ def test_reference_individual(dials_data, tmp_path, use_beam, use_gonio, use_det
 
 
 def test_multiple_sequence_import_fails_when_not_allowed(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
     del image_files[4]  # Delete filename to force two sequences
 
     # run without allowing multiple sequences
@@ -115,9 +110,7 @@ def test_multiple_sequence_import_fails_when_not_allowed(dials_data, tmp_path):
 
 
 def test_can_import_multiple_sequences(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
     del image_files[4]  # Delete filename to force two sequences
 
     result = subprocess.run(
@@ -140,9 +133,7 @@ def test_can_import_multiple_sequences(dials_data, tmp_path):
 
 def test_invert_axis_with_two_sequences_sharing_a_goniometer(dials_data, tmp_path):
     # Test for regression of https://github.com/dials/dials/issues/2467
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
     del image_files[4]  # Delete filename to force two sequences
 
     result = subprocess.run(
@@ -169,9 +160,7 @@ def test_ManualGeometryUpdater_inverts_axis(dials_data):
 
     # Create four imagesets, first two share a goniometer model, second two
     # have independent inverted goniometer models
-    filenames = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    filenames = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
     experiments = ExperimentListFactory.from_filenames(filenames[0:3])
     experiments.extend(ExperimentListFactory.from_filenames(filenames[2:5]))
     experiments.extend(ExperimentListFactory.from_filenames(filenames[4:7]))
@@ -225,10 +214,8 @@ def test_ManualGeometryUpdater_inverts_axis(dials_data):
 
 
 def test_with_mask(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
-    mask_filename = dials_data("centroid_test_data", pathlib=True) / "mask.pickle"
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
+    mask_filename = dials_data("centroid_test_data") / "mask.pickle"
 
     result = subprocess.run(
         [
@@ -252,9 +239,7 @@ def test_with_mask(dials_data, tmp_path):
 
 
 def test_override_geometry(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     # Write a geometry phil file
     (tmp_path / "geometry.phil").write_text(
@@ -333,9 +318,7 @@ def test_override_geometry(dials_data, tmp_path):
 
 
 def test_import_beam_centre(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     # provide mosflm beam centre to dials.import
     result = subprocess.run(
@@ -376,14 +359,9 @@ def test_import_beam_centre(dials_data, tmp_path):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
+def test_fast_slow_beam_centre(dials_data: pathlib.Path, tmp_path):
     # test fast_slow_beam_centre with a multi-panel CS-PAD image
-    impath = os.path.join(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858401.cbf",
-    )
+    impath = dials_data("image_examples") / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     result = subprocess.run(
         [
             shutil.which("dials.import"),
@@ -432,13 +410,10 @@ def test_fast_slow_beam_centre(dials_regression: pathlib.Path, tmp_path):
     assert offsets == pytest.approx(ref_offsets)
 
 
-def test_distance_multi_panel(dials_regression: pathlib.Path, tmp_path):
+def test_distance_multi_panel(dials_data: pathlib.Path, tmp_path):
     # test setting the distance with a multi-panel CS-PAD image
-    impath = os.path.join(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858401.cbf",
+    impath = str(
+        dials_data("image_examples") / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     )
     result = subprocess.run(
         [
@@ -486,9 +461,7 @@ def test_distance_multi_panel(dials_regression: pathlib.Path, tmp_path):
 
 
 def test_from_image_files(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     # Import from the image files
     result = subprocess.run(
@@ -505,9 +478,7 @@ def test_from_image_files(dials_data, tmp_path):
 
 
 def test_from_image_files_in_chunks(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     # Import from the image files
     result = subprocess.run(
@@ -527,9 +498,7 @@ def test_from_image_files_in_chunks(dials_data, tmp_path):
 
 
 def test_from_image_files_uneven_chunks(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     # Import from the image files
     result = subprocess.run(
@@ -551,9 +520,7 @@ def test_from_image_files_uneven_chunks(dials_data, tmp_path):
 
 
 def test_from_image_files_implicit_chunks(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     # Import from the image files
     result = subprocess.run(
@@ -575,8 +542,8 @@ def test_from_image_files_implicit_chunks(dials_data, tmp_path):
 def test_from_template(dials_data, tmp_path):
     # Find the image files
     templates = [
-        dials_data("centroid_test_data", pathlib=True) / "centroid_####.cbf",
-        dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf",
+        dials_data("centroid_test_data") / "centroid_####.cbf",
+        dials_data("centroid_test_data") / "centroid_0001.cbf",
     ]
 
     for template in templates:
@@ -600,7 +567,7 @@ def test_from_template(dials_data, tmp_path):
 
 def test_extrapolate_scan(dials_data, tmp_path):
     # First image file
-    image = dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"
+    image = dials_data("centroid_test_data") / "centroid_0001.cbf"
 
     result = subprocess.run(
         [
@@ -628,9 +595,7 @@ def centroid_test_data_with_missing_image(dials_data, tmp_path):
     afterwards to conserve disk space.
     """
     images = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob(
-            "centroid_*[1,2,3,5,6,7,8,9].cbf"
-        )
+        dials_data("centroid_test_data").glob("centroid_*[1,2,3,5,6,7,8,9].cbf")
     )
     for image in images:
         try:
@@ -686,9 +651,7 @@ def test_template_with_missing_image_outside_of_image_range(
 
 
 def test_import_still_sequence_as_experiments(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     out = "experiments_as_still.expt"
 
@@ -717,9 +680,7 @@ def test_import_still_sequence_as_experiments(dials_data, tmp_path):
 
 
 def test_import_still_sequence_as_experiments_subset(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )[3:6]
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))[3:6]
 
     out = tmp_path / "experiments_as_still.expt"
 
@@ -748,9 +709,7 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmp_path):
 
 
 def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
 
     out = tmp_path / "experiments_as_still.expt"
 
@@ -785,9 +744,7 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
 
 
 def test_import_still_sequence_as_experiments_split_subset(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
     image_files = image_files[:3] + image_files[6:]
 
     out = tmp_path / "experiments_as_still.expt"
@@ -813,9 +770,7 @@ def test_import_still_sequence_as_experiments_split_subset(dials_data, tmp_path)
 
 
 def test_with_convert_sequences_to_stills(dials_data, tmp_path):
-    image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
-    )
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
     result = subprocess.run(
         [
             shutil.which("dials.import"),
@@ -846,7 +801,7 @@ def test_with_convert_sequences_to_stills(dials_data, tmp_path):
 
 def test_convert_stills_to_sequences(dials_data, tmp_path):
     """Test with Jungfrau & Sacla data"""
-    JF16M = dials_data("lysozyme_JF16M_4img", pathlib=True)
+    JF16M = dials_data("lysozyme_JF16M_4img")
     result = subprocess.run(
         [
             shutil.which("dials.import"),
@@ -867,7 +822,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     assert len(experiments.scans()) == 4
 
     # Test with sacla data
-    sacla_path = dials_data("image_examples", pathlib=True)
+    sacla_path = dials_data("image_examples")
     image_path = sacla_path / "SACLA-MPCCD-run266702-0-subset.h5"
     result = subprocess.run(
         [
@@ -890,7 +845,7 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
 
     # also add in something that is sequences, for completess
     centroid_image_files = sorted(
-        dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+        dials_data("centroid_test_data").glob("centroid*.cbf")
     )[:3]  # just three images
     result = subprocess.run(
         [
@@ -914,14 +869,10 @@ def test_convert_stills_to_sequences(dials_data, tmp_path):
     assert len(experiments3.scans()) == 5  # four for sacla stills, 1 for centroid data
 
 
-def test_convert_stills_to_sequences_nonh5(dials_regression: pathlib.Path, tmp_path):
-    image_path = Path(
-        dials_regression,
-        "image_examples",
-        "LCLS_cspad_nexus",
-        "idx-20130301060858801.cbf",
+def test_convert_stills_to_sequences_nonh5(dials_data: pathlib.Path, tmp_path):
+    image_path = str(
+        dials_data("image_examples") / "LCLS_cspad_nexus-idx-20130301060858801.cbf"
     )
-    assert image_path.is_file()
     result = subprocess.run(
         [
             shutil.which("dials.import"),
@@ -943,7 +894,7 @@ def test_convert_stills_to_sequences_nonh5(dials_regression: pathlib.Path, tmp_p
 
 
 def test_import_still_sequence(dials_data, tmp_path):
-    ssx = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial")
 
     result = subprocess.run(
         [
@@ -959,7 +910,7 @@ def test_import_still_sequence(dials_data, tmp_path):
 
 
 def test_import_grid_scan(dials_data, tmp_path):
-    data_dir = dials_data("thaumatin_grid_scan", pathlib=True)
+    data_dir = dials_data("thaumatin_grid_scan")
     image_path = data_dir / "thau_3_2_*"
     result = subprocess.run(
         [
@@ -980,11 +931,7 @@ def test_import_grid_scan(dials_data, tmp_path):
 
 
 def test_import_stills(dials_data, tmp_path):
-    data_dir = (
-        dials_data("4fluoro_cxi", pathlib=True)
-        / "lcls_2022_smSFX_workshop_data"
-        / "ten_cbfs"
-    )
+    data_dir = dials_data("4fluoro_cxi") / "lcls_2022_smSFX_workshop_data" / "ten_cbfs"
     image_path = data_dir / "cxily6520_r0164_*.cbf"
     result = subprocess.run(
         [

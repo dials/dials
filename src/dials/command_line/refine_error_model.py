@@ -147,7 +147,7 @@ def make_output(models, params):
             if e is not None:
                 indices = [str(j + 1) for j, x in enumerate(models) if e is x]
                 d["error_model_summary"] += (
-                    f"\nError model {i+1}, applied to sweeps {', '.join(indices)}:"
+                    f"\nError model {i + 1}, applied to sweeps {', '.join(indices)}:"
                     + str(e)
                 )
     for i, model in enumerate(models):

@@ -15,7 +15,7 @@ from dials.array_family import flex
 
 
 def test1(dials_data, tmp_path):
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
 
     result = subprocess.run(
         [
@@ -67,7 +67,7 @@ def test1(dials_data, tmp_path):
 def test_multi_process_refinement_gives_same_results_as_single_process_refinement(
     dials_data, tmp_path
 ):
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     cmd = [
         shutil.which("dials.refine"),
         data_dir / "multi_stills_combined.json",
@@ -147,7 +147,7 @@ refinement {
     working_params = working_phil.extract()
 
     # use the multi stills test data
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "multi_stills_combined.json"
     pickle_path = data_dir / "multi_stills_combined.pickle"
 

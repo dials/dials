@@ -16,14 +16,14 @@ import dials.command_line.split_still_data as split
 )
 @pytest.mark.parametrize("use_yaml", [True, False])
 def test_split_still_data(dials_data, run_in_tmp_path, use_yaml):
-    data = dials_data("cunir_serial_processed", pathlib=True)
+    data = dials_data("cunir_serial_processed")
     args = [
         os.fspath(data / "integrated.expt"),
         os.fspath(data / "integrated.refl"),
         "nproc=1",
     ]
     if use_yaml:
-        images = os.fspath(dials_data("cunir_serial", pathlib=True))
+        images = os.fspath(dials_data("cunir_serial"))
         yml = f"""
 ---
 metadata:
@@ -57,3 +57,48 @@ grouping:
     assert len(expts2) == 2
     assert expts2[0].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17001"
     assert expts2[1].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17003"
+
+
+def test_split_still_data_h5(dials_data, run_in_tmp_path):
+    data = dials_data("lysozyme_ssx_processed")
+    args = [
+        os.fspath(data / "integrated.expt"),
+        os.fspath(data / "integrated.refl"),
+        "nproc=1",
+        "series_repeat=2",
+    ]
+    split.run(args=args)
+    assert pathlib.Path(run_in_tmp_path / "group_0_0.expt").is_file()
+    assert pathlib.Path(run_in_tmp_path / "group_0_0.refl").is_file()
+    assert pathlib.Path(run_in_tmp_path / "group_1_0.expt").is_file()
+    assert pathlib.Path(run_in_tmp_path / "group_1_0.refl").is_file()
+    expts1 = load.experiment_list("group_0_0.expt", check_format=False)
+    first_images = [
+        99,
+        133,
+        247,
+        565,
+        633,
+        763,
+        811,
+        819,
+        823,
+        847,
+        859,
+        929,
+        933,
+        971,
+        973,
+    ]
+    assert len(expts1) == len(first_images)
+
+    for i, expt in zip(first_images, expts1):
+        assert expt.scan.get_image_range() == (i, i)
+
+    expts2 = load.experiment_list(
+        run_in_tmp_path / "group_1_0.expt", check_format=False
+    )
+    second_images = [414, 472, 602, 878, 884, 920]
+    assert len(expts2) == len(second_images)
+    for i, expt in zip(second_images, expts2):
+        assert expt.scan.get_image_range() == (i, i)

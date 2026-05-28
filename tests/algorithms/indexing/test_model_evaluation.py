@@ -12,8 +12,8 @@ from dxtbx.serialize import load
 
 from dials.algorithms.indexing import model_evaluation
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
-from dials.algorithms.refinement.refiner import phil_scope as refine_phil
 from dials.array_family import flex
+from dials.command_line.index import phil_scope as index_phil
 
 
 def test_ModelRank():
@@ -166,8 +166,8 @@ def test_ModelEvaluation(dials_data):
     input_reflections["imageset_id"] = flex.size_t(input_reflections.size(), 0)
     input_reflections["id"] = flex.int(input_reflections.size(), -1)
 
-    refine_params = refine_phil.fetch().extract()
-    evaluator = model_evaluation.ModelEvaluation(refinement_params=refine_params)
+    indexer_params = index_phil.fetch().extract()
+    evaluator = model_evaluation.ModelEvaluation(params=indexer_params)
 
     experiments = copy.deepcopy(input_experiments)
     reflections = copy.deepcopy(input_reflections)

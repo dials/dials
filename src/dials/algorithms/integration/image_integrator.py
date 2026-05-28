@@ -144,9 +144,9 @@ class Task:
         exp_id = list(set(self.reflections["id"]))
         imageset = self.experiments[exp_id[0]].imageset
         for i in exp_id[1:]:
-            assert (
-                self.experiments[i].imageset == imageset
-            ), "Task can only handle 1 imageset"
+            assert self.experiments[i].imageset == imageset, (
+                "Task can only handle 1 imageset"
+            )
 
         # Get the sub imageset
         frame00, frame01 = self.frames

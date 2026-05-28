@@ -1495,7 +1495,7 @@ class MultiScalerBase(ScalerBase):
                 logger.info("Determining a combined error model for all datasets")
             else:
                 logger.info(
-                    f"Error model determination for sweep(s) {','.join(str(i+1) for i in g)}"
+                    f"Error model determination for sweep(s) {','.join(str(i + 1) for i in g)}"
                 )
             try:
                 model = run_error_model_refinement(

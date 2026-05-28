@@ -48,19 +48,28 @@ significant_clusters {
 
 help_message = """
 This module implements a subset of methods used in dials.cosym to perform
-correlation and cosine similarity based clustering methods. Data should be passed
-through dials.cosym first to implement consistent symmetry.
+correlation and cosine similarity based clustering methods. Classification of clusters
+based on cosym coordinates is also performed using the OPTICS algorithm. Data should be passed
+through dials.cosym first to implement consistent symmetry. To reproduce xia2.multiplex
+behaviour, data should also be scaled together. Clusters identified using the coordinate based
+approach can also be output into separate expt/refl files.
+
+For further details and to cite usage, please see:
+`Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290 <https://doi.org/10.1107/S2059798325004589>`_.
 
 Examples::
 
+  dials.correlation_matrix scaled.expt scaled.refl
   dials.correlation_matrix symmetrized.expt symmetrized.refl
+
+  dials.correlation_matrix scaled.expt scaled.refl significant_clusters.output=True
 
 """
 
 
 @show_mail_handle_errors()
 def run(args=None):
-    usage = "dials.correlation_matrix [options] symmetrized.expt symmetrized.refl"
+    usage = "dials.correlation_matrix [options] scaled.expt scaled.refl"
 
     parser = ArgumentParser(
         usage=usage,
@@ -145,6 +154,7 @@ def run(args=None):
             cos_angle_cluster_table=matrices.cos_table,
             image_range_tables=[matrices.table_list],
             cosym_graphs=matrices.rij_graphs,
+            pca_plot=matrices.pca_plot,
         )
 
         logger.info(

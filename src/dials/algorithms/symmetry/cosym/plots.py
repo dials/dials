@@ -77,7 +77,7 @@ additional representations are given.
     return d
 
 
-def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
+def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram", min_x=-1, bins=100):
     """Plot a histogram of the rij values.
 
     Args:
@@ -86,8 +86,8 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
     """
     hist, bin_edges = np.histogram(
         rij_matrix[rij_matrix != 0],
-        bins=100,
-        range=(min(-1, rij_matrix.min()), max(1, rij_matrix.max())),
+        bins=bins,
+        range=(min(min_x, rij_matrix.min()), max(1, rij_matrix.max())),
     )
     bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
 

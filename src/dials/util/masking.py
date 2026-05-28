@@ -271,9 +271,9 @@ def generate_mask(
                     )
                     mask_untrusted_rectangle(mask, x0, x1, y0, y1)
                 if region.polygon is not None:
-                    assert (
-                        len(region.polygon) % 2 == 0
-                    ), "Polygon must contain 2D coords"
+                    assert len(region.polygon) % 2 == 0, (
+                        "Polygon must contain 2D coords"
+                    )
                     vertices = []
                     for i in range(int(len(region.polygon) / 2)):
                         x = region.polygon[2 * i]

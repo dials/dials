@@ -8,7 +8,7 @@ import pytest
 
 @pytest.mark.parametrize("dataset", ["centroid_test_data", "thaumatin_grid_scan"])
 def test_spot_counts_per_image(dataset, dials_data, tmp_path):
-    path = dials_data(dataset, pathlib=True)
+    path = dials_data(dataset)
 
     # import the data
     result = subprocess.run(
@@ -60,7 +60,7 @@ def test_spot_counts_per_image(dataset, dials_data, tmp_path):
 
 
 def test_spot_counts_per_image_fails_cleanly_on_indexed(dials_data, tmp_path):
-    path = dials_data("insulin_processed", pathlib=True)
+    path = dials_data("insulin_processed")
     result = subprocess.run(
         [
             shutil.which("dials.spot_counts_per_image"),

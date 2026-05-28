@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 
 import gemmi
 import numpy as np
@@ -8,8 +9,10 @@ from scipy.spatial.transform import Rotation
 
 import iotbx.phil
 from dxtbx.model import Crystal
+from scitbx import matrix
 
 from dials.algorithms.indexing import DialsIndexError
+from dials.array_family import flex
 
 from .strategy import Strategy
 
@@ -34,9 +37,12 @@ pink_indexer
     voxel_grid_points=150
         .type = int(value_min=10, value_max=1000)
         .help = "Controls the number of voxels onto which the rotograms are discretized"
+    target_lattices=1
+        .type = int(value_min=1, value_max=100)
+        .help = "The target number of candidate lattices to generate."
     min_lattices=1
         .type = int(value_min=1, value_max=100)
-        .help = "The minimum number of candidate lattices to generate."
+        .help = "(Deprecated) The minimum number of candidate lattices to generate."
 }
 """
 
@@ -189,35 +195,30 @@ class Indexer:
 
     def index_pink(
         self,
-        s0,
-        s1,
+        rlps,
         max_refls=50,
         rotogram_grid_points=200,
         voxel_grid_points=200,
         int_dtype="uint8",
         float_dtype="float32",
-        min_lattices=1,
+        target_lattices=1,
         dilate_r=None,
     ):
         """
         Args:
-            s0 (array): An array of 3 floating point numbers corresponding to the s0 vector. This will be normalized.
-            s1 (array): An n x 3 array floating point numbers corresponding to the s1 vectors. This will be normalized.
+            rlps (array): An n x 3 array floating point numbers corresponding to the rlp vectors. This will be normalized.
             max_refls (int, optional): The maximum number of refls to consider.
             rotogram_grid_points (int, optional): The number of points at which to evaluate the rotograms.
             voxel_grid_points (int, optional): The fineness of the discretization used to quantitate rotograms.
             int_dtype (str or dtype, optional): the dtype to use for the voxel grid
             float_dtype (str or dtype, optional): the dtype to use for floating point values
-            min_lattices (int, optional): the minimum number of candidate lattices returned by this function
+            target_lattices (int, optional): the target number of candidate lattices returned by this function
             dilate_r (float, optional): optionally dilate the voxel grid by a kernel with this radius in pixels.
 
         Returns:
             iter_UB: an interable of crystal bases as numpy arrays
         """
-        s0_hat = normalize(np.asarray(s0, dtype=self.float_dtype))
-        s1_hat = normalize(np.asarray(s1, dtype=self.float_dtype))
-
-        q = s1_hat - s0_hat[None, :]
+        q = rlps
         q_len = norm2(q, keepdims=True)  # length of q if lambda is 1A
 
         # Possible resolution range for each observation considering wavelength range
@@ -229,8 +230,6 @@ class Indexer:
         if len(res_min) > max_refls:
             dmin = np.sort(res_min)[-max_refls]
             in_range = res_min >= dmin
-            s1_hat = s1_hat[in_range]
-            s1 = s1[in_range]
             q = q[in_range]
             q_len = q_len[in_range]
             res_min = res_min[in_range]
@@ -318,8 +317,15 @@ class Indexer:
             voxels = fftconvolve(voxels, kernel, mode="same")
 
         # Possible solutions are voxels with the highest density
-        cutoff = np.sort(voxels.flatten())[-min_lattices]
-        peaks = np.column_stack(np.where(voxels >= cutoff))
+        num_voxels = voxels.size
+        target_probability = (num_voxels - target_lattices) / num_voxels
+        cutoff = np.quantile(voxels, target_probability)
+        idx = np.where(voxels > cutoff)
+        asort = np.argsort(voxels[idx])
+        sortidx = tuple(i[asort[::-1]] for i in idx)  # Descending order
+        peaks = np.column_stack(sortidx)
+
+        # Get UB matrices for best peak voxels
         for peak in peaks:
             v = bin_centers[peak]
             l = norm2(v)
@@ -380,7 +386,14 @@ class PinkIndexer(Strategy):
         self.max_refls = params.max_refls
         self.rotogram_grid_points = params.rotogram_grid_points
         self.voxel_grid_points = params.voxel_grid_points
-        self.min_lattices = params.min_lattices
+        if params.min_lattices != 1:
+            warnings.warn(
+                "The parameter min_lattices is deprecated. Please use target_lattices instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            params.target_lattices = params.min_lattices
+        self.target_lattices = params.target_lattices
 
     def find_crystal_models(self, reflections, experiments):
         """Find a list of candidate crystal models.
@@ -394,32 +407,63 @@ class PinkIndexer(Strategy):
         reflections["id"] *= 0
         reflections["id"] -= 1
 
-        if len(experiments) < 1:
-            msg = "pink_indexer received an experimentlist with length > 1. To use the pink_indexer method, you must set joint_indexing=False when you call dials.index"
-            raise ValueError(msg)
-
+        # Get data from still
         expt = experiments[0]
         refls = reflections
 
+        # Build unit cell
         cell = gemmi.UnitCell(*self.cell.parameters())
 
-        beam = expt.beam
-        s0 = beam.get_s0()
+        # Get wavelength and bandwidth
         wav, bw = self.wavelength, self.percent_bandwidth
+        beam = expt.beam
         if wav is None:
-            wav = beam.get_wavelength()
+            if experiments.all_laue() or experiments.all_tof():
+                assert "wavelength" in reflections
+                wav = reflections["wavelength"]
+            else:
+                wav = beam.get_wavelength()
+
         if bw is None:
             bw = 1.0
         pidxr = Indexer(cell, wav, bw)
-        s1 = np.array(refls["s1"], dtype="float32")
+
+        # Get reciprocal lattice points and beam info
+        rlps = flex.vec3_double(len(refls))
+        s1 = refls["s1"]
+        s1_hat = s1 / s1.norms()
+        s0_hat = beam.get_unit_s0()
+
+        # Rotate reflections to common coordinate frame
+        for i, expt in enumerate(experiments):
+            sel_expt = refls["imageset_id"] == i
+            s1_hat_expt = s1_hat.select(sel_expt)
+            q = s1_hat_expt - s0_hat
+
+            if expt.goniometer is not None:
+                setting_rotation = matrix.sqr(expt.goniometer.get_setting_rotation())
+                rotation_axis = expt.goniometer.get_rotation_axis_datum()
+                sample_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
+                q = tuple(setting_rotation.inverse()) * q
+
+                if expt.scan is not None and expt.scan.has_property("oscillation"):
+                    _, _, z = refls["xyzobs.mm.value"].select(sel_expt).parts()
+                    q.rotate_around_origin(rotation_axis, -z)
+
+                q = tuple(sample_rotation.inverse()) * q
+
+            rlps.set_selected(sel_expt, q)
+
+        rlps = np.array(rlps, dtype="float32")
         self.candidate_crystal_models = []
+
+        # Get candidate crystal models from lattice search
         for UB in pidxr.index_pink(
-            s0,
-            s1,
+            rlps,
             self.max_refls,
             rotogram_grid_points=self.rotogram_grid_points,
             voxel_grid_points=self.voxel_grid_points,
-            min_lattices=self.min_lattices,
+            target_lattices=self.target_lattices,
         ):
             real_a, real_b, real_c = np.linalg.inv(UB.astype("double"))
             crystal = Crystal(real_a, real_b, real_c, self.spacegroup)

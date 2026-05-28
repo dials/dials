@@ -20,22 +20,22 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  static object predict1(const ScanVaryingRayPredictor &predictor,
-                         const cctbx::miller::index<> &h,
-                         const mat3<double> &A1,
-                         const mat3<double> &A2,
+  static object predict1(const ScanVaryingRayPredictor& predictor,
+                         const cctbx::miller::index<>& h,
+                         const mat3<double>& A1,
+                         const mat3<double>& A2,
                          int image,
                          std::size_t step) {
     boost::optional<Ray> result = predictor(h, A1, A2, image, step);
     return !result ? object() : object(*result);
   }
 
-  static object predict2(const ScanVaryingRayPredictor &predictor,
-                         const cctbx::miller::index<> &h,
-                         const mat3<double> &A1,
-                         const mat3<double> &A2,
-                         const vec3<double> &s0a,
-                         const vec3<double> &s0b,
+  static object predict2(const ScanVaryingRayPredictor& predictor,
+                         const cctbx::miller::index<>& h,
+                         const mat3<double>& A1,
+                         const mat3<double>& A2,
+                         const vec3<double>& s0a,
+                         const vec3<double>& s0b,
                          int image,
                          std::size_t step) {
     boost::optional<Ray> result = predictor(h, A1, A2, s0a, s0b, image, step);

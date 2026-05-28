@@ -10,16 +10,17 @@ from dials.array_family import flex
 
 def test_against_dials_integrate(dials_data, tmp_path):
     ## ensure insulin folder exists
-    dials_data("insulin", pathlib=True)
+    dials_data("insulin")
 
     # Run as a single job to avoid splitting reflections
     subprocess.run(
         (
             shutil.which("dials.integrate"),
-            dials_data("insulin_processed", pathlib=True) / "refined.expt",
-            dials_data("insulin_processed", pathlib=True) / "refined.refl",
+            dials_data("insulin_processed") / "refined.expt",
+            dials_data("insulin_processed") / "refined.refl",
             "mp.njobs=1",
             "mp.nproc=1",
+            "scan_range=1,2",
         ),
         cwd=tmp_path,
         capture_output=True,
@@ -28,8 +29,9 @@ def test_against_dials_integrate(dials_data, tmp_path):
     subprocess.run(
         (
             shutil.which("dev.dials.simple_integrate"),
-            dials_data("insulin_processed", pathlib=True) / "refined.expt",
-            dials_data("insulin_processed", pathlib=True) / "refined.refl",
+            dials_data("insulin_processed") / "refined.expt",
+            dials_data("insulin_processed") / "refined.refl",
+            "scan_range=1,2",
         ),
         cwd=tmp_path,
         capture_output=True,

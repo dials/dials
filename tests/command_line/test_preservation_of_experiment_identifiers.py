@@ -34,7 +34,7 @@ def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_pat
     tt_expt = tmp_path / "tt.expt"
 
     # First import - should set a unique id.
-    image_files = dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    image_files = dials_data("centroid_test_data").glob("centroid*.cbf")
     result = subprocess.run(
         [shutil.which("dials.import"), f"output.experiments={imported.name}"]
         + sorted(image_files),

@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
   using namespace boost::python;
 
   template <typename FloatType>
-  bool is_normally_distributed_wrapper(const af::const_ref<FloatType> &data,
+  bool is_normally_distributed_wrapper(const af::const_ref<FloatType>& data,
                                        double n_sigma) {
     if (n_sigma <= 0) {
       return is_normally_distributed(data);

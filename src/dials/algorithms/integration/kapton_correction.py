@@ -455,9 +455,9 @@ class image_kapton_correction:
             sig_w = self.params.kapton_half_width_mm.sigma
             sig_a = self.params.rotation_angle_deg.sigma
             self.kapton_params_sigmas = (sig_h, sig_t, sig_w, sig_a)
-            assert all(
-                sig >= 0 for sig in self.kapton_params_sigmas
-            ), "Kapton param sigmas must be nonnegative"
+            assert all(sig >= 0 for sig in self.kapton_params_sigmas), (
+                "Kapton param sigmas must be nonnegative"
+            )
             self.kapton_params_maxes = [
                 [
                     (
@@ -509,7 +509,7 @@ class image_kapton_correction:
                     # foreground: integration mask
                     shoebox = self.reflections_sele[iref]["shoebox"]
                     foreground = (
-                        (shoebox.mask.as_1d() & mask_code) == mask_code
+                        (shoebox.mask.as_1d().as_int() & mask_code) == mask_code
                     ).iselection()
                     width = shoebox.xsize()
                     fast_coords = (foreground % width).as_int()  # within spot
@@ -532,9 +532,9 @@ class image_kapton_correction:
                             kapton_correction_vector
                         ).unweighted_sample_standard_deviation()
                     except Exception:
-                        assert (
-                            len(kapton_correction_vector) == 1
-                        ), "stddev could not be calculated"
+                        assert len(kapton_correction_vector) == 1, (
+                            "stddev could not be calculated"
+                        )
                         spot_px_stddev = 0
                     absorption_sigmas.append(spot_px_stddev)
                 return absorption_corrections, absorption_sigmas

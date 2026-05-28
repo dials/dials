@@ -37,8 +37,8 @@ Advanced command-line tutorials
    centring_vs_pseudocentring
    multi_lattice_tutorial
    metrology_corrections
-   multi_crystal_analysis
    br_lyso_multi
+   intensity_based_clustering
 
 DIALS for 3DED/MicroED
 

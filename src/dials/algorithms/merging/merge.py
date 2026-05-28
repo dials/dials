@@ -112,7 +112,8 @@ def prepare_merged_reflection_table(
     d_max=None,
     partiality_threshold=0.99,
 ):
-    """Filter the data and prepare a reflection table with merged data."""
+    """Filter the data and prepare a reflection table with merged data. Return
+    both the filtered reflection table and the merged reflection table."""
     if (
         "inverse_scale_factor" in reflection_table
         and "intensity.scale.value" in reflection_table
@@ -170,7 +171,7 @@ def prepare_merged_reflection_table(
     merged_reflections["intensity"] = merged.data()
     merged_reflections["variance"] = flex.pow2(merged.sigmas())
     merged_reflections["miller_index"] = merged.indices()
-    return merged_reflections
+    return reflections, merged_reflections
 
 
 class MTZDataClass:
@@ -264,7 +265,7 @@ class MergedMTZCreator:
             self._add_column(r_free_array, label="FreeR_flag", type_char="I")
 
         if len(mtz_datasets) > 1:
-            suffixes = [f"_WAVE{i+1}" for i in range(len(mtz_datasets))]
+            suffixes = [f"_WAVE{i + 1}" for i in range(len(mtz_datasets))]
         else:
             suffixes = [""]
 
@@ -272,7 +273,7 @@ class MergedMTZCreator:
             if dataset.dataset_name is None:
                 dataset.dataset_name = "FROMDIALS"
             if dataset.crystal_name is None:
-                dataset.crystal_name = f"crystal_{i+2}"
+                dataset.crystal_name = f"crystal_{i + 2}"
             if dataset.project_name is None:
                 dataset.project_name = "DIALS"
             d = self.mtz.add_dataset(dataset.dataset_name)
@@ -499,7 +500,7 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
             dataset.multiplicities,
             dataset.anomalous_multiplicities,
             half_datasets=dataset.merged_half_datasets,
-            suffix=f"_WAVE{i+1}" if len(mtz_datasets) > 1 else "",
+            suffix=f"_WAVE{i + 1}" if len(mtz_datasets) > 1 else "",
         )
 
     return mtz_writer.mtz_file

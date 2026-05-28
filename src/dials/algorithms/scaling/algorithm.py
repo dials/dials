@@ -173,9 +173,11 @@ def prepare_input(params, experiments, reflections):
     #### and reflection table to the lists
     if params.scaling_options.reference:
         # Set a suitable d_min in the case when we might have a model file
-        d_min_for_structure_model = 2.0
+        d_min_for_structure_model = None
         if params.cut_data.d_min not in (None, Auto):
             d_min_for_structure_model = params.cut_data.d_min
+        else:
+            d_min_for_structure_model = min(flex.min(r["d"]) for r in reflections)
         expt, reflection_table = create_datastructures_for_reference_file(
             experiments,
             params.scaling_options.reference,
@@ -229,6 +231,8 @@ class ScalingAlgorithm:
         )
         logger.info("\nScaling models have been initialised for all experiments.")
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
+        if len(self.experiments) == 1 and self.experiments[0].scaling_model.id_ == "KB":
+            raise RuntimeError("Invalid model option (KB) for scaling a single dataset")
 
         self.experiments = set_image_ranges_in_scaling_models(self.experiments)
 

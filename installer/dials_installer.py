@@ -22,7 +22,7 @@ class installer(install_distribution.installer):
     product_name = "DIALS"
     dest_dir_prefix = "dials"
     make_apps = []
-    configure_modules = ["dials", "xia2", "iota", "prime"]
+    configure_modules = ["dials", "xia2"]
     include_gui_packages = True
     base_package_options = ["--dials"]
     installer_dir = installer_path
@@ -40,8 +40,6 @@ class installer(install_distribution.installer):
         "dxtbx",
         "dials",
         "xia2",
-        "iota",
-        "prime",
     ]
     flags = list(install_distribution.installer.flags)
     try:

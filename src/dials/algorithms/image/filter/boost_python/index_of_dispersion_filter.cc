@@ -17,11 +17,11 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   template <typename FloatType>
-  void index_of_dispersion_filter_wrapper(const char *name) {
+  void index_of_dispersion_filter_wrapper(const char* name) {
     typedef IndexOfDispersionFilter<FloatType> IndexOfDispersionFilterType;
 
     class_<IndexOfDispersionFilterType>(name, no_init)
-      .def(init<const af::const_ref<FloatType, af::c_grid<2> > &, int2>(
+      .def(init<const af::const_ref<FloatType, af::c_grid<2> >&, int2>(
         (arg("image"), arg("size"))))
       .def("index_of_dispersion", &IndexOfDispersionFilterType::index_of_dispersion)
       .def("mean", &IndexOfDispersionFilterType::mean)
@@ -29,12 +29,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   template <typename FloatType>
-  void index_of_dispersion_filter_masked_wrapper(const char *name) {
+  void index_of_dispersion_filter_masked_wrapper(const char* name) {
     typedef IndexOfDispersionFilterMasked<FloatType> IndexOfDispersionFilterType;
 
     class_<IndexOfDispersionFilterType>(name, no_init)
-      .def(init<const af::const_ref<FloatType, af::c_grid<2> > &,
-                const af::const_ref<int, af::c_grid<2> > &,
+      .def(init<const af::const_ref<FloatType, af::c_grid<2> >&,
+                const af::const_ref<int, af::c_grid<2> >&,
                 int2,
                 int>((arg("image"), arg("mask"), arg("size"), arg("min_count"))))
       .def("index_of_dispersion", &IndexOfDispersionFilterType::index_of_dispersion)
@@ -46,15 +46,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   IndexOfDispersionFilter<FloatType> make_index_of_dispersion_filter(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
     int2 size) {
     return IndexOfDispersionFilter<FloatType>(image, size);
   }
 
   template <typename FloatType>
   IndexOfDispersionFilterMasked<FloatType> make_index_of_dispersion_filter_masked(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
-    const af::const_ref<int, af::c_grid<2> > &mask,
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
+    const af::const_ref<int, af::c_grid<2> >& mask,
     int2 size,
     int min_size) {
     return IndexOfDispersionFilterMasked<FloatType>(image, mask, size, min_size);

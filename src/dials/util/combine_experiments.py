@@ -441,9 +441,9 @@ def combine_experiments_no_reflections(params, experiment_lists):
                 )
     # select a subset if requested
     if params.output.n_subset is not None and len(experiments) > params.output.n_subset:
-        assert (
-            params.output.n_subset_method == "random"
-        ), "Combining only experiments and not reflections is only possible with n_subset_method=random if n_subset is not None"
+        assert params.output.n_subset_method == "random", (
+            "Combining only experiments and not reflections is only possible with n_subset_method=random if n_subset is not None"
+        )
         experiments, _ = _select_random_subset(
             experiments,
             reflections=None,

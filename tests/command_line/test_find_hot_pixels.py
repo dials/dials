@@ -5,7 +5,7 @@ import subprocess
 
 
 def test(dials_data, tmp_path):
-    images = dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
+    images = dials_data("centroid_test_data").glob("centroid*.cbf")
 
     result = subprocess.run(
         [

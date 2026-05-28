@@ -266,7 +266,7 @@ class ProfileModelBase:
         L = eigen_decomposition.values()
         if max(L) > (self.mosaicity_max_limit**2):
             raise RuntimeError(
-                f"Mosaicity matrix is unphysically large {max(L)**0.5:.6f} > {self.mosaicity_max_limit} (mosaicity_max_limit)"
+                f"Mosaicity matrix is unphysically large {max(L) ** 0.5:.6f} > {self.mosaicity_max_limit} (mosaicity_max_limit)"
             )
         if min(L) < 1e-12:
             val = min(L) ** 0.5 if min(L) > 0 else 0.0

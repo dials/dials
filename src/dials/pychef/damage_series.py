@@ -9,7 +9,7 @@ from cctbx import crystal, miller, uctbx
 from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
-from dials.command_line.symmetry import median_unit_cell
+from dials.algorithms.symmetry import median_unit_cell
 from dials.pychef import interpret_images_to_doses_options
 from dials.report.plots import d_star_sq_to_d_ticks
 from dials.util.export_mtz import MTZWriterBase
@@ -368,9 +368,9 @@ def generate_damage_series(params, experiments, reflection_table):
             upper_dose_boundary,
         )
 
-        assert len(new_expts) == len(
-            refl.experiment_identifiers().keys()
-        ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        assert len(new_expts) == len(refl.experiment_identifiers().keys()), (
+            f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        )
         if params.output.damage_series:
             logger.info(
                 f"Saving experimental data for range {lower_dose_boundary} <= dose < {upper_dose_boundary}"
@@ -400,9 +400,9 @@ def generate_damage_series(params, experiments, reflection_table):
             upper_dose_boundary,
         )
 
-        assert len(new_expts) == len(
-            refl.experiment_identifiers().keys()
-        ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        assert len(new_expts) == len(refl.experiment_identifiers().keys()), (
+            f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        )
         if params.output.accumulation_series:
             if n == 0 and params.output.damage_series:
                 continue

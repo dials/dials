@@ -5,7 +5,7 @@ import subprocess
 
 
 def test(dials_data, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     experiments_path = data_dir / "indexed.expt"
     pickle_path = data_dir / "indexed.refl"
 

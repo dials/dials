@@ -16,7 +16,7 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 def test(dials_data, tmp_path):
     """Test two theta refine on integrated data."""
     # use multiple scan small molecule data for this test
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     prefix = (20, 25, 30, 35)
     exp_path = [data_dir / ("%d_integrated_experiments.json" % p) for p in prefix]
     pkl_path = [data_dir / ("%d_integrated.pickle" % p) for p in prefix]
@@ -60,7 +60,7 @@ def test(dials_data, tmp_path):
 
 def test_two_theta_refine_scaled_data(dials_data, tmp_path):
     """Test two theta refine on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = str(location / "scaled_20_25.refl")
     expts = str(location / "scaled_20_25.expt")
 

@@ -8,6 +8,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from math import isclose
 
+import dateutil.parser
 import gemmi
 import numpy as np
 import pandas as pd
@@ -55,9 +56,7 @@ class MTZWriterBase:
         )
         mtz_file = mtz.object()
         mtz_file.set_title(f"From {env.dispatcher_name}")
-        date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
-        if time.strftime("%Z") != "GMT":
-            date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+        date_str = time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
         mtz_file.add_history(f"From {dials_version()}, run on {date_str}")
         mtz_file.set_space_group_info(space_group.info())
         self.mtz_file = mtz_file
@@ -362,9 +361,7 @@ def write_columns(mtz, reflection_table):
 
     nref = len(reflection_table["miller_index"])
     assert nref
-    xdet, ydet, _ = (
-        flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
-    )
+    xdet, ydet, _ = (flex.double(x) for x in reflection_table["xyzcal.px"].parts())
 
     type_table = {
         "H": "H",
@@ -674,12 +671,25 @@ def export_mtz(
     # Create the mtz file
     mtz = gemmi.Mtz(with_base=True)
     mtz.title = f"From {env.dispatcher_name}"
-    date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
-    if time.strftime("%Z") != "GMT":
-        date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+    date_str = time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
     mtz.history += [
         f"From {dials_version()}, run on {date_str}",
     ]
+
+    # If the experiments have history lines, log the integrated and scaled
+    # entries from these for for future use in e.g. the MTZ Appendix
+    filtered_lines = {}
+    if experiment_list[0].history:
+        history_lines = experiment_list[0].history.get_history()
+        for line in history_lines:
+            items = line.split("|")
+            if len(items) == 4 and ("integrated" in items[3] or "scaled" in items[3]):
+                program = items[1] + " " + items[2]
+                filtered_lines[program] = dateutil.parser.isoparse(items[0])
+        for program, date in filtered_lines.items():
+            logger.info(
+                f"From {program}, run on {date.strftime('%Y-%m-%d at %H:%M:%S %Z')}"
+            )
 
     # Create the right gemmi spacegroup from the crystal's cctbx space_group
     # via a Hall symbol
@@ -763,9 +773,9 @@ def export_mtz(
             combined_data[k].extend(v)
     # ALL columns must be the same length
     assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
-    assert len(combined_data["id"]) == len(
-        reflection_table["id"]
-    ), "Lost rows in split/combine"
+    assert len(combined_data["id"]) == len(reflection_table["id"]), (
+        "Lost rows in split/combine"
+    )
 
     # Write all the data and columns to the mtz file
     write_columns(mtz, combined_data)

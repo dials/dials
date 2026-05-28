@@ -3,8 +3,8 @@ from __future__ import annotations
 import collections
 
 from dials.util import tabulate
-from dials_algorithms_integration_ext import *  # noqa: F403; lgtm
-from dials_algorithms_integration_kapton_ext import *  # noqa: F403; lgtm
+from dials_algorithms_integration_ext import *  # noqa: F403
+from dials_algorithms_integration_kapton_ext import *  # noqa: F403
 
 __all__ = (  # noqa: F405
     "Corrections",

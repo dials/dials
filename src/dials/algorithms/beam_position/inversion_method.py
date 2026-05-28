@@ -12,6 +12,7 @@ class InversionMethodSolver:
     def __init__(self, image, params, axis="x"):
         background_cutoff = params.projection.inversion.background_cutoff
         threshold = params.projection.inversion.bad_pixel_threshold
+        cwidth = params.projection.inversion.convolution_width
         self.axis = axis
 
         if axis == "x":
@@ -33,7 +34,7 @@ class InversionMethodSolver:
             axis=axis,
             method="max",
             exclude_range=exclude_range,
-            convolution_width=1,
+            convolution_width=cwidth,
             normalize=False,
         )
 
@@ -101,7 +102,7 @@ class InversionMethodSolver:
                 transform=ax.transAxes,
                 fontsize=7,
             )
-            label = f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})"
+            label = f"I_min, I_max = ({self.min_value:.1f}, {self.max_value:.1f})"
             ax.text(
                 0.01,
                 0.78,
@@ -142,7 +143,7 @@ class InversionMethodSolver:
                 rotation=-90,
                 fontsize=7,
             )
-            label = f"I_min, I_max = ({self.min_value:.1f}, " f"{self.max_value:.1f})"
+            label = f"I_min, I_max = ({self.min_value:.1f}, {self.max_value:.1f})"
             ax.text(
                 0.78,
                 0.99,

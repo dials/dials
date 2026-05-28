@@ -9,7 +9,7 @@ from dials.algorithms.refinement.engine import Journal
 def test_scan_varying_refinement_of_a_multiple_panel_detector(dials_data, tmp_path):
     from dials.array_family import flex
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
 
     result = subprocess.run(
         [

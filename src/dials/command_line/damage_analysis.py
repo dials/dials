@@ -45,7 +45,7 @@ from iotbx import mtz
 from libtbx import phil
 from scitbx.array_family import flex
 
-from dials.command_line.symmetry import median_unit_cell
+from dials.algorithms.symmetry import median_unit_cell
 from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
 from dials.pychef.damage_series import (
     generate_damage_series,

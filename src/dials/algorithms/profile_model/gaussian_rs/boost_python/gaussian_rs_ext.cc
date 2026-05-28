@@ -20,11 +20,8 @@
 #include <dials/algorithms/profile_model/gaussian_rs/modeller.h>
 #include <dials/algorithms/profile_model/modeller/boost_python/empirical_profile_modeller_wrapper.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace boost_python {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace boost_python {
 
     using namespace boost::python;
 

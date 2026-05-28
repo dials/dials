@@ -21,8 +21,8 @@ from dials.util.options import ArgumentParser
 @pytest.mark.xdist_group(name="group1")
 def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     # Download data set and the internally referenced images
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    dials_data("cunir_serial")
     pathlib.Path.mkdir(tmp_path / "nuggets")
     result = subprocess.run(
         [
@@ -84,8 +84,8 @@ expected_s6a1 = {
 @pytest.mark.xdist_group(name="group1")
 def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expected):
     # Download data set and the internally referenced images
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    dials_data("cunir_serial")
 
     expts = load.experiment_list(ssx / "indexed.expt", check_format=False)
     expts[3:4].as_file(tmp_path / "single.expt")
@@ -102,7 +102,7 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
             "algorithm=ellipsoid",
             f"ellipsoid.rlp_mosaicity={model}",
             "n_macro_cycles=2",
-            f"output.history={tmp_path /'history.json'}",
+            f"output.history={tmp_path / 'history.json'}",
             "max_iter=100",
             "LL_tolerance=1e-3",
         ],
@@ -127,8 +127,8 @@ def test_ssx_integrate_fullprocess_ellipsoid(dials_data, tmp_path, model, expect
 @pytest.mark.xdist_group(name="group1")
 def test_ssx_integrate_algorithms(dials_data, algorithm, expected_n_refls):
     # Download data set and the internally referenced images
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    dials_data("cunir_serial")
 
     indexed_refl = flex.reflection_table.from_file(
         ssx / "indexed.refl"

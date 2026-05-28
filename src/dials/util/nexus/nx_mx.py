@@ -849,7 +849,7 @@ def load(entry, exp_index):
 
     assert len(entries) == len(exp_index)
     for nxmx, name in zip(entries, exp_index):
-        assert np.string_(nxmx.name) == name, (nxmx.name, name)
+        assert np.bytes_(nxmx.name) == name, (nxmx.name, name)
 
     index = []
     rotations = []

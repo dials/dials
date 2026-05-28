@@ -61,7 +61,7 @@ def make_summary_table(results_summary: dict) -> tabulate:
             if not cryst["n_indexed"] or not cryst["n_strong"]:
                 continue
             n_idx, n_strong = (cryst["n_indexed"], cryst["n_strong"])
-            frac_idx = f"{n_idx}/{n_strong} ({100*n_idx/n_strong:2.1f}%)"
+            frac_idx = f"{n_idx}/{n_strong} ({100 * n_idx / n_strong:2.1f}%)"
             row = [
                 cryst["Image"],
                 str(total),
@@ -101,10 +101,10 @@ def make_cluster_plots(large_clusters: list[Cluster]) -> dict:
             for i in range(6):
                 uc_params[i].append(ucp[i])
         d_this = cluster_plotter.plot_uc_histograms(uc_params)
-        d_this["uc_scatter"]["layout"]["title"] += f" cluster {n+1}"
-        d_this["uc_hist"]["layout"]["title"] += f" cluster {n+1}"
+        d_this["uc_scatter"]["layout"]["title"] += f" cluster {n + 1}"
+        d_this["uc_hist"]["layout"]["title"] += f" cluster {n + 1}"
         if "uc_angle_hist" in d_this:
-            d_this["uc_angle_hist"]["layout"]["title"] += f" cluster {n+1}"
+            d_this["uc_angle_hist"]["layout"]["title"] += f" cluster {n + 1}"
         d_this[f"uc_scatter_{n}"] = d_this.pop("uc_scatter")
         d_this[f"uc_hist_{n}"] = d_this.pop("uc_hist")
         if "uc_angle_hist" in d_this:
@@ -230,7 +230,7 @@ def generate_plots(summary_data: dict) -> dict:
                     "y": sub_data.tolist(),
                     "type": "scatter",
                     "mode": "markers",
-                    "name": f"N indexed (lattice {i+2})",
+                    "name": f"N indexed (lattice {i + 2})",
                 }
             )
         for i, arr in enumerate(rmsd_x_arrays[1:]):
@@ -243,7 +243,7 @@ def generate_plots(summary_data: dict) -> dict:
                     "y": sub_data_x.tolist(),
                     "type": "scatter",
                     "mode": "markers",
-                    "name": f"RMSD X (lattice {i+2})",
+                    "name": f"RMSD X (lattice {i + 2})",
                 },
             )
             rmsd_data.append(
@@ -252,7 +252,7 @@ def generate_plots(summary_data: dict) -> dict:
                     "y": sub_data_y.tolist(),
                     "type": "scatter",
                     "mode": "markers",
-                    "name": f"RMSD Y (lattice {i+2})",
+                    "name": f"RMSD Y (lattice {i + 2})",
                 },
             )
         if rmsdz_data:
@@ -265,7 +265,7 @@ def generate_plots(summary_data: dict) -> dict:
                         "y": sub_data.tolist(),
                         "type": "scatter",
                         "mode": "markers",
-                        "name": f"RMSD dPsi (lattice {i+2})",
+                        "name": f"RMSD dPsi (lattice {i + 2})",
                     },
                 )
     percent_indexed = np.zeros(shape=(n_total_indexed.size,))

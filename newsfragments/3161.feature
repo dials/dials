@@ -1,0 +1,1 @@
+``dials.ssx_index``: Add experimental retain_unindexed_experiments option to keep models and data for all images regardless of indexing success, to allow viewing in the image viewer.

@@ -295,10 +295,15 @@ class LowResSpotMatch(Strategy):
         detector = experiments.detectors()[0]
         beam = experiments.beams()[0]
 
-        # Lab coordinate of the beam centre, using the first spot's panel
-        panel = detector[self.spots[0]["panel"]]
-        bc = panel.get_ray_intersection(beam.get_s0())
-        bc_lab = panel.get_lab_coord(bc)
+        # Lab coordinate of the beam centre,
+        # using the first panel found to intersect
+        for panel in detector:
+            try:
+                bc = panel.get_ray_intersection(beam.get_unit_s0())
+            except RuntimeError:  # Does not intersect panel
+                continue
+            bc_lab = panel.get_lab_coord(bc)
+            break
 
         # Lab coordinate of each spot
         spot_lab = flex.vec3_double(len(self.spots))
@@ -357,11 +362,17 @@ class LowResSpotMatch(Strategy):
         inner_spot_lab = spot_lab - panel_dirs * (tol * sig_r)
 
         # Set d* at band limits
-        inv_lambda = 1.0 / beam.get_wavelength()
+        if experiments.all_laue() or experiments.all_tof():
+            wavelength = self.spots["wavelength"]
+            s0 = self.spots["s0"]
+        else:
+            wavelength = beam.get_wavelength()
+            s0 = beam.get_s0()
+        inv_lambda = 1.0 / wavelength
         s1_outer = outer_spot_lab.each_normalize() * inv_lambda
         s1_inner = inner_spot_lab.each_normalize() * inv_lambda
-        self.spots["d_star_outer"] = (s1_outer - beam.get_s0()).norms()
-        self.spots["d_star_inner"] = (s1_inner - beam.get_s0()).norms()
+        self.spots["d_star_outer"] = (s1_outer - s0).norms()
+        self.spots["d_star_inner"] = (s1_inner - s0).norms()
         self.spots["d_star_band2"] = flex.pow2(
             self.spots["d_star_outer"] - self.spots["d_star_inner"]
         )

@@ -15,11 +15,11 @@ from iotbx.detectors import FlexImage, FlexImage_d
 
 from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.array_family import flex
+from dials.util.image_viewer import calculate_isoresolution_lines
 from dials.util.image_viewer.slip_viewer.flex_image import (
     get_flex_image,
     get_flex_image_multipanel,
 )
-from dials.util.image_viewer.spotfinder_frame import calculate_isoresolution_lines
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ def imageset_as_flex_image(
     for i_image in images:
         if (i_image < start) or (i_image >= start + n_images):
             raise ValueError(
-                f"Image {i_image} outside of scan range {start},{start+n_images-1}"
+                f"Image {i_image} outside of scan range {start},{start + n_images - 1}"
             )
         image = imageset.get_raw_data(i_image - start)
 

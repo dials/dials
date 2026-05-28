@@ -18,7 +18,7 @@ def test_run(dials_data):
     from dials.algorithms.refinement.refiner import phil_scope
     from dials.array_family import flex
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     exp_file = data_dir / "dials-423.json"
     ref_file = data_dir / "dials-423.pickle"
 

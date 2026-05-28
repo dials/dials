@@ -460,9 +460,9 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
         d_max=None,
     ):
         """Apply the filtering methods to reflection table."""
-        assert (
-            reflection_table.size() > 0
-        ), """Empty reflection table given to reduce_data_for_export function"""
+        assert reflection_table.size() > 0, (
+            """Empty reflection table given to reduce_data_for_export function"""
+        )
         reflection_table = cls.filter_unassigned_reflections(reflection_table)
         reflection_table = cls.reduce_on_intensities(reflection_table)
 

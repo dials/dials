@@ -164,9 +164,9 @@ class CosymAnalysis(symmetry_base, Subject):
         self.seed_dataset = seed_dataset
         if self.seed_dataset:
             self.seed_dataset = int(self.seed_dataset)
-            assert (
-                0 <= seed_dataset < len(intensities)
-            ), "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+            assert 0 <= seed_dataset < len(intensities), (
+                "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+            )
 
         max_id = len(intensities) - 1
         super().__init__(
@@ -211,46 +211,39 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.dataset_ids = self.dataset_ids.select(sel)
 
         self.params = params
+
+        def _map_space_group_to_input_cell(intensities, space_group):
+            from cctbx.sgtbx.bravais_types import bravais_lattice
+
+            best_subgroup = find_matching_symmetry(
+                intensities.unit_cell(),
+                space_group,
+                best_monoclinic_beta=str(bravais_lattice(group=space_group)) == "mI",
+            )
+            cb_op_inp_best = best_subgroup["cb_op_inp_best"]
+            best_subsym = best_subgroup["best_subsym"]
+            cb_op_best_primitive = best_subsym.change_of_basis_op_to_primitive_setting()
+
+            sg_cb_op_inp_primitive = (
+                space_group.info().change_of_basis_op_to_primitive_setting()
+            )
+            sg_primitive = space_group.change_basis(sg_cb_op_inp_primitive)
+            sg_best = sg_primitive.change_basis(cb_op_best_primitive.inverse())
+            # best_subgroup above is the bravais type, so create thin copy here with the
+            # user-input space group instead
+            best_subsym = best_subsym.customized_copy(space_group_info=sg_best.info())
+            best_subgroup = {
+                "subsym": best_subsym.change_basis(cb_op_inp_best.inverse()),
+                "best_subsym": best_subsym,
+                "cb_op_inp_best": cb_op_inp_best,
+            }
+
+            intensities = intensities.customized_copy(
+                space_group_info=sg_best.change_basis(cb_op_inp_best.inverse()).info()
+            )
+            return intensities, best_subgroup
+
         if self.params.space_group is not None:
-
-            def _map_space_group_to_input_cell(intensities, space_group):
-                from cctbx.sgtbx.bravais_types import bravais_lattice
-
-                best_subgroup = find_matching_symmetry(
-                    intensities.unit_cell(),
-                    space_group,
-                    best_monoclinic_beta=str(bravais_lattice(group=space_group))
-                    == "mI",
-                )
-                cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-                best_subsym = best_subgroup["best_subsym"]
-                cb_op_best_primitive = (
-                    best_subsym.change_of_basis_op_to_primitive_setting()
-                )
-
-                sg_cb_op_inp_primitive = (
-                    space_group.info().change_of_basis_op_to_primitive_setting()
-                )
-                sg_primitive = space_group.change_basis(sg_cb_op_inp_primitive)
-                sg_best = sg_primitive.change_basis(cb_op_best_primitive.inverse())
-                # best_subgroup above is the bravais type, so create thin copy here with the
-                # user-input space group instead
-                best_subsym = best_subsym.customized_copy(
-                    space_group_info=sg_best.info()
-                )
-                best_subgroup = {
-                    "subsym": best_subsym.change_basis(cb_op_inp_best.inverse()),
-                    "best_subsym": best_subsym,
-                    "cb_op_inp_best": cb_op_inp_best,
-                }
-
-                intensities = intensities.customized_copy(
-                    space_group_info=sg_best.change_basis(
-                        cb_op_inp_best.inverse()
-                    ).info()
-                )
-                return intensities, best_subgroup
-
             self.intensities, self.best_subgroup = _map_space_group_to_input_cell(
                 self.intensities, self.params.space_group.group()
             )
@@ -282,13 +275,11 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
-        # N.B. currently only multiprocessing used if cc_weights=sigma
+        # nproc is currently only used for parallelising calculations in
+        # the target initialisation.
         if self.params.nproc is Auto:
-            if self.params.cc_weights == "sigma":
-                params.nproc = dials.util.system.CPU_COUNT
-                logger.info(f"Setting nproc={params.nproc}")
-            else:
-                params.nproc = 1
+            self.params.nproc = dials.util.system.CPU_COUNT
+            logger.info(f"Setting nproc={self.params.nproc}")
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -320,7 +311,7 @@ class CosymAnalysis(symmetry_base, Subject):
         dimensions = []
         functional = []
         for dim in range(1, dims_to_test + 1):
-            logger.debug("Testing dimension: %i", dim)
+            logger.info(f"Testing dimension: {dim}/{dims_to_test}")
             self.target.set_dimensions(dim)
             max_calls = self.params.minimization.max_calls
             self._optimise(
@@ -420,11 +411,15 @@ class CosymAnalysis(symmetry_base, Subject):
             self.target.dim, NN * n_sym_ops
         ).transpose()
 
-    def _principal_component_analysis(self):
+    def _principal_component_analysis(self, cluster=False):
         # Perform PCA
         from sklearn.decomposition import PCA
 
-        pca = PCA().fit(self.coords)
+        if cluster:
+            logger.info(f"Dimensions used for clustering PCA: {self.target.dim}")
+            pca = PCA(n_components=self.target.dim).fit(self.coords)
+        else:
+            pca = PCA().fit(self.coords)
         logger.info("Principal component analysis:")
         logger.info(
             "Explained variance: "
@@ -436,9 +431,10 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.explained_variance = pca.explained_variance_
         self.explained_variance_ratio = pca.explained_variance_ratio_
-        if self.target.dim > 3:
+        if self.target.dim > 3 and not cluster:
             pca.n_components = 3
         self.coords_reduced = pca.fit_transform(self.coords)
+        self.pca_components = pca.components_
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):

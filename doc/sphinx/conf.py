@@ -44,6 +44,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx_design",
 ]
 
 # Add CDN path for mathjax script, converting Latex to readable text on the fly.

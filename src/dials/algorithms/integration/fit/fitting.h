@@ -34,7 +34,7 @@ namespace dials { namespace algorithms {
      */
     template <typename T, std::size_t N>
     af::const_ref<T, af::c_grid<2> > as_2d(
-      const af::const_ref<T, af::c_grid<N> > &src) {
+      const af::const_ref<T, af::c_grid<N> >& src) {
       DIALS_ASSERT(N > 2);
       std::size_t size = 1;
       for (std::size_t i = 1; i < src.accessor().size(); ++i) {
@@ -61,10 +61,10 @@ namespace dials { namespace algorithms {
     /**
      * Profile fit a single reflection
      */
-    ProfileFitter(const af::const_ref<T> &d,
-                  const af::const_ref<T> &b,
-                  const af::const_ref<bool> &m,
-                  const af::const_ref<T> &p,
+    ProfileFitter(const af::const_ref<T>& d,
+                  const af::const_ref<T>& b,
+                  const af::const_ref<bool>& m,
+                  const af::const_ref<T>& p,
                   double eps = 1e-3,
                   std::size_t maxiter = 10) {
       fit(d, b, m, p, eps, maxiter);
@@ -73,10 +73,10 @@ namespace dials { namespace algorithms {
     /**
      * Profile fit and deconvolve multiple reflections
      */
-    ProfileFitter(const af::const_ref<T> &d,
-                  const af::const_ref<T> &b,
-                  const af::const_ref<bool> &m,
-                  const af::const_ref<T, af::c_grid<2> > &p,
+    ProfileFitter(const af::const_ref<T>& d,
+                  const af::const_ref<T>& b,
+                  const af::const_ref<bool>& m,
+                  const af::const_ref<T, af::c_grid<2> >& p,
                   double eps = 1e-3,
                   std::size_t maxiter = 10) {
       fit(d, b, m, p, eps, maxiter);
@@ -85,10 +85,10 @@ namespace dials { namespace algorithms {
     /**
      * Profile fit a single 2D reflection
      */
-    ProfileFitter(const af::const_ref<T, af::c_grid<2> > &d,
-                  const af::const_ref<T, af::c_grid<2> > &b,
-                  const af::const_ref<bool, af::c_grid<2> > &m,
-                  const af::const_ref<T, af::c_grid<2> > &p,
+    ProfileFitter(const af::const_ref<T, af::c_grid<2> >& d,
+                  const af::const_ref<T, af::c_grid<2> >& b,
+                  const af::const_ref<bool, af::c_grid<2> >& m,
+                  const af::const_ref<T, af::c_grid<2> >& p,
                   double eps = 1e-3,
                   std::size_t maxiter = 10) {
       fit(d.as_1d(), b.as_1d(), m.as_1d(), p.as_1d(), eps, maxiter);
@@ -97,10 +97,10 @@ namespace dials { namespace algorithms {
     /**
      * Profile fit and deconvolve multiple 2D reflections
      */
-    ProfileFitter(const af::const_ref<T, af::c_grid<3> > &d,
-                  const af::const_ref<T, af::c_grid<3> > &b,
-                  const af::const_ref<bool, af::c_grid<3> > &m,
-                  const af::const_ref<T, af::c_grid<3> > &p,
+    ProfileFitter(const af::const_ref<T, af::c_grid<3> >& d,
+                  const af::const_ref<T, af::c_grid<3> >& b,
+                  const af::const_ref<bool, af::c_grid<3> >& m,
+                  const af::const_ref<T, af::c_grid<3> >& p,
                   double eps = 1e-3,
                   std::size_t maxiter = 10) {
       fit(d.as_1d(), b.as_1d(), m.as_1d(), p.as_1d(), eps, maxiter);
@@ -109,10 +109,10 @@ namespace dials { namespace algorithms {
     /**
      * Profile fit a single 3D reflection
      */
-    ProfileFitter(const af::const_ref<T, af::c_grid<2> > &d,
-                  const af::const_ref<T, af::c_grid<2> > &b,
-                  const af::const_ref<bool, af::c_grid<2> > &m,
-                  const af::const_ref<T, af::c_grid<3> > &p,
+    ProfileFitter(const af::const_ref<T, af::c_grid<2> >& d,
+                  const af::const_ref<T, af::c_grid<2> >& b,
+                  const af::const_ref<bool, af::c_grid<2> >& m,
+                  const af::const_ref<T, af::c_grid<3> >& p,
                   double eps = 1e-3,
                   std::size_t maxiter = 10) {
       fit(d.as_1d(), b.as_1d(), m.as_1d(), detail::as_2d(p), eps, maxiter);
@@ -121,10 +121,10 @@ namespace dials { namespace algorithms {
     /**
      * Profile fit and deconvolve multiple 3D reflections
      */
-    ProfileFitter(const af::const_ref<T, af::c_grid<3> > &d,
-                  const af::const_ref<T, af::c_grid<3> > &b,
-                  const af::const_ref<bool, af::c_grid<3> > &m,
-                  const af::const_ref<T, af::c_grid<4> > &p,
+    ProfileFitter(const af::const_ref<T, af::c_grid<3> >& d,
+                  const af::const_ref<T, af::c_grid<3> >& b,
+                  const af::const_ref<bool, af::c_grid<3> >& m,
+                  const af::const_ref<T, af::c_grid<4> >& p,
                   double eps = 1e-3,
                   std::size_t maxiter = 10) {
       fit(d.as_1d(), b.as_1d(), m.as_1d(), detail::as_2d(p), eps, maxiter);
@@ -185,10 +185,10 @@ namespace dials { namespace algorithms {
      * @param eps The tolerance
      * @param maxiter The maximum number of iterations
      */
-    void fit(const af::const_ref<T> &d,
-             const af::const_ref<T> &b,
-             const af::const_ref<bool> &m,
-             const af::const_ref<T> &p,
+    void fit(const af::const_ref<T>& d,
+             const af::const_ref<T>& b,
+             const af::const_ref<bool>& m,
+             const af::const_ref<T>& p,
              double eps,
              std::size_t maxiter) {
       // Save the max iter
@@ -275,10 +275,10 @@ namespace dials { namespace algorithms {
      * @param eps The tolerance
      * @param maxiter The maximum number of iterations
      */
-    void fit(const af::const_ref<T> &d,
-             const af::const_ref<T> &b,
-             const af::const_ref<bool> &m,
-             const af::const_ref<T, af::c_grid<2> > &p,
+    void fit(const af::const_ref<T>& d,
+             const af::const_ref<T>& b,
+             const af::const_ref<bool>& m,
+             const af::const_ref<T, af::c_grid<2> >& p,
              double eps,
              std::size_t maxiter) {
       // Save the max iter
@@ -382,10 +382,10 @@ namespace dials { namespace algorithms {
     /**
      * Compute the correlation for a single reflection
      */
-    double compute_correlation(const af::const_ref<T> &d,
-                               const af::const_ref<T> &b,
-                               const af::const_ref<bool> &m,
-                               const af::const_ref<T> &p) const {
+    double compute_correlation(const af::const_ref<T>& d,
+                               const af::const_ref<T>& b,
+                               const af::const_ref<bool>& m,
+                               const af::const_ref<T>& p) const {
       // Compute the mean observed and predicted
       double xb = 0.0, yb = 0.0;
       std::size_t count = 0;
@@ -423,10 +423,10 @@ namespace dials { namespace algorithms {
     /**
      * Compute the correlation for multiple profiles
      */
-    double compute_correlation(const af::const_ref<T> &d,
-                               const af::const_ref<T> &b,
-                               const af::const_ref<bool> &m,
-                               const af::const_ref<T, af::c_grid<2> > &p) const {
+    double compute_correlation(const af::const_ref<T>& d,
+                               const af::const_ref<T>& b,
+                               const af::const_ref<bool>& m,
+                               const af::const_ref<T, af::c_grid<2> >& p) const {
       // Compute the mean observed and predicted
       double xb = 0.0, yb = 0.0;
       std::size_t count = 0;

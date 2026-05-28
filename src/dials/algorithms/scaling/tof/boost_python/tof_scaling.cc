@@ -6,38 +6,38 @@ namespace dials_scaling { namespace boost_python {
 
   using namespace boost::python;
   BOOST_PYTHON_MODULE(dials_tof_scaling_ext) {
-    class_<TOFCorrectionsData>("TOFCorrectionsData", no_init)
-      .def(init<double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double>());
+    class_<TOFAbsorptionParams>("TOFAbsorptionParams", no_init)
+      .def(init<double, double, double, double, double, double, double, double>());
 
-    void (*extract_shoeboxes1)(dials::af::reflection_table &,
-                               dxtbx::model::Experiment &,
-                               dxtbx::ImageSequence &,
+    class_<TOFIncidentSpectrumParams>("TOFIncidentSpectrumParams", no_init)
+      .def(init<std::shared_ptr<ImageSequence>,
+                std::shared_ptr<ImageSequence>,
+                double,
+                double,
+                double>())
+      .def_readwrite("incident_data", &TOFIncidentSpectrumParams::incident_data)
+      .def_readwrite("empty_data", &TOFIncidentSpectrumParams::empty_data)
+      .def_readwrite("sample_proton_charge",
+                     &TOFIncidentSpectrumParams::sample_proton_charge)
+      .def_readwrite("incident_proton_charge",
+                     &TOFIncidentSpectrumParams::incident_proton_charge)
+      .def_readwrite("empty_proton_charge",
+                     &TOFIncidentSpectrumParams::empty_proton_charge);
+
+    void (*extract_shoeboxes1)(dials::af::reflection_table&,
+                               dxtbx::model::Experiment&,
+                               dxtbx::ImageSequence&,
                                bool) = &tof_extract_shoeboxes_to_reflection_table;
-    void (*extract_shoeboxes2)(dials::af::reflection_table &,
-                               dxtbx::model::Experiment &,
-                               dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               TOFCorrectionsData &,
+    void (*extract_shoeboxes2)(dials::af::reflection_table&,
+                               dxtbx::model::Experiment&,
+                               dxtbx::ImageSequence&,
+                               TOFIncidentSpectrumParams&,
                                bool) = &tof_extract_shoeboxes_to_reflection_table;
-    void (*extract_shoeboxes3)(dials::af::reflection_table &,
-                               dxtbx::model::Experiment &,
-                               dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               dxtbx::ImageSequence &,
-                               double,
-                               double,
-                               double,
+    void (*extract_shoeboxes3)(dials::af::reflection_table&,
+                               dxtbx::model::Experiment&,
+                               dxtbx::ImageSequence&,
+                               TOFIncidentSpectrumParams&,
+                               TOFAbsorptionParams&,
                                bool) = &tof_extract_shoeboxes_to_reflection_table;
 
     def("tof_extract_shoeboxes_to_reflection_table", extract_shoeboxes1);

@@ -181,9 +181,9 @@ experiments file must also be specified with the option: reference.experiments= 
             ).count(True)
             == 0
         ):
-            assert (
-                "intensity.sum.value" in reference_reflections
-            ), "No 'intensity.sum.value in reference reflections"
+            assert "intensity.sum.value" in reference_reflections, (
+                "No 'intensity.sum.value in reference reflections"
+            )
             reference_reflections.set_flags(
                 flex.bool(reference_reflections.size(), True),
                 reference_reflections.flags.integrated_sum,

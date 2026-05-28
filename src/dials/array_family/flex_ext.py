@@ -57,11 +57,11 @@ class _:
     # the modified algorithms. If these are modified on the instance level, then
     # only the instance will have the modified algorithms and new instances will
     # have the defaults
-    background_algorithm = functools.partial(
-        dials.extensions.glm_background_ext.GLMBackgroundExt, None
+    background_algorithm = staticmethod(
+        functools.partial(dials.extensions.glm_background_ext.GLMBackgroundExt, None)
     )
-    centroid_algorithm = functools.partial(
-        dials.extensions.simple_centroid_ext.SimpleCentroidExt, None
+    centroid_algorithm = staticmethod(
+        functools.partial(dials.extensions.simple_centroid_ext.SimpleCentroidExt, None)
     )
 
     @staticmethod
@@ -210,6 +210,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Writing compressed reflections to {filename}")
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             self.as_msgpack_to_file(dials.util.ext.streambuf(python_file_obj=outfile))
 
@@ -220,6 +223,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Reading compressed reflections from {filename}")
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
             return dials_array_family_flex_ext.reflection_table.from_msgpack(
                 infile.read()
@@ -1131,9 +1137,9 @@ class _:
                 )
                 assert len(identifiers) == len(set(experiments.identifiers()))
                 for experiment in experiments:
-                    assert (
-                        experiment.identifier in identifiers.values()
-                    ), experiment.identifier
+                    assert experiment.identifier in identifiers.values(), (
+                        experiment.identifier
+                    )
 
     def are_experiment_identifiers_consistent(self, experiments=None):
         """

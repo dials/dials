@@ -226,7 +226,7 @@ class CompareGlobalLocal:
 
 
 def test_index_reflections(dials_data):
-    data_dir = dials_data("i04_weak_data", pathlib=True)
+    data_dir = dials_data("i04_weak_data")
     experiments = load.experiment_list(
         data_dir / "experiments.json", check_format=False
     )
@@ -245,7 +245,7 @@ def test_local_multiple_rotations(dials_data):
     """Test the fix for https://github.com/dials/dials/issues/1458"""
 
     experiments = load.experiment_list(
-        dials_data("insulin_processed", pathlib=True) / "indexed.expt",
+        dials_data("insulin_processed") / "indexed.expt",
         check_format=False,
     )
     # Override the scan range to ensure we have 4 full rotations

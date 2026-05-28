@@ -11,7 +11,7 @@ import pytest
 def test_standalone_error_model_refinement_on_scaled_data(
     dials_data, tmp_path, grouping
 ):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 

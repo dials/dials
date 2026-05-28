@@ -25,7 +25,7 @@ def model(tmp_path):
 
 
 def test_simple(dials_data, model, tmp_path):
-    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    experiments = dials_data("centroid_test_data") / "experiments.json"
 
     reflns_simple = tmp_path / "simple" / "observations.refl"
     reflns_g_simple = tmp_path / "gmodel_simple" / "observations.refl"
@@ -86,7 +86,7 @@ def test_simple(dials_data, model, tmp_path):
 
 
 def test_robust(dials_data, model, tmp_path):
-    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    experiments = dials_data("centroid_test_data") / "experiments.json"
 
     reflns_robust = tmp_path / "robust" / "observations.refl"
     reflns_g_robust = tmp_path / "gmodel_robust" / "observations.refl"

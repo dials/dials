@@ -9,7 +9,7 @@ import logging
 import math
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 
 from cctbx import uctbx
 from dxtbx import flumpy
@@ -339,7 +339,7 @@ def make_error_model_plots(params, experiments):
             for i, e in enumerate(unique_error_models):
                 indices = [str(j + 1) for j, x in enumerate(error_models) if e is x]
                 d["error_model_summary"] += (
-                    f"\nError model {i+1}, applied to sweeps {', '.join(indices)}:"
+                    f"\nError model {i + 1}, applied to sweeps {', '.join(indices)}:"
                     + str(e)
                 )
         for em in unique_error_models:

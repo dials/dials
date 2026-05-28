@@ -624,17 +624,15 @@ def _parameterise_detectors(options, experiments, analysis):
             # Additional checks on whether a scan-varying parameterisation is allowed
             if options.detector.panels == "automatic" and len(detector) > 1:
                 raise DialsRefineConfigError(
-                    "Scan-varying multiple panel detectors are not "
-                    "currently supported"
+                    "Scan-varying multiple panel detectors are not currently supported"
                 )
             if options.detector.panels == "multiple":
                 raise DialsRefineConfigError(
-                    "Scan-varying multiple panel detectors are not "
-                    "currently supported"
+                    "Scan-varying multiple panel detectors are not currently supported"
                 )
             if options.detector.panels == "hierarchical":
                 raise DialsRefineConfigError(
-                    "Scan-varying hierarchical detectors are not " "currently supported"
+                    "Scan-varying hierarchical detectors are not currently supported"
                 )
 
             array_range = scan.get_array_range()
