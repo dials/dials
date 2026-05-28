@@ -437,12 +437,14 @@ class ExtractSpots:
                 chunksize = test_chunksize
                 remainder = test_remainder
             test_chunksize -= 1
-        if test_remainder == 0:
+        remainder = nimg % (chunksize * nproc)
+        if remainder == 0:
             return chunksize
         else:
             # work out the remainder at the chunksize to avoid a small amount leftover
-            remainder = nimg % (chunksize * nproc)
-            extra = int(math.ceil(remainder / chunksize))
+            # how many full batches we will have after correction
+            n_batches = nimg // (chunksize * nproc)
+            extra = int(math.ceil(remainder / (chunksize * n_batches)))
             return chunksize + extra
 
     def _find_spots(self, imageset):
