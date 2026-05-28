@@ -1,0 +1,3 @@
+Adopt a new dxtbx method for detector ray-intersection checks. The new method
+avoids slow error-handling paths and saves up to 5 minutes on large integration
+jobs.
