@@ -486,7 +486,7 @@ class Model(ProfileModelExt):
         detector,
         goniometer=None,
         scan=None,
-        sigma_b_multiplier=2.0,
+        bbox_params=None,
         **kwargs,
     ):
         """Given an experiment and list of reflections, compute the
@@ -499,9 +499,26 @@ class Model(ProfileModelExt):
         :param goniometer: The goniometer model
         :param scan: The scan model
         """
-        from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
+        from dials.algorithms.profile_model.gaussian_rs import (
+            BBoxCalculator,
+            inflate_bboxes,
+        )
 
         # Check the input
+        if bbox_params is not None:
+            if bbox_params.background_region_method == "sigma_b_multiplier":
+                sigma_b_multiplier = bbox_params.sigma_b_multiplier
+                min_added_volume = None
+                margin_range = None
+            else:
+                sigma_b_multiplier = 1.0
+                min_added_volume = bbox_params.min_added_volume
+                margin_range = bbox_params.margin_range
+        else:
+            sigma_b_multiplier = 1.0
+            min_added_volume = 4096
+            margin_range = 3, 16
+
         assert sigma_b_multiplier >= 1.0
 
         # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
@@ -518,6 +535,10 @@ class Model(ProfileModelExt):
         bbox = calculate(
             reflections["s1"], reflections["xyzcal.px"].parts()[2], reflections["panel"]
         )
+
+        if min_added_volume:
+            margin_min, margin_max = sorted(margin_range)
+            bbox = inflate_bboxes(bbox, margin_min, margin_max, min_added_volume)
 
         # Return the bounding boxes
         return bbox

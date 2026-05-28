@@ -808,7 +808,6 @@ class _:
             from dials.algorithms.integration.integrator import phil_scope
 
             bbox_params = phil_scope.extract().integration.bbox
-        sigma_b_multiplier = bbox_params.sigma_b_multiplier
         self["bbox"] = dials_array_family_flex_ext.int6(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["bbox"].set_selected(
@@ -820,7 +819,7 @@ class _:
                     expr.detector,
                     expr.goniometer,
                     expr.scan,
-                    sigma_b_multiplier=sigma_b_multiplier,
+                    bbox_params=bbox_params,
                 ),
             )
         return self["bbox"]
