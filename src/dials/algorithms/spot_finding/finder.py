@@ -429,7 +429,21 @@ class ExtractSpots:
         if nproc * min_chunksize >= nimg:
             return min_chunksize
         chunksize = int(math.ceil(nimg / nproc))
-        return chunksize
+        remainder = nimg % (chunksize * nproc)
+        test_chunksize = chunksize - 1
+        while test_chunksize >= min_chunksize:
+            test_remainder = nimg % (test_chunksize * nproc)
+            if test_remainder <= remainder:
+                chunksize = test_chunksize
+                remainder = test_remainder
+            test_chunksize -= 1
+        if test_remainder == 0:
+            return chunksize
+        else:
+            # work out the remainder at the chunksize to avoid a small amount leftover
+            remainder = nimg % (chunksize * nproc)
+            extra = int(math.ceil(remainder / chunksize))
+            return chunksize + extra
 
     def _find_spots(self, imageset):
         """
