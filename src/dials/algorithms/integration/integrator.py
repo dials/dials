@@ -369,9 +369,10 @@ class Parameters:
         """
 
         def __init__(self):
-            self.sigma_b_multiplier = 2.0
+            self.sigma_b_multiplier = 1.0
             self.min_added_volume = 4096
             self.margin_range = (3, 16)
+            self.background_region_method = "min_added_volume"
 
     class Filter:
         """
