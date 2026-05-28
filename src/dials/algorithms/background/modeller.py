@@ -329,7 +329,9 @@ class BackgroundModeller:
         # Compute some reflection properties
         self.reflections.compute_zeta_multi(self.experiments)
         self.reflections.compute_d(self.experiments)
-        self.reflections.compute_bbox(self.experiments)
+        self.reflections.compute_bbox(
+            self.experiments, bbox_params=self.params.integration.bbox
+        )
 
         # Construvt the image integrator processor
         processor = ProcessorImage(self.experiments, self.reflections, self.params)

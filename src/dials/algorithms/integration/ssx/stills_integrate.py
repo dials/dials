@@ -77,7 +77,7 @@ class StillsIntegrator(SimpleIntegrator):
         )
         # need to set imageset id?
         elist = ProfileModelFactory.create(params, elist, table)
-        predicted.compute_bbox(elist)
+        predicted.compute_bbox(elist, bbox_params=params.integration.bbox)
         return predicted, elist
 
     @staticmethod

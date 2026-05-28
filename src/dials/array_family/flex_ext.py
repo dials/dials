@@ -796,15 +796,19 @@ class _:
         )
         return self["d"]
 
-    def compute_bbox(self, experiments, sigma_b_multiplier=2.0):
+    def compute_bbox(self, experiments, bbox_params=None):
         """
         Compute the bounding boxes.
 
         :param experiments: The list of experiments
-        :param profile_model: The profile models
-        :param sigma_b_multiplier: Multiplier to cover extra background
+        :param bbox_params: Parameters for bounding box computation
         :return: The bounding box for each reflection
         """
+        if bbox_params is None:
+            from dials.algorithms.integration.integrator import phil_scope
+
+            bbox_params = phil_scope.extract().integration.bbox
+        sigma_b_multiplier = bbox_params.sigma_b_multiplier
         self["bbox"] = dials_array_family_flex_ext.int6(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["bbox"].set_selected(

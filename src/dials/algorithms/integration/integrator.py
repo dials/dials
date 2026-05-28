@@ -394,7 +394,6 @@ class Parameters:
 
         def __init__(self):
             self.fitting = True
-            self.sigma_b_multiplier = 2.0
             self.valid_foreground_threshold = 0.75
             self.validation = Parameters.Profile.Validation()
 
@@ -499,9 +498,7 @@ def _initialize_rotation(experiments, params, reflections):
     # Compute some reflection properties
     reflections.compute_zeta_multi(experiments)
     reflections.compute_d(experiments)
-    reflections.compute_bbox(
-        experiments, sigma_b_multiplier=params.bbox.sigma_b_multiplier
-    )
+    reflections.compute_bbox(experiments, bbox_params=params.bbox)
 
     # Filter the reflections by zeta
     mask = flex.abs(reflections["zeta"]) < params.filter.min_zeta
@@ -520,9 +517,7 @@ def _initialize_stills(experiments, params, reflections):
 
     # Compute some reflection properties
     reflections.compute_d(experiments)
-    reflections.compute_bbox(
-        experiments, sigma_b_multiplier=params.bbox.sigma_b_multiplier
-    )
+    reflections.compute_bbox(experiments, bbox_params=params.bbox)
 
     # Check the bounding boxes are all 1 frame in width
     z0, z1 = reflections["bbox"].parts()[4:6]
@@ -1491,7 +1486,7 @@ class Integrator3DThreaded:
         self.reflections.compute_d(self.experiments)
         self.reflections.compute_bbox(
             self.experiments,
-            sigma_b_multiplier=self.params.integration.bbox.sigma_b_multiplier,
+            bbox_params=self.params.integration.bbox,
         )
 
         # Filter the reflections by zeta
