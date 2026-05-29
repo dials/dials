@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+
+from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.phil import parse
 
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
@@ -67,7 +70,7 @@ class Script:
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
-            check_format=True,
+            check_format=False,
             read_experiments=True,
         )
 
@@ -108,13 +111,24 @@ class Script:
             predicted = flex.reflection_table.from_predictions(
                 expt, force_static=params.force_static, dmin=params.d_min
             )
+
+            # Copy the experiment identifiers verbatim to the new table
+            predicted.experiment_identifiers()[i_expt] = experiments[i_expt].identifier
             predicted["id"] = flex.int(len(predicted), i_expt)
             predicted_all.extend(predicted)
 
         # if we are not ignoring shadows, look for reflections in the masked
-        # region, see https://github.com/dials/dials/issues/349
-
+        # region, see https://github.com/dials/dials/issues/349. In this case
+        # we need access to the image data
         if not params.ignore_shadows:
+            try:
+                experiments = ExperimentListFactory.from_json(
+                    experiments.as_json(), check_format=True
+                )
+            except OSError as e:
+                sys.exit(
+                    f"Unable to read image data. Please check {e.filename} is accessible"
+                )
             shadowed = filter_shadowed_reflections(
                 experiments, predicted_all, experiment_goniometer=True
             )

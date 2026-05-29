@@ -28,7 +28,7 @@ def check_french_wilson_amplitudes(amplitudes):
 
 
 def test_french_wilson_insulin(dials_data):
-    insulin = dials_data("insulin_processed", pathlib=True)
+    insulin = dials_data("insulin_processed")
     expts = load.experiment_list(insulin / "scaled.expt", check_format=False)
     refls = flex.reflection_table.from_file(insulin / "scaled.refl")
     merged, _, _ = merge.merge(expts, refls)

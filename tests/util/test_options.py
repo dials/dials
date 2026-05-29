@@ -8,6 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
+import libtbx.phil
 from dxtbx.model import Experiment, ExperimentList
 
 from dials.util import Sorry
@@ -21,7 +22,7 @@ from . import mock_reflection_file_object, mock_two_reflection_file_object
 
 
 def test_cannot_read_headerless_h5(dials_data):
-    data_h5 = dials_data("vmxi_thaumatin", pathlib=True) / "image_15799_data_000001.h5"
+    data_h5 = dials_data("vmxi_thaumatin") / "image_15799_data_000001.h5"
     parser = ArgumentParser(read_experiments_from_images=True)
     with pytest.raises(Sorry):
         parser.parse_args([str(data_h5)])
@@ -109,3 +110,22 @@ def test_reflections_and_experiments_from_files():
     assert expts[0].identifier == "0"
     assert expts[1].identifier == "1"
     assert expts[2].identifier == "2"
+
+
+def test_invalid_phil_raises_system_exit(capsys):
+    phil = libtbx.phil.parse(
+        """
+foo = true
+  .type = bool
+"""
+    )
+    parser = ArgumentParser(phil=phil)
+    with pytest.raises(SystemExit) as e:
+        parser.parse_args(args=["foo=bar"])
+    assert e.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert (
+        'error: Invalid phil parameter: One True or False value expected, foo="bar" found'
+        in captured.err
+    )

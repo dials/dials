@@ -23,9 +23,9 @@ namespace dials { namespace refinement {
     return v[0] * L1 + v[1] * L2 + v[2] * L3;
   }
 
-  af::shared<mat3<double> > dRq_de(const af::const_ref<double> &theta,
-                                   const af::const_ref<vec3<double> > &e1,
-                                   const af::const_ref<vec3<double> > &q) {
+  af::shared<mat3<double> > dRq_de(const af::const_ref<double>& theta,
+                                   const af::const_ref<vec3<double> >& e1,
+                                   const af::const_ref<vec3<double> >& q) {
     // Calculate the derivative of a rotated vector with respect to the axis
     // of rotation. The result is a 3*3 matrix. This function implements the
     // method of Gallego & Yezzi (equn 8 in http://arxiv.org/pdf/1312.0788.pdf)

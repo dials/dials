@@ -8,4 +8,4 @@ else:
     ext = boost_adaptbx.boost.python.import_ext("recviewer_ext", optional=False)
 
 if ext is not None:
-    from recviewer_ext import *
+    from recviewer_ext import *  # noqa: F403

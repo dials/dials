@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import os
+import subprocess
 
-import procrunner
 import pytest
 
 cpp_tests = [
     # Paths are under /build/
     "tests/algorithms/spatial_indexing/tst_collision_detection",
     "tests/algorithms/spot_prediction/tst_reeke_model",
+    "tests/util/tst_thread_pool",
 ]
 
 
@@ -23,5 +24,5 @@ def test_cpp_program(executable):
     )
     print(full_path)
 
-    result = procrunner.run([full_path])
+    result = subprocess.run([full_path], capture_output=True)
     assert not result.returncode and not result.stderr

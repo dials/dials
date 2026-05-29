@@ -11,7 +11,6 @@
 #ifndef DIALS_MODEL_DATA_IMAGE_VOLUME_H
 #define DIALS_MODEL_DATA_IMAGE_VOLUME_H
 
-#include <boost/cstdint.hpp>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/image.h>
@@ -105,7 +104,7 @@ namespace dials { namespace model {
     /**
      * @returns The mask array
      */
-    af::versa<int, af::c_grid<3> > mask() const {
+    af::versa<uint8_t, af::c_grid<3> > mask() const {
       return mask_;
     }
 
@@ -195,7 +194,8 @@ namespace dials { namespace model {
     /**
      * Extract data with the given bbox
      */
-    af::versa<int, af::c_grid<3> > extract_mask(int6 bbox, std::size_t index) const {
+    af::versa<uint8_t, af::c_grid<3> > extract_mask(int6 bbox,
+                                                    std::size_t index) const {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -208,7 +208,7 @@ namespace dials { namespace model {
       std::size_t xsize = bbox[1] - bbox[0];
       std::size_t ysize = bbox[3] - bbox[2];
       std::size_t zsize = bbox[5] - bbox[4];
-      af::versa<int, af::c_grid<3> > result(af::c_grid<3>(zsize, ysize, xsize));
+      af::versa<uint8_t, af::c_grid<3> > result(af::c_grid<3>(zsize, ysize, xsize));
       std::size_t i0 = bbox[0];
       std::size_t j0 = bbox[2];
       std::size_t k0 = bbox[4] - frame0_;
@@ -216,9 +216,9 @@ namespace dials { namespace model {
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
             std::size_t l = grid_(k + k0, j + j0, i + i0);
-            int value = mask_[l];
+            uint8_t value = mask_[l];
             if (value & Foreground) {
-              const Label &label = label_[l];
+              const Label& label = label_[l];
               if (!label.contains(index)) {
                 value &= ~Foreground;
                 value &= ~Valid;
@@ -234,7 +234,7 @@ namespace dials { namespace model {
     /**
      * Set data with the given bbox
      */
-    void set_data(int6 bbox, const af::const_ref<FloatType, af::c_grid<3> > &data) {
+    void set_data(int6 bbox, const af::const_ref<FloatType, af::c_grid<3> >& data) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -266,7 +266,7 @@ namespace dials { namespace model {
      * Set data with the given bbox
      */
     void set_background(int6 bbox,
-                        const af::const_ref<FloatType, af::c_grid<3> > &background) {
+                        const af::const_ref<FloatType, af::c_grid<3> >& background) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -299,7 +299,7 @@ namespace dials { namespace model {
      */
     void set_mask(int6 bbox,
                   std::size_t index,
-                  const af::const_ref<int, af::c_grid<3> > &mask) {
+                  const af::const_ref<uint8_t, af::c_grid<3> >& mask) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -333,17 +333,17 @@ namespace dials { namespace model {
     void set_mask_value(std::size_t k,
                         std::size_t j,
                         std::size_t i,
-                        int value,
+                        uint8_t value,
                         std::size_t index) {
       std::size_t l = grid_(k, j, i);
-      int value1 = mask_[l];
-      int value2 = value;
+      uint8_t value1 = mask_[l];
+      uint8_t value2 = value;
       if (value1 & Foreground) {
         value2 &= ~Background;
       }
       if (value2 & Foreground) {
         value1 &= ~Background;
-        Label &label = label_[l];
+        Label& label = label_[l];
         if (label.first < 0) {
           label.first = (int)index;
         } else if (label.second < 0) {
@@ -367,8 +367,8 @@ namespace dials { namespace model {
      */
     template <typename T>
     void set_image(int frame,
-                   const af::const_ref<T, af::c_grid<2> > &data,
-                   const af::const_ref<bool, af::c_grid<2> > &mask) {
+                   const af::const_ref<T, af::c_grid<2> >& data,
+                   const af::const_ref<bool, af::c_grid<2> >& mask) {
       DIALS_ASSERT(frame >= frame0_);
       DIALS_ASSERT(frame < frame1_);
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
@@ -398,7 +398,7 @@ namespace dials { namespace model {
     af::c_grid<3> grid_;
     af::versa<FloatType, af::c_grid<3> > data_;
     af::versa<FloatType, af::c_grid<3> > background_;
-    af::versa<int, af::c_grid<3> > mask_;
+    af::versa<uint8_t, af::c_grid<3> > mask_;
     af::versa<Label, af::c_grid<3> > label_;
   };
 
@@ -417,7 +417,7 @@ namespace dials { namespace model {
      * Add an image volume
      * @param x The image volume
      */
-    void add(const ImageVolume<FloatType> &x) {
+    void add(const ImageVolume<FloatType>& x) {
       if (size() > 0) {
         DIALS_ASSERT(x.frame0() == volume_[0].frame0());
         DIALS_ASSERT(x.frame1() == volume_[0].frame1());
@@ -464,7 +464,7 @@ namespace dials { namespace model {
      * @param image The multipanel image
      */
     template <typename T>
-    void set_image(int frame, const Image<T> &image) {
+    void set_image(int frame, const Image<T>& image) {
       DIALS_ASSERT(image.npanels() == volume_.size());
       for (std::size_t i = 0; i < image.npanels(); ++i) {
         volume_[i].set_image(frame, image.data(i), image.mask(i));

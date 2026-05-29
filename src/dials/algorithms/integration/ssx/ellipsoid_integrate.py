@@ -21,6 +21,9 @@ from dials.algorithms.profile_model.ellipsoid.algorithm import (
     run_ellipsoid_refinement,
 )
 from dials.algorithms.profile_model.ellipsoid.indexer import reindex
+from dials.algorithms.profile_model.ellipsoid.refiner import (
+    BadSpotForIntegrationException,
+)
 from dials.constants import FULL_PARTIALITY
 
 
@@ -38,6 +41,14 @@ class EllipsoidOutputCollector(OutputCollector):
         # also record some model info:
         self.data["profile_model"] = experiment.profile.to_dict()
         self.data["profile_model_mosaicity"] = experiment.profile.mosaicity()
+        if "likelihood" not in self.data:
+            self.data["likelihood"] = []
+        if "parameters" not in self.data:
+            self.data["parameters"] = []
+        lh_this_cycle = [i["likelihood"] for d in refiner_output for i in d]
+        parameters_per_cycle = [i["parameters"] for d in refiner_output for i in d]
+        self.data["likelihood"].append(lh_this_cycle)
+        self.data["parameters"].append(parameters_per_cycle)
 
     def collect_after_preprocess(self, experiment, reflection_table):
         self.data["n_strong_after_preprocess"] = reflection_table.size()
@@ -67,7 +78,6 @@ class EllipsoidIntegrator(SimpleIntegrator):
             self.collector = EllipsoidOutputCollector()
 
     def run(self, experiment, table):
-
         # first set ids to zero so can integrate (this is how integration
         # finds the image in the imageset)
         ids_map = dict(table.experiment_identifiers())
@@ -103,20 +113,28 @@ class EllipsoidIntegrator(SimpleIntegrator):
             except ToFewReflections as e:
                 raise RuntimeError(e)
             else:
-                experiment, table, refiner_output = self.refine(
-                    experiment,
-                    table,
-                    sigma_d,
-                    profile_model=self.params.profile.ellipsoid.rlp_mosaicity.model,
-                    fix_list=fix_list,
-                    n_cycles=self.params.profile.ellipsoid.refinement.n_cycles,
-                    capture_progress=isinstance(
-                        self.collector, EllipsoidOutputCollector
-                    ),
-                )
-                self.collector.collect_after_refinement(
-                    experiment, table, refiner_output["refiner_output"]["history"]
-                )
+                try:
+                    experiment, table, refiner_output = self.refine(
+                        experiment,
+                        table,
+                        sigma_d,
+                        profile_model=self.params.profile.ellipsoid.rlp_mosaicity.model,
+                        fix_list=fix_list,
+                        n_cycles=self.params.profile.ellipsoid.refinement.n_cycles,
+                        capture_progress=isinstance(
+                            self.collector, EllipsoidOutputCollector
+                        ),
+                        max_iter=self.params.profile.ellipsoid.refinement.max_iter,
+                        LL_tolerance=self.params.profile.ellipsoid.refinement.LL_tolerance,
+                        mosaicity_max_limit=self.params.profile.ellipsoid.refinement.mosaicity_max_limit,
+                        max_cell_volume_change_fraction=self.params.profile.ellipsoid.refinement.max_cell_volume_change_fraction,
+                    )
+                except BadSpotForIntegrationException as e:
+                    raise RuntimeError(e)
+                else:
+                    self.collector.collect_after_refinement(
+                        experiment, table, refiner_output["refiner_output"]["history"]
+                    )
 
         predicted = self.predict(
             experiment,
@@ -165,6 +183,10 @@ class EllipsoidIntegrator(SimpleIntegrator):
         fix_list=None,
         n_cycles=1,
         capture_progress=False,
+        max_iter=1000,
+        LL_tolerance=1e-6,
+        mosaicity_max_limit=0.004,
+        max_cell_volume_change_fraction=0.2,
     ):
         fix_unit_cell = False
         fix_orientation = False
@@ -183,6 +205,10 @@ class EllipsoidIntegrator(SimpleIntegrator):
             fix_orientation=fix_orientation,
             n_cycles=n_cycles,
             capture_progress=capture_progress,
+            max_iter=max_iter,
+            LL_tolerance=LL_tolerance,
+            mosaicity_max_limit=mosaicity_max_limit,
+            max_cell_volume_change_fraction=max_cell_volume_change_fraction,
         )
         return expts[0], refls, output_data
 

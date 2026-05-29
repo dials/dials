@@ -23,7 +23,8 @@
 #include <dials/model/data/image.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/array_family/reflection_table.h>
-#include <dials/array_family/boost_python/flex_table_suite.h>
+#include <dxtbx/array_family/flex_table_suite.h>
+#include <dials/array_family/boost_python/reflection_table_suite.h>
 
 namespace dials { namespace algorithms {
 
@@ -84,7 +85,8 @@ namespace dials { namespace algorithms {
       flatten_ = shoebox[0].flat;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
         DIALS_ASSERT(shoebox[i].flat == flatten_);
-        DIALS_ASSERT(shoebox[i].is_allocated() == false);
+        DIALS_ASSERT(shoebox[i].is_data_allocated() == false);
+        DIALS_ASSERT(shoebox[i].is_background_allocated() == false);
         DIALS_ASSERT(shoebox[i].bbox[1] > shoebox[i].bbox[0]);
         DIALS_ASSERT(shoebox[i].bbox[3] > shoebox[i].bbox[2]);
         DIALS_ASSERT(shoebox[i].bbox[5] > shoebox[i].bbox[4]);
@@ -117,11 +119,11 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void next(const Image<T>& image, Executor& executor) {
-      using dials::af::boost_python::flex_table_suite::select_rows_index;
-      using dials::af::boost_python::flex_table_suite::set_selected_rows_index;
+      using dials::af::boost_python::reflection_table_suite::select_rows_index;
+      using dxtbx::af::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
       typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      typedef af::ref<uint8_t, af::c_grid<3> > sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == npanels_);
 
@@ -141,8 +143,9 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(ind[i] < shoebox.size());
           Shoebox<>& sbox = shoebox[ind[i]];
           if (frame_ == sbox.bbox[4]) {
-            DIALS_ASSERT(sbox.is_allocated() == false);
-            sbox.allocate();
+            DIALS_ASSERT(sbox.is_data_allocated() == false);
+            DIALS_ASSERT(sbox.is_background_allocated() == false);
+            sbox.allocate_data();
           }
           int6 b = sbox.bbox;
           sbox_data_type sdata = sbox.data.ref();
@@ -172,7 +175,6 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(xb >= 0 && xe <= xs);
           DIALS_ASSERT(yb + y0 >= 0 && ye + y0 <= yi);
           DIALS_ASSERT(xb + x0 >= 0 && xe + x0 <= xi);
-          DIALS_ASSERT(sbox.is_consistent());
           if (flatten_) {
             for (std::size_t y = yb; y < ye; ++y) {
               for (std::size_t x = xb; x < xe; ++x) {
@@ -204,6 +206,10 @@ namespace dials { namespace algorithms {
       if (process_indices.size() > 0) {
         double start_time = timestamp();
         af::const_ref<std::size_t> ind = process_indices.const_ref();
+        // allocate background only for the selected reflections
+        for (std::size_t i = 0; i < ind.size(); ++i) {
+          shoebox[ind[i]].allocate_background();
+        }
         af::reflection_table reflections = select_rows_index(data_, ind);
         executor.process(frame_, reflections);
         set_selected_rows_index(data_, ind, reflections);
@@ -227,11 +233,11 @@ namespace dials { namespace algorithms {
      */
     template <typename T>
     void next_data_only(const Image<T>& image) {
-      using dials::af::boost_python::flex_table_suite::select_rows_index;
-      using dials::af::boost_python::flex_table_suite::set_selected_rows_index;
+      using dials::af::boost_python::reflection_table_suite::select_rows_index;
+      using dxtbx::af::flex_table_suite::set_selected_rows_index;
       typedef Shoebox<>::float_type float_type;
       typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
-      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      typedef af::ref<uint8_t, af::c_grid<3> > sbox_mask_type;
       DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
       DIALS_ASSERT(image.npanels() == npanels_);
 
@@ -251,8 +257,10 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(ind[i] < shoebox.size());
           Shoebox<>& sbox = shoebox[ind[i]];
           if (frame_ == sbox.bbox[4]) {
-            DIALS_ASSERT(sbox.is_allocated() == false);
-            sbox.allocate();
+            DIALS_ASSERT(sbox.is_data_allocated() == false);
+            DIALS_ASSERT(sbox.is_background_allocated() == false);
+            sbox.allocate_data();
+            sbox.allocate_background();
           }
           int6 b = sbox.bbox;
           sbox_data_type sdata = sbox.data.ref();

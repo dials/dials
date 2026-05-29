@@ -65,7 +65,6 @@ class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
         reflections = super().calculate_weights(reflections)
 
         if "delpsical.weights" not in reflections:
-
             raise DialsRefineConfigError(
                 'The key "delpsical.weights" is expected within the input reflections'
             )
@@ -94,5 +93,47 @@ class ConstantWeightingStrategy:
             reflections["delpsical.weights"] = wz
         else:
             reflections["xyzobs.mm.weights"] = flex.vec3_double(wx, wy, wz)
+
+        return reflections
+
+
+class LaueStatisticalWeightingStrategy(StatisticalWeightingStrategy):
+    """
+    Variance in z estimated from sqrt(x^2+y^2)
+    """
+
+    def __init__(
+        self,
+        wavelength_weight: float = 1e7,
+    ):
+        self._wavelength_weight = wavelength_weight
+
+    def calculate_weights(self, reflections):
+        reflections = super().calculate_weights(reflections)
+
+        wx, wy, _ = reflections["xyzobs.mm.weights"].parts()
+        wz = flex.sqrt(wx * wx + wy * wy) * self._wavelength_weight
+        reflections["xyzobs.mm.weights"] = flex.vec3_double(wx, wy, wz)
+
+        return reflections
+
+
+class LaueMixedWeightingStrategy(StatisticalWeightingStrategy):
+    """
+    Use statistical weighting for x and y, and constant weighting for z
+    """
+
+    def __init__(
+        self,
+        wavelength_weight: float = 1e7,
+    ):
+        self._wavelength_weight = wavelength_weight
+
+    def calculate_weights(self, reflections):
+        reflections = super().calculate_weights(reflections)
+
+        wx, wy, wz = reflections["xyzobs.mm.weights"].parts()
+        wz = wz * 0 + self._wavelength_weight
+        reflections["xyzobs.mm.weights"] = flex.vec3_double(wx, wy, wz)
 
         return reflections

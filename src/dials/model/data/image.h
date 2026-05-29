@@ -39,7 +39,7 @@ namespace dials { namespace model {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
     }
 
-    Image(const af::const_ref<data_type> &data, const af::const_ref<bool_type> &mask)
+    Image(const af::const_ref<data_type>& data, const af::const_ref<bool_type>& mask)
         : data_(data.begin(), data.end()), mask_(mask.begin(), mask.end()) {
       DIALS_ASSERT(data_.size() == mask_.size());
       for (std::size_t i = 0; i < data_.size(); ++i) {

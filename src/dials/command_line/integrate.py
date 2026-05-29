@@ -6,7 +6,7 @@ a corresponding set of strong spots from which a profile model is calculated.
 The program will output a set of integrated reflections and an experiment list
 with additional profile model data. The data can be reintegrated using the same
 profile model by inputting this integrated.expt file back into
-dials.integate.
+dials.integrate.
 
 Examples::
 
@@ -19,14 +19,12 @@ Examples::
   dials.integrate models.expt refined.refl background.algorithm=glm
 """
 
-
 from __future__ import annotations
 
 import logging
 import math
 import sys
-
-from orderedset import OrderedSet
+import warnings
 
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
@@ -37,6 +35,7 @@ from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
+from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
@@ -123,10 +122,7 @@ phil_scope = parse(
 
   }
 
-  exclude_images = None
-    .type = ints
-    .help = "Exclude images from integration (e.g. 1,2,3,4,5 etc)"
-
+  include scope dials.util.exclude_images.phil_scope
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
@@ -269,7 +265,6 @@ def sample_predictions(experiments, predicted, params):
 
     working_isel = flex.size_t()
     for iexp, exp in enumerate(experiments):
-
         sel = predicted["id"] == iexp
         isel = sel.iselection()
         nrefs = sample_size = len(isel)
@@ -316,7 +311,6 @@ def split_for_scan_range(experiments, reference, scan_range):
 
     # Only do anything is the scan range is set
     if scan_range is not None and len(scan_range) > 0:
-
         # Ensure that all experiments have the same imageset and scan
         iset = [e.imageset for e in experiments]
         scan = [e.scan for e in experiments]
@@ -348,17 +342,13 @@ def split_for_scan_range(experiments, reference, scan_range):
             # Validate the requested scan range
             if scan_end == scan_start:
                 raise ValueError(
-                    "Scan range end must be higher than start; pass {},{} for single image".format(
-                        scan_start, scan_start + 1
-                    )
+                    f"Scan range end must be higher than start; pass {scan_start},{scan_start + 1} for single image"
                 )
             if scan_end < scan_start:
                 raise ValueError("Scan range must be in ascending order")
             elif scan_start < frames_start or scan_end > frames_end:
                 raise ValueError(
-                    "Scan range must be within image range {}..{}".format(
-                        frames_start, frames_end
-                    )
+                    f"Scan range must be within image range {frames_start}..{frames_end}"
                 )
 
             assert scan_end > scan_start
@@ -476,11 +466,38 @@ def run_integration(params, experiments, reference=None):
             experiments, reference, params.scan_range
         )
 
-    # Modify experiment list if exclude images is set
+    # Modify experiment list if exclude_images is set
+    if params.exclude_images_multiple:
+        params.exclude_images = expand_exclude_multiples(
+            experiments,
+            params.exclude_images_multiple,
+            params.exclude_images,
+        )
     if params.exclude_images:
-        for experiment in experiments:
-            for index in params.exclude_images:
-                experiment.imageset.mark_for_rejection(index, True)
+        try:
+            experiments = set_invalid_images(experiments, params.exclude_images)
+        except ValueError as err:
+            # Handle deprecated way of providing exclude_images
+            try:
+                exclude_images = [
+                    int(e)
+                    for e in str(params.exclude_images)
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("'", "")
+                    .split(",")
+                ]
+            except ValueError:
+                raise (err)
+            warnings.warn(
+                "Providing exclude_images as a single list (e.g. 1,2,3,4,5 etc.) is deprecated.\n"
+                + str(err),
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            for experiment in experiments:
+                for index in exclude_images:
+                    experiment.imageset.mark_for_rejection(index, True)
 
     # Predict the reflections
     logger.info("\n".join(("", "=" * 80, "")))
@@ -493,11 +510,11 @@ def run_integration(params, experiments, reference=None):
         force_static=params.prediction.force_static,
         padding=params.prediction.padding,
     )
-    isets = OrderedSet(e.imageset for e in experiments)
+    isets = {e.imageset: i for i, e in enumerate(experiments)}
     predicted["imageset_id"] = flex.int(predicted.size(), 0)
     if len(isets) > 1:
         for e in experiments:
-            iset_id = isets.index(e.imageset)
+            iset_id = isets[e.imageset]
             for id_ in predicted.experiment_identifiers().keys():
                 identifier = predicted.experiment_identifiers()[id_]
                 if identifier == e.identifier:
@@ -607,11 +624,22 @@ def run_integration(params, experiments, reference=None):
 
     # Correct integrated intensities for absorption correction, if necessary
     for abs_params in params.absorption_correction:
-        if abs_params.apply and abs_params.algorithm == "fuller_kapton":
-            from dials.algorithms.integration.kapton_correction import (
-                multi_kapton_correction,
-            )
-
+        if abs_params.apply:
+            if abs_params.algorithm == "fuller_kapton":
+                from dials.algorithms.integration.kapton_correction import (
+                    multi_kapton_correction,
+                )
+            elif abs_params.algorithm == "kapton_2019":
+                from dials.algorithms.integration.kapton_2019_correction import (
+                    multi_kapton_correction,
+                )
+            elif abs_params.algorithm == "other":
+                continue  # custom abs. corr. implementation should go here
+            else:
+                raise ValueError(
+                    "absorption_correction.apply=True, "
+                    "but no .algorithm has been selected!"
+                )
             experiments, reflections = multi_kapton_correction(
                 experiments, reflections, abs_params.fuller_kapton, logger=logger
             )()
@@ -726,7 +754,7 @@ def run(args=None, phil=working_phil):
         )
         reflections.as_file(params.output.reflections)
         logger.info("Saving the experiments to %s", params.output.experiments)
-        experiments.as_file(params.output.experiments)
+        experiments.as_file(params.output.experiments, history_as_integrated=True)
 
         if report:
             report.as_file(params.output.report)

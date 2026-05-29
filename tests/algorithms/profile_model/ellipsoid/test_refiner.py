@@ -16,9 +16,13 @@ from dials.algorithms.profile_model.ellipsoid.model import (
     Simple6ProfileModel,
     compute_change_of_basis_operation,
 )
-from dials.algorithms.profile_model.ellipsoid.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
+from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     ModelState,
+    Simple1Angular1MosaicityParameterisation,
+    Simple1Angular3MosaicityParameterisation,
     Simple1MosaicityParameterisation,
+    Simple6Angular1MosaicityParameterisation,
+    Simple6Angular3MosaicityParameterisation,
     Simple6MosaicityParameterisation,
 )
 from dials.algorithms.profile_model.ellipsoid.refiner import (
@@ -42,7 +46,6 @@ def first_derivative(func, x, h):
 
 
 def generate_data(experiments, reflections):
-
     from random import seed
 
     seed(0)
@@ -66,16 +69,19 @@ def generate_data(experiments, reflections):
     mobs = np.array([uniform(0, 1e-3), uniform(0, 1e-3)])
     sp = s2.normalize() * s0.length()
 
-    b1, b2, b3, b4, b5, b6 = (
+    b1, b2, b3, b4, b5, b6, b7, b8, b9 = (
         uniform(1e-3, 3e-3),
         uniform(0.0, 1e-3),
         uniform(1e-3, 3e-3),
         uniform(0.0, 1e-3),
         uniform(0.0, 1e-3),
         uniform(1e-3, 3e-3),
+        uniform(0.0, 1e-3),
+        uniform(0.0, 1e-3),
+        uniform(0.0, 1e-3),
     )
 
-    S_param = (b1, b2, b3, b4, b5, b6)
+    S_param = (b1, b2, b3, b4, b5, b6, b7, b8, b9)
     L_param = (uniform(1e-3, 2e-3),)
     ctot = randint(100, 1000)
 
@@ -91,7 +97,6 @@ def generate_data(experiments, reflections):
 
 @pytest.fixture
 def testdata(test_experiment):
-
     TestData = namedtuple(
         "TestData",
         [
@@ -127,7 +132,6 @@ def testdata(test_experiment):
 
 @pytest.fixture
 def refinerdata_testdata(testdata):
-
     experiment = testdata.experiment
     reflections = testdata.reflections
 
@@ -158,13 +162,11 @@ def refinerdata_testdata(testdata):
     )
 
     shoebox_data = flex.float(flex.grid(1, 11, 11))
-    shoebox_mask = flex.int(flex.grid(1, 11, 11))
+    shoebox_mask = flex.uint8(flex.grid(1, 11, 11))
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (
-                100
-                * exp(-0.5 * (j - 5) ** 2 / 1**2)
-                * exp(-0.5 * (i - 5) ** 2 / 1**2)
+                100 * exp(-0.5 * (j - 5) ** 2 / 1**2) * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:
@@ -188,9 +190,9 @@ def test_ConditionalDistribution(testdata):
         h = testdata.h
         s0 = np.array(testdata.s0).reshape(3, 1)
         sp = np.array(testdata.sp).reshape(3, 1)
-        # ctot = testdata.ctot
-        # mobs = testdata.mobs
-        # Sobs = testdata.Sobs
+        ctot = testdata.ctot
+        mobs = testdata.mobs
+        Sobs = testdata.Sobs
 
         U_params = models[1].get_param_vals()
         B_params = models[2].get_param_vals()
@@ -217,9 +219,9 @@ def test_ConditionalDistribution(testdata):
                 s0,
                 sp,
                 h,
-                0,
-                np.array([0.0, 0.0]),
-                np.array([0.0, 0.0, 0.0, 0.0]).reshape(2, 2),
+                ctot,
+                np.array(mobs),
+                np.array(Sobs).reshape(2, 2),
             ).conditional
             return conditional
 
@@ -227,8 +229,9 @@ def test_ConditionalDistribution(testdata):
 
         step = 1e-6
 
-        dm_dp = conditional.first_derivatives_of_mean()
-        dS_dp = conditional.first_derivatives_of_sigma()
+        dm_dp = copy.copy(conditional.first_derivatives_of_mean())
+        dS_dp = copy.copy(conditional.first_derivatives_of_sigma())
+
         parameters = state.active_parameters
 
         def compute_sigma(parameters):
@@ -251,9 +254,12 @@ def test_ConditionalDistribution(testdata):
 
         for n, c in zip(dm_num, dm_dp):
             for nn, cc in zip(n, c):
-                print(nn)
-                print(cc)
-                assert abs(nn - cc) < 1e-7
+                if not abs(nn - cc) < 1e-7:
+                    print(dm_num)
+                    print(dm_dp)
+                    print(nn)
+                    print(cc)
+                    assert 0
             # assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
 
         ds_num = []
@@ -268,13 +274,26 @@ def test_ConditionalDistribution(testdata):
 
         for n, c in zip(ds_num, dS_dp):
             for nn, cc in zip(n.flatten(), c.flatten()):
-                print(nn)
-                print(cc)
-                assert abs(nn - cc) < 1e-7
+                if not abs(nn - cc) < 1e-7:
+                    print(nn)
+                    print(cc)
+                    assert 0
             # assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
 
-    S1 = Simple1MosaicityParameterisation()
-    S6 = Simple6MosaicityParameterisation()
+    S1 = Simple1MosaicityParameterisation(np.array([0.01]))
+    S6 = Simple6MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025])
+    )
+    S1A1 = Simple1Angular1MosaicityParameterisation(np.array([0.01, 0.002]))
+    S6A1 = Simple6Angular1MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002])
+    )
+    S1A3 = Simple1Angular3MosaicityParameterisation(
+        np.array([0.01, 0.002, 0.001, 0.002])
+    )
+    S6A3 = Simple6Angular3MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002, 0.001, 0.003])
+    )
 
     check(S1, None, fix_wavelength_spread=True)
     check(S1, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
@@ -286,9 +305,26 @@ def test_ConditionalDistribution(testdata):
     check(S6, None, fix_wavelength_spread=True, fix_unit_cell=True)
     check(S6, None, fix_wavelength_spread=True, fix_orientation=True)
 
+    # Note, we cannot use finite difference tests to test the derivatives when
+    # the unit cell and orientation are not fixed for the angular model. This is because
+    # the derivative calculation is under the assumption that the Q matrix is invariant,
+    # however the Q matrix depends on r so there is a small additional term missing (dQ/dp).
+    # So just test the mosaic model minimisation at fixed UB.
+    check(
+        S1A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S6A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S1A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S6A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+
 
 def test_rotate_vec3_double():
-
     vectors = np.array([[1, 1, 1]], dtype=np.float64).reshape(3, 1) / norm(
         np.array([1, 1, 1], dtype=np.float64)
     )
@@ -302,7 +338,6 @@ def test_rotate_vec3_double():
 
 
 def test_rotate_mat3_double():
-
     A = np.eye(3, dtype=np.float64)
     v1 = np.array([0, 0, 1.0], dtype=np.float64).reshape(3, 1)
     v2 = np.array([1, 1, 1.0], dtype=np.float64).reshape(3, 1)
@@ -388,10 +423,20 @@ def test_ReflectionLikelihood(testdata):
         print(list(dL_dp))
         for n, c in zip(dL_num, dL_dp):
             print(n, c)
-            assert n == pytest.approx(c, abs=1e-4)
+            assert n == pytest.approx(c, rel=1e-6)
 
     S1 = Simple1MosaicityParameterisation()
     S6 = Simple6MosaicityParameterisation()
+    S1A1 = Simple1Angular1MosaicityParameterisation(np.array([0.01, 0.002]))
+    S6A1 = Simple6Angular1MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002])
+    )
+    S1A3 = Simple1Angular3MosaicityParameterisation(
+        np.array([0.01, 0.002, 0.001, 0.003])
+    )
+    S6A3 = Simple6Angular3MosaicityParameterisation(
+        np.array([0.01, 0.005, 0.02, 0.015, 0.03, 0.025, 0.002, 0.001, 0.003])
+    )
 
     check(S1, None, fix_wavelength_spread=True)
     check(S1, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
@@ -403,9 +448,22 @@ def test_ReflectionLikelihood(testdata):
     check(S6, None, fix_wavelength_spread=True, fix_orientation=True)
     check(S6, None, fix_wavelength_spread=True)
 
+    # See note at L300 regarding finite difference tests at fixed UB.
+    check(
+        S1A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S6A1, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S1A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+    check(
+        S6A3, None, fix_wavelength_spread=True, fix_unit_cell=True, fix_orientation=True
+    )
+
 
 def test_Refiner(testdata, refinerdata_testdata):
-
     experiment = testdata.experiment
     data = refinerdata_testdata
 
@@ -420,7 +478,6 @@ def test_Refiner(testdata, refinerdata_testdata):
         fix_unit_cell=True,
         fix_wavelength_spread=True,
     ):
-
         state = ModelState(
             experiment,
             parameterisation,
@@ -432,8 +489,6 @@ def test_Refiner(testdata, refinerdata_testdata):
 
         refiner = Refiner(state, data)
         refiner.refine()
-
-        print(state.mosaicity_covariance_matrix)
 
     check(S1, fix_mosaic_spread=False, fix_orientation=True, fix_unit_cell=True)
     check(S1, fix_mosaic_spread=True, fix_orientation=False, fix_unit_cell=True)
@@ -451,7 +506,6 @@ def test_Refiner(testdata, refinerdata_testdata):
 
 
 def test_RefinerData(testdata):
-
     experiment = testdata.experiment
     reflections = testdata.reflections
 
@@ -482,13 +536,11 @@ def test_RefinerData(testdata):
     )
 
     shoebox_data = flex.float(flex.grid(1, 11, 11))
-    shoebox_mask = flex.int(flex.grid(1, 11, 11))
+    shoebox_mask = flex.uint8(flex.grid(1, 11, 11))
     for j in range(11):
         for i in range(11):
             shoebox_data[0, j, i] = (
-                100
-                * exp(-0.5 * (j - 5) ** 2 / 1**2)
-                * exp(-0.5 * (i - 5) ** 2 / 1**2)
+                100 * exp(-0.5 * (j - 5) ** 2 / 1**2) * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:
@@ -501,7 +553,7 @@ def test_RefinerData(testdata):
     assert data.h_list == reflections["miller_index"]
     for i, sp in enumerate(reflections["sp"]):
         assert data.sp_list[:, i] == pytest.approx(sp)
-    assert data.ctot_list[0] == sum(shoebox_data)
+    assert data.ctot_list[0] == pytest.approx(sum(shoebox_data), abs=1e-9)
 
     mobs1 = np.abs(data.mobs_list[0, :])
     mobs2 = np.abs(data.mobs_list[1, :])

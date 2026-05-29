@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import os
 import random
 
 import pytest
@@ -51,7 +50,6 @@ def run_single(experiments1, filename):
     index2 = []
 
     for exp1, exp2 in zip(experiments1, experiments2):
-
         # Check the beam
         b1 = exp1.beam
         b2 = exp2.beam
@@ -175,17 +173,17 @@ def run_single(experiments1, filename):
 @pytest.mark.parametrize(
     "filename",
     [
-        "single",
-        "multiple_unrelated",
-        "multi_crystal",
-        "two_colour",
-        "multiple_sweeps",
-        "stills",
+        "nexus-single",
+        "nexus-multi_unrelated",
+        "nexus-multi_crystal",
+        "nexus-two_colour",
+        "nexus-multi_sweeps",
+        "nexus-stills",
     ],
 )
-def test_nexus_dump_and_reload(dials_regression, tmpdir, filename):
-    path = os.path.join(dials_regression, "nexus_test_data", "shared_models")
-    filename_in = os.path.join(path, f"{filename}.json")
-    filename_out = tmpdir.join(f"{filename}.nxs").strpath
+def test_nexus_dump_and_reload(dials_data, tmp_path, filename):
+    data_dir = dials_data("misc_regression")
+    filename_in = str(data_dir / f"{filename}.expt")
+    filename_out = str(tmp_path / f"{filename}.nxs")
     experiments = ExperimentListFactory.from_json_file(filename_in)
     run_single(experiments, filename_out)

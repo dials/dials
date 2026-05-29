@@ -354,7 +354,10 @@ def make_filtering_merging_stats_plots(merging_stats):
                     },
                     "yaxis": {
                         "title": "R-pim",
-                        "range": [0, min(1.5, max(r_pim_bins))],
+                        "range": [
+                            0,
+                            min(1.5, max(r for r in r_pim_bins if r is not None)),
+                        ],
                     },
                 },
             }
@@ -382,7 +385,10 @@ def make_filtering_merging_stats_plots(merging_stats):
                     },
                     "yaxis": {
                         "title": "R-merge",
-                        "range": [0, min(1.5, max(r_merge_bins))],
+                        "range": [
+                            0,
+                            min(1.5, max(r for r in r_merge_bins if r is not None)),
+                        ],
                     },
                 },
             }

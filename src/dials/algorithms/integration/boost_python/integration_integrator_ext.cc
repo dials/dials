@@ -13,6 +13,7 @@
 #include <dials/algorithms/integration/processor.h>
 #include <dials/algorithms/integration/integrator.h>
 #include <dials/algorithms/integration/manager.h>
+#include <dxtbx/array_family/flex_table_suite.h>
 
 using namespace boost::python;
 
@@ -21,7 +22,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   /**
    * Split the reflection table where the blocks are given.
    */
-  inline void job_list_split(const JobList &self, af::reflection_table data) {
+  inline void job_list_split(const JobList& self, af::reflection_table data) {
     // Check the input
     DIALS_ASSERT(data.is_consistent());
     DIALS_ASSERT(data.contains("bbox"));
@@ -125,19 +126,18 @@ namespace dials { namespace algorithms { namespace boost_python {
     data.resize(bbox_new.size());
 
     // Reorder the reflections
-    af::boost_python::flex_table_suite::reorder(data, indices.const_ref());
+    dxtbx::af::flex_table_suite::reorder(data, indices.const_ref());
 
     // Set the new bounding boxes
-    af::boost_python::flex_table_suite::setitem_column(
-      data, "bbox", bbox_new.const_ref());
-    af::boost_python::flex_table_suite::setitem_column(
+    dxtbx::af::flex_table_suite::setitem_column(data, "bbox", bbox_new.const_ref());
+    dxtbx::af::flex_table_suite::setitem_column(
       data, "partial_id", indices.const_ref());
   }
 
   /**
    * Compute the memory for each job
    */
-  af::shared<std::size_t> job_list_shoebox_memory(const JobList &self,
+  af::shared<std::size_t> job_list_shoebox_memory(const JobList& self,
                                                   af::reflection_table data,
                                                   bool flatten) {
     // Check the input
@@ -300,7 +300,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("nframes", &JobList::Job::nframes);
 
     class_<JobList>("JobList")
-      .def(init<tiny<int, 2>, const af::const_ref<tiny<int, 2> > &>())
+      .def(init<tiny<int, 2>, const af::const_ref<tiny<int, 2> >&>())
       .def("add", &JobList::add)
       .def("__len__", &JobList::size)
       .def("__getitem__", &JobList::operator[], return_internal_reference<>())
@@ -308,7 +308,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("shoebox_memory", &job_list_shoebox_memory);
 
     class_<ReflectionManager>("ReflectionManager", no_init)
-      .def(init<const JobList &, af::reflection_table>((arg("jobs"), arg("data"))))
+      .def(init<const JobList&, af::reflection_table>((arg("jobs"), arg("data"))))
       .def("__len__", &ReflectionManager::size)
       .def("finished", &ReflectionManager::finished)
       .def("accumulate", &ReflectionManager::accumulate)

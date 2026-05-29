@@ -1,50 +1,46 @@
 from __future__ import annotations
 
 import pickle
-
-import procrunner
+import shutil
+import subprocess
 
 
 def return_locations():
     locations = {
-        (1042, 980),
+        (848, 1482),
         (1042, 988),
         (1042, 1474),
+        (1060, 979),
         (1060, 980),
         (1060, 988),
         (1060, 1474),
         (1060, 1482),
-        (1253, 980),
-        (1254, 980),
-        (1254, 988),
         (1254, 1474),
         (1254, 1482),
         (1272, 1474),
         (1272, 1482),
         (1285, 1235),
         (1285, 1237),
-        (1465, 980),
-        (1466, 980),
         (1466, 988),
         (1466, 1474),
-        (1484, 988),
         (1484, 1482),
+        (1485, 980),
         (1696, 1482),
     }
     return locations
 
 
 def test_find_bad_pixels(dials_data, tmp_path):
-
-    image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))
+    image_files = sorted(dials_data("x4wide").glob("*.cbf"))
     image_files = image_files[:10] + image_files[-10:]
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.find_bad_pixels",
+            shutil.which("dials.find_bad_pixels"),
             "mask=pixels.mask",
         ]
         + image_files,
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
 
@@ -74,13 +70,14 @@ def test_find_bad_pixels(dials_data, tmp_path):
         assert mask[idx] is False
 
     # check that this mask can be used in import
-    image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))[:3]
-    result = procrunner.run(
+    image_files = sorted(dials_data("x4wide").glob("*.cbf"))[:3]
+    result = subprocess.run(
         [
-            "dials.import",
+            shutil.which("dials.import"),
             "mask=pixels.mask",
         ]
         + image_files,
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr

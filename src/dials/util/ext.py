@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dials_util_ext import *  # noqa: F403; lgtm
+from dials_util_ext import *  # noqa: F403
 
 __all__ = (  # noqa: F405
     "ResolutionMaskGenerator",
@@ -9,4 +9,5 @@ __all__ = (  # noqa: F405
     "ostream",
     "scale_down_array",
     "streambuf",
+    "BatchArrays",
 )

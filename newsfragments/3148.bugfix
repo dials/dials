@@ -1,0 +1,1 @@
+``dials.integrate``: allocate shoebox background arrays just ahead of use rather than much earlier, for a significant peak memory saving.

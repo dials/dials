@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import copy
+import gc
 import glob
 import logging
 import os
@@ -16,6 +17,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.util import ersatz_uuid4
 from libtbx.phil import parse
 from libtbx.utils import Abort, Sorry
 
@@ -124,6 +126,10 @@ def _control_phil_str():
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
+    logging_option = normal *suppressed disabled
+      .type = choice
+      .help = normal includes all logging, suppress turns off DIALS refine output
+      .help = and disabled removes basically all logging
     experiments_filename = None
       .type = str
       .help = The filename for output experiments. For example, %s_imported.expt
@@ -152,9 +158,15 @@ def _control_phil_str():
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
-    integration_pickle = int-%d-%s.pickle
+    integration_pickle = None
       .type = str
-      .help = Filename for cctbx.xfel-style integration pickle files
+      .expert_level = 3
+      .help = Filename for legacy cxi.merge integration pickle files. Example: int-%d-%s.pickle
+    psana_identifiers = False
+      .type = bool
+      .expert_level = 3
+      .help = Add psana timestamps to the experiment identifiers. This allows \
+              sorting of LCLS XFEL data for certain experiments.
   }
 
   mp {
@@ -226,6 +238,32 @@ def _dials_phil_str():
         .type = strings
         .help = List of indexing methods. If indexing fails with first method, indexing will be \
                 attempted with the next, and so forth
+      reflection_subsampling
+      {
+        enable  = False
+          .type = bool
+          .help = Enable random subsampling of reflections during indexing. Attempts to index    \
+                  will be repeated with random subsampling of spotfinder spots, starting at      \
+                  step_start % of total spots, repeating n_attempts_per_step times per step,     \
+                  and decreasing by step_size % until step_stop % is reached. With the defaults, \
+                  26 total indexing attempts will be made, randomly subsampling from 100% to     \
+                  50% by 2 % steps, one attempt per step.
+        step_start = 100
+          .type = int
+          .help = What percent of reflections to start with
+        step_stop = 50
+          .type = int
+          .help = What percent of reflections to end with
+        step_size = 2
+          .type = int
+          .help = What percent of reflections to decrease by per step
+        n_attempts_per_step = 1
+          .type = int
+          .help = How many attempts to make at each step
+        seed = 42
+          .type = int
+          .help = Random seed for sub-sampling
+      }
       known_orientations = None
         .type = path
         .multiple = True
@@ -249,7 +287,7 @@ def _dials_phil_str():
       transformation = 6
         .type = int(value_min=0, value_max=6)
         .multiple = False
-        .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distince coset results. \
+        .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distance coset results. \
                 0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
                 See Sauter and Zwart, Acta D (2009) 65:553
     }
@@ -290,7 +328,6 @@ refinement {
   }
   reflections {
     weighting_strategy.override = stills
-    outlier.algorithm = null
   }
 }
 integration {
@@ -324,10 +361,7 @@ def do_import(filename, load_models=True):
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
-            raise Abort(f"Could not load {filename}")
-
-    if len(experiments) == 0:
-        raise Abort(f"Could not load {filename}")
+            pass
 
     from dxtbx.imageset import ImageSetFactory
 
@@ -408,7 +442,7 @@ class Script:
         from libtbx import easy_mp
 
         try:
-            from mpi4py import MPI
+            from libtbx.mpi4py import MPI
         except ImportError:
             rank = 0
             size = 1
@@ -468,6 +502,23 @@ class Script:
                 transmitted_info = None
             params, options, all_paths = comm.bcast(transmitted_info, root=0)
 
+        if params.output.logging_option == "suppressed":
+            logging.getLogger("dials.algorithms.indexing.nave_parameters").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.indexing.stills_indexer").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger("dials.algorithms.refinement.refiner").setLevel(
+                logging.ERROR
+            )
+            logging.getLogger(
+                "dials.algorithms.refinement.reflection_manager"
+            ).setLevel(logging.ERROR)
+
+        elif params.output.logging_option == "disabled":
+            logging.disable(logging.ERROR)
+
         # Check we have some filenames
         if not all_paths:
             self.parser.print_help()
@@ -479,7 +530,7 @@ class Script:
             self.pr = cProfile.Profile()
             self.pr.enable()
 
-        print(f"Have {len(all_paths)} files")
+        logger.info(f"Have {len(all_paths)} files")
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
@@ -516,7 +567,6 @@ class Script:
             log.config(verbosity=options.verbose, logfile=logfile)
 
         else:
-
             # Configure logging
             log.config(verbosity=options.verbose, logfile="dials.process.log")
 
@@ -612,7 +662,7 @@ class Script:
                         update_geometry(imageset)
                         experiment.beam = imageset.get_beam()
                         experiment.detector = imageset.get_detector()
-                    except RuntimeError as e:
+                    except (RuntimeError, AttributeError) as e:
                         logger.warning("Error updating geometry on item %s, %s", tag, e)
                         continue
 
@@ -743,9 +793,24 @@ class Script:
                     copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
                 )
 
-                if rank == 0:
+                if any(os.path.splitext(p)[1].lower() == ".loc" for p in all_paths):
+                    import psana
+
+                    if getattr(psana, "xtc_version", None) == 2:
+                        root = 2  # psana2 uses ranks 0 and 1
+                    else:
+                        root = 0
+                else:
+                    root = 0
+
+                if rank == root:
                     # server process
+                    num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
+                        print(
+                            "Processing %d / %d shots" % (item_num, num_iter),
+                            flush=True,
+                        )
                         if process_fractions and not process_this_event(item_num):
                             continue
 
@@ -755,20 +820,21 @@ class Script:
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
-                    for rankreq in range(size - 1):
-                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                    for rankreq in range(root + 1, size):
+                        rank = comm.recv(source=rankreq)
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                else:
+                elif rank > root:
                     # client process
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
-                        comm.send(rank, dest=0)
+                        comm.send(rank, dest=root)
                         print("Rank %d waiting for response" % rank)
-                        item = comm.recv(source=0)
+                        item = comm.recv(source=root)
+                        print(f"receiving item: {rank=} {item=}")
                         if item == "endrun":
                             print("Rank %d received endrun" % rank)
                             break
@@ -850,6 +916,7 @@ class Processor:
         assert os.path.exists(debug_dir)
         self.debug_file_path = os.path.join(debug_dir, "debug_%d.txt" % rank)
         write_newline = os.path.exists(self.debug_file_path)
+        self.debug_file_handle = None
         if write_newline:  # needed if the there was a crash
             self.debug_write("")
 
@@ -954,24 +1021,39 @@ class Processor:
         if not self.params.mp.debug.output_debug_logs:
             return
 
-        from xfel.cxi.cspad_ana import cspad_tbx  # XXX move to common timestamp format
+        from serialtbx.util.time import timestamp  # XXX move to common timestamp format
 
-        ts = cspad_tbx.evt_timestamp()  # Now
-        debug_file_handle = open(self.debug_file_path, "a")
+        ts = timestamp()  # Now
+        if not self.debug_file_handle:
+            self.debug_file_handle = open(self.debug_file_path, "a")
         if string == "":
-            debug_file_handle.write("\n")
+            self.debug_file_handle.write("\n")
         else:
             if state is None:
                 state = "    "
-            debug_file_handle.write(self.debug_str % (ts, state, string))
-        debug_file_handle.close()
+            self.debug_file_handle.write(self.debug_str % (ts, state, string))
 
     def process_experiments(self, tag, experiments):
+        # Note d.sp is often rather memory constrained in large parallel
+        # jobs with many processes per compute node. In one configuration we
+        # noted the accumulation of ~10MB dead memory per run of the stills
+        # indexer. Therefore we trigger garbage collection every image.
+        gc.collect()
 
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
         self.tag = tag
         self.debug_start(tag)
+
+        for experiment in experiments:
+            if experiment.identifier == "":
+                experiment.identifier = ersatz_uuid4()
+            if self.params.output.psana_identifiers:
+                fmt = experiment.imageset.get_format_class().get_instance(
+                    experiment.imageset.paths()[0]
+                )
+                ts = fmt.get_psana_timestamp(experiment.imageset.indices()[0])
+                experiment.identifier = ts + "_" + experiment.identifier
 
         if self.params.output.experiments_filename:
             if self.params.output.composite_output:
@@ -1088,9 +1170,8 @@ class Processor:
                     for panel in detector:
                         if panel.get_gain() != 1.0 and panel.get_gain() != gain:
                             raise RuntimeError(
-                                """
-The detector is reporting a gain of %f but you have also supplied a gain of %f. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
-                                % (panel.get_gain(), gain)
+                                f"""
+The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
                             )
 
     def find_spots(self, experiments):
@@ -1190,33 +1271,61 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 if self.params.indexing.stills.require_known_orientation:
                     raise
 
-        if params.indexing.stills.method_list is None and not indexing_succeeded:
-            idxr = Indexer.from_parameters(
-                reflections,
-                experiments,
-                params=params,
-            )
-            idxr.index()
-        elif not indexing_succeeded:
-            indexing_error = None
-            for method in params.indexing.stills.method_list:
-                params.indexing.method = method
+        if not indexing_succeeded:
+            if self.params.indexing.stills.reflection_subsampling.enable:
+                flex.set_random_seed(
+                    self.params.indexing.stills.reflection_subsampling.seed
+                )
+                subsets = range(
+                    self.params.indexing.stills.reflection_subsampling.step_start,
+                    self.params.indexing.stills.reflection_subsampling.step_stop
+                    - self.params.indexing.stills.reflection_subsampling.step_size,
+                    -self.params.indexing.stills.reflection_subsampling.step_size,
+                )
+            else:
+                subsets = [100]
+            all_reflections = reflections
+            subset_indexing_error = None
+            for i in subsets:
+                if i != 100:
+                    reflections = all_reflections.select(
+                        flex.random_permutation(len(all_reflections))
+                    )[: int(len(all_reflections) * i / 100)]
                 try:
-                    idxr = Indexer.from_parameters(
-                        reflections, experiments, params=params
-                    )
-                    idxr.index()
-                except Exception as e:
-                    logger.info("Couldn't index using method %s", method)
-                    if indexing_error is None:
-                        if e is None:
-                            e = Exception(f"Couldn't index using method {method}")
-                        indexing_error = e
+                    if params.indexing.stills.method_list is None:
+                        idxr = Indexer.from_parameters(
+                            reflections,
+                            experiments,
+                            params=params,
+                        )
+                        idxr.index()
+                    else:
+                        ml_indexing_error = None
+                        for method in params.indexing.stills.method_list:
+                            params.indexing.method = method
+                            try:
+                                idxr = Indexer.from_parameters(
+                                    reflections,
+                                    experiments,
+                                    params=params,
+                                )
+                                idxr.index()
+                            except Exception as e_ml:
+                                logger.info("Couldn't index using method %s", method)
+                                ml_indexing_error = e_ml
+                            else:
+                                ml_indexing_error = None
+                                break
+                        if ml_indexing_error:
+                            raise ml_indexing_error
+                except Exception as e_subset:
+                    subset_indexing_error = e_subset
                 else:
-                    indexing_error = None
+                    logger.info("Indexed using %d%% of the reflections" % i)
+                    subset_indexing_error = None
                     break
-            if indexing_error is not None:
-                raise indexing_error
+            if subset_indexing_error:
+                raise subset_indexing_error
 
         indexed = idxr.refined_reflections
         experiments = idxr.refined_experiments
@@ -1241,6 +1350,16 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 % (len(filtered), len(indexed))
             )
             indexed = filtered
+
+        if self.params.output.psana_identifiers:
+            identifiers = indexed.experiment_identifiers()
+            for expt_id, expt in enumerate(experiments):
+                fmt = expt.imageset.get_format_class().get_instance(
+                    expt.imageset.paths()[0]
+                )
+                ts = fmt.get_psana_timestamp(expt.imageset.indices()[0])
+                expt.identifier = ts + "_" + expt.identifier
+                identifiers[expt_id] = expt.identifier
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
@@ -1303,7 +1422,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             # Dump experiments to disk
             if self.params.output.refined_experiments_filename:
-
                 experiments.as_json(self.params.output.refined_experiments_filename)
 
             if self.params.output.indexed_filename:
@@ -1332,7 +1450,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     )
 
         if self.params.dispatch.coset:
-            from xfel.util.sublattice_helper import integrate_coset
+            from dials.algorithms.integration.sublattice_helper import integrate_coset
 
             integrate_coset(self, experiments, indexed)
 
@@ -1400,7 +1518,13 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     from dials.algorithms.integration.kapton_2019_correction import (
                         multi_kapton_correction,
                     )
-
+                elif abs_params.algorithm == "other":
+                    continue  # custom abs. corr. implementation should go here
+                else:
+                    raise ValueError(
+                        "absorption_correction.apply=True, "
+                        "but no .algorithm has been selected!"
+                    )
                 experiments, integrated = multi_kapton_correction(
                     experiments, integrated, abs_params.fuller_kapton, logger=logger
                 )()
@@ -1462,7 +1586,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             # Dump experiments to disk
             if self.params.output.integrated_experiments_filename:
-
                 experiments.as_json(self.params.output.integrated_experiments_filename)
 
             if self.params.output.integrated_filename:
@@ -1497,10 +1620,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: {:f}, half mosaicity degrees: {:f}".format(
-                    crystal_model.get_domain_size_ang(),
-                    crystal_model.get_half_mosaicity_deg(),
-                )
+                log_str += f". Final ML model: domain size angstroms: {crystal_model.get_domain_size_ang():f}, half mosaicity degrees: {crystal_model.get_half_mosaicity_deg():f}"
 
         logger.info(log_str)
 
@@ -1523,7 +1643,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             return
 
         if self.params.output.integration_pickle is not None:
-            from xfel.command_line.frame_extractor import ConstructFrame
+            from serialtbx.util.construct_frame import ConstructFrame
 
             # Split everything into separate experiments for pickling
             for e_number, experiment in enumerate(experiments):
@@ -1629,7 +1749,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 assert self.params.mp.method == "mpi"
                 stride = self.params.mp.composite_stride
 
-                from mpi4py import MPI
+                from libtbx.mpi4py import MPI
 
                 comm = MPI.COMM_WORLD
                 rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
@@ -1729,19 +1849,11 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                         dest=destrank,
                     )
 
-                    self.all_imported_experiments = (
-                        self.all_strong_reflections
-                    ) = (
+                    self.all_imported_experiments = self.all_strong_reflections = (
                         self.all_indexed_experiments
-                    ) = (
-                        self.all_indexed_reflections
-                    ) = (
+                    ) = self.all_indexed_reflections = (
                         self.all_integrated_experiments
-                    ) = (
-                        self.all_integrated_reflections
-                    ) = (
-                        self.all_coset_experiments
-                    ) = (
+                    ) = self.all_integrated_reflections = self.all_coset_experiments = (
                         self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
 
@@ -1750,7 +1862,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_imported_experiments) > 0
                 and self.params.output.experiments_filename
             ):
-
                 self.all_imported_experiments.as_json(
                     self.params.output.experiments_filename
                 )
@@ -1767,7 +1878,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_indexed_experiments) > 0
                 and self.params.output.refined_experiments_filename
             ):
-
                 self.all_indexed_experiments.as_json(
                     self.params.output.refined_experiments_filename
                 )
@@ -1784,7 +1894,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 len(self.all_integrated_experiments) > 0
                 and self.params.output.integrated_experiments_filename
             ):
-
                 self.all_integrated_experiments.as_json(
                     self.params.output.integrated_experiments_filename
                 )
@@ -1803,7 +1912,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     len(self.all_coset_experiments) > 0
                     and self.params.output.coset_experiments_filename
                 ):
-
                     self.all_coset_experiments.as_json(
                         self.params.output.coset_experiments_filename
                     )
@@ -1838,6 +1946,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()
+        if self.debug_file_handle:
+            self.debug_file_handle
+            del self.debug_file_handle
 
 
 @dials.util.show_mail_handle_errors()

@@ -64,7 +64,6 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
 
     # Start the drmaa session
     with drmaa.Session() as s:
-
         # Create the job template
         jt = s.createJobTemplate()
         jt.remoteCommand = "cluster.dials.exec"
@@ -90,7 +89,6 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
 
         N = len(list(iterable))
         try:
-
             # Submit the array job
             joblist = s.runBulkJobs(jt, 1, N, 1)
 
@@ -115,7 +113,6 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
             s.deleteJobTemplate(jt)
 
         except KeyboardInterrupt:
-
             # Delete the jobs
             s.control(
                 drmaa.Session.JOB_IDS_SESSION_ALL, drmaa.JobControlAction.TERMINATE

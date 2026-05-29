@@ -35,12 +35,6 @@ from dials.util.options import ArgumentParser, flatten_experiments, flatten_refl
 # Useful to know what version of DIALS we are running
 from dials.util.version import dials_version
 
-try:
-    from typing import List
-except ImportError:
-    pass
-
-
 # Define a logger.
 logger = logging.getLogger("dials.boilerplate")
 
@@ -104,7 +98,7 @@ def do_boilerplate(
 
 
 @dials.util.show_mail_on_error()
-def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     Check command-line input and call other functions to do the legwork.
 

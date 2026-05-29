@@ -37,9 +37,7 @@ class active_parameter_manager:
         n_cumul_params = 0
         for component, obj in components.items():
             if component in selection_list:
-                assert hasattr(
-                    obj, "parameters"
-                ), """component object must have the
+                assert hasattr(obj, "parameters"), """component object must have the
           attribute 'parameters' for access to the component parameters."""
                 self.x.extend(obj.free_parameters)
                 n_params = len(obj.free_parameters)
@@ -204,7 +202,6 @@ class multi_active_parameter_manager(TargetInterface):
 
 
 class shared_active_parameter_manager(multi_active_parameter_manager):
-
     """Class to enforce sharing of model components.
 
     Intercept calls to a multi_apm, to override set_params calls and manage
@@ -334,8 +331,9 @@ class ParameterManagerGenerator:
     def __init__(self, data_managers, apm_type, target, mode="concurrent", shared=None):
         if mode not in ["concurrent", "consecutive"]:
             raise ValueError(
-                "Bad value for refinement order mode: %s, expected %s"
-                % (mode, " or ".join(["concurrent", "consecutive"]))
+                "Bad value for refinement order mode: {}, expected {}".format(
+                    mode, " or ".join(["concurrent", "consecutive"])
+                )
             )
         self.target = target
         self.data_managers = data_managers

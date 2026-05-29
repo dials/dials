@@ -86,7 +86,6 @@ class RestraintsParameterisation:
         xl_unit_cell_parameterisations=None,
         goniometer_parameterisations=None,
     ):
-
         if detector_parameterisations is None:
             detector_parameterisations = []
         if beam_parameterisations is None:
@@ -148,7 +147,7 @@ class RestraintsParameterisation:
         if param_i.parameterisation in self._param_to_restraint:
             raise DialsRefineConfigError(
                 "Parameterisation already restrained. Cannot create "
-                "additional restraint with experiment {}".format(experiment_id)
+                f"additional restraint with experiment {experiment_id}"
             )
 
         # create new restraint
@@ -163,7 +162,6 @@ class RestraintsParameterisation:
         self._param_to_restraint.add(param_i.parameterisation)
 
     def add_restraints_to_group_xl_unit_cell(self, target, experiment_ids, sigma):
-
         # select the right parameterisations, if they exist
         if experiment_ids == "all":
             param_indices = list(self._exp_to_xluc_param.values())
@@ -183,9 +181,7 @@ class RestraintsParameterisation:
             if param in self._param_to_restraint:
                 raise DialsRefineConfigError(
                     "Parameterisation already restrained. Cannot create "
-                    "additional group restraint for experiment(s) {}".format(
-                        str(experiment_ids)
-                    )
+                    f"additional group restraint for experiment(s) {str(experiment_ids)}"
                 )
 
         # create new group of restraints

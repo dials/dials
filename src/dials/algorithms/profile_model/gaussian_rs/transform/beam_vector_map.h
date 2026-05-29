@@ -18,11 +18,8 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace transform {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace transform {
 
     using dxtbx::model::BeamBase;
     using dxtbx::model::Detector;
@@ -41,8 +38,8 @@ namespace dials {
      * @param corner Calculate coordinates at corners or centre
      * @returns An array of beam vectors
      */
-    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel &panel,
-                                                                   const BeamBase &beam,
+    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel& panel,
+                                                                   const BeamBase& beam,
                                                                    std::size_t n_div,
                                                                    bool corner) {
       // check the input
@@ -93,8 +90,8 @@ namespace dials {
      * @param corner Calculate coordinates at corners or centre
      * @returns An array of beam vectors
      */
-    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel &panel,
-                                                                   const BeamBase &beam,
+    inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(const Panel& panel,
+                                                                   const BeamBase& beam,
                                                                    bool corner) {
       return beam_vector_map(panel, beam, 1, corner);
     }
@@ -106,8 +103,8 @@ namespace dials {
      * @returns An array of beam vectors
      */
     inline af::versa<vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Panel &panel,
-      const BeamBase &beam) {
+      const Panel& panel,
+      const BeamBase& beam) {
       return beam_vector_map(panel, beam, 1, false);
     }
 

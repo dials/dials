@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 import os
 from sys import exit
-from typing import List, NamedTuple, Optional, Tuple, Union
+from typing import NamedTuple
 
 import numpy as np
 import numpy.ma as ma
@@ -109,12 +109,12 @@ class ExptParams(NamedTuple):
     """
 
     input_file: str
-    s0: Tuple[float, float, float]
+    s0: tuple[float, float, float]
     beam_on_detector: Point
     wavelength: float
     distance: float
-    img_size: Tuple[int, int]
-    pix_size: Tuple[float, float]
+    img_size: tuple[int, int]
+    pix_size: tuple[float, float]
     image: np.ndarray
 
 
@@ -129,9 +129,7 @@ class Output(NamedTuple):
     strt_lines: str
 
 
-def _convert_units(
-    val: Union[float, Point], unit_in: str, unit_out: str
-) -> Union[float, Point]:
+def _convert_units(val: float | Point, unit_in: str, unit_out: str) -> float | Point:
     """Keep units sanity for pyFAI <--> DIALS conversions
     Most parameters will be kept in SI units internally
 
@@ -278,8 +276,8 @@ class Geometry(pfGeometry):
 
     def update_beam_pos(
         self,
-        beam_coords_px: Optional[Point] = None,
-        beam_dist_mm: Optional[float] = None,
+        beam_coords_px: Point | None = None,
+        beam_dist_mm: float | None = None,
     ):
         """
         Update beam position
@@ -497,7 +495,7 @@ class EyeballWidget:
         # Finally, show widget
         plt.show()
 
-    def calibrant_rings(self, geometry: Optional[Geometry] = None) -> np.ndarray:
+    def calibrant_rings(self, geometry: Geometry | None = None) -> np.ndarray:
         """
         Make a masked array for the calibration rings. If a geometry parameters
         is given then use that geometry for the calibrant, otherwise use the
@@ -671,9 +669,7 @@ class PowderCalibrator:
 
         # Tell me what calibrant I am using
         logger.info(
-            f"Starting calibration using {self.standard}:\n"
-            f"-----\n"
-            f"{self.calibrant}\n"
+            f"Starting calibration using {self.standard}:\n-----\n{self.calibrant}\n"
         )
 
     def show_pyfai_improvement(
@@ -746,7 +742,7 @@ class PowderCalibrator:
     def refine_with_pyfai(
         self,
         num_rings: int = 5,
-        fix: Tuple = ("rot1", "rot2", "rot3", "wavelength"),
+        fix: tuple = ("rot1", "rot2", "rot3", "wavelength"),
         pts_per_deg: float = 1.0,
         Imin: float = 10.0,
         plots: bool = True,
@@ -807,12 +803,12 @@ class PowderCalibrator:
         self.geometry.update_from_ai(ai)
         self.geometry.save_to_expt(output=self.output.calibrated_geom)
 
-        logger.info(f"Geometry fitted by pyFAI:\n" f"-----\n" f"{self.geometry}\n")
+        logger.info(f"Geometry fitted by pyFAI:\n-----\n{self.geometry}\n")
         self.show_straight_lines(ai, show=plots)
 
 
 @dials.util.show_mail_handle_errors()
-def run(args: List[str] = None, phil: scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: scope = phil_scope) -> None:
     """
     Check command-line input and do the sequence of
     function calls.

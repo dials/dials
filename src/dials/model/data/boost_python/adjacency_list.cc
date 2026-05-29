@@ -12,7 +12,6 @@
 #include <boost/python/def.hpp>
 #include <boost/python/iterator.hpp>
 #include <boost_adaptbx/std_pair_conversion.h>
-#include <boost/iterator/transform_iterator.hpp>
 #include <dials/model/data/adjacency_list.h>
 
 namespace dials { namespace model { namespace boost_python {
@@ -37,14 +36,14 @@ namespace dials { namespace model { namespace boost_python {
       return result;
     }
 
-    static object iter(object const &o) {
+    static object iter(object const& o) {
       return o;
     }
   };
 
   template <typename ClassIter>
   struct iterator_wrapper {
-    static void wrap(const char *name) {
+    static void wrap(const char* name) {
       class_<ClassIter>(name, no_init)
         .def("next", &ClassIter::next)
         .def("__next__", &ClassIter::next)
@@ -52,15 +51,15 @@ namespace dials { namespace model { namespace boost_python {
     }
   };
 
-  static AdjacencyList::edge_iterator edges_begin(const AdjacencyList &list) {
+  static AdjacencyList::edge_iterator edges_begin(const AdjacencyList& list) {
     return list.edges().first;
   }
 
-  static AdjacencyList::edge_iterator edges_end(const AdjacencyList &list) {
+  static AdjacencyList::edge_iterator edges_end(const AdjacencyList& list) {
     return list.edges().second;
   }
 
-  adjacent_vertices_iterator make_adjacent_vertices_iterator(const AdjacencyList &self,
+  adjacent_vertices_iterator make_adjacent_vertices_iterator(const AdjacencyList& self,
                                                              std::size_t index) {
     return adjacent_vertices_iterator(self.edges(index).first,
                                       self.edges(index).second);

@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
    */
   template <typename T>
   af::versa<T, af::c_grid<2> > summed_area_table(
-    const af::const_ref<T, af::c_grid<2> > &image) {
+    const af::const_ref<T, af::c_grid<2> >& image) {
     // Allocate the table
     af::versa<T, af::c_grid<2> > table_arr(image.accessor(),
                                            af::init_functor_null<T>());
@@ -61,7 +61,7 @@ namespace dials { namespace algorithms {
    */
   template <typename T>
   af::versa<T, af::c_grid<2> > summed_area(
-    const af::const_ref<T, af::c_grid<2> > &image,
+    const af::const_ref<T, af::c_grid<2> >& image,
     int2 size) {
     // Check the sizes are valid
     DIALS_ASSERT(size.all_ge(0));

@@ -1,4 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.ssx_index
 """
 This program runs indexing on the spotfinding results from a
 still sequence i.e. SSX data. This wraps a call to the regular
@@ -18,8 +17,8 @@ file and a single experiment list file, with a joint detector and beam model.
 Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
 Usage:
-    dev.dials.ssx_index imported.expt strong.refl
-    dev.dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
+    dials.ssx_index imported.expt strong.refl
+    dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
 """
 
 from __future__ import annotations
@@ -32,8 +31,8 @@ from functools import reduce
 
 from cctbx import crystal
 from libtbx import Auto, phil
-from libtbx.introspection import number_of_processors
 
+from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.ssx.analysis import (
     generate_html_report,
     generate_plots,
@@ -43,12 +42,8 @@ from dials.algorithms.indexing.ssx.analysis import (
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
-
-try:
-    from typing import List
-except ImportError:
-    pass
 
 logger = logging.getLogger("dials")
 
@@ -72,14 +67,13 @@ refinement {
   }
   reflections {
     weighting_strategy.override = stills
-    outlier.algorithm = null
   }
 }
 """
 
 phil_scope = phil.parse(
     """
-method = *fft1d *real_space_grid_search
+method = *fft1d *real_space_grid_search pink_indexer low_res_spot_match ffbidx
     .type = choice(multi=True)
 nproc = Auto
     .type = int
@@ -89,6 +83,14 @@ min_spots = 10
     .type = int
     .expert_level = 2
     .help = "Images with fewer than this number of strong spots will not be indexed"
+retain_unindexed_experiments = False
+    .type = bool
+    .expert_level = 3
+    .help = "Keep all input experiment models and input reflections in the output."
+            "i.e. the output contains indexed and unindexed experiments and reflections"
+            "This is an experimental mode that can be used to view the output of SSX indexing"
+            "in the image viewer, but follow on programs may not be able to handle"
+            "these files as input as not all experiments have a crystal model or data."
 output.html = dials.ssx_index.html
     .type = str
 output.json = None
@@ -113,9 +115,9 @@ phil_scope.adopt_scope(
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     """
-    Run dev.dials.ssx_index as from the command line.
+    Run dials.ssx_index as from the command line.
 
     This program takes an imported experiment list and a reflection table
     of strong spots and performs parallelised indexing for synchrotron
@@ -126,7 +128,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
 
     parser = ArgumentParser(
-        usage="dev.dials.ssx_index imported.expt strong.refl [options]",
+        usage="dials.ssx_index imported.expt strong.refl [options]",
         read_experiments=True,
         read_reflections=True,
         phil=phil_scope,
@@ -151,7 +153,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     if params.nproc is Auto:
-        params.nproc = number_of_processors(return_value_if_unknown=1)
+        params.nproc = CPU_COUNT
 
     if params.nproc > 1:
         params.indexing.nproc = params.nproc
@@ -159,17 +161,25 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     logger.info(f"Using {params.indexing.nproc} processes for indexing")
 
     st = time.time()
-    indexed_experiments, indexed_reflections, summary_data = index(
-        experiments, reflections[0], params
-    )
+    try:
+        indexed_experiments, indexed_reflections, summary_data = index(
+            experiments, reflections[0], params
+        )
+    except DialsIndexError as e:
+        sys.exit(f"Error: {e}")
 
     summary_table = make_summary_table(summary_data)
-    logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
+    logger.info("\nSummary of images successfully indexed\n" + summary_table)
 
     n_images = reduce(
         lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0
     )
-    logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
+    n_indexed = 0
+    if indexed_reflections.size():
+        n_indexed = indexed_reflections.get_flags(
+            indexed_reflections.flags.indexed
+        ).count(True)
+    logger.info(f"{n_indexed} spots indexed on {n_images} images\n")
 
     crystal_symmetries = [
         crystal.symmetry(
@@ -177,17 +187,20 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             space_group=expt.crystal.get_space_group(),
         )
         for expt in indexed_experiments
+        if expt.crystal
     ]
     if crystal_symmetries:
         cluster_plots, _ = report_on_crystal_clusters(
             crystal_symmetries,
             make_plots=(params.output.html or params.output.json),
         )
-
-    logger.info(f"Saving indexed experiments to {params.output.experiments}")
-    indexed_experiments.as_file(params.output.experiments)
-    logger.info(f"Saving indexed reflections to {params.output.reflections}")
-    indexed_reflections.as_file(params.output.reflections)
+    if indexed_experiments:
+        logger.info(f"Saving indexed experiments to {params.output.experiments}")
+        indexed_experiments.as_file(params.output.experiments)
+        logger.info(f"Saving indexed reflections to {params.output.reflections}")
+        indexed_reflections.as_file(params.output.reflections)
+    else:
+        logger.info("No reflections indexed")
 
     if (params.output.html or params.output.json) and indexed_experiments:
         summary_plots = generate_plots(summary_data)

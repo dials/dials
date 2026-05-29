@@ -11,12 +11,14 @@ ExperimentLists.
 
 from __future__ import annotations
 
+import importlib.metadata
 import logging
+import math
 from copy import deepcopy
+from dataclasses import dataclass
 from unittest.mock import Mock
 
 import numpy as np
-import pkg_resources
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
@@ -34,6 +36,7 @@ from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
 from dials.util.reference import intensities_from_reference_file
+from dials_scaling_ext import split_unmerged
 
 logger = logging.getLogger("dials")
 
@@ -41,7 +44,7 @@ logger = logging.getLogger("dials")
 def set_image_ranges_in_scaling_models(experiments):
     """Set the batch range in scaling models if not already set."""
     for exp in experiments:
-        if exp.scan:
+        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
             valid_image_ranges = exp.scan.get_valid_image_ranges(exp.identifier)
             if "valid_image_range" not in exp.scaling_model.configdict:
                 # only set if not currently set i.e. set initial
@@ -101,11 +104,11 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
                 "intensity.sum.variance"
             ] * flex.pow2(conv * inverse_partiality)
             if "partiality.inv.variance" in reflection_table:
+                # see e.g. https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+                # section "Example formulae", f=AB.
                 reflection_table["variance"] += (
-                    reflection_table["intensity.sum.value"]
-                    * conv
-                    * reflection_table["partiality.inv.variance"]
-                )
+                    flex.pow2(reflection_table["intensity.sum.value"] * conv)
+                ) * reflection_table["partiality.inv.variance"]
         else:
             reflection_table["intensity"] = (
                 reflection_table["intensity.sum.value"] * conv
@@ -212,7 +215,9 @@ def create_scaling_model(params, experiments, reflections):
     # Determine non-auto model to use outside the loop over datasets.
     if not use_auto_model:
         model_class = None
-        for entry_point in pkg_resources.iter_entry_points("dxtbx.scaling_model_ext"):
+        for entry_point in importlib.metadata.entry_points(
+            group="dxtbx.scaling_model_ext"
+        ):
             if entry_point.name == params.model:
                 model_class = entry_point.load()
                 break
@@ -223,7 +228,7 @@ def create_scaling_model(params, experiments, reflections):
         if not expt.scaling_model or params.overwrite_existing_models:
             # need to make a new model
             if use_auto_model:
-                if not expt.scan:
+                if not expt.scan or (expt.scan.get_oscillation()[1] == 0.0):
                     model = KBScalingModel
                 else:  # set model as physical unless scan < 1.0 degree
                     osc_range = expt.scan.get_oscillation_range()
@@ -249,15 +254,11 @@ def create_Ih_table(
     Allow an unequal number of experiments and reflections, as only need to
     extract one space group value (can optionally check all same if many)."""
     if selections:
-        assert len(selections) == len(
-            reflections
-        ), """Must have an equal number of
+        assert len(selections) == len(reflections), """Must have an equal number of
     reflection tables and selections in the input lists."""
     space_group_0 = experiments[0].crystal.get_space_group()
     for experiment in experiments:
-        assert (
-            experiment.crystal.get_space_group() == space_group_0
-        ), """The space
+        assert experiment.crystal.get_space_group() == space_group_0, """The space
     groups of all experiments must be equal."""
     input_tables = []
     indices_lists = []
@@ -372,8 +373,180 @@ def determine_best_unit_cell(experiments):
     return best_unit_cell
 
 
+@dataclass
+class MergedHalfDatasets:
+    data1: miller.array
+    data2: miller.array
+    multiplicity1: miller.array
+    multiplicity2: miller.array
+
+
+class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
+    """A class to extend iotbx merging statistics."""
+
+    def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.r_split = None
+        self.r_split_binned = None
+        self.binner = None
+        self.merged_half_datasets = None
+        if not additional_stats:
+            return
+        i_obs = kwargs.get("i_obs")
+        n_bins = kwargs.get("n_bins", 20)
+        if not i_obs:
+            return
+        i_obs_copy = i_obs.customized_copy()
+        i_obs_copy.setup_binner(n_bins=n_bins)
+        i_obs = i_obs.map_to_asu()
+        i_obs = i_obs.sort("packed_indices")
+
+        split = split_unmerged(
+            unmerged_indices=i_obs.indices(),
+            unmerged_data=i_obs.data(),
+            unmerged_sigmas=i_obs.sigmas(),
+            seed=seed,
+        )
+        indices = split.indices()
+        m1 = miller.array(
+            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+            data=split.data1(),
+            sigmas=split.sigma1(),
+        )
+        m2 = miller.array(
+            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+            data=split.data2(),
+            sigmas=split.sigma2(),
+        )
+        n1 = miller.array(
+            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+            data=split.n1(),
+        )
+        n2 = miller.array(
+            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+            data=split.n2(),
+        )
+        self.merged_half_datasets = MergedHalfDatasets(m1, m2, n1, n2)
+        assert i_obs_copy.binner() is not None
+        self.binner = i_obs_copy.binner()
+        m1.use_binning(self.binner)
+        m2.use_binning(self.binner)
+
+        self.r_split = self.calc_rsplit(
+            m1, m2, assume_index_matching=True, use_binning=False
+        )
+        self.r_split_binned = self.calc_rsplit(
+            m1, m2, assume_index_matching=True, use_binning=True
+        )
+
+    def as_dict(self):
+        d = super().as_dict()
+        if not self.r_split:
+            return d
+        d["overall"]["r_split"] = self.r_split
+        d["r_split"] = self.r_split_binned
+        return d
+
+    @classmethod
+    def calc_rsplit(cls, this, other, assume_index_matching=False, use_binning=False):
+        # based on White, T. A. et al. J. Appl. Cryst. 45, 335-341 (2012).
+        # adapted from cctbx_project/xfel/cxi_cc.py
+        # Note that compared to the original published definition, we have used random
+        # half-set assignment of observations (like in cc1/2), rather than random half-set
+        # assignment of whole images.
+        if not use_binning:
+            assert other.indices().size() == this.indices().size()
+            if this.data().size() == 0:
+                return 0.0
+
+            if assume_index_matching:
+                (o, c) = (this, other)
+            else:
+                (o, c) = this.common_sets(other=other, assert_no_singles=True)
+
+            den = 0.5 * flex.sum(o.data() + c.data())
+            if den == 0:  # avoid zero division error
+                return -1
+            return (1.0 / math.sqrt(2)) * flex.sum(flex.abs(o.data() - c.data())) / den
+
+        assert this.binner is not None
+        results = []
+        for i_bin in this.binner().range_used():
+            sel = this.binner().selection(i_bin)
+            results.append(
+                cls.calc_rsplit(
+                    this.select(sel),
+                    other.select(sel),
+                    assume_index_matching=assume_index_matching,
+                    use_binning=False,
+                )
+            )
+        return results
+
+    @classmethod
+    def weighted_cchalf(
+        cls, this, other, assume_index_matching=False, use_binning=False
+    ) -> list[tuple]:
+        if not use_binning:
+            assert other.data().size() == this.data().size()
+            if this.data().size() == 0:
+                return [(None, 0)]
+
+            if assume_index_matching:
+                (o, c) = (this, other)
+            else:
+                (o, c) = this.common_sets(other=other, assert_no_singles=True)
+
+            # The case where the denominator is less or equal to zero is
+            # pathological and should never arise in practice.
+            assert len(o.sigmas())
+            assert len(c.sigmas())
+            n = len(o.data())
+            if n == 1:
+                return [(None, 1)]
+            v_o = flex.pow2(o.sigmas())
+            v_c = flex.pow2(c.sigmas())
+            joint_w = 1.0 / (v_o + v_c)
+            sumjw = flex.sum(joint_w)
+            norm_jw = joint_w / sumjw
+            xbar = flex.sum(o.data() * norm_jw)
+            ybar = flex.sum(c.data() * norm_jw)
+            dx = o.data() - xbar
+            dy = c.data() - ybar
+            sxy = flex.sum(dx * dy * norm_jw)
+
+            sx = flex.sum(flex.pow2(dx) * norm_jw)
+            sy = flex.sum(flex.pow2(dy) * norm_jw)
+            if sx == 0.0 or sy == 0.0:
+                return [(None, 1)]
+            # effective sample size of weighted sample
+            # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
+            # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
+            neff = 1 / flex.sum(flex.pow2(norm_jw))
+            return [(sxy / ((sx * sy) ** 0.5), neff)]
+
+        assert this.binner is not None
+        results = []
+        for i_bin in this.binner().range_all():
+            sel = this.binner().selection(i_bin)
+            results.append(
+                cls.weighted_cchalf(
+                    this.select(sel),
+                    other.select(sel),
+                    assume_index_matching=assume_index_matching,
+                    use_binning=False,
+                )[0]
+            )
+        return results
+
+
 def merging_stats_from_scaled_array(
-    scaled_miller_array, n_bins=20, use_internal_variance=False, anomalous=True
+    scaled_miller_array,
+    n_bins=20,
+    use_internal_variance=False,
+    anomalous=True,
+    additional_stats=False,
+    cc_one_half_significance_level=0.01,
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -383,14 +556,15 @@ def merging_stats_from_scaled_array(
             "cannot be calculated."
         )
     try:
-        result = iotbx.merging_statistics.dataset_statistics(
+        result = ExtendedDatasetStatistics(
             i_obs=scaled_miller_array,
             n_bins=n_bins,
             anomalous=False,
             sigma_filtering=None,
             eliminate_sys_absent=False,
             use_internal_variance=use_internal_variance,
-            cc_one_half_significance_level=0.01,
+            cc_one_half_significance_level=cc_one_half_significance_level,
+            additional_stats=additional_stats,
         )
     except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
@@ -411,14 +585,15 @@ def merging_stats_from_scaled_array(
             )
         else:
             try:
-                anom_result = iotbx.merging_statistics.dataset_statistics(
+                anom_result = ExtendedDatasetStatistics(
                     i_obs=intensities_anom,
                     n_bins=n_bins,
                     anomalous=True,
                     sigma_filtering=None,
-                    cc_one_half_significance_level=0.01,
+                    cc_one_half_significance_level=cc_one_half_significance_level,
                     eliminate_sys_absent=False,
                     use_internal_variance=use_internal_variance,
+                    additional_stats=additional_stats,
                 )
             except (RuntimeError, Sorry) as e:
                 logger.warning(
@@ -427,17 +602,18 @@ def merging_stats_from_scaled_array(
                     e,
                     exc_info=True,
                 )
-
     return result, anom_result
 
 
 def create_datastructures_for_reference_file(
-    experiments, reference_file, anomalous=True, d_min=2.0
+    experiments, reference_file, anomalous=True, d_min=1.0, k_sol=0.35, b_sol=46
 ):
     # If the file is a model file, then d_min is used to determine the highest
     # resolution calculated intensities.
     wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
-    intensities = intensities_from_reference_file(reference_file, d_min, wavelength)
+    intensities = intensities_from_reference_file(
+        reference_file, d_min, wavelength, k_sol, b_sol
+    )
     if not anomalous:
         intensities = intensities.as_non_anomalous_array().merge_equivalents().array()
 
@@ -463,11 +639,10 @@ def create_datastructures_for_reference_file(
     expt.crystal = deepcopy(experiments[0].crystal)
     params = Mock()
     params.KB.decay_correction.return_value = False
+    params.KB.analytical_correction = False
     expt.scaling_model = KBScalingModel.from_data(params, [], [])
     expt.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
     expt.identifier = ersatz_uuid4()
-
-    table.experiment_identifiers()[len(experiments)] = expt.identifier
 
     table.experiment_identifiers()[len(experiments)] = expt.identifier
 
@@ -477,16 +652,16 @@ def create_datastructures_for_reference_file(
 def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=True):
     """
     Read a merged mtz file and extract miller indices, intensities and variances.
-    Deprecated, retained for backwards compability.
+    Deprecated, retained for backwards compatibility.
     """
     return create_datastructures_for_reference_file(experiments, mtz_file, anomalous)
 
 
 def create_datastructures_for_structural_model(
-    experiments, model_file, anomalous=True, d_min=2.0
+    experiments, model_file, anomalous=True, d_min=2.0, k_sol=0.35, b_sol=46
 ):
     """Read a cif/pdb file, calculate intensities. Return an experiment and
     reflection table to be used for the structural model in scaling."""
     return create_datastructures_for_reference_file(
-        experiments, model_file, anomalous, d_min
+        experiments, model_file, anomalous, d_min, k_sol, b_sol
     )

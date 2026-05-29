@@ -212,9 +212,7 @@ def run_filtering(params, experiments, reflections):
                 sel = reflections["id"] >= 0
                 if sel.count(False) > 0:
                     print(
-                        "Removing {} reflections with negative experiment id".format(
-                            sel.count(False)
-                        )
+                        f"Removing {sel.count(False)} reflections with negative experiment id"
                     )
                 reflections = reflections.select(sel)
                 reflections.compute_d(experiments)

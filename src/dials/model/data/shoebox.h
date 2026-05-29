@@ -43,15 +43,15 @@ namespace dials { namespace model {
    * can return as the centroid
    */
   template <typename AlgorithmType>
-  Centroid extract_centroid_object(const AlgorithmType &algorithm,
-                                   const vec3<double> &ioffset) {
+  Centroid extract_centroid_object(const AlgorithmType& algorithm,
+                                   const vec3<double>& ioffset) {
     // Try to get the variance and add 0.5 to the standard error
     Centroid result;
     result.px.position = algorithm.mean() + ioffset;
     try {
       result.px.variance = algorithm.unbiased_variance();
       result.px.std_err_sq = algorithm.mean_sq_error();
-    } catch (dials::error const &) {
+    } catch (dials::error const&) {
       result.px.variance = vec3<double>(0.0, 0.0, 0.0);
       result.px.std_err_sq = vec3<double>(1.0 / 12.0, 1.0 / 12.0, 1.0 / 12.0);
     }
@@ -69,7 +69,7 @@ namespace dials { namespace model {
     int6 bbox;                                        ///< The bounding box
     bool flat;                                        ///< Is the shoebox flat
     af::versa<FloatType, af::c_grid<3> > data;        ///< The shoebox data
-    af::versa<int, af::c_grid<3> > mask;              ///< The shoebox mask
+    af::versa<uint8_t, af::c_grid<3> > mask;          ///< The shoebox mask
     af::versa<FloatType, af::c_grid<3> > background;  ///< The shoebox background
 
     /**
@@ -87,7 +87,7 @@ namespace dials { namespace model {
      * Initialise the shoebox
      * @param bbox_ The bounding box to initialise with
      */
-    Shoebox(const int6 &bbox_)
+    Shoebox(const int6& bbox_)
         : panel(0),
           bbox(bbox_),
           flat(false),
@@ -100,7 +100,7 @@ namespace dials { namespace model {
      * @param panel_ The panel number
      * @param bbox_ The bounding box to initialise with
      */
-    Shoebox(std::size_t panel_, const int6 &bbox_)
+    Shoebox(std::size_t panel_, const int6& bbox_)
         : panel(panel_),
           bbox(bbox_),
           flat(false),
@@ -114,7 +114,7 @@ namespace dials { namespace model {
      * @param bbox_ The bounding box to initialise with
      * @param flat_ The shoebix is flat
      */
-    Shoebox(std::size_t panel_, const int6 &bbox_, bool flat_)
+    Shoebox(std::size_t panel_, const int6& bbox_, bool flat_)
         : panel(panel_),
           bbox(bbox_),
           flat(flat_),
@@ -125,28 +125,36 @@ namespace dials { namespace model {
     /**
      * Allocate the mask and data from the bounding box
      */
-    void allocate_with_value(int maskcode) {
+    void allocate_data_with_value(uint8_t maskcode) {
       std::size_t zs = flat ? 1 : zsize();
       af::c_grid<3> accessor(zs, ysize(), xsize());
       data = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
-      mask = af::versa<int, af::c_grid<3> >(accessor, maskcode);
-      background = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
+      mask = af::versa<uint8_t, af::c_grid<3> >(accessor, maskcode);
     }
 
     /**
      * Allocate the mask and data with mask code valid.
      */
-    void allocate() {
-      allocate_with_value(0);
+    void allocate_data() {
+      allocate_data_with_value(0);
     }
 
     /**
-     * Deallocate the mask and data arrays
+     * Allocate the background from the bounding box
+     */
+    void allocate_background() {
+      std::size_t zs = flat ? 1 : zsize();
+      af::c_grid<3> accessor(zs, ysize(), xsize());
+      background = af::versa<FloatType, af::c_grid<3> >(accessor, 0.0);
+    }
+
+    /**
+     * Deallocate the data, mask and background arrays
      */
     void deallocate() {
       af::c_grid<3> accessor(0, 0, 0);
       data = af::versa<FloatType, af::c_grid<3> >(accessor);
-      mask = af::versa<int, af::c_grid<3> >(accessor);
+      mask = af::versa<uint8_t, af::c_grid<3> >(accessor);
       background = af::versa<FloatType, af::c_grid<3> >(accessor);
     }
 
@@ -213,10 +221,9 @@ namespace dials { namespace model {
       return result;
     }
 
-    /** @return True/False whether the shoeboxes are allocated */
-    bool is_allocated() const {
+    /** @return True/False whether the shoebox data and mask are allocated */
+    bool is_data_allocated() const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
-      DIALS_ASSERT(data.accessor().all_eq(background.accessor()));
       if (data.size() == 0) {
         return false;
       } else {
@@ -224,6 +231,20 @@ namespace dials { namespace model {
           DIALS_ASSERT(data.accessor().all_eq(size_flat()));
         } else {
           DIALS_ASSERT(data.accessor().all_eq(size()));
+        }
+      }
+      return true;
+    }
+
+    /** @return True/False whether the shoebox background is allocated */
+    bool is_background_allocated() const {
+      if (background.size() == 0) {
+        return false;
+      } else {
+        if (flat) {
+          DIALS_ASSERT(background.accessor().all_eq(size_flat()));
+        } else {
+          DIALS_ASSERT(background.accessor().all_eq(size()));
         }
       }
       return true;
@@ -247,7 +268,7 @@ namespace dials { namespace model {
      * @returns True/False
      */
     bool does_bbox_contain_bad_pixels(
-      const af::const_ref<bool, af::c_grid<2> > &mask) const {
+      const af::const_ref<bool, af::c_grid<2> >& mask) const {
       std::size_t ysize = mask.accessor()[0];
       std::size_t xsize = mask.accessor()[1];
       int j0 = bbox[2] > 0 ? bbox[2] : 0;
@@ -269,7 +290,7 @@ namespace dials { namespace model {
      * @param code The code
      * @returns The number of pixels with that code
      */
-    int count_mask_values(int code) const {
+    int count_mask_values(uint8_t code) const {
       int count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if ((mask[i] & code) == code) {
@@ -308,7 +329,7 @@ namespace dials { namespace model {
      * @param code The mask code
      * @returns The centroid
      */
-    Centroid centroid_masked(int code) const {
+    Centroid centroid_masked(uint8_t code) const {
       typedef CentroidMaskedImage3d<FloatType> Centroider;
 
       // Calculate the foreground mask
@@ -328,7 +349,7 @@ namespace dials { namespace model {
         if (bbox[5] == bbox[4] + 1) {
           result.px.position[2] = bbox[4] + 0.5;
         }
-      } catch (dials::error const &) {
+      } catch (dials::error const&) {
         double xmid = (bbox[1] + bbox[0]) / 2.0;
         double ymid = (bbox[3] + bbox[2]) / 2.0;
         double zmid = (bbox[5] + bbox[4]) / 2.0;
@@ -389,7 +410,7 @@ namespace dials { namespace model {
      * Perform a centroid minus the background
      * @return The centroid
      */
-    Centroid centroid_masked_minus_background(int code) const {
+    Centroid centroid_masked_minus_background(uint8_t code) const {
       typedef CentroidMaskedImage3d<FloatType> Centroider;
 
       // Calculate the foreground mask and data
@@ -412,7 +433,7 @@ namespace dials { namespace model {
       try {
         Centroider centroid(foreground_data, foreground_mask);
         result = extract_centroid_object(centroid, offset);
-      } catch (dials::error const &) {
+      } catch (dials::error const&) {
         double xmid = (bbox[1] + bbox[0]) / 2.0;
         double ymid = (bbox[3] + bbox[2]) / 2.0;
         double zmid = (bbox[5] + bbox[4]) / 2.0;
@@ -490,7 +511,7 @@ namespace dials { namespace model {
      * @param rhs The other shoebox
      * @returns True/False. They are the same
      */
-    bool operator==(const Shoebox &rhs) const {
+    bool operator==(const Shoebox& rhs) const {
       return ((bbox.all_eq(rhs.bbox)) && (data.all_eq(rhs.data))
               && (mask.all_eq(rhs.mask)) && (background.all_eq(rhs.background)));
     }
@@ -500,7 +521,7 @@ namespace dials { namespace model {
      * @param rhs The other shoebox
      * @returns True/False. They are not the same
      */
-    bool operator!=(const Shoebox &rhs) const {
+    bool operator!=(const Shoebox& rhs) const {
       return !(*this == rhs);
     }
 

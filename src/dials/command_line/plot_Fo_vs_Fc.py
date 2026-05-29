@@ -6,7 +6,6 @@ https://doi.org/10.1107/S2059798317010348
 Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
-
 from __future__ import annotations
 
 import sys
@@ -21,9 +20,9 @@ from scitbx.lstbx import normal_eqns, normal_eqns_solving
 from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import ArgumentParser
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
+matplotlib.use("pdf")
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.ticker import MultipleLocator  # noqa: E402
 
 
 class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):
@@ -178,8 +177,8 @@ class Script:
         ax.grid(True, which="minor")
         ax.set_axisbelow(True)
         ax.set_aspect("equal")
-        ax.set_xlabel(r"$F_c$")
-        ax.set_ylabel(r"$F_o$")
+        ax.set_xlabel("$F_c$")
+        ax.set_ylabel("$F_o$")
         ax.scatter(self.fc, self.fobs, s=1, c="indianred")
 
         if self.params.max_Fc:

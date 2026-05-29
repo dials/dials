@@ -22,9 +22,9 @@ namespace dials { namespace algorithms { namespace boost_python {
     typedef AssignIndices w_t;
 
     class_<w_t>("AssignIndices", no_init)
-      .def(init<af::const_ref<scitbx::vec3<double> > const &,
-                af::const_ref<double> const &,
-                af::const_ref<scitbx::mat3<double> > const &,
+      .def(init<af::const_ref<scitbx::vec3<double> > const&,
+                af::const_ref<double> const&,
+                af::const_ref<scitbx::mat3<double> > const&,
                 double>((arg("reciprocal_space_points"),
                          arg("phi"),
                          arg("UB_matrices"),
@@ -36,9 +36,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_assign_indices_local() {
     typedef AssignIndicesLocal w_t;
     class_<w_t>("AssignIndicesLocal", no_init)
-      .def(init<af::const_ref<scitbx::vec3<double> > const &,
-                af::const_ref<double> const &,
-                af::const_ref<scitbx::mat3<double> > const &,
+      .def(init<af::const_ref<scitbx::vec3<double> > const&,
+                af::const_ref<double> const&,
+                af::const_ref<scitbx::mat3<double> > const&,
                 const double,
                 const double,
                 const double,

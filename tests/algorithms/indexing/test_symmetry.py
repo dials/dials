@@ -12,7 +12,6 @@ from dials.algorithms.indexing import symmetry
 
 @pytest.mark.parametrize("space_group_symbol", bravais_types.acentric)
 def test_SymmetryHandler(space_group_symbol):
-
     sgi = sgtbx.space_group_info(symbol=space_group_symbol)
     sg = sgi.group()
     cs = sgi.any_compatible_crystal_symmetry(volume=10000)
@@ -180,7 +179,6 @@ for symbol in bravais_types.acentric:
 
 @pytest.mark.parametrize("crystal_symmetry", crystal_symmetries)
 def test_find_matching_symmetry(crystal_symmetry):
-
     cs = crystal_symmetry
     cs.show_summary()
 
@@ -193,7 +191,6 @@ def test_find_matching_symmetry(crystal_symmetry):
             (cs.unit_cell(), cs.space_group()),
             (None, cs.space_group()),
         ][:]:
-
             best_subgroup = symmetry.find_matching_symmetry(
                 uc_inp, target_space_group=ref_sg
             )

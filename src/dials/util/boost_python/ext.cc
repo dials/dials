@@ -13,7 +13,7 @@ namespace dials { namespace util { namespace boost_python {
     static void wrap() {
       using namespace boost::python;
       class_<wt, boost::noncopyable>("streambuf", no_init)
-        .def(init<boost::python::object &, std::size_t>(
+        .def(init<boost::python::object&, std::size_t>(
           (arg("python_file_obj"), arg("buffer_size") = 0)))
         .def_readwrite("default_buffer_size",
                        wt::default_buffer_size,
@@ -29,7 +29,7 @@ namespace dials { namespace util { namespace boost_python {
       using namespace boost::python;
       class_<std::ostream, boost::noncopyable>("std_ostream", no_init);
       class_<wt, boost::noncopyable, bases<std::ostream> >("ostream", no_init)
-        .def(init<boost::python::object &, std::size_t>(
+        .def(init<boost::python::object&, std::size_t>(
           (arg("python_file_obj"), arg("buffer_size") = 0)));
     }
   };
@@ -40,25 +40,8 @@ namespace dials { namespace util { namespace boost_python {
 
     def("ub_to_mosflm_u", &ub_to_mosflm_u, (arg("UB"), arg("uc")));
 
-    def("add_dials_batches",
-        &add_dials_batches,
-        (arg("mtz"),
-         arg("dataset_id"),
-         arg("image_range"),
-         arg("batch_offset"),
-         arg("wavelength"),
-         arg("mosaic"),
-         arg("phi_start"),
-         arg("phi_range"),
-         arg("cell_array"),
-         arg("umat_array"),
-         arg("panel_size"),
-         arg("panel_distance"),
-         arg("axis"),
-         arg("s0n")));
-
     class_<ResolutionMaskGenerator>("ResolutionMaskGenerator", no_init)
-      .def(init<const BeamBase &, const Panel &>())
+      .def(init<const BeamBase&, const Panel&>())
       .def("apply", &ResolutionMaskGenerator::apply);
 
     python_streambuf_wrapper::wrap();

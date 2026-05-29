@@ -8,7 +8,6 @@ Usage:
     dials.integrate integrated.expt refined.refl background.algorithm=gmodel gmodel.robust.algorithm=True gmodel.model=background.pickle
 """
 
-
 from __future__ import annotations
 
 import logging
@@ -226,7 +225,7 @@ class Script:
         if params.integration.mp.nproc != 1 or params.integration.mp.njobs != 1:
             # https://github.com/dials/dials/issues/1083
             logger.warning(
-                "Multiprocessing is currently disabled. " "Setting nproc = njobs = 1"
+                "Multiprocessing is currently disabled. Setting nproc = njobs = 1"
             )
             params.integration.mp.nproc = 1
             params.integration.mp.njobs = 1
@@ -247,7 +246,7 @@ class Script:
             self.parser.print_help()
             return
 
-        if any((e.profile is None for e in experiments)):
+        if any(e.profile is None for e in experiments):
             sys.exit(
                 "Experiments must contain a profile model (for example, after integration)"
             )

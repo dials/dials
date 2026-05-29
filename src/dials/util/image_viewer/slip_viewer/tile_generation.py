@@ -5,7 +5,7 @@ import sys
 
 import wx
 
-from .flex_image import (  # noqa: F401; moved but other places import from here
+from .flex_image import (  # noqa: F401 # Moved, but other places import from here
     get_flex_image,
     get_flex_image_multipanel,
 )
@@ -267,7 +267,7 @@ class _Tiles:
         return pic
 
     def get_flex_pixel_coordinates(self, lon, lat):
-        # get pixel coordintes. Note 0,0 is the center of pixel 0,0
+        # get pixel coordinates. Note 0,0 is the center of pixel 0,0
         (
             fast_picture_coord_pixel_scale,
             slow_picture_coord_pixel_scale,
@@ -319,7 +319,6 @@ class _Tiles:
         return value
 
     def get_spotfinder_data(self, params):
-
         pointdata = []
         test_pattern = False
         if (
@@ -439,7 +438,6 @@ class _Tiles:
         beam = self.raw_image.get_beam()
         if detector is None or beam is None:
             return None
-        beam = beam.get_s0()
 
         if readout is None:
             return None

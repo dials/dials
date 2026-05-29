@@ -23,7 +23,7 @@ namespace dials { namespace algorithms {
   public:
     virtual ~MaskCalculatorIface() = 0;
 
-    virtual void operator()(af::Reflection &reflection,
+    virtual void operator()(af::Reflection& reflection,
                             bool adjacent = false) const = 0;
   };
 
@@ -37,7 +37,7 @@ namespace dials { namespace algorithms {
   public:
     virtual ~BackgroundCalculatorIface() = 0;
 
-    virtual void operator()(af::Reflection &reflection) const = 0;
+    virtual void operator()(af::Reflection& reflection) const = 0;
   };
 
   // Implementation for pure virtual destructor
@@ -51,8 +51,8 @@ namespace dials { namespace algorithms {
     virtual ~IntensityCalculatorIface() = 0;
 
     virtual void operator()(
-      af::Reflection &reflection,
-      const std::vector<af::Reflection> &adjacent_reflections) const = 0;
+      af::Reflection& reflection,
+      const std::vector<af::Reflection>& adjacent_reflections) const = 0;
   };
 
   // Implementation for pure virtual destructor
@@ -65,7 +65,7 @@ namespace dials { namespace algorithms {
   public:
     virtual ~ReferenceCalculatorIface() = 0;
 
-    virtual void operator()(af::Reflection &reflection) = 0;
+    virtual void operator()(af::Reflection& reflection) = 0;
   };
 
   // Implementation for pure virtual destructor

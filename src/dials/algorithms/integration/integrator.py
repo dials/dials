@@ -20,7 +20,6 @@ from dials.algorithms.integration.processor import (
     ProcessorFlat3D,
     ProcessorSingle2D,
     ProcessorStills,
-    assess_available_memory,
     build_processor,
     job,
 )
@@ -39,6 +38,7 @@ from dials.constants import EPS, FULL_PARTIALITY
 from dials.util import Sorry, phil, pprint, tabulate
 from dials.util.command_line import heading
 from dials.util.report import Report
+from dials.util.system import MEMORY_LIMIT
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
@@ -114,10 +114,11 @@ def generate_phil_scope():
                   "number of blocks may be set to 1. If force is True then the"
                   "block size is always calculated."
 
-        max_memory_usage = 0.90
+        max_memory_usage = 0.80
           .type = float(value_min=0.0,value_max=1.0)
-          .help = "The maximum percentage of available memory to use for"
-                  "allocating shoebox arrays."
+          .help = "The maximum fraction of available memory to use for"
+                  "allocating shoebox arrays. Set to None to disable"
+                  "nproc throttling."
 
       }
 
@@ -560,7 +561,7 @@ def _finalize_stills(reflections, experiments, params):
 
     # verify sigmas are sensible
     if "intensity.prf.value" in integrated:
-        if (integrated["intensity.prf.variance"] <= 0).count(True) > 0:
+        if (integrated["intensity.prf.variance"] < 0).count(True) > 0:
             raise Sorry(
                 "Found negative variances (prf). Are bad pixels properly masked out?"
             )
@@ -587,9 +588,9 @@ def _finalize_stills(reflections, experiments, params):
                 )
 
         # apply detector gain to summation variances
-        integrated[
-            "intensity.sum.variance"
-        ] *= params.integration.summation.detector_gain
+        integrated["intensity.sum.variance"] *= (
+            params.integration.summation.detector_gain
+        )
     if "background.sum.value" in integrated:
         if (integrated["background.sum.variance"] < 0).count(True) > 0:
             raise Sorry(
@@ -602,9 +603,9 @@ def _finalize_stills(reflections, experiments, params):
             )
             integrated = integrated.select(integrated["background.sum.variance"] > 0)
         # apply detector gain to background summation variances
-        integrated[
-            "background.sum.variance"
-        ] *= params.integration.summation.detector_gain
+        integrated["background.sum.variance"] *= (
+            params.integration.summation.detector_gain
+        )
 
     reflections = integrated
 
@@ -615,6 +616,8 @@ class ProfileModellerExecutor(Executor):
     """
     The class to do profile modelling calculations
     """
+
+    __getstate_manages_dict__ = 1
 
     def __init__(self, experiments, profile_fitter):
         """
@@ -719,6 +722,8 @@ class ProfileValidatorExecutor(Executor):
     The class to do profile validation calculations
     """
 
+    __getstate_manages_dict__ = 1
+
     def __init__(self, experiments, profile_fitter):
         """
         Initialise the executor
@@ -821,6 +826,8 @@ class IntegratorExecutor(Executor):
     """
     The class to process the integration data
     """
+
+    __getstate_manages_dict__ = 1
 
     def __init__(
         self, experiments, profile_fitter=None, valid_foreground_threshold=0.75
@@ -993,7 +1000,6 @@ class Integrator:
 
         # Do profile modelling
         if profile_fitting:
-
             logger.info("=" * 80)
             logger.info("")
             logger.info(heading("Modelling reflection profiles"))
@@ -1013,7 +1019,6 @@ class Integrator:
                     "** Skipping profile modelling - no reference profiles given **"
                 )
             else:
-
                 # Try to set up the validation
                 if self.params.profile.validation.number_of_partitions > 1:
                     n = len(reference)
@@ -1128,7 +1133,6 @@ class Integrator:
 
                 # If we have more than 1 fold then do the validation
                 if num_folds > 1:
-
                     # Create the data processor
                     executor = ProfileValidatorExecutor(
                         self.experiments, profile_fitter
@@ -1277,24 +1281,24 @@ class Integrator:
         if self.params.integration.mp.method != "multiprocessing":
             self.reflections, time_info = _run_processor(self.reflections)
         else:
-            # need to do a memory check and decide whether to split table
-            available_immediate, _, __ = assess_available_memory(
-                self.params.integration
-            )
-
-            #  here don't consider nproc as the processor will reduce nproc to 1
-            # if necessary, only want to split if we can't even process with
-            # nproc = 1
+            # Here, don't consider nproc as the processor will reduce nproc to 1 if
+            # necessary. Only want to split if we can't even process with nproc = 1
 
             if self.params.integration.mp.n_subset_split:
                 tables = self.reflections.random_split(
                     self.params.integration.mp.n_subset_split
                 )
             else:
+                # Need to do a memory check and decide whether to split table.
+                # Split if its size in memory exceeds the fraction of available memory
+                # specified by the PHIL parameter integration.block.max_memory_usage.
+                max_memory_usage = self.params.integration.block.max_memory_usage
+                if max_memory_usage is None:
+                    max_memory_usage = 1.0
                 tables = _iterative_table_split(
                     [self.reflections],
                     self.experiments,
-                    available_immediate,
+                    MEMORY_LIMIT * max_memory_usage,
                 )
 
             if len(tables) == 1:
@@ -1521,7 +1525,6 @@ class Integrator3DThreaded:
 
         # Do profile modelling
         if self.params.integration.profile.fitting:
-
             logger.info("=" * 80)
             logger.info("")
             logger.info(heading("Modelling reflection profiles"))
@@ -1638,14 +1641,14 @@ def create_integrator(params, experiments, reflections):
     BackgroundAlgorithm = dials.extensions.Background.load(
         params.integration.background.algorithm
     )
-    flex.reflection_table.background_algorithm = functools.partial(
-        BackgroundAlgorithm, params
+    flex.reflection_table.background_algorithm = staticmethod(
+        functools.partial(BackgroundAlgorithm, params)
     )
     CentroidAlgorithm = dials.extensions.Centroid.load(
         params.integration.centroid.algorithm
     )
-    flex.reflection_table.centroid_algorithm = functools.partial(
-        CentroidAlgorithm, params
+    flex.reflection_table.centroid_algorithm = staticmethod(
+        functools.partial(CentroidAlgorithm, params)
     )
 
     # Get the classes we need

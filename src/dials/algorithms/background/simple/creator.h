@@ -13,7 +13,7 @@
 
 #include <omptbx/omp_or_stubs.h>
 #include <cmath>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/background/simple/outlier_rejector.h>
@@ -41,8 +41,7 @@ namespace dials { namespace algorithms { namespace background {
      * Initialise with the desired modeller.
      * @param modeller The background modeller
      */
-    SimpleBackgroundCreator(boost::shared_ptr<Modeller> modeller,
-                            std::size_t min_pixels)
+    SimpleBackgroundCreator(std::shared_ptr<Modeller> modeller, std::size_t min_pixels)
         : modeller_(modeller), min_pixels_(min_pixels) {
       DIALS_ASSERT(modeller != NULL);
       DIALS_ASSERT(min_pixels > 0);
@@ -53,8 +52,8 @@ namespace dials { namespace algorithms { namespace background {
      * @param modeller The background modeller
      * @param rejector The outlier rejector
      */
-    SimpleBackgroundCreator(boost::shared_ptr<Modeller> modeller,
-                            boost::shared_ptr<OutlierRejector> rejector,
+    SimpleBackgroundCreator(std::shared_ptr<Modeller> modeller,
+                            std::shared_ptr<OutlierRejector> rejector,
                             std::size_t min_pixels)
         : modeller_(modeller), rejector_(rejector), min_pixels_(min_pixels) {
       DIALS_ASSERT(modeller != NULL);
@@ -67,7 +66,7 @@ namespace dials { namespace algorithms { namespace background {
      * @return Success True/False per shoebox
      */
     template <typename FloatType>
-    af::shared<bool> operator()(const af::const_ref<Shoebox<FloatType> > &shoeboxes,
+    af::shared<bool> operator()(const af::const_ref<Shoebox<FloatType> >& shoeboxes,
                                 af::ref<double> mse,
                                 af::ref<double> dispersion) const {
       af::shared<bool> result(shoeboxes.size(), true);
@@ -76,11 +75,11 @@ namespace dials { namespace algorithms { namespace background {
           af::tiny<FloatType, 2> r = this->operator()(shoeboxes[i]);
           mse[i] = r[0];
           dispersion[i] = r[1];
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           result[i] = false;
           mse[i] = 0.0;
           dispersion[i] = 0.0;
-        } catch (std::runtime_error const &) {
+        } catch (std::runtime_error const&) {
           result[i] = false;
           mse[i] = 0.0;
           dispersion[i] = 0.0;
@@ -113,7 +112,7 @@ namespace dials { namespace algorithms { namespace background {
         // Extract from image volume
         af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
         af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-        af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
+        af::versa<uint8_t, af::c_grid<3> > mask = v.extract_mask(b, i);
 
         // Compute the background
         try {
@@ -121,9 +120,9 @@ namespace dials { namespace algorithms { namespace background {
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch (scitbx::error const &) {
+        } catch (scitbx::error const&) {
           success[i] = false;
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           success[i] = false;
         }
       }
@@ -148,8 +147,8 @@ namespace dials { namespace algorithms { namespace background {
      */
     template <typename FloatType>
     af::tiny<FloatType, 2> operator()(
-      const af::const_ref<FloatType, af::c_grid<3> > &data_in,
-      af::ref<int, af::c_grid<3> > mask,
+      const af::const_ref<FloatType, af::c_grid<3> >& data_in,
+      af::ref<uint8_t, af::c_grid<3> > mask,
       af::ref<FloatType, af::c_grid<3> > background) const {
       // Copy the array to a double
       af::versa<double, af::c_grid<3> > data(data_in.accessor());
@@ -162,7 +161,7 @@ namespace dials { namespace algorithms { namespace background {
         for (std::size_t k = 0; k < mask.accessor()[0]; ++k) {
           for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
             for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
-              const int mask_code = Valid | Background;
+              const uint8_t mask_code = Valid | Background;
               if ((mask(k, j, i) & mask_code) == mask_code
                   && ((mask(k, j, i) & Overlapped) == 0)) {
                 mask(k, j, i) |= BackgroundUsed;
@@ -179,7 +178,7 @@ namespace dials { namespace algorithms { namespace background {
       }
 
       // Create the background model
-      boost::shared_ptr<Model> model =
+      std::shared_ptr<Model> model =
         modeller_->create(data.const_ref(), bgmask.const_ref());
 
       // Populate the background shoebox
@@ -217,8 +216,8 @@ namespace dials { namespace algorithms { namespace background {
     }
 
   private:
-    boost::shared_ptr<Modeller> modeller_;
-    boost::shared_ptr<OutlierRejector> rejector_;
+    std::shared_ptr<Modeller> modeller_;
+    std::shared_ptr<OutlierRejector> rejector_;
     std::size_t min_pixels_;
   };
 

@@ -175,14 +175,19 @@ class SingleScalerFactory(ScalerFactory):
             )
 
         if params.reflection_selection.method == "intensity_ranges":
-            reflection_table = quasi_normalisation(reflection_table, experiment)
+            try:
+                reflection_table = quasi_normalisation(reflection_table, experiment)
+            except AssertionError:
+                raise BadDatasetForScalingException(
+                    """Unable to use this dataset for scaling with the option reflection_selection.method=intensity_ranges"""
+                )
         if (
             params.reflection_selection.method in (None, Auto, "auto", "quasi_random")
         ) or (
             experiment.scaling_model.id_ == "physical"
             and "absorption" in experiment.scaling_model.components
         ):
-            if experiment.scan:
+            if experiment.scan and (experiment.scan.get_oscillation()[1] != 0.0):
                 reflection_table = calc_crystal_frame_vectors(
                     reflection_table, experiment
                 )

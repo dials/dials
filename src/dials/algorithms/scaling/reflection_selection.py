@@ -83,7 +83,7 @@ logger = logging.getLogger("dials")
 
 
 def _build_class_matrix(class_index, class_matrix, offset=0):
-    for (i, val) in enumerate(class_index, start=offset):
+    for i, val in enumerate(class_index, start=offset):
         class_matrix[val, i] = 1.0
     return class_matrix
 
@@ -125,7 +125,6 @@ scaling not possible."""
 def _perform_quasi_random_selection(
     Ih_table, n_datasets, min_per_class, min_total, max_total
 ):
-
     class_matrix = sparse.matrix(n_datasets, Ih_table.size)
     class_matrix = _build_class_matrix(
         flumpy.from_numpy(Ih_table.Ih_table["dataset_id"].to_numpy()), class_matrix
@@ -277,7 +276,7 @@ def _loop_over_class_matrix(
         return cols_not_used, total_in_classes, False
 
     total_in_classes = sorted_class_matrix.col(0).as_dense_vector()
-    defecit = flex.double(sorted_class_matrix.n_rows, 0)
+    deficit = flex.double(sorted_class_matrix.n_rows, 0)
     cols_not_used = flex.size_t(range(1, sorted_class_matrix.n_cols))
     total_deficit = 0
     while (
@@ -294,28 +293,28 @@ def _loop_over_class_matrix(
         if not success:
             # want to stop looking for that class as no more left
             current_in_row = total_in_classes[row_needed]
-            defecit[row_needed] = min_per_area - current_in_row
+            deficit[row_needed] = min_per_area - current_in_row
             total_deficit += min_per_area - current_in_row
             total_in_classes[row_needed] = min_per_area
         if flex.sum(total_in_classes) > max_per_bin:
             # if we have reached the maximum, then finish there
-            return total_in_classes - defecit, cols_not_used
-    total_in_classes -= defecit
+            return total_in_classes - deficit, cols_not_used
+    total_in_classes -= deficit
     n = flex.sum(total_in_classes)
     # if we haven't reached the minimum total, then need to add more until we
     # reach it or run out of reflections
     if n < min_per_bin and cols_not_used:
         # how many have deficit? (i.e. no more left?)
-        c = sum(1 for d in defecit if d != 0.0)
+        c = sum(1 for d in deficit if d != 0.0)
         n_classes = sorted_class_matrix.n_rows
         multiplier = int(floor(min_per_bin * (n_classes - c) / (n * n_classes)) + 1)
         new_limit = min_per_area * multiplier  # new limit per area
 
-        for i, d in enumerate(defecit):
+        for i, d in enumerate(deficit):
             if d != 0.0:
                 # don't want to be searching for those classes that we know dont have any left
                 total_in_classes[i] = new_limit
-                defecit[i] = d + new_limit - min_per_area
+                deficit[i] = d + new_limit - min_per_area
         while cols_not_used and flex.min(total_in_classes) < new_limit:
             row_needed = _get_next_row_needed(total_in_classes)
             cols_not_used, total_in_classes, success = _add_next_column(
@@ -323,9 +322,9 @@ def _loop_over_class_matrix(
             )
             if not success:
                 current_in_row = total_in_classes[row_needed]
-                defecit[row_needed] = new_limit - current_in_row
+                deficit[row_needed] = new_limit - current_in_row
                 total_in_classes[row_needed] = new_limit
-        return total_in_classes - defecit, cols_not_used
+        return total_in_classes - deficit, cols_not_used
     return total_in_classes, cols_not_used
 
 

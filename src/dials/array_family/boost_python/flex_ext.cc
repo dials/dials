@@ -31,6 +31,7 @@ namespace dials { namespace af { namespace boost_python {
   void export_flex_unit_cell();
   void export_flex_shoebox_extractor();
   void export_flex_binner();
+  void export_shoebox_extract();
 
   template <typename FloatType>
   std::string get_real_type();
@@ -55,11 +56,15 @@ namespace dials { namespace af { namespace boost_python {
     export_flex_unit_cell();
     export_flex_shoebox_extractor();
     export_flex_binner();
+    export_shoebox_extract();
 
     def("get_real_type", &get_real_type<ProfileFloatType>);
 
     scitbx::af::boost_python::c_grid_flex_conversions<bool, af::c_grid<4> >();
     scitbx::af::boost_python::c_grid_flex_conversions<double, af::c_grid<4> >();
+
+    // The uint8_t conversion is needed for the shoebox mask array
+    scitbx::af::boost_python::c_grid_flex_conversions<uint8_t, af::c_grid<3> >();
 
     tuple_mapping_fixed_capacity<af::small<model::Ray, 2> >();
   }

@@ -79,6 +79,7 @@ def mock_physical_params():
     params.physical.lmax = 4
     params.physical.decay_restraint = 1e-1
     params.physical.surface_weight = "auto"
+    params.physical.analytical_correction = False
     return params
 
 
@@ -251,6 +252,20 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
     assert physicalmodel.fixed_components == ["decay"]
 
+    mock_physical_params.physical.analytical_correction = True
+    with pytest.raises(ValueError):
+        _ = PhysicalScalingModel.from_data(
+            mock_physical_params, mock_exp, test_reflections
+        )
+    test_reflections["analytical_correction"] = flex.double(
+        test_reflections.size(), 1.0
+    )
+    physicalmodel = PhysicalScalingModel.from_data(
+        mock_physical_params, mock_exp, test_reflections
+    )
+    assert "analytical" in physicalmodel.components
+    mock_physical_params.physical.analytical_correction = False
+
 
 def test_PhysicalScalingModel(test_reflections, mock_exp):
     """Test the PhysicalScalingModel class."""
@@ -299,8 +314,13 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
             "est_standard_devs": [0.05, 0.1],
             "null_parameter_value": 1,
         },
+        "analytical": {
+            "n_parameters": 0,
+            "null_parameter_value": 1.0,
+            "parameters": [],
+        },
         "configuration_parameters": {
-            "corrections": ["scale"],
+            "corrections": ["scale", "analytical"],
             "s_norm_fac": 0.1,
             "scale_rot_interval": 10.0,
             "decay_restaint": 1e-1,
@@ -311,6 +331,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     assert "scale" in physicalmodel.components
     assert "absorption" not in physicalmodel.components
     assert "decay" not in physicalmodel.components
+    assert "analytical" in physicalmodel.components
     assert list(physicalmodel.components["scale"].parameters) == [0.5, 1.0]
     assert list(physicalmodel.components["scale"].parameter_esds) == [0.05, 0.1]
 

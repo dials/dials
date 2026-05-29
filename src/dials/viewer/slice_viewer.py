@@ -89,7 +89,6 @@ class show_3d_wx_app(wx.App):
 
 class show_reflections:
     def __init__(self, table, two_windows=False):
-
         # two_windows = True
         print("two_windows =", two_windows)
 
@@ -103,7 +102,6 @@ class show_reflections:
 
 class show_tabl_2fr_wx_app(wx.App):
     def OnInit(self):
-
         self.ImgFrame = flex_3d_frame(None, "DIALS reflections viewer IMG")
         self.flex_panel = flex_arr_img_panel(self.ImgFrame)
         self.ImgFrame.frame_ini_img(self.flex_panel)
@@ -141,7 +139,6 @@ class show_tabl_1fr_wx_app(wx.App):
         return True
 
     def in_tabl(self, table, two_windows):
-
         # if not two_windows:
         self.upper_panel.ini_n_intro(table)
         self.data_grid.ini_n_intro(table)

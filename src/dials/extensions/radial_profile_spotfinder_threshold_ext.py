@@ -105,7 +105,7 @@ class RadialProfileSpotFinderThresholdExt:
         beam = imageset.get_beam()
 
         # Get 2θ array for the panel or ROI
-        two_theta_array = panel.get_two_theta_array(beam.get_s0())
+        two_theta_array = panel.get_two_theta_array(beam.get_unit_s0())
         if region_of_interest:
             x0, x1, y0, y1 = region_of_interest
             two_theta_array = two_theta_array[y0:y1, x0:x1]

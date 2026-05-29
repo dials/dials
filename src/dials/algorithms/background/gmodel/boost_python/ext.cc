@@ -8,6 +8,7 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
+#include <memory>
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/background/gmodel/creator.h>
@@ -19,7 +20,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
   using namespace boost::python;
 
   struct StaticBackgroundModelPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getstate(const StaticBackgroundModel &obj) {
+    static boost::python::tuple getstate(const StaticBackgroundModel& obj) {
       boost::python::list data;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         data.append(obj.data(i));
@@ -27,7 +28,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
       return boost::python::make_tuple(data);
     }
 
-    static void setstate(StaticBackgroundModel &obj, boost::python::tuple state) {
+    static void setstate(StaticBackgroundModel& obj, boost::python::tuple state) {
       DIALS_ASSERT(boost::python::len(state) == 1);
       boost::python::list data = boost::python::extract<boost::python::list>(state[0]);
       for (std::size_t i = 0; i < boost::python::len(data); ++i) {
@@ -44,14 +45,14 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
       .def("mask", &PolarTransformResult::mask);
 
     class_<PolarTransform>("PolarTransform", no_init)
-      .def(init<const BeamBase &, const Panel &, const Goniometer &>())
+      .def(init<const BeamBase&, const Panel&, const Goniometer&>())
       .def("image_xmap", &PolarTransform::image_xmap)
       .def("image_ymap", &PolarTransform::image_ymap)
       .def("discontinuity", &PolarTransform::discontinuity)
       .def("to_polar", &PolarTransform::to_polar)
       .def("from_polar", &PolarTransform::from_polar);
 
-    class_<BackgroundModel, boost::noncopyable, boost::shared_ptr<BackgroundModel> >(
+    class_<BackgroundModel, boost::noncopyable, std::shared_ptr<BackgroundModel> >(
       "BackgroundModel", no_init)
       .def("extract", pure_virtual(&BackgroundModel::extract));
 
@@ -63,7 +64,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
 
     class_<GModelBackgroundCreator> creator("Creator", no_init);
     creator
-      .def(init<boost::shared_ptr<BackgroundModel>, bool, std::size_t>(
+      .def(init<std::shared_ptr<BackgroundModel>, bool, std::size_t>(
         (arg("model"), arg("robust"), arg("min_pixels") = 10)))
       .def("__call__", &GModelBackgroundCreator::shoebox)
       .def("__call__", &GModelBackgroundCreator::volume);

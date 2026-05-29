@@ -5,8 +5,10 @@ Test the command line script dials.scale, for successful completion.
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 import iotbx.merging_statistics
@@ -25,9 +27,9 @@ from dials.util.options import ArgumentParser
 
 def run_one_scaling(working_directory, argument_list):
     """Run the dials.scale algorithm."""
-    command = ["dials.scale"] + argument_list
+    command = [shutil.which("dials.scale")] + argument_list
     print(command)
-    result = procrunner.run(command, working_directory=working_directory)
+    result = subprocess.run(command, cwd=working_directory, capture_output=True)
     print(result.stderr)
     assert not result.returncode and not result.stderr
     assert (working_directory / "scaled.expt").is_file()
@@ -252,12 +254,12 @@ def test_scale_script_prepare_input():
 
 def test_targeted_scaling_against_mtz(dials_data, tmp_path):
     """Test targeted scaling against an mtz generated with dials.scale."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refl = location / "scaled_35.refl"
     expt = location / "scaled_35.expt"
-    command = ["dials.scale", refl, expt, "unmerged_mtz=unmerged.mtz"]
+    command = [shutil.which("dials.scale"), refl, expt, "unmerged_mtz=unmerged.mtz"]
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "scaled.refl").is_file()
@@ -267,14 +269,14 @@ def test_targeted_scaling_against_mtz(dials_data, tmp_path):
     expt = location / "scaled_30.expt"
     reference = tmp_path / "unmerged.mtz"
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         refl,
         expt,
         f"reference={reference}",
         "unmerged_mtz=unmerged_2.mtz",
     ]
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "scaled.refl").is_file()
@@ -300,7 +302,7 @@ def test_targeted_scaling_against_mtz(dials_data, tmp_path):
 )
 def test_scale_single_dataset_with_options(dials_data, tmp_path, option):
     """Test different non-default command-line options with a single dataset."""
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     args = [refl_1, expt_1]
@@ -312,16 +314,16 @@ def test_scale_single_dataset_with_options(dials_data, tmp_path, option):
 @pytest.fixture(scope="session")
 def vmxi_protk_reindexed(dials_data, tmp_path_factory):
     """Reindex the protk data to be in the correct space group."""
-    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    location = dials_data("vmxi_proteinase_k_sweeps")
 
     command = [
-        "dials.reindex",
+        shutil.which("dials.reindex"),
         location / "experiments_0.json",
         location / "reflections_0.pickle",
         "space_group=P422",
     ]
     tmp_path = tmp_path_factory.mktemp("vmxi_protk_reindexed")
-    procrunner.run(command, working_directory=tmp_path)
+    subprocess.run(command, cwd=tmp_path, capture_output=True)
     return tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"
 
 
@@ -392,7 +394,7 @@ def test_error_model_options(
 )
 def test_scale_multiple_datasets_with_options(dials_data, tmp_path, option):
     """Test different non-defaul command-line options with multiple datasets."""
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     refl_2 = data_dir / "25_integrated.pickle"
@@ -406,7 +408,7 @@ def test_scale_multiple_datasets_with_options(dials_data, tmp_path, option):
 def test_scale_physical(dials_data, tmp_path):
     """Test standard scaling of one dataset."""
 
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     extra_args = [
@@ -420,6 +422,7 @@ def test_scale_physical(dials_data, tmp_path):
         "use_free_set=1",
         "outlier_rejection=simple",
         "json=scaling.json",
+        "additional_stats=True",
     ]
     run_one_scaling(tmp_path, [refl_1, expt_1] + extra_args)
     unmerged_mtz = tmp_path / "unmerged.mtz"
@@ -446,6 +449,36 @@ def test_scale_physical(dials_data, tmp_path):
     assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
         False
     )
+
+    # run with a precalculated analytical correction (set to 1 for test to check result the same)
+    data_dir = dials_data("l_cysteine_dials_output")
+    r2 = flex.reflection_table.from_file(data_dir / "20_integrated.pickle")
+    r2["analytical_correction"] = flex.double(r2.size(), 1.0)
+    r2.as_file(tmp_path / "modified.refl")
+    extra_args = [
+        "model=physical",
+        "physical.analytical_correction=True",
+        "error_model=None",
+        "intensity_choice=profile",
+        "unmerged_mtz=unmerged.mtz",
+        "use_free_set=1",
+        "outlier_rejection=simple",
+    ]
+    import os
+
+    run_one_scaling(
+        tmp_path, [os.fspath(tmp_path / "modified.refl"), expt_1] + extra_args
+    )
+    unmerged_mtz = tmp_path / "unmerged.mtz"
+    assert unmerged_mtz.is_file()
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    assert "analytical" in expts[0].scaling_model.components
+
+    # Now inspect output, check it's identical
+    result2 = get_merging_stats(unmerged_mtz)
+    assert result2.overall.r_pim == result.overall.r_pim
+    assert result2.overall.cc_one_half == result.overall.cc_one_half
+    assert result2.overall.n_obs == result.overall.n_obs
 
     # run again with the concurrent scaling option turned off and the 'standard'
     # outlier rejection
@@ -474,7 +507,7 @@ def test_scale_physical(dials_data, tmp_path):
 
 def test_scale_set_absorption_level(dials_data, tmp_path):
     """Test that the absorption parameters are correctly set for the absorption option."""
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     refl = location / "20_integrated.pickle"
     expt = location / "20_integrated_experiments.json"
 
@@ -482,13 +515,13 @@ def test_scale_set_absorption_level(dials_data, tmp_path):
     # minimiser due to indeterminate solution of the normal equations. In this
     # case, the error should be caught and scaling can proceed.
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         refl,
         expt,
         "absorption_level=medium",
         "unmerged_mtz=unmerged.mtz",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -504,13 +537,13 @@ def test_scale_set_absorption_level(dials_data, tmp_path):
     ## now scale again with different options, but fix the absorption surface to
     # test the correction.fix option.
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         tmp_path / "scaled.refl",
         tmp_path / "scaled.expt",
         "error_model=None",
         "physical.correction.fix=absorption",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -520,15 +553,15 @@ def test_scale_set_absorption_level(dials_data, tmp_path):
 
 
 def test_scale_normal_equations_failure(dials_data, tmp_path):
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     refl = location / "20_integrated.pickle"
     expt = location / "20_integrated_experiments.json"
 
     # exclude a central region of data to force the failure of the full matrix
     # minimiser due to indeterminate solution of the normal equations. In this
     # case, the error should be caught and scaling can proceed.
-    command = ["dials.scale", refl, expt, "exclude_images=800:1400"]
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [shutil.which("dials.scale"), refl, expt, "exclude_images=800:1400"]
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -536,10 +569,10 @@ def test_scale_normal_equations_failure(dials_data, tmp_path):
 
 def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     """Test the scale and filter command line program."""
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
 
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         "filtering.method=deltacchalf",
         "stdcutoff=4.0",
         "mode=image_group",
@@ -555,7 +588,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
         command.append(location / f"experiments_{i}.json")
         command.append(location / f"reflections_{i}.pickle")
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -577,10 +610,10 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
 def test_scale_and_filter_termination(dials_data, tmp_path):
     """Test the scale and filter command line program,
     when it terminates with a cycle when going over the max percent removed."""
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
 
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         "filtering.method=deltacchalf",
         "stdcutoff=2.0",
         "max_percent_removed=5.0",
@@ -595,7 +628,7 @@ def test_scale_and_filter_termination(dials_data, tmp_path):
         command.append(location / f"experiments_{i}.json")
         command.append(location / f"reflections_{i}.pickle")
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -613,9 +646,9 @@ def test_scale_and_filter_termination(dials_data, tmp_path):
 def test_scale_and_filter_image_group_single_dataset(dials_data, tmp_path):
     """Test the scale and filter deltacchalf.mode=image_group on a
     single data set."""
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         data_dir / "20_integrated.pickle",
         data_dir / "20_integrated_experiments.json",
         "filtering.method=deltacchalf",
@@ -625,7 +658,7 @@ def test_scale_and_filter_image_group_single_dataset(dials_data, tmp_path):
         "scale_and_filter_results=analysis_results.json",
         "error_model=None",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -639,19 +672,19 @@ def test_scale_and_filter_image_group_single_dataset(dials_data, tmp_path):
 
 
 def test_scale_when_a_dataset_is_filtered_out(dials_data, tmp_path):
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
     # Modify one of the input tables so that it gets filtered out
     # during scaler initialisation. Triggers the bug referenced in
     # https://github.com/dials/dials/issues/2045
     refls = flex.reflection_table.from_file(location / "reflections_3.pickle")
     refls["partiality"] = flex.double(refls.size(), 0.3)
     refls.as_file(tmp_path / "modified_3.refl")
-    command = ["dials.scale", "d_min=2.0", tmp_path / "modified_3.refl"]
+    command = [shutil.which("dials.scale"), "d_min=2.0", tmp_path / "modified_3.refl"]
     for i in [1, 2, 3, 4]:
         command.append(location / f"experiments_{i}.json")
     for i in [1, 2, 4]:
         command.append(location / f"reflections_{i}.pickle")
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
@@ -660,13 +693,13 @@ def test_scale_when_a_dataset_is_filtered_out(dials_data, tmp_path):
 
 def test_scale_dose_decay_model(dials_data, tmp_path):
     """Test the scale and filter command line program."""
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
-    command = ["dials.scale", "d_min=2.0", "model=dose_decay"]
+    location = dials_data("multi_crystal_proteinase_k")
+    command = [shutil.which("dials.scale"), "d_min=2.0", "model=dose_decay"]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location / f"experiments_{i}.json")
         command.append(location / f"reflections_{i}.pickle")
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -676,12 +709,14 @@ def test_scale_dose_decay_model(dials_data, tmp_path):
 
 
 def test_scale_best_unit_cell_d_min(dials_data, tmp_path):
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
     best_unit_cell = uctbx.unit_cell((42, 42, 39, 90, 90, 90))
     d_min = 2
     command = [
-        "dials.scale",
-        "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
+        shutil.which("dials.scale"),
+        "best_unit_cell={:g},{:g},{:g},{:g},{:g},{:g}".format(
+            *best_unit_cell.parameters()
+        ),
         f"d_min={d_min:g}",
         "unmerged_mtz=unmerged.mtz",
         "merged_mtz=merged.mtz",
@@ -689,7 +724,7 @@ def test_scale_best_unit_cell_d_min(dials_data, tmp_path):
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location / f"experiments_{i}.json")
         command.append(location / f"reflections_{i}.pickle")
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -707,9 +742,9 @@ def test_scale_best_unit_cell_d_min(dials_data, tmp_path):
 
 def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
     """Test the scale and filter command line program."""
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         "filtering.method=deltacchalf",
         "stdcutoff=1.0",
         "mode=dataset",
@@ -724,7 +759,7 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
         command.append(location / f"experiments_{i}.json")
         command.append(location / f"reflections_{i}.pickle")
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "filtered.refl").is_file()
     assert (tmp_path / "scaled.expt").is_file()
@@ -745,7 +780,7 @@ def test_scale_array(dials_data, tmp_path):
     round may fail. Currently turning off absorption term to avoid
     overparameterisation and failure of full matrix minimisation."""
 
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl = data_dir / "20_integrated.pickle"
     expt = data_dir / "20_integrated_experiments.json"
     extra_args = ["model=array", "array.absorption_correction=0", "full_matrix=0"]
@@ -756,7 +791,7 @@ def test_scale_array(dials_data, tmp_path):
 def test_multi_scale(dials_data, tmp_path):
     """Test standard scaling of two datasets."""
 
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     refl_2 = data_dir / "25_integrated.pickle"
@@ -814,7 +849,7 @@ def test_multi_scale(dials_data, tmp_path):
 def test_multi_scale_individual_error_models(dials_data, tmp_path):
     """Test standard scaling of two datasets."""
 
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     refl_2 = data_dir / "25_integrated.pickle"
@@ -847,7 +882,7 @@ def test_multi_scale_individual_error_models(dials_data, tmp_path):
 
 def test_multi_scale_exclude_images(dials_data, tmp_path):
     """Test scaling of multiple dataset with image exclusion."""
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     refl_2 = data_dir / "25_integrated.pickle"
@@ -921,9 +956,9 @@ def test_scale_handle_bad_dataset(dials_data, tmp_path):
     """Set command line parameters such that one dataset does not meet the
     criteria for inclusion in scaling. Check that this is excluded and the
     scaling job completes without failure."""
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
     command = [
-        "dials.scale",
+        shutil.which("dials.scale"),
         "reflection_selection.method=intensity_ranges",
         "Isigma_range=90.0,1000",
     ]
@@ -931,7 +966,7 @@ def test_scale_handle_bad_dataset(dials_data, tmp_path):
         command.append(location / f"experiments_{i}.json")
         command.append(location / f"reflections_{i}.pickle")
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
     reflections = flex.reflection_table.from_file(tmp_path / "scaled.refl")
@@ -940,13 +975,38 @@ def test_scale_handle_bad_dataset(dials_data, tmp_path):
     assert len(reflections.experiment_identifiers()) == 4
 
 
+def test_target_scale_handle_bad_dataset(dials_data, tmp_path):
+    """Set command line parameters such that some datasets do not meet the
+    criteria for inclusion in scaling. Check that these are excluded and the
+    scaling job completes without failure."""
+    location = dials_data("cunir_serial_processed")
+    pdb = dials_data("cunir_serial") / "2BW4.pdb"
+    command = [
+        shutil.which("dials.scale"),
+        "reflection_selection.method=intensity_ranges",
+        "Isigma_range=18.0,0.0",
+        "full_matrix=None",
+        os.fspath(location / "integrated.refl"),
+        os.fspath(location / "integrated.expt"),
+        f"reference={os.fspath(pdb)}",
+    ]
+
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+
+    reflections = flex.reflection_table.from_file(tmp_path / "scaled.refl")
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    assert len(expts) == 2
+    assert len(reflections.experiment_identifiers()) == 2
+
+
 def test_targeted_scaling(dials_data, tmp_path):
     """Test the targeted scaling workflow."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     target_refl = location / "scaled_35.refl"
     target_expt = location / "scaled_35.expt"
 
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     refl_2 = data_dir / "25_integrated.pickle"
@@ -973,7 +1033,7 @@ def test_targeted_scaling(dials_data, tmp_path):
 
 
 def test_shared_absorption_surface(dials_data, tmp_path):
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
     refl_2 = data_dir / "25_integrated.pickle"
@@ -996,7 +1056,7 @@ def test_shared_absorption_surface(dials_data, tmp_path):
 
 def test_incremental_scale_workflow(dials_data, tmp_path):
     """Try scale, cosym, scale, cosym, scale."""
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
 
@@ -1005,9 +1065,15 @@ def test_incremental_scale_workflow(dials_data, tmp_path):
     # test order also - first new file before scaled
     refl_2 = data_dir / "25_integrated.pickle"
     expt_2 = data_dir / "25_integrated_experiments.json"
-    command = ["dials.cosym", refl_2, expt_2, "scaled.refl", "scaled.expt"]
+    command = [
+        shutil.which("dials.cosym"),
+        refl_2,
+        expt_2,
+        "scaled.refl",
+        "scaled.expt",
+    ]
 
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "symmetrized.expt").is_file()
     assert (tmp_path / "symmetrized.refl").is_file()
@@ -1019,7 +1085,7 @@ def test_incremental_scale_workflow(dials_data, tmp_path):
     refl_2 = data_dir / "30_integrated.pickle"
     expt_2 = data_dir / "30_integrated_experiments.json"
     command = [
-        "dials.cosym",
+        shutil.which("dials.cosym"),
         "scaled.refl",
         "scaled.expt",
         refl_1,
@@ -1027,7 +1093,7 @@ def test_incremental_scale_workflow(dials_data, tmp_path):
         "output.reflections=symmetrized.refl",
         "output.experiments=symmetrized.expt",
     ]
-    result = procrunner.run(command, working_directory=tmp_path)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "symmetrized.expt").is_file()
     assert (tmp_path / "symmetrized.refl").is_file()
@@ -1046,7 +1112,7 @@ def test_incremental_scale_workflow(dials_data, tmp_path):
 )
 def test_scale_cross_validate(dials_data, tmp_path, mode, parameter, parameter_values):
     """Test standard scaling of one dataset."""
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     refl = data_dir / "20_integrated.pickle"
     expt = data_dir / "20_integrated_experiments.json"
     extra_args = [
@@ -1059,8 +1125,8 @@ def test_scale_cross_validate(dials_data, tmp_path, mode, parameter, parameter_v
         extra_args += [f"parameter={parameter}"]
     if parameter_values:
         extra_args += [f"parameter_values={parameter_values}"]
-    command = ["dials.scale", refl, expt] + extra_args
-    result = procrunner.run(command, working_directory=tmp_path)
+    command = [shutil.which("dials.scale"), refl, expt] + extra_args
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
 
@@ -1080,7 +1146,7 @@ def test_few_reflections(dials_data):
         dials_data: DIALS custom Pytest fixture for access to test data.
     """
     # Get the input experiment lists and reflection tables.
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     experiments = ExperimentList.from_file(data_dir / "11_integrated.expt")
     experiments.extend(ExperimentList.from_file(data_dir / "23_integrated.expt"))
     refls = "11_integrated.refl", "23_integrated.refl"

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 
-import procrunner
 import pytest
 
 from dials.command_line import estimate_resolution as cmdline
@@ -16,10 +17,10 @@ from dials.command_line import estimate_resolution as cmdline
     ],
 )
 def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
-    x4wide = dials_data("x4wide_processed", pathlib=True)
+    x4wide = dials_data("x4wide_processed")
     paths = [str(x4wide / p) for p in input_files]
     reference_mtz = x4wide / "AUTOMATIC_DEFAULT_scaled.mtz"
-    result = cmdline.run(
+    cmdline.run(
         [
             "cc_half=0.9",
             "isigma=2",
@@ -40,12 +41,13 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
     )
     captured = capsys.readouterr()
     expected_output = (
-        "Resolution rmerge:        1.34",
-        "Resolution cc_half:       1.56",
+        "Resolution rmerge:        1.33",
+        "Resolution cc_half:       1.58",
         "Resolution cc_ref:        1.3",
         "Resolution I/sig:         1.53",
         "Resolution Mn(I/sig):     1.51",
-        "Resolution Mn(I)/Mn(sig): 1.50",
+        "Resolution Mn(I)/Mn(sig): 1.49",
+        "Resolution cc_half_significance_level:    1.20",
     )
     for line in expected_output:
         assert line in captured.out
@@ -53,13 +55,13 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
     expected_keys = {
         "cc_half",
         "cc_ref",
+        "cc_half_significance_level",
         "isigma",
         "misigma",
         "i_mean_over_sigma_mean",
         "rmerge",
         "completeness",
     }
-    assert set(result.keys()) == expected_keys
     resolutionizer = run_in_tmp_path / "resolutionizer.json"
     assert resolutionizer.is_file()
     with resolutionizer.open() as fh:
@@ -68,7 +70,7 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
 
 
 def test_multi_sequence_with_batch_range(dials_data, run_in_tmp_path, capsys):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
@@ -76,21 +78,25 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmp_path, capsys):
         ["batch_range=1900,3600", str(refls), str(expts)],
     )
     captured = capsys.readouterr()
-
-    expected_output = "Resolution cc_half:       0.61"
+    expected_output = (
+        "Resolution cc_half:       0.59",
+        "Resolution cc_half_significance_level:    0.59",
+    )
     for line in expected_output:
         assert line in captured.out
     assert run_in_tmp_path.joinpath("dials.estimate_resolution.html").is_file()
 
 
-def test_dispatcher_name():
-    result = procrunner.run(["dials.estimate_resolution"])
+def test_dispatcher_name(tmp_path):
+    result = subprocess.run(
+        [shutil.which("dials.estimate_resolution")], cwd=tmp_path, capture_output=True
+    )
     assert not result.returncode
     assert not result.stderr
 
 
 def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     cmdline.run(
         ["misigma=1"]
         + [
@@ -106,8 +112,9 @@ def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
     captured = capsys.readouterr()
 
     expected_output = (
-        "Resolution fit against cc_half failed: No reflections left for fitting",
+        "Resolution fit against cc_half failed: Not enough reflections for fitting",
         "Resolution Mn(I/sig):     0.62",
+        "Resolution cc_half_significance_level:    0.62",
     )
     for line in expected_output:
         assert line in captured.out
@@ -115,7 +122,7 @@ def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
 
 
 def test_mismatched_experiments_reflections(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     with pytest.raises(SystemExit):
         cmdline.run(
             [

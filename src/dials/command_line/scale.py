@@ -40,19 +40,14 @@ from __future__ import annotations
 
 import logging
 import sys
-from io import StringIO
 
 from libtbx import phil
 
 from dials.algorithms.scaling.algorithm import ScaleAndFilterAlgorithm, ScalingAlgorithm
 from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.export_mtz import log_summary
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-
-try:
-    from typing import List
-except ImportError:
-    pass
 
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
@@ -97,6 +92,10 @@ phil_scope = phil.parse(
       .type = int
       .help = "Number of bins to use for calculating and plotting merging stats."
       .expert_level = 1
+    additional_stats = False
+      .type = bool
+      .help = "Calculate and report the R-split statistic in the merging stats."
+      .expert_level=2
     delete_integration_shoeboxes = True
       .type = bool
       .help = "Discard integration shoebox data from scaling output, to help"
@@ -131,10 +130,8 @@ def _export_merged_mtz(params, experiments, joint_table):
     mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
     logger.disabled = False
     logger.info("\nWriting merged data to %s", (params.output.merged_mtz))
-    out = StringIO()
-    mtz_file.show_summary(out=out)
-    logger.info(out.getvalue())
-    mtz_file.write(params.output.merged_mtz)
+    log_summary(mtz_file)
+    mtz_file.write_to_file(params.output.merged_mtz)
 
 
 def _export_unmerged_mtz(params, experiments, reflection_table):
@@ -201,7 +198,7 @@ def run_scaling(params, experiments, reflections):
 
 
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.scale integrated.refl integrated.expt
 [integrated.refl(2) integrated.expt(2) ....] [options]"""
@@ -233,7 +230,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
 
     try:
         scaled_experiments, joint_table = run_scaling(params, experiments, reflections)
-    except ValueError as e:
+    except (ValueError, RuntimeError) as e:
         raise Sorry(e)
     else:
         # Note, cross validation mode does not produce scaled datafiles
@@ -241,7 +238,9 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             logger.info(
                 "Saving the scaled experiments to %s", params.output.experiments
             )
-            scaled_experiments.as_file(params.output.experiments)
+            scaled_experiments.as_file(
+                params.output.experiments, history_as_scaled=True
+            )
             logger.info(
                 "Saving the scaled reflections to %s", params.output.reflections
             )

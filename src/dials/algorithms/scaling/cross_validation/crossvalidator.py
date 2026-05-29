@@ -5,10 +5,9 @@ cross validator for dials.scale
 
 from __future__ import annotations
 
+import importlib.metadata
 import itertools
 from copy import deepcopy
-
-import pkg_resources
 
 from libtbx import phil
 from libtbx.table_utils import simple_table
@@ -44,7 +43,7 @@ class CrossValidator:
         raise NotImplementedError()
 
     def get_parameter_type(self, name):
-        """Find the parameter type for a discreet phil option - bool or choice."""
+        """Find the parameter type for a discrete phil option - bool or choice."""
         raise NotImplementedError()
 
     def set_parameter(self, params, name, val):
@@ -172,8 +171,8 @@ is provided. For example, physical.decay_correction rather than decay_correction
             return params
         available_models = [
             entry_point.name
-            for entry_point in pkg_resources.iter_entry_points(
-                "dxtbx.scaling_model_ext"
+            for entry_point in importlib.metadata.entry_points(
+                group="dxtbx.scaling_model_ext"
             )
         ]
         phil_branches = [
