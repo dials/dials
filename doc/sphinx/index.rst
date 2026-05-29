@@ -42,7 +42,8 @@ Contact
 
 For feature requests, bug reports or any other information, please contact
 the DIALS developers at dials-user-group@jiscmail.net, or post an
-`issue`_. Ask users and developers for help on the RS-Station `forum`_.
+`issue`_. Ask users and developers for help in our `Slack workspace`_ or
+on the RS-Station `forum`_.
 
 Citing DIALS
 ============
@@ -117,3 +118,4 @@ Work at LBNL is performed under `Department of Energy`_ contract DE-AC02-05CH112
 .. _dials.github.io: https://dials.github.io/
 .. _`NIH`: https://www.nigms.nih.gov/
 .. _`forum`: https://discourse.rs-station.org/c/software/dials/10 
+.. _`Slack workspace`: https://join.slack.com/t/dials-support/shared_invite/zt-3rjyeiqkm-U3BTLiAOgXmhh59wJcLanA
