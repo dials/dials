@@ -468,8 +468,12 @@ class MMCIFOutputFile:
 
         for i, exp in enumerate(experiments):
             scan = exp.scan
-            image_range = scan.get_image_range()
-            start, increment = scan.get_oscillation(deg=True)
+            if scan:
+                image_range = scan.get_image_range()
+                start, increment = scan.get_oscillation(deg=True)
+            else:
+                image_range = (1, 1)
+                start, increment = (0, 0)
             scan_loop.add_row(
                 (
                     i + 1,
@@ -566,8 +570,12 @@ class MMCIFOutputFile:
         for i, exp in enumerate(experiments):
             scan = exp.scan
             crystal_id = crystal_to_id[exp.crystal]
-            image_range = scan.get_image_range()
-            osc_range = scan.get_oscillation_range(deg=True)
+            if scan:
+                image_range = scan.get_image_range()
+                osc_range = scan.get_oscillation_range(deg=True)
+            else:
+                image_range = (1, 1)
+                osc_range = (0, 0)
             cif_loop.add_row(
                 (
                     i + 1,
