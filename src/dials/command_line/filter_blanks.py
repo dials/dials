@@ -182,7 +182,10 @@ def run(args=None):
 
             # rewrite experiment id on output to match index
             keep["id"] = flex.int(len(keep), len(valid_experiments) - 1)
+            keep.experiment_identifiers()[j] = _expt.identifier
             valid_reflections.extend(keep)
+
+    valid_reflections.assert_experiment_identifiers_are_consistent(valid_experiments)
 
     if params.output.reflections:
         valid_reflections.as_file(params.output.reflections)
