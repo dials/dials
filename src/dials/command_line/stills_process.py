@@ -23,6 +23,7 @@ from libtbx.utils import Abort, Sorry
 
 import dials.util
 from dials.array_family import flex
+from dials.command_line.dials_import import MetaDataUpdater
 from dials.util import log
 
 logger = logging.getLogger("dials.command_line.stills_process")
@@ -168,6 +169,8 @@ def _control_phil_str():
       .help = Add psana timestamps to the experiment identifiers. This allows \
               sorting of LCLS XFEL data for certain experiments.
   }
+
+  include scope dials.util.options.lookup_phil_scope
 
   mp {
     method = *multiprocessing sge lsf pbs mpi
@@ -397,6 +400,34 @@ def sync_geometry(src, dest):
             sync_geometry(src_child, dest_child)
 
 
+def _apply_lookup_to_imageset(imageset, params, lookup_cache):
+    """Apply lookup data (gain map) to an imageset using the cache.
+
+    Only acts if lookup.gain is set; returns the imageset unchanged otherwise.
+    The lookup object is read from file once and cached by absolute path so
+    that subsequent calls for the same gain file do not re-read from disk.
+    """
+    if params.lookup.gain is None:
+        return imageset
+    gain_key = os.path.abspath(params.lookup.gain)
+    if gain_key not in lookup_cache:
+        lookup_cache[gain_key] = MetaDataUpdater.import_lookup_data(params)
+    try:
+        imageset = MetaDataUpdater.update_lookup(imageset, lookup_cache[gain_key])
+    except AssertionError:
+        _imageset_label = (
+            " ".join(imageset.paths()) if hasattr(imageset, "paths") else str(imageset)
+        )
+        logger.warning(
+            "Gain map %s is incompatible with imageset %s (panel count mismatch); "
+            "re-raising",
+            params.lookup.gain,
+            _imageset_label,
+        )
+        raise
+    return imageset
+
+
 class Script:
     """A class for running the script."""
 
@@ -409,6 +440,7 @@ class Script:
 
         self.tag = None
         self.reference_detector = None
+        self._lookup_cache: dict = {}
 
         # Create the parser
         self.parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
@@ -532,6 +564,23 @@ class Script:
 
         logger.info(f"Have {len(all_paths)} files")
 
+        # Reject lookup fields that are present in the shared PHIL scope but not
+        # yet implemented in stills_process.
+        for _unsupported in ("pedestal", "dx", "dy"):
+            if getattr(params.lookup, _unsupported) is not None:
+                raise NotImplementedError(
+                    f"lookup.{_unsupported} is not supported by dials.stills_process"
+                )
+
+        # Top-level lookup.mask propagates to downstream scopes if not already set.
+        # Explicit nested settings (spotfinder.lookup.mask, integration.lookup.mask)
+        # take precedence over the top-level alias.
+        if params.lookup.mask is not None:
+            if params.spotfinder.lookup.mask is None:
+                params.spotfinder.lookup.mask = params.lookup.mask
+            if params.integration.lookup.mask is None:
+                params.integration.lookup.mask = params.lookup.mask
+
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
             if mask_path is not None and not os.path.isfile(mask_path):
@@ -602,6 +651,13 @@ class Script:
 
         update_geometry = ManualGeometryUpdater(params)
 
+        # Warm the gain-map cache once before any worker closures run.
+        # This avoids reading the gain file once per image in the do_work loops.
+        if params.lookup.gain is not None:
+            _gain_key = os.path.abspath(params.lookup.gain)
+            _initial_lookup = MetaDataUpdater.import_lookup_data(params)
+            self._lookup_cache[_gain_key] = _initial_lookup
+
         # Import stuff
         logger.info("Loading files...")
         pre_import = params.dispatch.pre_import or len(all_paths) == 1
@@ -660,6 +716,9 @@ class Script:
                         experiment.load_models()
                         imageset = experiment.imageset
                         update_geometry(imageset)
+                        imageset = _apply_lookup_to_imageset(
+                            imageset, params, self._lookup_cache
+                        )
                         experiment.beam = imageset.get_beam()
                         experiment.detector = imageset.get_detector()
                     except (RuntimeError, AttributeError) as e:
@@ -730,6 +789,9 @@ class Script:
 
                     try:
                         update_geometry(imagesets[0])
+                        imagesets[0] = _apply_lookup_to_imageset(
+                            imagesets[0], params, self._lookup_cache
+                        )
                         experiment = experiments[0]
                         experiment.beam = imagesets[0].get_beam()
                         experiment.detector = imagesets[0].get_detector()
