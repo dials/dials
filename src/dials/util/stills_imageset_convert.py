@@ -36,38 +36,79 @@ def frame_index(iset_dict):
     return sfi[0] if sfi else 0
 
 
-def build_consolidated_scan(frame_numbers, wavelengths, batch_offset=0):
+def build_consolidated_scan(single_file_indices, wavelengths, batch_offset=0):
     """Return a __stills_consolidated scan dict.
 
-    Args:
-      frame_numbers: list of 1-based image-range starts, length N (one per experiment).
-      wavelengths:   list of per-frame wavelengths in Angstrom, length N.
-      batch_offset:  integer batch offset (default 0).
+    Per-frame identity is stored only as 0-based ``single_file_indices`` on the
+    imageset (the redundant 1-based ``frame_numbers`` array was removed); the
+    consolidated scan carries just the per-frame property arrays. This function
+    builds the scan and enforces the alignment invariant that the wavelength
+    array has exactly one entry per unique frame.
 
-    The returned dict is the only acceptable JSON form for a consolidated scan
-    and matches what :func:`expand_consolidated_scan` knows how to read back.
+    Args:
+      single_file_indices: the imageset's 0-based frame indices (sparse,
+        ascending, one per unique frame). Used only to validate length.
+      wavelengths:   list of per-unique-frame wavelengths in Angstrom.
+      batch_offset:  integer batch offset (default 0).
     """
+    assert len(single_file_indices) == len(wavelengths), (
+        "consolidated stills: single_file_indices length %d != wavelength "
+        "length %d" % (len(single_file_indices), len(wavelengths))
+    )
     return {
         "__stills_consolidated": True,
         "batch_offset": batch_offset,
-        "frame_numbers": list(frame_numbers),
         "properties": {"wavelength": list(wavelengths)},
         "valid_image_ranges": {},
     }
 
 
-def expand_consolidated_scan(scan_list):
-    """Return ``(frame_numbers, wavelengths)`` from a __stills_consolidated scan list.
+def consolidated_frame_map(d):
+    """Return ``{scan_point: (fi, wl)}`` for a consolidated-scan .expt dict.
 
-    Returns ``(None, None)`` if the scan list is absent or not consolidated, so
-    callers can detect that case and fall back to per-frame scan dicts.
+    ``fi`` is the 0-based HDF5 frame index recovered from the referenced
+    imageset's ``single_file_indices``; ``wl`` is the per-frame wavelength.
+    Returns ``None`` if the scan is absent or not consolidated, so callers can
+    fall back to :func:`per_frame_scan_map`.
+
+    This is the dials-side mirror of dxtbx's
+    ``ExperimentListDict._expand_consolidated_scans`` (dxtbx cannot import
+    dials). The two must stay identical; a cross-repo unit test guards them.
+
+    Invariant: within each imageset, ``single_file_indices`` is sparse and
+    ascending and aligns positionally with that imageset's experiments taken in
+    ascending (deduped) scan_point order. Multi-lattice frames share one
+    scan_point, so dedup before zipping; group per imageset since scan_point is
+    global while single_file_indices is per-imageset.
     """
+    scan_list = d.get("scan", [])
     if not scan_list or not scan_list[0].get("__stills_consolidated"):
-        return None, None
-    con = scan_list[0]
-    fns = con["frame_numbers"]
-    wls = con.get("properties", {}).get("wavelength", [None] * len(fns))
-    return fns, wls
+        return None
+    wls = scan_list[0].get("properties", {}).get("wavelength", [])
+    imagesets = d.get("imageset", [])
+
+    sps_by_imageset = {}
+    for exp in d["experiment"]:
+        sp = exp.get("scan_point")
+        if sp is None:
+            continue
+        sps_by_imageset.setdefault(exp["imageset"], set()).add(sp)
+
+    frame_for_scan_point = {}
+    for m, sp_set in sps_by_imageset.items():
+        sps = sorted(sp_set)
+        sfi_m = imagesets[m]["single_file_indices"]
+        assert len(sfi_m) == len(sps), (
+            "consolidated stills: single_file_indices length %d != %d unique "
+            "scan_points for imageset %d" % (len(sfi_m), len(sps), m)
+        )
+        for local_pos, sp in enumerate(sps):
+            frame_for_scan_point[sp] = sfi_m[local_pos]
+
+    return {
+        sp: (fi, wls[sp] if sp < len(wls) else None)
+        for sp, fi in frame_for_scan_point.items()
+    }
 
 
 def per_frame_scan_map(scan_list):

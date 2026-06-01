@@ -30,7 +30,7 @@ import dials.util
 from dials.util import log
 from dials.util.options import ArgumentParser
 from dials.util.stills_imageset_convert import (
-    expand_consolidated_scan as _expand_consolidated_scan,
+    consolidated_frame_map as _consolidated_frame_map,
 )
 from dials.util.stills_imageset_convert import (
     per_frame_scan_map as _per_frame_scan_map,
@@ -62,8 +62,8 @@ def convert_expt(input_path, output_path):
     with open(input_path) as f:
         d = json.load(f)
 
-    frame_numbers, wavelengths = _expand_consolidated_scan(d.get("scan", []))
-    consolidated = frame_numbers is not None
+    frame_map = _consolidated_frame_map(d)
+    consolidated = frame_map is not None
     if not consolidated:
         per_frame = _per_frame_scan_map(d.get("scan", []))
 
@@ -81,8 +81,7 @@ def convert_expt(input_path, output_path):
 
         if consolidated:
             sp = exp["scan_point"]
-            fi = frame_numbers[sp] - 1
-            wl = wavelengths[sp]
+            fi, wl = frame_map[sp]
         else:
             scan_idx = exp.get("scan")
             if scan_idx is not None and scan_idx in per_frame:

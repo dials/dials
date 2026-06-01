@@ -11,7 +11,8 @@ import subprocess
 
 import pytest
 
-from dxtbx.format import Format
+from dxtbx.format.FormatMultiImage import FormatMultiImage
+from dxtbx.format.FormatMultiImage import Reader as MultiImageReader
 from dxtbx.imageset import ImageSequence, ImageSetData
 from dxtbx.model import Scan
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
@@ -37,7 +38,12 @@ def _attach_still_imagesets(json_path, tmp_path):
     n = len(src)
     shared_beam = src[0].beam
     shared_detector = src[0].detector
-    isetdata = ImageSetData(reader=Format.Reader(None, ["dummy.cbf"] * n), masker=None)
+    # Single-file reader so to_dict writes single_file_indices: after P2 a
+    # consolidated stills scan requires it (frame_numbers was removed).
+    isetdata = ImageSetData(
+        reader=MultiImageReader(FormatMultiImage, ["dummy.h5"], num_images=n),
+        masker=None,
+    )
     shared_imageset = ImageSequence(
         isetdata,
         scan=Scan(image_range=(1, n), oscillation=(0.0, 0.0)),

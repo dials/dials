@@ -6,10 +6,11 @@ stills_process_imagesequence branch: one shared ImageSequence per source file, o
 XFELBeam, detectors deduplicated, and a single consolidated scan object with
 per-frame wavelengths.
 
-Experiments are sorted by 0-based HDF5 frame index (ascending) so that the
-``frame_numbers`` array in the consolidated scan is ordered. If a companion
-reflection table is provided, the ``id`` column and ``experiment_identifiers``
-map are remapped to match the new experiment ordering.
+Experiments are sorted by 0-based HDF5 frame index (ascending) so that each
+imageset's ``single_file_indices`` is sparse, ascending, and aligns with its
+experiments in scan_point order (the consolidated reader's alignment invariant).
+If a companion reflection table is provided, the ``id`` column and
+``experiment_identifiers`` map are remapped to match the new experiment ordering.
 
 Examples::
 
@@ -106,8 +107,10 @@ def convert_expt(input_path, output_path):
         src_frame_sets.setdefault(info["src"], set()).add(info["fi"])
 
     for src in src_frame_sets:
+        # Sparse, ascending frame indices: one entry per unique frame this
+        # source actually contributes. (Dense range() listed frames no
+        # experiment references and broke positional alignment with scan_points.)
         fis = sorted(src_frame_sets[src])
-        dense = list(range(fis[0], fis[-1] + 1))
         first_iset = next(
             imagesets_in[exp["imageset"]]
             for exp in experiments
@@ -116,7 +119,7 @@ def convert_expt(input_path, output_path):
         new_iset = {
             "__id__": "ImageSequence",
             "template": src,
-            "single_file_indices": dense,
+            "single_file_indices": fis,
             "mask": first_iset.get("mask"),
             "gain": first_iset.get("gain"),
             "pedestal": first_iset.get("pedestal"),
@@ -143,18 +146,32 @@ def convert_expt(input_path, output_path):
             new_detectors.append(copy.deepcopy(det))
         old_to_new_det[old_idx] = det_key_to_new_idx[key]
 
-    # Build sorted experiments and per-experiment model lists.
-    frame_numbers = []
+    # scan_point is a per-UNIQUE-FRAME global index: multi-lattice experiments on
+    # the same (src, fi) share one scan_point (per-shot wavelength is identical
+    # across lattices, so dedup is safe). It is distinct from new_idx, the
+    # per-EXPERIMENT index for the crystal/profile/scaling_model/experiment
+    # arrays (one new experiment per lattice). Assign scan_points per imageset in
+    # ascending-frame order so that within each imageset ascending scan_point
+    # corresponds to ascending frame -- the alignment the consolidated reader
+    # relies on. The consolidated wavelength array is indexed by scan_point, so
+    # it is built here in scan_point order (one entry per unique frame).
+    wl_for_frame = {(info["src"], info["fi"]): info["wl"] for info in exp_info}
+    scan_point_for_frame = {}
+    consolidated_sfi = []
     wavelengths = []
+    for src in src_frame_sets:
+        for fi in sorted(src_frame_sets[src]):
+            scan_point_for_frame[(src, fi)] = len(wavelengths)
+            consolidated_sfi.append(fi)
+            wavelengths.append(wl_for_frame[(src, fi)])
+
+    # Build sorted experiments and per-experiment model lists.
     new_crystals = []
     new_profiles = []
     new_scaling_models = []
     new_experiments = []
 
     for new_idx, info in enumerate(exp_info):
-        frame_numbers.append(info["fi"] + 1)
-        wavelengths.append(info["wl"])
-
         if info["old_crystal"] is not None and crystals_in:
             new_crystals.append(copy.deepcopy(crystals_in[info["old_crystal"]]))
         if info["old_profile"] is not None and profiles_in:
@@ -169,7 +186,7 @@ def convert_expt(input_path, output_path):
         exp["beam"] = 0
         exp["detector"] = old_to_new_det[info["old_det"]]
         exp["scan"] = 0
-        exp["scan_point"] = new_idx
+        exp["scan_point"] = scan_point_for_frame[(info["src"], info["fi"])]
         if new_crystals:
             exp["crystal"] = new_idx
         if new_profiles:
@@ -179,7 +196,7 @@ def convert_expt(input_path, output_path):
         exp.pop("goniometer", None)
         new_experiments.append(exp)
 
-    consolidated_scan = build_consolidated_scan(frame_numbers, wavelengths)
+    consolidated_scan = build_consolidated_scan(consolidated_sfi, wavelengths)
 
     d["experiment"] = new_experiments
     d["imageset"] = new_imagesets
