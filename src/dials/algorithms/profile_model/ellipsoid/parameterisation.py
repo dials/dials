@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
 
 import numpy as np
 from numpy.linalg import norm
@@ -18,7 +17,7 @@ from dials.array_family import flex
 
 
 class BaseParameterisation(ABC):
-    def __init__(self, params: Optional[np.array] = None) -> None:
+    def __init__(self, params: np.array | None = None) -> None:
         """
         Initialise with the parameters
 
@@ -90,7 +89,7 @@ class Simple1MosaicityParameterisation(BaseParameterisation):
             [[[2.0 * b1, 0, 0], [0, 2.0 * b1, 0], [0, 0, 2.0 * b1]]], dtype=np.float64
         ).reshape(1, 3, 3)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """One value for mosaicity for Simple1"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -135,7 +134,7 @@ class Simple6MosaicityParameterisation(BaseParameterisation):
         )
         return np.matmul(M, M.T)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Three components for mosaicity for Simple6"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -255,7 +254,7 @@ class Simple1Angular1MosaicityParameterisation(BaseParameterisation):
             dtype=np.float64,
         )
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -282,7 +281,6 @@ class Simple1Angular1MosaicityParameterisation(BaseParameterisation):
         return d1
 
     def first_derivatives_angular(self):
-
         b2 = self.params[1]
         d2 = np.array(
             [[2 * b2, 0, 0], [0, 2 * b2, 0], [0, 0, 0]], dtype=np.float64
@@ -328,7 +326,7 @@ class Simple1Angular3MosaicityParameterisation(BaseParameterisation):
         bcsq = self.params[2] ** 2 + self.params[3] ** 2
         return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, 0]], dtype=np.float64)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -354,7 +352,6 @@ class Simple1Angular3MosaicityParameterisation(BaseParameterisation):
         return d1
 
     def first_derivatives_angular(self):
-
         b1 = self.params[1]
         b2 = self.params[2]
         b3 = self.params[3]
@@ -396,7 +393,7 @@ class Simple6Angular1MosaicityParameterisation(BaseParameterisation):
             dtype=np.float64,
         )
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -452,7 +449,6 @@ class Simple6Angular1MosaicityParameterisation(BaseParameterisation):
         return ds
 
     def first_derivatives_angular(self):
-
         b2 = self.params[6]
         d2 = np.array(
             [[2 * b2, 0, 0], [0, 2 * b2, 0], [0, 0, 0]], dtype=np.float64
@@ -491,7 +487,7 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         bcsq = self.params[7] ** 2 + self.params[8] ** 2
         return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, 0]], dtype=np.float64)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -545,7 +541,6 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         return ds
 
     def first_derivatives_angular(self):
-
         b1 = self.params[6]
         b2 = self.params[7]
         b3 = self.params[8]
@@ -556,7 +551,7 @@ class Simple6Angular3MosaicityParameterisation(BaseParameterisation):
         return ds
 
 
-class ModelState(object):
+class ModelState:
     """
     A class to keep track of the model state
 
@@ -658,7 +653,9 @@ class ModelState(object):
     def U_params(self, params) -> None:
         try:
             self._U_parameterisation.set_param_vals(tuple(float(i) for i in params))
-        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+        except (
+            ValueError
+        ) as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
             raise RuntimeError(f"Error setting U parameterisation: {e}")
 
     @property
@@ -670,7 +667,9 @@ class ModelState(object):
     def B_params(self, params) -> None:
         try:
             self._B_parameterisation.set_param_vals(tuple(float(i) for i in params))
-        except ValueError as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
+        except (
+            ValueError
+        ) as e:  # Rare, from rstbx parameter_reduction.py, set_orientation L38
             raise RuntimeError(f"Error setting B parameterisation: {e}")
 
     @property
@@ -786,7 +785,7 @@ class ModelState(object):
             self.L_params = temp
 
     @property
-    def parameter_labels(self) -> List[str]:
+    def parameter_labels(self) -> list[str]:
         """
         Get the parameter labels
 
@@ -804,7 +803,7 @@ class ModelState(object):
         return labels
 
 
-class ReflectionModelState(object):
+class ReflectionModelState:
     """
     Class to compute basic derivatives of Sigma and r w.r.t parameters
 
@@ -1021,7 +1020,7 @@ class Angular2MosaicityParameterisation(BaseParameterisation):
             dtype=np.float64,
         )
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Two unique components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()
@@ -1075,7 +1074,7 @@ class Angular4MosaicityParameterisation(BaseParameterisation):
         dd = self.params[3] ** 2
         return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, dd]], dtype=np.float64)
 
-    def mosaicity(self) -> Dict:
+    def mosaicity(self) -> dict:
         """Three components of mosaicity"""
         decomp = linalg.eigensystem.real_symmetric(
             matrix.sqr(flumpy.from_numpy(self.sigma())).as_flex_double_matrix()

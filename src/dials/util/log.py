@@ -4,12 +4,12 @@ import logging.config
 import os
 import sys
 import time
-from typing import List
 
 try:
     from colorlog import ColoredFormatter
 except ImportError:
     ColoredFormatter = None
+
 
 # https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
 class DialsLogfileFormatter:
@@ -142,7 +142,7 @@ def config_simple_cached():
     )
 
 
-def rehandle_cached_records(records: List[logging.LogRecord]) -> None:
+def rehandle_cached_records(records: list[logging.LogRecord]) -> None:
     """
     Submit cached log records to the relevant loggers for handling.
 

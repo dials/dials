@@ -14,8 +14,8 @@ from dials.array_family import flex
 @pytest.mark.xdist_group(name="group1")
 def test_run_ellipsoid_refinement(dials_data):
     # Download data set and the internally referenced images
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    dials_data("cunir_serial")
 
     refls = flex.reflection_table.from_file(ssx / "indexed.refl")
     expts = load.experiment_list(ssx / "indexed.expt", check_format=False)[0:1]

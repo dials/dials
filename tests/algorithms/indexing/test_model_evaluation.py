@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import copy
 import functools
-import os
-from pathlib import Path
 
 import pytest
 
@@ -14,8 +12,8 @@ from dxtbx.serialize import load
 
 from dials.algorithms.indexing import model_evaluation
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
-from dials.algorithms.refinement.refiner import phil_scope as refine_phil
 from dials.array_family import flex
+from dials.command_line.index import phil_scope as index_phil
 
 
 def test_ModelRank():
@@ -151,11 +149,11 @@ def test_ModelRank():
     )
 
 
-def test_ModelEvaluation(dials_regression: Path):
+def test_ModelEvaluation(dials_data):
     # thaumatin
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_import.json")
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    sequence_path = data_dir / "experiments_import.json"
 
     input_reflections = flex.reflection_table.from_file(pickle_path)
     input_experiments = load.experiment_list(sequence_path, check_format=False)
@@ -168,8 +166,8 @@ def test_ModelEvaluation(dials_regression: Path):
     input_reflections["imageset_id"] = flex.size_t(input_reflections.size(), 0)
     input_reflections["id"] = flex.int(input_reflections.size(), -1)
 
-    refine_params = refine_phil.fetch().extract()
-    evaluator = model_evaluation.ModelEvaluation(refinement_params=refine_params)
+    indexer_params = index_phil.fetch().extract()
+    evaluator = model_evaluation.ModelEvaluation(params=indexer_params)
 
     experiments = copy.deepcopy(input_experiments)
     reflections = copy.deepcopy(input_reflections)

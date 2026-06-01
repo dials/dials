@@ -20,7 +20,6 @@ class SauterPoon(CentroidOutlier):
         verbose=False,
         pdf=None,
     ):
-
         # here the column names are fixed by the algorithm, so what's passed in is
         # ignored.
         CentroidOutlier.__init__(
@@ -41,7 +40,6 @@ class SauterPoon(CentroidOutlier):
         return
 
     def _detect_outliers(self, cols):
-
         # cols is guaranteed to be a list of three flex arrays, containing miller
         # indices, observed pixel coordinates and calculated pixel coordinates.
         # Copy the data into matches

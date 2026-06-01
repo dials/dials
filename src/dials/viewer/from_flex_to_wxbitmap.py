@@ -13,9 +13,7 @@ class wxbitmap_convert:
     """
 
     def __init__(self, data_in_n1, data_in_n2=None):
-
         if data_in_n1 is None and data_in_n2 is None:
-
             self.lst_3d_data = None
             self.lst_3d_mask = None
 
@@ -70,7 +68,6 @@ class wxbitmap_convert:
                     or img2_np.shape[1] == 0
                     or img2_np.shape[2] == 0
                 ):
-
                     self.lst_3d_data = None
                     self.lst_3d_mask = None
 

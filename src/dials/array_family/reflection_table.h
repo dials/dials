@@ -133,11 +133,13 @@ namespace dials { namespace af {
 
     // Excluded by refinement
     ExcludedForRefinement = (1 << 25),
-    BadForRefinement = ExcludedForRefinement | CentroidOutlier,
+    NotSuitableForRefinement =
+      (1 << 27),  // For handling xds imported data when we don't have an xyzobs
+    BadForRefinement =
+      ExcludedForRefinement | CentroidOutlier | NotSuitableForRefinement,
 
     // Scaled flag indicates good reflections after scaling
     Scaled = (1 << 26),
-
   };
 
 }}  // namespace dials::af

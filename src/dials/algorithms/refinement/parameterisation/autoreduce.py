@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 from libtbx.phil import parse
 from scitbx.array_family import flex
 
 from dials.algorithms.refinement import DialsRefineConfigError
+
+logger = logging.getLogger(__name__)
 
 phil_str = """
       min_nref_per_parameter = 5
@@ -43,10 +43,10 @@ phil_str = """
 """
 phil_scope = parse(phil_str)
 
+
 # A callback for PredictionParameterisation.get_gradients which will give
 # the positions of reflections associated with a particular parameter
 def id_associated_refs(result):
-
     # There are usually 3 parts to results: gradients in X, Y and Z
     vals = list(result.values())
     try:

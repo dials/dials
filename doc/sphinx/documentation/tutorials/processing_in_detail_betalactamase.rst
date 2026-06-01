@@ -84,11 +84,7 @@ let DIALS make the choice:
 
 .. dials_tutorial_include:: betalactamase/dials.find_spots.cmd
 
-.. container:: toggle
-
-    .. container:: header
-
-        **Show/Hide Log**
+.. dropdown:: **Show/Hide Log**
 
     .. dials_tutorial_include:: betalactamase/dials.find_spots.log
         :linenos:
@@ -158,13 +154,10 @@ be used to constrain the lattice during refinement, but otherwise
 indexing and refinement will be carried out in the primitive lattice
 using space group P1.
 
-.. container:: toggle
 
-    .. container:: header
+.. dropdown:: **Show/Hide Log**
 
-        **Show/Hide Log**
-
-    ..  dials_tutorial_include:: betalactamase/dials.index.log
+    .. dials_tutorial_include:: betalactamase/dials.index.log
         :linenos:
 
 If successful, ``dials.index`` writes two output data files - an
@@ -324,11 +317,7 @@ from ``dials.refine_bravais_settings`` run:
 
 .. dials_tutorial_include:: betalactamase/dials.refine.cmd
 
-.. container:: toggle
-
-    .. container:: header
-
-        **Show/Hide Log**
+.. dropdown:: **Show/Hide Log**
 
     .. dials_tutorial_include:: betalactamase/dials.refine.log
         :linenos:
@@ -368,11 +357,7 @@ number of processors used to speed the job up.
 
 .. dials_tutorial_include:: betalactamase/dials.integrate.cmd
 
-.. container:: toggle
-
-    .. container:: header
-
-        **Show/Hide Log**
+.. dropdown:: **Show/Hide Log**
 
     .. dials_tutorial_include:: betalactamase/dials.integrate.log
         :linenos:
@@ -421,11 +406,7 @@ reflections to suggest the space group symmetry.
 
 .. dials_tutorial_include:: betalactamase/dials.symmetry.cmd
 
-.. container:: toggle
-
-    .. container:: header
-
-        **Show/Hide Log**
+.. dropdown:: **Show/Hide Log**
 
     .. dials_tutorial_include:: betalactamase/dials.symmetry.log
         :linenos:
@@ -476,11 +457,7 @@ and scattered beam vector relative to the crystal.
 
 .. dials_tutorial_include:: betalactamase/dials.scale.cmd
 
-.. container:: toggle
-
-    .. container:: header
-
-        **Show/Hide Log**
+.. dropdown:: **Show/Hide Log**
 
     .. dials_tutorial_include:: betalactamase/dials.scale.log
         :linenos:

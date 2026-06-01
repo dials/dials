@@ -4,6 +4,7 @@ import logging
 import re
 
 import libtbx
+from dxtbx.model import PolychromaticBeam
 from libtbx.phil import parse
 
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -15,11 +16,12 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
     phil_str as sv_phil_str,
 )
 from dials.algorithms.refinement.refinement_helpers import string_sel
+from dials.algorithms.refinement.reflection_manager import LaueReflectionManager
 from dials.algorithms.refinement.restraints.restraints_parameterisation import (
     uc_phil_str as uc_restraints_phil_str,
 )
 
-from .beam_parameters import BeamParameterisation
+from .beam_parameters import BeamParameterisation, LaueBeamParameterisation
 from .crystal_parameters import (
     CrystalOrientationParameterisation,
     CrystalUnitCellParameterisation,
@@ -31,6 +33,7 @@ from .detector_parameters import (
 )
 from .goniometer_parameters import GoniometerParameterisation
 from .prediction_parameters import (
+    LauePredictionParameterisation,
     XYPhiPredictionParameterisation,
     XYPhiPredictionParameterisationSparse,
 )
@@ -63,15 +66,14 @@ format_data = {
 
 logger = logging.getLogger(__name__)
 
-phil_str = (
-    """
+phil_str = """
     auto_reduction
       .help = "determine behaviour when there are too few reflections to"
               "reasonably produce a full parameterisation of the experiment list"
       .expert_level = 1
-    {
-      %(autoreduce_phil)s
-    }
+    {{
+      {autoreduce_phil}
+    }}
 
     scan_varying = False
       .help = "Allow models that are not forced to be static to vary during"
@@ -129,7 +131,7 @@ phil_str = (
 
     beam
       .help = "beam parameters"
-    {
+    {{
       fix = all *in_spindle_plane out_spindle_plane *wavelength
         .help = "Whether to fix beam parameters. By default,"
                 "in_spindle_plane is selected, and one of the two"
@@ -147,7 +149,7 @@ phil_str = (
                 "partial names to match"
         .expert_level = 1
 
-      %(constr_phil)s
+      {constr_phil}
 
       force_static = True
         .type = bool
@@ -155,12 +157,12 @@ phil_str = (
                 "scan-varying refinement"
         .expert_level = 1
 
-      %(sv_phil)s
-    }
+      {sv_phil}
+    }}
 
     crystal
       .help = "crystal parameters"
-    {
+    {{
       fix = all cell orientation
         .help = "Fix crystal parameters"
         .type = choice
@@ -168,16 +170,16 @@ phil_str = (
 
       unit_cell
         .expert_level = 1
-      {
+      {{
         fix_list = None
           .type = strings
           .help = "Fix specified parameters by a list of 0-based indices or"
                   "partial names to match"
           .expert_level = 1
 
-        %(uc_restraints_phil)s
+        {uc_restraints_phil}
 
-        %(constr_phil)s
+        {constr_phil}
 
         force_static = False
           .type = bool
@@ -185,19 +187,19 @@ phil_str = (
                   "when doing scan-varying refinement"
           .expert_level = 1
 
-        %(sv_phil)s
-      }
+        {sv_phil}
+      }}
 
       orientation
         .expert_level = 1
-      {
+      {{
         fix_list = None
           .type = strings
           .help = "Fix specified parameters by a list of 0-based indices or"
                   "partial names to match"
           .expert_level = 1
 
-        %(constr_phil)s
+        {constr_phil}
 
         force_static = False
           .type = bool
@@ -205,13 +207,13 @@ phil_str = (
                   "when doing scan-varying refinement"
           .expert_level = 1
 
-        %(sv_phil)s
-      }
-    }
+        {sv_phil}
+      }}
+    }}
 
     detector
       .help = "detector parameters"
-    {
+    {{
       panels = *automatic single multiple hierarchical
         .help = "Select appropriate detector parameterisation. Both the"
                 "single and multiple panel detector options treat the whole"
@@ -238,7 +240,7 @@ phil_str = (
                 "partial names to match"
         .expert_level = 1
 
-      %(constr_phil)s
+      {constr_phil}
 
       force_static = True
         .type = bool
@@ -246,12 +248,12 @@ phil_str = (
                 "when doing scan-varying refinement"
         .expert_level = 1
 
-      %(sv_phil)s
-    }
+      {sv_phil}
+    }}
 
     goniometer
       .help = "goniometer setting matrix parameters"
-    {
+    {{
       fix = *all in_beam_plane out_beam_plane
         .help = "Whether to fix goniometer parameters. By default,"
                 "fix all. Alternatively the setting matrix can be constrained"
@@ -267,7 +269,7 @@ phil_str = (
                 "partial names to match"
         .expert_level = 1
 
-      %(constr_phil)s
+      {constr_phil}
 
       force_static = True
         .type = bool
@@ -275,8 +277,8 @@ phil_str = (
                 "scan-varying refinement"
         .expert_level = 1
 
-      %(sv_phil)s
-    }
+      {sv_phil}
+    }}
 
     sparse = Auto
       .help = "Calculate gradients using sparse data structures."
@@ -294,9 +296,7 @@ phil_str = (
               "for prediction and gradients."
       .type = bool
       .expert_level = 1
-"""
-    % format_data
-)
+""".format(**format_data)
 phil_scope = parse(phil_str)
 
 
@@ -317,7 +317,6 @@ def _filter_parameter_names(parameterisation):
 
 # Helper function to perform centroid analysis
 def _centroid_analysis(options, experiments, reflection_manager):
-
     analysis = None
     if not options.scan_varying:
         return analysis
@@ -433,8 +432,15 @@ def _parameterise_beams(options, experiments, analysis):
                 experiment_ids=exp_ids,
             )
         else:
-            # Parameterise scan static beam, passing the goniometer
-            beam_param = BeamParameterisation(beam, goniometer, experiment_ids=exp_ids)
+            if isinstance(beam, PolychromaticBeam):
+                beam_param = LaueBeamParameterisation(
+                    beam, goniometer, experiment_ids=exp_ids
+                )
+            else:
+                # Parameterise scan static beam, passing the goniometer
+                beam_param = BeamParameterisation(
+                    beam, goniometer, experiment_ids=exp_ids
+                )
 
         # Set the model identifier to name the parameterisation
         beam_param.model_identifier = f"Beam{ibeam + 1}"
@@ -454,7 +460,9 @@ def _parameterise_beams(options, experiments, analysis):
                 fix_list.append("Mu1")
             if "out_spindle_plane" in options.beam.fix:
                 fix_list.append("Mu2")
-            if "wavelength" in options.beam.fix:
+            if "wavelength" in options.beam.fix and not isinstance(
+                beam, PolychromaticBeam
+            ):
                 fix_list.append("nu")
 
         if fix_list:
@@ -616,17 +624,15 @@ def _parameterise_detectors(options, experiments, analysis):
             # Additional checks on whether a scan-varying parameterisation is allowed
             if options.detector.panels == "automatic" and len(detector) > 1:
                 raise DialsRefineConfigError(
-                    "Scan-varying multiple panel detectors are not "
-                    "currently supported"
+                    "Scan-varying multiple panel detectors are not currently supported"
                 )
             if options.detector.panels == "multiple":
                 raise DialsRefineConfigError(
-                    "Scan-varying multiple panel detectors are not "
-                    "currently supported"
+                    "Scan-varying multiple panel detectors are not currently supported"
                 )
             if options.detector.panels == "hierarchical":
                 raise DialsRefineConfigError(
-                    "Scan-varying hierarchical detectors are not " "currently supported"
+                    "Scan-varying hierarchical detectors are not currently supported"
                 )
 
             array_range = scan.get_array_range()
@@ -818,10 +824,16 @@ def build_prediction_parameterisation(
     analysis = _centroid_analysis(options, experiments, reflection_manager)
 
     # Parameterise each unique model
-    beam_params = _parameterise_beams(options, experiments, analysis)
     xl_ori_params, xl_uc_params = _parameterise_crystals(options, experiments, analysis)
     det_params = _parameterise_detectors(options, experiments, analysis)
     gon_params = _parameterise_goniometers(options, experiments, analysis)
+    beam_params = _parameterise_beams(options, experiments, analysis)
+
+    if isinstance(reflection_manager, LaueReflectionManager):
+        PredParam = LauePredictionParameterisation
+        return PredParam(
+            experiments, det_params, beam_params, xl_ori_params, xl_uc_params
+        )
 
     # Build the prediction equation parameterisation
     if do_stills:  # doing stills

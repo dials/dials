@@ -246,7 +246,6 @@ def test_invalid_yml(tmp_path):
     reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
 )
 def test_real_h5_example(tmp_path, dials_data):
-
     """This test tests a few use cases on processed data derived from h5 format."""
     fpath1 = (
         "/dls/mx/data/nt30330/nt30330-15/VMXi-AB1698/well_42/images/image_58766.nxs"
@@ -288,7 +287,7 @@ grouping:
 
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
     handler = get_grouping_handler(parsed, "group_by")
-    dtbp = dials_data("dtpb_serial_processed", pathlib=True)
+    dtbp = dials_data("dtpb_serial_processed")
 
     fps = [
         FilePair(
@@ -395,7 +394,6 @@ grouping:
     reason="Failures due to translated paths; see https://github.com/cctbx/dxtbx/issues/613",
 )
 def test_real_cbf_example(tmp_path, dials_data):
-
     """This test tests a few use cases on real cbf data, using the template
     metadata definition.
 
@@ -405,7 +403,7 @@ def test_real_cbf_example(tmp_path, dials_data):
     Finally, the single value definition is tested.
     """
 
-    ssx = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial")
     fpath = str(os.fspath(ssx / "merlin0047_#####.cbf"))
     real_example = f"""
 ---

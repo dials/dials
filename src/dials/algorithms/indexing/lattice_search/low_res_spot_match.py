@@ -295,10 +295,15 @@ class LowResSpotMatch(Strategy):
         detector = experiments.detectors()[0]
         beam = experiments.beams()[0]
 
-        # Lab coordinate of the beam centre, using the first spot's panel
-        panel = detector[self.spots[0]["panel"]]
-        bc = panel.get_ray_intersection(beam.get_s0())
-        bc_lab = panel.get_lab_coord(bc)
+        # Lab coordinate of the beam centre,
+        # using the first panel found to intersect
+        for panel in detector:
+            try:
+                bc = panel.get_ray_intersection(beam.get_unit_s0())
+            except RuntimeError:  # Does not intersect panel
+                continue
+            bc_lab = panel.get_lab_coord(bc)
+            break
 
         # Lab coordinate of each spot
         spot_lab = flex.vec3_double(len(self.spots))
@@ -357,11 +362,17 @@ class LowResSpotMatch(Strategy):
         inner_spot_lab = spot_lab - panel_dirs * (tol * sig_r)
 
         # Set d* at band limits
-        inv_lambda = 1.0 / beam.get_wavelength()
+        if experiments.all_laue() or experiments.all_tof():
+            wavelength = self.spots["wavelength"]
+            s0 = self.spots["s0"]
+        else:
+            wavelength = beam.get_wavelength()
+            s0 = beam.get_s0()
+        inv_lambda = 1.0 / wavelength
         s1_outer = outer_spot_lab.each_normalize() * inv_lambda
         s1_inner = inner_spot_lab.each_normalize() * inv_lambda
-        self.spots["d_star_outer"] = (s1_outer - beam.get_s0()).norms()
-        self.spots["d_star_inner"] = (s1_inner - beam.get_s0()).norms()
+        self.spots["d_star_outer"] = (s1_outer - s0).norms()
+        self.spots["d_star_inner"] = (s1_inner - s0).norms()
         self.spots["d_star_band2"] = flex.pow2(
             self.spots["d_star_outer"] - self.spots["d_star_inner"]
         )
@@ -471,7 +482,6 @@ class LowResSpotMatch(Strategy):
         return result
 
     def _extend_by_candidates(self, graph):
-
         existing_ids = [e["spot_id"] for e in graph.vertices]
         obs_relps = [matrix.col(self.spots[e]["rlp"]) for e in existing_ids]
         exp_relps = [e["rlp_datum"] for e in graph.vertices]
@@ -532,7 +542,6 @@ class LowResSpotMatch(Strategy):
 
     @staticmethod
     def _fit_U_from_superposed_points(reference, other):
-
         # Add the origin to both sets of points
         reference.append((0, 0, 0))
         other.append((0, 0, 0))
@@ -542,7 +551,6 @@ class LowResSpotMatch(Strategy):
         return fit.r
 
     def _fit_crystal_model(self, graph):
-
         vertices = graph.vertices
 
         # Reciprocal lattice points of the observations
@@ -556,7 +564,6 @@ class LowResSpotMatch(Strategy):
         UB = U * self.Bmat
 
         if self._params.bootstrap_crystal:
-
             # Attempt to index the low resolution spots
             from dials_algorithms_indexing_ext import AssignIndices
 

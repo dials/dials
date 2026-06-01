@@ -45,7 +45,6 @@ class EqualShiftConstraint:
     parameterisations"""
 
     def __init__(self, indices, parameter_vector):
-
         self.indices = indices
         parameter_vector = flex.double(parameter_vector)
         self.constrained_value = flex.mean(parameter_vector.select(indices))
@@ -60,7 +59,6 @@ class EqualShiftConstraint:
 
 class ConstraintManager:
     def __init__(self, constraints, n_full_params):
-
         self._constraints = [e for e in constraints if e is not None]
 
         # constraints should be a list of EqualShiftConstraint objects
@@ -81,7 +79,6 @@ class ConstraintManager:
         return [c.indices for c in self._constraints]
 
     def constrain_parameters(self, x):
-
         assert len(x) == self._n_full_params
 
         constrained_vals = flex.double([c.constrained_value for c in self._constraints])
@@ -94,7 +91,6 @@ class ConstraintManager:
         return constrained_x
 
     def expand_parameters(self, constrained_x):
-
         unconstrained_part = constrained_x[0 : self._n_unconstrained_params]
         constrained_part = constrained_x[self._n_unconstrained_params :]
 
@@ -113,7 +109,6 @@ class ConstraintManager:
         return full_x
 
     def constrain_jacobian(self, jacobian):
-
         # set up result matrix
         nrow = jacobian.all()[0]
         ncol = self._n_unconstrained_params + len(self._constraints)
@@ -139,7 +134,6 @@ class ConstraintManager:
         return constrained_jacobian
 
     def constrain_gradient_vector(self, grad):
-
         # extract unconstrained gradients into the result
         result = []
         result = list(flex.double(grad).select(self._unconstrained_idx))
@@ -184,7 +178,6 @@ class ConstraintManagerFactory:
     a constraints manager to be linked to the Refinery"""
 
     def __init__(self, refinement_phil, pred_param, sparse=False):
-
         self._params = refinement_phil
         self._pred_param = pred_param
 
@@ -242,7 +235,6 @@ class ConstraintManagerFactory:
         return EqualShiftConstraint(indices, self._all_vals)
 
     def __call__(self):
-
         # shorten options path
         options = self._params.refinement.parameterisation
 

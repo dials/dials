@@ -52,7 +52,6 @@ class wxbmp_from_np_array:
 
     def bmp_lst_scaled(self, scale=1.0):
         if self._ini_wx_bmp_lst is None:
-
             NewW = 350
 
             wx_image = wx.Image(NewW, NewW)
@@ -82,7 +81,6 @@ class wxbmp_from_np_array:
         return wx_bmp_lst
 
     def _wx_img_w_cpp(self, np_2d_tmp, show_nums, palette, np_2d_mask=None):
-
         xmax = np_2d_tmp.shape[1]
         ymax = np_2d_tmp.shape[0]
 

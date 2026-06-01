@@ -31,6 +31,7 @@ from dials.algorithms.scaling.combine_intensities import (
     SingleDatasetIntensityCombiner,
 )
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
+from dials.algorithms.scaling.error_model.error_model import extract_error_model_groups
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.outlier_rejection import (
     determine_Esq_outlier_index_arrays,
@@ -350,6 +351,9 @@ class SingleScaler(ScalerBase):
         self.free_set_selection = flex.bool(self.n_suitable_refl, False)
         self._free_Ih_table = None  # An array of len n_suitable_refl
         self._configure_model_and_datastructures(for_multi=for_multi)
+        self.is_still = True
+        if self._experiment.scan and self._experiment.scan.get_oscillation()[1] != 0.0:
+            self.is_still = False
         if self.params.weighting.error_model.error_model:
             # reload current error model parameters, or create new null
             self.experiment.scaling_model.load_error_model(
@@ -380,7 +384,10 @@ class SingleScaler(ScalerBase):
         Ih_table, _ = self._create_global_Ih_table(anomalous=True, remove_outliers=True)
         try:
             model = run_error_model_refinement(
-                self._experiment.scaling_model.error_model, Ih_table
+                self._experiment.scaling_model.error_model,
+                Ih_table,
+                self.params.reflection_selection.min_partiality,
+                use_stills_filtering=self.is_still,
             )
         except (ValueError, RuntimeError) as e:
             logger.info(e)
@@ -1468,31 +1475,9 @@ class MultiScalerBase(ScalerBase):
     @Subject.notify_event(event="performed_error_analysis")
     def perform_error_optimisation(self, update_Ih=True):
         """Perform an optimisation of the sigma values."""
-        if self.params.weighting.error_model.grouping == "combined":
-            minimisation_groups = [[i for i, _ in enumerate(self.active_scalers)]]
-        elif self.params.weighting.error_model.grouping == "individual":
-            minimisation_groups = [[i] for i, _ in enumerate(self.active_scalers)]
-        else:
-            groups = self.params.weighting.error_model.error_model_group
-            if not groups:
-                logger.info(
-                    """No error model groups defined, defaulting to combined error model optimisation"""
-                )
-                minimisation_groups = [[i for i, _ in enumerate(self.active_scalers)]]
-            else:
-                all_datasets = [i for i, _ in enumerate(self.active_scalers)]
-                # groups are defined in terms of sweeps (1,2,3,...), but here
-                # need to convert to dataset number (0, 1, 2,...)
-                explicitly_grouped = [i - 1 for j in groups for i in j]
-                if -1 in explicitly_grouped:  # sweeps provided indexed from 0
-                    explicitly_grouped = [i for j in groups for i in j]
-                    minimisation_groups = [list(g) for g in groups]
-                else:
-                    minimisation_groups = [[i - 1 for i in g] for g in groups]
-                others = set(all_datasets).difference(set(explicitly_grouped))
-                if others:
-                    minimisation_groups += [list(others)]
-
+        minimisation_groups = extract_error_model_groups(
+            self.params.weighting.error_model, len(self.active_scalers)
+        )
         for g in minimisation_groups:
             scalers = [self.active_scalers[i] for i in g]
             error_model = scalers[0]._experiment.scaling_model.error_model
@@ -1500,16 +1485,24 @@ class MultiScalerBase(ScalerBase):
                 continue
             tables = [s.get_valid_reflections().select(~s.outliers) for s in scalers]
             space_group = scalers[0].experiment.crystal.get_space_group()
-            Ih_table = IhTable(tables, space_group, anomalous=True)
+            Ih_table = IhTable(
+                tables,
+                space_group,
+                anomalous=True,
+                additional_cols=["partiality"],
+            )
             if len(minimisation_groups) == 1:
                 logger.info("Determining a combined error model for all datasets")
             else:
                 logger.info(
-                    f"Error model determination for sweep(s) {','.join(str(i+1) for i in g)}"
+                    f"Error model determination for sweep(s) {','.join(str(i + 1) for i in g)}"
                 )
             try:
                 model = run_error_model_refinement(
-                    scalers[0]._experiment.scaling_model.error_model, Ih_table
+                    scalers[0]._experiment.scaling_model.error_model,
+                    Ih_table,
+                    min_partiality=self.params.reflection_selection.min_partiality,
+                    use_stills_filtering=scalers[0].is_still,
                 )
             except (ValueError, RuntimeError) as e:
                 logger.info(e)

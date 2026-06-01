@@ -31,7 +31,7 @@ def test_assign_identifiers(dials_data, run_in_tmp_path):
     sequence_path_list = []
     blank_ids_path_list = []
 
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     for i in [20, 25]:
         fn = data_dir / f"{i}_integrated.pickle"
         refls = flex.reflection_table.from_file(fn)

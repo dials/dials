@@ -2,7 +2,6 @@
 Test refinement of a crystal unit cell using a two theta target.
 """
 
-
 from __future__ import annotations
 
 from copy import deepcopy
@@ -20,7 +19,6 @@ from dials.algorithms.refinement.two_theta_refiner import (
 
 
 def generate_reflections(experiments):
-
     from cctbx.sgtbx import space_group, space_group_symbols
     from scitbx.array_family import flex
 
@@ -158,7 +156,6 @@ def test_fd_derivatives():
     deltas = [1.0e-7] * len(p_vals)
 
     for i in range(len(deltas)):
-
         val = p_vals[i]
 
         p_vals[i] -= deltas[i] / 2.0
@@ -193,7 +190,7 @@ def test_refinement(dials_data):
 
     # Get a beam and detector from a experiments. This one has a CS-PAD, but that
     # is irrelevant
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "cspad-single-image.expt"
 
     # load models

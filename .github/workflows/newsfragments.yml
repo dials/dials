@@ -10,10 +10,10 @@ jobs:
   rename-news:
     name: Newsfragment
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: (github.event.pull_request.draft == false) && (! startswith(github.event.pull_request.title, '[pre-commit.ci]'))
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ secrets.USER_TOKEN }}

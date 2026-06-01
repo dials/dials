@@ -6,7 +6,6 @@ https://doi.org/10.1107/S2059798317010348
 Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
-
 from __future__ import annotations
 
 import sys
@@ -22,8 +21,8 @@ from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import ArgumentParser
 
 matplotlib.use("pdf")
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.ticker import MultipleLocator  # noqa: E402
 
 
 class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):

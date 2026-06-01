@@ -7,6 +7,7 @@ methods to define how these are composed into one model.
 
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import math
 
@@ -48,8 +49,6 @@ from dials_scaling_ext import (
 )
 
 logger = logging.getLogger("dials")
-
-import pkg_resources
 
 base_model_phil_str = """\
 correction.fix = None
@@ -457,7 +456,6 @@ def _add_absorption_component_to_physically_derived_model(model, reflection_tabl
 
 
 class DoseDecay(ScalingModelBase):
-
     """A model similar to the physical model, where an exponential decay
     component is used plus a relative B-factor per sweep, with no absorption
     surface by default. Most suitable for multi-crystal datasets."""
@@ -1512,11 +1510,12 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
 
 model_phil_scope = phil.parse("")
 _dxtbx_scaling_models = {
-    ep.name: ep for ep in pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
+    ep.name: ep
+    for ep in importlib.metadata.entry_points(group="dxtbx.scaling_model_ext")
 }
-assert (
-    _dxtbx_scaling_models
-), "No models registered with dxtbx.scaling_model_ext entry point"
+assert _dxtbx_scaling_models, (
+    "No models registered with dxtbx.scaling_model_ext entry point"
+)
 model_phil_scope.adopt_scope(
     phil.parse(
         "model ="

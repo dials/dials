@@ -25,7 +25,6 @@ class ParameterReporter:
         xl_unit_cell_parameterisations=None,
         goniometer_parameterisations=None,
     ):
-
         if detector_parameterisations is None:
             detector_parameterisations = []
         if beam_parameterisations is None:
@@ -47,7 +46,6 @@ class ParameterReporter:
         self._length = self._len()
 
     def _len(self):
-
         length = 0
         for model in self._detector_parameterisations:
             length += model.num_free()
@@ -69,7 +67,6 @@ class ParameterReporter:
         return "\n".join("    " + e for e in str(string).split("\n"))
 
     def __str__(self):
-
         s = "Parameter Report:\n"
         if self._detector_parameterisations:
             s += "Detector parameters:\n"
@@ -172,7 +169,6 @@ class TableColumn:
     """Bucket to store data to be used for constructing tables to print."""
 
     def __init__(self, title, values):
-
         self._title = title
         self._values = values
 

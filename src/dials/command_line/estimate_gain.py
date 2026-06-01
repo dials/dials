@@ -117,8 +117,7 @@ def estimate_gain(
     if len(gains) > 1:
         stats = flex.mean_and_variance(gains)
         print(
-            "Average gain: %.2f +/- %.2f"
-            % (stats.mean(), stats.unweighted_sample_standard_deviation())
+            f"Average gain: {stats.mean():.2f} +/- {stats.unweighted_sample_standard_deviation():.2f}"
         )
 
     if output_gain_map:

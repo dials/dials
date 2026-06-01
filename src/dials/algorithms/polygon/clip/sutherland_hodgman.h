@@ -25,7 +25,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @param e2 The second edge point
    */
   template <typename T>
-  bool is_inside(const T &p, const T &e1, const T &e2) {
+  bool is_inside(const T& p, const T& e1, const T& e2) {
     return (e2[0] - e1[0]) * (p[1] - e1[1]) > (e2[1] - e1[1]) * (p[0] - e1[0]);
   }
 
@@ -38,7 +38,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The intersection
    */
   template <typename T>
-  T intersection(const T &p1, const T &p2, const T &e1, const T &e2) {
+  T intersection(const T& p1, const T& p2, const T& e1, const T& e2) {
     T dc(e1[0] - e2[0], e1[1] - e2[1]);
     T dp(p1[0] - p2[0], p1[1] - p2[1]);
     double n1 = e1[0] * e2[1] - e1[1] * e2[0];
@@ -57,8 +57,8 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The resulting clipped polygon.
    */
   template <typename PolygonType>
-  PolygonType sutherland_hodgman(const PolygonType &subject,
-                                 const PolygonType &target) {
+  PolygonType sutherland_hodgman(const PolygonType& subject,
+                                 const PolygonType& target) {
     // Get the polygon and vertex type
     typedef PolygonType polygon_type;
     typedef typename PolygonType::value_type vertex_type;
@@ -130,8 +130,8 @@ namespace dials { namespace algorithms { namespace polygon {
             typename TargetPolygonType,
             typename OutputPolygonType,
             int MAX_VERTICES>
-  OutputPolygonType sutherland_hodgman_simple_convex(const SubjectPolygonType &subject,
-                                                     const TargetPolygonType &target) {
+  OutputPolygonType sutherland_hodgman_simple_convex(const SubjectPolygonType& subject,
+                                                     const TargetPolygonType& target) {
     // Get the polygon and vertex type
     typedef typename OutputPolygonType::value_type vertex_type;
 
@@ -206,7 +206,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns True/False inside or not
    */
   template <int side, typename PointType, typename RectType>
-  bool is_inside_rect(const PointType &p, const RectType &r) {
+  bool is_inside_rect(const PointType& p, const RectType& r) {
     bool inside = false;
     if (side == LEFT) {
       inside = p[0] >= r[0][0];
@@ -230,9 +230,9 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The intersection point.
    */
   template <int side, typename PointType, typename RectType>
-  PointType intersection_rect(const PointType &p1,
-                              const PointType &p2,
-                              const RectType &r) {
+  PointType intersection_rect(const PointType& p1,
+                              const PointType& p2,
+                              const RectType& r) {
     PointType p;
     if (side == LEFT) {
       p[0] = r[0][0];
@@ -259,9 +259,9 @@ namespace dials { namespace algorithms { namespace polygon {
    * @param rect The rectangle to clip against
    */
   template <int side, typename PolygonType, typename RectType>
-  void sutherland_hodgman_rect_line(PolygonType &result,
-                                    const PolygonType &poly,
-                                    const RectType &rect) {
+  void sutherland_hodgman_rect_line(PolygonType& result,
+                                    const PolygonType& poly,
+                                    const RectType& rect) {
     typedef typename PolygonType::value_type PointType;
 
     if (poly.size() == 0) {
@@ -298,7 +298,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The clipped polygon.
    */
   template <typename PolygonType, typename RectType>
-  PolygonType sutherland_hodgman_rect(const PolygonType &poly, const RectType &rect) {
+  PolygonType sutherland_hodgman_rect(const PolygonType& poly, const RectType& rect) {
     // Clip along each rect line
     PolygonType result1(poly.size()), result2(poly.size());
     result1.clear();

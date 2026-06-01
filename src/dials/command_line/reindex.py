@@ -103,7 +103,6 @@ output {
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-
     usage = "dials.reindex [options] indexed.expt indexed.refl"
 
     parser = ArgumentParser(
@@ -182,9 +181,9 @@ experiments file must also be specified with the option: reference.experiments= 
             ).count(True)
             == 0
         ):
-            assert (
-                "intensity.sum.value" in reference_reflections
-            ), "No 'intensity.sum.value in reference reflections"
+            assert "intensity.sum.value" in reference_reflections, (
+                "No 'intensity.sum.value in reference reflections"
+            )
             reference_reflections.set_flags(
                 flex.bool(reference_reflections.size(), True),
                 reference_reflections.flags.integrated_sum,
@@ -209,7 +208,6 @@ experiments file must also be specified with the option: reference.experiments= 
             raise Sorry("No reflections remain after filtering the test dataset")
 
     elif params.reference.file:
-
         wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
 
         reference_miller_set = intensities_from_reference_file(

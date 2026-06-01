@@ -6,7 +6,11 @@ from __future__ import annotations
 
 import math
 import os
+import sys
 import time
+
+import OpenGL
+from packaging.version import Version
 
 import gltbx.fonts
 import gltbx.gl as gl
@@ -17,6 +21,11 @@ import gltbx.util
 import scitbx.math
 from scitbx import matrix
 from scitbx.array_family import flex
+
+# Fix for Python 3.12 and pyopengl <=3.1.7. See https://github.com/silx-kit/silx/pull/3982
+if sys.version_info >= (3, 12) and Version(OpenGL.__version__) <= Version("3.1.7"):
+    # Python3.12 patch: see https://github.com/mcfletch/pyopengl/pull/100
+    OpenGL.FormatHandler.by_name("ctypesparameter").check.append("_ctypes.CArgObject")
 
 try:
     import wx
@@ -387,7 +396,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
     def compute_home_translation(self):
         s = self.minimum_covering_sphere
-        x, y, z = [-v for v in gltbx.util.object_as_eye_coordinates(s.center())]
+        x, y, z = (-v for v in gltbx.util.object_as_eye_coordinates(s.center()))
         h = s.radius()
         if self.w < self.h:
             h *= self.h / max(1, self.w)
@@ -479,7 +488,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         self.rotation_center = self.minimum_covering_sphere.center()
 
     def move_to_center_of_viewport(self, obj_coor):
-        dx, dy = [-x for x in gltbx.util.object_as_eye_coordinates(obj_coor)[:2]]
+        dx, dy = (-x for x in gltbx.util.object_as_eye_coordinates(obj_coor)[:2])
         move_factor = self.translation_move_factor((dx, dy, 0))
         mvm = gltbx.util.get_gl_modelview_matrix()
         for f in animation_stepper(
@@ -600,28 +609,19 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         model = gltbx.util.get_gl_modelview_matrix()
         proj = gltbx.util.get_gl_projection_matrix()
         view = gltbx.util.get_gl_viewport()
-        winx = []
-        winy = []
-        winz = []
         rc = self.rotation_center
         rc_eye = gltbx.util.object_as_eye_coordinates(rc)
-        assert glu.gluProject(rc[0], rc[1], rc[2], model, proj, view, winx, winy, winz)
-        objx = []
-        objy = []
-        objz = []
+        winx, winy, winz = glu.gluProject(rc[0], rc[1], rc[2], model, proj, view)
         win_height = max(1, self.w)
-        assert glu.gluUnProject(
-            winx[0],
-            winy[0] + 0.5 * win_height,
-            winz[0],
+        objx, objy, objz = glu.gluUnProject(
+            winx,
+            winy + 0.5 * win_height,
+            winz,
             model,
             proj,
             view,
-            objx,
-            objy,
-            objz,
         )
-        dist = v3distsq((objx[0], objy[0], objz[0]), rc) ** 0.5
+        dist = v3distsq((objx, objy, objz), rc) ** 0.5
         scale = abs(dist / (0.5 * win_height))
         x, y = event.GetX(), event.GetY()
         gltbx.util.translate_object(scale, x, y, self.xmouse, self.ymouse)
@@ -1078,7 +1078,7 @@ class App(wx.App):
             self.fit_on_screen_id,
             images.fit_img.as_wx_Bitmap(),
             "Fit in window",
-            "Resizes and shifts object to fit into window." " Keyboard shortcut: f",
+            "Resizes and shifts object to fit into window. Keyboard shortcut: f",
         )
 
         self.mark_snap_back_id = wx.NewId()
@@ -1095,8 +1095,7 @@ class App(wx.App):
             self.snap_back_id,
             images.snap_back_img.as_wx_Bitmap(),
             "Snap back orientation",
-            "Rotates object back to the last marked orientation."
-            " Keyboard shortcut: a",
+            "Rotates object back to the last marked orientation. Keyboard shortcut: a",
         )
 
         self.toggle_spin_id = wx.NewId()

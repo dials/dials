@@ -26,4 +26,5 @@ IndentCaseLabels: false
 NamespaceIndentation: Inner
 # Don't sort includes
 SortIncludes: false
+AllowShortLoopsOnASingleLine: false
 ---

@@ -18,11 +18,11 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
   using scitbx::af::flex;
-  using scitbx::af::flex_int;
+  using scitbx::af::flex_uint8_t;
 
   /** Set the data array as a flex array */
   template <typename FloatType>
-  void set_data(Shoebox<FloatType> &obj, typename flex<FloatType>::type &data) {
+  void set_data(Shoebox<FloatType>& obj, typename flex<FloatType>::type& data) {
     DIALS_ASSERT(data.accessor().all().size() == 3);
     obj.data = af::versa<FloatType, af::c_grid<3> >(data.handle(),
                                                     af::c_grid<3>(data.accessor()));
@@ -30,16 +30,16 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Set the mask array as a flex array */
   template <typename FloatType>
-  void set_mask(Shoebox<FloatType> &obj, flex_int &mask) {
+  void set_mask(Shoebox<FloatType>& obj, flex_uint8_t& mask) {
     DIALS_ASSERT(mask.accessor().all().size() == 3);
     obj.mask =
-      af::versa<int, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
+      af::versa<uint8_t, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
   }
 
   /** Set the bgrd array as a flex array */
   template <typename FloatType>
-  void set_background(Shoebox<FloatType> &obj,
-                      typename flex<FloatType>::type &background) {
+  void set_background(Shoebox<FloatType>& obj,
+                      typename flex<FloatType>::type& background) {
     DIALS_ASSERT(background.accessor().all().size() == 3);
     obj.background = af::versa<FloatType, af::c_grid<3> >(
       background.handle(), af::c_grid<3>(background.accessor()));
@@ -47,7 +47,7 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Get a list of shoebox pixel coordinates. */
   template <typename ShoeboxType>
-  af::shared<vec3<double> > coords(const ShoeboxType &self) {
+  af::shared<vec3<double> > coords(const ShoeboxType& self) {
     af::shared<vec3<double> > result;
     for (std::size_t k = 0; k < self.zsize(); ++k) {
       for (std::size_t j = 0; j < self.ysize(); ++j) {
@@ -65,7 +65,7 @@ namespace dials { namespace model { namespace boost_python {
   /** Get a list of shoebox pixel coordinates. */
   template <typename ShoeboxType>
   af::shared<vec3<double> > coords_with_mask(
-    const ShoeboxType &self,
+    const ShoeboxType& self,
     const af::const_ref<bool, af::c_grid<3> > mask) {
     DIALS_ASSERT(mask.accessor().all_eq(self.size()));
     af::shared<vec3<double> > result;
@@ -86,7 +86,7 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Get a list of shoebox pixel values. */
   template <typename ShoeboxType>
-  af::shared<double> values(const ShoeboxType &self) {
+  af::shared<double> values(const ShoeboxType& self) {
     DIALS_ASSERT(self.is_consistent());
     af::shared<double> result;
     for (std::size_t k = 0; k < self.zsize(); ++k) {
@@ -101,7 +101,7 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Get a list of shoebox pixel values. */
   template <typename ShoeboxType>
-  af::shared<double> values_with_mask(const ShoeboxType &self,
+  af::shared<double> values_with_mask(const ShoeboxType& self,
                                       const af::const_ref<bool, af::c_grid<3> > mask) {
     DIALS_ASSERT(mask.accessor().all_eq(self.size()));
     DIALS_ASSERT(self.is_consistent());
@@ -120,8 +120,8 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Get a list of shoebox pixel coordinates. */
   template <typename ShoeboxType>
-  af::shared<vec3<double> > beam_vectors(const ShoeboxType &self,
-                                         const Detector &detector) {
+  af::shared<vec3<double> > beam_vectors(const ShoeboxType& self,
+                                         const Detector& detector) {
     af::shared<vec3<double> > result;
     for (std::size_t k = 0; k < self.zsize(); ++k) {
       for (std::size_t j = 0; j < self.ysize(); ++j) {
@@ -139,8 +139,8 @@ namespace dials { namespace model { namespace boost_python {
   /** Get a list of shoebox pixel coordinates. */
   template <typename ShoeboxType>
   af::shared<vec3<double> > beam_vectors_with_mask(
-    const ShoeboxType &self,
-    const Detector &detector,
+    const ShoeboxType& self,
+    const Detector& detector,
     const af::const_ref<bool, af::c_grid<3> > mask) {
     DIALS_ASSERT(mask.accessor().all_eq(self.size()));
     af::shared<vec3<double> > result;
@@ -160,13 +160,13 @@ namespace dials { namespace model { namespace boost_python {
   }
 
   template <typename FloatType>
-  class_<Shoebox<FloatType> > shoebox_wrapper(const char *name) {
+  class_<Shoebox<FloatType> > shoebox_wrapper(const char* name) {
     typedef Shoebox<FloatType> shoebox_type;
 
     class_<shoebox_type> shoebox(name);
-    shoebox.def(init<const shoebox_type &>())
-      .def(init<std::size_t, const int6 &>())
-      .def(init<const int6 &>())
+    shoebox.def(init<const shoebox_type&>())
+      .def(init<std::size_t, const int6&>())
+      .def(init<const int6&>())
       .add_property(
         "data",
         make_getter(&shoebox_type::data, return_value_policy<return_by_value>()),
@@ -185,8 +185,9 @@ namespace dials { namespace model { namespace boost_python {
         make_setter(&shoebox_type::bbox, return_value_policy<return_by_value>()))
       .def_readwrite("panel", &shoebox_type::panel)
       .def_readwrite("flat", &shoebox_type::flat)
-      .def("allocate", &shoebox_type::allocate)
-      .def("allocate", &shoebox_type::allocate_with_value)
+      .def("allocate_data", &shoebox_type::allocate_data)
+      .def("allocate_data_with_value", &shoebox_type::allocate_data_with_value)
+      .def("allocate_background", &shoebox_type::allocate_background)
       .def("deallocate", &shoebox_type::deallocate)
       .def("xoffset", &shoebox_type::xoffset)
       .def("yoffset", &shoebox_type::yoffset)
@@ -198,7 +199,8 @@ namespace dials { namespace model { namespace boost_python {
       .def("size", &shoebox_type::size)
       .def("size_flat", &shoebox_type::size_flat)
       .def("is_consistent", &shoebox_type::is_consistent)
-      .def("is_allocated", &shoebox_type::is_allocated)
+      .def("is_data_allocated", &shoebox_type::is_data_allocated)
+      .def("is_background_allocated", &shoebox_type::is_background_allocated)
       .def("is_bbox_within_image_volume",
            &shoebox_type::is_bbox_within_image_volume,
            (arg("image_size"), arg("scan_range")))

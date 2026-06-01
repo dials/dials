@@ -5,18 +5,44 @@ This is a guide on how to process synchrotron serial crystallography (SSX) data
 with DIALS, using stepwise command line programs in a similar manner to processing
 rotation data.
 
-Indexing SSX data with dials.ssx_index
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Importing and spotfinding
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A sequence of SSX images can be imported and spotfinding can be run in the same
+A sequence of still shot images can be imported and spotfinding can be run in the same
 way as for rotation data::
 
-    dials.import /data/images*cbf
+    dials.import /data/images*cbf convert_stills_to_sequences=True
     dials.find_spots imported.expt
 
 Note that for simplicity in this example we are not using a reference geometry when importing.
 These commands produce an :samp:`imported.expt` experiments file containing the experimental
 metadata and a :samp:`strong.refl` reflections file containing the found spots.
+
+It is important to note that the dials data structures obtained upon import can differ depending
+on the image format and metadata, which can cause performance issues in spotfinding if not handled
+correctly via the use of the :samp:`convert_stills_to_sequences=True` parameter in :samp:`dials.import`.
+The bottom of the :samp:`dials.import` log lists the interpretation of the images, e.g.::
+
+
+  num images: 100
+  sequences:
+    still:    1
+    sweep:    0
+  num stills: 0
+
+
+The "sequences" datastructure is optimised for processing sequences of image data in a stepwise
+manner, whereas alternative datastructures are optimised for distributed processing of still
+images in the :samp:`dials.stills_process` program. 
+If you see an entry under "num stills:", this can lead to slow spotfinding for the stepwise 
+processing described in this guide; using the parameter :samp:`convert_stills_to_sequences=True`
+as part of your :samp:`dials.import` command will overcome this.
+
+
+
+Indexing SSX data with dials.ssx_index
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Then to index the data, we can use::
 
     dials.ssx_index strong.refl imported.expt
@@ -89,7 +115,7 @@ To summarise the main options (and their default values)::
 To see the full list of options with descriptions, run :samp:`dials.ssx_index -ce2 -a2`
 
 Integrating SSX data with dials.ssx_integrate
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After indexing, the experimental models can be further refined with dials.refine,
 or the indexing output can also be integrated directly.
@@ -122,3 +148,12 @@ of useful statistics such as the number of spots integrated on each image,
 the modelled mosaicity values and unit cell clustering analysis. This data can
 also be output to json format for further analysis, by providing a filename to
 the option :samp:`output.json`.
+
+Scaling and merging data
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is advised to first perform scaling and merging using the :samp:`xia2.ssx_reduce` pipeline, as
+described at https://xia2.github.io/serial_crystallography.html#data-reduction. The default parameters
+of :samp:`dials.scale`, :samp:`dials.cosym` and other data reduction programs are set for full rotation data;
+the :samp:`xia2.ssx_reduce` pipeline will run these programs with sensible defaults. You are then able to
+inspect the logs, see which parameters were used and try stepwise processing with the dials commands.

@@ -20,11 +20,8 @@
 #include <dials/algorithms/profile_model/gaussian_rs/modeller.h>
 #include <dials/algorithms/profile_model/modeller/boost_python/empirical_profile_modeller_wrapper.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace boost_python {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace boost_python {
 
     using namespace boost::python;
 
@@ -297,10 +294,10 @@ namespace dials {
 
       // Export zeta factor functions
       def("zeta_factor",
-          (double (*)(vec3<double>, vec3<double>, vec3<double>)) & zeta_factor,
+          (double (*)(vec3<double>, vec3<double>, vec3<double>))&zeta_factor,
           (arg("m2"), arg("s0"), arg("s1")));
       def("zeta_factor",
-          (double (*)(vec3<double>, vec3<double>)) & zeta_factor,
+          (double (*)(vec3<double>, vec3<double>))&zeta_factor,
           (arg("m2"), arg("e1")));
       def("zeta_factor", &zeta_factor_array, (arg("m2"), arg("s0"), arg("s1")));
       def("zeta_factor",

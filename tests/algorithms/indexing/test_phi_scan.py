@@ -18,13 +18,9 @@ def test_run(dials_data, tmp_path):
     )
     expected_rmsds = (0.039, 0.035, 0.002)
 
-    experiments_old = (
-        dials_data("indexing_test_data", pathlib=True) / "phi_scan_old.expt"
-    )
-    experiments_new = dials_data("indexing_test_data", pathlib=True) / "phi_scan.expt"
-    strong_pickle = (
-        dials_data("indexing_test_data", pathlib=True) / "phi_scan_strong.pickle"
-    )
+    experiments_old = dials_data("indexing_test_data") / "phi_scan_old.expt"
+    experiments_new = dials_data("indexing_test_data") / "phi_scan.expt"
+    strong_pickle = dials_data("indexing_test_data") / "phi_scan_strong.pickle"
 
     imageset_old = load.experiment_list(
         experiments_old, check_format=False

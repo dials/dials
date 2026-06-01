@@ -6,7 +6,6 @@ Example:
   dials.sequence_to_stills sequence.expt sequence.refl
 """
 
-
 from __future__ import annotations
 
 import logging
@@ -116,7 +115,6 @@ def sequence_to_stills(experiments, reflections, params):
             f"Converting experiment {expt_id} images {i_start} to {i_stop} to stills"
         )
         for i_array in range(i_start, i_stop):
-
             # Shift array position to scan-point index
             i_scan_point = i_array - i_start
 

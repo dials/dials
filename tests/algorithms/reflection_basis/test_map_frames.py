@@ -18,9 +18,7 @@ from dials.algorithms.profile_model.gaussian_rs.transform import (
 
 
 def test_map_frames_forward(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
+    sequence = load.imageset(dials_data("centroid_test_data") / "sweep.json")
 
     # Get the models
     beam = sequence.get_beam()
@@ -59,7 +57,6 @@ def test_map_frames_forward(dials_data):
     s0_length = matrix.col(beam.get_s0()).length()
 
     for i in range(100):
-
         # Get random x, y, z
         x = random.uniform(0, 2000)
         y = random.uniform(0, 2000)
@@ -108,9 +105,7 @@ def test_map_frames_forward(dials_data):
 
 
 def test_map_frames_reverse(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
+    sequence = load.imageset(dials_data("centroid_test_data") / "sweep.json")
 
     # Get the models
     beam = sequence.get_beam()
@@ -148,7 +143,6 @@ def test_map_frames_reverse(dials_data):
     s0_length = matrix.col(beam.get_s0()).length()
 
     for i in range(100):
-
         # Get random x, y, z
         x = random.uniform(0, 2000)
         y = random.uniform(0, 2000)
@@ -204,9 +198,7 @@ def test_map_frames_reverse(dials_data):
 
 
 def test_map_forward_reverse(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
+    sequence = load.imageset(dials_data("centroid_test_data") / "sweep.json")
 
     # Get the models
     beam = sequence.get_beam()
@@ -254,7 +246,6 @@ def test_map_forward_reverse(dials_data):
     s0_length = matrix.col(beam.get_s0()).length()
 
     for i in range(100):
-
         # Get random x, y, z
         x = random.uniform(0, 2000)
         y = random.uniform(0, 2000)

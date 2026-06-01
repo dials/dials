@@ -57,7 +57,6 @@ def slice_reflections(reflections, image_ranges):
 
     to_keep = flex.size_t()
     for iexp, sr in enumerate(image_ranges):
-
         if sr is None:
             continue
         isel = (reflections["id"] == iexp).iselection()

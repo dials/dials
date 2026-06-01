@@ -41,7 +41,6 @@ class GoniometerMixin:
 
     @staticmethod
     def _compose_core(iS, gamma1, gamma2, gamma1_axis, gamma2_axis):
-
         # convert angles to radians
         g1rad, g2rad = gamma1 / 1000.0, gamma2 / 1000.0
 
@@ -115,7 +114,6 @@ class GoniometerParameterisation(ModelParameterisation, GoniometerMixin):
         return
 
     def compose(self):
-
         # extract setting matrix from the initial state
         iS = self._initial_state
 
@@ -137,7 +135,6 @@ class GoniometerParameterisation(ModelParameterisation, GoniometerMixin):
         return
 
     def get_state(self):
-
         # only a single setting matrix exists, so no multi_state_elt argument is
         # allowed
 

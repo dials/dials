@@ -4,6 +4,7 @@ import copy
 import logging
 
 from cctbx import sgtbx
+from dxtbx.model import ExperimentList
 from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
@@ -17,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 def derive_change_of_basis_op(from_hkl, to_hkl):
-
     # exclude those reflections that we couldn't index
     sel = (to_hkl != (0, 0, 0)) & (from_hkl != (0, 0, 0))
     assert sel.count(True) >= 3  # need minimum of 3 equations ?
@@ -70,9 +70,9 @@ def change_of_basis_op_against_reference(
     # reference with data that has not yet been through integration
     for table in reflections:
         if table.get_flags(table.flags.integrated_sum).count(True) == 0:
-            assert (
-                "intensity.sum.value" in table
-            ), "No 'intensity.sum.value' in reflections"
+            assert "intensity.sum.value" in table, (
+                "No 'intensity.sum.value' in reflections"
+            )
             table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
     # Make miller array of the datasets
     best_cell = determine_best_unit_cell(experiments)
@@ -91,9 +91,24 @@ def change_of_basis_op_against_reference(
     return change_of_basis_op
 
 
-def reindex_experiments(experiments, cb_op, space_group=None):
-    reindexed_experiments = copy.deepcopy(experiments)
+def reindex_experiments(
+    experiments: ExperimentList,
+    cb_op: sgtbx.change_of_basis_op,
+    space_group: sgtbx.space_group | None = None,
+) -> ExperimentList:
+    """
+    Reindexes the given experiment list using the provided change of basis operator, and optionally set the space group.
 
+    Args:
+        experiments (ExperimentList): The list of experiments to reindex.
+        cb_op (sgtbx.change_of_basis_op): The change of basis operator.
+        space_group (sgtbx.space_group | None, optional): The space group to set after reindexing. Defaults to None.
+
+    Returns:
+        ExperimentList: The reindexed experiments.
+    """
+
+    reindexed_experiments = copy.deepcopy(experiments)
     for crystal in reindexed_experiments.crystals():
         cryst_reindexed = copy.deepcopy(crystal)
         if space_group is not None:
@@ -123,9 +138,26 @@ def reindex_experiments(experiments, cb_op, space_group=None):
     return reindexed_experiments
 
 
-def reindex_reflections(reflections, change_of_basis_op, hkl_offset=None):
-    reflections = flex.reflection_table.concat(reflections)
+def reindex_reflections(
+    reflections: list[flex.reflection_table],
+    change_of_basis_op: sgtbx.change_of_basis_op,
+    hkl_offset: list[int] | None = None,
+) -> flex.reflection_table:
+    """
+    Reindexes reflection tables based on a change of basis operation and an optional HKL offset.
 
+    Args:
+        reflections (list[flex.reflection_table]): A list of reflection tables to be reindexed.
+        change_of_basis_op (sgtbx.change_of_basis_op): The change of basis operation to apply.
+        hkl_offset (list[int] | None, optional): An optional HKL offset to apply. Defaults to None.
+
+    Returns:
+        flex.reflection_table: The reindexed reflection table.
+
+    Removes reflections whose change of basis results in non-integral indices.
+    """
+
+    reflections = flex.reflection_table.concat(reflections)
     miller_indices = reflections["miller_index"]
 
     if hkl_offset is not None:

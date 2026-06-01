@@ -17,7 +17,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   template <std::size_t DIM>
-  void label_image_stack_wrapper(const char *name) {
+  void label_image_stack_wrapper(const char* name) {
     typedef LabelImageStack<DIM> label_type;
     class_<label_type>(name, no_init)
       .def(init<int2>((arg("size"))))
@@ -29,7 +29,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("values", &label_type::values);
   }
 
-  inline void label_pixels_wrapper(const char *name) {
+  inline void label_pixels_wrapper(const char* name) {
     typedef LabelPixels label_type;
     class_<label_type>(name, no_init)
       .def(init<int3>((arg("size"))))

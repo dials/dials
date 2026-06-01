@@ -24,8 +24,8 @@ def run_export(export_format, dials_data, tmp_path):
         [
             shutil.which("dials.export"),
             "format=" + export_format,
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "experiments.json",
+            dials_data("centroid_test_data") / "integrated.pickle",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -45,8 +45,8 @@ def test_mtz(dials_data, tmp_path):
             "format=mtz",
             "project_name=ham",
             "crystal_name=spam",
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "experiments.json",
+            dials_data("centroid_test_data") / "integrated.pickle",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -61,12 +61,8 @@ def test_mtz(dials_data, tmp_path):
 def test_mtz_recalculated_cell(dials_data, tmp_path):
     # First run dials.two_theta_refine to ensure that the crystals have
     # recalculated_unit_cell set
-    scaled_expt = (
-        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.expt"
-    )
-    scaled_refl = (
-        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.refl"
-    )
+    scaled_expt = dials_data("x4wide_processed") / "AUTOMATIC_DEFAULT_scaled.expt"
+    scaled_refl = dials_data("x4wide_processed") / "AUTOMATIC_DEFAULT_scaled.refl"
     result = subprocess.run(
         [shutil.which("dials.two_theta_refine"), scaled_expt, scaled_refl],
         cwd=tmp_path,
@@ -100,12 +96,8 @@ def test_mtz_recalculated_cell(dials_data, tmp_path):
 
 
 def test_mtz_best_unit_cell(dials_data, tmp_path):
-    scaled_expt = (
-        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.expt"
-    )
-    scaled_refl = (
-        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.refl"
-    )
+    scaled_expt = dials_data("x4wide_processed") / "AUTOMATIC_DEFAULT_scaled.expt"
+    scaled_refl = dials_data("x4wide_processed") / "AUTOMATIC_DEFAULT_scaled.refl"
     best_unit_cell = uctbx.unit_cell((42, 42, 39, 90, 90, 90))
     d_min = 1.5
     result = subprocess.run(
@@ -115,7 +107,9 @@ def test_mtz_best_unit_cell(dials_data, tmp_path):
             scaled_expt,
             scaled_refl,
             f"d_min={d_min:f}",
-            "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
+            "best_unit_cell={:g},{:g},{:g},{:g},{:g},{:g}".format(
+                *best_unit_cell.parameters()
+            ),
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -131,7 +125,7 @@ def test_mtz_best_unit_cell(dials_data, tmp_path):
 def test_multi_sequence_integrated_mtz(dials_data, tmp_path):
     """Test dials.export on multi-sequence integrated data."""
     # first combine two integrated files
-    data = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    data = dials_data("multi_crystal_proteinase_k")
     result = subprocess.run(
         [
             shutil.which("dials.combine_experiments"),
@@ -168,7 +162,7 @@ def test_mtz_multi_wavelength(dials_data, tmp_path):
     """Test multi-wavelength mtz export"""
     # First make suitable input - multi datasets experiment list and reflection
     # table with different wavelengths
-    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    mcp = dials_data("multi_crystal_proteinase_k")
     exp_1 = load.experiment_list(mcp / "experiments_1.json", check_format=False)
     exp_2 = load.experiment_list(mcp / "experiments_2.json", check_format=False)
     refl_1 = flex.reflection_table.from_file(mcp / "reflections_1.pickle")
@@ -215,8 +209,8 @@ def test_mtz_multi_wavelength(dials_data, tmp_path):
 
 
 def test_mtz_primitive_cell(dials_data, tmp_path):
-    scaled_expt = dials_data("insulin_processed", pathlib=True) / "scaled.expt"
-    scaled_refl = dials_data("insulin_processed", pathlib=True) / "scaled.refl"
+    scaled_expt = dials_data("insulin_processed") / "scaled.expt"
+    scaled_refl = dials_data("insulin_processed") / "scaled.refl"
 
     # Export in I23
     subprocess.run(
@@ -277,8 +271,8 @@ def test_mmcif(compress, hklout, dials_data, tmp_path):
     command = [
         shutil.which("dials.export"),
         "format=mmcif",
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json",
-        dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+        dials_data("centroid_test_data") / "experiments.json",
+        dials_data("centroid_test_data") / "integrated.pickle",
     ]
     if hklout is not None:
         command.append(f"mmcif.hklout={hklout}")
@@ -294,15 +288,14 @@ def test_mmcif(compress, hklout, dials_data, tmp_path):
     assert (tmp_path / hklin).is_file()
 
 
+@pytest.mark.skipif(
+    shutil.which("gemmi") is None, reason="Could not find gemmi executable"
+)
 @pytest.mark.parametrize("pdb_version", ["v5", "v5_next"])
 def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     """Call dials.export format=mmcif after scaling"""
-    scaled_expt = (
-        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.expt"
-    )
-    scaled_refl = (
-        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.refl"
-    )
+    scaled_expt = dials_data("x4wide_processed") / "AUTOMATIC_DEFAULT_scaled.expt"
+    scaled_refl = dials_data("x4wide_processed") / "AUTOMATIC_DEFAULT_scaled.refl"
     command = [
         shutil.which("dials.export"),
         "format=mmcif",
@@ -319,13 +312,24 @@ def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
     if pdb_version == "v5":
         assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
+        # check that gemmi can understand the output
+        cmd = [
+            shutil.which("gemmi"),
+            "cif2mtz",
+            tmp_path / "scaled.mmcif",
+            tmp_path / "test.mtz",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
+        assert not result.returncode and not result.stderr
+        assert (tmp_path / "test.mtz").is_file()
+
     elif pdb_version == "v5_next":
         assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()
 
 
 def test_mmcif_p1_narrow_wedge(dials_data, tmp_path):
     """Call dials.export format=mmcif after scaling"""
-    data_dir = dials_data("x4wide_processed", pathlib=True)
+    data_dir = dials_data("x4wide_processed")
 
     refl = flex.reflection_table.from_file(data_dir / "AUTOMATIC_DEFAULT_scaled.refl")
     refl = slice_reflections(refl, [(1, 3)])
@@ -351,8 +355,8 @@ def test_mmcif_p1_narrow_wedge(dials_data, tmp_path):
     assert (tmp_path / "scaled.mmcif").is_file()
 
     model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
-    assert model["dials"]["_reflns.pdbx_redundancy"] == "1.0"
-    assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0"
+    assert model["dials"]["_reflns.pdbx_redundancy"] == "1.000"
+    assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0000"
 
 
 def test_xds_ascii(dials_data, tmp_path):
@@ -362,8 +366,8 @@ def test_xds_ascii(dials_data, tmp_path):
             shutil.which("dials.export"),
             "intensity=sum",
             "format=xds_ascii",
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "experiments.json",
+            dials_data("centroid_test_data") / "integrated.pickle",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -398,8 +402,8 @@ def test_sadabs(dials_data, tmp_path):
             "intensity=sum",
             "mtz.partiality_threshold=0.99",
             "format=sadabs",
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "experiments.json",
+            dials_data("centroid_test_data") / "integrated.pickle",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -431,9 +435,8 @@ def test_json(dials_data, tmp_path):
         [
             shutil.which("dials.export"),
             "format=json",
-            dials_data("centroid_test_data", pathlib=True)
-            / "imported_experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "strong.pickle",
+            dials_data("centroid_test_data") / "imported_experiments.json",
+            dials_data("centroid_test_data") / "strong.pickle",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -458,8 +461,8 @@ def test_json_shortened(dials_data, tmp_path):
         [
             shutil.which("dials.export"),
             "format=json",
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "experiments.json",
+            dials_data("centroid_test_data") / "integrated.pickle",
             "json.filename=integrated.json",
             "n_digits=4",
             "compact=False",
@@ -487,10 +490,8 @@ def test_shelx(dials_data, tmp_path):
             shutil.which("dials.export"),
             "intensity=scale",
             "format=shelx",
-            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
-            / "scaled_20_25.expt",
-            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
-            / "scaled_20_25.refl",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -526,10 +527,8 @@ def test_shelx_ins(dials_data, tmp_path):
             shutil.which("dials.export"),
             "intensity=scale",
             "format=shelx",
-            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
-            / "scaled_20_25.expt",
-            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
-            / "scaled_20_25.refl",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -538,8 +537,8 @@ def test_shelx_ins(dials_data, tmp_path):
     assert (tmp_path / "dials.ins").is_file()
 
     cell_esds = {
-        "CELL": (5.4815, 8.2158, 12.1457, 90.000, 90.000, 90.000),
-        "ZERR": (0.0005, 0.0007, 0.0011, 0.003, 0.004, 0.004),
+        "CELL": (5.48154, 8.21578, 12.14570, 90.0000, 90.0000, 90.0000),
+        "ZERR": (0.00050, 0.00073, 0.00109, 0.0034, 0.0037, 0.0037),
     }
 
     with (tmp_path / "dials.ins").open() as fh:
@@ -548,7 +547,7 @@ def test_shelx_ins(dials_data, tmp_path):
             instruction = tokens[0]
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
-                assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+                assert result == pytest.approx(cell_esds[instruction], abs=0.0001)
 
 
 def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
@@ -559,10 +558,8 @@ def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
             "intensity=scale",
             "format=shelx",
             "best_unit_cell=5,8,12,90,90,90",
-            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
-            / "scaled_20_25.expt",
-            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
-            / "scaled_20_25.refl",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -584,9 +581,40 @@ def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
                 assert result == pytest.approx(cell_esds[instruction], abs=0.001)
 
 
+def test_shelx_ins_composition(dials_data, tmp_path):
+    # Call dials.export
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "intensity=scale",
+            "format=shelx",
+            "composition=C3H7NO2S",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    sfac_unit = {
+        "SFAC": "C H N O S",
+        "UNIT": "12 28 4 8 4",
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            if instruction in sfac_unit:
+                result = " ".join(tokens[1:6])
+                assert result == sfac_unit[instruction]
+
+
 def test_export_sum_or_profile_only(dials_data, tmp_path):
-    expt = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
-    refl = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
+    expt = dials_data("insulin_processed") / "integrated.expt"
+    refl = dials_data("insulin_processed") / "integrated.refl"
 
     for remove in "prf", "sum":
         removed = tmp_path / f"removed_{remove}.refl"
@@ -610,8 +638,8 @@ def test_export_sum_or_profile_only(dials_data, tmp_path):
 
 @pytest.mark.parametrize("intensity_choice", ["profile", "sum"])
 def test_pets(dials_data, tmp_path, intensity_choice):
-    expt = dials_data("quartz_processed", pathlib=True) / "integrated.expt"
-    refl = dials_data("quartz_processed", pathlib=True) / "integrated.refl"
+    expt = dials_data("quartz_processed") / "integrated.expt"
+    refl = dials_data("quartz_processed") / "integrated.refl"
     # Call dials.export
     result = subprocess.run(
         [
@@ -635,7 +663,7 @@ def test_pets(dials_data, tmp_path, intensity_choice):
     output_data = output.read_bytes().replace(b"\r\n", b"\n")
 
     if intensity_choice == "profile":
-        reference = dials_data("quartz_processed", pathlib=True) / "dials_prf.cif_pets"
+        reference = dials_data("quartz_processed") / "dials_prf.cif_pets"
     else:
-        reference = dials_data("quartz_processed", pathlib=True) / "dials_dyn.cif_pets"
+        reference = dials_data("quartz_processed") / "dials_dyn.cif_pets"
     assert output_data == reference.read_bytes()

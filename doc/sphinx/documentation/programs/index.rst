@@ -19,6 +19,7 @@ Main processing commands:
    dials_symmetry
    dials_scale
    dials_export
+   dials_merge
    xia2_multiplex
 
 Utilities:
@@ -51,6 +52,8 @@ Utilities:
    dials_anvil_correction
    dials_missing_reflections
    dials_filter_reflections
+   dials_import_xds
+   dials_correlation_matrix
 
 Printable command line reference:
 

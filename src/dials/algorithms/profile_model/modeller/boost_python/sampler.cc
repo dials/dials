@@ -23,26 +23,26 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   struct SingleSamplerPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const SingleSampler &obj) {
+    static boost::python::tuple getinitargs(const SingleSampler& obj) {
       return boost::python::make_tuple(obj.scan_range(), obj.grid_size());
     }
   };
 
   struct GridSamplerPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const GridSampler &obj) {
+    static boost::python::tuple getinitargs(const GridSampler& obj) {
       return boost::python::make_tuple(
         obj.image_size(), obj.scan_range(), obj.grid_size());
     }
   };
 
   struct CircleSamplerPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const CircleSampler &obj) {
+    static boost::python::tuple getinitargs(const CircleSampler& obj) {
       return boost::python::make_tuple(obj.image_size(), obj.scan_range(), obj.num_z());
     }
   };
 
   struct EwaldSphereSamplerPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const EwaldSphereSampler &obj) {
+    static boost::python::tuple getinitargs(const EwaldSphereSampler& obj) {
       return boost::python::make_tuple(
         obj.beam(), obj.detector(), obj.goniometer(), obj.scan(), obj.num_phi());
     }
@@ -114,9 +114,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<EwaldSphereSampler, bases<SamplerIface> >("EwaldSphereSampler", no_init)
       .def(init<const std::shared_ptr<BeamBase>,
-                const Detector &,
-                const Goniometer &,
-                const Scan &,
+                const Detector&,
+                const Goniometer&,
+                const Scan&,
                 std::size_t>())
       .def("beam", &EwaldSphereSampler::beam)
       .def("detector", &EwaldSphereSampler::detector)

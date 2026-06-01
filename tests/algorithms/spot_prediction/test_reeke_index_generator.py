@@ -14,7 +14,6 @@ from dials.algorithms.spot_prediction import ReekeIndexGenerator
 
 class Test:
     def setup_method(self):
-
         # cubic, 50A cell, 1A radiation, 1 deg osciillation, everything ideal
         a = 50.0
         self.ub = matrix.sqr((1.0 / a, 0.0, 0.0, 0.0, 1.0 / a, 0.0, 0.0, 0.0, 1.0 / a))
@@ -26,7 +25,6 @@ class Test:
         self.margin = 1
 
     def test_varying_s0(self):
-
         space_group_type = space_group_info("P 1").group().type()
         ub_beg, ub_end = self._get_ub(0)
 
@@ -73,7 +71,6 @@ class Test:
         assert len(common) >= 0.98 * min_set_len
 
     def _get_ub(self, frame):
-
         angle_beg = frame * 1
         angle_end = (frame + 1) * 1
 

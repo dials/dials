@@ -5,6 +5,8 @@ import subprocess
 
 import pytest
 
+from dxtbx.util import ersatz_uuid4
+
 from dials.array_family import flex
 
 
@@ -22,6 +24,8 @@ def reflections(tmp_path_factory):
     rt.set_flags(mask2, rt.flags.reference_spot)
     tmp_path = tmp_path_factory.mktemp("filter_reflections")
     rt_name = tmp_path / "test_refs.refl"
+    for id in set(rt["id"]):
+        rt.experiment_identifiers()[id] = ersatz_uuid4()
     rt.as_file(rt_name)
     return rt_name
 
@@ -122,7 +126,7 @@ def test_filter_reflections_printing_analysis(reflections, tmp_path):
 def test_filter_reflections(
     experiment, reflections, args, expected, dials_data, tmp_path
 ):
-    dataset = dials_data("centroid_test_data", pathlib=True)
+    dataset = dials_data("centroid_test_data")
     result = subprocess.run(
         [
             shutil.which("dials.filter_reflections"),

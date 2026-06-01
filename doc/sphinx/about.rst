@@ -2,6 +2,22 @@
 About
 +++++
 
+Atomic structures are vital for scientific research.  From understanding
+the mechanisms of biology to the design of new materials for industrial applications,
+knowing the placement of atoms in a molecule assists in the control of disease progression,
+drug design, the development of therapies such as vaccines, building new compounds
+for better batteries, and finding new methods of carbon sequestration.
+
+Crystallography is one of the prime technologies used to generate high quality structures,
+generated from crystallographic data collected at large facilities like synchrotrons and
+X-ray free electron lasers, on large micro electron diffraction instruments, at neutron
+sources, or at home in a lab.  At these facilities and instruments, crystals are either
+rotated in a beam of photons, neutrons, or electrons, or are exposed one at a time in a
+serial experiment, and diffraction data from detectors are collected and stored in image
+files. The DIALS software package (Diffraction Integration for Advanced Light Sources) is
+used throughout the world for processing crystallographic data in automated pipelines or
+through graphical user interfaces.
+
 The DIALS software is developed in a fully open-source, collaborative
 environment. The main development teams are based at `Diamond Light Source`_
 and `CCP4`_, in the UK, and at `Lawrence Berkeley National Laboratory`_, USA.
@@ -35,19 +51,19 @@ reuse both within DIALS and by third parties.
 Development Teams
 =================
 
-DIALS East
+DIALS UK
 ----------
 
 Development of DIALS in the UK is funded by the `Wellcome Trust`_,
 `Diamond Light Source`_ and `CCP4`_, and led by `Dr Gwyndaf Evans`_.
 
-DIALS West
+DIALS US
 ----------
 
 Development of DIALS at `Lawrence Berkeley National Laboratory`_, USA is led by
-`Dr Nicholas Sauter`_ and supported by `National Institutes of Health`_ /
-`National Institute of General Medical Sciences`_ grant R01-GM117126: *DIALS:
-New Computational Methods to Enable Challenging Crystallographic Experiments*.
+`Dr Aaron Brewster`_ and supported by `National Institutes of Health`_ /
+`National Institute of General Medical Sciences`_ grant R24GM154040: *DIALS:
+supporting structural biology through open source diffraction processing software*.
 Work at LBNL is performed under `Department of Energy`_ contract
 DE-AC02-05CH11231.
 
@@ -83,11 +99,11 @@ Matthew Webber.
 
 .. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`Boost.Python`: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/index.html
-.. _`cctbx`: http://cctbx.sourceforge.net/
+.. _`cctbx`: https://github.com/cctbx
 .. _`CCP4`: http://www.ccp4.ac.uk/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/Home.html
 .. _`Dr Gwyndaf Evans`: http://www.diamond.ac.uk/Beamlines/Mx/VMXm/Staff/Evans.html
-.. _`Dr Nicholas Sauter`: https://biosciences.lbl.gov/profiles/nicholas-sauter/
+.. _`Dr Aaron Brewster`: https://biosciences.lbl.gov/profiles/aaron-brewster/
 .. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
 .. _`National Institutes of Health`: http://www.nih.gov/
 .. _`National Institute of General Medical Sciences`: http://www.nigms.nih.gov/

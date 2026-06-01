@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import random
 
 import pytest
@@ -12,17 +11,14 @@ from dials.util.reciprocal_lattice import Render3d
 
 
 @pytest.fixture
-def multi_sequence_data(dials_regression):
+def multi_sequence_data(dials_data):
+    data_dir = dials_data("indexing_test_data")
     experiments = load.experiment_list(
-        os.path.join(
-            dials_regression, "indexing_test_data", "multi_sweep", "experiments.json"
-        ),
+        data_dir / "multi_sweep-experiments.json",
         check_format=False,
     )
     reflections = flex.reflection_table.from_file(
-        os.path.join(
-            dials_regression, "indexing_test_data", "multi_sweep", "indexed.pickle"
-        )
+        data_dir / "multi_sweep-indexed.pickle",
     )
     return {"reflections": reflections, "experiments": experiments}
 
@@ -30,11 +26,11 @@ def multi_sequence_data(dials_regression):
 @pytest.fixture
 def centroid_test_data(dials_data):
     experiments = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+        dials_data("centroid_test_data") / "experiments.json",
         check_format=False,
     )
     reflections = flex.reflection_table.from_file(
-        dials_data("centroid_test_data", pathlib=True) / "integrated.pickle"
+        dials_data("centroid_test_data") / "integrated.pickle"
     )
     return {"reflections": reflections, "experiments": experiments}
 
@@ -66,12 +62,12 @@ def test_Render3d(mocker, multi_sequence_data):
     render.load_models(experiments, reflections)
     assert render.set_beam_centre.call_count == 1
 
-    for (outlier_display, expected_count) in (("outliers", 0), ("inliers", 1255)):
+    for outlier_display, expected_count in (("outliers", 0), ("inliers", 1255)):
         render.settings.outlier_display = outlier_display
         render.load_models(experiments, reflections)
         assert render.viewer.set_points.call_args[0][0].size() == expected_count
 
-    for (display, expected_count) in (
+    for display, expected_count in (
         ("indexed", 1255),
         ("unindexed", 0),
         ("integrated", 0),

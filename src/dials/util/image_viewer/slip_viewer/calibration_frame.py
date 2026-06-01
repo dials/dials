@@ -48,7 +48,7 @@ class SBSettingsPanel(wx.Panel):
             name_quadrant = ["Q0", "Q1", "Q2", "Q3"][serial]
             box = wx.BoxSizer(wx.HORIZONTAL)
 
-            for (name_direction, value) in [("fast", fast), ("slow", slow)]:
+            for name_direction, value in [("fast", fast), ("slow", slow)]:
                 name_ctrl = name_quadrant + "_" + name_direction + "_ctrl"
 
                 spinner = FloatSpin(

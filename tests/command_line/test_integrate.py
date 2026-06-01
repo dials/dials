@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import datetime
 import json
 import math
 import os
-import pathlib
 import shutil
 import subprocess
 
@@ -19,9 +17,7 @@ from dials.array_family import flex
 def test_basic_integrate(dials_data, tmp_path):
     # Call dials.integrate
 
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -56,16 +52,14 @@ def test_basic_integrate(dials_data, tmp_path):
 
     (tmp_path / "integrated.refl").unlink()
     for i in range(1, 10):
-        source = dials_data("centroid_test_data", pathlib=True) / f"centroid_000{i}.cbf"
+        source = dials_data("centroid_test_data") / f"centroid_000{i}.cbf"
         destination = tmp_path / f"centroid_001{i}.cbf"
         try:
             destination.symlink_to(source)
         except OSError:
             shutil.copyfile(source, destination)
 
-    with dials_data("centroid_test_data", pathlib=True).joinpath(
-        "experiments.json"
-    ).open("r") as fh:
+    with dials_data("centroid_test_data").joinpath("experiments.json").open("r") as fh:
         j = json.load(fh)
     assert j["scan"][0]["image_range"] == [1, 9]
     j["scan"][0]["image_range"] = [11, 19]
@@ -127,9 +121,7 @@ def test_basic_integrate(dials_data, tmp_path):
     [(None, None), (1, "degrees"), (2, "frames"), (1, "frames")],
 )
 def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -143,15 +135,12 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
     assert not result.returncode and not result.stderr
 
 
-@pytest.mark.skipif(
-    (datetime.date.today() < datetime.date(2024, 6, 5)),
-    reason="Temporary skip for test that started to fail on Azure pipelines",
-)
+@pytest.mark.skip(reason="3d threaded integrator")
 def test_basic_threaded_integrate(dials_data, tmp_path):
     """Test the threaded integrator on single imageset data."""
 
-    expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
-    refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
 
     result = subprocess.run(
         [
@@ -178,9 +167,7 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
 
 
 def test_basic_integrate_output_integrated_only(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "bar"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -214,9 +201,7 @@ def test_basic_integrate_output_integrated_only(dials_data, tmp_path):
 
 
 def test_integration_with_sampling(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -246,9 +231,7 @@ def test_integration_with_sampling(dials_data, tmp_path):
 
 
 def test_integration_with_sample_size(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -275,9 +258,7 @@ def test_integration_with_sample_size(dials_data, tmp_path):
 
 
 def test_integration_with_image_exclusions(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -313,8 +294,8 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     """Test that imageset ids are correctly output for multi-sweep integration."""
     # Just integrate 15 images for each sweep
 
-    images1 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_01_000*.cbf"
-    images2 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_02_000*.cbf"
+    images1 = dials_data("l_cysteine_dials_output") / "l-cyst_01_000*.cbf"
+    images2 = dials_data("l_cysteine_dials_output") / "l-cyst_02_000*.cbf"
 
     result = subprocess.run(
         [shutil.which("dials.import"), images1, images2],
@@ -333,6 +314,7 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
             shutil.which("dials.index"),
             tmp_path / "imported.expt",
             tmp_path / "strong.refl",
+            "joint_indexing=True",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -387,8 +369,8 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
 
 
 def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
-    expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
-    refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
@@ -414,34 +396,14 @@ def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
     assert prf_and_zero.count(True) == 0
 
 
-def test_multi_sweep(dials_regression: pathlib.Path, tmp_path):
-    expts = os.path.join(
-        dials_regression, "integration_test_data", "multi_sweep", "experiments.json"
-    )
-
-    experiments = load.experiment_list(expts)
-    for i, expt in enumerate(experiments):
-        expt.identifier = str(100 + i)
-
-    # Patched data file. Original had trusted_range from -1, but now this range
-    # is defined to start from the minimum trusted value. This test should be
-    # updated with new data in dials-data (i.e. not dials_regression).
-    # https://github.com/dials/dials/issues/2200
-    panel = experiments[0].detector[0]
-    max_trusted = panel.get_trusted_range()[1]
-    panel.set_trusted_range((0, max_trusted))
-
-    experiments.as_json(tmp_path / "modified_input.json")
-
-    refls = os.path.join(
-        dials_regression, "integration_test_data", "multi_sweep", "indexed.pickle"
-    )
-
+def test_multi_sweep(dials_data, tmp_path):
+    expts = str(dials_data("centroid_test_data") / "multi_sweep_indexed.expt")
+    refls = str(dials_data("centroid_test_data") / "multi_sweep_indexed.refl")
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
             "nproc=1",
-            "modified_input.json",
+            expts,
             refls,
             "prediction.padding=0",
         ],
@@ -479,28 +441,18 @@ def test_multi_sweep(dials_regression: pathlib.Path, tmp_path):
     assert flex.abs(I1 - I2) < 1e-6
 
 
-def test_multi_lattice(dials_regression: pathlib.Path, tmp_path):
-    expts = os.path.join(
-        dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
-    )
-
-    experiments = load.experiment_list(expts)
-    for i, expt in enumerate(experiments):
-        expt.identifier = str(100 + i)
-    experiments.as_json(tmp_path / "modified_input.json")
+def test_multi_lattice(dials_data, tmp_path):
+    expt = str(dials_data("trypsin_multi_lattice") / "refined.expt")
+    refl = str(dials_data("trypsin_multi_lattice") / "refined.refl")
 
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
             "nproc=1",
-            "modified_input.json",
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "multi_lattice",
-                "indexed.pickle",
-            ),
+            "d_min=4",
             "prediction.padding=0",
+            expt,
+            refl,
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -509,34 +461,42 @@ def test_multi_lattice(dials_regression: pathlib.Path, tmp_path):
     assert (tmp_path / "integrated.refl").is_file()
     assert (tmp_path / "integrated.expt").is_file()
 
+    # Expected identifiers (should be unchanged from the input)
+    expected_identifiers = {
+        0: "54924b82-9a0e-4b39-840d-0e14b780534b",
+        1: "6c80adf7-3e6f-47a6-abca-916ec3c056a7",
+        2: "7a8dbd6a-11be-429a-ba1f-2d855babaaa5",
+        3: "1b0937cc-e16d-4778-b5b5-4ddc0f772b91",
+        4: "6c745eeb-b835-4c4e-9a31-348ecd4607d8",
+        5: "1584899c-8f81-4d82-b093-44abe1a6f859",
+    }
     experiments = load.experiment_list(tmp_path / "integrated.expt")
-    for i, expt in enumerate(experiments):
-        assert expt.identifier == str(100 + i)
+    assert [e.identifier for e in experiments] == list(expected_identifiers.values())
 
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert len(table) == 4962
-    assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
-    # both should only have the imageset_id of zero as they share an imageset
+    assert len(table) == 4020
+    assert dict(table.experiment_identifiers()) == expected_identifiers
+
+    # all 6 experiments should have an imageset_id of zero as they share an imageset
     assert set(table["imageset_id"]) == {0}
 
-    # Check output contains from two lattices
+    # Check output contains from six lattices
     exp_id = list(set(table["id"]))
-    assert len(exp_id) == 2
+    assert len(exp_id) == 6
 
-    # Check both lattices have integrated reflections
+    # Check all lattices have integrated reflections
     mask = table.get_flags(table.flags.integrated_prf)
     table = table.select(mask)
     exp_id = list(set(table["id"]))
-    assert len(exp_id) == 2
+    assert len(exp_id) == 6
 
 
 def test_output_rubbish(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.index"),
-            dials_data("centroid_test_data", pathlib=True)
-            / "imported_experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "strong.pickle",
+            dials_data("centroid_test_data") / "imported_experiments.json",
+            dials_data("centroid_test_data") / "strong.pickle",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -570,29 +530,17 @@ def test_output_rubbish(dials_data, tmp_path):
     assert list(table.experiment_identifiers().values())  # not empty
 
 
-def test_integrate_with_kapton(dials_regression: pathlib.Path, tmp_path):
-    pickle_name = "idx-20161021225550223_indexed.pickle"
-    json_name = "idx-20161021225550223_refined_experiments.json"
-    image_name = "20161021225550223.pickle"
-    pickle_path = os.path.join(
-        dials_regression, "integration_test_data", "stills_PSII", pickle_name
-    )
-    json_path = os.path.join(
-        dials_regression, "integration_test_data", "stills_PSII", json_name
-    )
-    image_path = os.path.join(
-        dials_regression, "integration_test_data", "stills_PSII", image_name
-    )
+def test_integrate_with_kapton(dials_data, tmp_path):
+    data_dir = dials_data("integration_test_data")
+    refl_path = str(data_dir / "kapton-idx-20161021225550223_indexed.refl")
+    expt_path = str(data_dir / "kapton-idx-20161021225550223_refined.expt")
+    image_path = str(data_dir / "kapton-20161021225550223.pickle")
+    mask_path = str(data_dir / "kapton-mask.pickle")
 
-    assert os.path.exists(pickle_path)
-    assert os.path.exists(json_path)
-    shutil.copy(pickle_path, tmp_path)
+    assert os.path.exists(refl_path)
+    assert os.path.exists(expt_path)
+    shutil.copy(refl_path, tmp_path)
     shutil.copy(image_path, tmp_path)
-
-    with open(json_path) as r:
-        (tmp_path / json_name).write_text(
-            r.read() % os.fspath(tmp_path).replace("\\", "\\\\")
-        )
 
     templ_phil = """
       output {
@@ -624,17 +572,13 @@ def test_integrate_with_kapton(dials_regression: pathlib.Path, tmp_path):
     without_kapton_phil = templ_phil % (
         "nokapton",
         "nokapton",
-        os.path.join(
-            dials_regression, "integration_test_data", "stills_PSII", "mask.pickle"
-        ).replace("\\", "\\\\"),
+        mask_path,
         "False",
     )
     with_kapton_phil = templ_phil % (
         "kapton",
         "kapton",
-        os.path.join(
-            dials_regression, "integration_test_data", "stills_PSII", "mask.pickle"
-        ).replace("\\", "\\\\"),
+        mask_path,
         "True",
     )
 
@@ -645,7 +589,7 @@ def test_integrate_with_kapton(dials_regression: pathlib.Path, tmp_path):
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
         result = subprocess.run(
-            ["dials.integrate", "nproc=1", pickle_name, json_name, phil],
+            [shutil.which("dials.integrate"), "nproc=1", refl_path, expt_path, phil],
             cwd=tmp_path,
             capture_output=True,
         )

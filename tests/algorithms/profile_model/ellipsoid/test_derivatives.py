@@ -33,7 +33,6 @@ def second_derivative(func, x, y=None, h=None):
 
 
 def generate_data():
-
     from random import seed
 
     seed(0)
@@ -78,7 +77,6 @@ def compute_s2(b1, b2, b3):
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_epsilon(sigma, s0, b1, b2, b3):
-
     ds2 = ds2_db(b1, b2, b3)
 
     def compute_epsilon(b1, b2, b3):
@@ -117,7 +115,6 @@ def test_derivative_of_epsilon(sigma, s0, b1, b2, b3):
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_mubar(sigma, s0, b1, b2, b3):
-
     ds2 = ds2_db(b1, b2, b3)
 
     def compute_mubar(b1, b2, b3):
@@ -164,7 +161,6 @@ def test_derivative_of_mubar(sigma, s0, b1, b2, b3):
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_e1(sigma, s0, b1, b2, b3):
-
     ds2 = ds2_db(b1, b2, b3)
 
     def compute_e1(b1, b2, b3):
@@ -207,7 +203,6 @@ def test_derivative_of_e1(sigma, s0, b1, b2, b3):
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_e2(sigma, s0, b1, b2, b3):
-
     ds2 = ds2_db(b1, b2, b3)
 
     def compute_e2(b1, b2, b3):
@@ -252,7 +247,6 @@ def test_derivative_of_e2(sigma, s0, b1, b2, b3):
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_e3(sigma, s0, b1, b2, b3):
-
     ds2 = ds2_db(b1, b2, b3)
 
     def compute_e3(b1, b2, b3):
@@ -295,7 +289,6 @@ def test_derivative_of_e3(sigma, s0, b1, b2, b3):
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_s1(sigma, s0, b1, b2, b3):
-
     ds2 = ds2_db(b1, b2, b3)
 
     def compute_s1(b1, b2, b3):
@@ -397,7 +390,6 @@ def test_derivative_of_s1(sigma, s0, b1, b2, b3):
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_f(sigma, s0, b1, b2, b3):
-
     ds2 = ds2_db(b1, b2, b3)
 
     def compute_f(b1, b2, b3):

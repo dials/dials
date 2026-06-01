@@ -87,8 +87,8 @@ namespace dials { namespace algorithms {
      * @param tolerance The stopping criteria
      * @param max_iter The maximum number of iterations
      */
-    robust_estimator(const af::const_ref<double> &X,
-                     const af::const_ref<double> &Y,
+    robust_estimator(const af::const_ref<double>& X,
+                     const af::const_ref<double>& Y,
                      double B,
                      double c,
                      double tolerance,
@@ -139,7 +139,7 @@ namespace dials { namespace algorithms {
      * @param X The design matrix
      * @return The values
      */
-    af::shared<double> mu(const af::const_ref<double> &X) const {
+    af::shared<double> mu(const af::const_ref<double>& X) const {
       af::shared<double> result(X.size());
       for (std::size_t i = 0; i < result.size(); ++i) {
         double eta = X[i] * beta_;
@@ -149,7 +149,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    void compute(const af::const_ref<double> &X, const af::const_ref<double> &Y) {
+    void compute(const af::const_ref<double>& X, const af::const_ref<double>& Y) {
       // Number of observations and coefficients
       std::size_t n_obs = X.size();
 

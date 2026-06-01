@@ -50,8 +50,8 @@ namespace dials { namespace algorithms { namespace background {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    virtual void mark(const af::const_ref<double, af::c_grid<3> > &data,
-                      af::ref<int, af::c_grid<3> > mask) const {
+    virtual void mark(const af::const_ref<double, af::c_grid<3> >& data,
+                      af::ref<uint8_t, af::c_grid<3> > mask) const {
       // Check the input
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
 
@@ -61,7 +61,7 @@ namespace dials { namespace algorithms { namespace background {
       for (std::size_t i = 0; i < data.accessor()[0]; ++i) {
         // Get the 2D slices
         af::const_ref<double, af::c_grid<2> > data_2d(&data[i * xysize], accessor);
-        af::ref<int, af::c_grid<2> > mask_2d(&mask[i * xysize], accessor);
+        af::ref<uint8_t, af::c_grid<2> > mask_2d(&mask[i * xysize], accessor);
 
         // Compute the initial mask using a subset of the available pixels
         compute_initial_mask(data_2d, mask_2d);
@@ -87,7 +87,7 @@ namespace dials { namespace algorithms { namespace background {
      */
     struct compare_pixel_value {
       af::const_ref<double> data_;
-      compare_pixel_value(const af::const_ref<double> &data) : data_(data) {}
+      compare_pixel_value(const af::const_ref<double>& data) : data_(data) {}
       bool operator()(std::size_t a, std::size_t b) {
         return data_[a] < data_[b];
       }
@@ -97,9 +97,9 @@ namespace dials { namespace algorithms { namespace background {
      * Calculate the initial mask. Select the fraction of pixels with the lowest
      * intensity and then update the mask for those pixels.
      */
-    void compute_initial_mask(const af::const_ref<double, af::c_grid<2> > &data,
-                              af::ref<int, af::c_grid<2> > mask) const {
-      int code = Valid | Background;
+    void compute_initial_mask(const af::const_ref<double, af::c_grid<2> >& data,
+                              af::ref<uint8_t, af::c_grid<2> > mask) const {
+      uint8_t code = Valid | Background;
       std::vector<std::size_t> index;
       index.reserve(data.size());
       for (std::size_t i = 0; i < mask.size(); ++i) {
@@ -121,11 +121,11 @@ namespace dials { namespace algorithms { namespace background {
     /**
      * Compute the background plane given shoebox data and mask
      */
-    void compute_background(const af::const_ref<double, af::c_grid<2> > &data,
-                            const af::const_ref<int, af::c_grid<2> > &mask,
-                            double &a,
-                            double &b,
-                            double &c) const {
+    void compute_background(const af::const_ref<double, af::c_grid<2> >& data,
+                            const af::const_ref<uint8_t, af::c_grid<2> >& mask,
+                            double& a,
+                            double& b,
+                            double& c) const {
       std::vector<double> A(3 * 3, 0);
       std::vector<double> B(3, 0);
       int hy = data.accessor()[0] / 2;
@@ -161,7 +161,7 @@ namespace dials { namespace algorithms { namespace background {
      * Compute the correction to the background plane for the initial estimate
      * where only a fraction of the input pixels are given.
      */
-    void compute_correction(double &a, double &b, double &c) const {
+    void compute_correction(double& a, double& b, double& c) const {
       double factor = 0.8;
       if (fraction_ >= 0.999) {
         factor = 0.0;
@@ -181,8 +181,8 @@ namespace dials { namespace algorithms { namespace background {
      * Compute the final mask. Check the data for outliers by looking at the
      * deviation of each point from the plane.
      */
-    void compute_final_mask(const af::const_ref<double, af::c_grid<2> > &data,
-                            af::ref<int, af::c_grid<2> > mask,
+    void compute_final_mask(const af::const_ref<double, af::c_grid<2> >& data,
+                            af::ref<uint8_t, af::c_grid<2> > mask,
                             double a,
                             double b,
                             double c) const {

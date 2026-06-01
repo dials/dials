@@ -45,7 +45,6 @@ def correct(experiments, reflections, assign_indices, threshold=0.9):
 
 
 def detect(miller_indices, threshold=0.9):
-
     for test in tools.R:
         cum = tools.cpp_absence_test(miller_indices, test["mod"], test["vec"])
         for counter in range(test["mod"]):

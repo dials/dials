@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy.spatial.distance as ssd
@@ -25,7 +25,7 @@ class Cluster:
     def __init__(
         self,
         crystal_symmetries: list[crystal.symmetry],
-        lattice_ids: Optional[list[int]] = None,
+        lattice_ids: list[int] | None = None,
         name="",
     ):
         assert lattice_ids is None or len(crystal_symmetries) == len(lattice_ids)
@@ -60,8 +60,8 @@ class Cluster:
 @dataclass
 class ClusteringResult:
     clusters: list[Cluster]
-    dendrogram: Optional[dict] = None
-    linkage_matrix: Optional[np.ndarray] = None
+    dendrogram: dict | None = None
+    linkage_matrix: np.ndarray | None = None
 
     def __len__(self):
         return len(self.clusters)
@@ -95,30 +95,13 @@ class ClusteringResult:
                 sorted_pg_comp = sorted(
                     cluster.pg_composition.items(), key=lambda x: -1 * x[1]
                 )
-                pg_strings = ["{} in {}".format(pg[1], pg[0]) for pg in sorted_pg_comp]
+                pg_strings = [f"{pg[1]} in {pg[0]}" for pg in sorted_pg_comp]
                 point_group_string = ", ".join(pg_strings) + "."
                 text.append(point_group_string)
                 text.append(
-                    (
-                        "{:<16} {:<8} {:<6.2f}({:<5.2f}) {:<6.2f}({:<5.2f})"
-                        " {:<6.2f}({:<5.2f}) {:<6.2f}({:<4.2f}) {:<6.2f}"
-                        "({:<4.2f}) {:<6.2f}({:<4.2f})"
-                    ).format(
-                        cluster.name,
-                        len(cluster),
-                        cluster.median_cell[0],
-                        cluster.cell_std[0],
-                        cluster.median_cell[1],
-                        cluster.cell_std[1],
-                        cluster.median_cell[2],
-                        cluster.cell_std[2],
-                        cluster.median_cell[3],
-                        cluster.cell_std[3],
-                        cluster.median_cell[4],
-                        cluster.cell_std[4],
-                        cluster.median_cell[5],
-                        cluster.cell_std[5],
-                    )
+                    f"{cluster.name:<16} {len(cluster):<8} {cluster.median_cell[0]:<6.2f}({cluster.cell_std[0]:<5.2f}) {cluster.median_cell[1]:<6.2f}({cluster.cell_std[1]:<5.2f})"
+                    f" {cluster.median_cell[2]:<6.2f}({cluster.cell_std[2]:<5.2f}) {cluster.median_cell[3]:<6.2f}({cluster.cell_std[3]:<4.2f}) {cluster.median_cell[4]:<6.2f}"
+                    f"({cluster.cell_std[4]:<4.2f}) {cluster.median_cell[5]:<6.2f}({cluster.cell_std[5]:<4.2f})"
                 )
                 text.append(
                     (
@@ -147,16 +130,8 @@ class ClusteringResult:
                     "".join(
                         [
                             (
-                                "{:<14} {:<11.2f} {:<11.2f} {:<11.2f}"
-                                "{:<12.1f} {:<12.1f} {:<12.1f}"
-                            ).format(
-                                list(cluster.pg_composition.keys())[0],
-                                cluster.median_cell[0],
-                                cluster.median_cell[1],
-                                cluster.median_cell[2],
-                                cluster.median_cell[3],
-                                cluster.median_cell[4],
-                                cluster.median_cell[5],
+                                f"{list(cluster.pg_composition.keys())[0]:<14} {cluster.median_cell[0]:<11.2f} {cluster.median_cell[1]:<11.2f} {cluster.median_cell[2]:<11.2f}"
+                                f"{cluster.median_cell[3]:<12.1f} {cluster.median_cell[4]:<12.1f} {cluster.median_cell[5]:<12.1f}"
                             ),
                         ]
                     )
@@ -169,25 +144,26 @@ class ClusteringResult:
         Highest possible metric symmetry and unit cell using LePage (J Appl Cryst 1982, 15:255) method, maximum delta 3deg."""
         )
         n_clusters = len(self.clusters) - len(singletons)
-        text.insert(0, f"\n{n_clusters} cluster{'s'[:n_clusters^1]}")
+        text.insert(0, f"\n{n_clusters} cluster{'s'[: n_clusters ^ 1]}")
         n_singletons = len(singletons)
         text[:0] = [
-            f"{n_singletons} singleton{'s'[:n_singletons^1]}:\n",
+            f"{n_singletons} singleton{'s'[: n_singletons ^ 1]}:\n",
             "{:<14} {:<11} {:<11} {:<11}{:<12} {:<12} {:<12}".format(
                 "Point group", "a", "b", "c", "alpha", "beta", "gamma"
             ),
-            "".join(singletons),
+            "\n".join(singletons),
         ]
         return "\n".join(text)
 
 
 def cluster_unit_cells(
     crystal_symmetries: list[crystal.symmetry],
-    lattice_ids: Optional[list[int]] = None,
+    lattice_ids: list[int] | None = None,
     threshold: int = 10000,
-    ax: Optional["matplotlib.axes.Axes"] = None,
+    ax: matplotlib.axes.Axes | None = None,
     no_plot: bool = True,
-) -> Optional[ClusteringResult]:
+    linkage: str = "single",
+) -> ClusteringResult | None:
     if not lattice_ids:
         lattice_ids = list(range(len(crystal_symmetries)))
     cluster = Cluster(crystal_symmetries, lattice_ids)
@@ -210,7 +186,7 @@ def cluster_unit_cells(
     if len(pair_distances) > 0:
         logger.info("Distances have been calculated")
         linkage_matrix = hierarchy.linkage(
-            pair_distances, method="single", metric=metric
+            pair_distances, method=linkage, metric=metric
         )
         cluster_ids = hierarchy.fcluster(
             linkage_matrix, threshold, criterion="distance"
@@ -230,10 +206,11 @@ def cluster_unit_cells(
         )
         sub_clusters.append(cluster)
 
-    # Order clusters by size
-    sub_clusters = sorted(sub_clusters, key=len)
+    # Order clusters by size, largest first, with zero-padded id number
+    sub_clusters = sorted(sub_clusters, key=len, reverse=True)
+    pad = f"0{len(str(len(sub_clusters)))}"
     for i, cluster in enumerate(sub_clusters):
-        cluster.name = f"cluster_{i + 1}"
+        cluster.name = f"cluster_{i + 1:{pad}}"
 
     dendrogram = hierarchy.dendrogram(
         linkage_matrix,

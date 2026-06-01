@@ -95,7 +95,7 @@ namespace kapton { namespace boost_python { namespace {
     def("get_kapton_path_cpp", &kapton::get_kapton_path_cpp);
   }
 
-}}}  // namespace kapton::boost_python::
+}}}  // namespace kapton::boost_python
 
 BOOST_PYTHON_MODULE(dials_algorithms_integration_kapton_ext) {
   kapton::boost_python::kapton_init_module();

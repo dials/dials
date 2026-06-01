@@ -9,7 +9,7 @@ from cctbx import crystal, miller, uctbx
 from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
-from dials.command_line.symmetry import median_unit_cell
+from dials.algorithms.symmetry import median_unit_cell
 from dials.pychef import interpret_images_to_doses_options
 from dials.report.plots import d_star_sq_to_d_ticks
 from dials.util.export_mtz import MTZWriterBase
@@ -72,7 +72,7 @@ def _generate_blank_plots_template(label):
     return d
 
 
-class DamageSeriesPlots(object):
+class DamageSeriesPlots:
     def __init__(self, d_max=None, d_min=None):
         self._d_star_sq_tickvals = None
         self._d_star_sq_ticktext = None
@@ -227,7 +227,6 @@ def _write_mtz(sel_intensities, sel_doses, fname):
 
 
 def generate_damage_series_mtz(params, doses, intensities):
-
     plots = DamageSeriesPlots(d_max=params.d_max, d_min=params.d_min)
     group_size = params.damage_series.dose_group_size
     assert group_size > 0.0
@@ -271,7 +270,6 @@ def generate_damage_series_mtz(params, doses, intensities):
 
 
 def generate_damage_series(params, experiments, reflection_table):
-
     # first set up plotting stuff
     plots = DamageSeriesPlots(d_max=params.d_max, d_min=params.d_min)
 
@@ -370,9 +368,9 @@ def generate_damage_series(params, experiments, reflection_table):
             upper_dose_boundary,
         )
 
-        assert len(new_expts) == len(
-            refl.experiment_identifiers().keys()
-        ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        assert len(new_expts) == len(refl.experiment_identifiers().keys()), (
+            f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        )
         if params.output.damage_series:
             logger.info(
                 f"Saving experimental data for range {lower_dose_boundary} <= dose < {upper_dose_boundary}"
@@ -402,9 +400,9 @@ def generate_damage_series(params, experiments, reflection_table):
             upper_dose_boundary,
         )
 
-        assert len(new_expts) == len(
-            refl.experiment_identifiers().keys()
-        ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        assert len(new_expts) == len(refl.experiment_identifiers().keys()), (
+            f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
+        )
         if params.output.accumulation_series:
             if n == 0 and params.output.damage_series:
                 continue

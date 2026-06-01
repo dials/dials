@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -18,10 +17,10 @@ from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
 
 
-def test_reindex(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_reindex(dials_data, tmp_path):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "indexed.pickle"
+    experiments_path = data_dir / "experiments.json"
     commands = [
         shutil.which("dials.reindex"),
         pickle_path,
@@ -110,10 +109,10 @@ def test_reindex(dials_regression: Path, tmp_path):
     assert not result.returncode and not result.stderr
 
 
-def test_reindex_multi_sequence(dials_regression: Path, tmp_path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+def test_reindex_multi_sequence(dials_data, tmp_path):
+    data_dir = dials_data("indexing_test_data")
+    pickle_path = data_dir / "multi_sweep-indexed.pickle"
+    experiments_path = data_dir / "multi_sweep-experiments.json"
     commands = [
         shutil.which("dials.reindex"),
         pickle_path,
@@ -149,11 +148,11 @@ def test_reindex_multi_sequence(dials_regression: Path, tmp_path):
     )
 
 
-def test_reindex_against_reference(dials_regression: Path, tmp_path):
+def test_reindex_against_reference(dials_data: Path, tmp_path):
     """Test the reindexing against a reference dataset functionality."""
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "indexed.pickle")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "indexed.pickle"
+    experiments_path = data_dir / "experiments.json"
 
     commands = [
         shutil.which("dials.reindex"),
@@ -244,7 +243,7 @@ def test_reindex_experiments():
 
 
 def test_reindex_cb_op_exit(dials_data, run_in_tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
 
     # Want a SystemExit, rather than an uncaught exception
     with pytest.raises(SystemExit) as e:
@@ -260,7 +259,7 @@ def test_reindex_cb_op_exit(dials_data, run_in_tmp_path):
 
 
 def test_reindex_reference_multi_crystal(dials_data, tmp_path):
-    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    mcp = dials_data("multi_crystal_proteinase_k")
     args = [shutil.which("dials.cosym"), "space_group=P4"]
     for i in [1, 2, 3, 4]:
         args.append(mcp / f"experiments_{i}.json")
@@ -298,8 +297,8 @@ def test_reindex_reference_multi_crystal(dials_data, tmp_path):
 
 
 def test_reindex_reference_file(dials_data, tmp_path):
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    ssx_data = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    ssx_data = dials_data("cunir_serial")
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
 

@@ -279,7 +279,7 @@ namespace dials { namespace algorithms {
      * Add the profiles from another modeller
      * @param other The other modeller
      */
-    void accumulate(const MultiExpProfileModeller &other) {
+    void accumulate(const MultiExpProfileModeller& other) {
       DIALS_ASSERT(size() == other.size());
       for (std::size_t i = 0; i < size(); ++i) {
         modellers_[i]->accumulate(other.modellers_[i]);

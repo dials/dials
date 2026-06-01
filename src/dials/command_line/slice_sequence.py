@@ -3,6 +3,7 @@ from __future__ import annotations
 from os.path import basename, splitext
 
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx.phil import parse
 
 import dials.util
 from dials.algorithms.refinement.refinement_helpers import calculate_frame_numbers
@@ -30,8 +31,6 @@ Examples::
   dials.slice_sequence models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 """
-
-from libtbx.phil import parse
 
 phil_scope = parse(
     """
@@ -130,12 +129,10 @@ def concatenate_reflections(sliced_reflections, identifiers):
 
 
 def exclude_images_multiple(experiments, reflections, image_number):
-
     sliced_experiments = []
     sliced_reflections = []
 
     for iexp, experiment in enumerate(experiments):
-
         # Calculate the image range for each slice
         first_image, last_image = experiment.scan.get_image_range()
         first_exclude = ((first_image - 1) // image_number + 1) * image_number
