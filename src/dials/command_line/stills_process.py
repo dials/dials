@@ -1599,8 +1599,8 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("Finding Strong Spots")
         logger.info("*" * 80)
 
-        # Find the strong spots — cache the SpotFinder to preserve the static mask
-        # and ExtractPixelsFromImage across stills frames.
+        # Find the strong spots — cache the SpotFinder so its resolution mask
+        # (mask_generator output) is reused across non-XFEL stills frames.
         if self.spot_finder_factory is None:
             self.spot_finder_factory = self.get_spot_finder_factory(experiments)
         observed = self.spot_finder_factory.find_spots(experiments)
