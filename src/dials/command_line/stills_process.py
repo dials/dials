@@ -376,7 +376,7 @@ def _make_stills_sequence(data, indices, beam, detector, frame_range):
     )
 
 
-def do_import(filename, load_models=True):
+def do_import(filename):
     logger.info("Loading %s", os.path.basename(filename))
 
     # For multi-image formats (NXmx, XTC, etc.) force as_sequence=True so the
@@ -412,6 +412,16 @@ def do_import(filename, load_models=True):
                 filename,
                 e,
             )
+            # load_models=False is load-bearing here, not just a perf choice:
+            # (1) structure -- for a still ImageSequence it returns ONE experiment
+            #     holding the full imageset, which the per-frame loop below expands
+            #     to N (eager would return N full-imageset experiments -> N^2);
+            # (2) correctness -- the eager still-sequence path
+            #     (ExperimentListDict.from_sequence_and_crystal) historically
+            #     squashed per-frame wavelength via an indexless get_beam(); the
+            #     loop below attaches imageset.get_beam(i) per frame instead.
+            #     (That dxtbx path is now fixed to index per-frame, but the
+            #     structural N-vs-N^2 reason above still requires load_models=False.)
             experiments = ExperimentListFactory.from_filenames(
                 [filename], load_models=False
             )
@@ -430,6 +440,9 @@ def do_import(filename, load_models=True):
                 ]
             )
     else:
+        # load_models=False is load-bearing (see the fallback above): the
+        # per-frame expansion loop below requires a single full-imageset
+        # experiment and attaches imageset.get_beam(i) per frame itself.
         experiments = ExperimentListFactory.from_filenames(
             [filename], load_models=False
         )
@@ -474,6 +487,11 @@ def do_import(filename, load_models=True):
                 # Null the experiment's scan/goniometer so downstream code
                 # (indexer, refiner) sees scan=None as expected for stills.
                 _scan = None
+            # Models are attached per-frame at construction (beam=imageset.get_beam(i),
+            # detector, scan). Do NOT call expt.load_models() here: it would re-read
+            # the imageset's synthetic still scan back onto the experiment, which is
+            # both redundant for beam/detector and harmful for scan (it would undo
+            # the scan=None nulling above for stills).
             expt = Experiment(
                 imageset=per_frame_iset,
                 detector=experiment.detector,
@@ -482,13 +500,6 @@ def do_import(filename, load_models=True):
                 goniometer=experiment.goniometer,
                 crystal=experiment.crystal,
             )
-            if load_models:
-                expt.load_models()
-                # load_models() reads scan/goniometer back from the imageset's
-                # still scan; re-null so downstream code sees scan=None for stills.
-                if expt.scan is not None and expt.scan.is_still():
-                    expt.scan = None
-                    expt.goniometer = None
             all_experiments.append(expt)
 
     return all_experiments
@@ -991,7 +1002,7 @@ class Script:
 
             experiments = ExperimentList()
             for path in sorted(all_paths):
-                experiments.extend(do_import(path, load_models=False))
+                experiments.extend(do_import(path))
 
             indices = []
             basenames = []
@@ -1036,13 +1047,9 @@ class Script:
                     try:
                         assert len(experiments) == 1
                         experiment = experiments[0]
-                        experiment.load_models()
-                        # load_models() overwrites scan/goniometer from the imageset,
-                        # which for stills holds the synthetic zero-oscillation Scan.
-                        # Re-null these so downstream code sees scan=None for stills.
-                        if experiment.scan is not None and experiment.scan.is_still():
-                            experiment.scan = None
-                            experiment.goniometer = None
+                        # do_import already attached per-frame models at construction;
+                        # do NOT call experiment.load_models() (it would re-read the
+                        # synthetic still scan and undo the scan=None nulling for stills).
                         imageset = experiment.imageset
                         update_geometry(imageset)
                         experiment.beam = imageset.get_beam()
@@ -1104,7 +1111,7 @@ class Script:
                 for item in item_list:
                     tag, filename = item
 
-                    experiments = do_import(filename, load_models=True)
+                    experiments = do_import(filename)
                     imagesets = experiments.imagesets()
                     if len(imagesets) == 0 or len(imagesets[0]) == 0:
                         logger.info("Zero length imageset in file: %s", filename)
