@@ -661,6 +661,14 @@ def save_subset(input_: SplittingIterable) -> tuple[str, FilePair] | None:
         refls = refls.select_on_experiment_identifiers(sel_identifiers)
         refls.reset_ids()
     if expts:
+        # Selecting a subset of experiments leaves a shared stills ImageSequence
+        # advertising all source frames in single_file_indices; prune it back to
+        # the survivors so the consolidated scan written by as_file() does not
+        # over-count scan_points on read. No-op for non-stills / per-frame
+        # imagesets (the cunir multi-file CBF case early-returns).
+        from dials.util.combine_experiments import consolidate_stills_imagesets
+
+        expts, refls = consolidate_stills_imagesets(expts, refls)
         exptout = (
             input_.working_directory
             / f"group_{input_.groupindex}_{input_.fileindex}.expt"

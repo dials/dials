@@ -17,6 +17,7 @@ from dials.util.combine_experiments import (
     CombineWithReference,  # noqa
     combine_experiments,
     combine_experiments_no_reflections,
+    consolidate_stills_imagesets,
     do_unit_cell_clustering,
 )
 from dials.util.options import ArgumentParser
@@ -337,140 +338,11 @@ def _save_experiments_and_reflections(
                 batch_refls.as_file(ref_filename)
 
 
-def _consolidate_stills_imagesets(experiments, reflections=None):
-    """Merge experiments from the same source file into one shared ImageSequence.
-
-    When N per-worker .expt files are combined, each file contributes its own
-    ImageSequence Python object even when all files reference the same source
-    data file. This causes to_dict() to write N imageset entries. Group by
-    source path and re-create one shared ImageSequence per unique path.
-
-    Preserves experiment order (so reflection-table 'id' stays valid).
-    Does not re-open source files.
-    """
-    from collections import defaultdict
-
-    from dxtbx.imageset import ImageSequence
-    from dxtbx.model import Scan
-    from dxtbx.model.experiment_list import Experiment
-
-    if not experiments:
-        return experiments, reflections
-    first_iset = experiments[0].imageset
-    if not isinstance(first_iset, ImageSequence):
-        return experiments, reflections
-    if first_iset.get_scan() is None or not first_iset.get_scan().is_still():
-        return experiments, reflections
-
-    by_path = defaultdict(list)
-    for expt in experiments:
-        by_path[expt.imageset.paths()[0]].append(expt)
-
-    def _frame(expt):
-        # 0-based frame this experiment owns within its source file. Derive it
-        # from the per-experiment scan (the same key the to_dict consolidation
-        # uses to assign scan_point and that the reader zips against
-        # single_file_indices), NOT from imageset.indices(): a shared
-        # ImageSequence reports all its frames via indices(), but after
-        # min/max_reflections_per_experiment / n_subset filtering only a subset
-        # of experiments survives. image_range[0] - 1 is the value that
-        # round-trips back to this experiment's scan on read.
-        if expt.scan is not None:
-            return expt.scan.get_image_range()[0] - 1
-        return expt.imageset.indices()[0]
-
-    def _needs_rebuild(grp):
-        # Cross-worker merge: distinct imageset objects for one source path must
-        # be collapsed to one shared ImageSequence.
-        if len({id(e.imageset) for e in grp}) > 1:
-            return True
-        # A single-frame imageset (e.g. multi-file CBF stills, one .cbf per
-        # shot) has nothing to prune: indices() == [0] and its scan image_range
-        # is the absolute CBF frame number from the filename, not a 0-based
-        # index into a shared file, so the indices()-vs-_frame() comparison
-        # below would always (wrongly) mismatch. Only a genuine multi-frame
-        # composite can over-advertise frames. (The cross-worker branch above
-        # also never fires here: one experiment per file => one path group per
-        # imageset, never a shared path with distinct imageset objects.)
-        iset = grp[0].imageset
-        if len(iset) <= 1:
-            return False
-        # Prune-after-filter: a single shared composite that still advertises
-        # frames with no surviving experiment must be pruned, or the consolidated
-        # scan's single_file_indices over-counts the scan_points on read.
-        return set(iset.indices()) != {_frame(e) for e in grp}
-
-    # Nothing to do if no path group needs merging or pruning (the common
-    # unfiltered single-imageset combine).
-    if not any(_needs_rebuild(grp) for grp in by_path.values()):
-        return experiments, reflections
-
-    old_imagesets = list(experiments.imagesets())
-
-    from dxtbx.format.Registry import get_format_class_for_file
-
-    path_to_iset = {}
-    for path, grp in by_path.items():
-        # Use only the surviving experiments' frames (sparse), matching the
-        # sparse layout produced by stills_process._rebuild_shared_imageset_output
-        # so downstream consumers (image_viewer's frame-list lookup, etc.) see a
-        # consistent imageset structure regardless of which tool produced it.
-        sorted_frames = sorted({_frame(e) for e in grp})
-        if len({id(e.imageset) for e in grp}) > 1:
-            # Cross-worker merge: each worker's imageset data() is sized for that
-            # worker's frame subset, so re-open the source file to get a
-            # full-file ImageSetData that can accommodate the union of frames.
-            data = get_format_class_for_file(path).get_imageset([path]).data()
-        else:
-            # Prune: the single shared imageset's data() already covers all its
-            # own frames and we are only removing some, so reuse it. Re-opening
-            # is unnecessary (and would fail for synthetic readers whose path
-            # does not exist on disk).
-            data = grp[0].imageset.data()
-        path_to_iset[path] = ImageSequence(
-            data,
-            flex.size_t(sorted_frames),
-            grp[0].beam,
-            grp[0].detector,
-            None,
-            Scan((1, len(sorted_frames)), (0.0, 0.0)),
-        )
-
-    new_experiments = ExperimentList()
-    for expt in experiments:
-        new_experiments.append(
-            Experiment(
-                imageset=path_to_iset[expt.imageset.paths()[0]],
-                beam=expt.beam,
-                detector=expt.detector,
-                goniometer=expt.goniometer,
-                scan=expt.scan,
-                crystal=expt.crystal,
-                profile=expt.profile,
-                scaling_model=expt.scaling_model,
-                identifier=expt.identifier,
-            )
-        )
-
-    if reflections is not None and "imageset_id" in reflections:
-        new_imagesets = list(new_experiments.imagesets())
-        old_to_new = {
-            old_imagesets.index(old_e.imageset): new_imagesets.index(new_e.imageset)
-            for old_e, new_e in zip(experiments, new_experiments)
-        }
-        new_iset_id = reflections["imageset_id"].deep_copy()
-        for old_id, new_id in old_to_new.items():
-            new_iset_id.set_selected(reflections["imageset_id"] == old_id, new_id)
-        reflections["imageset_id"] = new_iset_id
-
-    return new_experiments, reflections
-
-
 def _sort_experiments_and_reflections(expts, refls):
     """Sort experiments and reflections by (source path, frame index).
 
     Works for both per-frame imagesets (imageset.indices()[0]) and shared
-    ImageSequences produced by _consolidate_stills_imagesets (uses the
+    ImageSequences produced by consolidate_stills_imagesets (uses the
     per-experiment scan's image_range).  Remaps reflection-table 'id',
     'experiment_identifiers', and 'imageset_id' to stay consistent with
     the new experiment order.
@@ -589,7 +461,7 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
     else:
         expts = combine_experiments_no_reflections(params, experiment_lists)
         refls = None
-    expts, refls = _consolidate_stills_imagesets(expts, refls)
+    expts, refls = consolidate_stills_imagesets(expts, refls)
     _is_stills = bool(expts) and expts[0].is_still()
     if _is_stills or params.output.sort_by_imageset_path_and_image_index:
         expts, refls = _sort_experiments_and_reflections(expts, refls)
