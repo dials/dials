@@ -544,7 +544,10 @@ def test_sort_by_imageset_path_and_image_index(dials_data, tmp_path):
     )
     indices = [iset.indices()[0] for iset in exp.imagesets()]
 
-    assert indices == [0, 2, 3, 1]
+    # Stills are auto-sorted by (imageset path, frame) on combine regardless of
+    # the opt-in flag (see _sort_experiments_and_reflections triggered by
+    # _is_stills in run()), so the input order [0, 2, 3, 1] comes out frame-sorted.
+    assert indices == [0, 1, 2, 3]
 
     result = subprocess.run(
         [

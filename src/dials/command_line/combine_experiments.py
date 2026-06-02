@@ -366,8 +366,32 @@ def _consolidate_stills_imagesets(experiments, reflections=None):
     for expt in experiments:
         by_path[expt.imageset.paths()[0]].append(expt)
 
-    # Nothing to do if every path group already shares one Python object
-    if all(len({id(e.imageset) for e in grp}) == 1 for grp in by_path.values()):
+    def _frame(expt):
+        # 0-based frame this experiment owns within its source file. Derive it
+        # from the per-experiment scan (the same key the to_dict consolidation
+        # uses to assign scan_point and that the reader zips against
+        # single_file_indices), NOT from imageset.indices(): a shared
+        # ImageSequence reports all its frames via indices(), but after
+        # min/max_reflections_per_experiment / n_subset filtering only a subset
+        # of experiments survives. image_range[0] - 1 is the value that
+        # round-trips back to this experiment's scan on read.
+        if expt.scan is not None:
+            return expt.scan.get_image_range()[0] - 1
+        return expt.imageset.indices()[0]
+
+    def _needs_rebuild(grp):
+        # Cross-worker merge: distinct imageset objects for one source path must
+        # be collapsed to one shared ImageSequence.
+        if len({id(e.imageset) for e in grp}) > 1:
+            return True
+        # Prune-after-filter: a single shared imageset that still advertises
+        # frames with no surviving experiment must be pruned, or the consolidated
+        # scan's single_file_indices over-counts the scan_points on read.
+        return set(grp[0].imageset.indices()) != {_frame(e) for e in grp}
+
+    # Nothing to do if no path group needs merging or pruning (the common
+    # unfiltered single-imageset combine).
+    if not any(_needs_rebuild(grp) for grp in by_path.values()):
         return experiments, reflections
 
     old_imagesets = list(experiments.imagesets())
@@ -376,17 +400,24 @@ def _consolidate_stills_imagesets(experiments, reflections=None):
 
     path_to_iset = {}
     for path, grp in by_path.items():
-        # Use only the integrated frame indices (sparse), matching the sparse
-        # layout produced by stills_process._rebuild_shared_imageset_output so
-        # downstream consumers (image_viewer's frame-list lookup, etc.) see a
+        # Use only the surviving experiments' frames (sparse), matching the
+        # sparse layout produced by stills_process._rebuild_shared_imageset_output
+        # so downstream consumers (image_viewer's frame-list lookup, etc.) see a
         # consistent imageset structure regardless of which tool produced it.
-        sorted_frames = sorted(set().union(*(set(e.imageset.indices()) for e in grp)))
-        # The per-worker imageset data() is sized for that worker's frame subset;
-        # re-open the source file to get a full-file ImageSetData that can
-        # accommodate any frame index up to the file's total count.
-        parent_iset = get_format_class_for_file(path).get_imageset([path])
+        sorted_frames = sorted({_frame(e) for e in grp})
+        if len({id(e.imageset) for e in grp}) > 1:
+            # Cross-worker merge: each worker's imageset data() is sized for that
+            # worker's frame subset, so re-open the source file to get a
+            # full-file ImageSetData that can accommodate the union of frames.
+            data = get_format_class_for_file(path).get_imageset([path]).data()
+        else:
+            # Prune: the single shared imageset's data() already covers all its
+            # own frames and we are only removing some, so reuse it. Re-opening
+            # is unnecessary (and would fail for synthetic readers whose path
+            # does not exist on disk).
+            data = grp[0].imageset.data()
         path_to_iset[path] = ImageSequence(
-            parent_iset.data(),
+            data,
             flex.size_t(sorted_frames),
             grp[0].beam,
             grp[0].detector,
