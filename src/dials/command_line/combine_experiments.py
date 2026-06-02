@@ -384,10 +384,21 @@ def _consolidate_stills_imagesets(experiments, reflections=None):
         # be collapsed to one shared ImageSequence.
         if len({id(e.imageset) for e in grp}) > 1:
             return True
-        # Prune-after-filter: a single shared imageset that still advertises
+        # A single-frame imageset (e.g. multi-file CBF stills, one .cbf per
+        # shot) has nothing to prune: indices() == [0] and its scan image_range
+        # is the absolute CBF frame number from the filename, not a 0-based
+        # index into a shared file, so the indices()-vs-_frame() comparison
+        # below would always (wrongly) mismatch. Only a genuine multi-frame
+        # composite can over-advertise frames. (The cross-worker branch above
+        # also never fires here: one experiment per file => one path group per
+        # imageset, never a shared path with distinct imageset objects.)
+        iset = grp[0].imageset
+        if len(iset) <= 1:
+            return False
+        # Prune-after-filter: a single shared composite that still advertises
         # frames with no surviving experiment must be pruned, or the consolidated
         # scan's single_file_indices over-counts the scan_points on read.
-        return set(grp[0].imageset.indices()) != {_frame(e) for e in grp}
+        return set(iset.indices()) != {_frame(e) for e in grp}
 
     # Nothing to do if no path group needs merging or pruning (the common
     # unfiltered single-imageset combine).
