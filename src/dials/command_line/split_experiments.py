@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import functools
 
 from dxtbx.model.experiment_list import ExperimentList
@@ -139,6 +140,15 @@ class Script:
             extension="refl",
         )
 
+        # Stamp every output file with one shared timestamp so the identical
+        # split-provenance line deduplicates cleanly on recombine (otherwise
+        # each file gets a per-write second-resolution timestamp). Format
+        # matches History::append_history_item (ISO-extended UTC, "...Z").
+        history_timestamp = (
+            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+            + "Z"
+        )
+
         if params.output.chunk_sizes:
             if not sum(params.output.chunk_sizes) == len(experiments):
                 raise Sorry(
@@ -174,7 +184,9 @@ class Script:
                 print(
                     f"Saving experiments with wavelength {wl} to {experiment_filename}"
                 )
-                new_exps.as_json(experiment_filename)
+                new_exps.as_json(
+                    experiment_filename, history_timestamp=history_timestamp
+                )
                 if reflections:
                     refls = reflections.select_on_experiment_identifiers(expids)
                     refls["imageset_id"] = flex.int(refls.size(), 0)
@@ -257,7 +269,9 @@ class Script:
             for i, detector in enumerate(experiments.detectors()):
                 experiment_filename = experiments_template(index=i)
                 print("Saving experiment %d to %s" % (i, experiment_filename))
-                split_data[detector]["experiments"].as_json(experiment_filename)
+                split_data[detector]["experiments"].as_json(
+                    experiment_filename, history_timestamp=history_timestamp
+                )
 
                 if reflections is not None:
                     reflections_filename = reflections_template(index=i)
@@ -271,7 +285,7 @@ class Script:
             def save_chunk(chunk_id, expts, refls):
                 experiment_filename = experiments_template(index=chunk_id)
                 print("Saving chunk %d to %s" % (chunk_id, experiment_filename))
-                expts.as_json(experiment_filename)
+                expts.as_json(experiment_filename, history_timestamp=history_timestamp)
                 if refls is not None:
                     reflections_filename = reflections_template(index=chunk_id)
                     print(
@@ -339,7 +353,9 @@ class Script:
             for i, experiment in enumerate(experiments):
                 experiment_filename = experiments_template(index=i)
                 print("Saving experiment %d to %s" % (i, experiment_filename))
-                ExperimentList([experiment]).as_json(experiment_filename)
+                ExperimentList([experiment]).as_json(
+                    experiment_filename, history_timestamp=history_timestamp
+                )
 
                 if reflections is not None:
                     reflections_filename = reflections_template(index=i)

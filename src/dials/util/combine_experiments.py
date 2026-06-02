@@ -191,7 +191,10 @@ class CombineWithReference:
             scan=scan,
             goniometer=goniometer,
             crystal=crystal,
+            profile=experiment.profile,
             imageset=imageset,
+            scaling_model=experiment.scaling_model,
+            history=experiment.history,
         )
 
 

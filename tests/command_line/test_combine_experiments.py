@@ -564,3 +564,23 @@ def test_sort_by_imageset_path_and_image_index(dials_data, tmp_path):
     indices = [iset.indices()[0] for iset in exp.imagesets()]
 
     assert indices == [0, 1, 2, 3]
+
+
+def test_combine_with_reference_preserves_profile_scaling_history():
+    """CombineWithReference must not drop profile, scaling_model or history
+    (the split->combine round-trip audit, DEVELOPMENT_V2.md P7)."""
+    from dxtbx.model import Experiment, History
+
+    from dials.util.combine_experiments import CombineWithReference
+
+    expt = Experiment(identifier="abc")
+    expt.profile = {"__id__": "gaussian_rs", "sigma_b": 0.02}
+    expt.scaling_model = {"__id__": "physical"}
+    expt.history = History(["2026-01-01T00:00:00Z|dials.stills_process|v1"])
+
+    combined = CombineWithReference()(expt)
+
+    assert combined.identifier == "abc"
+    assert combined.profile == expt.profile
+    assert combined.scaling_model == expt.scaling_model
+    assert combined.history.get_history() == expt.history.get_history()
