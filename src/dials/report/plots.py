@@ -1015,12 +1015,21 @@ class ResolutionPlotsAndStats:
         if not self.is_centric:
             headers.append("CC<sub>ano</sub>")
         r_split_vals = []
+        weighted_cc_vals = []
+        weighted_cc_anom_vals = []
         if (
             hasattr(self.dataset_statistics, "r_split")
             and self.dataset_statistics.r_split
         ):
             headers.insert(-2, "R<sub>split</sub>")
             r_split_vals = self.dataset_statistics.r_split.value_binned
+            weighted_cc_vals = self.dataset_statistics.weighted_cc_data.value_binned
+            headers.append("CC<sub>½</sub>(σ-w)")
+            if not self.is_centric:
+                headers.append("CC<sub>ano</sub>(σ-w)")
+                weighted_cc_anom_vals = (
+                    self.dataset_statistics.weighted_cc_anom_data.value_binned
+                )
         rows = []
 
         def safe_format(format_str, item):
@@ -1042,6 +1051,7 @@ class ResolutionPlotsAndStats:
             ]
             if r_split_vals:
                 row.append(f"{r_split_vals[i]:.3f}")
+
             if cc_half_method == "sigma_tau":
                 row.append(
                     "{:.3f}{}".format(
@@ -1062,6 +1072,16 @@ class ResolutionPlotsAndStats:
                     "{:.3f}{}".format(
                         bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else ""
                     )
+                )
+            if weighted_cc_vals:
+                row.append(
+                    f"{weighted_cc_vals[i]:.3f}" if weighted_cc_vals[i] else "0.000"
+                )
+            if weighted_cc_anom_vals:
+                row.append(
+                    f"{weighted_cc_anom_vals[i]:.3f}"
+                    if weighted_cc_anom_vals[i]
+                    else "0.000"
                 )
             rows.append(row)
 
