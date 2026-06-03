@@ -268,6 +268,28 @@ def table_1_summary(
     return text
 
 
+def extra_values(merging_statistics):
+    d = {
+        "Rsplit(I)": {
+            "overall": merging_statistics.r_split.value,
+            "binned": merging_statistics.r_split.value_binned,
+        },
+        "Rsplit(I) (σ-weighted)": {
+            "overall": merging_statistics.weighted_r_split.value,
+            "binned": merging_statistics.weighted_r_split.value_binned,
+        },
+        "CC half (σ-weighted)": {
+            "overall": merging_statistics.weighted_cc_data.value,
+            "binned": merging_statistics.weighted_cc_data.value_binned,
+        },
+        "Anomalous correlation (σ-weighted)": {
+            "overall": merging_statistics.weighted_cc_anom_data.value,
+            "binned": merging_statistics.weighted_cc_anom_data.value_binned,
+        },
+    }
+    return d
+
+
 def table_1_stats(
     merging_statistics,
     anomalous_statistics=None,
@@ -289,28 +311,6 @@ def table_1_stats(
         "CC half": "cc_one_half",
         "Total unique": "n_uniq",
     }
-    extra_key_to_var = {}
-    if merging_statistics.r_split:
-        extra_key_to_var.update(
-            {
-                "Rsplit(I)": {
-                    "overall": "weighted_r_split",
-                    "binned": "weighted_r_split_binned",
-                },
-                "Rsplit(I) (σ-weighted)": {
-                    "overall": "r_split",
-                    "binned": "r_split_binned",
-                },
-                "CC half (σ-weighted)": {
-                    "overall": "weighted_cc_half",
-                    "binned": "weighted_cc_half_binned",
-                },
-                "Anomalous correlation (σ-weighted)": {
-                    "overall": "weighted_cc_anom",
-                    "binned": "weighted_cc_anom_binned",
-                },
-            }
-        )
 
     anom_key_to_var = {
         "Rmerge(I+/-)": "r_merge",
@@ -346,25 +346,32 @@ def table_1_stats(
                 values = [v_ * 100 if v_ else None for v_ in values]
             if values[0] is not None:
                 stats[key] = values
-        for key, value in e.items():
-            if four_column_output:
-                values = (
-                    getattr(s, value["overall"]),
-                    getattr(s, value["binned"])[0],
-                    getattr(s, value["binned"])[-1],
-                    getattr(r, value["overall"]),
-                )
-            else:
-                values = (
-                    getattr(r, value["overall"]),
-                    getattr(r, value["binned"])[0],
-                    getattr(r, value["binned"])[-1],
-                )
-            if values[0] is not None:
-                stats[key] = values
+        if e:
+            extra_stats = extra_values(r)
+            if s:
+                extra_stats_sel = extra_values(s)
+            for key, value in extra_stats.items():
+                if four_column_output:
+                    values = (
+                        extra_stats_sel[key]["overall"],
+                        extra_stats_sel[key]["binned"][0],
+                        extra_stats_sel[key]["binned"][-1],
+                        extra_stats[key]["overall"],
+                    )
+                else:
+                    values = (
+                        extra_stats[key]["overall"],
+                        extra_stats[key]["binned"][0],
+                        extra_stats[key]["binned"][-1],
+                    )
+                if values[0] is not None:
+                    stats[key] = values
 
     generate_stats(
-        key_to_var, merging_statistics, selected_statistics, extra_key_to_var
+        key_to_var,
+        merging_statistics,
+        selected_statistics,
+        e=bool(merging_statistics.r_split),
     )
     if Wilson_B_iso:
         stats["Wilson B factor"] = [Wilson_B_iso]
@@ -414,8 +421,8 @@ def make_merging_statistics_summary(dataset_statistics):
         hasattr(dataset_statistics, "r_split")
         and dataset_statistics.r_split is not None
     ):
-        r_split_vals = list(dataset_statistics.r_split_binned) + [
-            dataset_statistics.r_split
+        r_split_vals = list(dataset_statistics.r_split.value_binned) + [
+            dataset_statistics.r_split.value
         ]
         names.insert(-2, "r_splt")
     n_headers = len(names)  # 14 or 15

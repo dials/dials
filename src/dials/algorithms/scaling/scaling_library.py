@@ -16,8 +16,10 @@ import logging
 import math
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import Optional, Tuple
 from unittest.mock import Mock
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import iotbx.merging_statistics
@@ -381,7 +383,12 @@ class MergedHalfDatasets:
     multiplicity2: miller.array
 
 
-import matplotlib.pyplot as plt
+@dataclass
+class MergingStatistic:
+    value: float
+    value_binned: list[float]
+    neff: Optional[float] = None
+    neff_binned: Optional[list[float]] = None
 
 
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
@@ -389,25 +396,22 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
     def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
         super().__init__(*args, **kwargs)
-        self.r_split = None
-        self.r_split_binned = None
+
         self.binner = None
         self.merged_half_datasets = None
-        self.weighted_cc_anom_binned = None
-        self.neff_binned_anom = None
-        self.weighted_cc_half_binned = None
-        self.neff_binned = None
-        self.weighted_r_split_binned = None
+
+        self.weighted_cc_data = None
+        self.weighted_cc_anom_data = None
+        self.r_split = None
         self.weighted_r_split = None
-        self.weighted_cc_half = None
-        self.neff_overall = None
+
         if not additional_stats:
             return
         i_obs = kwargs.get("i_obs")
         n_bins = kwargs.get("n_bins", 20)
         if not i_obs:
             return
-        
+
         i_obs_copy = i_obs.customized_copy()
         i_obs_copy.setup_binner(n_bins=n_bins)
         i_obs_copy2 = i_obs.customized_copy()
@@ -446,52 +450,60 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         m1.use_binning(self.binner)
         m2.use_binning(self.binner)
 
-        self.r_split = self.calc_rsplit(
+        r_split = self.calc_rsplit(
             m1, m2, assume_index_matching=True, use_binning=False
         )
-        self.r_split_binned = self.calc_rsplit(
+        r_split_binned = self.calc_rsplit(
             m1, m2, assume_index_matching=True, use_binning=True
         )
+        self.r_split = MergingStatistic(r_split, r_split_binned)
         # now do weighted rsplit
-        self.weighted_r_split = self.calc_rsplit(
+        weighted_r_split = self.calc_rsplit(
             m1, m2, assume_index_matching=True, use_binning=False, weighted=True
         )
-        self.weighted_r_split_binned = self.calc_rsplit(
+        weighted_r_split_binned = self.calc_rsplit(
             m1, m2, assume_index_matching=True, use_binning=True, weighted=True
         )
-
-        self.weighted_cc_half, self.neff_overall = (
-            ExtendedDatasetStatistics.weighted_cchalf(
-                m1, m2, assume_index_matching=True, use_binning=False
-            )[0]
+        self.weighted_r_split = MergingStatistic(
+            weighted_r_split, weighted_r_split_binned
         )
+
+        weighted_cc_half, neff_overall = ExtendedDatasetStatistics.weighted_cchalf(
+            m1, m2, assume_index_matching=True, use_binning=False
+        )[0]
         results = ExtendedDatasetStatistics.weighted_cchalf(
             m1, m2, assume_index_matching=True, use_binning=True
         )
         weighted_cc_half_binned = [i[0] for i in results]
         neff_binned = [i[1] for i in results]
         if weighted_cc_half_binned is not None:
-            self.weighted_cc_half_binned = weighted_cc_half_binned[1:-1]
-            self.neff_binned = neff_binned[1:-1]
-            
-        # now do weighted cc anom
-        self.weighted_cc_anom, self.neff_overall_anom = weighted_anom_correlation(
-            i_obs_copy2
+            weighted_cc_half_binned = weighted_cc_half_binned[1:-1]
+            neff_binned = neff_binned[1:-1]
+        self.weighted_cc_data = MergingStatistic(
+            weighted_cc_half, weighted_cc_half_binned, neff_overall, neff_binned
         )
-        weighted_cc_half_binned, neff_binned = weighted_anom_correlation(
+
+        # now do weighted cc anom
+        weighted_cc_anom, neff_overall_anom = weighted_anom_correlation(i_obs_copy2)
+        weighted_cc_half_anom_binned, neff_anom_binned = weighted_anom_correlation(
             i_obs_copy2, use_binning=True, n_bins=n_bins, plot_label="weighted_anom"
         )
-        if weighted_cc_half_binned is not None:
-            self.weighted_cc_anom_binned = weighted_cc_half_binned
-            self.neff_binned_anom = neff_binned
-        
+        self.weighted_cc_anom_data = MergingStatistic(
+            weighted_cc_anom,
+            weighted_cc_half_anom_binned,
+            neff_overall_anom,
+            neff_anom_binned,
+        )
+        # if weighted_cc_half_binned is not None:
+        #    self.weighted_cc_anom_binned = weighted_cc_half_binned
+        #    self.neff_binned_anom = neff_binned
 
     def as_dict(self):
         d = super().as_dict()
         if not self.r_split:
             return d
-        d["overall"]["r_split"] = self.r_split
-        d["r_split"] = self.r_split_binned
+        d["overall"]["r_split"] = self.r_split.value
+        d["r_split"] = self.r_split.value_binned
         return d
 
     @classmethod
@@ -555,7 +567,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         assume_index_matching=False,
         use_binning=False,
         plot_label=None,
-    ) -> List[Tuple]:
+    ) -> list[Tuple]:
         if not use_binning:
             assert other.data().size() == this.data().size()
             if this.data().size() == 0:
@@ -607,8 +619,8 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                     print(list(c.sigmas().select(sort_order)[:10]))
                     print("indices")
                     print(list(o.indices().select(sort_order)[:10]))
-                    #sel = sort_order[:10]
-                    #assert 0
+                    # sel = sort_order[:10]
+                    # assert 0
                     sel = norm_jw > 0.00001
                     plt.errorbar(
                         x=list(o.data().select(sel)),
@@ -643,8 +655,8 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                     fmt="o",
                     markersize=0.5,
                 )
-                #plt.xlim([-30,30])
-                #plt.ylim([-30,30])
+                # plt.xlim([-30,30])
+                # plt.ylim([-30,30])
                 plt.plot(
                     [
                         min(min(o.data()), min(c.data())),
@@ -676,8 +688,8 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 plt.grid()
                 plt.xlabel(r"ΔI$_1$", fontsize=16)
                 plt.ylabel(r"ΔI$_2$", fontsize=16)
-                plt.xlim([-30,30])
-                plt.ylim([-30,30])
+                plt.xlim([-30, 30])
+                plt.ylim([-30, 30])
                 plt.savefig(f"{plot_label}_{n}_noerrorbar.png")
                 plt.cla()
             return [(sxy / ((sx * sy) ** 0.5), neff)]
@@ -704,7 +716,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=None):
     tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
     tmp_array = tmp_array.sort("packed_indices")
-    '''sel = tmp_array.indices() == (9, 1, 2)
+    """sel = tmp_array.indices() == (9, 1, 2)
     print("9,1,2 data, sigmas")
     print(", ".join(f"{i:3f}" for i in tmp_array.data().select(sel)))
     print(", ".join(f"{i:3f}" for i in tmp_array.sigmas().select(sel)))
@@ -714,7 +726,7 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=Non
     print(", ".join(f"{i:3f}" for i in tmp_array.data().select(sel)))
     print(", ".join(f"{i:3f}" for i in tmp_array.sigmas().select(sel)))
     #print(list(i_obs.d_spacings().select(sel)))
-    assert 0'''
+    assert 0"""
     if not use_binning:
         seed = 0
         split = split_unmerged(

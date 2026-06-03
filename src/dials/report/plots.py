@@ -6,6 +6,7 @@ for reports of several programs.
 from __future__ import annotations
 
 import logging
+import math
 from io import StringIO
 
 import numpy as np
@@ -590,9 +591,6 @@ class IntensityStatisticsPlots:
         }
 
 
-import math
-
-
 def compute_cc_significance(r, n, p):
     # https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#Testing_using_Student.27s_t-distribution
     if r == -1 or n <= 2:
@@ -663,16 +661,18 @@ class ResolutionPlotsAndStats:
 
     def weighted_stats_plot(self):
         d = {}
-        if self.dataset_statistics.weighted_cc_half_binned:
+        if self.dataset_statistics.weighted_cc_data:
+            wcc_data = self.dataset_statistics.weighted_cc_data
+            wccanom_data = self.dataset_statistics.weighted_cc_anom_data
             d_star_sq_bins = []
 
             _, critical_vals = compute_cc_significance_levels(
-                self.dataset_statistics.weighted_cc_half_binned,
-                self.dataset_statistics.neff_binned,
+                wcc_data.value_binned,
+                wcc_data.neff_binned,
             )
             _, critical_anom_vals = compute_cc_significance_levels(
-                self.dataset_statistics.weighted_cc_anom_binned,
-                self.dataset_statistics.neff_binned_anom,
+                wccanom_data.value_binned,
+                wccanom_data.neff_binned,
             )
             for bin in self.dataset_statistics.binner.range_used():
                 d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
@@ -688,19 +688,22 @@ class ResolutionPlotsAndStats:
                 {
                     "cc_one_half_weighted": cc_half_plot(
                         d_star_sq=d_star_sq_bins,
-                        cc_half=self.dataset_statistics.weighted_cc_half_binned,
+                        cc_half=wcc_data.value_binned,
                         cc_half_fit=None,
                         d_min=None,
                         cc_half_critical_values=critical_vals,
-                        cc_anom=self.dataset_statistics.weighted_cc_anom_binned,
+                        cc_anom=wccanom_data.value_binned,
                         cc_anom_critical_values=critical_anom_vals,
                     )
                 }
             )
+            d["cc_one_half_weighted"]["layout"]["yaxis"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-weighted)"
+            )
             d["cc_one_half_weighted"]["layout"]["title"] = (
                 "CC<sub>½</sub>(\u03c3-weighted) vs resolution"
             )
-        if self.dataset_statistics.weighted_r_split_binned:
+        if self.dataset_statistics.weighted_r_split:
             d_star_sq_bins = []
             for bin in self.dataset_statistics.binner.range_used():
                 d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
@@ -721,7 +724,7 @@ class ResolutionPlotsAndStats:
                         "data": [
                             {
                                 "x": d_star_sq_bins,  # d_star_sq
-                                "y": self.dataset_statistics.weighted_r_split_binned,
+                                "y": self.dataset_statistics.weighted_r_split.value_binned,
                                 "type": "scatter",
                                 "name": "R<sub>split</sub>(\u03c3-weighted) vs resolution",
                             }
@@ -772,7 +775,7 @@ class ResolutionPlotsAndStats:
                         "data": [
                             {
                                 "x": d_star_sq_bins,  # d_star_sq
-                                "y": self.dataset_statistics.r_split_binned,
+                                "y": self.dataset_statistics.r_split.value_binned,
                                 "type": "scatter",
                                 "name": "R<sub>split</sub> vs resolution",
                             }
@@ -1014,10 +1017,10 @@ class ResolutionPlotsAndStats:
         r_split_vals = []
         if (
             hasattr(self.dataset_statistics, "r_split")
-            and self.dataset_statistics.r_split_binned
+            and self.dataset_statistics.r_split
         ):
             headers.insert(-2, "R<sub>split</sub>")
-            r_split_vals = self.dataset_statistics.r_split_binned
+            r_split_vals = self.dataset_statistics.r_split.value_binned
         rows = []
 
         def safe_format(format_str, item):
@@ -1093,9 +1096,9 @@ class ResolutionPlotsAndStats:
             and self.dataset_statistics.r_split is not None
         ):
             rsplits = (
-                self.dataset_statistics.r_split,
-                self.dataset_statistics.r_split_binned[0],
-                self.dataset_statistics.r_split_binned[-1],
+                self.dataset_statistics.r_split.value,
+                self.dataset_statistics.r_split.value_binned[0],
+                self.dataset_statistics.r_split.value_binned[-1],
             )
             rows.append(["R<sub>split</sub>"] + [f"{rs:.3f}" for rs in rsplits])
 
