@@ -198,7 +198,8 @@ def filter_similar_orientations(
         cell = gemmi.UnitCell(*cryst.get_unit_cell().parameters())
         sg = gemmi.SpaceGroup(cryst.get_space_group().type().lookup_symbol())
         gemmi_ops = gemmi.find_twin_laws(cell, sg, max_obliq=max_obliq, all_ops=True)
-        sgtbx_ops = [rt_mx(op.triplet()) for op in gemmi_ops]
+        sgtbx_ops = [rt_mx("x,y,z")]
+        sgtbx_ops.extend([rt_mx(op.triplet()) for op in gemmi_ops])
 
         for cryst_a in other_crystal_models:
             R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
