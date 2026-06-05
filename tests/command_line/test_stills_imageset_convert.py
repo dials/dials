@@ -222,6 +222,66 @@ def test_converter_roundtrip_multisource_multilattice(tmp_path):
     assert recovered == expected
 
 
+def _classic_input_no_sfi():
+    """A classic per-frame ImageSet .expt dict mimicking legacy merge inputs:
+    every experiment shares one dummy source path and NO imageset carries
+    single_file_indices, so on-disk frame identity is lost. Each experiment
+    still has its own distinct beam wavelength."""
+    wavelengths = [1.300, 1.305, 1.310, 1.320]
+    d = {
+        "__id__": "ExperimentList",
+        "imageset": [],
+        "beam": [],
+        "detector": [{"panels": [], "_tag": "det"}],
+        "crystal": [],
+        "experiment": [],
+    }
+    for tag, wl in enumerate(wavelengths):
+        # No single_file_indices; shared dummy source path.
+        d["imageset"].append({"__id__": "ImageSet", "images": ["dummy_input"]})
+        d["beam"].append(
+            {"__id__": "monochromatic", "wavelength": wl, "direction": [0.0, 0.0, 1.0]}
+        )
+        d["crystal"].append({"_tag": tag})
+        d["experiment"].append(
+            {"imageset": tag, "beam": tag, "detector": 0, "crystal": tag, "_tag": tag}
+        )
+    return d, wavelengths
+
+
+def test_converter_synthesizes_frames_without_sfi(tmp_path):
+    """Legacy inputs without single_file_indices must NOT collapse to one frame:
+    the converter synthesizes a distinct 0-based frame per experiment and keeps
+    each experiment's own wavelength (one consolidated wavelength per shot)."""
+    classic, wavelengths = _classic_input_no_sfi()
+    in_path = tmp_path / "classic_no_sfi.expt"
+    seq_path = tmp_path / "sequence.expt"
+    out_path = tmp_path / "roundtrip.expt"
+    with open(in_path, "w") as f:
+        json.dump(classic, f)
+
+    set_to_seq.convert_expt(str(in_path), str(seq_path))
+    seq = json.loads(seq_path.read_text())
+
+    # One ImageSequence, synthetic dense frame indices, one wavelength per shot.
+    assert len(seq["imageset"]) == 1
+    assert seq["imageset"][0]["single_file_indices"] == [0, 1, 2, 3]
+    con = seq["scan"][0]
+    assert con.get("__stills_consolidated") is True
+    assert con["properties"]["wavelength"] == wavelengths
+    # Distinct scan_point per experiment (no spurious multi-lattice dedup).
+    sps = [e["scan_point"] for e in seq["experiment"]]
+    assert sorted(sps) == [0, 1, 2, 3]
+
+    # Backward round-trip recovers each experiment's own wavelength.
+    seq_to_set.convert_expt(str(seq_path), str(out_path))
+    back = json.loads(out_path.read_text())
+    recovered = [None] * len(wavelengths)
+    for e in back["experiment"]:
+        recovered[e["_tag"]] = back["beam"][e["beam"]]["wavelength"]
+    assert recovered == wavelengths
+
+
 def _single_file_still_sequence(n):
     """A single-file-reader ImageSequence over n frames (no real data)."""
     reader = MultiImageReader(FormatMultiImage, ["dummy.h5"], num_images=n)

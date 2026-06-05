@@ -78,16 +78,39 @@ def convert_expt(input_path, output_path):
     scaling_models_in = d.get("scaling_model", [])
     experiments = d["experiment"]
 
+    # A source file is "real" only if every imageset referencing it carries
+    # single_file_indices. Legacy per-frame ImageSet lists (e.g. older merge
+    # inputs) dropped single_file_indices and reused one dummy/empty source path
+    # for every still, so frame identity was lost on disk. For such a source we
+    # cannot recover the original HDF5 frame index -- but each experiment still
+    # carries its own beam wavelength, so we synthesize a distinct 0-based frame
+    # index per experiment (in original order) and treat each as its own unique
+    # frame. Collapsing them to a single (src, fi) would fuse N distinct per-shot
+    # wavelengths into one and corrupt every downstream wavelength read.
+    src_has_sfi = {}
+    for exp in experiments:
+        iset = imagesets_in[exp["imageset"]]
+        src = _source_file(iset)
+        has = bool(iset.get("single_file_indices"))
+        src_has_sfi[src] = src_has_sfi.get(src, True) and has
+
     # Gather per-experiment metadata, then sort by (src, fi).
+    synthetic_fi = {}
     exp_info = []
     for i, exp in enumerate(experiments):
         iset = imagesets_in[exp["imageset"]]
+        src = _source_file(iset)
+        if src_has_sfi[src]:
+            fi = _frame_index(iset)
+        else:
+            fi = synthetic_fi.get(src, 0)
+            synthetic_fi[src] = fi + 1
         exp_info.append(
             {
                 "old_idx": i,
                 "exp": exp,
-                "src": _source_file(iset),
-                "fi": _frame_index(iset),
+                "src": src,
+                "fi": fi,
                 "wl": beams_in[exp["beam"]].get("wavelength", 0.0),
                 "old_det": exp.get("detector", 0),
                 "old_crystal": exp.get("crystal"),
