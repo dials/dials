@@ -505,7 +505,10 @@ def consolidate_stills_imagesets(experiments, reflections=None):
     first_iset = experiments[0].imageset
     if not isinstance(first_iset, ImageSequence):
         return experiments, reflections
-    if first_iset.get_scan() is None or not first_iset.get_scan().is_still():
+    # Skip rotation data. Experiment.is_still() is the full stills contract
+    # (scan-None / scan.is_still() / goniometer-None, and correctly excludes
+    # Laue and ToF), not just the imageset scan's oscillation width.
+    if not experiments[0].is_still():
         return experiments, reflections
 
     by_path = defaultdict(list)

@@ -604,8 +604,10 @@ def _rebuild_shared_imageset_output(experiments):
     first_iset = experiments[0].imageset
     if not isinstance(first_iset, ImageSequence):
         return experiments
-    first_scan = first_iset.get_scan()
-    if first_scan is None or not first_scan.is_still():
+    # Skip rotation data. Experiment.is_still() is the full stills contract
+    # (scan-None / scan.is_still() / goniometer-None, and correctly excludes
+    # Laue and ToF), not just the imageset scan's oscillation width.
+    if not experiments[0].is_still():
         return experiments
 
     by_file = defaultdict(list)
