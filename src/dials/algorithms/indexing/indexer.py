@@ -7,7 +7,7 @@ import math
 import iotbx.phil
 import libtbx
 from cctbx import sgtbx
-from dxtbx.model import ExperimentList, ImageSequence, tof_helpers
+from dxtbx.model import ExperimentList, tof_helpers
 
 import dials.util
 from dials.algorithms.indexing import (
@@ -334,11 +334,7 @@ class Indexer:
             "auto",
             libtbx.Auto,
         ):
-            if (
-                self.experiments[0].goniometer is None
-                or self.experiments[0].scan is None
-                or self.experiments[0].scan.is_still()
-            ):
+            if self.experiments[0].is_still():
                 self.all_params.refinement.reflections.outlier.algorithm = "sauter_poon"
             else:
                 # different default to dials.refine
@@ -393,10 +389,10 @@ class Indexer:
             has_stills = False
             has_sequences = False
             for expt in experiments:
-                if isinstance(expt.imageset, ImageSequence):
-                    has_sequences = True
-                else:
+                if expt.is_still():
                     has_stills = True
+                else:
+                    has_sequences = True
 
             if has_stills and has_sequences:
                 raise ValueError(
@@ -421,24 +417,6 @@ class Indexer:
                     params.indexing.basis_vector_combinations.max_refine = 5
                 else:
                     params.indexing.basis_vector_combinations.max_refine = 50
-
-            if use_stills_indexer:
-                # Ensure the indexer and downstream applications treat this as set of stills
-                from dxtbx.imageset import ImageSet
-
-                for experiment in experiments:
-                    # Elsewhere, checks are made for ImageSequence when picking between algorithms
-                    # specific to rotations vs. stills, so here reset any ImageSequences to stills.
-                    # Note, dials.stills_process resets ImageSequences to ImageSets already,
-                    # and it's not free (the ImageSet cache is dropped), only do it if needed
-                    if isinstance(experiment.imageset, ImageSequence):
-                        experiment.imageset = ImageSet(
-                            experiment.imageset.data(), experiment.imageset.indices()
-                        )
-                    experiment.imageset.set_scan(None)
-                    experiment.imageset.set_goniometer(None)
-                    experiment.scan = None
-                    experiment.goniometer = None
 
             IndexerType = None
             for entry_point in importlib.metadata.entry_points(
@@ -518,6 +496,11 @@ class Indexer:
 
     def index(self):
         experiments = ExperimentList()
+
+        # Reset outputs so a failed re-entry on a cached Indexer does not
+        # silently inherit the previous frame's result (the
+        # "if self.refined_experiments is None" guard below).
+        self.refined_experiments = None
 
         had_refinement_error = False
         have_similar_crystal_models = False
@@ -881,7 +864,7 @@ class Indexer:
                     sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel))
                 )
             x_px, y_px = xy_cal_px.parts()
-            if expt.scan is not None:
+            if not expt.is_still():
                 if expt.scan.has_property("time_of_flight"):
                     tof = expt.scan.get_property("time_of_flight")
                     frames = list(range(len(tof)))
@@ -894,7 +877,7 @@ class Indexer:
                 else:
                     z_px = z
             else:
-                # must be a still image, z centroid not meaningful
+                # still image (scan is None or zero-oscillation): z centroid not meaningful
                 z_px = z
             xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
             reflections["xyzcal.px"].set_selected(imgset_sel, xyzcal_px)

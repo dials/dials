@@ -46,7 +46,7 @@ class chooser_wrapper:
         return self.image_set.get_scan()
 
     def get_beam(self):
-        return self.image_set.get_beam()
+        return self.image_set.get_beam(self.index)
 
     def get_mask(self):
         return self.image_set.get_mask(self.index)
@@ -364,11 +364,10 @@ class XrayFrame(XFBaseClass):
         @return panel_id, beam_center_fast, beam_center_slow. panel_id is the panel the
         returned coordinates are relative to.
         """
-        image = self.image_chooser.GetClientData(
-            self.image_chooser.GetSelection()
-        ).image_set
+        wrapper = self.image_chooser.GetClientData(self.image_chooser.GetSelection())
+        image = wrapper.image_set
         detector = image.get_detector()
-        beam = image.get_beam()
+        beam = wrapper.get_beam()
         if abs(detector[0].get_distance()) == 0:
             return 0.0, 0.0
 

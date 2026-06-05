@@ -486,13 +486,14 @@ def _parameterise_crystals(options, experiments, analysis):
         # This crystal can only ever appear either in scans or in stills
         # (otherwise it requires a different crystal model)
         exp_ids = experiments.indices(crystal)
-        assoc_models = [
-            (experiments[i].goniometer, experiments[i].scan) for i in exp_ids
-        ]
+        expts_in_group = [experiments[i] for i in exp_ids]
+        assoc_models = [(e.goniometer, e.scan) for e in expts_in_group]
         goniometer, scan = assoc_models[0]
-        if goniometer is None:
-            # There should be no associated goniometer and scan models
-            if any(g or s for (g, s) in assoc_models):
+        if expts_in_group[0].is_still():
+            # First experiment is a still. All other experiments in this group
+            # must also be stills (Experiment.is_still() treats missing
+            # goniometer, missing scan, or zero-oscillation scan as still).
+            if any(not e.is_still() for e in expts_in_group):
                 raise DialsRefineConfigError(
                     "A crystal model appears in a mixture of scan and still "
                     "experiments, which is not supported"
