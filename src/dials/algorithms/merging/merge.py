@@ -408,8 +408,9 @@ class MergedMTZCreator:
             flumpy.to_numpy(sigmas).astype("float32"),
         )
 
+    @staticmethod
     def _separate_anomalous(
-        self, miller_array: miller.array
+        miller_array: miller.array,
     ) -> tuple[miller.array, miller.array]:
         """
         Separates the anomalous pairs from a given Miller array to produce

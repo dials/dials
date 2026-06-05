@@ -38,7 +38,12 @@ from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
 from dials.util.reference import intensities_from_reference_file
-from dials_scaling_ext import split_unmerged
+from dials_scaling_ext import (
+    average_intensity_variance,
+    mean_sample_variance,
+    split_into_hemispheres,
+    split_unmerged,
+)
 
 logger = logging.getLogger("dials")
 
@@ -395,7 +400,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
     def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs, cc_one_half_method="sigma_tau")
 
         self.binner = None
         self.merged_half_datasets = None
@@ -404,6 +409,11 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         self.weighted_cc_anom_data = None
         self.r_split = None
         self.weighted_r_split = None
+
+        self.weighted_cchalf_anom_sigma_tau = None
+        self.weighted_cchalf_sigma_tau = None
+
+        # FIXME implemented weighted sigma-tau
 
         if not additional_stats:
             return
@@ -416,6 +426,47 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         i_obs_copy.setup_binner(n_bins=n_bins)
         i_obs_copy2 = i_obs.customized_copy()
         i_obs_copy2.setup_binner(n_bins=n_bins)
+        i_obs_copy3 = i_obs.customized_copy()
+        i_obs_copy3.setup_binner(n_bins=n_bins)
+        i_obs_copy3 = i_obs_copy3.map_to_asu()
+        i_obs_copy3 = i_obs_copy3.sort("packed_indices")
+        i_obs_copy3.setup_binner(n_bins=n_bins)
+        sigma_tau_binned = self.calculate_weighted_cchalf_sigma_tau(
+            i_obs_copy3, use_binning=True
+        )
+        # do weighted sum
+        n_tot = 0
+        sumval = 0
+        for i_bin, cc in zip(i_obs_copy3.binner().range_all(), sigma_tau_binned):
+            sel = i_obs_copy3.binner().selection(i_bin)
+            n = sel.count(True)
+            sumval += cc * n
+            n_tot += n
+
+        overall = sumval / n_tot
+        self.weighted_cchalf_sigma_tau = MergingStatistic(
+            overall, sigma_tau_binned[1:-1]
+        )
+        # assert 0
+        # print(res)
+        # print("about to calculte weighted cc anom")
+        sigma_tau_binned_anom = self.calculate_weighted_cchalf_anom_sigma_tau(
+            i_obs_copy3, use_binning=True
+        )
+        # do weighted sum
+        n_tot = 0
+        sumval = 0
+        for i_bin, cc in zip(i_obs_copy3.binner().range_all(), sigma_tau_binned_anom):
+            sel = i_obs_copy3.binner().selection(i_bin)
+            n = sel.count(True)
+            sumval += cc * n
+            n_tot += n
+
+        overall = sumval / n_tot
+        self.weighted_cchalf_anom_sigma_tau = MergingStatistic(
+            overall, sigma_tau_binned_anom[1:-1]
+        )
+
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
 
@@ -494,9 +545,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             neff_overall_anom,
             neff_anom_binned,
         )
-        # if weighted_cc_half_binned is not None:
-        #    self.weighted_cc_anom_binned = weighted_cc_half_binned
-        #    self.neff_binned_anom = neff_binned
 
     def as_dict(self):
         d = super().as_dict()
@@ -557,6 +605,84 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 weighted=weighted,
             )
             results.append(r)
+        return results
+
+    @classmethod
+    def calculate_weighted_cchalf_anom_sigma_tau(cls, i_obs, use_binning=False):
+        if not use_binning:
+            # calculated sigmas
+            sg_type = i_obs.space_group().type()
+            # asu = i_obs.customized_copy(anomalous_flag=True).map_to_asu()
+            # FIXME should we only include data that has a pair?
+            plus_sel, minus_sel = split_into_hemispheres(sg_type, i_obs.indices())
+            data_plus = i_obs.select(plus_sel)
+            sigma_sq_e_plus = mean_sample_variance(
+                data_plus.indices(), data_plus.data(), data_plus.sigmas(), True
+            )
+            data_minus = i_obs.select(minus_sel)
+            sigma_sq_e_minus = mean_sample_variance(
+                data_minus.indices(), data_minus.data(), data_minus.sigmas(), True
+            )
+
+            sigma_sq_e = sigma_sq_e_minus + sigma_sq_e_plus
+            tmp = i_obs.customized_copy(anomalous_flag=True)
+            dano = tmp.merge_equivalents().array().anomalous_differences()
+            sigma_sq_y = average_intensity_variance(
+                dano.indices(), dano.data(), dano.sigmas(), True
+            )
+            print("doing anom")
+            print(f"sigma_sq_e {sigma_sq_e}")
+            print(f"sigma_sq_y {sigma_sq_y}")
+            if not sigma_sq_e:
+                return [0.0]
+            if not sigma_sq_y:
+                return [0.0]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            print(cc_half)
+            return [cc_half]
+        results = []
+        for i, i_bin in enumerate(i_obs.binner().range_all()):
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_weighted_cchalf_anom_sigma_tau(
+                    i_obs.select(sel),
+                    use_binning=False,
+                )[0]
+            )
+        return results
+
+    @classmethod
+    def calculate_weighted_cchalf_sigma_tau(cls, i_obs, use_binning=False):
+        if not use_binning:
+            # calculated sigmas
+            sigma_sq_e = mean_sample_variance(
+                i_obs.indices(), i_obs.data(), i_obs.sigmas(), True
+            )
+            sigma_sq_y = average_intensity_variance(
+                i_obs.indices(), i_obs.data(), i_obs.sigmas(), True
+            )
+            print(f"sigma_sq_e {sigma_sq_e}")
+            print(f"sigma_sq_y {sigma_sq_y}")
+            if not sigma_sq_e:
+                return [0.0]
+            if not sigma_sq_y:
+                return [0.0]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            print(cc_half)
+            return [cc_half]
+        results = []
+        for i, i_bin in enumerate(i_obs.binner().range_all()):
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_weighted_cchalf_sigma_tau(
+                    i_obs.select(sel),
+                    use_binning=False,
+                )[0]
+            )
         return results
 
     @classmethod

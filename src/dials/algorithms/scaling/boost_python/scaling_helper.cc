@@ -3,10 +3,12 @@
 #include <dials/algorithms/scaling/scaling_helper.h>
 #include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/algorithms/scaling/match_bijvoet_mates_adapted.h>
 
 namespace dials_scaling { namespace boost_python {
 
   using namespace boost::python;
+  using namespace cctbx::miller;
 
   using scitbx::sparse::matrix;
 
@@ -85,6 +87,24 @@ namespace dials_scaling { namespace boost_python {
         (arg("s0_selection"), arg("s1_selection"), arg("coefficients_list")));
   }
 
+  void export_mean_sample_variance() {
+    def("mean_sample_variance",
+        &mean_sample_variance,
+        (arg("unmerged_indices"),
+         arg("unmerged_data"),
+         arg("unmerged_sigmas"),
+         arg("weighted")));
+  }
+
+  void export_average_intensity_variance() {
+    def("average_intensity_variance",
+        &average_intensity_variance,
+        (arg("unmerged_indices"),
+         arg("unmerged_data"),
+         arg("unmerged_sigmas"),
+         arg("weighted")));
+  }
+
   void export_gaussian_smoother_first_fixed() {
     class_<GaussianSmootherFirstFixed>("GaussianSmootherFirstFixed", no_init)
       .def(init<vec2<double>, std::size_t>((arg("x_range"), arg("num_intervals"))))
@@ -121,6 +141,12 @@ namespace dials_scaling { namespace boost_python {
       .def("n1", &split_unmerged::n1)
       .def("n2", &split_unmerged::n2)
       .def("indices", &split_unmerged::indices);
+  }
+
+  void export_split_into_hemispheres() {
+    def("split_into_hemispheres",
+        &split_into_hemispheres_wrapper,
+        (arg("sg_type"), arg("miller_indices")));
   }
 
 }}  // namespace dials_scaling::boost_python

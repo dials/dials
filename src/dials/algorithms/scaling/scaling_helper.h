@@ -10,6 +10,10 @@
 #include <dials/algorithms/refinement/gaussian_smoother.h>
 #include <scitbx/random.h>
 #include <cctbx/miller.h>
+#include <cctbx/sgtbx/reciprocal_space_asu.h>
+#include <scitbx/array_family/shared.h>
+#include <map>
+#include <set>
 
 typedef scitbx::sparse::matrix<double>::column_type col_type;
 
@@ -535,6 +539,94 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
   return coefficients_list;
 }
 
+double average_intensity_variance(
+  scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
+  scitbx::af::const_ref<double> const& unmerged_data,
+  scitbx::af::const_ref<double> const& unmerged_sigmas,
+  bool weighted = true) {
+  double intensity_variance_sum = 0.0;
+  double N = 0.0;
+  CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
+  std::size_t group_begin = 0;
+  std::size_t group_end = 1;
+  double sumx = 0.0;
+  double sumx2 = 0.0;
+  for (; group_end < unmerged_indices.size(); group_end++) {
+    if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
+      // process a group
+      int n = group_end - group_begin;
+      // if (n < 2){
+      //   group_begin = group_end;
+      //   continue;
+      // }
+      double sumw = 0.;
+      double sumwx = 0.;
+      for (int index = group_begin; index < group_end; index++) {
+        double invw = 1.0 / std::pow(unmerged_sigmas[index], 2);
+        sumw += invw;
+        sumwx += invw * unmerged_data[index];
+      }
+      double xbar = sumwx / sumw;
+      sumx += xbar;
+      sumx2 += (xbar * xbar);
+      N += 1;
+      group_begin = group_end;
+    }
+  }
+  if (N < 2) {
+    return 0;
+  }
+
+  return (sumx2 - ((sumx * sumx) / N)) / N - 1;
+}
+
+double mean_sample_variance(
+  scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
+  scitbx::af::const_ref<double> const& unmerged_data,
+  scitbx::af::const_ref<double> const& unmerged_sigmas,
+  bool weighted = true) {
+  double weighted_sample_variances_sum = 0.0;
+  double N = 0.;
+  CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
+  std::size_t group_begin = 0;
+  std::size_t group_end = 1;
+  for (; group_end < unmerged_indices.size(); group_end++) {
+    if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
+      // process a group
+      double n = group_end - group_begin;
+      if (n < 2) {
+        group_begin = group_end;
+        continue;
+      }
+      double sumw = 0.;
+      double sumwx2 = 0.;
+      double sumwx = 0.;
+      for (int index = group_begin; index < group_end; index++) {
+        double invw = 1.0 / std::pow(unmerged_sigmas[index], 2);
+        sumw += invw;
+        sumwx2 += invw * unmerged_data[index] * unmerged_data[index];
+        sumwx += invw * unmerged_data[index];
+      }
+
+      if (sumw <= 0.0) {
+        group_begin = group_end;
+        continue;
+      }
+
+      double a = sumwx2 / sumw;
+      double b = std::pow(sumwx / sumw, 2);
+      double s_eiw2 = 2.0 * (a - b) / (n - 1);
+      weighted_sample_variances_sum += s_eiw2;
+      N += 1;
+      group_begin = group_end;
+    }
+  }
+  if (N == 0) {
+    return 0;
+  }
+  return weighted_sample_variances_sum / N;
+}
+
 // adaptation of cctbx/miller/merge_equivalents.h
 class split_unmerged {
 public:
@@ -659,6 +751,93 @@ protected:
 
   scitbx::random::mersenne_twister gen;
 };
+
+using namespace cctbx::miller;
+using scitbx::af::shared;
+
+/// Result struct
+struct hemisphere_selections {
+  shared<std::size_t> plus;
+  shared<std::size_t> minus;
+};
+
+hemisphere_selections split_into_hemispheres(
+  cctbx::sgtbx::space_group_type const& sg_type,
+  shared<cctbx::miller::index<> > const& miller_indices) {
+  typedef std::vector<std::size_t> group_type;
+  typedef std::map<cctbx::miller::index<>, group_type, fast_less_than<> > lookup_type;
+
+  lookup_type lookup;
+
+  // 1. Group observations by index
+  for (std::size_t i = 0; i < miller_indices.size(); i++) {
+    lookup[miller_indices[i]].push_back(i);
+  }
+
+  cctbx::sgtbx::reciprocal_space::asu asu(sg_type);
+
+  hemisphere_selections result;
+
+  std::set<cctbx::miller::index<> > processed;
+
+  // 2. Process unique h / -h pairs
+  for (auto const& kv : lookup) {
+    cctbx::miller::index<> h = kv.first;
+
+    if (processed.count(h) || processed.count(-h)) {
+      continue;
+    }
+
+    auto it_plus = lookup.find(h);
+    auto it_minus = lookup.find(-h);
+
+    // Determine hemisphere using ASU
+    int which = asu.which(h);
+    CCTBX_ASSERT(which != 0);
+
+    if (it_minus != lookup.end()) {
+      // Case: both h and -h exist
+
+      if (which > 0) {
+        // h → positive
+        for (auto i : it_plus->second)
+          result.plus.push_back(i);
+        for (auto i : it_minus->second)
+          result.minus.push_back(i);
+      } else {
+        // h → negative
+        for (auto i : it_plus->second)
+          result.minus.push_back(i);
+        for (auto i : it_minus->second)
+          result.plus.push_back(i);
+      }
+    } else {
+      // Case: no Friedel mate (singleton group)
+
+      if (which > 0) {
+        for (auto i : it_plus->second)
+          result.plus.push_back(i);
+      } else {
+        for (auto i : it_plus->second)
+          result.minus.push_back(i);
+      }
+    }
+
+    processed.insert(h);
+    processed.insert(-h);
+  }
+
+  return result;
+};
+
+tuple split_into_hemispheres_wrapper(
+  cctbx::sgtbx::space_group_type const& sg_type,
+  scitbx::af::shared<cctbx::miller::index<> > const& miller_indices) {
+  hemisphere_selections res = split_into_hemispheres(sg_type, miller_indices);
+
+  return make_tuple(res.plus, res.minus);
+}
+
 }  // namespace dials_scaling
 
 #endif  // DIALS_SCALING_SCALING_HELPER_H
