@@ -400,7 +400,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
     def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
-        super().__init__(*args, **kwargs, cc_one_half_method="sigma_tau")
+        super().__init__(*args, **kwargs)
 
         self.binner = None
         self.merged_half_datasets = None
@@ -616,10 +616,12 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # FIXME should we only include data that has a pair?
             plus_sel, minus_sel = split_into_hemispheres(sg_type, i_obs.indices())
             data_plus = i_obs.select(plus_sel)
+            data_plus = data_plus.sort("packed_indices")
             sigma_sq_e_plus = mean_sample_variance(
                 data_plus.indices(), data_plus.data(), data_plus.sigmas(), True
             )
             data_minus = i_obs.select(minus_sel)
+            data_minus = data_minus.sort("packed_indices")
             sigma_sq_e_minus = mean_sample_variance(
                 data_minus.indices(), data_minus.data(), data_minus.sigmas(), True
             )
@@ -657,6 +659,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     def calculate_weighted_cchalf_sigma_tau(cls, i_obs, use_binning=False):
         if not use_binning:
             # calculated sigmas
+            i_obs.sort_indices()
             sigma_sq_e = mean_sample_variance(
                 i_obs.indices(), i_obs.data(), i_obs.sigmas(), True
             )

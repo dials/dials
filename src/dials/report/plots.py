@@ -852,9 +852,6 @@ class ResolutionPlotsAndStats:
                 )
                 for bin_stats in self.dataset_statistics.bins
             ]
-            print("cc one half bins")
-            print(cc_one_half_bins)
-            # assert 0
             cc_one_half_critical_value_bins = [
                 (
                     bin_stats.cc_one_half_sigma_tau_critical_value
@@ -863,6 +860,7 @@ class ResolutionPlotsAndStats:
                 )
                 for bin_stats in self.dataset_statistics.bins
             ]
+            print("done sigma tau")
         else:
             cc_one_half_bins = [
                 bin_stats.cc_one_half if bin_stats.cc_one_half else 0.0

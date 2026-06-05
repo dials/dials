@@ -555,10 +555,10 @@ double average_intensity_variance(
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
       // process a group
       int n = group_end - group_begin;
-      // if (n < 2){
-      //   group_begin = group_end;
-      //   continue;
-      // }
+      /*if (n < 2){
+         group_begin = group_end;
+         continue;
+      }*/
       double sumw = 0.;
       double sumwx = 0.;
       for (int index = group_begin; index < group_end; index++) {
@@ -576,7 +576,7 @@ double average_intensity_variance(
   if (N < 2) {
     return 0;
   }
-
+  // FIXME need proper dof N from weighting not N-1
   return (sumx2 - ((sumx * sumx) / N)) / N - 1;
 }
 
@@ -811,17 +811,17 @@ hemisphere_selections split_into_hemispheres(
         for (auto i : it_minus->second)
           result.plus.push_back(i);
       }
-    } else {
-      // Case: no Friedel mate (singleton group)
+    } /* else {
+       // Case: no Friedel mate (singleton group)
 
-      if (which > 0) {
-        for (auto i : it_plus->second)
-          result.plus.push_back(i);
-      } else {
-        for (auto i : it_plus->second)
-          result.minus.push_back(i);
-      }
-    }
+       if (which > 0) {
+         for (auto i : it_plus->second)
+           result.plus.push_back(i);
+       } else {
+         for (auto i : it_plus->second)
+           result.minus.push_back(i);
+       }
+     }*/
 
     processed.insert(h);
     processed.insert(-h);
