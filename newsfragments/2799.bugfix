@@ -1,1 +1,0 @@
-``dials.index``: fix inconsistent experiment IDs after indexing with ``index_assignment.method=local``

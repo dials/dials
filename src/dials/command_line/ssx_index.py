@@ -67,7 +67,6 @@ refinement {
   }
   reflections {
     weighting_strategy.override = stills
-    outlier.algorithm = null
   }
 }
 """
@@ -84,6 +83,14 @@ min_spots = 10
     .type = int
     .expert_level = 2
     .help = "Images with fewer than this number of strong spots will not be indexed"
+retain_unindexed_experiments = False
+    .type = bool
+    .expert_level = 3
+    .help = "Keep all input experiment models and input reflections in the output."
+            "i.e. the output contains indexed and unindexed experiments and reflections"
+            "This is an experimental mode that can be used to view the output of SSX indexing"
+            "in the image viewer, but follow on programs may not be able to handle"
+            "these files as input as not all experiments have a crystal model or data."
 output.html = dials.ssx_index.html
     .type = str
 output.json = None
@@ -167,7 +174,12 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     n_images = reduce(
         lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0
     )
-    logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
+    n_indexed = 0
+    if indexed_reflections.size():
+        n_indexed = indexed_reflections.get_flags(
+            indexed_reflections.flags.indexed
+        ).count(True)
+    logger.info(f"{n_indexed} spots indexed on {n_images} images\n")
 
     crystal_symmetries = [
         crystal.symmetry(
@@ -175,17 +187,20 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
             space_group=expt.crystal.get_space_group(),
         )
         for expt in indexed_experiments
+        if expt.crystal
     ]
     if crystal_symmetries:
         cluster_plots, _ = report_on_crystal_clusters(
             crystal_symmetries,
             make_plots=(params.output.html or params.output.json),
         )
-
-    logger.info(f"Saving indexed experiments to {params.output.experiments}")
-    indexed_experiments.as_file(params.output.experiments)
-    logger.info(f"Saving indexed reflections to {params.output.reflections}")
-    indexed_reflections.as_file(params.output.reflections)
+    if indexed_experiments:
+        logger.info(f"Saving indexed experiments to {params.output.experiments}")
+        indexed_experiments.as_file(params.output.experiments)
+        logger.info(f"Saving indexed reflections to {params.output.reflections}")
+        indexed_reflections.as_file(params.output.reflections)
+    else:
+        logger.info("No reflections indexed")
 
     if (params.output.html or params.output.json) and indexed_experiments:
         summary_plots = generate_plots(summary_data)

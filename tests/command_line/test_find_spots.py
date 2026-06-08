@@ -4,7 +4,6 @@ import os
 import pickle
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -35,7 +34,7 @@ def test_find_spots_from_images(dials_data, tmp_path):
             "output.shoeboxes=True",
             "algorithm=dispersion",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -60,7 +59,7 @@ def test_find_spots_from_images_override_maximum(dials_data, tmp_path):
             "output.shoeboxes=True",
             "algorithm=dispersion",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -74,9 +73,7 @@ def test_find_spots_from_images_override_maximum(dials_data, tmp_path):
 
 
 def test_find_spots_from_zero_indexed_cbf(dials_data, tmp_path):
-    one_indexed_cbf = (
-        dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"
-    )
+    one_indexed_cbf = dials_data("centroid_test_data") / "centroid_0001.cbf"
     zero_indexed_cbf = tmp_path / "centroid_0000.cbf"
     shutil.copy(one_indexed_cbf, zero_indexed_cbf)
 
@@ -100,7 +97,7 @@ def test_find_spots_from_images_output_experiments(dials_data, tmp_path):
             "algorithm=dispersion",
             "output.experiments=spotfinder.expt",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -119,7 +116,7 @@ def test_find_spots_from_imported_experiments(dials_data, tmp_path):
     """First run import to generate an imported.expt and use this."""
     _ = subprocess.run(
         [shutil.which("dials.import")]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -151,7 +148,7 @@ def test_find_spots_from_imported_as_grid(dials_data, tmp_path):
     """First run import to generate an imported.expt and use this."""
     _ = subprocess.run(
         [shutil.which("dials.import"), "oscillation=0,0"]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -186,7 +183,7 @@ def test_find_spots_with_resolution_filter(dials_data, tmp_path):
             "filter.d_min=2",
             "filter.d_max=15",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -209,7 +206,7 @@ def test_find_spots_with_hot_mask(dials_data, tmp_path):
             "algorithm=dispersion",
             "output.shoeboxes=False",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -239,7 +236,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmp_path):
             "output.shoeboxes=False",
             "algorithm=dispersion",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -267,7 +264,7 @@ def test_find_spots_with_generous_parameters(dials_data, tmp_path):
             "output.reflections=spotfinder.refl",
             "algorithm=dispersion",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -280,7 +277,7 @@ def test_find_spots_with_generous_parameters(dials_data, tmp_path):
 
 def test_find_spots_with_user_defined_mask(dials_data, tmp_path):
     # Now with a user defined mask
-    mask_pickle = dials_data("centroid_test_data", pathlib=True) / "mask.pickle"
+    mask_pickle = dials_data("centroid_test_data") / "mask.pickle"
     result = subprocess.run(
         [
             shutil.which("dials.find_spots"),
@@ -290,7 +287,7 @@ def test_find_spots_with_user_defined_mask(dials_data, tmp_path):
             "algorithm=dispersion",
             f"lookup.mask={mask_pickle}",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -299,7 +296,7 @@ def test_find_spots_with_user_defined_mask(dials_data, tmp_path):
 
     reflections = flex.reflection_table.from_file(tmp_path / "spotfinder.refl")
     experiments = ExperimentListFactory.from_json_file(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+        dials_data("centroid_test_data") / "experiments.json"
     )
     assert len(experiments) == 1
     imageset = experiments.imagesets()[0]
@@ -319,7 +316,7 @@ def test_find_spots_with_user_defined_region(dials_data, tmp_path):
             "output.shoeboxes=True",
             "region_of_interest=800,1200,800,1200",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -343,7 +340,7 @@ def test_find_spots_with_image_exclusions(dials_data, tmp_path):
             "output.shoeboxes=True",
             "exclude_images=4:6",
         ]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -357,16 +354,15 @@ def test_find_spots_with_image_exclusions(dials_data, tmp_path):
     assert len(z.select((z > 3) & (z < 6.5))) == 0
 
 
-def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
+def test_find_spots_with_xfel_stills(dials_data, tmp_path):
     # now with XFEL stills
     result = subprocess.run(
         [
             shutil.which("dials.find_spots"),
             "nproc=1",
-            os.path.join(
-                dials_regression,
-                "spotfinding_test_data",
-                "idx-s00-20131106040302615.cbf",
+            str(
+                dials_data("image_examples")
+                / "LCLS_cspad_nexus-idx-20130301060858801.cbf",
             ),
             "output.reflections=spotfinder.refl",
             "algorithm=dispersion",
@@ -378,13 +374,13 @@ def test_find_spots_with_xfel_stills(dials_regression: Path, tmp_path):
     assert (tmp_path / "spotfinder.refl").is_file()
 
     reflections = flex.reflection_table.from_file(tmp_path / "spotfinder.refl")
-    assert len(reflections) == 2643
+    assert len(reflections) == 1148
 
 
 def test_find_spots_with_per_image_statistics(dials_data, tmp_path):
     result = subprocess.run(
         [shutil.which("dials.find_spots"), "nproc=1", "per_image_statistics=True"]
-        + list(dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")),
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
         cwd=tmp_path,
         capture_output=True,
     )
@@ -407,10 +403,7 @@ def test_find_spots_radial_profile(dials_data, blur, expected_nref, run_in_tmp_p
             f"blur={blur}",
         ]
         + [
-            os.fspath(f)
-            for f in dials_data("centroid_test_data", pathlib=True).glob(
-                "centroid*.cbf"
-            )
+            os.fspath(f) for f in dials_data("centroid_test_data").glob("centroid*.cbf")
         ],
         return_results=True,
     )

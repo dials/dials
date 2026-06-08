@@ -190,12 +190,23 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
     def _post_predict_one_experiment(self, experiment, reflections):
         # Add ToF to xyzcal.mm
         wavelength_cal = reflections["wavelength_cal"]
-        distance = experiment.beam.get_sample_to_source_distance() * 10**-3
-        distance = distance + (reflections["s1"].norms() * 10**-3)
+        x_cal, y_cal, _ = reflections["xyzcal.mm"].parts()
+        L1_cal = flex.double(len(reflections))
+        for i_panel in range(len(experiment.detector)):
+            sel = reflections["panel"] == i_panel
+            x_cal_p = x_cal.select(sel)
+            y_cal_p = y_cal.select(sel)
+            s1_cal = experiment.detector[i_panel].get_lab_coord(
+                flex.vec2_double(x_cal_p, y_cal_p)
+            )
+            L1_cal_p = s1_cal.norms() * 10**-3  # (m)
+            L1_cal.set_selected(sel, L1_cal_p)
+
+        distance = experiment.beam.get_sample_to_source_distance() * 10**-3  # (m)
+        distance = distance + L1_cal
         tof_cal = tof_helpers.tof_from_wavelength(distance, wavelength_cal)  # (s)
-        x, y, z = reflections["xyzcal.mm"].parts()
         tof_cal = tof_cal * 1e6  # (usec)
-        reflections["xyzcal.mm"] = flex.vec3_double(x, y, tof_cal)
+        reflections["xyzcal.mm"] = flex.vec3_double(x_cal, y_cal, tof_cal)
 
         # Add frame to xyzcal.px
         expt_tof = experiment.scan.get_property("time_of_flight")  # (usec)
@@ -204,7 +215,7 @@ class TOFExperimentsPredictor(LaueExperimentsPredictor):
         tof_cal.set_selected(tof_cal < min(expt_tof), min(expt_tof))
         tof_cal.set_selected(tof_cal > max(expt_tof), max(expt_tof))
         reflection_frames = flex.double(tof_to_frame(tof_cal))
-        px, py, pz = reflections["xyzcal.px"].parts()
+        px, py, _ = reflections["xyzcal.px"].parts()
         reflections["xyzcal.px"] = flex.vec3_double(px, py, reflection_frames)
 
         return reflections

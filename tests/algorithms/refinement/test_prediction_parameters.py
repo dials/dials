@@ -192,9 +192,7 @@ def test():
 
 
 def test_laue_prediction_parameters(dials_data):
-    fmt = FormatISISSXD(
-        join(dials_data("isis_sxd_example_data", pathlib=True), "sxd_nacl_run.nxs")
-    )
+    fmt = FormatISISSXD(join(dials_data("isis_sxd_example_data"), "sxd_nacl_run.nxs"))
     beam = fmt.get_beam()
     detector = fmt.get_detector()
     goniometer = fmt.get_goniometer()

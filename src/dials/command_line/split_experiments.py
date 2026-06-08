@@ -343,11 +343,10 @@ class Script:
 
                 if reflections is not None:
                     reflections_filename = reflections_template(index=i)
-                    print(
-                        "Saving reflections for experiment %d to %s"
-                        % (i, reflections_filename)
-                    )
                     ref_sel = reflections.select(reflections["id"] == i)
+                    print(
+                        f"Saving {len(ref_sel)} reflections for experiment {i} to {reflections_filename}"
+                    )
                     if ref_sel.experiment_identifiers().keys():
                         identifier = ref_sel.experiment_identifiers()[i]
                         for k in ref_sel.experiment_identifiers().keys():

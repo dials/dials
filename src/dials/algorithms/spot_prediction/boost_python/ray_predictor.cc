@@ -22,9 +22,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   static af::reflection_table call_with_miller_index_array(
-    const ScanStaticRayPredictor &self,
-    const af::const_ref<cctbx::miller::index<> > &h,
-    const mat3<double> &UB) {
+    const ScanStaticRayPredictor& self,
+    const af::const_ref<cctbx::miller::index<> >& h,
+    const mat3<double>& UB) {
     af::reflection_table result;
     af::shared<cctbx::miller::index<> > hkl = result["miller_index"];
     af::shared<vec3<double> > s1 = result["s1"];
@@ -44,9 +44,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   static af::reflection_table laue_with_miller_index_array(
-    LaueRayPredictor &self,
-    const af::const_ref<cctbx::miller::index<> > &h,
-    const mat3<double> &UB) {
+    LaueRayPredictor& self,
+    const af::const_ref<cctbx::miller::index<> >& h,
+    const mat3<double>& UB) {
     af::reflection_table result;
     af::shared<cctbx::miller::index<> > hkl = result["miller_index"];
     af::shared<vec3<double> > s1 = result["s1"];

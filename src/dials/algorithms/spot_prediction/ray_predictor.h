@@ -88,7 +88,7 @@ namespace dials { namespace algorithms {
       vec2<double> phi;
       try {
         phi = calculate_rotation_angles_(pstar0);
-      } catch (error const &) {
+      } catch (error const&) {
         return rays;
       }
 
@@ -124,7 +124,7 @@ namespace dials { namespace algorithms {
       vec2<double> phi;
       try {
         phi = calculate_rotation_angles_(pstar0);
-      } catch (error const &) {
+      } catch (error const&) {
         return rays;
       }
 
@@ -276,7 +276,7 @@ namespace dials { namespace algorithms {
      * @param ub The UB matrix
      * @returns Ray
      */
-    Ray operator()(const miller_index &h, const mat3<double> &ub) {
+    Ray operator()(const miller_index& h, const mat3<double>& ub) {
       // Calculate the reciprocal lattice vector
       vec3<double> q = setting_rotation_ * fixed_rotation_ * ub * h;
 

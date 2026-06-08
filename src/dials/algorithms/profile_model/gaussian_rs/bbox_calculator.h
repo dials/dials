@@ -52,9 +52,9 @@ namespace dials { namespace algorithms { namespace profile_model {
 
       virtual int6 single(vec3<double> s1, double frame, std::size_t panel) const = 0;
 
-      virtual af::shared<int6> array(const af::const_ref<vec3<double> > &s1,
-                                     const af::const_ref<double> &frame,
-                                     const af::const_ref<std::size_t> &panel) const = 0;
+      virtual af::shared<int6> array(const af::const_ref<vec3<double> >& s1,
+                                     const af::const_ref<double>& frame,
+                                     const af::const_ref<std::size_t>& panel) const = 0;
     };
 
     /** Calculate the bounding box for each reflection */
@@ -68,10 +68,10 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param delta_divergence The xds delta_divergence parameter
        * @param delta_mosaicity The xds delta_mosaicity parameter
        */
-      BBoxCalculator3D(const BeamBase &beam,
-                       const Detector &detector,
-                       const Goniometer &gonio,
-                       const Scan &scan,
+      BBoxCalculator3D(const BeamBase& beam,
+                       const Detector& detector,
+                       const Goniometer& gonio,
+                       const Scan& scan,
                        double delta_divergence,
                        double delta_mosaicity)
           : s0_(beam.get_s0()),
@@ -92,12 +92,12 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param delta_divergence The xds delta_divergence parameter
        * @param delta_mosaicity The xds delta_mosaicity parameter
        */
-      BBoxCalculator3D(const BeamBase &beam,
-                       const Detector &detector,
-                       const Goniometer &gonio,
-                       const Scan &scan,
-                       const af::const_ref<double> &delta_divergence,
-                       const af::const_ref<double> &delta_mosaicity)
+      BBoxCalculator3D(const BeamBase& beam,
+                       const Detector& detector,
+                       const Goniometer& gonio,
+                       const Scan& scan,
+                       const af::const_ref<double>& delta_divergence,
+                       const af::const_ref<double>& delta_mosaicity)
           : s0_(beam.get_s0()),
             m2_(gonio.get_rotation_axis()),
             detector_(detector),
@@ -219,9 +219,9 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param s1 The array of diffracted beam vectors
        * @param frame The array of frame numbers.
        */
-      virtual af::shared<int6> array(const af::const_ref<vec3<double> > &s1,
-                                     const af::const_ref<double> &frame,
-                                     const af::const_ref<std::size_t> &panel) const {
+      virtual af::shared<int6> array(const af::const_ref<vec3<double> >& s1,
+                                     const af::const_ref<double>& frame,
+                                     const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(s1.size() == frame.size());
         DIALS_ASSERT(s1.size() == panel.size());
         af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
@@ -250,8 +250,8 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param delta_divergence The xds delta_divergence parameter
        * @param delta_mosaicity The xds delta_mosaicity parameter
        */
-      BBoxCalculator2D(const BeamBase &beam,
-                       const Detector &detector,
+      BBoxCalculator2D(const BeamBase& beam,
+                       const Detector& detector,
                        double delta_divergence,
                        double delta_mosaicity)
           : s0_(beam.get_s0()),
@@ -331,9 +331,9 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param s1 The array of diffracted beam vectors
        * @param phi The array of rotation angles.
        */
-      virtual af::shared<int6> array(const af::const_ref<vec3<double> > &s1,
-                                     const af::const_ref<double> &frame,
-                                     const af::const_ref<std::size_t> &panel) const {
+      virtual af::shared<int6> array(const af::const_ref<vec3<double> >& s1,
+                                     const af::const_ref<double>& frame,
+                                     const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(s1.size() == frame.size());
         DIALS_ASSERT(s1.size() == panel.size());
         af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
@@ -376,10 +376,10 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param phi The array of rotation angles.
        * @param panel The panel number
        */
-      af::shared<int6> operator()(const af::const_ref<std::size_t> &id,
-                                  const af::const_ref<vec3<double> > &s1,
-                                  const af::const_ref<double> &phi,
-                                  const af::const_ref<std::size_t> &panel) const {
+      af::shared<int6> operator()(const af::const_ref<std::size_t>& id,
+                                  const af::const_ref<vec3<double> >& s1,
+                                  const af::const_ref<double>& phi,
+                                  const af::const_ref<std::size_t>& panel) const {
         DIALS_ASSERT(s1.size() == id.size());
         DIALS_ASSERT(s1.size() == phi.size());
         DIALS_ASSERT(s1.size() == panel.size());

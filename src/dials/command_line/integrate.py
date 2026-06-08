@@ -754,7 +754,7 @@ def run(args=None, phil=working_phil):
         )
         reflections.as_file(params.output.reflections)
         logger.info("Saving the experiments to %s", params.output.experiments)
-        experiments.as_file(params.output.experiments)
+        experiments.as_file(params.output.experiments, history_as_integrated=True)
 
         if report:
             report.as_file(params.output.report)

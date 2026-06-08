@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import math
-from pathlib import Path
 
 import pytest
 
 from scitbx import matrix
 
 
-def test(dials_regression: Path, tmp_path):
+def test(dials_data, tmp_path):
     import dxtbx
     from iotbx.xds import integrate_hkl, xparm
     from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
@@ -16,8 +15,8 @@ def test(dials_regression: Path, tmp_path):
     from dials.algorithms.spot_prediction import RotationAngles
 
     # The XDS files to read from
-    integrate_filename = dials_regression / "data" / "sim_mx" / "INTEGRATE.HKL"
-    gxparm_filename = dials_regression / "data" / "sim_mx" / "GXPARM.XDS"
+    integrate_filename = dials_data("misc_regression") / "sim_mx-INTEGRATE.HKL"
+    gxparm_filename = dials_data("misc_regression") / "sim_mx-GXPARM.XDS"
 
     # Read the XDS files
     integrate_handle = integrate_hkl.reader()

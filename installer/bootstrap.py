@@ -49,7 +49,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2024"
+_prebuilt_cctbx_base = "2026"
 
 
 def make_executable(filepath):
@@ -845,7 +845,7 @@ def update_sources(options):
                 ("cctbx/cctbx_project", "master"),
                 ("cctbx/dxtbx", "main"),
                 ("dials/annlib", "master"),
-                ("dials/cbflib", "main"),
+                ("dials/cbflib", "CBFlib-0.9.8"),
                 ("dials/ccp4io", "master"),
                 ("dials/ccp4io_adaptbx", "master"),
                 ("dials/dials", "main"),
@@ -1097,8 +1097,8 @@ conda activate {dist_root}/conda_base
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(dials)
 
-if (CMAKE_UNITY_BUILD AND MSVC)
-    # Windows can fail in this scenario because too many objects
+if (MSVC)
+    # Windows can fail because of too many objects
     add_compile_options(/bigobj)
 endif()
 
@@ -1160,7 +1160,6 @@ def configure_build(config_flags):
         "xfel",
         "dials",
         "xia2",
-        "prime",
         "--skip_phenix_dispatchers",
         "--use_environment",
     ] + config_flags
@@ -1191,7 +1190,7 @@ def make_build_cmake():
         parallel = []
         if "CMAKE_GENERATOR" not in os.environ:
             if hasattr(os, "sched_getaffinity"):
-                cpu = os.sched_getaffinity(0)
+                cpu = len(os.sched_getaffinity(0))
             else:
                 cpu = multiprocessing.cpu_count()
             if isinstance(cpu, int):
@@ -1271,8 +1270,8 @@ be passed separately with quotes to avoid confusion (e.g
     parser.add_argument(
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
-        default="3.12",
-        choices=("3.10", "3.11", "3.12"),
+        default="3.13",
+        choices=("3.11", "3.12", "3.13"),
     )
     parser.add_argument(
         "--branch",

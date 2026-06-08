@@ -38,7 +38,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @returns The code describing the location of the point relative to the box.
    */
   template <typename PointType, typename BoxType>
-  int cohen_sutherland_outcode(const PointType &p, const BoxType &b) {
+  int cohen_sutherland_outcode(const PointType& p, const BoxType& b) {
     int code = INSIDE;
     if (p[0] < b[0][0])
       code |= LEFT;
@@ -62,8 +62,8 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @returns The return code.
    */
   template <typename PointType, typename BoxType>
-  int cohen_sutherland_intersection(PointType &p,
-                                    const BoxType &aabb,
+  int cohen_sutherland_intersection(PointType& p,
+                                    const BoxType& aabb,
                                     int code,
                                     double m,
                                     double c) {
@@ -159,8 +159,8 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @returns The intersecting line
    */
   template <typename LineType, typename BoxType>
-  std::pair<LineType, bool> cohen_sutherland_single(const LineType &line,
-                                                    const BoxType &aabb) {
+  std::pair<LineType, bool> cohen_sutherland_single(const LineType& line,
+                                                    const BoxType& aabb) {
     typedef typename LineType::value_type point_type;
 
     // Get the points on the line

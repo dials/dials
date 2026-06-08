@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import logging
 import random
 import sys
@@ -11,6 +10,10 @@ import iotbx.phil
 from cctbx import crystal, sgtbx
 
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
+from dials.algorithms.symmetry import (
+    median_unit_cell,
+    prepare_datasets_for_symmetry_analysis,
+)
 from dials.algorithms.symmetry.cosym import (
     CosymAnalysis,
     change_of_basis_op_to_best_cell,
@@ -18,15 +21,10 @@ from dials.algorithms.symmetry.cosym import (
 )
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.array_family import flex
-from dials.command_line.symmetry import (
-    apply_change_of_basis_ops,
-    change_of_basis_ops_to_minimum_cell,
-    eliminate_sys_absent,
-    median_unit_cell,
-)
 from dials.util import Sorry, log, show_mail_handle_errors
-from dials.util.exclude_images import get_selection_for_valid_image_ranges
-from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.exclude_images import (
+    get_selection_for_valid_image_ranges,
+)
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -41,6 +39,7 @@ logger = logging.getLogger("dials.command_line.cosym")
 
 phil_scope = iotbx.phil.parse(
     """\
+include scope dials.util.exclude_images.phil_scope
 partiality_threshold = 0.4
   .type = float
   .help = "Use reflections with a partiality above the threshold."
@@ -72,6 +71,13 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
+exclude_inconsistent_unit_cells = True
+  .type = bool
+  .help = "Exclude datasets with unit cells that cannot be mapped to a common"
+          "minimum cell, as controlled by the absolute_angle_tolerance and"
+          "relative_length_tolerance parameters. If False, an error will be"
+          "raised instead."
+
 output {
   suffix = "_reindexed"
     .type = str
@@ -101,10 +107,6 @@ class cosym(Subject):
         if params is None:
             params = phil_scope.extract()
         self.params = params
-
-        # if all datasets have been through scaling, a decision about error models has
-        # been made, so don't apply any further sigma correction
-        apply_sigma_correction = not all(s for s in experiments.scaling_models())
 
         reference_intensities = None
         if self.params.reference:
@@ -151,77 +153,19 @@ class cosym(Subject):
                     self._experiments, self._reflections, use_datasets=identifiers
                 )
 
-        # Map experiments and reflections to minimum cell
-        cb_ops = change_of_basis_ops_to_minimum_cell(
-            self._experiments,
-            params.lattice_symmetry_max_delta,
-            params.relative_length_tolerance,
-            params.absolute_angle_tolerance,
-        )
-        exclude = [
-            expt.identifier
-            for expt, cb_op in zip(self._experiments, cb_ops)
-            if not cb_op
-        ]
-        if len(exclude):
-            exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
-            logger.info(
-                f"Excluding {len(exclude)} datasets from cosym analysis "
-                f"(couldn't determine consistent cb_op to minimum cell):\n"
-                f"dataset indices: {exclude_indices}",
+        datasets, self._experiments, self._reflections, _ = (
+            prepare_datasets_for_symmetry_analysis(
+                self._experiments,
+                self._reflections,
+                self.params,
+                outlier_rejection_after_filter=False,
+                anomalous=False,
             )
-
-            if self.params.output.excluded:
-                excluded_experiments = copy.deepcopy(self._experiments)
-                excluded_reflections = copy.deepcopy(self._reflections)
-                excluded_experiments, excluded_reflections = (
-                    select_datasets_on_identifiers(
-                        excluded_experiments, excluded_reflections, use_datasets=exclude
-                    )
-                )
-                logger.info(
-                    "Saving excluded experiments to %s",
-                    self.params.output.excluded_prefix + ".expt",
-                )
-                excluded_experiments.as_file(
-                    self.params.output.excluded_prefix + ".expt"
-                )
-                logger.info(
-                    "Saving excluded reflections to %s",
-                    self.params.output.excluded_prefix + ".refl",
-                )
-                joined = flex.reflection_table()
-                excluded_reflections = update_imageset_ids(
-                    excluded_experiments, excluded_reflections
-                )
-                for refl in excluded_reflections:
-                    joined.extend(refl)
-                joined.as_file(self.params.output.excluded_prefix + ".refl")
-
-            self._experiments, self._reflections = select_datasets_on_identifiers(
-                self._experiments, self._reflections, exclude_datasets=exclude
-            )
-            cb_ops = list(filter(None, cb_ops))
-
-        # Eliminate reflections that are systematically absent due to centring
-        # of the lattice, otherwise they would lead to non-integer miller indices
-        # when reindexing to a primitive setting
-        self._reflections = eliminate_sys_absent(self._experiments, self._reflections)
-
-        self._experiments, self._reflections = apply_change_of_basis_ops(
-            self._experiments, self._reflections, cb_ops
         )
 
-        # transform models into miller arrays
-        datasets = filtered_arrays_from_experiments_reflections(
-            self.experiments,
-            self.reflections,
-            outlier_rejection_after_filter=False,
-            partiality_threshold=params.partiality_threshold,
-        )
-        datasets = [
-            ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
-        ]
+        # if all datasets have been through scaling, a decision about error models has
+        # been made, so don't apply any further sigma correction
+        apply_sigma_correction = not all(s for s in self.experiments.scaling_models())
 
         if reference_intensities:
             # Note the minimum cell reduction routines can introduce a change of hand for the reference.

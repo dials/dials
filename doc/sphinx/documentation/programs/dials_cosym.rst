@@ -97,11 +97,7 @@ a `HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/dials
 
 The full log file can be viewed here:
 
-.. container:: toggle
-
-    .. container:: header
-
-        **Show/Hide Log**
+.. dropdown:: **Show/Hide Log**
 
     .. dials_tutorial_include:: multi_crystal/dials.cosym.log
 

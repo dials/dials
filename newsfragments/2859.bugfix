@@ -1,1 +1,0 @@
-``dials.cluster_unit_cell``: Clusters are given a ``cluster_id`` in order of decreasing size, and the output filenames match the ``cluster_id``.

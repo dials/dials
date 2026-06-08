@@ -11,7 +11,7 @@ namespace dials { namespace model {
 
   class ShoeboxReaderInternal {
   public:
-    ShoeboxReaderInternal(const std::string &filename) {}
+    ShoeboxReaderInternal(const std::string& filename) {}
 
     af::shared<Shoebox<double> > read(std::size_t z0, std::size_t z1) const {}
 
@@ -28,7 +28,7 @@ namespace dials { namespace model {
      * @param filename The file to read from
      * @param blocks The list of blocks to read
      */
-    ShoeboxReader(const std::string &filename, const af::const_ref<std::size_t> &blocks)
+    ShoeboxReader(const std::string& filename, const af::const_ref<std::size_t>& blocks)
         : filename_(filename), blocks_(blocks.begin(), blocks.end()) {
       // Check we have at least 1 block and that block array is valid
       DIALS_ASSERT(blocks.size() >= 2);

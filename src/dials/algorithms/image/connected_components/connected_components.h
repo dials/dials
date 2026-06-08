@@ -67,8 +67,8 @@ namespace dials { namespace algorithms {
      * @param image The image to use
      * @param mask The mask to use
      */
-    void add_image(const af::const_ref<int, af::c_grid<2> > &image,
-                   const af::const_ref<bool, af::c_grid<2> > &mask) {
+    void add_image(const af::const_ref<int, af::c_grid<2> >& image,
+                   const af::const_ref<bool, af::c_grid<2> >& mask) {
       // Check the input
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(image.accessor().all_eq(size_));
@@ -175,8 +175,8 @@ namespace dials { namespace algorithms {
      * @param image The image to use
      * @param mask The mask to use
      */
-    void add_image(const af::const_ref<int, af::c_grid<2> > &image,
-                   const af::const_ref<bool, af::c_grid<2> > &mask) {
+    void add_image(const af::const_ref<int, af::c_grid<2> >& image,
+                   const af::const_ref<bool, af::c_grid<2> >& mask) {
       // Check the input
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(image.accessor().all_eq(size_));
@@ -267,11 +267,11 @@ namespace dials { namespace algorithms {
      * @param values The pixel values
      * @param coords The pixel coords
      */
-    void add_pixels(const af::const_ref<int> &values,
-                    const af::const_ref<vec3<int> > &coords) {
+    void add_pixels(const af::const_ref<int>& values,
+                    const af::const_ref<vec3<int> >& coords) {
       DIALS_ASSERT(values.size() == coords.size());
       for (std::size_t i = 0; i < coords.size(); ++i) {
-        const vec3<int> &xyz = coords[i];
+        const vec3<int>& xyz = coords[i];
         DIALS_ASSERT(xyz[0] >= 0 && xyz[0] < size_[2]);
         DIALS_ASSERT(xyz[1] >= 0 && xyz[1] < size_[1]);
         DIALS_ASSERT(xyz[2] >= 0 && xyz[2] < size_[0]);
@@ -338,7 +338,7 @@ namespace dials { namespace algorithms {
     struct Vec3IntHash {
       vec3<int> size_;
       Vec3IntHash(vec3<int> size) : size_(size) {}
-      std::size_t operator()(vec3<int> const &x) const {
+      std::size_t operator()(vec3<int> const& x) const {
         boost::hash<int> hasher;
         return hasher(x[0] + x[1] * size_[2] + x[2] * size_[1] * size_[2]);
       }

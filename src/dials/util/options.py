@@ -234,7 +234,7 @@ class Importer:
                 message=str(exception),
                 traceback=traceback.format_exc(),
                 type=type,
-                exception=exception,
+                exception=exception.__class__.__name__,
             )
         )
 
@@ -269,7 +269,7 @@ class Importer:
         for arg in args:
             # Don't expand wildcards if URI-style filename
             if "*" in arg and not get_url_scheme(arg):
-                filenames = glob(arg)
+                filenames = glob(arg, recursive=True)
                 if filenames:
                     args_new.extend(filenames)
                 else:

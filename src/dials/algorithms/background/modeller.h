@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
      * Initialize from an image volume
      * @param volume The image volume
      */
-    BackgroundStatistics(const ImageVolume<> &volume)
+    BackgroundStatistics(const ImageVolume<>& volume)
         : accessor_(volume.accessor()[1], volume.accessor()[2]),
           sum_(accessor_, 0.0),
           sum_sq_(accessor_, 0.0),
@@ -39,12 +39,12 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(volume.is_consistent());
       typedef ImageVolume<>::float_type FloatType;
       af::const_ref<FloatType, af::c_grid<3> > data = volume.data().const_ref();
-      af::const_ref<int, af::c_grid<3> > mask = volume.mask().const_ref();
+      af::const_ref<uint8_t, af::c_grid<3> > mask = volume.mask().const_ref();
       for (std::size_t j = 0; j < accessor_[0]; ++j) {
         for (std::size_t i = 0; i < accessor_[1]; ++i) {
           for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
             double d = data(k, j, i);
-            int m = mask(k, j, i);
+            uint8_t m = mask(k, j, i);
             if ((m & Valid) && !(m & Foreground)) {
               sum_(j, i) += d;
               sum_sq_(j, i) += d * d;
@@ -61,7 +61,7 @@ namespace dials { namespace algorithms {
      * Add results from another object
      * @param other The other object
      */
-    BackgroundStatistics operator+=(const BackgroundStatistics &other) {
+    BackgroundStatistics operator+=(const BackgroundStatistics& other) {
       DIALS_ASSERT(accessor_.all_eq(other.accessor_));
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         sum_[i] += other.sum_[i];
@@ -197,7 +197,7 @@ namespace dials { namespace algorithms {
      * Initialize with multipanel image volume
      * @param volume The multi panel image volume
      */
-    MultiPanelBackgroundStatistics(const MultiPanelImageVolume<> &volume) {
+    MultiPanelBackgroundStatistics(const MultiPanelImageVolume<>& volume) {
       for (std::size_t i = 0; i < volume.size(); ++i) {
         statistics_.push_back(BackgroundStatistics(volume.get(i)));
       }
@@ -223,7 +223,7 @@ namespace dials { namespace algorithms {
      * @param other The other object
      */
     MultiPanelBackgroundStatistics operator+=(
-      const MultiPanelBackgroundStatistics &other) {
+      const MultiPanelBackgroundStatistics& other) {
       DIALS_ASSERT(size() == other.size());
       for (std::size_t i = 0; i < size(); ++i) {
         statistics_[i] += other.statistics_[i];

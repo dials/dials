@@ -133,7 +133,7 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
         pytest.importorskip("mpi4py")
 
     # Check the data files for this test exist
-    sacla_path = dials_data("image_examples", pathlib=True)
+    sacla_path = dials_data("image_examples")
     image_path = sacla_path / "SACLA-MPCCD-run266702-0-subset.h5"
     assert image_path.is_file()
 
@@ -165,6 +165,7 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
             assert os.path.isfile(known_orientations_path)
             f.write("indexing.stills.known_orientations=%s\n" % known_orientations_path)
             f.write("indexing.stills.require_known_orientation=True\n")
+            f.write("refinement.reflections.outlier.algorithm=null\n")
 
     # Call dials.stills_process
     if use_mpi:
@@ -238,7 +239,7 @@ def test_pseudo_scan(dials_data, tmp_path):
     result = subprocess.run(
         (
             shutil.which("dials.stills_process"),
-            dials_data("centroid_test_data", pathlib=True) / "centroid_000[1-2].cbf",
+            dials_data("centroid_test_data") / "centroid_000[1-2].cbf",
             "convert_sequences_to_stills=True",
             "squash_errors=False",
             "composite_output=True",

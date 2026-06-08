@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import copy
+import gc
 import glob
 import logging
 import os
@@ -16,6 +17,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.util import ersatz_uuid4
 from libtbx.phil import parse
 from libtbx.utils import Abort, Sorry
 
@@ -160,6 +162,11 @@ def _control_phil_str():
       .type = str
       .expert_level = 3
       .help = Filename for legacy cxi.merge integration pickle files. Example: int-%d-%s.pickle
+    psana_identifiers = False
+      .type = bool
+      .expert_level = 3
+      .help = Add psana timestamps to the experiment identifiers. This allows \
+              sorting of LCLS XFEL data for certain experiments.
   }
 
   mp {
@@ -253,6 +260,9 @@ def _dials_phil_str():
         n_attempts_per_step = 1
           .type = int
           .help = How many attempts to make at each step
+        seed = 42
+          .type = int
+          .help = Random seed for sub-sampling
       }
       known_orientations = None
         .type = path
@@ -318,7 +328,6 @@ refinement {
   }
   reflections {
     weighting_strategy.override = stills
-    outlier.algorithm = null
   }
 }
 integration {
@@ -352,10 +361,7 @@ def do_import(filename, load_models=True):
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
-            raise Abort(f"Could not load {filename}")
-
-    if len(experiments) == 0:
-        raise Abort(f"Could not load {filename}")
+            pass
 
     from dxtbx.imageset import ImageSetFactory
 
@@ -787,7 +793,17 @@ class Script:
                     copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
                 )
 
-                if rank == 0:
+                if any(os.path.splitext(p)[1].lower() == ".loc" for p in all_paths):
+                    import psana
+
+                    if getattr(psana, "xtc_version", None) == 2:
+                        root = 2  # psana2 uses ranks 0 and 1
+                    else:
+                        root = 0
+                else:
+                    root = 0
+
+                if rank == root:
                     # server process
                     num_iter = len(iterable)
                     for item_num, item in enumerate(iterable):
@@ -804,20 +820,21 @@ class Script:
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
-                    for rankreq in range(size - 1):
-                        rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                    for rankreq in range(root + 1, size):
+                        rank = comm.recv(source=rankreq)
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                else:
+                elif rank > root:
                     # client process
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
-                        comm.send(rank, dest=0)
+                        comm.send(rank, dest=root)
                         print("Rank %d waiting for response" % rank)
-                        item = comm.recv(source=0)
+                        item = comm.recv(source=root)
+                        print(f"receiving item: {rank=} {item=}")
                         if item == "endrun":
                             print("Rank %d received endrun" % rank)
                             break
@@ -1017,10 +1034,26 @@ class Processor:
             self.debug_file_handle.write(self.debug_str % (ts, state, string))
 
     def process_experiments(self, tag, experiments):
+        # Note d.sp is often rather memory constrained in large parallel
+        # jobs with many processes per compute node. In one configuration we
+        # noted the accumulation of ~10MB dead memory per run of the stills
+        # indexer. Therefore we trigger garbage collection every image.
+        gc.collect()
+
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
         self.tag = tag
         self.debug_start(tag)
+
+        for experiment in experiments:
+            if experiment.identifier == "":
+                experiment.identifier = ersatz_uuid4()
+            if self.params.output.psana_identifiers:
+                fmt = experiment.imageset.get_format_class().get_instance(
+                    experiment.imageset.paths()[0]
+                )
+                ts = fmt.get_psana_timestamp(experiment.imageset.indices()[0])
+                experiment.identifier = ts + "_" + experiment.identifier
 
         if self.params.output.experiments_filename:
             if self.params.output.composite_output:
@@ -1240,6 +1273,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         if not indexing_succeeded:
             if self.params.indexing.stills.reflection_subsampling.enable:
+                flex.set_random_seed(
+                    self.params.indexing.stills.reflection_subsampling.seed
+                )
                 subsets = range(
                     self.params.indexing.stills.reflection_subsampling.step_start,
                     self.params.indexing.stills.reflection_subsampling.step_stop
@@ -1314,6 +1350,16 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 % (len(filtered), len(indexed))
             )
             indexed = filtered
+
+        if self.params.output.psana_identifiers:
+            identifiers = indexed.experiment_identifiers()
+            for expt_id, expt in enumerate(experiments):
+                fmt = expt.imageset.get_format_class().get_instance(
+                    expt.imageset.paths()[0]
+                )
+                ts = fmt.get_psana_timestamp(expt.imageset.indices()[0])
+                expt.identifier = ts + "_" + expt.identifier
+                identifiers[expt_id] = expt.identifier
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
@@ -1900,6 +1946,9 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()
+        if self.debug_file_handle:
+            self.debug_file_handle
+            del self.debug_file_handle
 
 
 @dials.util.show_mail_handle_errors()

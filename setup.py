@@ -6,7 +6,7 @@ import setuptools
 
 from build import build
 
-__version_tag__ = "3.22.dev"
+__version_tag__ = "3.25.dev"
 
 setup_kwargs = {
     "name": "dials",
@@ -20,7 +20,7 @@ setup_kwargs = {
         "homepage": "https://dials.github.io",
         "repository": "https://github.com/dials/dials",
     },
-    "python_requires": ">=3.10",
+    "python_requires": ">=3.11",
     "packages": setuptools.find_packages(where="src"),
     "package_dir": {"": "src"},
     "package_data": {

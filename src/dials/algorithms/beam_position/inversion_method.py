@@ -12,6 +12,7 @@ class InversionMethodSolver:
     def __init__(self, image, params, axis="x"):
         background_cutoff = params.projection.inversion.background_cutoff
         threshold = params.projection.inversion.bad_pixel_threshold
+        cwidth = params.projection.inversion.convolution_width
         self.axis = axis
 
         if axis == "x":
@@ -33,7 +34,7 @@ class InversionMethodSolver:
             axis=axis,
             method="max",
             exclude_range=exclude_range,
-            convolution_width=1,
+            convolution_width=cwidth,
             normalize=False,
         )
 

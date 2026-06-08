@@ -5,7 +5,7 @@ import subprocess
 
 
 def test(dials_data, tmp_path):
-    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    experiments = dials_data("centroid_test_data") / "experiments.json"
     result = subprocess.run(
         [
             shutil.which("dials.background"),
@@ -26,7 +26,7 @@ def test(dials_data, tmp_path):
 
 
 def test_checkpoints(dials_data, tmp_path):
-    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    experiments = dials_data("centroid_test_data") / "experiments.json"
     result = subprocess.run(
         [
             shutil.which("dials.background"),
@@ -52,12 +52,8 @@ def test_checkpoints(dials_data, tmp_path):
 
 
 def test_multiple_imagesets(dials_data, tmp_path):
-    filenames = sorted(
-        dials_data("thaumatin_grid_scan", pathlib=True).glob("thau_3_2_00*.cbf.bz2")
-    )
-    filenames.extend(
-        sorted(dials_data("centroid_test_data", pathlib=True).glob("centroid_*.cbf"))
-    )
+    filenames = sorted(dials_data("thaumatin_grid_scan").glob("thau_3_2_00*.cbf.bz2"))
+    filenames.extend(sorted(dials_data("centroid_test_data").glob("centroid_*.cbf")))
 
     result = subprocess.run(
         [

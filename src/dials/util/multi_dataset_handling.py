@@ -52,6 +52,9 @@ class OrderedSet:
     def index(self, item):
         return self._dict[item]
 
+    def __contains__(self, item):
+        return item in self._dict
+
     def __iter__(self):
         return iter(self._dict)
 

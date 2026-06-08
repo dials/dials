@@ -488,7 +488,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         cls, this, other, assume_index_matching=False, use_binning=False
     ) -> list[tuple]:
         if not use_binning:
-            assert other.indices().size() == this.indices().size()
+            assert other.data().size() == this.data().size()
             if this.data().size() == 0:
                 return [(None, 0)]
 
@@ -643,8 +643,6 @@ def create_datastructures_for_reference_file(
     expt.scaling_model = KBScalingModel.from_data(params, [], [])
     expt.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
     expt.identifier = ersatz_uuid4()
-
-    table.experiment_identifiers()[len(experiments)] = expt.identifier
 
     table.experiment_identifiers()[len(experiments)] = expt.identifier
 

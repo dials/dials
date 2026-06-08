@@ -147,6 +147,10 @@ output {
   mask_params = mask.phil
     .type = path
     .help = "Name of output mask parameter file"
+
+  ellipse_params = ellipse.phil
+    .type = path
+    .help = "Name of output ellipse parameter file"
 }
 
 predict_reflections = False

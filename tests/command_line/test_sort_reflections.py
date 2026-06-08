@@ -10,7 +10,7 @@ def test_sort_intensities(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.sort_reflections"),
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "integrated.pickle",
             "key=intensity.sum.value",
             "output=sorted1.refl",
         ],
@@ -28,7 +28,7 @@ def test_reverse_sort_intensities(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.sort_reflections"),
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "integrated.pickle",
             "output=sorted2.refl",
             "key=intensity.sum.value",
             "reverse=True",
@@ -47,7 +47,7 @@ def test_default_sort_on_miller_index(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.sort_reflections"),
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "integrated.pickle",
             "output=sorted3.refl",
         ],
         cwd=tmp_path,
@@ -59,7 +59,7 @@ def test_default_sort_on_miller_index(dials_data, tmp_path):
     data = flex.reflection_table.from_file(tmp_path / "sorted3.refl")
     mi1 = data["miller_index"]
     orig = flex.reflection_table.from_file(
-        dials_data("centroid_test_data", pathlib=True) / "integrated.pickle"
+        dials_data("centroid_test_data") / "integrated.pickle"
     )
     mi2 = flex.miller_index(sorted(orig["miller_index"]))
     assert mi1.all_eq(mi2)
@@ -69,7 +69,7 @@ def test_default_sort_on_miller_index_verbose(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.sort_reflections"),
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "integrated.pickle",
             "output=sorted4.refl",
             "-v",
         ],

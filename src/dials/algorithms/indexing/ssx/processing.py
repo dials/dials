@@ -5,13 +5,14 @@ import logging
 import math
 import os
 import pathlib
-import sys
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from typing import Any
 
 import numpy as np
 
+from dxtbx.format.FormatMultiImage import FormatMultiImage
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from libtbx import Auto, phil
 
@@ -36,6 +37,7 @@ class InputToIndex:
     method_list: list[str] = field(default_factory=list)
     known_crystal_models: list[Crystal] | None = None
     imageset_no: int = 0
+    imageset_index: int = 0
 
 
 @dataclass
@@ -51,7 +53,9 @@ class IndexingResult:
     rmsd_y: list[float] = field(default_factory=list)
     rmsd_dpsi: list[float] = field(default_factory=list)
     imageset_no: int = 0
+    imageset_index: int = 0
     unindexed_experiment: Experiment = None
+    unindexed_reflections: flex.reflection_table = None
 
 
 loggers_to_disable = [
@@ -143,82 +147,96 @@ def index_one(
                 f"Image {image_no + 1}: Failed to index with {method} method, error: {e}"
             )
             if method == method_list[-1]:
-                return None, None
+                return None, None, reflection_table
         else:
             logger.info(
                 f"Image {image_no + 1}: Indexed {idxr.refined_reflections.size()}/{reflection_table.size()} spots with {method} method."
             )
-            return idxr.refined_experiments, idxr.refined_reflections
+            return (
+                idxr.refined_experiments,
+                idxr.refined_reflections,
+                idxr.unindexed_reflections,
+            )
 
 
 def wrap_index_one(input_to_index: InputToIndex) -> IndexingResult:
-    # First unpack the input and run the function
-    expts, table = index_one(
-        input_to_index.experiment,
-        input_to_index.reflection_table,
-        input_to_index.parameters,
-        input_to_index.method_list,
-        input_to_index.image_no,
-        input_to_index.known_crystal_models,
-    )
-
-    # Now calculate some useful quantities for the result
-    n_strong = input_to_index.reflection_table.get_flags(
-        input_to_index.reflection_table.flags.strong
-    ).count(True)
-    if expts and table:
-        result = IndexingResult(
-            input_to_index.image_identifier,
+    # block printing from rstbx
+    with (
+        open(os.devnull, "w") as devnull,
+        redirect_stdout(devnull),
+        redirect_stderr(devnull),
+    ):
+        # First unpack the input and run the function
+        expts, table, unindexed = index_one(
+            input_to_index.experiment,
+            input_to_index.reflection_table,
+            input_to_index.parameters,
+            input_to_index.method_list,
             input_to_index.image_no,
-            table,
-            expts,
-            n_strong=n_strong,
-            imageset_no=input_to_index.imageset_no,
-            unindexed_experiment=input_to_index.experiment,
-        )
-        for id_, identifier in table.experiment_identifiers():
-            selr = table.select(table["id"] == id_)
-            calx, caly, _ = selr["xyzcal.px"].parts()
-            obsx, obsy, _ = selr["xyzobs.px.value"].parts()
-            if "delpsical.rad" in selr:
-                delpsi = selr["delpsical.rad"]
-                rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
-            else:
-                rmsd_z = 0.0
-            rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
-            rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
-            n_id_ = calx.size()
-            result.n_indexed.append(n_id_)
-            result.rmsd_x.append(rmsd_x)
-            result.rmsd_y.append(rmsd_y)
-            result.rmsd_dpsi.append(rmsd_z)
-            result.identifiers.append(identifier)
-    else:
-        result = IndexingResult(
-            input_to_index.image_identifier,
-            input_to_index.image_no,
-            n_strong=n_strong,
-            imageset_no=input_to_index.imageset_no,
-            unindexed_experiment=input_to_index.experiment,
+            input_to_index.known_crystal_models,
         )
 
-    # If chosen, output a message to json to show live progress
-    if input_to_index.parameters.output.nuggets:
-        msg = {
-            "image_no": input_to_index.image_no + 1,
-            "n_indexed": (len(table) if table else 0),
-            "n_strong": n_strong,
-            "n_cryst": (len(expts) if expts else 0),
-            "image": input_to_index.image_identifier,
-        }
-        with open(
-            input_to_index.parameters.output.nuggets
-            / f"nugget_index_{msg['image']}.json",
-            "w",
-        ) as f:
-            f.write(json.dumps(msg))
+        # Now calculate some useful quantities for the result
+        n_strong = input_to_index.reflection_table.get_flags(
+            input_to_index.reflection_table.flags.strong
+        ).count(True)
+        if expts and table:
+            result = IndexingResult(
+                input_to_index.image_identifier,
+                input_to_index.image_no,
+                table,
+                expts,
+                n_strong=n_strong,
+                imageset_no=input_to_index.imageset_no,
+                unindexed_experiment=input_to_index.experiment,
+                imageset_index=input_to_index.imageset_index,
+                unindexed_reflections=unindexed,
+            )
+            for id_, identifier in table.experiment_identifiers():
+                selr = table.select(table["id"] == id_)
+                calx, caly, _ = selr["xyzcal.px"].parts()
+                obsx, obsy, _ = selr["xyzobs.px.value"].parts()
+                if "delpsical.rad" in selr:
+                    delpsi = selr["delpsical.rad"]
+                    rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
+                else:
+                    rmsd_z = 0.0
+                rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
+                rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
+                n_id_ = calx.size()
+                result.n_indexed.append(n_id_)
+                result.rmsd_x.append(rmsd_x)
+                result.rmsd_y.append(rmsd_y)
+                result.rmsd_dpsi.append(rmsd_z)
+                result.identifiers.append(identifier)
+        else:
+            result = IndexingResult(
+                input_to_index.image_identifier,
+                input_to_index.image_no,
+                n_strong=n_strong,
+                imageset_no=input_to_index.imageset_no,
+                unindexed_experiment=input_to_index.experiment,
+                imageset_index=input_to_index.imageset_index,
+                unindexed_reflections=unindexed,
+            )
 
-    return result
+        # If chosen, output a message to json to show live progress
+        if input_to_index.parameters.output.nuggets:
+            msg = {
+                "image_no": input_to_index.image_no + 1,
+                "n_indexed": (len(table) if table else 0),
+                "n_strong": n_strong,
+                "n_cryst": (len(expts) if expts else 0),
+                "image": input_to_index.image_identifier,
+            }
+            with open(
+                input_to_index.parameters.output.nuggets
+                / f"nugget_index_{msg['image']}.json",
+                "w",
+            ) as f:
+                f.write(json.dumps(msg))
+
+        return input_to_index.image_no, result
 
 
 def index_all_concurrent(
@@ -236,10 +254,13 @@ def index_all_concurrent(
     n = 0
     original_isets = list(experiments.imagesets())
     identifiers_to_scans = {expt.identifier: expt.scan for expt in experiments}
+    filtered_out_refls = {}
     for n_iset, iset in enumerate(experiments.imagesets()):
         for i in range(len(iset)):
             refl_index = i + n
-            if reflections[refl_index]:
+            if reflections[refl_index] and (
+                reflections[refl_index].size() >= params.min_spots
+            ):
                 expt = experiments[refl_index]
                 input_iterable.append(
                     InputToIndex(
@@ -252,44 +273,141 @@ def index_all_concurrent(
                         image_no=refl_index,
                         method_list=method_list,
                         imageset_no=n_iset,
+                        imageset_index=i,
                     )
                 )
-            else:  # experiments that have already been filtered
+            else:  # filtered out
+                image = pathlib.Path(iset.get_image_identifier(i)).name
+                filtered_out_refls[refl_index] = reflections[refl_index]
+                if issubclass(iset.get_format_class(), FormatMultiImage):
+                    index = iset.indices()[i] + 1
+                    image += f"-{index}"
                 results_summary[refl_index].append(
                     {
-                        "Image": pathlib.Path(iset.get_image_identifier(i)).name,
+                        "Image": image,
                         "n_indexed": 0,
                         "n_strong": 0,
                     }
                 )
         n += len(iset)
 
-    with open(os.devnull, "w") as devnull:
-        sys.stdout = devnull  # block printing from rstbx
-        with manage_loggers(
-            params.individual_log_verbosity,
-            loggers_to_disable,
-            debug_loggers_to_disable,
-        ):
-            if params.indexing.nproc > 1:
-                with Pool(params.indexing.nproc) as pool:
-                    results: list[IndexingResult] = pool.map(
-                        wrap_index_one, input_iterable
-                    )
-            else:
-                results: list[IndexingResult] = [
-                    wrap_index_one(i) for i in input_iterable
-                ]
+    with manage_loggers(
+        params.individual_log_verbosity,
+        loggers_to_disable,
+        debug_loggers_to_disable,
+    ):
+        if params.indexing.nproc > 1:
+            with Pool(params.indexing.nproc) as pool:
+                result_map = {}
+                for key, value in pool.imap_unordered(wrap_index_one, input_iterable):
+                    result_map[key] = value
+        else:
+            result_map = dict(wrap_index_one(i) for i in input_iterable)
 
-    sys.stdout = sys.__stdout__
     # prepare tables for output
-    indexed_experiments, indexed_reflections = _join_indexing_results(
-        results, experiments, original_isets, identifiers_to_scans
+    if params.retain_unindexed_experiments:
+        output_experiments, output_reflections = (
+            _combine_indexing_results_with_filtered_out_input(
+                result_map,
+                experiments,
+                original_isets,
+                identifiers_to_scans,
+                filtered_out_refls,
+            )
+        )
+    else:
+        output_experiments, output_reflections = _join_indexing_results(
+            result_map,
+            experiments,
+            original_isets,
+            identifiers_to_scans,
+        )
+
+    results_summary = _add_results_to_summary_dict(
+        results_summary, list(result_map.values())
     )
 
-    results_summary = _add_results_to_summary_dict(results_summary, results)
+    return output_experiments, output_reflections, results_summary
 
-    return indexed_experiments, indexed_reflections, results_summary
+
+def _combine_indexing_results_with_filtered_out_input(
+    results: list[IndexingResult],
+    experiments,
+    original_isets,
+    identifiers_to_scans,
+    filtered_out_refls,
+) -> tuple[ExperimentList, flex.reflection_table]:
+    use_gonio = None
+    if len(experiments.goniometers()):  # need a placeholder gonio
+        use_gonio = experiments.goniometers()[0]
+    n_tot = 0
+    # need to insert indexed crystals into existing structure
+    output_experiments = ExperimentList()
+    output_reflections = flex.reflection_table()
+    for i in sorted(list(results.keys()) + list(filtered_out_refls.keys())):
+        if i in results:
+            res = results[i]
+            identifier = res.unindexed_experiment.identifier
+            scan = identifiers_to_scans[identifier]
+            if use_gonio:
+                res.unindexed_experiment.scan = scan
+                res.unindexed_experiment.goniometer = use_gonio
+            output_experiments.append(res.unindexed_experiment)
+            if res.n_indexed:
+                for expt in res.experiments:
+                    expt.scan = scan
+                    expt.beam = res.unindexed_experiment.beam
+                    expt.imageset = original_isets[res.imageset_no]
+                    res.reflection_table["imageset_id"] = flex.int(
+                        res.reflection_table.size(), res.imageset_no
+                    )
+                    if use_gonio:
+                        expt.goniometer = use_gonio
+                output_experiments.extend(res.experiments)
+                output = res.unindexed_reflections
+                for k in output.experiment_identifiers().keys():
+                    del output.experiment_identifiers()[k]
+                output["id"] = flex.int(output.size(), n_tot)
+                output.experiment_identifiers()[n_tot] = (
+                    res.unindexed_experiment.identifier
+                )
+                n_tot += 1
+                table = res.reflection_table
+                ids_map = dict(table.experiment_identifiers())
+                for k in table.experiment_identifiers().keys():
+                    del table.experiment_identifiers()[k]
+                table["id"] += n_tot
+                for k, v in ids_map.items():
+                    table.experiment_identifiers()[k + n_tot] = v
+                n_tot += len(ids_map.keys())
+                output.extend(table)
+                output_reflections.extend(output)
+            else:
+                output = res.unindexed_reflections
+                for k in output.experiment_identifiers().keys():
+                    del output.experiment_identifiers()[k]
+                output["id"] = flex.int(output.size(), n_tot)
+                output.experiment_identifiers()[n_tot] = (
+                    res.unindexed_experiment.identifier
+                )
+                n_tot += 1
+                output_reflections.extend(output)
+        else:
+            # Either filtered out or empty.
+            assert i in filtered_out_refls
+            refls = filtered_out_refls[i]
+            identifier = refls.experiment_identifiers()[0]
+            j = list(experiments.identifiers() == identifier).index(True)
+            expt = experiments[j]
+            del refls.experiment_identifiers()[0]
+            refls.experiment_identifiers()[n_tot] = identifier
+            if refls.size():
+                refls["id"] = flex.int(refls.size(), n_tot)
+            n_tot += 1
+            output_experiments.append(expt)
+            output_reflections.extend(refls)
+    output_reflections.assert_experiment_identifiers_are_consistent(output_experiments)
+    return output_experiments, output_reflections
 
 
 def _join_indexing_results(
@@ -298,18 +416,15 @@ def _join_indexing_results(
     original_isets,
     identifiers_to_scans,
 ) -> tuple[ExperimentList, flex.reflection_table]:
+    use_gonio = None
+    if len(experiments.goniometers()):  # need a placeholder gonio
+        use_gonio = experiments.goniometers()[0]
+    n_tot = 0
+
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
 
-    use_beam = None
-    use_gonio = None
-    if len(experiments.beams()) == 1:
-        use_beam = experiments.beams()[0]
-    if len(experiments.goniometers()):  # need a placeholder gonio
-        use_gonio = experiments.goniometers()[0]
-
-    n_tot = 0
-    for res in results:
+    for res in results.values():
         if res.n_indexed:
             identifier = res.unindexed_experiment.identifier
             scan = identifiers_to_scans[identifier]
@@ -319,8 +434,6 @@ def _join_indexing_results(
                 res.reflection_table["imageset_id"] = flex.int(
                     res.reflection_table.size(), res.imageset_no
                 )
-                if use_beam:
-                    expt.beam = use_beam
                 if use_gonio:
                     expt.goniometer = use_gonio
 
@@ -347,10 +460,23 @@ def _add_results_to_summary_dict(
     # convert to results_summary dict current format
     for res in results:
         if res.n_indexed:
+            # for things like nexus files, we want image to be expressed like
+            # experiment_001.nxs-50, experiment_001.nxs-62, etc.
+            # for things like cbfs, we want image to be expressed like
+            # experiment_0050.cbf, experiment_0062.cbf, etc.
+            # these will be displayed in the summary table.
+            image = pathlib.Path(
+                res.experiments[0].imageset.paths()[res.imageset_index]
+            ).name
+            if issubclass(
+                res.experiments[0].imageset.get_format_class(), FormatMultiImage
+            ):
+                index = res.experiments[0].imageset.indices()[res.imageset_index] + 1
+                image += f"-{index}"
             for j in range(len(res.n_indexed)):
                 results_summary[res.image_no].append(
                     {
-                        "Image": res.image,
+                        "Image": image,
                         "identifier": res.identifiers[j],
                         "n_indexed": res.n_indexed[j],
                         "n_strong": res.n_strong,
@@ -360,6 +486,8 @@ def _add_results_to_summary_dict(
                     }
                 )
         else:
+            # Note we can't currently get the true image string here, but this is
+            # not used.
             results_summary[res.image_no].append(
                 {
                     "Image": res.image,
@@ -407,11 +535,23 @@ def preprocess(
                 refl.centroid_px_to_mm(elist)
                 refl.map_centroids_to_reciprocal_space(elist)
             else:
+                # For filtered out or no refls, make a placeholder refl table
+                # with an id of zero and identifiers mapped.
+                # This is so they can be passed through if retain=True
                 n_filtered_out += 1
-                reflections[i] = None
+                refl["imageset_id"] = flex.int(refl.size(), 0)
+                for k in refl.experiment_identifiers().keys():
+                    del refl.experiment_identifiers()[k]
+                refl.experiment_identifiers()[0] = experiment.identifier
+                refl["id"] = flex.int(refl.size(), 0)
+                reflections[i] = refl
                 filtered_out_images.append(i + 1)
         else:
             filtered_out_images.append(i + 1)
+            r = flex.reflection_table()
+            r.experiment_identifiers()[0] = experiment.identifier
+            reflections[i] = r
+
     if n_filtered_out:
         logger.info(
             f"Filtered {n_filtered_out} images with fewer than {params.min_spots} spots"
@@ -437,7 +577,7 @@ def preprocess(
             )
         max_cells = []
         for refl in reflections:
-            if refl:
+            if refl.size() >= params.min_spots:
                 try:
                     max_cells.append(find_max_cell(refl).max_cell)
                 except (DialsIndexError, AssertionError):

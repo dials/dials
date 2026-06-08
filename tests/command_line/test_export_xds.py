@@ -8,7 +8,7 @@ from dials.array_family import flex
 
 def test_spots_xds(tmp_path):
     xds_input = "SPOT.XDS"
-    output_pickle = "spot.refl"
+    output_filepath = "spot.refl"
 
     tmp_path.joinpath(xds_input).write_text(
         """\
@@ -29,17 +29,16 @@ def test_spots_xds(tmp_path):
         [
             shutil.which("dials.import_xds"),
             xds_input,  # xparm_file,
-            "input.method=reflections",
-            "output.filename=" + output_pickle,
+            "output.reflections=" + output_filepath,
             "remove_invalid=True",
         ],
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmp_path.joinpath(output_pickle).is_file()
+    assert tmp_path.joinpath(output_filepath).is_file()
 
-    reflections = flex.reflection_table.from_file(tmp_path / output_pickle)
+    reflections = flex.reflection_table.from_file(tmp_path / output_filepath)
     assert len(reflections) == 5
 
     tmp_path.joinpath(xds_input).unlink()
@@ -47,7 +46,7 @@ def test_spots_xds(tmp_path):
 
     # now test we can export it again
     result = subprocess.run(
-        [shutil.which("dials.export"), "format=xds", output_pickle],
+        [shutil.which("dials.export"), "format=xds", output_filepath],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -68,7 +67,7 @@ def test_spots_xds(tmp_path):
 
 
 def test_export_xds(dials_data, tmp_path):
-    experiment = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    experiment = dials_data("centroid_test_data") / "experiments.json"
     result = subprocess.run(
         [shutil.which("dials.find_spots"), "nproc=1", experiment],
         cwd=tmp_path,
@@ -115,8 +114,7 @@ def test_export_imported_experiments(dials_data, tmp_path):
         [
             shutil.which("dials.export"),
             "format=xds",
-            dials_data("centroid_test_data", pathlib=True)
-            / "imported_experiments.json",
+            dials_data("centroid_test_data") / "imported_experiments.json",
         ],
         cwd=tmp_path,
         capture_output=True,

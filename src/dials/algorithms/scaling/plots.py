@@ -557,7 +557,7 @@ x-axis.""",
     azimuth_ = np.linspace(0, 2 * np.pi, 2 * STEPS)
     polar_ = np.linspace(0, np.pi, STEPS)
     THETA, _ = np.meshgrid(azimuth_, polar_, indexing="ij")
-    Intensity = np.full(THETA.shape, np.NAN)
+    Intensity = np.full(THETA.shape, np.nan)
 
     # note, the s1_lookup, s0_lookup is only calculated for large datasets, so
     # for small datasets we need to calculate again.
@@ -590,7 +590,7 @@ x-axis.""",
         }
     )
 
-    Intensity = np.full(THETA.shape, np.NAN)
+    Intensity = np.full(THETA.shape, np.nan)
 
     if "s0_lookup" not in physical_model.components["absorption"].data:
         s0_lookup = calc_lookup_index(
@@ -820,7 +820,7 @@ def normal_probability_plot(data, label=None):
     H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
-    z[:] = np.NAN
+    z[:] = np.nan
     z[nonzeros] = H[nonzeros]
 
     # also make a histogram

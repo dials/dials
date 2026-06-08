@@ -206,9 +206,7 @@ def test_fast_mcd_large(dials_data):
     flex.set_random_seed(42)
 
     # test large dataset algorithm
-    data_pth = (
-        dials_data("refinement_test_data", pathlib=True) / "residuals-with-outliers.dat"
-    )
+    data_pth = dials_data("refinement_test_data") / "residuals-with-outliers.dat"
 
     with open(data_pth) as f:
         residuals = f.readlines()

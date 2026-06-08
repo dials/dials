@@ -287,7 +287,7 @@ grouping:
 
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
     handler = get_grouping_handler(parsed, "group_by")
-    dtbp = dials_data("dtpb_serial_processed", pathlib=True)
+    dtbp = dials_data("dtpb_serial_processed")
 
     fps = [
         FilePair(
@@ -403,7 +403,7 @@ def test_real_cbf_example(tmp_path, dials_data):
     Finally, the single value definition is tested.
     """
 
-    ssx = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial")
     fpath = str(os.fspath(ssx / "merlin0047_#####.cbf"))
     real_example = f"""
 ---

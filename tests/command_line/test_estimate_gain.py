@@ -5,9 +5,7 @@ import subprocess
 
 
 def test(dials_data, tmp_path):
-    input_filename = (
-        dials_data("centroid_test_data", pathlib=True) / "imported_experiments.json"
-    )
+    input_filename = dials_data("centroid_test_data") / "imported_experiments.json"
 
     result = subprocess.run(
         [shutil.which("dials.estimate_gain"), f"input.experiments={input_filename}"],

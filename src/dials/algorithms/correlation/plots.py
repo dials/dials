@@ -47,7 +47,7 @@ def linkage_matrix_to_dict(linkage_matrix: np.ndarray) -> OrderedDict:
     return link_dict
 
 
-def plot_dims(dims: list, funcs: list) -> dict:
+def plot_dims(dims: list, funcs: list, chosen_dim: int) -> dict:
     """
     Prepares a plotly-style plot of the dimension optimisation procedure.
     Args:
@@ -63,13 +63,41 @@ def plot_dims(dims: list, funcs: list) -> dict:
                     "x": dims,
                     "y": funcs,
                     "type": "line",
-                    "name": "Dimension Functionals",
-                }
+                    "name": "Residual of rij",
+                },
+                {
+                    "x": [None],
+                    "y": [None],
+                    "mode": "lines",
+                    "line": {"color": "black", "dash": "dash"},
+                    "name": f"Chosen dimension = {chosen_dim}",
+                    "hoverinfo": "skip",
+                },
             ],
             "layout": {
                 "title": "Residual for each tested dimension",
                 "xaxis": {"title": "Dimension"},
                 "yaxis": {"title": "Functional"},
+                "legend": {
+                    "x": 0.98,
+                    "y": 0.98,
+                    "xref": "paper",
+                    "yref": "paper",
+                    "xanchor": "right",
+                    "yanchor": "top",
+                },
+                "shapes": [
+                    {
+                        "type": "line",
+                        "x0": chosen_dim,
+                        "x1": chosen_dim,
+                        "y0": 0,
+                        "y1": 1,
+                        "xref": "x",
+                        "yref": "paper",
+                        "line": {"color": "black", "dash": "dash"},
+                    }
+                ],
             },
             "help": """\
 A line graph showing the residual remaining in the minimisation for
@@ -82,13 +110,16 @@ analysis (Zhang et al 2006).
     return d
 
 
-def plot_reachability(nums: np.ndarray, reach: np.ndarray, labels: np.ndarray) -> dict:
+def plot_reachability(
+    nums: np.ndarray, reach: np.ndarray, labels: np.ndarray, all_data: np.ndarray
+) -> dict:
     """
     Prepares a plotly-style figure of the reachability plot calculated by OPTICS.
     Args:
         nums (np.ndarray): array of datasets in OPTICS cluster order - NOT the same as dataset IDS
         reach (np.ndarray): reachability value between neighbouring datasets
         labels (np.ndarray): labels for which cluster each point belongs to in OPTICS cluster order
+        all_data (np.ndarray): all dataset labels
     Returns:
         d (dict): plotly-style dictionary of reachability plot
     """
@@ -119,6 +150,8 @@ def plot_reachability(nums: np.ndarray, reach: np.ndarray, labels: np.ndarray) -
                     "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
                 },
                 "name": "Cluster %i" % k if k >= 0 else "Noise",
+                "text": all_data[isel].tolist(),
+                "hovertemplate": "Dataset %{text}",
             }
         )
 
@@ -129,6 +162,7 @@ def plot_reachability(nums: np.ndarray, reach: np.ndarray, labels: np.ndarray) -
                 "title": "OPTICS Reachability",
                 "xaxis": {"title": "Cluster-order of Datasets"},
                 "yaxis": {"title": "Reachability Distance Between Datasets"},
+                "hovermode": "closest",
             },
             "help": """\
 Reachability plot from OPTICS analysis (M. Ankerst et al, 1999, ACM SIGMOD). As this is a density-
@@ -307,7 +341,9 @@ def to_plotly_json(
     return d
 
 
-def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
+def plot_pca_coords(
+    pca_coords, axes_labels, cluster_labels, dimensions, cluster_list, noise_labels
+):
     clusters = []
     unique_labels = sorted(dict.fromkeys(cluster_labels))
     n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
@@ -349,6 +385,11 @@ def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
                 "axis": {"matches": True},
             }
             dim_data.append(dim_dict)
+            for cluster in cluster_list:
+                if cluster.cluster_id == i:
+                    labels = cluster.labels
+            if i == -1:
+                labels = noise_labels
         ddict = {
             "name": "Cluster %i" % i if i >= 0 else "Noise",
             "type": "splom",
@@ -358,6 +399,8 @@ def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
                 "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
                 "size": 3,
             },
+            "text": labels,
+            "hovertemplate": "Dataset %{text}",
         }
         clusters.append(ddict)
 
@@ -368,6 +411,7 @@ def plot_pca_coords(pca_coords, axes_labels, cluster_labels, dimensions):
 
         layout[xtitle] = {"range": data_range}
         layout[ytitle] = {"range": data_range}
+        layout["hovermode"] = "closest"
 
     d = {
         "data": clusters,
