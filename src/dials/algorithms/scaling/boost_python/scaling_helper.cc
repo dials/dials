@@ -105,6 +105,18 @@ namespace dials_scaling { namespace boost_python {
          arg("weighted")));
   }
 
+  void export_mean_sample_variance_unweighted() {
+    def("mean_sample_variance_unweighted",
+        &mean_sample_variance_unweighted,
+        (arg("unmerged_indices"), arg("unmerged_data")));
+  }
+
+  void export_average_intensity_variance_unweighted() {
+    def("average_intensity_variance_unweighted",
+        &average_intensity_variance_unweighted,
+        (arg("unmerged_indices"), arg("unmerged_data")));
+  }
+
   void export_gaussian_smoother_first_fixed() {
     class_<GaussianSmootherFirstFixed>("GaussianSmootherFirstFixed", no_init)
       .def(init<vec2<double>, std::size_t>((arg("x_range"), arg("num_intervals"))))

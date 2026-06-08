@@ -34,6 +34,48 @@ output.log=dials.merging_statistics.log
 
 logger = logging.getLogger("dials")
 
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
+
+def generate_html_report(json_data, filename):
+    multi_data = None
+    styles = {}
+    if "multi_data" in json_data:
+        multi_data = json_data.pop("multi_data")
+    for wl, v in json_data.items():
+        str_wl = wl.replace(".", "_")
+        for plot_cat in [
+            "resolution_plots",
+            "misc_plots",
+            "unit_cell_plots",
+            "orientation_graphs",
+        ]:
+            if plot_cat in v:
+                for name in list(v[plot_cat].keys()):
+                    v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
+                    if plot_cat == "orientation_graphs":
+                        styles[name + "_" + str_wl] = "square-plot"
+            else:
+                v[plot_cat] = {}
+
+    loader = ChoiceLoader(
+        [
+            PackageLoader("dials", "templates"),
+            PackageLoader("dials", "static", encoding="utf-8"),
+        ]
+    )
+    env = Environment(loader=loader)
+    template = env.get_template("merging_statistics_report.html")
+    html = template.render(
+        page_title="dials merging statistics report",
+        individual_reports=json_data,
+        multi_data=multi_data,
+        styles=styles,
+    )
+    logger.info("Writing html report to %s", filename)
+    with open(filename, "wb") as f:
+        f.write(html.encode("utf-8", "xmlcharrefreplace"))
+
 
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
@@ -101,11 +143,12 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     except (ValueError, KeyError) as e:
         sys.exit(f"Error: {e}")
     else:
-        stats, anom_stats = merging_stats_from_scaled_array(iobs, additional_stats=True, n_bins=8)
+        stats, anom_stats = merging_stats_from_scaled_array(
+            iobs, additional_stats=True, n_bins=8
+        )
         from dials.report.plots import ResolutionPlotsAndStats
 
         logger.info(table_1_summary(stats, anom_stats))
-        from dials.algorithms.merging.reporting import generate_html_report
 
         is_centric = iobs.space_group().is_centric()
         plotter = ResolutionPlotsAndStats(stats, anom_stats, is_centric)

@@ -40,7 +40,9 @@ from dials.util.options import ArgumentParser
 from dials.util.reference import intensities_from_reference_file
 from dials_scaling_ext import (
     average_intensity_variance,
+    average_intensity_variance_unweighted,
     mean_sample_variance,
+    mean_sample_variance_unweighted,
     split_into_hemispheres,
     split_unmerged,
 )
@@ -412,6 +414,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
         self.weighted_cchalf_anom_sigma_tau = None
         self.weighted_cchalf_sigma_tau = None
+        self.cchalf_sigma_tau = None
 
         # FIXME implemented weighted sigma-tau
 
@@ -431,25 +434,51 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         i_obs_copy3 = i_obs_copy3.map_to_asu()
         i_obs_copy3 = i_obs_copy3.sort("packed_indices")
         i_obs_copy3.setup_binner(n_bins=n_bins)
-        sigma_tau_binned = self.calculate_weighted_cchalf_sigma_tau(
+        ## CC1/2 sigam-tau
+        sigma_tau_binned = self.calculate_cchalf_sigma_tau(
             i_obs_copy3, use_binning=True
         )
+        sigma_tau_values = []
         # do weighted sum
         n_tot = 0
         sumval = 0
-        for i_bin, cc in zip(i_obs_copy3.binner().range_all(), sigma_tau_binned):
-            sel = i_obs_copy3.binner().selection(i_bin)
-            n = sel.count(True)
+        n_per_res = []
+        for val in sigma_tau_binned:
+            cc = val[0]
+            n = val[1]
             sumval += cc * n
             n_tot += n
+            n_per_res.append(n)
+            sigma_tau_values.append(cc)
 
         overall = sumval / n_tot
-        self.weighted_cchalf_sigma_tau = MergingStatistic(
-            overall, sigma_tau_binned[1:-1]
+        self.cchalf_sigma_tau = MergingStatistic(
+            overall, sigma_tau_values[1:-1], neff=n_tot, neff_binned=n_per_res[1:-1]
         )
-        # assert 0
-        # print(res)
-        # print("about to calculte weighted cc anom")
+        ## CC1/2 sigam-tau sigma-weighted
+        sigma_tau_binned = self.calculate_weighted_cchalf_sigma_tau(
+            i_obs_copy3, use_binning=True
+        )
+        sigma_tau_weighted_values = []
+        # do weighted sum
+        n_tot = 0
+        sumval = 0
+        n_per_res_weighted = []
+        for val in sigma_tau_binned:
+            cc = val[0]
+            n = val[1]
+            sumval += cc * n
+            n_tot += n
+            n_per_res_weighted.append(n)
+            sigma_tau_weighted_values.append(cc)
+        overall = sumval / n_tot
+        self.weighted_cchalf_sigma_tau = MergingStatistic(
+            overall,
+            sigma_tau_weighted_values[1:-1],
+            neff=n_tot,
+            neff_binned=n_per_res_weighted,
+        )
+
         sigma_tau_binned_anom = self.calculate_weighted_cchalf_anom_sigma_tau(
             i_obs_copy3, use_binning=True
         )
@@ -617,12 +646,12 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             plus_sel, minus_sel = split_into_hemispheres(sg_type, i_obs.indices())
             data_plus = i_obs.select(plus_sel)
             data_plus = data_plus.sort("packed_indices")
-            sigma_sq_e_plus = mean_sample_variance(
+            sigma_sq_e_plus, _ = mean_sample_variance(
                 data_plus.indices(), data_plus.data(), data_plus.sigmas(), True
             )
             data_minus = i_obs.select(minus_sel)
             data_minus = data_minus.sort("packed_indices")
-            sigma_sq_e_minus = mean_sample_variance(
+            sigma_sq_e_minus, _ = mean_sample_variance(
                 data_minus.indices(), data_minus.data(), data_minus.sigmas(), True
             )
 
@@ -656,27 +685,72 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         return results
 
     @classmethod
+    def calculate_cchalf_sigma_tau(cls, i_obs, use_binning=False):
+        # To validate the calculations
+        # CCTBX calculation:
+        """intensities_copy = self.customized_copy(
+        sigmas=flex.double(self.size(), 1))
+        merging_internal = intensities_copy.merge_equivalents(
+            use_internal_variance=True)
+        merged = merging_internal.array().select(
+            merging_internal.redundancies().data() > 1
+        )
+        if merged.size() <= 1:
+            cc_one_half = 0
+        else:
+            internal_variances = flex.pow2(merged.sigmas())
+            mav = flex.mean_and_variance(merged.data())
+            var_y = mav.unweighted_sample_variance()
+            var_e = 2 * flex.mean(internal_variances)
+            cc_one_half = (var_y - 0.5 * var_e)/(var_y + 0.5 * var_e)"""
+        if not use_binning:
+            # calculated sigmas
+            i_obs = i_obs.sort("packed_indices")
+            sigma_sq_e, n = mean_sample_variance_unweighted(
+                i_obs.indices(), i_obs.data()
+            )
+            sigma_sq_y = average_intensity_variance_unweighted(
+                i_obs.indices(), i_obs.data()
+            )
+            if not sigma_sq_e:
+                return [0.0, 0]
+            if not sigma_sq_y:
+                return [0.0, 0]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            print(f"{cc_half} {n} {i_obs.size()}")
+            return (cc_half, n)
+        results = []
+        for i, i_bin in enumerate(i_obs.binner().range_all()):
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_cchalf_sigma_tau(
+                    i_obs.select(sel),
+                    use_binning=False,
+                )
+            )
+        return results
+
+    @classmethod
     def calculate_weighted_cchalf_sigma_tau(cls, i_obs, use_binning=False):
         if not use_binning:
             # calculated sigmas
-            i_obs.sort_indices()
-            sigma_sq_e = mean_sample_variance(
+            i_obs = i_obs.sort("packed_indices")
+            sigma_sq_e, n = mean_sample_variance(
                 i_obs.indices(), i_obs.data(), i_obs.sigmas(), True
             )
             sigma_sq_y = average_intensity_variance(
                 i_obs.indices(), i_obs.data(), i_obs.sigmas(), True
             )
-            print(f"sigma_sq_e {sigma_sq_e}")
-            print(f"sigma_sq_y {sigma_sq_y}")
             if not sigma_sq_e:
-                return [0.0]
+                return [0.0, 0]
             if not sigma_sq_y:
-                return [0.0]
+                return [0.0, 0]
             cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
                 sigma_sq_y + (0.5 * sigma_sq_e)
             )
-            print(cc_half)
-            return [cc_half]
+            return (cc_half, n)
         results = []
         for i, i_bin in enumerate(i_obs.binner().range_all()):
             sel = i_obs.binner().selection(i_bin)
@@ -684,7 +758,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 cls.calculate_weighted_cchalf_sigma_tau(
                     i_obs.select(sel),
                     use_binning=False,
-                )[0]
+                )
             )
         return results
 

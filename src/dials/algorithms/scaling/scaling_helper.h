@@ -539,6 +539,40 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
   return coefficients_list;
 }
 
+double average_intensity_variance_unweighted(
+  scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
+  scitbx::af::const_ref<double> const& unmerged_data) {
+  double intensity_variance_sum = 0.0;
+  double N = 0.0;
+  std::size_t group_begin = 0;
+  std::size_t group_end = 1;
+  double sumx = 0.0;
+  double sumx2 = 0.0;
+  for (; group_end < unmerged_indices.size(); group_end++) {
+    if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
+      // process a group
+      int n = group_end - group_begin;
+      if (n < 2) {
+        group_begin = group_end;
+        continue;
+      }
+      double sumx = 0.;
+      for (int index = group_begin; index < group_end; index++) {
+        sumx += unmerged_data[index];
+      }
+      double xbar = sumx / n;
+      sumx += xbar;
+      sumx2 += (xbar * xbar);
+      N += 1;
+      group_begin = group_end;
+    }
+  }
+  if (N < 2) {
+    return 0;
+  }
+  return (sumx2 - ((sumx * sumx) / N)) / N - 1;
+}
+
 double average_intensity_variance(
   scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
   scitbx::af::const_ref<double> const& unmerged_data,
@@ -555,10 +589,10 @@ double average_intensity_variance(
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
       // process a group
       int n = group_end - group_begin;
-      /*if (n < 2){
-         group_begin = group_end;
-         continue;
-      }*/
+      if (n < 2) {
+        group_begin = group_end;
+        continue;
+      }
       double sumw = 0.;
       double sumwx = 0.;
       for (int index = group_begin; index < group_end; index++) {
@@ -580,7 +614,44 @@ double average_intensity_variance(
   return (sumx2 - ((sumx * sumx) / N)) / N - 1;
 }
 
-double mean_sample_variance(
+tuple mean_sample_variance_unweighted(
+  scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
+  scitbx::af::const_ref<double> const& unmerged_data) {
+  double sample_variances_sum = 0.0;
+  double N = 0.;
+  std::size_t group_begin = 0;
+  std::size_t group_end = 1;
+  for (; group_end < unmerged_indices.size(); group_end++) {
+    if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
+      // process a group
+      double n = group_end - group_begin;
+      if (n < 2) {
+        group_begin = group_end;
+        continue;
+      }
+      double sumx2 = 0.;
+      double sumx = 0.;
+      for (int index = group_begin; index < group_end; index++) {
+        sumx2 += unmerged_data[index] * unmerged_data[index];
+        sumx += unmerged_data[index];
+      }
+
+      double a = sumx2;
+      double b = std::pow(sumx, 2) / n;
+      double s_eiw2 = 2.0 * (a - b) / (n * (n - 1));
+      // double s_eiw2 = (a - b) / (n - 1);
+      sample_variances_sum += s_eiw2;
+      N += 1;
+      group_begin = group_end;
+    }
+  }
+  if (N == 0) {
+    return make_tuple(0, 0);
+  }
+  return make_tuple(sample_variances_sum / N, N);
+}
+
+tuple mean_sample_variance(
   scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
   scitbx::af::const_ref<double> const& unmerged_data,
   scitbx::af::const_ref<double> const& unmerged_sigmas,
@@ -599,11 +670,13 @@ double mean_sample_variance(
         continue;
       }
       double sumw = 0.;
+      double sumw2 = 0.;
       double sumwx2 = 0.;
       double sumwx = 0.;
       for (int index = group_begin; index < group_end; index++) {
         double invw = 1.0 / std::pow(unmerged_sigmas[index], 2);
         sumw += invw;
+        sumw2 += invw * invw;
         sumwx2 += invw * unmerged_data[index] * unmerged_data[index];
         sumwx += invw * unmerged_data[index];
       }
@@ -615,16 +688,24 @@ double mean_sample_variance(
 
       double a = sumwx2 / sumw;
       double b = std::pow(sumwx / sumw, 2);
-      double s_eiw2 = 2.0 * (a - b) / (n - 1);
+
+      double c = ((sumw * sumw) / sumw2) - 1;
+      if (c <= 0.0) {
+        group_begin = group_end;
+        continue;
+      }
+      double prefactor = 2.0 / c;
+      double s_eiw2 = prefactor * (a - b);
       weighted_sample_variances_sum += s_eiw2;
       N += 1;
       group_begin = group_end;
     }
   }
   if (N == 0) {
-    return 0;
+    return make_tuple(0, 0);
   }
-  return weighted_sample_variances_sum / N;
+  // FIXME need proper weighting of mean?
+  return make_tuple(weighted_sample_variances_sum / N, N);
 }
 
 // adaptation of cctbx/miller/merge_equivalents.h

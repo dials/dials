@@ -648,7 +648,7 @@ class ResolutionPlotsAndStats:
         )
         self.is_centric = is_centric
 
-    def make_all_plots(self, cc_one_half_method="sigma_tau"):
+    def make_all_plots(self, cc_one_half_method=None):
         """Make a dictionary containing all available resolution-dependent plots."""
         d = self.cc_one_half_plot(method=cc_one_half_method)
         d.update(self.i_over_sig_i_plot())
@@ -702,6 +702,31 @@ class ResolutionPlotsAndStats:
             )
             d["cc_one_half_weighted"]["layout"]["title"] = (
                 "CC<sub>½</sub>(\u03c3-weighted) vs resolution"
+            )
+
+            ccst_data = self.dataset_statistics.cchalf_sigma_tau
+            _, critical_vals = compute_cc_significance_levels(
+                ccst_data.value_binned,
+                ccst_data.neff_binned,
+            )
+            d.update(
+                {
+                    "cc_one_half_sigma_tau": cc_half_plot(
+                        d_star_sq=d_star_sq_bins,
+                        cc_half=ccst_data.value_binned,
+                        cc_half_fit=None,
+                        d_min=None,
+                        cc_half_critical_values=critical_vals,
+                        cc_anom=None,
+                        cc_anom_critical_values=None,
+                    )
+                }
+            )
+            d["cc_one_half_sigma_tau"]["layout"]["yaxis"]["title"] = (
+                "CC<sub>½</sub>(sigma-tau)"
+            )
+            d["cc_one_half_sigma_tau"]["layout"]["title"] = (
+                "CC<sub>½</sub>(sigma-tau) vs resolution"
             )
         if self.dataset_statistics.weighted_cchalf_sigma_tau:
             wcc_data = self.dataset_statistics.weighted_cchalf_sigma_tau
@@ -860,7 +885,6 @@ class ResolutionPlotsAndStats:
                 )
                 for bin_stats in self.dataset_statistics.bins
             ]
-            print("done sigma tau")
         else:
             cc_one_half_bins = [
                 bin_stats.cc_one_half if bin_stats.cc_one_half else 0.0

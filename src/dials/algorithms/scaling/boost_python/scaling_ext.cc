@@ -22,6 +22,8 @@ namespace dials_scaling { namespace boost_python {
   void export_split_unmerged();
   void export_mean_sample_variance();
   void export_average_intensity_variance();
+  void export_mean_sample_variance_unweighted();
+  void export_average_intensity_variance_unweighted();
   void export_split_into_hemispheres();
 
   BOOST_PYTHON_MODULE(dials_scaling_ext) {
@@ -42,6 +44,8 @@ namespace dials_scaling { namespace boost_python {
     export_split_unmerged();
     export_mean_sample_variance();
     export_average_intensity_variance();
+    export_mean_sample_variance_unweighted();
+    export_average_intensity_variance_unweighted();
     export_split_into_hemispheres();
   }
 
