@@ -649,7 +649,7 @@ def export_mtz(
         if expt.scan is not None
     ]
     unique_offsets = set(batch_offsets)
-    if len(unique_offsets) != len(batch_offsets):
+    if not unique_offsets or len(unique_offsets) != len(batch_offsets):
         logger.debug("Calculating new batches")
         batch_offsets = calculate_batch_offsets(experiment_list)
         batch_starts = [
