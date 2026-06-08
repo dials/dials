@@ -306,10 +306,11 @@ def make_outlier_plots(reflection_tables, experiments):
             ]
         else:
             zrange = [0, 0]
+        # Round down to reduce file size (https://github.com/dials/dials/issues/3190)
         data[j] = {
-            "x": list(x),
-            "y": list(y),
-            "z": list(z),
+            "x": [round(e, 2) for e in x],
+            "y": [round(e, 2) for e in y],
+            "z": [round(e, 2) for e in z],
             "image_size": expt.detector[0].get_image_size(),
             "z_range": zrange,
         }
