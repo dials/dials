@@ -1196,8 +1196,8 @@ https://doi.org/10.1107/S0907444905036693
             plotname: {
                 "data": [
                     {
-                        "x": list(dano1.data()),
-                        "y": list(dano2.data()),
+                        "x": [round(e, 2) for e in dano1.data()],
+                        "y": [round(e, 2) for e in dano2.data()],
                         "type": "scatter",
                         "mode": "markers",
                         "size": 1,
