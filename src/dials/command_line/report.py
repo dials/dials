@@ -187,12 +187,18 @@ class ScanVaryingCrystalAnalyser:
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
-            aa = [round(i, ndigits=6) for i in aa]
-            bb = [round(i, ndigits=6) for i in bb]
-            cc = [round(i, ndigits=6) for i in cc]
+            a = [round(i, ndigits=3) for i in aa]
+            b = [round(i, ndigits=3) for i in bb]
+            c = [round(i, ndigits=3) for i in cc]
+            aa = [round(i, ndigits=3) for i in aa]
+            bb = [round(i, ndigits=3) for i in bb]
+            cc = [round(i, ndigits=3) for i in cc]
             start, stop = scan.get_array_range()
-            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
-            vol = [e.volume() for e in cells]
+            phi = [
+                round(scan.get_angle_from_array_index(t), ndigits=3)
+                for t in range(start, stop + 1)
+            ]
+            vol = [round(e.volume(), ndigits=3) for e in cells]
             cell_dat = {
                 "phi": phi,
                 "a": a,
