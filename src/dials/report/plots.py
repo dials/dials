@@ -559,7 +559,8 @@ class IntensityStatisticsPlots:
                                 for e in second_moments_acentric.binner.bin_centers(2)
                             ],  # d_star_sq
                             "y": [
-                                round(e, 3) for e in second_moments_acentric.data[1:-1]
+                                round(e, 3) if e else None
+                                for e in second_moments_acentric.data[1:-1]
                             ],
                             "type": "scatter",
                             "name": "<I<sup>2</sub>> acentric",
@@ -574,7 +575,8 @@ class IntensityStatisticsPlots:
                                 for e in second_moments_centric.binner.bin_centers(2)
                             ],  # d_star_sq
                             "y": [
-                                round(e, 3) for e in second_moments_centric.data[1:-1]
+                                round(e, 3) if e else None
+                                for e in second_moments_centric.data[1:-1]
                             ],
                             "type": "scatter",
                             "name": "<I<sup>2</sub>> centric",
@@ -784,7 +786,7 @@ class ResolutionPlotsAndStats:
                 "data": [
                     {
                         "x": [round(e, 3) for e in self.d_star_sq_bins],  # d_star_sq
-                        "y": [round(e, 3) for e in r_pim_bins],
+                        "y": [round(e, 3) if e else None for e in r_pim_bins],
                         "type": "scatter",
                         "name": "R<sub>pim</sub> vs resolution",
                     }
