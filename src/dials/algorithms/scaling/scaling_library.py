@@ -447,6 +447,10 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
         i_obs_copy = i_obs.customized_copy()
         i_obs_copy.setup_binner(n_bins=n_bins)
+        print("Resolution bin ranges:")
+        for ibin in i_obs_copy.binner().range_used():
+            r = i_obs_copy.binner().bin_d_range(ibin)
+            print(f"{r[0]:.2f}-{r[1]:.2f}")
         i_obs_copy2 = i_obs.customized_copy()
         i_obs_copy2.setup_binner(n_bins=n_bins)
         i_obs_copy3 = i_obs.customized_copy()
@@ -560,10 +564,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         weighted_cc_half_anom_binned, neff_anom_binned = weighted_anom_correlation(
             i_obs_copy2, use_binning=True, n_bins=n_bins, plot_label="weighted_anom"
         )
-        print(f"Weighted cc anom {weighted_cc_anom}")
-        print(f"Weighted neff overall anom {neff_overall_anom}")
-        print(f"Weighted cc anom {weighted_cc_half_anom_binned}")
-        print(f"Weighted neff overall anom {neff_anom_binned}")
         self.weighted_cc_anom_data = MergingStatistic(
             weighted_cc_anom,
             weighted_cc_half_anom_binned,
@@ -668,9 +668,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 sigma_sq_y = average_intensity_variance_unweighted(
                     dano.indices(), dano.data()
                 )
-            print("anom")
-            print(sigma_sq_e)
-            print(sigma_sq_y)
             if not sigma_sq_e:
                 return [0.0, 0]
             if not sigma_sq_y:
@@ -714,9 +711,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             sigma_sq_y = average_intensity_variance(
                 dano.indices(), dano.data(), dano.sigmas(), True
             )
-            print("doing anom")
-            print(f"sigma_sq_e {sigma_sq_e}")
-            print(f"sigma_sq_y {sigma_sq_y}")
             if not sigma_sq_e:
                 return [0.0]
             if not sigma_sq_y:
@@ -724,7 +718,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
                 sigma_sq_y + (0.5 * sigma_sq_e)
             )
-            print(cc_half)
             return [cc_half]
         results = []
         for i, i_bin in enumerate(i_obs.binner().range_all()):
@@ -772,7 +765,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
                 sigma_sq_y + (0.5 * sigma_sq_e)
             )
-            print(f"{cc_half} {n} {i_obs.size()}")
             return (cc_half, n)
         results = []
         for i, i_bin in enumerate(i_obs.binner().range_all()):
@@ -886,17 +878,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=None):
     tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
     tmp_array = tmp_array.sort("packed_indices")
-    """sel = tmp_array.indices() == (9, 1, 2)
-    print("9,1,2 data, sigmas")
-    print(", ".join(f"{i:3f}" for i in tmp_array.data().select(sel)))
-    print(", ".join(f"{i:3f}" for i in tmp_array.sigmas().select(sel)))
-    #print(list(i_obs.d_spacings().select(sel)))
-    print("-9,-1,-2 data, sigmas")
-    sel = tmp_array.indices() == (-9, -1, -2)
-    print(", ".join(f"{i:3f}" for i in tmp_array.data().select(sel)))
-    print(", ".join(f"{i:3f}" for i in tmp_array.sigmas().select(sel)))
-    #print(list(i_obs.d_spacings().select(sel)))
-    assert 0"""
     if not use_binning:
         seed = 0
         split = split_unmerged(
@@ -924,7 +905,6 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=Non
         cc, neff = ExtendedDatasetStatistics.weighted_cchalf(
             dano1, dano2, assume_index_matching=True, plot_label=plot_label
         )[0]
-        print(f"cc,neff: {cc} {neff}")
         return cc, neff
     tmp_array.setup_binner(n_bins=n_bins)
     ccs = []
