@@ -19,7 +19,6 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 from unittest.mock import Mock
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import iotbx.merging_statistics
@@ -398,6 +397,26 @@ class MergingStatistic:
     neff_binned: Optional[list[float]] = None
 
 
+def overall_sigma_tau(sigma_tau_binned):
+    sigma_tau_values = []
+    # do weighted sum
+    n_tot = 0
+    sumval = 0
+    n_per_res = []
+    for val in sigma_tau_binned:
+        cc = val[0]
+        n = val[1]
+        sumval += cc * n
+        n_tot += n
+        n_per_res.append(n)
+        sigma_tau_values.append(cc)
+
+    overall = sumval / n_tot
+    return MergingStatistic(
+        overall, sigma_tau_values[1:-1], neff=n_tot, neff_binned=n_per_res[1:-1]
+    )
+
+
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
@@ -415,6 +434,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         self.weighted_cchalf_anom_sigma_tau = None
         self.weighted_cchalf_sigma_tau = None
         self.cchalf_sigma_tau = None
+        self.cchalf_anom_sigma_tau = None
 
         # FIXME implemented weighted sigma-tau
 
@@ -435,54 +455,26 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         i_obs_copy3 = i_obs_copy3.sort("packed_indices")
         i_obs_copy3.setup_binner(n_bins=n_bins)
         ## CC1/2 sigam-tau
-        sigma_tau_binned = self.calculate_cchalf_sigma_tau(
-            i_obs_copy3, use_binning=True
-        )
-        sigma_tau_values = []
-        # do weighted sum
-        n_tot = 0
-        sumval = 0
-        n_per_res = []
-        for val in sigma_tau_binned:
-            cc = val[0]
-            n = val[1]
-            sumval += cc * n
-            n_tot += n
-            n_per_res.append(n)
-            sigma_tau_values.append(cc)
-
-        overall = sumval / n_tot
-        self.cchalf_sigma_tau = MergingStatistic(
-            overall, sigma_tau_values[1:-1], neff=n_tot, neff_binned=n_per_res[1:-1]
+        self.cchalf_sigma_tau = overall_sigma_tau(
+            self.calculate_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
         )
         ## CC1/2 sigam-tau sigma-weighted
-        sigma_tau_binned = self.calculate_weighted_cchalf_sigma_tau(
-            i_obs_copy3, use_binning=True
-        )
-        sigma_tau_weighted_values = []
-        # do weighted sum
-        n_tot = 0
-        sumval = 0
-        n_per_res_weighted = []
-        for val in sigma_tau_binned:
-            cc = val[0]
-            n = val[1]
-            sumval += cc * n
-            n_tot += n
-            n_per_res_weighted.append(n)
-            sigma_tau_weighted_values.append(cc)
-        overall = sumval / n_tot
-        self.weighted_cchalf_sigma_tau = MergingStatistic(
-            overall,
-            sigma_tau_weighted_values[1:-1],
-            neff=n_tot,
-            neff_binned=n_per_res_weighted,
+        self.weighted_cchalf_sigma_tau = overall_sigma_tau(
+            self.calculate_weighted_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
         )
 
-        sigma_tau_binned_anom = self.calculate_weighted_cchalf_anom_sigma_tau(
-            i_obs_copy3, use_binning=True
+        self.cchalf_anom_sigma_tau = overall_sigma_tau(
+            self.calculate_cchalf_anom_sigma_tau(
+                i_obs_copy3, use_binning=True, weighted=False
+            )
         )
-        # do weighted sum
+
+        self.weighted_cchalf_anom_sigma_tau = overall_sigma_tau(
+            self.calculate_cchalf_anom_sigma_tau(
+                i_obs_copy3, use_binning=True, weighted=True
+            )
+        )
+        """# do weighted sum
         n_tot = 0
         sumval = 0
         for i_bin, cc in zip(i_obs_copy3.binner().range_all(), sigma_tau_binned_anom):
@@ -494,7 +486,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         overall = sumval / n_tot
         self.weighted_cchalf_anom_sigma_tau = MergingStatistic(
             overall, sigma_tau_binned_anom[1:-1]
-        )
+        )"""
 
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
@@ -568,6 +560,10 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         weighted_cc_half_anom_binned, neff_anom_binned = weighted_anom_correlation(
             i_obs_copy2, use_binning=True, n_bins=n_bins, plot_label="weighted_anom"
         )
+        print(f"Weighted cc anom {weighted_cc_anom}")
+        print(f"Weighted neff overall anom {neff_overall_anom}")
+        print(f"Weighted cc anom {weighted_cc_half_anom_binned}")
+        print(f"Weighted neff overall anom {neff_anom_binned}")
         self.weighted_cc_anom_data = MergingStatistic(
             weighted_cc_anom,
             weighted_cc_half_anom_binned,
@@ -634,6 +630,63 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 weighted=weighted,
             )
             results.append(r)
+        return results
+
+    @classmethod
+    def calculate_cchalf_anom_sigma_tau(cls, i_obs, use_binning=False, weighted=False):
+        if not use_binning:
+            sg_type = i_obs.space_group().type()
+            # asu = i_obs.customized_copy(anomalous_flag=True).map_to_asu()
+            # FIXME should we only include data that has a pair?
+            plus_sel, minus_sel = split_into_hemispheres(sg_type, i_obs.indices())
+            data_plus = i_obs.select(plus_sel)
+            data_plus = data_plus.sort("packed_indices")
+            data_minus = i_obs.select(minus_sel)
+            data_minus = data_minus.sort("packed_indices")
+            if weighted:
+                sigma_sq_e_plus, n1 = mean_sample_variance(
+                    data_plus.indices(), data_plus.data(), data_plus.sigmas(), True
+                )
+                sigma_sq_e_minus, n2 = mean_sample_variance(
+                    data_minus.indices(), data_minus.data(), data_minus.sigmas(), True
+                )
+            else:
+                sigma_sq_e_plus, n1 = mean_sample_variance_unweighted(
+                    data_plus.indices(), data_plus.data()
+                )
+                sigma_sq_e_minus, n2 = mean_sample_variance_unweighted(
+                    data_minus.indices(), data_minus.data()
+                )
+            sigma_sq_e = sigma_sq_e_minus + sigma_sq_e_plus
+            tmp = i_obs.customized_copy(anomalous_flag=True)
+            dano = tmp.merge_equivalents().array().anomalous_differences()
+            if weighted:
+                sigma_sq_y = average_intensity_variance(
+                    dano.indices(), dano.data(), dano.sigmas(), True
+                )
+            else:
+                sigma_sq_y = average_intensity_variance_unweighted(
+                    dano.indices(), dano.data()
+                )
+            print("anom")
+            print(sigma_sq_e)
+            print(sigma_sq_y)
+            if not sigma_sq_e:
+                return [0.0, 0]
+            if not sigma_sq_y:
+                return [0.0, 0]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            return [cc_half, n1 + n2]
+        results = []
+        for i, i_bin in enumerate(i_obs.binner().range_all()):
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_cchalf_anom_sigma_tau(
+                    i_obs.select(sel), use_binning=False, weighted=weighted
+                )
+            )
         return results
 
     @classmethod
@@ -809,92 +862,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
             neff = 1 / flex.sum(flex.pow2(norm_jw))
-            if plot_label:
-                if n == 1307:
-                    print("norm_jw:")
-                    sort_order = flex.sort_permutation(norm_jw, reverse=True)
-                    print(list(norm_jw.select(sort_order)[:10]))
-                    print("data")
-                    print(list(o.data().select(sort_order)[:10]))
-                    print(list(c.data().select(sort_order)[:10]))
-                    print("sigmas")
-                    print(list(o.sigmas().select(sort_order)[:10]))
-                    print(list(c.sigmas().select(sort_order)[:10]))
-                    print("indices")
-                    print(list(o.indices().select(sort_order)[:10]))
-                    # sel = sort_order[:10]
-                    # assert 0
-                    sel = norm_jw > 0.00001
-                    plt.errorbar(
-                        x=list(o.data().select(sel)),
-                        y=list(c.data().select(sel)),
-                        yerr=list(c.sigmas().select(sel)),
-                        xerr=list(o.sigmas().select(sel)),
-                        fmt="o",
-                        markersize=0.5,
-                    )
-                    plt.plot(
-                        [
-                            min(min(o.data().select(sel)), min(c.data().select(sel))),
-                            max(max(o.data().select(sel)), max(c.data().select(sel))),
-                        ],
-                        [
-                            min(min(o.data().select(sel)), min(c.data().select(sel))),
-                            max(max(o.data().select(sel)), max(c.data().select(sel))),
-                        ],
-                        color="k",
-                    )
-                    plt.gca().set_aspect("equal")
-                    plt.grid()
-                    plt.xlabel(r"ΔI$_1$", fontsize=16)
-                    plt.ylabel(r"ΔI$_2$", fontsize=16)
-                    plt.savefig(f"{plot_label}_{n}_selected.png")
-                    plt.cla()
-                plt.errorbar(
-                    x=list(o.data()),
-                    y=list(c.data()),
-                    yerr=list(c.sigmas()),
-                    xerr=list(o.sigmas()),
-                    fmt="o",
-                    markersize=0.5,
-                )
-                # plt.xlim([-30,30])
-                # plt.ylim([-30,30])
-                plt.plot(
-                    [
-                        min(min(o.data()), min(c.data())),
-                        max(max(o.data()), max(c.data())),
-                    ],
-                    [
-                        min(min(o.data()), min(c.data())),
-                        max(max(o.data()), max(c.data())),
-                    ],
-                    color="k",
-                )
-                plt.grid()
-                plt.xlabel(r"ΔI$_1$", fontsize=16)
-                plt.ylabel(r"ΔI$_2$", fontsize=16)
-                plt.savefig(f"{plot_label}_{n}_{neff:.5f}.png")
-                plt.cla()
-                plt.scatter(x=list(o.data()), y=list(c.data()), s=2)
-                plt.plot(
-                    [
-                        min(min(o.data()), min(c.data())),
-                        max(max(o.data()), max(c.data())),
-                    ],
-                    [
-                        min(min(o.data()), min(c.data())),
-                        max(max(o.data()), max(c.data())),
-                    ],
-                    color="k",
-                )
-                plt.grid()
-                plt.xlabel(r"ΔI$_1$", fontsize=16)
-                plt.ylabel(r"ΔI$_2$", fontsize=16)
-                plt.xlim([-30, 30])
-                plt.ylim([-30, 30])
-                plt.savefig(f"{plot_label}_{n}_noerrorbar.png")
-                plt.cla()
             return [(sxy / ((sx * sy) ** 0.5), neff)]
 
         assert this.binner is not None

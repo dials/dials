@@ -705,9 +705,14 @@ class ResolutionPlotsAndStats:
             )
 
             ccst_data = self.dataset_statistics.cchalf_sigma_tau
+            ccst_anom_data = self.dataset_statistics.cchalf_anom_sigma_tau
             _, critical_vals = compute_cc_significance_levels(
                 ccst_data.value_binned,
                 ccst_data.neff_binned,
+            )
+            _, ccanom_critical_vals = compute_cc_significance_levels(
+                ccst_anom_data.value_binned,
+                ccst_anom_data.neff_binned,
             )
             d.update(
                 {
@@ -717,8 +722,8 @@ class ResolutionPlotsAndStats:
                         cc_half_fit=None,
                         d_min=None,
                         cc_half_critical_values=critical_vals,
-                        cc_anom=None,
-                        cc_anom_critical_values=None,
+                        cc_anom=ccst_anom_data.value_binned,
+                        cc_anom_critical_values=ccanom_critical_vals,
                     )
                 }
             )
@@ -733,14 +738,14 @@ class ResolutionPlotsAndStats:
             wccanom_data = self.dataset_statistics.weighted_cchalf_anom_sigma_tau
             d_star_sq_bins = []
 
-            """_, critical_vals = compute_cc_significance_levels(
+            _, critical_vals = compute_cc_significance_levels(
                 wcc_data.value_binned,
                 wcc_data.neff_binned,
             )
             _, critical_anom_vals = compute_cc_significance_levels(
                 wccanom_data.value_binned,
                 wccanom_data.neff_binned,
-            )"""
+            )
             for bin in self.dataset_statistics.binner.range_used():
                 d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
 
@@ -758,9 +763,9 @@ class ResolutionPlotsAndStats:
                         cc_half=wcc_data.value_binned,
                         cc_half_fit=None,
                         d_min=None,
-                        cc_half_critical_values=None,
+                        cc_half_critical_values=critical_vals,
                         cc_anom=wccanom_data.value_binned,
-                        cc_anom_critical_values=None,
+                        cc_anom_critical_values=critical_anom_vals,
                     )
                 }
             )

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from iotbx import mtz
 from libtbx import phil
@@ -26,15 +29,19 @@ from dials.report.analysis import (
 )
 
 phil_scope = iotbx.phil.parse("""\
+n_bins = 10
+    .type = int
+    .help = "The number of resolution bins for merging statistics calculations"
 output.log=dials.merging_statistics.log
     .type = str
     .help = "The log filename"
+output.json=dials.merging_statistics.json
+    .type = str
+    .help = "The json filename for the plot data."
 """)
 
 
 logger = logging.getLogger("dials")
-
-from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 
 def generate_html_report(json_data, filename):
@@ -144,7 +151,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         sys.exit(f"Error: {e}")
     else:
         stats, anom_stats = merging_stats_from_scaled_array(
-            iobs, additional_stats=True, n_bins=8
+            iobs, additional_stats=True, n_bins=params.n_bins
         )
         from dials.report.plots import ResolutionPlotsAndStats
 
@@ -163,6 +170,8 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         d["resolution_plots"].update(plotter.make_all_plots())
         json_data = {"main": d}
         generate_html_report(json_data, "dials.merging_statistics.html")
+        with open(params.output.json, "w") as f:
+            json.dump(json_data, f, indent=2)
 
 
 if __name__ == "__main__":

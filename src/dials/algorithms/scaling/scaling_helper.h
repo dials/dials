@@ -542,6 +542,8 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
 double average_intensity_variance_unweighted(
   scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
   scitbx::af::const_ref<double> const& unmerged_data) {
+  // Formula based on https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2
+  // referred to there as s^2_{y}
   double intensity_variance_sum = 0.0;
   double N = 0.0;
   std::size_t group_begin = 0;
@@ -552,10 +554,13 @@ double average_intensity_variance_unweighted(
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
       // process a group
       int n = group_end - group_begin;
-      if (n < 2) {
-        group_begin = group_end;
-        continue;
-      }
+      // We are calculating the variance of all reflections across the dataset,
+      // which we can include individuals - this is important in the case of
+      // merged data like dano.
+      // if (n < 2) {
+      //  group_begin = group_end;
+      //  continue;
+      //}
       double sumx = 0.;
       for (int index = group_begin; index < group_end; index++) {
         sumx += unmerged_data[index];
@@ -578,6 +583,8 @@ double average_intensity_variance(
   scitbx::af::const_ref<double> const& unmerged_data,
   scitbx::af::const_ref<double> const& unmerged_sigmas,
   bool weighted = true) {
+  // Formula based on https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2
+  // referred to there as s^2_{y_w}
   double intensity_variance_sum = 0.0;
   double N = 0.0;
   CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
@@ -589,10 +596,10 @@ double average_intensity_variance(
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
       // process a group
       int n = group_end - group_begin;
-      if (n < 2) {
-        group_begin = group_end;
-        continue;
-      }
+      // if (n < 2) {
+      //   group_begin = group_end;
+      //   continue;
+      // }
       double sumw = 0.;
       double sumwx = 0.;
       for (int index = group_begin; index < group_end; index++) {
@@ -610,7 +617,6 @@ double average_intensity_variance(
   if (N < 2) {
     return 0;
   }
-  // FIXME need proper dof N from weighting not N-1
   return (sumx2 - ((sumx * sumx) / N)) / N - 1;
 }
 
@@ -621,6 +627,8 @@ tuple mean_sample_variance_unweighted(
   double N = 0.;
   std::size_t group_begin = 0;
   std::size_t group_end = 1;
+  // Formula based on https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2
+  // referred to there as s^2_{ei}
   for (; group_end < unmerged_indices.size(); group_end++) {
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
       // process a group
@@ -639,7 +647,6 @@ tuple mean_sample_variance_unweighted(
       double a = sumx2;
       double b = std::pow(sumx, 2) / n;
       double s_eiw2 = 2.0 * (a - b) / (n * (n - 1));
-      // double s_eiw2 = (a - b) / (n - 1);
       sample_variances_sum += s_eiw2;
       N += 1;
       group_begin = group_end;
@@ -656,6 +663,10 @@ tuple mean_sample_variance(
   scitbx::af::const_ref<double> const& unmerged_data,
   scitbx::af::const_ref<double> const& unmerged_sigmas,
   bool weighted = true) {
+  // Formula based on  https://doi.org/10.1107/S2059798320006348,
+  // which is an updated version of the definition in
+  // https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2 referred to there as
+  // s^2_{ei_w}
   double weighted_sample_variances_sum = 0.0;
   double N = 0.;
   CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
@@ -704,7 +715,6 @@ tuple mean_sample_variance(
   if (N == 0) {
     return make_tuple(0, 0);
   }
-  // FIXME need proper weighting of mean?
   return make_tuple(weighted_sample_variances_sum / N, N);
 }
 
