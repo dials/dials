@@ -26,7 +26,7 @@ def plot_screw_axes(screw_axes_data):
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),
-                            "y": list(data["i_over_sigma"]),
+                            "y": [round(e, 3) for e in data["i_over_sigma"]],
                             "type": "scatter",
                             "name": name,
                             "xaxis": "x",
@@ -71,7 +71,7 @@ def plot_screw_axes(screw_axes_data):
                     "data": [
                         {
                             "x": list(range(len(y))),
-                            "y": list(y),
+                            "y": [round(e, 3) for e in y],
                             "type": "scatter",
                             "name": "Fourier amplitudes",
                             "xaxis": "x",
@@ -138,7 +138,7 @@ are indicated by vertical lines.""",
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),
-                            "y": list(data["intensities"]),
+                            "y": [round(e, 3) for e in data["intensities"]],
                             "type": "scatter",
                             "name": "intensity",
                             "xaxis": "x",
@@ -153,7 +153,7 @@ are indicated by vertical lines.""",
                         },
                         {
                             "x": list(data["miller_axis_vals"]),
-                            "y": list(data["sigmas"]),
+                            "y": [round(e, 3) for e in data["sigmas"]],
                             "type": "scatter",
                             "name": "sigma",
                             "xaxis": "x",

@@ -964,22 +964,22 @@ class CentroidAnalyser:
             "centroid_mean_differences_vs_phi": {
                 "data": [
                     {
-                        "x": list(phi),
-                        "y": list(mean_residuals_x),
+                        "x": [round(e, 3) for e in phi],
+                        "y": [round(e, 3) for e in mean_residuals_x],
                         "type": "scatter",
                         "name": "mean_dx",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(mean_residuals_y),
+                        "x": [round(e, 3) for e in phi],
+                        "y": [round(e, 3) for e in mean_residuals_y],
                         "type": "scatter",
                         "name": "mean_dy",
                         "xaxis": "x2",
                         "yaxis": "y2",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(mean_residuals_phi),
+                        "x": [round(e, 3) for e in phi],
+                        "y": [round(e, 3) for e in mean_residuals_phi],
                         "type": "scatter",
                         "name": "mean_dphi",
                         "xaxis": "x3",
@@ -999,22 +999,22 @@ class CentroidAnalyser:
             "centroid_rmsd_vs_phi": {
                 "data": [
                     {
-                        "x": list(phi),
-                        "y": list(rmsd_x),
+                        "x": [round(e, 3) for e in phi],
+                        "y": [round(e, 3) for e in rmsd_x],
                         "type": "scatter",
                         "name": "rmsd_dx",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(rmsd_y),
+                        "x": [round(e, 3) for e in phi],
+                        "y": [round(e, 3) for e in rmsd_y],
                         "type": "scatter",
                         "name": "rmsd_dy",
                         "xaxis": "x2",
                         "yaxis": "y2",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(rmsd_phi),
+                        "x": [round(e, 3) for e in phi],
+                        "y": [round(e, 3) for e in rmsd_phi],
                         "type": "scatter",
                         "name": "rmsd_dphi",
                         "xaxis": "x3",
@@ -1844,8 +1844,8 @@ class ReferenceProfileAnalyser:
             "reflection_cc_vs_resolution": {
                 "data": [
                     {
-                        "x": list(d_star_sq_bins),  # d_star_sq
-                        "y": list(ccs),
+                        "x": [round(e, 3) for e in d_star_sq_bins],  # d_star_sq
+                        "y": [round(e, 3) for e in ccs],
                         "type": "scatter",
                         "name": "profile_correlation",
                     }

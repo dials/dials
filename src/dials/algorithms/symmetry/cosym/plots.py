@@ -32,8 +32,8 @@ def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
         isel = np.where(labels == k)[0]
         data.append(
             {
-                "x": coord_x[isel].tolist(),
-                "y": coord_y[isel].tolist(),
+                "x": [round(e, 3) for e in coord_x[isel].tolist()],
+                "y": [round(e, 3) for e in coord_y[isel].tolist()],
                 "mode": "markers",
                 "type": "scatter",
                 "marker": {

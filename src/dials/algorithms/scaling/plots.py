@@ -100,7 +100,7 @@ def plot_relative_Bs(relative_Bs):
             "data": [
                 {
                     "x": list(range(0, len(relative_Bs))),
-                    "y": relative_Bs,
+                    "y": [round(e, 3) for e in relative_Bs],
                     "type": "scatter",
                     "name": "Relative B-factor per dataset",
                     "mode": "markers",
@@ -171,8 +171,8 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
 
     data.append(
         {
-            "x": list(sample_values),
-            "y": list(sample_scales),
+            "x": [round(e, 3) for e in sample_values],
+            "y": [round(e, 3) for e in sample_scales],
             "type": "line",
             "name": "smoothly-varying <br>scale correction",
             "xaxis": "x",
@@ -181,8 +181,8 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
     )
     data.append(
         {
-            "x": list(smoother_phis),
-            "y": list(parameters),
+            "x": [round(e, 3) for e in smoother_phis],
+            "y": [round(e, 3) for e in parameters],
             "type": "scatter",
             "mode": "markers",
             "name": "smoothly-varying <br>scale parameters",
@@ -286,8 +286,8 @@ def plot_smooth_scales(physical_model):
 
         data.append(
             {
-                "x": list(sample_values),
-                "y": list(np.log(sample_scales) * 2.0),
+                "x": [round(e, 3) for e in sample_values],
+                "y": [round(e, 3) for e in np.log(sample_scales) * 2.0],
                 "type": "line",
                 "name": "smoothly-varying <br>B-factor correction",
                 "xaxis": "x",
@@ -296,8 +296,8 @@ def plot_smooth_scales(physical_model):
         )
         data.append(
             {
-                "x": list(smoother_phis),
-                "y": list(parameters),
+                "x": [round(e, 3) for e in smoother_phis],
+                "y": [round(e, 3) for e in parameters],
                 "type": "scatter",
                 "mode": "markers",
                 "name": "smoothly-varying <br>B-factor parameters",
@@ -345,7 +345,7 @@ def plot_absorption_parameters(physical_model):
             "data": [
                 {
                     "x": [i + 0.5 for i in range(len(params))],
-                    "y": list(params),
+                    "y": [round(e, 3) for e in params],
                     "type": "scatter",
                     "name": "absorption parameters",
                     "xaxis": "x",
@@ -721,7 +721,7 @@ def error_model_variance_plot(data, label=None):
             "data": [
                 {
                     "x": x,
-                    "y": list(initial_variances)[::-1],
+                    "y": [round(e, 3) for e in initial_variances][::-1],
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -730,7 +730,7 @@ def error_model_variance_plot(data, label=None):
                 },
                 {
                     "x": x,
-                    "y": list(bin_variances)[::-1],
+                    "y": [round(e, 3) for e in bin_variances][::-1],
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -778,15 +778,15 @@ def error_regression_plot(data, label=None):
         key: {
             "data": [
                 {
-                    "x": list(x),
-                    "y": list(y),
+                    "x": [round(e, 3) for e in x],
+                    "y": [round(e, 3) for e in y],
                     "type": "scatter",
                     "mode": "markers",
                     "name": "expected vs observed",
                 },
                 {
-                    "x": list(x),
-                    "y": list(fit),
+                    "x": [round(e, 3) for e in x],
+                    "y": [round(e, 3) for e in fit],
                     "type": "scatter",
                     "name": "best least-squares fit",
                 },
@@ -886,14 +886,14 @@ the line due to wide tails of the distribution.
         key_hist: {
             "data": [
                 {
-                    "x": list(histy.slot_centers()),
+                    "x": [round(e, 3) for e in histy.slot_centers()],
                     "y": list(histy.slots()),
                     "type": "bar",
                     "name": "dataset normalised deviations",
                 },
                 {
-                    "x": list(histy.slot_centers()),
-                    "y": gaussian,
+                    "x": [round(e, 3) for e in histy.slot_centers()],
+                    "y": [round(e, 3) for e in gaussian],
                     "type": "scatter",
                     "name": "Ideal normal distribution",
                 },

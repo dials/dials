@@ -270,7 +270,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         data["dF"]["dano"]["data"].append(
             {
                 "x": d_star_sq_bins,
-                "y": list(dFsdF),
+                "y": [round(e, 3) for e in dFsdF],
                 "type": "scatter",
                 "name": "\u03bb" + f"={wave:.4f}",
             }

@@ -508,15 +508,15 @@ def plot_result(metric, result):
         return {
             "data": [
                 {
-                    "x": list(result.d_star_sq),  # d_star_sq
-                    "y": list(result.y_obs),
+                    "x": [round(e, 3) for e in result.d_star_sq],  # d_star_sq
+                    "y": [round(e, 3) for e in result.y_obs],
                     "type": "scatter",
                     "name": "y_obs",
                 },
                 (
                     {
-                        "x": list(result.d_star_sq),
-                        "y": list(result.y_fit),
+                        "x": [round(e, 3) for e in result.d_star_sq],
+                        "y": [round(e, 3) for e in result.y_fit],
                         "type": "scatter",
                         "name": "y_fit",
                         "line": {"color": "rgb(47, 79, 79)"},

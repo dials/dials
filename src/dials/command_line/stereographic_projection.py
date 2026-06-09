@@ -419,8 +419,8 @@ def projections_as_dict(projections, labels):
     x, y = projections_all.parts()
     data.append(
         {
-            "x": list(x),
-            "y": list(y),
+            "x": [round(e, 3) for e in list(x)],
+            "y": [round(e, 3) for e in list(y)],
             "mode": "markers",
             "type": "scatter",
             "name": "stereographic_projections",

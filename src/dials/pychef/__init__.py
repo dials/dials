@@ -332,7 +332,7 @@ class Statistics:
         scp_data.append(
             {
                 "x": x,
-                "y": list(self.scp),
+                "y": [round(e, 3) for e in self.scp],
                 "type": "scatter",
                 "name": "Scp overall",
                 "line": {"width": 3},
@@ -341,7 +341,7 @@ class Statistics:
         rcp_data.append(
             {
                 "x": x,
-                "y": list(self.rcp),
+                "y": [round(e, 3) for e in self.rcp],
                 "type": "scatter",
                 "name": "Rcp overall",
                 "line": {"width": 3},
@@ -353,7 +353,7 @@ class Statistics:
         completeness_data.append(
             {
                 "x": x,
-                "y": list(self.ieither_comp_overall),
+                "y": [round(e, 3) for e in self.ieither_comp_overall],
                 "type": "scatter",
                 "name": "I",
                 "line": {"width": 3},
@@ -363,7 +363,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iboth_comp_overall),
+                    "y": [round(e, 3) for e in self.iboth_comp_overall],
                     "type": "scatter",
                     "name": "dI",
                     "line": {"width": 3},
@@ -372,7 +372,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iplus_comp_overall),
+                    "y": [round(e, 3) for e in self.iplus_comp_overall],
                     "type": "scatter",
                     "name": "I+",
                     "line": {"width": 3},
@@ -381,7 +381,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iminus_comp_overall),
+                    "y": [round(e, 3) for e in self.iminus_comp_overall],
                     "type": "scatter",
                     "name": "I-",
                     "line": {"width": 3},
@@ -396,7 +396,7 @@ class Statistics:
                 scp_data.append(
                     {
                         "x": x,
-                        "y": list(self.scp_bins[j : j + 1, :].as_1d()),
+                        "y": [round(e, 3) for e in self.scp_bins[j : j + 1, :].as_1d()],
                         "type": "scatter",
                         "name": "Scp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -405,7 +405,7 @@ class Statistics:
                 rcp_data.append(
                     {
                         "x": x,
-                        "y": list(self.rcp_bins[j : j + 1, :].as_1d()),
+                        "y": [round(e, 3) for e in self.rcp_bins[j : j + 1, :].as_1d()],
                         "type": "scatter",
                         "name": "Rcp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -415,7 +415,10 @@ class Statistics:
                 completeness_data.append(
                     {
                         "x": x,
-                        "y": list(self.ieither_comp_bins[j : j + 1, :].as_1d()),
+                        "y": [
+                            round(e, 3)
+                            for e in self.ieither_comp_bins[j : j + 1, :].as_1d()
+                        ],
                         "type": "scatter",
                         "name": "I" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
