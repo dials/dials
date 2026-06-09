@@ -210,7 +210,8 @@ def test_MultiScalingRestraints(
     for i in range(mock_restrained_component.n_params):
         for j in range(mock_restrained_component.n_params):
             assert jacobian_restraints[1][i, j] == abs_restraints[1][i, j]
-            assert jacobian_restraints[1][i + n_abs_params, j + n_total_params] == (
-                abs_restraints[1][i, j]
+            assert (
+                jacobian_restraints[1][i + n_abs_params, j + n_total_params]
+                == (abs_restraints[1][i, j])
             )
     assert abs_restraints[1].non_zeroes * 2 == jacobian_restraints[1].non_zeroes

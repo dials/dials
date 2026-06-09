@@ -74,9 +74,9 @@ def get_raw_data_from_file(imageset, i):
 def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=True):
     from dxtbx.format.FormatCBF import FormatCBF
 
-    assert issubclass(
-        imageset.get_format_class(), FormatCBF
-    ), "Only CBF format images supported"
+    assert issubclass(imageset.get_format_class(), FormatCBF), (
+        "Only CBF format images supported"
+    )
 
     assert len(imageset) >= n_images
 
@@ -88,7 +88,6 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
         data_out = None
 
         for j in range(n_images):
-
             i_in = (i_out * n_images) + j
 
             if get_raw_data_from_imageset:
@@ -141,7 +140,6 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                 "Omega_increment",
                 "Chi_increment",
             }:
-
                 if rsplit[1] == "Count_cutoff":  # needs to be an integer
                     new_header.append(
                         "%s\n"
@@ -194,9 +192,11 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                     #   'Strings with spaces, as they are seen as multiple columns, or with'
                     #   _multiple _columns _defined _on _same _line _they _are _seen _as _one _column
                     new_line = [
-                        element
-                        if modifier is None
-                        else f"{float(element) * modifier:f}"
+                        (
+                            element
+                            if modifier is None
+                            else f"{float(element) * modifier:f}"
+                        )
                         for modifier, element in zip(modifiers, line.split())
                     ]
                     new_header[n] = f"{' '.join(new_line)}\r\n"

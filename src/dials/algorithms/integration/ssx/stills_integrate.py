@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import functools
-
 from dxtbx.model import ExperimentList
 
-import dials.extensions
 from dials.algorithms.integration.integrator import (
     Parameters,
     _finalize_stills,
@@ -36,7 +33,6 @@ class StillsIntegrator(SimpleIntegrator):
             self.collector = StillsOutputCollector()
 
     def run(self, experiment, table):
-
         # first set ids to zero so can integrate (this is how integration
         # finds the image in the imageset)
         ids_map = dict(table.experiment_identifiers())
@@ -86,21 +82,8 @@ class StillsIntegrator(SimpleIntegrator):
 
     @staticmethod
     def integrate(experiments, table, params):
-
         _params = Parameters.from_phil(params.integration)
         experiments[0].scan = None
-        BackgroundAlgorithm = dials.extensions.Background.load(
-            params.integration.background.algorithm
-        )
-        flex.reflection_table.background_algorithm = functools.partial(
-            BackgroundAlgorithm, params
-        )
-        CentroidAlgorithm = dials.extensions.Centroid.load(
-            params.integration.centroid.algorithm
-        )
-        flex.reflection_table.centroid_algorithm = functools.partial(
-            CentroidAlgorithm, params
-        )
         _initialize_stills(experiments, _params, table)
 
         table["shoebox"] = flex.shoebox(table["panel"], table["bbox"], allocate=True)

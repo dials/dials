@@ -1,0 +1,25 @@
+{
+  "libraries": {
+    "annlib": { "base": "ann_cctbx;ann" },
+    "ccp4io": { "base": "ccp4io" },
+    "cctbx": { "base": "cctbx", "sgtbx::direct_space_asu": "cctbx_sgtbx_asu" },
+    "fast_linalg": { "base": "fast_linalg" },
+    "iotbx": { "mtz": "iotbx_mtz", "pdb": "iotbx_pdb", "xplor": "iotbx_xplor" },
+    "maptbx": { "asymmetric_map": "asymmetric_map" },
+    "mmtbx": { "masks": "mmtbx_masks", "tls": "mmtbx_tls" },
+    "omptbx": { "base": "omptbx" },
+    "rstbx": { "base": "rstbx" },
+    "scitbx": {
+      "boost_python": "scitbx_boost_python",
+      "minpack": "scitbx_minpack",
+      "slatec": "scitbx_slatec"
+    },
+    "smtbx": { "refinement_constraints": "smtbx_refinement_constraints" },
+    "spotfinder": { "base": "spotfinder", "dxtbx": "dxtbxspotfinder" },
+    "xfel": { "legacy_scale": "legacy_scale", "mono_sim": "xfel_mono_sim" }
+  },
+  "includes": {
+    "annlib": ["include", "#build/annlib_adaptbx/include"],
+    "ccp4io": ["libccp4/ccp4"]
+  }
+}

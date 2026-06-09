@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_EWALD_SPHERE_SAMPLER_H
 
 #include <cmath>
+#include <memory>
 #include <scitbx/array_family/tiny_types.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
@@ -45,10 +46,10 @@ namespace dials { namespace algorithms {
     /**
      * Initialise the sampler
      */
-    EwaldSphereSampler(const boost::shared_ptr<BeamBase> beam,
-                       const Detector &detector,
-                       const Goniometer &goniometer,
-                       const Scan &scan,
+    EwaldSphereSampler(const std::shared_ptr<BeamBase> beam,
+                       const Detector& detector,
+                       const Goniometer& goniometer,
+                       const Scan& scan,
                        std::size_t num_phi)
         : beam_(beam),
           detector_(detector),
@@ -69,7 +70,7 @@ namespace dials { namespace algorithms {
       // centre
       max_angle_ = 0;
       for (std::size_t i = 0; i < detector.size(); ++i) {
-        const Panel &p = detector[i];
+        const Panel& p = detector[i];
         std::size_t width = p.get_image_size()[0];
         std::size_t height = p.get_image_size()[1];
         vec3<double> s1 = p.get_pixel_lab_coord(vec2<double>(0, 0)).normalize();
@@ -314,7 +315,7 @@ namespace dials { namespace algorithms {
       return coord_[index];
     }
 
-    boost::shared_ptr<BeamBase> beam() const {
+    std::shared_ptr<BeamBase> beam() const {
       return beam_;
     }
 
@@ -340,7 +341,7 @@ namespace dials { namespace algorithms {
       return par_sum + iy + iz * tot_sum;
     }
 
-    boost::shared_ptr<BeamBase> beam_;
+    std::shared_ptr<BeamBase> beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;

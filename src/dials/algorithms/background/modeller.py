@@ -223,7 +223,6 @@ class BackgroundModellerExecutor:
 
         result = []
         for i in range(len(self.result)):
-
             # Get the statistics
             stats = self.result.get(i)
             mean = stats.mean(self.min_images)

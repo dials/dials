@@ -67,7 +67,7 @@ class Render3d:
             self.viewer.set_rotation_axis(
                 self.experiments[0].goniometer.get_rotation_axis()
             )
-        self.viewer.set_beam_vector(self.experiments[0].beam.get_s0())
+        self.viewer.set_beam_vector(self.experiments[0].beam.get_unit_s0())
         if self.settings.beam_centre is None:
             try:
                 (
@@ -171,11 +171,11 @@ class Render3d:
             elif self.settings.display == "integrated":
                 reflections = reflections.select(integrated_sel)
 
-            if self.settings.experiment_ids:
-                sel = flex.bool(len(reflections), False)
-                for i in self.settings.experiment_ids:
-                    sel.set_selected(reflections["id"] == i, True)
-                reflections = reflections.select(sel)
+        if self.settings.experiment_ids:
+            sel = flex.bool(len(reflections), False)
+            for i in self.settings.experiment_ids:
+                sel.set_selected(reflections["id"] == i, True)
+            reflections = reflections.select(sel)
 
         d_spacings = 1 / reflections["rlp"].norms()
 

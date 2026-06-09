@@ -125,7 +125,8 @@ def compute_mean_cchalf_in_bins(bin_data):
             cchalf = compute_cchalf(mean, var)
             mean_cchalf += n * cchalf
             count += n
-    mean_cchalf /= count
+    if count:
+        mean_cchalf /= count
     return mean_cchalf
 
 
@@ -277,7 +278,6 @@ Summary of input data:
         # Compute CC1/2 minus each dataset
         cchalf_i = {}
         for dataset in dataset_lookup:
-
             # Find all observations from this dataset and create a lookup based on
             # miller index
             index_lookup = defaultdict(list)

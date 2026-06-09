@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-import os
+import logging
 import pickle
 import random
 
@@ -11,7 +11,9 @@ from cctbx import sgtbx
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.serialize import load
 
+from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
+from dials.model.data import Shoebox
 
 
 def test_accessing_invalid_key_throws_keyerror():
@@ -169,6 +171,17 @@ def test_delete():
     assert table.is_consistent()
     assert table.nrows() == 0
     assert table.ncols() == 2
+
+
+def test_slice():
+    table = flex.reflection_table()
+    table["col1"] = flex.int([0, 0, 1, 2, 3, 4, 5])
+    table["id"] = flex.int([-1, 0, 1, 2, 3, 4, 5])
+    for i in range(0, 6):
+        table.experiment_identifiers()[i] = str(i)
+    sliced = table[4:]
+    assert sliced.nrows() == 3
+    assert dict(sliced.experiment_identifiers()) == {3: "3", 4: "4", 5: "5"}
 
 
 def test_row_operations():
@@ -744,8 +757,6 @@ def test_copy():
 
 
 def test_extract_shoeboxes():
-    from dials.algorithms.shoebox import MaskCode
-
     random.seed(0)
 
     reflections = flex.reflection_table()
@@ -776,7 +787,8 @@ def test_extract_shoeboxes():
         reflections.append({"panel": random.randint(0, 1), "bbox": bbox})
 
     reflections["shoebox"] = flex.shoebox(reflections["panel"], reflections["bbox"])
-    reflections["shoebox"].allocate()
+    reflections["shoebox"].allocate_data()
+    reflections["shoebox"].allocate_background()
 
     class FakeImageSet:
         def __init__(self):
@@ -794,7 +806,7 @@ def test_extract_shoeboxes():
                 def __getitem__(self, index):
                     class FakePanel:
                         def get_trusted_range(self):
-                            return (-1, 1000000)
+                            return (0, 1000000)
 
                     return FakePanel()
 
@@ -939,8 +951,6 @@ def test_split_partials():
 
 
 def test_split_partials_with_shoebox():
-    from dials.model.data import Shoebox
-
     r = flex.reflection_table()
     r["value1"] = flex.double()
     r["value2"] = flex.int()
@@ -960,7 +970,8 @@ def test_split_partials_with_shoebox():
         v2 = random.randint(0, 100)
         v3 = random.uniform(0, 100)
         sbox = Shoebox(0, (x0, x1, y0, y1, z0, z1))
-        sbox.allocate()
+        sbox.allocate_data()
+        sbox.allocate_background()
         assert sbox.is_consistent()
         w = x1 - x0
         h = y1 - y0
@@ -980,7 +991,8 @@ def test_split_partials_with_shoebox():
         )
         for z in range(z0, z1):
             sbox = Shoebox(0, (x0, x1, y0, y1, z, z + 1))
-            sbox.allocate()
+            sbox.allocate_data()
+            sbox.allocate_background()
             assert sbox.is_consistent()
             w = x1 - x0
             h = y1 - y0
@@ -1084,37 +1096,37 @@ def test_find_overlapping():
             assert is_overlap(b0, b1, i)
 
 
-def test_to_from_msgpack(tmpdir):
-    from dials.model.data import Shoebox
+def gen_shoebox():
+    shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for k in range(1):
+        for j in range(3):
+            for i in range(4):
+                shoebox.data[k, j, i] = i + j + k + 0.1
+                shoebox.mask[k, j, i] = i % 2
+                shoebox.background[k, j, i] = i * j + 0.2
+    return shoebox
 
-    def gen_shoebox():
-        shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
-        shoebox.allocate()
-        for k in range(1):
-            for j in range(3):
-                for i in range(4):
-                    shoebox.data[k, j, i] = i + j + k + 0.1
-                    shoebox.mask[k, j, i] = i % 2
-                    shoebox.background[k, j, i] = i * j + 0.2
-        return shoebox
 
-    def compare(a, b):
-        assert a.is_consistent()
-        assert b.is_consistent()
-        assert a.panel == b.panel
-        assert a.bbox == b.bbox
-        for aa, bb in zip(a.data, b.data):
-            if abs(aa - bb) > 1e-9:
-                return False
-        for aa, bb in zip(a.background, b.background):
-            if abs(aa - bb) > 1e-9:
-                return False
-        for aa, bb in zip(a.mask, b.mask):
-            if aa != bb:
-                return False
-        return True
+def compare(a, b):
+    assert a.is_consistent()
+    assert b.is_consistent()
+    assert a.panel == b.panel
+    assert a.bbox == b.bbox
+    for aa, bb in zip(a.data, b.data):
+        if abs(aa - bb) > 1e-9:
+            return False
+    for aa, bb in zip(a.background, b.background):
+        if abs(aa - bb) > 1e-9:
+            return False
+    for aa, bb in zip(a.mask, b.mask):
+        if aa != bb:
+            return False
+    return True
 
-    # The columns as lists
+
+def table_and_columns():
     c1 = list(range(10))
     c2 = list(range(10))
     c3 = ["a", "b", "c", "d", "e", "f", "g", "i", "j", "k"]
@@ -1125,7 +1137,7 @@ def test_to_from_msgpack(tmpdir):
     c8 = [tuple(i + j for j in range(9)) for i in range(10)]
     c9 = [tuple(i + j for j in range(6)) for i in range(10)]
     c10 = [(i + 1, i + 2, i + 3) for i in range(10)]
-    c11 = [gen_shoebox() for i in range(10)]
+    c11 = [gen_shoebox() for _ in range(10)]
 
     # Create a table with some elements
     table = flex.reflection_table()
@@ -1140,6 +1152,47 @@ def test_to_from_msgpack(tmpdir):
     table["col9"] = flex.int6(c9)
     table["col10"] = flex.miller_index(c10)
     table["col11"] = flex.shoebox(c11)
+    return table, [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11]
+
+
+def test_to_from_h5(tmp_path):
+    # The columns as lists
+    table, columns = table_and_columns()
+    c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
+    table["id"] = flex.int(table.size(), 0)
+    table.experiment_identifiers()[0] = "test"
+
+    table.as_hdf5(tmp_path / "reflections.h5")
+    new_table = flex.reflection_table.from_hdf5(tmp_path / "reflections.h5")
+    assert new_table.is_consistent()
+    assert new_table.nrows() == 10
+    assert new_table.ncols() == 12  # one more as an id column is needed
+    assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
+    assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
+    assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
+    assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
+    assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
+    assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))
+    assert all(tuple(a == b for a, b in zip(new_table["col7"], c7)))
+    assert all(tuple(a == b for a, b in zip(new_table["col8"], c8)))
+    assert all(tuple(a == b for a, b in zip(new_table["col9"], c9)))
+    assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
+    assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
+
+    assert all(new_table["id"] == 0)
+    assert dict(new_table.experiment_identifiers()) == {0: "test"}
+
+    # test empty table
+    t = flex.reflection_table([])
+    t.as_hdf5(tmp_path / "empty.h5")
+    empty_table = flex.reflection_table.from_hdf5(tmp_path / "empty.h5")
+    assert list(empty_table.keys()) == []
+    assert not dict(empty_table.experiment_identifiers())
+
+
+def test_to_from_msgpack(tmp_path):
+    table, columns = table_and_columns()
+    c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
 
     obj = table.as_msgpack()
     new_table = flex.reflection_table.from_msgpack(obj)
@@ -1158,10 +1211,8 @@ def test_to_from_msgpack(tmpdir):
     assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
     assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
 
-    table.as_msgpack_file(tmpdir.join("reflections.mpack").strpath)
-    new_table = flex.reflection_table.from_msgpack_file(
-        tmpdir.join("reflections.mpack").strpath
-    )
+    table.as_msgpack_file(tmp_path / "reflections.mpack")
+    new_table = flex.reflection_table.from_msgpack_file(tmp_path / "reflections.mpack")
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
     assert new_table.ncols() == 11
@@ -1179,8 +1230,6 @@ def test_to_from_msgpack(tmpdir):
 
 
 def test_experiment_identifiers():
-    from dxtbx.model import Experiment, ExperimentList
-
     table = flex.reflection_table()
     table["id"] = flex.int([0, 1, 2, 3])
 
@@ -1293,9 +1342,9 @@ def test_experiment_identifiers():
     assert table.experiment_identifiers()[4] == "qrst"
 
 
-def test_select_remove_on_experiment_identifiers():
-
+def test_select_remove_on_experiment_identifiers(caplog):
     table = flex.reflection_table()
+    table.reset_ids()  # test empty table
     table["id"] = flex.int([0, 1, 2, 3])
 
     experiments = ExperimentList()
@@ -1335,19 +1384,25 @@ def test_select_remove_on_experiment_identifiers():
     table1.reset_ids()
     assert list(table1.experiment_identifiers().keys()) == []
 
-    # Test exception is raised if bad choice
-    with pytest.raises(KeyError):
-        table.remove_on_experiment_identifiers(["efgh"])
-    with pytest.raises(KeyError):
-        table.select_on_experiment_identifiers(["efgh"])
+    # Test warning is logged if bad choice
+    caplog.set_level(logging.WARNING)
+    table.remove_on_experiment_identifiers(["efgh"])
+    assert caplog.record_tuples[0][1] == logging.WARNING
+    caplog.clear()
+
+    table.select_on_experiment_identifiers(["efgh"])
+    assert caplog.record_tuples[0][1] == logging.WARNING
+    caplog.clear()
 
     table = flex.reflection_table()
     table["id"] = flex.int([0, 1, 2, 3])
-    # Test exception is raised if identifiers map not set
-    with pytest.raises(KeyError):
-        table.remove_on_experiment_identifiers(["efgh"])
-    with pytest.raises(KeyError):
-        table.select_on_experiment_identifiers(["abcd", "mnop"])
+    # Test warning is logged if identifiers map not set
+
+    table.remove_on_experiment_identifiers(["efgh"])
+    assert caplog.record_tuples[0][1] == logging.WARNING
+    caplog.clear()
+
+    table.select_on_experiment_identifiers(["abcd", "mnop"])
 
 
 def test_as_miller_array():
@@ -1375,10 +1430,10 @@ def test_as_miller_array():
         _ = table.as_miller_array(experiment, intensity="2")
 
 
-def test_map_centroids_to_reciprocal_space(dials_regression):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    expts_path = os.path.join(data_dir, "experiments_import.json")
+def test_map_centroids_to_reciprocal_space(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    expts_path = data_dir / "experiments_import.json"
 
     refl = flex.reflection_table.from_file(pickle_path)
     expts = load.experiment_list(expts_path, check_format=False)
@@ -1432,10 +1487,10 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     )
 
 
-def test_calculate_entering_flags(dials_regression):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    experiments_path = os.path.join(data_dir, "experiments_import.json")
+def test_calculate_entering_flags(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    experiments_path = data_dir / "experiments_import.json"
 
     refl = flex.reflection_table.from_pickle(pickle_path)
     experiments = load.experiment_list(experiments_path, check_format=False)
@@ -1577,7 +1632,6 @@ def test_match_by_hkle():
 
 
 def test_concat():
-
     table1 = flex.reflection_table()
     table2 = flex.reflection_table()
 
@@ -1592,8 +1646,14 @@ def test_concat():
     ids2[0] = "c"
     ids2[1] = "d"
 
-    table1 = flex.reflection_table.concat([table1, table2])
+    table3 = flex.reflection_table.concat([table1, table2])
+    ids3 = dict(table3.experiment_identifiers())
 
-    assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
-    assert list(ids1.keys()) == [0, 1, 2, 3]
-    assert list(ids1.values()) == ["a", "b", "c", "d"]
+    assert list(table3["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
+    assert list(ids3.keys()) == [0, 1, 2, 3]
+    assert list(ids3.values()) == ["a", "b", "c", "d"]
+
+    # test empty tables
+    table1 = flex.reflection_table()
+    table2 = flex.reflection_table()
+    table1 = flex.reflection_table.concat([table1, table2])

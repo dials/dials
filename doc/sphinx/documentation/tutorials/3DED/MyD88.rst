@@ -177,9 +177,8 @@ viewer with this command:
 
    dials.image_viewer imported.expt strong.refl
 
-Another useful viewer is the 3D
-:doc:`dials.reciprocal_lattice_viewer<../../programs/dials_reciprocal_lattice_viewer>`,
-which we will now launch like this
+Another useful viewer is the 3D dials.reciprocal_lattice_viewer, which we will now
+launch like this
 
 .. code-block:: bash
 

@@ -11,33 +11,27 @@ from pathlib import Path
 import libtbx
 import libtbx.pkg_utils
 
-try:
-    import pkg_resources
-except ModuleNotFoundError:
-    pkg_resources = None
+# So that we can import DIALS within this script, work out where the
+# sources are and make them importable
+_src_path_root = str(Path(libtbx.env.dist_path("dials")).joinpath("src"))
+if _src_path_root not in sys.path:
+    sys.path.insert(0, _src_path_root)
 
-# Hack:
-# Other packages, configured first, might attempt to import dials, which
-# would only get a namespace package. This means even just setting the
-# path wouldn't work.
-# So, check to see if we have a namespace package imported, remove it (and
-# any sub-packages), set the __path__, then import the real copy of DIALS.
-#
-# This is probably... not something we want to do, but it allows moving
-# to src/ without drastically changing this part of the setup.
+# Other packages, configured first, might have attempted to import dials, which
+# would only get a namespace package, if the modules/ folder is configured as a
+# repository. This means just setting the path wouldn't work. So, check to see
+# if we have a namespace package imported, remove it (and any sub-packages),
+# set the __path__, then import the real copy of DIALS.
 #
 # If this is *only* dxtbx, then we can probably get away without this by
 # removing this part from dxtbx.
 _dials = sys.modules.get("dials")
 if _dials and _dials.__file__ is None:
     # Someone tried to import us and got a namespace package
-    _src_path_root = str(Path(libtbx.env.dist_path("dials")).joinpath("src"))
     del sys.modules["dials"]
     # Remove any sub-modules that we might have tried and failed to import
     for _module in [x for x in sys.modules if x.startswith("dials.")]:
         del sys.modules[_module]
-    # Add the new path at the front of the system paths list
-    sys.path.insert(0, _src_path_root)
 
 # Now, check to see if we configured XFEL first. If so, this is an error and we
 # have a mis-configured environment.
@@ -61,7 +55,7 @@ Error:
 """
         )
 
-import dials.precommitbx.nagger
+import dials.precommitbx.nagger  # noqa: E402
 
 try:
     from dials.util.version import dials_version
@@ -74,6 +68,25 @@ dials.precommitbx.nagger.nag()
 
 # During src/ transition, this ensures that the old entry points are cleared
 libtbx.pkg_utils.define_entry_points({})
+
+
+def _find_site_packages_with_metadata(package_name: str, build_path: Path):
+    """
+    Find the site-packages directory containing the package metadata.
+    Returns the site-packages directory if metadata is found, None otherwise.
+    """
+    # Look for Python site-packages directories in the build path
+    for python_dir in build_path.glob("lib/python*"):
+        site_packages = python_dir / "site-packages"
+        if site_packages.exists():
+            # Look for both .dist-info and .egg-info directories
+            for pattern in [f"{package_name}*.dist-info", f"{package_name}*.egg-info"]:
+                for metadata_dir in site_packages.glob(pattern):
+                    if metadata_dir.exists():
+                        # Return site-packages only if we actually found metadata
+                        return site_packages
+            # If no metadata found in this site-packages, continue searching
+    return None
 
 
 def _install_setup_readonly_fallback(package_name: str):
@@ -107,32 +120,27 @@ def _install_setup_readonly_fallback(package_name: str):
     # Get the actual environment being configured (NOT libtbx.env)
     env = _get_real_env_hack_hack_hack()
 
-    # Update the libtbx environment pythonpaths to point to the source
-    # location which now has an .egg-info folder; this will mean that
-    # the PYTHONPATH is written into the libtbx dispatchers
-    rel_path = libtbx.env.as_relocatable_path(import_path)
-    if rel_path not in env.pythonpath:
-        env.pythonpath.insert(0, rel_path)
+    # As of PEP 660, the package metadata (dist-info) goes in the install dir,
+    # not the source dir. Add this location to the python path.
+    metadata_dir = _find_site_packages_with_metadata(package_name, Path(build_path))
+    if metadata_dir and metadata_dir not in sys.path:
+        metadata_rel = libtbx.env.as_relocatable_path(str(metadata_dir))
+        if metadata_rel not in env.pythonpath:
+            env.pythonpath.insert(0, metadata_rel)
 
-    # Update the sys.path so that we can find the .egg-info in this process
+    # Update the sys.path so we can find the package in this process
     # if we do a full reconstruction of the working set
     if import_path not in sys.path:
         sys.path.insert(0, import_path)
-
-    # ...and add to the existing pkg_resources working_set
-    if pkg_resources:
-        pkg_resources.working_set.add_entry(import_path)
 
     # Add the src/ folder as an extra command_line_locations for dispatchers
     module = env.module_dict[package_name]
     if f"src/{package_name}" not in module.extra_command_line_locations:
         module.extra_command_line_locations.append(f"src/{package_name}")
 
-    # Regenerate dispatchers for this module, and for any other modules
-    # that might depend on it
-    my_index = env.module_list.index(module)
+    # Regenerate dispatchers for all modules with this new sys.path
     with contextlib.redirect_stdout(io.StringIO()):
-        for module in env.module_list[my_index:]:
+        for module in env.module_list:
             module.process_command_line_directories()
 
 
@@ -221,9 +229,7 @@ export PATH
 }
 
 unset LIBTBX_BUILD
-""" % abs(
-            libtbx.env.build_path
-        )
+""" % abs(libtbx.env.build_path)
     with open(filename, "w") as fh:
         fh.write(script.lstrip())
 
@@ -314,9 +320,7 @@ for cmd in [
     Requires(ac, Dir(libtbx.env.under_build("lib")))
     Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "src", "dials", "util", "options.py"))
     Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "autocomplete.sh"))
-""".format(
-                "\n".join([f'    "{cmd}",' for cmd in command_list])
-            )
+""".format("\n".join([f'    "{cmd}",' for cmd in command_list]))
         )
 
     # Generate a bash script activating command line completion for each relevant command

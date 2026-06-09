@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, Mock
 
+import numpy as np
 import pytest
 
 from dxtbx import flumpy
@@ -30,7 +31,7 @@ from dials.util.options import ArgumentParser
 def side_effect_update_var(variances, intensities):
     """Side effect to mock configure reflection table
     call during initialisation."""
-    return flex.double(range(1, len(variances) + 1))
+    return np.arange(1, len(variances) + 1)
 
 
 @pytest.fixture

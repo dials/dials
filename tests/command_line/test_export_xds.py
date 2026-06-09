@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
 
 from dials.array_family import flex
 
 
 def test_spots_xds(tmp_path):
     xds_input = "SPOT.XDS"
-    output_pickle = "spot.refl"
+    output_filepath = "spot.refl"
 
     tmp_path.joinpath(xds_input).write_text(
         """\
@@ -24,28 +25,30 @@ def test_spots_xds(tmp_path):
 """
     )
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.import_xds",
+            shutil.which("dials.import_xds"),
             xds_input,  # xparm_file,
-            "input.method=reflections",
-            "output.filename=" + output_pickle,
+            "output.reflections=" + output_filepath,
             "remove_invalid=True",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
-    assert tmp_path.joinpath(output_pickle).is_file()
+    assert tmp_path.joinpath(output_filepath).is_file()
 
-    reflections = flex.reflection_table.from_file(tmp_path / output_pickle)
+    reflections = flex.reflection_table.from_file(tmp_path / output_filepath)
     assert len(reflections) == 5
 
     tmp_path.joinpath(xds_input).unlink()
     assert not tmp_path.joinpath(xds_input).exists()
 
     # now test we can export it again
-    result = procrunner.run(
-        ["dials.export", "format=xds", output_pickle], working_directory=tmp_path
+    result = subprocess.run(
+        [shutil.which("dials.export"), "format=xds", output_filepath],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("xds", "SPOT.XDS").is_file()
@@ -59,28 +62,29 @@ def test_spots_xds(tmp_path):
  1317.52 1171.59 19.28 120.00  6 -4 6
  1260.25 1300.55 13.67 116.00  -4 2 6
  1090.27 1199.47 41.49 114.00  -2 3 -13
-""".split(
-            "\n"
-        )
+""".split("\n")
     ]
 
 
 def test_export_xds(dials_data, tmp_path):
-    experiment = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    result = procrunner.run(
-        ["dials.find_spots", "nproc=1", experiment], working_directory=tmp_path
+    experiment = dials_data("centroid_test_data") / "experiments.json"
+    result = subprocess.run(
+        [shutil.which("dials.find_spots"), "nproc=1", experiment],
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("strong.refl").is_file()
 
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.export",
+            shutil.which("dials.export"),
             "format=xds",
             experiment,
             "strong.refl",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("xds", "XDS.INP").is_file()
@@ -91,13 +95,14 @@ def test_export_xds(dials_data, tmp_path):
     tmp_path.joinpath("xds", "XPARM.XDS").unlink()
     assert not tmp_path.joinpath("xds", "XDS.INP").is_file()
     assert not tmp_path.joinpath("xds", "XPARM.XDS").is_file()
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.export",
+            shutil.which("dials.export"),
             "format=xds",
             experiment,
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("xds", "XDS.INP").is_file()
@@ -105,14 +110,14 @@ def test_export_xds(dials_data, tmp_path):
 
 
 def test_export_imported_experiments(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         [
-            "dials.export",
+            shutil.which("dials.export"),
             "format=xds",
-            dials_data("centroid_test_data", pathlib=True)
-            / "imported_experiments.json",
+            dials_data("centroid_test_data") / "imported_experiments.json",
         ],
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("xds", "XDS.INP").is_file()

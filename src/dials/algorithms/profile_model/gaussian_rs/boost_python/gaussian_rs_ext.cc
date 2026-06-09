@@ -8,6 +8,7 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
+#include <memory>
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost_adaptbx/std_pair_conversion.h>
@@ -19,11 +20,8 @@
 #include <dials/algorithms/profile_model/gaussian_rs/modeller.h>
 #include <dials/algorithms/profile_model/modeller/boost_python/empirical_profile_modeller_wrapper.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace boost_python {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace boost_python {
 
     using namespace boost::python;
 
@@ -131,7 +129,7 @@ namespace dials {
         dials::algorithms::boost_python::empirical_profile_modeller_wrapper<
           GaussianRSProfileModeller>("GaussianRSProfileModeller");
       result
-        .def(init<boost::shared_ptr<BeamBase>,
+        .def(init<std::shared_ptr<BeamBase>,
                   const Detector&,
                   const Goniometer&,
                   const Scan&,
@@ -144,6 +142,11 @@ namespace dials {
                   int,
                   int>())
         .def("coord", &GaussianRSProfileModeller::coord)
+        .def("model", &GaussianRSProfileModeller::model, (arg("reflections")))
+        .def("fit_reciprocal_space",
+             &GaussianRSProfileModeller::fit_reciprocal_space,
+             (arg("reflections")))
+        .def("normalize_profiles", &GaussianRSProfileModeller::normalize_profiles)
         .def_pickle(GaussianRSProfileModellerPickleSuite());
 
       scope in_modeller = result;
@@ -158,10 +161,10 @@ namespace dials {
         .value("reciprocal_space", GaussianRSProfileModeller::ReciprocalSpace)
         .value("detector_space", GaussianRSProfileModeller::DetectorSpace);
 
-      /* register_ptr_to_python< boost::shared_ptr<GaussianRSProfileModeller> >(); */
+      /* register_ptr_to_python< std::shared_ptr<GaussianRSProfileModeller> >(); */
       /* implicitly_convertible< */
-      /*   boost::shared_ptr<GaussianRSProfileModeller>, */
-      /* boost::shared_ptr<ProfileModellerIface> >(); */
+      /*   std::shared_ptr<GaussianRSProfileModeller>, */
+      /* std::shared_ptr<ProfileModellerIface> >(); */
     }
 
     BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_ext) {
@@ -291,10 +294,10 @@ namespace dials {
 
       // Export zeta factor functions
       def("zeta_factor",
-          (double (*)(vec3<double>, vec3<double>, vec3<double>)) & zeta_factor,
+          (double (*)(vec3<double>, vec3<double>, vec3<double>))&zeta_factor,
           (arg("m2"), arg("s0"), arg("s1")));
       def("zeta_factor",
-          (double (*)(vec3<double>, vec3<double>)) & zeta_factor,
+          (double (*)(vec3<double>, vec3<double>))&zeta_factor,
           (arg("m2"), arg("e1")));
       def("zeta_factor", &zeta_factor_array, (arg("m2"), arg("s0"), arg("s1")));
       def("zeta_factor",

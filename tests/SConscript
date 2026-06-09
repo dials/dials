@@ -1,5 +1,6 @@
 Import("env")
 
+newlibs = [l for l in env["LIBS"] if "python" not in l]
 env.Replace(LIBS=[])
 
 env.Program(
@@ -9,4 +10,9 @@ env.Program(
 env.Program(
     target="algorithms/spatial_indexing/tst_collision_detection",
     source="algorithms/spatial_indexing/tst_collision_detection.cc",
+)
+env.Program(
+    target="util/tst_thread_pool",
+    source="util/tst_thread_pool.cc",
+    LIBS=newlibs,
 )

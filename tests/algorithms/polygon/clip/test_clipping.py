@@ -62,7 +62,6 @@ def generate_polygon(nvert, box):
 
 def test_SimpleWithConvex_intersecting():
     for i in range(10000):
-
         # Generate intersecting polygons
         subject, target = generate_intersecting()
 
@@ -78,7 +77,6 @@ def test_SimpleWithConvex_intersecting():
 
 def test_SimpleWithConvex_non_intersecting():
     for i in range(10000):
-
         # Generate nonintersecting polygons
         subject, target = generate_non_intersecting()
 
@@ -93,7 +91,6 @@ def test_SimpleWithConvex_non_intersecting():
 
 def test_SimpleWithRect_intersecting():
     for i in range(10000):
-
         # Generate intersecting polygons
         subject, target = generate_intersecting(target_size=2)
         rect = ((0, 0), (10, 10))
@@ -108,7 +105,6 @@ def test_SimpleWithRect_intersecting():
 
 def test_TriangleWithTriangle_intersecting():
     for i in range(10000):
-
         # Generate intersecting polygons
         subject, target = generate_intersecting(3, 3)
 
@@ -122,7 +118,6 @@ def test_TriangleWithTriangle_intersecting():
 
 def test_TriangleWithTriangle_non_intersecting():
     for i in range(10000):
-
         # Generate nonintersecting polygons
         subject, target = generate_non_intersecting(3, 3)
 
@@ -135,7 +130,6 @@ def test_TriangleWithTriangle_non_intersecting():
 
 def test_TriangleWithConvexQuad_intersecting():
     for i in range(10000):
-
         # Generate intersecting polygons
         subject, target = generate_intersecting(3, 4)
 
@@ -149,7 +143,6 @@ def test_TriangleWithConvexQuad_intersecting():
 
 def test_TriangleWithConvexQuad_non_intersecting():
     for i in range(10000):
-
         # Generate nonintersecting polygons
         subject, target = generate_non_intersecting(3, 4)
 
@@ -162,7 +155,6 @@ def test_TriangleWithConvexQuad_non_intersecting():
 
 def test_QuadWithTriangle_intersecting():
     for i in range(10000):
-
         # Generate intersecting polygons
         subject, target = generate_intersecting(4, 3)
 
@@ -176,7 +168,6 @@ def test_QuadWithTriangle_intersecting():
 
 def test_QuadWithTriangle_non_intersecting():
     for i in range(10000):
-
         # Generate nonintersecting polygons
         subject, target = generate_non_intersecting(4, 3)
 
@@ -189,7 +180,6 @@ def test_QuadWithTriangle_non_intersecting():
 
 def test_QuadWithConvexQuad_intersecting():
     for i in range(10000):
-
         # Generate intersecting polygons
         subject, target = generate_intersecting(4, 4)
 
@@ -203,7 +193,6 @@ def test_QuadWithConvexQuad_intersecting():
 
 def test_QuadWithConvexQuad_non_intersecting():
     for i in range(10000):
-
         # Generate nonintersecting polygons
         subject, target = generate_non_intersecting(4, 4)
 

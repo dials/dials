@@ -1,4 +1,4 @@
-""""
+""" "
 Classes that each define a smoothly varying component of a scaling model.
 
 These classes use a gaussian smoother (1D, 2D or 3D) to calculate the
@@ -126,9 +126,7 @@ class SmoothMixin:
     def nparam_to_val(n_params):
         """Convert the number of parameters to the required input value
         for the smoother."""
-        assert (
-            n_params >= 2
-        ), """cannot initialise a smooth scale factor
+        assert n_params >= 2, """cannot initialise a smooth scale factor
       for <2 parameters."""
         if n_params == 2 or n_params == 3:
             return n_params - 1
@@ -352,9 +350,7 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     null_parameter_value = 1.0
 
     def __init__(self, initial_values, shape, parameter_esds=None):
-        assert len(initial_values) == (
-            shape[0] * shape[1]
-        ), """The shape
+        assert len(initial_values) == (shape[0] * shape[1]), """The shape
     information to initialise a 2D smoother is inconsistent with the length
     of the initial parameter list."""
         super().__init__(initial_values, parameter_esds)
@@ -490,9 +486,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     null_parameter_value = 1.0
 
     def __init__(self, initial_values, shape, parameter_esds=None):
-        assert len(initial_values) == (
-            shape[0] * shape[1] * shape[2]
-        ), """The
+        assert len(initial_values) == (shape[0] * shape[1] * shape[2]), """The
     shape information to initialise a 3D smoother is inconsistent with the
     length of the initial parameter list."""
         super().__init__(initial_values, parameter_esds)

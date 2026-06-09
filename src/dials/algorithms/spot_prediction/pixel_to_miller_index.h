@@ -37,11 +37,11 @@ namespace dials { namespace algorithms {
     /**
      * Initialize with models
      */
-    PixelToMillerIndex(const BeamBase &beam,
-                       const Detector &detector,
-                       const Goniometer &goniometer,
-                       const Scan &scan,
-                       const CrystalBase &crystal)
+    PixelToMillerIndex(const BeamBase& beam,
+                       const Detector& detector,
+                       const Goniometer& goniometer,
+                       const Scan& scan,
+                       const CrystalBase& crystal)
         : detector_(detector),
           scan_(scan),
           s0_(beam.get_s0()),
@@ -53,9 +53,9 @@ namespace dials { namespace algorithms {
     /**
      * Initialize with models
      */
-    PixelToMillerIndex(const BeamBase &beam,
-                       const Detector &detector,
-                       const CrystalBase &crystal)
+    PixelToMillerIndex(const BeamBase& beam,
+                       const Detector& detector,
+                       const CrystalBase& crystal)
         : detector_(detector),
           s0_(beam.get_s0()),
           m2_(0, 0, 0),

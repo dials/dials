@@ -1,12 +1,10 @@
 """Testing functions for multivariate outlier rejection by the FAST-MCD
 algorithm"""
 
-
 from __future__ import annotations
 
 
 def test_maha():
-
     # Want implementation of Mahalanobis distance to match this R session:
 
     # > x1 <- round(rnorm(10,3), 3)
@@ -157,7 +155,7 @@ def test_fast_mcd_small():
 
     # unpack the data into vectors
     rows = [[float(e) for e in row.split()] for row in hbk.splitlines()]
-    x1, x2, x3 = [flex.double(e) for e in zip(*rows)]
+    x1, x2, x3 = (flex.double(e) for e in zip(*rows))
 
     # Fast MCD raw estimates
     fast_mcd = FastMCD([x1, x2, x3])
@@ -195,7 +193,7 @@ def test_fast_mcd_small():
     assert approx_equal(fast_mcd._finite_samp_fac, 1.12792118859)
 
 
-def test_fast_mcd_large(dials_regression):
+def test_fast_mcd_large(dials_data):
     # set random seeds to try to avoid assertion errors due to occasionally
     # finding less common solutions
     import random
@@ -208,11 +206,7 @@ def test_fast_mcd_large(dials_regression):
     flex.set_random_seed(42)
 
     # test large dataset algorithm
-    import os
-
-    data_pth = os.path.join(
-        dials_regression, "refinement_test_data", "outlier_rejection", "residuals.dat"
-    )
+    data_pth = dials_data("refinement_test_data") / "residuals-with-outliers.dat"
 
     with open(data_pth) as f:
         residuals = f.readlines()

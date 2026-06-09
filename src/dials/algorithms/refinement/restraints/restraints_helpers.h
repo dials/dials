@@ -12,7 +12,7 @@
 #define DIALS_REFINEMENT_RESTRAINTS_HELPERS_H
 
 #ifndef RAD2DEG
-#define RAD2DEG(x) ((x)*57.29577951308232087721)
+#define RAD2DEG(x) ((x) * 57.29577951308232087721)
 #endif
 
 #include <scitbx/mat3.h>
@@ -38,8 +38,8 @@ namespace dials { namespace refinement {
    */
   class CalculateCellGradients {
   public:
-    CalculateCellGradients(const mat3<double> &B,
-                           const af::const_ref<mat3<double> > &dB_dp) {
+    CalculateCellGradients(const mat3<double>& B,
+                           const af::const_ref<mat3<double> >& dB_dp) {
       // calculate the real space orthogonalisation matrix and its derivatives
       Omat_ = (B.transpose()).inverse();
       for (std::size_t i = 0; i < dB_dp.size(); ++i) {

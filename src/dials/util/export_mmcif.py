@@ -14,13 +14,49 @@ from cctbx import miller
 from cctbx.sgtbx import bravais_types
 from iotbx.merging_statistics import dataset_statistics
 from libtbx import Auto
+from mmtbx.scaling import data_statistics as mmtbx_dataset_statistics
 from scitbx.array_family import flex
 
 import dials.util.version
+from dials.algorithms.symmetry import median_unit_cell
+from dials.util.citations import (
+    dials_citation,
+    dials_scale_citation,
+    ssx_citation,
+    xds_citation,
+)
 from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
+dials_version = dials.util.version.dials_version()
+
+
+stats_formats = {
+    "_reflns.d_resolution_high": "{:.3f}",
+    "_reflns.d_resolution_low": "{:.3f}",
+    "_reflns.pdbx_CC_half": "{:.4f}",
+    "_reflns.pdbx_Rmerge_I_obs": "{:.4f}",
+    "_reflns.pdbx_Rpim_I_all": "{:.4f}",
+    "_reflns.pdbx_Rrim_I_all": "{:.4f}",
+    "_reflns.pdbx_netI_over_sigmaI": "{:.3f}",
+    "_reflns.pdbx_netI_over_av_sigmaI": "{:.3f}",
+    "_reflns.pdbx_redundancy": "{:.3f}",
+    "_reflns.percent_possible_obs": "{:.3f}",
+}
+
+stats_array_formats = {
+    "_reflns_shell.d_res_high": "{:.3f}",
+    "_reflns_shell.d_res_low": "{:.3f}",
+    "_reflns_shell.pdbx_CC_half": "{:.4f}",
+    "_reflns_shell.Rmerge_I_obs": "{:.4f}",
+    "_reflns_shell.pdbx_Rpim_I_all": "{:.4f}",
+    "_reflns_shell.pdbx_Rrim_I_all": "{:.4f}",
+    "_reflns_shell.pdbx_netI_over_sigmaI_obs": "{:.3f}",
+    "_reflns_shell.meanI_over_sigI_obs": "{:.3f}",
+    "_reflns_shell.pdbx_redundancy": "{:.3f}",
+    "_reflns_shell.percent_possible_obs": "{:.3f}",
+}
 
 
 class MMCIFOutputFile:
@@ -34,7 +70,8 @@ class MMCIFOutputFile:
         """
         self._cif = iotbx.cif.model.cif()
         self.params = params
-        self._fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
+        self._v5_next_fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
+        self._v5_0_fmt = "%2i %6i %-2i %-2i %-2i %5.3f %5.3f"
 
     def write(self, experiments, reflections):
         """
@@ -61,7 +98,10 @@ class MMCIFOutputFile:
         # Add the block
         self._cif["dials"] = self.make_cif_block(experiments, reflections)
 
-        loop_format_strings = {"_pdbx_diffrn_unmerged_refln": self._fmt}
+        if self.params.mmcif.pdb_version == "v5":
+            loop_format_strings = {"_diffrn_refln": self._v5_0_fmt}
+        else:
+            loop_format_strings = {"_pdbx_diffrn_unmerged_refln": self._v5_next_fmt}
 
         # Print to file
         if self.params.mmcif.compress and not filename.endswith(
@@ -85,19 +125,17 @@ class MMCIFOutputFile:
     def make_cif_block(self, experiments, reflections):
         """Write the data to a cif block"""
         # Select reflections
-        selection = reflections.get_flags(reflections.flags.integrated, all=True)
+        selection = reflections.get_flags(reflections.flags.integrated, all=False)
         reflections = reflections.select(selection)
 
-        # Filter out bad variances and other issues, but don't filter on ice rings
-        # or alter partialities.
-
         # Assumes you want to apply the lp and dqe corrections to sum and prf
-        # Do we want to combine partials?
         reflections = filter_reflection_table(
             reflections,
             self.params.intensity,
-            combine_partials=False,
-            partiality_threshold=0.0,
+            partiality_threshold=self.params.mtz.partiality_threshold,
+            combine_partials=self.params.mtz.combine_partials,
+            min_isigi=self.params.mtz.min_isigi,
+            filter_ice_rings=self.params.mtz.filter_ice_rings,
             d_min=self.params.mtz.d_min,
         )
 
@@ -105,7 +143,6 @@ class MMCIFOutputFile:
         cif_block = iotbx.cif.model.block()
 
         # Audit trail
-        dials_version = dials.util.version.dials_version()
         cif_block["_audit.revision_id"] = 1
         cif_block["_audit.creation_method"] = dials_version
         cif_block["_audit.creation_date"] = datetime.date.today().isoformat()
@@ -114,11 +151,12 @@ class MMCIFOutputFile:
         mmcif_software_header = (
             "_software.pdbx_ordinal",
             "_software.citation_id",
-            "_software.name",  # as defined at [1]
+            "_software.name",
             "_software.version",
             "_software.type",
             "_software.classification",
             "_software.description",
+            "_software.pdbx_reference_DOI",
         )
 
         mmcif_citations_header = (
@@ -135,52 +173,30 @@ class MMCIFOutputFile:
         software_loop = iotbx.cif.model.loop(header=mmcif_software_header)
         citations_loop = iotbx.cif.model.loop(header=mmcif_citations_header)
 
-        software_loop.add_row(
-            (
-                1,
-                1,
-                "DIALS",
-                dials_version,
-                "package",
-                "data processing",
-                "Data processing and integration within the DIALS software package",
+        ## for now, only sign it was obtained by dials.import_xds is if some
+        ## not_suitable_for_refinement flags are set.
+        if any(reflections.get_flags(reflections.flags.not_suitable_for_refinement)):
+            integration_software = xds_citation
+        else:
+            integration_software = dials_citation
+        software_loop.add_row((1, 1) + integration_software.mmcif_software_loop_data())
+        citations_loop.add_row((1,) + integration_software.mmcif_citation_loop_data())
+        next_id = 2
+        if (
+            experiments[0].profile
+            and experiments[0].profile.to_dict()["__id__"] == "ellipsoid"
+        ):
+            software_loop.add_row(
+                (next_id, next_id) + ssx_citation.mmcif_software_loop_data()
             )
-        )
-        citations_loop.add_row(
-            (
-                1,
-                "Acta Cryst. D",
-                74,
-                2,
-                85,
-                97,
-                2018,
-                "DIALS: implementation and evaluation of a new integration package",
-            )
-        )
+            citations_loop.add_row((next_id,) + ssx_citation.mmcif_citation_loop_data())
+            next_id += 1
         if "scale" in self.params.intensity:
             software_loop.add_row(
-                (
-                    2,
-                    2,
-                    "DIALS",
-                    dials_version,
-                    "program",
-                    "data scaling",
-                    "Data scaling and merging within the DIALS software package",
-                )
+                (next_id, next_id) + dials_scale_citation.mmcif_software_loop_data()
             )
             citations_loop.add_row(
-                (
-                    2,
-                    "Acta Cryst. D",
-                    76,
-                    4,
-                    385,
-                    399,
-                    2020,
-                    "Scaling diffraction data in the DIALS software package: algorithms and new approaches for multi-crystal scaling",
-                )
+                (next_id,) + dials_scale_citation.mmcif_citation_loop_data()
             )
         cif_block.add_loop(software_loop)
         cif_block.add_loop(citations_loop)
@@ -206,7 +222,8 @@ class MMCIFOutputFile:
         epochs = []
         for exp in experiments:
             wls.append(round(exp.beam.get_wavelength(), 5))
-            epochs.append(exp.scan.get_epochs()[0])
+            if exp.scan:
+                epochs.append(exp.scan.get_epochs()[0])
         unique_wls = set(wls)
         cif_block["_exptl_crystal.id"] = 1  # links to crystal_id
         cif_block["_diffrn.id"] = 1  # links to diffrn_id
@@ -221,14 +238,39 @@ class MMCIFOutputFile:
         # _diffrn_detector.pdbx_collection_date = (Date of collection yyyy-mm-dd)
         # _diffrn_detector.type = (full name of detector e.g. DECTRIS PILATUS3 2M)
         # One date is required, so if multiple just use the first date.
-        min_epoch = min(epochs)
-        date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
         cif_block["_diffrn_detector.diffrn_id"] = 1
-        cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
+        cif_block["_diffrn_detector.id"] = 1
+        if epochs:  # some still expts have scans, but some don't
+            min_epoch = min(epochs)
+            date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
+            cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
+
+        # add some symmetry information
+        sginfo = experiments[0].crystal.get_space_group().info()
+        symbol = sginfo.type().universal_hermann_mauguin_symbol()
+        number = sginfo.type().number()
+        symmetry_block = iotbx.cif.model.block()
+        symmetry_block["_symmetry.entry_id"] = "DIALS"
+        symmetry_block["_symmetry.space_group_name_H-M"] = symbol
+        symmetry_block["_symmetry.Int_Tables_number"] = number
+        cif_block.update(symmetry_block)
+
+        # add a loop with cell values (median if multi-crystal)
+        median_cell = median_unit_cell(experiments)
+        a, b, c, al, be, ga = median_cell.parameters()
+        cell_block = iotbx.cif.model.block()
+        cell_block["_cell.entry_id"] = "DIALS"
+        cell_block["_cell.length_a"] = f"{a:.4f}"
+        cell_block["_cell.length_b"] = f"{b:.4f}"
+        cell_block["_cell.length_c"] = f"{c:.4f}"
+        cell_block["_cell.angle_alpha"] = f"{al:.4f}"
+        cell_block["_cell.angle_beta"] = f"{be:.4f}"
+        cell_block["_cell.angle_gamma"] = f"{ga:.4f}"
+        cif_block.update(cell_block)
 
         # Write reflection data
         # Required columns
-        header = (
+        v5_next_header = (
             "_pdbx_diffrn_unmerged_refln.reflection_id",
             "_pdbx_diffrn_unmerged_refln.scan_id",
             "_pdbx_diffrn_unmerged_refln.image_id_begin",
@@ -238,7 +280,17 @@ class MMCIFOutputFile:
             "_pdbx_diffrn_unmerged_refln.index_l",
         )
 
-        extra_items = {
+        v5_0_header = (
+            "_diffrn_refln.diffrn_id",  # pointer to _diffrn.id in the DIFFRN category.
+            "_diffrn_refln.id",  # uniquely identifies reflection
+            "_diffrn_refln.index_h",
+            "_diffrn_refln.index_k",
+            "_diffrn_refln.index_l",
+            "_diffrn_refln.pdbx_detector_x",
+            "_diffrn_refln.pdbx_detector_y",
+        )
+
+        v5_next_extra_items = {
             "scales": ("_pdbx_diffrn_unmerged_refln.scale_value", "%5.3f"),
             "intensity.scale.value": (
                 "_pdbx_diffrn_unmerged_refln.intensity_meas",
@@ -268,6 +320,13 @@ class MMCIFOutputFile:
             "partiality": ("_pdbx_diffrn_unmerged_refln.partiality", "%7.4f"),
         }
 
+        v5_0_extra_items = {
+            "scales": ("_diffrn_refln.pdbx_scale_value", "%5.3f"),
+            "intensity.scale.value": ("_diffrn_refln.intensity_net", "%8.3f"),
+            "intensity.scale.sigma": ("_diffrn_refln.intensity_sigma", "%8.3f"),
+            "angle": ("_diffrn_refln.pdbx_scan_angle", "%7.4f"),
+        }
+
         variables_present = []
         if "scale" in self.params.intensity:
             reflections["scales"] = 1.0 / reflections["inverse_scale_factor"]
@@ -277,28 +336,46 @@ class MMCIFOutputFile:
             variables_present.extend(
                 ["scales", "intensity.scale.value", "intensity.scale.sigma"]
             )
-        if "sum" in self.params.intensity:
-            reflections["intensity.sum.sigma"] = flex.sqrt(
-                reflections["intensity.sum.variance"]
-            )
-            variables_present.extend(["intensity.sum.value", "intensity.sum.sigma"])
-        if "profile" in self.params.intensity:
-            reflections["intensity.prf.sigma"] = flex.sqrt(
-                reflections["intensity.prf.variance"]
-            )
-            variables_present.extend(["intensity.prf.value", "intensity.prf.sigma"])
+        if self.params.mmcif.pdb_version == "v5_next":
+            if "sum" in self.params.intensity:
+                reflections["intensity.sum.sigma"] = flex.sqrt(
+                    reflections["intensity.sum.variance"]
+                )
+                variables_present.extend(["intensity.sum.value", "intensity.sum.sigma"])
+            if "profile" in self.params.intensity:
+                reflections["intensity.prf.sigma"] = flex.sqrt(
+                    reflections["intensity.prf.variance"]
+                )
+                variables_present.extend(["intensity.prf.value", "intensity.prf.sigma"])
 
         # Should always exist
         reflections["angle"] = reflections["xyzcal.mm"].parts()[2] * RAD2DEG
         variables_present.extend(["angle"])
 
-        if "partiality" in reflections:
-            variables_present.extend(["partiality"])
+        if self.params.mmcif.scale and "intensity.scale.value" in reflections:
+            min_val = min(reflections["intensity.scale.value"])
+            if min_val <= self.params.mmcif.min_scale:
+                # reduce the range of data, for e.g. sortmtz analysis
+                divisor = abs(min_val) / abs(self.params.mmcif.min_scale)
+                n = len(str(divisor).split(".")[0])
+                divisor = float("1" + int(n) * "0")
+                reflections["intensity.scale.value"] /= divisor
+                reflections["intensity.scale.sigma"] /= divisor
+                reflections["scales"] /= divisor
+
+        if self.params.mmcif.pdb_version == "v5_next":
+            if "partiality" in reflections:
+                variables_present.extend(["partiality"])
 
         for name in variables_present:
             if name in reflections:
-                header += (extra_items[name][0],)
-                self._fmt += " " + extra_items[name][1]
+                v5_next_header += (v5_next_extra_items[name][0],)
+                self._v5_next_fmt += " " + v5_next_extra_items[name][1]
+
+        for name in variables_present:
+            if name in reflections and name in v5_0_extra_items:
+                v5_0_header += (v5_0_extra_items[name][0],)
+                self._v5_0_fmt += " " + v5_0_extra_items[name][1]
 
         if "scale" in self.params.intensity:
             # Write dataset_statistics - first make a miller array
@@ -325,17 +402,126 @@ class MMCIFOutputFile:
                 eliminate_sys_absent=False,
                 assert_is_not_unique_set_under_symmetry=False,
             )
+            merged = i_obs.merge_equivalents(use_internal_variance=False)
+            # Also estimate the Wilson B factor.
+            iso_b_wilson = mmtbx_dataset_statistics.wilson_scaling(
+                miller_array=merged.array(), n_residues=200
+            ).iso_b_wilson
             merged_block = iotbx.cif.model.block()
             merged_block["_reflns.pdbx_ordinal"] = 1
             merged_block["_reflns.pdbx_diffrn_id"] = 1
             merged_block["_reflns.entry_id"] = "DIALS"
             merged_data = result.as_cif_block()
+            # Apply custom formatting.
+            for k in list(merged_data.keys()):
+                if k in stats_formats:
+                    merged_data[k] = stats_formats[k].format(float(merged_data[k]))
+                elif k in stats_array_formats:
+                    merged_data[k] = flex.std_string(
+                        [
+                            stats_array_formats[k].format(float(i))
+                            for i in merged_data[k]
+                        ]
+                    )
+            merged_block["_reflns.B_iso_Wilson_estimate"] = f"{iso_b_wilson:.3f}"
             merged_block.update(merged_data)
             cif_block.update(merged_block)
+
+        # Write the necessary metadata to link the scans to the detector/dataset
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_detector_element.detector_id",
+                "_diffrn_detector_element.id",
+            )
+        )
+        cif_loop.add_row((1, 1))
+        cif_block.add_loop(cif_loop)
+        detector_axis_cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_detector_axis.detector_id",
+                "_diffrn_detector_axis.axis_id",
+            )
+        )
+        diffrn_frame_cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_data_frame.detector_element_id",
+                "_diffrn_data_frame.id",
+            )
+        )
+
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_scan_axis.scan_id",
+                "_diffrn_scan_axis.axis_id",
+                "_diffrn_scan_axis.angle_start",
+                "_diffrn_scan_axis.angle_increment",
+            )
+        )
+        scan_loop = iotbx.cif.model.loop(
+            header=[
+                "_diffrn_scan.id",
+                "_diffrn_scan.frame_id_start",
+                "_diffrn_scan.frame_id_end",
+                "_diffrn_scan.frames",
+            ]
+        )
+
+        for i, exp in enumerate(experiments):
+            scan = exp.scan
+            if scan:
+                image_range = scan.get_image_range()
+                start, increment = scan.get_oscillation(deg=True)
+            else:
+                image_range = (1, 1)
+                start, increment = (0, 0)
+            scan_loop.add_row(
+                (
+                    i + 1,
+                    f"scan_{i + 1}_frame_start",
+                    f"scan_{i + 1}_frame_end",
+                    image_range[1] - image_range[0] + 1,
+                )
+            )
+            # for h, v in zip(header, vals):
+            #    cif_block[h] = v
+            cif_loop.add_row(
+                (
+                    i + 1,
+                    i + 1,
+                    start,
+                    increment,
+                )
+            )
+            diffrn_frame_cif_loop.add_row((1, f"scan_{i + 1}_frame_start"))
+            diffrn_frame_cif_loop.add_row((1, f"scan_{i + 1}_frame_end"))
+            detector_axis_cif_loop.add_row((1, i + 1))
+        cif_block.add_loop(diffrn_frame_cif_loop)
+        cif_block.add_loop(detector_axis_cif_loop)
+        cif_block.add_loop(scan_loop)
+        cif_block.add_loop(cif_loop)
 
         # Write the crystal information
         # if v5, that's all so return
         if self.params.mmcif.pdb_version == "v5":
+            h, k, l = (
+                hkl.iround()
+                for hkl in reflections["miller_index"].as_vec3_double().parts()
+            )
+            # Det_x, det_y are expected to be calculated positions
+            # according to the dictionary definition.
+            det_x, det_y, _ = reflections["xyzcal.px"].parts()
+            loop_values = [
+                flex.int(len(reflections), 1),  # diffn id
+                flex.size_t_range(1, len(reflections) + 1),  # refln id
+                h,
+                k,
+                l,
+                det_x,
+                det_y,
+            ] + [reflections[name] for name in variables_present]
+            cif_loop = iotbx.cif.model.loop(data=dict(zip(v5_0_header, loop_values)))
+            cif_block.add_loop(cif_loop)
+
             return cif_block
         # continue if v5_next
         cif_loop = iotbx.cif.model.loop(
@@ -384,8 +570,12 @@ class MMCIFOutputFile:
         for i, exp in enumerate(experiments):
             scan = exp.scan
             crystal_id = crystal_to_id[exp.crystal]
-            image_range = scan.get_image_range()
-            osc_range = scan.get_oscillation_range(deg=True)
+            if scan:
+                image_range = scan.get_image_range()
+                osc_range = scan.get_oscillation_range(deg=True)
+            else:
+                image_range = (1, 1)
+                osc_range = (0, 0)
             cif_loop.add_row(
                 (
                     i + 1,
@@ -399,9 +589,9 @@ class MMCIFOutputFile:
             cif_block.add_loop(cif_loop)
 
         _, _, _, _, z0, z1 = reflections["bbox"].parts()
-        h, k, l = [
+        h, k, l = (
             hkl.iround() for hkl in reflections["miller_index"].as_vec3_double().parts()
-        ]
+        )
         # make scan id consistent with header as defined above
         scan_id = flex.int(reflections.size(), 0)
         for id_ in reflections.experiment_identifiers().keys():
@@ -418,7 +608,7 @@ class MMCIFOutputFile:
             k,
             l,
         ] + [reflections[name] for name in variables_present]
-        cif_loop = iotbx.cif.model.loop(data=dict(zip(header, loop_values)))
+        cif_loop = iotbx.cif.model.loop(data=dict(zip(v5_next_header, loop_values)))
         cif_block.add_loop(cif_loop)
 
         return cif_block

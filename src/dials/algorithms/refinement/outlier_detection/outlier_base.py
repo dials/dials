@@ -9,7 +9,7 @@ from libtbx.phil import parse
 
 from dials.array_family import flex
 from dials.util import tabulate
-from dials.util.mp import available_cores
+from dials.util.system import CPU_COUNT
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,6 @@ class CentroidOutlier:
         block_width=None,
         nproc=1,
     ):
-
         # column names of the data in which to look for outliers
         if cols is None:
             cols = ["x_resid", "y_resid", "phi_resid"]
@@ -248,7 +247,6 @@ class CentroidOutlier:
 
         # loop over the completed jobs
         for i, job in enumerate(jobs3):
-
             iexp = job["id"]
             ipanel = job["panel"]
             nref = len(job["indices"])
@@ -277,9 +275,9 @@ class CentroidOutlier:
                 p100 = nout / nref * 100.0
                 if p100 > 30.0:
                     msg = (
-                        "{:3.1f}% of reflections were flagged as outliers from job"
-                        " {}"
-                    ).format(p100, i + 1)
+                        f"{p100:3.1f}% of reflections were flagged as outliers from job"
+                        f" {i + 1}"
+                    )
                     logger.debug(msg)
             row.extend([str(nref), str(nout), f"{p100:3.1f}"])
             rows.append(row)
@@ -299,7 +297,6 @@ class CentroidOutlier:
 
         msg = None
         if nref >= self._min_num_obs:
-
             # get the subset of data as a list of columns
             cols = [data[col] for col in self._cols]
 
@@ -311,9 +308,7 @@ class CentroidOutlier:
 
         elif nref > 0:
             # too few reflections in the job
-            msg = "For job {}, fewer than {} reflections are present.".format(
-                i + 1, self._min_num_obs
-            )
+            msg = f"For job {i + 1}, fewer than {self._min_num_obs} reflections are present."
             msg += " All reflections flagged as possible outliers."
             ioutliers = indices
 
@@ -402,6 +397,16 @@ outlier
             "doi.org/10.1080/00401706.1999.10485670."
     .expert_level = 1
   {
+     positional_coordinates = *auto xy radial_transverse deltatt_transverse
+       .help = "Whether to use xy spot coordinates in image space,"
+               "radial/transverse spot coordinates relative to the beam"
+               "vector, or a mix of delta two theta and transverse coordinates."
+       .type = choice
+     rotational_coordinates = *auto null phi deltapsi delpsidstar
+       .help = "Whether to use phi rotation, delta psi angle, or deltapsi"
+               "normalized by resolution as coordinates. Null means only use"
+               "positional_coordinates."
+       .type = choice
      alpha = 0.5
        .help = "Decimal fraction controlling the size of subsets over which the"
                "covariance matrix determinant is minimised."
@@ -477,7 +482,6 @@ phil_scope = parse(phil_str)
 class CentroidOutlierFactory:
     @staticmethod
     def from_parameters_and_colnames(params, colnames):
-
         # id the relevant scope for the requested method
         method = params.outlier.algorithm
         if method == "null":
@@ -522,8 +526,8 @@ class CentroidOutlierFactory:
             params.outlier.block_width = None
 
         if params.outlier.nproc is libtbx.Auto:
-            params.outlier.nproc = available_cores()
-            logger.info("Setting outlier.nproc={}".format(params.outlier.nproc))
+            params.outlier.nproc = CPU_COUNT
+            logger.info(f"Setting outlier.nproc={params.outlier.nproc}")
 
         od = outlier_detector(
             cols=colnames,
@@ -539,7 +543,6 @@ class CentroidOutlierFactory:
 
 
 if __name__ == "__main__":
-
     # test construction
     params = phil_scope.extract()
     params.outlier.algorithm = "tukey"

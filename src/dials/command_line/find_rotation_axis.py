@@ -15,6 +15,7 @@ Examples::
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import sys
 
@@ -23,14 +24,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import dxtbx.flumpy as flumpy
+import libtbx
 import libtbx.phil
+from scitbx import matrix
 
 import dials.util
 import dials.util.log
 from dials.array_family import flex
-
-# from dials.array_family import flex
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.system import CPU_COUNT
 from dials.util.version import dials_version
 
 # Define a logger
@@ -39,10 +41,19 @@ logger = logging.getLogger("dials.find_rotation_axis")
 # Define the master PHIL scope for this program.
 phil_scope = libtbx.phil.parse(
     """
+d_max = 10.0
+    .type = float
+    .help = "Low resolution limit to apply to the data, intended to remove"
+            "noisy regions of low angle scatter"
+
 max_two_theta = 10.0
     .type = float
     .help = "Scattering angle limit to select reflections only in the central"
             "mostly flat region of the Ewald sphere surface"
+
+max_sample_size = 2000
+    .help = "The maximum number of reflections to use."
+    .type = int(value_min=1)
 
 view = False
     .type = bool
@@ -64,6 +75,12 @@ opposite = False
     .type = bool
     .help = "Try the opposite from the initial value (or that given by"
             "azimuth=VAL)"
+
+nproc = Auto
+    .help = "Number of processes over which to split the search. If set to"
+            "Auto, DIALS will choose automatically."
+    .type = int(value_min=1)
+    .expert_level = 1
 
 output {
     experiments = optimised.expt
@@ -119,12 +136,6 @@ def make_2d_rotmat(theta):
     return R
 
 
-def random_sample(arr, n):
-    """Select random sample of `n` rows from array"""
-    indices = np.random.choice(arr.shape[0], n, replace=False)
-    return arr[indices]
-
-
 def xyz2cyl(arr):
     """
     Take a set of reflections in XYZ and convert to polar (cylindrical)
@@ -145,7 +156,10 @@ def cylinder_histo(xyz, bins=(1000, 500)):
     """
     i, j = np.triu_indices(len(xyz), k=1)
     diffs = xyz[i] - xyz[j]
+    del i
+    del j
     polar = xyz2cyl(diffs)
+    del diffs
 
     px, py = polar.T
     H, xedges, yedges = np.histogram2d(
@@ -214,6 +228,13 @@ def make(arr, azimuth: float, wavelength: float):
     return xyz
 
 
+def calc_var(arr, azimuth, wavelength, hist_bins):
+    xyz = make(arr, azimuth, wavelength)
+    H, _, _ = cylinder_histo(xyz, bins=hist_bins)
+    var = np.var(H)
+    return var
+
+
 def optimise(
     arr,
     azimuth_start: float,
@@ -221,7 +242,7 @@ def optimise(
     plusminus: int = 180,
     step: int = 10,
     hist_bins: (int, int) = (1000, 500),
-    plot: bool = False,
+    nproc: int = 1,
 ) -> float:
     """
     Optimise the value of azimuth around the given point.
@@ -231,7 +252,7 @@ def optimise(
         step, plusminus: together with azimuth_start define the range of values
             to loop over
         hist_bins: size of the 2d histogram to produce the final phi/theta plot
-        plot: toggle to plot the histogram after each step
+        nproc: number of processes over which to split the search
 
     Returns:
         The best value for the azimuth angle
@@ -242,23 +263,21 @@ def optimise(
     best_score = 0
     best_azimuth = 0
 
-    for azimuth in r:
-        xyz = make(arr, azimuth, wavelength)
+    if nproc > 1:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
+            variances = [
+                pool.submit(calc_var, arr, azimuth, wavelength, hist_bins)
+                for azimuth in r
+            ]
+        variances = [e.result() for e in variances]
+    else:
+        # For nproc=1 keep the jobs in the main process
+        variances = [calc_var(arr, azimuth, wavelength, hist_bins) for azimuth in r]
 
-        H, xedges, yedges = cylinder_histo(xyz, bins=hist_bins)
-
-        var = np.var(H)
-
+    for azimuth, var in zip(r, variances):
         logger.info(f"azimuth: {azimuth:8.2f}, variance: {var:5.2f}")
 
-        if plot:
-            plot_histo(
-                H,
-                xedges,
-                yedges,
-                title=f"azimuth={azimuth:.2f}$^\\circ$ | variance: {var:.2f}",
-            )
-
+        # Collate data for the rotation axis distribution curve
         xvals.append(azimuth)
         vvals.append(var)
 
@@ -271,13 +290,20 @@ def optimise(
     return best_azimuth
 
 
-def extract_spot_data(reflections, experiments, max_two_theta):
+def extract_spot_data(reflections, experiments, params):
     """
-    From the spot positions, extract reciprocal space X, Y and angle positions
-    for each reflection up to the scattering angle max_two_theta
+    Filter reflections according to various parameters, then extract reciprocal
+    space X, Y and angle positions.
     """
+
+    max_two_theta = params.max_two_theta
+    d_max = params.d_max
+    max_sample_size = params.max_sample_size
+
     # Map reflections to reciprocal space
     reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+    reflections["d"] = 1 / reflections["rlp"].norms()
 
     # Calculate scattering vectors
     reflections["s1"] = flex.vec3_double(len(reflections))
@@ -288,7 +314,6 @@ def extract_spot_data(reflections, experiments, max_two_theta):
             sel_expt = reflections["imageset_id"] == i
         else:
             sel_expt = reflections["id"] == i
-
         for i_panel in range(len(expt.detector)):
             sel = sel_expt & (panel_numbers == i_panel)
             x, y, _ = reflections["xyzobs.mm.value"].select(sel).parts()
@@ -299,11 +324,25 @@ def extract_spot_data(reflections, experiments, max_two_theta):
             reflections["2theta"].set_selected(sel, tt)
 
     # Filter reflections
-    full_len = len(reflections)
-    reflections = reflections.select(reflections["2theta"] <= max_two_theta)
-    if len(reflections) < full_len:
+    nref = len(reflections)
+    if max_two_theta:
+        reflections = reflections.select(reflections["2theta"] <= max_two_theta)
+    if len(reflections) < nref:
         logger.info(
-            f"{len(reflections)} reflections with 2θ ≤ {max_two_theta}° selected from {full_len} total"
+            f"{len(reflections)} reflections with 2θ ≤ {max_two_theta}° selected from {nref} total"
+        )
+    nref = len(reflections)
+    if d_max:
+        reflections = reflections.select(reflections["d"] <= d_max)
+        logger.info(
+            f"{len(reflections)} reflections with d ≤ {d_max} Å selected from {nref} total"
+        )
+    nref = len(reflections)
+    if max_sample_size and max_sample_size < nref:
+        reflections.sort("d", reverse=True)
+        reflections = reflections[0:max_sample_size]
+        logger.info(
+            f"{len(reflections)} lowest resolution reflections selected from {nref} total"
         )
 
     x, y, _ = reflections["s1"].parts()
@@ -376,8 +415,9 @@ def run(args=None, phil=phil_scope):
     expt = experiments[0]
     wavelength = expt.beam.get_wavelength()
     rotx, roty, _ = expt.goniometer.get_rotation_axis()
-    azimuth_current = np.degrees(np.arctan2(roty, rotx))
-    arr = extract_spot_data(reflections, experiments, params.max_two_theta)
+    azimuth_current = np.degrees(np.arctan2(-roty, rotx))
+    arr = extract_spot_data(reflections, experiments, params)
+    del reflections
 
     if params.azimuth is not None:
         azimuth_current = params.azimuth
@@ -399,6 +439,10 @@ def run(args=None, phil=phil_scope):
         f"                 {np.radians(azimuth_current):.5f} radians"
     )
 
+    if params.nproc is libtbx.Auto:
+        params.nproc = CPU_COUNT
+        logger.info(f"Setting nproc={params.nproc}")
+
     hist_bins = 1000, 500
 
     if params.view:
@@ -417,17 +461,35 @@ def run(args=None, phil=phil_scope):
             logger.info("Performing global search")
             azimuth_tmp = 0
             azimuth_global = azimuth_tmp = optimise(
-                arr, azimuth_tmp, wavelength, plusminus=180, step=5, hist_bins=hist_bins
+                arr,
+                azimuth_tmp,
+                wavelength,
+                plusminus=180,
+                step=5,
+                hist_bins=hist_bins,
+                nproc=params.nproc,
             )
 
         logger.info("Performing local search")
         azimuth_local = azimuth_tmp = optimise(
-            arr, azimuth_tmp, wavelength, plusminus=5, step=1, hist_bins=hist_bins
+            arr,
+            azimuth_tmp,
+            wavelength,
+            plusminus=5,
+            step=1,
+            hist_bins=hist_bins,
+            nproc=params.nproc,
         )
 
         logger.info("Performing fine search")
         azimuth_fine = azimuth_tmp = optimise(
-            arr, azimuth_tmp, wavelength, plusminus=1, step=0.1, hist_bins=hist_bins
+            arr,
+            azimuth_tmp,
+            wavelength,
+            plusminus=1,
+            step=0.1,
+            hist_bins=hist_bins,
+            nproc=params.nproc,
         )
 
         azimuth_final = azimuth_tmp
@@ -486,7 +548,27 @@ def run(args=None, phil=phil_scope):
     logger.info(
         f"\nRotation axis found: {azimuth_deg:.2f} deg. / {azimuth_rad:.3f} rad."
     )
-    expt.goniometer.set_rotation_axis(rotation_axis_to_xyz(azimuth_rad))
+
+    current_rotation_axis = matrix.col(expt.goniometer.get_rotation_axis())
+    new_rotation_axis = matrix.col(rotation_axis_to_xyz(azimuth_rad))
+
+    # Rotation matrix to take the current_rotation_axis to the new_rotation_axis
+    angle = current_rotation_axis.angle(new_rotation_axis)
+    if angle:
+        axis = matrix.col(current_rotation_axis.cross(new_rotation_axis)).normalize()
+        R = axis.axis_and_angle_as_r3_rotation_matrix(angle)
+    else:
+        R = matrix.sqr(matrix.identity(3))
+
+    try:
+        # For a multi-axis goniometer, rotate the base axis by R
+        axes = expt.goniometer.get_axes()
+        base_axis = matrix.col(axes[-1])
+        axes[-1] = R * base_axis
+        expt.goniometer.set_axes(axes)
+    except AttributeError:
+        # For a single-axis goniometer, just set the new_rotation_axis
+        expt.goniometer.set_rotation_axis(new_rotation_axis)
     logger.info(str(expt.goniometer))
 
     logger.info(f"Saving optimised experiments to {params.output.experiments}")

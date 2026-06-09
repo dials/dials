@@ -18,20 +18,20 @@ from dials.algorithms.symmetry.absences.screw_axes import (
 )
 
 
-def score_screw_axes(laue_group_info, reflection_table, significance_level=0.95):
+def score_screw_axes(
+    laue_group_info, reflection_table, significance_level=0.95, method="direct"
+):
     """Get the relevant screw axes and score them. Print pretty table."""
     scores = []
     axes = []
     for axis in laue_group_info["unique_axes"]:
         a = axis()
-        a.register_observer(
-            event="selected data for scoring", observer=ScrewAxisObserver()
-        )
+        a.register_observer(event="scored axis", observer=ScrewAxisObserver())
         if "equivalent_axes" in laue_group_info:
             if axis in laue_group_info["equivalent_axes"]:
                 for equivalent in laue_group_info["equivalent_axes"][axis]:
                     a.add_equivalent_axis(equivalent())
-        scores.append(a.score_axis(reflection_table, significance_level))
+        scores.append(a.score_axis(reflection_table, significance_level, method))
         axes.append(a)
     return axes, scores
 

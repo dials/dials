@@ -98,6 +98,8 @@ def test_exclusion_in_CCHalfFromDials():
             },
             "dataset_removal": {"cutoff_value": -1.0},
         }
+        algo.cchalf_i = {0: 80.0, 1: 85.0, 2: 78.0, 3: 79.0}
+        algo.delta_cchalf_i = {0: 0.0, 1: 5.0, 2: -2.0, 3: -1.0}
         return algo
 
     with mock.patch(
@@ -106,6 +108,8 @@ def test_exclusion_in_CCHalfFromDials():
     ):
         script = CCHalfFromDials(params, expts, refls)
         script.run()
+        table = script.get_table(True)
+        assert table
 
         assert script.datasetid_to_groups == {"0": [], "1": [2]}  # all but 3 removed
         expts = script.experiments

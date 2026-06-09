@@ -3,14 +3,12 @@ Figure out correct gradient expressions required for crystal unit cell
 restraints
 """
 
-
 from __future__ import annotations
 
 import math
-import os
 
 
-def test(dials_regression):
+def test(dials_data):
     from libtbx.phil import parse
     from libtbx.test_utils import approx_equal
     from scitbx import matrix
@@ -44,12 +42,7 @@ def test(dials_regression):
         from dxtbx.model.experiment_list import ExperimentListFactory
 
         experiments = ExperimentListFactory.from_json_file(
-            os.path.join(
-                dials_regression,
-                "refinement_test_data",
-                "multi_stills",
-                "combined_experiments.json",
-            ),
+            dials_data("refinement_test_data") / "multi_stills_combined.json",
             check_format=False,
         )
         crystal = experiments[0].crystal
@@ -128,7 +121,7 @@ def test(dials_regression):
     bb *= DEG2RAD
     cc *= DEG2RAD
     Ut = matrix.sqr(crystal.get_U()).transpose()
-    avec, bvec, cvec = [Ut * vec for vec in crystal.get_real_space_vectors()]
+    avec, bvec, cvec = (Ut * vec for vec in crystal.get_real_space_vectors())
 
     # calculate d[B^T]/dp
     dB_dp = xluc_param.get_ds_dp()
@@ -150,7 +143,6 @@ def test(dials_regression):
 
     # look at each parameter
     for i, dO in enumerate(dO_dp):
-
         # print
         # print "***** PARAMETER {0} *****".format(i)
 

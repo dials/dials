@@ -4,30 +4,45 @@ Command line script to allow merging and truncating of a dials dataset.
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
-from io import StringIO
 
 from dxtbx.model import ExperimentList
-from iotbx import phil
+from iotbx import mtz, phil
 
 from dials.algorithms.merging.merge import (
     MTZDataClass,
-    generate_html_report,
-    make_dano_table,
+    collect_html_data_from_merge,
+    generate_r_free_flags,
     make_merged_mtz_file,
     merge,
-    show_wilson_scaling_analysis,
-    truncate,
+    process_merged_data,
+    r_free_flags_from_reference,
 )
+from dials.algorithms.merging.reporting import generate_html_report
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
-from dials.util.export_mtz import match_wavelengths
+from dials.util.exclude_images import (
+    exclude_image_ranges_from_scans,
+    get_selection_for_valid_image_ranges,
+)
+from dials.util.export_mtz import log_summary, match_wavelengths
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 help_message = """
-Merge scaled dials data.
+
+This program merges scaled DIALS data to produce a merged MTZ file.
+
+A truncation procedure is run as part of the merging process, to convert intensity estimates to
+positive structure-factor amplitudes (French & Wilson, 1978).
+
+R-free flags are generated for the output MTZ. A number of options can be used to
+control this process, including the use of a reference dataset.
+
+A HTML output report is generated with merging statistics tables and plots.
 
 Examples::
 
@@ -47,7 +62,23 @@ anomalous = True
     .help = "Output anomalous as well as mean intensities."
 truncate = True
     .type = bool
-    .help = "Option to perform truncation on merged data."
+    .help = "Use the French & Wilson (1978) algorithm to correct for negative "
+            "intensities when estimating amplitudes."
+french_wilson {
+    implementation = *dials cctbx
+        .type = choice
+        .help = "Choice of implementation of the French & Wilson algorithm"
+    min_reflections = 200
+        .type = int(value_min=1)
+        .help = "Only perform French & Wilson procedure if at least this "
+                "number of reflections."
+    fallback_to_flat_prior = True
+        .type = bool
+        .help = "If insufficient number of reflections to perform the "
+                "French & Wilson procedure, fallback to assumption of a "
+                "flat prior, i.e.: "
+                "  |F| = sqrt((Io+sqrt(Io**2 +2sigma**2))/2.0)"
+}
 d_min = None
     .type = float
     .help = "High resolution limit to apply to the data."
@@ -84,6 +115,7 @@ merging {
         .type = bool
         .help = "Option to control whether reported merging stats are anomalous."
 }
+include scope dials.algorithms.merging.merge.r_free_flags_phil_scope
 output {
     log = dials.merge.log
         .type = str
@@ -93,6 +125,9 @@ output {
     html = dials.merge.html
         .type = str
         .help = "Filename for html output report."
+    json = None
+        .type = str
+        .help = "Filename to output data from html report in json format."
     crystal_names = XTAL
         .type = strings
         .help = "Crystal name to be used in MTZ file output (multiple names
@@ -104,40 +139,96 @@ output {
         .type = strings
         .help = "Dataset name to be used in MTZ file output (multiple names
             allowed for MAD datasets)"
+    additional_stats = False
+       .type = bool
+       .help = "Calculate and report the R-split statistic. Also saves the"
+               "half-dataset merged arrays to the MTZ output file."
 }
+include scope dials.util.exclude_images.phil_scope
 """,
     process_includes=True,
 )
 
+# local overrides for refiner.phil_scope
+phil_overrides = phil.parse(
+    """
+  r_free_flags
+  {
+    fraction = 0.05
+  }
+"""
+)
+phil_scope = phil_scope.fetch(sources=[phil_overrides])
 
-def merge_data_to_mtz(params, experiments, reflections):
-    """Merge data (at each wavelength) and write to an mtz file object."""
+
+def merge_data_to_mtz_with_report_collection(
+    params: phil.scope_extract,
+    experiments: ExperimentList,
+    reflections: list[flex.reflection_table],
+) -> tuple[mtz.object, dict]:
+    """Run the merge_data_to_mtz function, also collecting data for json/html output"""
+    with collect_html_data_from_merge() as collector:
+        mtz = merge_data_to_mtz(params, experiments, reflections)
+        json_data = collector.create_json()
+    return mtz, json_data
+
+
+def merge_data_to_mtz(
+    params: phil.scope_extract,
+    experiments: ExperimentList,
+    reflections: list[flex.reflection_table],
+) -> mtz.object:
+    """Merge data (at each wavelength) and write to an mtz file object.
+
+    reflections can be a list containing a single reflection table, or a list
+    of reflection tables.
+    """
     wavelengths = match_wavelengths(
         experiments,
         absolute_tolerance=params.wavelength_tolerance,
     )  # wavelengths is an ordered dict
+    for wl in wavelengths.values():
+        wl.calculate_weighted_mean(reflections)
+
     mtz_datasets = [
-        MTZDataClass(wavelength=w, project_name=params.output.project_name)
-        for w in wavelengths.keys()
+        MTZDataClass(
+            wavelength=wlg.weighted_mean, project_name=params.output.project_name
+        )
+        for wlg in wavelengths.values()
     ]
     dataset_names = params.output.dataset_names
     crystal_names = params.output.crystal_names
 
+    # exclude any images
+    if params.exclude_images:
+        experiments = exclude_image_ranges_from_scans(
+            reflections, experiments, params.exclude_images
+        )
+        reflections = [
+            refl.select(get_selection_for_valid_image_ranges(refl, exp))
+            for refl, exp in zip(reflections, experiments)
+        ]
     # check if best_unit_cell is set.
     best_unit_cell = params.best_unit_cell
     if not best_unit_cell:
         best_unit_cell = determine_best_unit_cell(experiments)
-    reflections[0]["d"] = best_unit_cell.d(reflections[0]["miller_index"])
+    for table in reflections:
+        table["d"] = best_unit_cell.d(table["miller_index"])
     for expt in experiments:
         expt.crystal.unit_cell = best_unit_cell
 
     if len(wavelengths) > 1:
+        identifiers_list = list(experiments.identifiers())
         logger.info(
             "Multiple wavelengths found: \n%s",
             "\n".join(
-                "  Wavlength: %.5f, experiment numbers: %s "
-                % (k, ",".join(map(str, v)))
-                for k, v in wavelengths.items()
+                "  Wavlength: {:.5f}, experiment numbers: {} ".format(
+                    v.weighted_mean,
+                    ",".join(
+                        map(str, [identifiers_list.index(i) for i in v.identifiers])
+                    ),
+                )
+                for v in wavelengths.values()
             ),
         )
         if not dataset_names or len(dataset_names) != len(wavelengths):
@@ -150,24 +241,31 @@ def merge_data_to_mtz(params, experiments, reflections):
                 "Unequal number of crystal names and wavelengths, using default naming."
             )
             crystal_names = [None] * len(wavelengths)
-        experiments_subsets = []
-        reflections_subsets = []
+        experiments_subsets: list[ExperimentList] = []
+        reflections_subsets: list[flex.reflection_table] = []
         for dataset, dname, cname in zip(mtz_datasets, dataset_names, crystal_names):
             dataset.dataset_name = dname
             dataset.crystal_name = cname
-        for exp_nos in wavelengths.values():
-            expids = [experiments[i].identifier for i in exp_nos]
+        for wlg in wavelengths.values():
             experiments_subsets.append(
-                ExperimentList([experiments[i] for i in exp_nos])
+                ExperimentList([experiments[i] for i in wlg.exp_nos])
             )
             reflections_subsets.append(
-                reflections[0].select_on_experiment_identifiers(expids)
+                flex.reflection_table.concat(
+                    [
+                        r.select_on_experiment_identifiers(wlg.identifiers)
+                        for r in reflections
+                    ]
+                )
             )
     else:
         mtz_datasets[0].dataset_name = dataset_names[0]
         mtz_datasets[0].crystal_name = crystal_names[0]
-        experiments_subsets = [experiments]
-        reflections_subsets = reflections
+        experiments_subsets: list[ExperimentList] = [experiments]
+        if len(reflections) > 1:
+            reflections_subsets = [flex.reflection_table.concat(reflections)]
+        else:
+            reflections_subsets = reflections
 
     # merge and truncate the data for each wavelength group
     for experimentlist, reflection_table, mtz_dataset in zip(
@@ -186,46 +284,21 @@ def merge_data_to_mtz(params, experiments, reflections):
             assess_space_group=params.assess_space_group,
             n_bins=params.merging.n_bins,
             use_internal_variance=params.merging.use_internal_variance,
+            show_additional_stats=params.output.additional_stats,
+        )
+        process_merged_data(
+            params, mtz_dataset, merged, merged_anomalous, stats_summary
         )
 
-        merged_array = merged.array()
-        # Save the relevant data in the mtz_dataset dataclass
-        # This will add the data for IMEAN/SIGIMEAN
-        mtz_dataset.merged_array = merged_array
-        if merged_anomalous:
-            merged_anomalous_array = merged_anomalous.array()
-            # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
-            mtz_dataset.merged_anomalous_array = merged_anomalous_array
-            mtz_dataset.multiplicities = merged_anomalous.redundancies()
-        else:
-            merged_anomalous_array = None
-            # This will add the data for N
-            mtz_dataset.multiplicities = merged.redundancies()
-
-        if params.anomalous:
-            merged_intensities = merged_anomalous_array
-        else:
-            merged_intensities = merged_array
-
-        anom_amplitudes = None
-        if params.truncate:
-            amplitudes, anom_amplitudes, dano = truncate(merged_intensities)
-            # This will add the data for F, SIGF
-            mtz_dataset.amplitudes = amplitudes
-            # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
-            mtz_dataset.anomalous_amplitudes = anom_amplitudes
-            # This will add the data for DANO, SIGDANO
-            mtz_dataset.dano = dano
-
-        # print out analysis statistics
-        show_wilson_scaling_analysis(merged_intensities)
-        if stats_summary:
-            logger.info(stats_summary)
-        if anom_amplitudes:
-            logger.info(make_dano_table(anom_amplitudes))
+    if params.r_free_flags.reference:
+        r_free_array = r_free_flags_from_reference(params, mtz_datasets)
+    elif params.r_free_flags.generate:
+        r_free_array = generate_r_free_flags(params, mtz_datasets)
+    else:
+        r_free_array = None
 
     # pass the dataclasses to an MTZ writer to generate the mtz file and return.
-    return make_merged_mtz_file(mtz_datasets)
+    return make_merged_mtz_file(mtz_datasets, r_free_array=r_free_array)
 
 
 @show_mail_handle_errors()
@@ -281,18 +354,25 @@ Only scaled data can be processed with dials.merge"""
             )
 
     try:
-        mtz_file = merge_data_to_mtz(params, experiments, reflections)
+        if params.output.json or params.output.html:
+            mtz_file, json_data = merge_data_to_mtz_with_report_collection(
+                params, experiments, reflections
+            )
+        else:
+            mtz_file = merge_data_to_mtz(params, experiments, reflections)
+            json_data = {}
     except ValueError as e:
         raise Sorry(e)
 
     logger.info("\nWriting reflections to %s", (params.output.mtz))
-    out = StringIO()
-    mtz_file.show_summary(out=out)
-    logger.info(out.getvalue())
-    mtz_file.write(params.output.mtz)
+    log_summary(mtz_file)
+    mtz_file.write_to_file(params.output.mtz)
 
+    if params.output.json:
+        with open(params.output.json, "w", encoding="utf-8") as f:
+            json.dump(json_data, f, indent=2)
     if params.output.html:
-        generate_html_report(mtz_file, params.output.html)
+        generate_html_report(json_data, params.output.html)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import random
 
+import numpy as np
+
 from cctbx import sgtbx
 
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
@@ -19,3 +21,4 @@ def test_unit_cell():
     assert "cluster_1" in str(result)
     assert len(result.clusters) == 1
     assert "dcoord" in result.dendrogram.keys()
+    assert isinstance(result.linkage_matrix, np.ndarray)

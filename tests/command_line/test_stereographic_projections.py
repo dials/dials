@@ -2,23 +2,24 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 from pathlib import Path
-
-import procrunner
 
 from dials.command_line import stereographic_projection
 
 
 def test_stereographic_projection(dials_data, tmp_path):
-    result = procrunner.run(
+    result = subprocess.run(
         (
-            "dials.stereographic_projection",
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+            shutil.which("dials.stereographic_projection"),
+            dials_data("centroid_test_data") / "experiments.json",
             "hkl_limit=4",
             "plot.filename=proj.png",
             "json.filename=proj.json",
         ),
-        working_directory=tmp_path,
+        cwd=tmp_path,
+        capture_output=True,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("projections.txt").is_file()
@@ -34,7 +35,7 @@ def test_stereographic_projection(dials_data, tmp_path):
 def test_labels(dials_data, tmp_path):
     output_file = tmp_path / "proj.json"
     experiments = sorted(
-        dials_data("multi_crystal_proteinase_k", pathlib=True).glob("experiments*.json")
+        dials_data("multi_crystal_proteinase_k").glob("experiments*.json")
     )
     args = [str(e) for e in experiments] + [
         f"plot.labels={' '.join(str(i) for i in range(len(experiments)))}",

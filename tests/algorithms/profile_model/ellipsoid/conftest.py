@@ -100,7 +100,7 @@ def test_experiment():
                 "thickness": 0.32,
                 "mu": 3.9220322752480934,
                 "gain": 1.0,
-                "trusted_range": [-1.0, 161977.0],
+                "trusted_range": [0.0, 161977.0],
                 "image_size": [2463, 2527],
                 "px_mm_strategy": {"type": "ParallaxCorrectedPxMmStrategy"},
                 "identifier": "",

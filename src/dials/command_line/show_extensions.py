@@ -51,7 +51,6 @@ class Script:
             # Either just show information about interfaces or show some about
             # extensions depending on user input
             if params.interfaces:
-
                 # Print info about interface
                 if options.verbose > 0:
                     print(f" name = {iface.name}")
@@ -64,7 +63,6 @@ class Script:
                             print(f" phil:\n{phil}")
 
             else:
-
                 # Loop through all the extensions
                 for ext in iface.extensions():
                     print(f" Extension: {ext.__name__}")

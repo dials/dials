@@ -41,8 +41,8 @@ def create_scaler(params, experiments, reflections):
         scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
     else:
         is_scaled_list = [expt.scaling_model.is_scaled for expt in experiments]
-        # if target mtz/model -> want to do targeted scaling only
-        if params.scaling_options.target_mtz or params.scaling_options.target_model:
+        # if target datafile/model -> want to do targeted scaling only
+        if params.scaling_options.reference:
             # last experiment/refl is target, rest are to scale against this
             scaler = TargetScalerFactory.create_for_target_against_reference(
                 params, experiments, reflections
@@ -175,14 +175,19 @@ class SingleScalerFactory(ScalerFactory):
             )
 
         if params.reflection_selection.method == "intensity_ranges":
-            reflection_table = quasi_normalisation(reflection_table, experiment)
+            try:
+                reflection_table = quasi_normalisation(reflection_table, experiment)
+            except AssertionError:
+                raise BadDatasetForScalingException(
+                    """Unable to use this dataset for scaling with the option reflection_selection.method=intensity_ranges"""
+                )
         if (
             params.reflection_selection.method in (None, Auto, "auto", "quasi_random")
         ) or (
             experiment.scaling_model.id_ == "physical"
             and "absorption" in experiment.scaling_model.components
         ):
-            if experiment.scan:
+            if experiment.scan and (experiment.scan.get_oscillation()[1] != 0.0):
                 reflection_table = calc_crystal_frame_vectors(
                     reflection_table, experiment
                 )
@@ -273,7 +278,7 @@ class TargetScalerFactory:
 
     @staticmethod
     def create_for_target_against_reference(params, experiments, reflections):
-        """Create TargetScaler for case where have a target_mtz or target_model."""
+        """Create TargetScaler for case where have a reference datafile or model."""
         scaled_scalers = []
         unscaled_scalers = []
         idx_to_remove = []

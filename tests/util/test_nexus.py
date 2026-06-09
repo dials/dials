@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 def test_run(dials_data, run_in_tmp_path):
+
     from dxtbx.model.experiment_list import ExperimentList
 
     from dials.array_family import flex

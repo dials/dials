@@ -95,7 +95,7 @@ class NaveParameters:
                 k_degrees,
             )
 
-            from xfel.mono_simulation.max_like import minimizer
+            from serialtbx.mono_simulation.max_like import minimizer
 
             # coerce the estimates to be positive for max-likelihood
             lower_limit_domain_size = (
@@ -152,7 +152,7 @@ class NaveParameters:
                 plt.show()
                 plt.close()
 
-            from xfel.mono_simulation.util import green_curve_area
+            from serialtbx.mono_simulation.util import green_curve_area
 
             self.green_curve_area = green_curve_area(two_thetas, tan_outer_deg_ML)
             logger.info("The green curve area is %s", self.green_curve_area)

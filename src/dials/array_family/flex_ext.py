@@ -13,7 +13,6 @@ import logging
 import operator
 import os
 import pickle
-from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -23,6 +22,7 @@ import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx.model import ExperimentType
 from scitbx import matrix
 
 import dials.extensions.glm_background_ext
@@ -30,6 +30,8 @@ import dials.extensions.simple_centroid_ext
 import dials.util.ext
 import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
+from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
+from dials.util.table_as_hdf5_file import HDF5TableFile
 
 __all__ = ["real", "reflection_table_selector"]
 
@@ -55,11 +57,11 @@ class _:
     # the modified algorithms. If these are modified on the instance level, then
     # only the instance will have the modified algorithms and new instances will
     # have the defaults
-    background_algorithm = functools.partial(
-        dials.extensions.glm_background_ext.GLMBackgroundExt, None
+    background_algorithm = staticmethod(
+        functools.partial(dials.extensions.glm_background_ext.GLMBackgroundExt, None)
     )
-    centroid_algorithm = functools.partial(
-        dials.extensions.simple_centroid_ext.SimpleCentroidExt, None
+    centroid_algorithm = staticmethod(
+        functools.partial(dials.extensions.simple_centroid_ext.SimpleCentroidExt, None)
     )
 
     @staticmethod
@@ -169,7 +171,16 @@ class _:
                 params.spotfinder.filter.min_spot_size,
             )
 
-        # Get the integrator from the input parameters
+        # Set images to exclude in the imagesets
+        if params.spotfinder.exclude_images_multiple:
+            params.spotfinder.exclude_images = expand_exclude_multiples(
+                experiments,
+                params.spotfinder.exclude_images_multiple,
+                params.spotfinder.exclude_images,
+            )
+        experiments = set_invalid_images(experiments, params.spotfinder.exclude_images)
+
+        # Get the spot-finder from the input parameters
         logger.info("Configuring spot finder from input parameters")
         spotfinder = SpotFinderFactory.from_parameters(
             experiments=experiments, params=params, is_stills=is_stills
@@ -199,6 +210,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Writing compressed reflections to {filename}")
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             self.as_msgpack_to_file(dials.util.ext.streambuf(python_file_obj=outfile))
 
@@ -209,6 +223,9 @@ class _:
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
+        if os.getenv("DIALS_USE_GZIP_REFL") and not filename.endswith(".gz"):
+            filename += ".gz"
+            logger.info(f"Reading compressed reflections from {filename}")
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
             return dials_array_family_flex_ext.reflection_table.from_msgpack(
                 infile.read()
@@ -220,6 +237,8 @@ class _:
         """
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
+        elif os.getenv("DIALS_USE_H5"):
+            self.as_hdf5(filename)
         else:
             self.as_msgpack_file(filename)
 
@@ -233,7 +252,12 @@ class _:
                 filename
             )
         except RuntimeError:
-            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
+            try:
+                return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
+            except OSError:
+                return dials_array_family_flex_ext.reflection_table.from_pickle(
+                    filename
+                )
 
     @staticmethod
     def empty_standard(nrows):
@@ -351,19 +375,19 @@ class _:
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def as_h5(self, filename):
-        """
-        Write the reflection table as a HDF5 file.
+    def as_hdf5(self, filename):
+        """Write the reflection table as a hdf5 file."""
 
-        :param filename: The output filename
-        """
-        from dials.util.nexus_old import NexusFile
+        with HDF5TableFile(filename, "w") as handle:
+            handle.add_tables([self])
 
-        handle = NexusFile(filename, "w")
-        # Clean up any removed experiments from the identifiers map
-        self.clean_experiment_identifiers_map()
-        handle.set_reflections(self)
-        handle.close()
+    @classmethod
+    def from_hdf5(cls, filename):
+        with HDF5TableFile(filename, "r") as handle:
+            tables = handle.get_tables()
+        if len(tables) > 1:
+            return cls.concat(tables)
+        return tables[0]
 
     def as_miller_array(self, experiment, intensity="sum"):
         """Return a miller array with the chosen intensities.
@@ -391,8 +415,7 @@ class _:
         except KeyError as e:
             logger.error(e, exc_info=True)
             raise KeyError(
-                "Unable to find %s, %s in reflection table"
-                % (
+                "Unable to find {}, {} in reflection table".format(
                     "intensity." + intensity + ".value",
                     "intensity." + intensity + ".variance",
                 )
@@ -475,7 +498,7 @@ class _:
 
     def match_by_hkle(
         self, other: dials_array_family_flex_ext.reflection_table
-    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
+    ) -> tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
         """
         Match reflections with another set of reflections by the h, k, l
         and entering values. Uses pandas dataframe merge method to match
@@ -491,13 +514,13 @@ class _:
 
         hkl = self["miller_index"].as_vec3_double().parts()
         hkl = (part.as_numpy_array().astype(int) for part in hkl)
-        e = self["entering"].as_numpy_array()
+        e = self["entering"].as_numpy_array().astype(int)
         n = np.arange(e.size)
         p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
         hkl = other["miller_index"].as_vec3_double().parts()
         hkl = (part.as_numpy_array().astype(int) for part in hkl)
-        e = other["entering"].as_numpy_array()
+        e = other["entering"].as_numpy_array().astype(int)
         n = np.arange(e.size)
         p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
@@ -510,7 +533,7 @@ class _:
 
     @staticmethod
     def concat(
-        tables: List[dials_array_family_flex_ext.reflection_table],
+        tables: list[dials_array_family_flex_ext.reflection_table],
     ) -> dials_array_family_flex_ext.reflection_table:
         """
         Concatenate a list of reflection tables, taking care to correctly handle
@@ -521,10 +544,10 @@ class _:
         from dials.util.multi_dataset_handling import renumber_table_id_columns
 
         tables = renumber_table_id_columns(tables)
-        first = tables[0]
-        for table in tables[1:]:
-            first.extend(table)
-        return first
+        new = dials_array_family_flex_ext.reflection_table()
+        for table in tables:
+            new.extend(table)
+        return new
 
     def match_with_reference(self, other):
         """
@@ -653,8 +676,8 @@ class _:
         *,
         max_separation: int = 2,
         key: str = "xyzobs.px.value",
-        scale: Tuple[float, float, float] = (1, 1, 1),
-    ) -> Tuple[
+        scale: tuple[float, float, float] = (1, 1, 1),
+    ) -> tuple[
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.int,
         cctbx.array_family.flex.double,
@@ -927,7 +950,11 @@ class _:
 
         compute = CorrectionsMulti()
         for experiment in experiments:
-            if experiment.goniometer is not None:
+            if (
+                experiment.goniometer is not None
+                and experiment.scan is not None
+                and (experiment.scan.get_oscillation()[1] != 0.0)
+            ):
                 compute.append(
                     Corrections(
                         experiment.beam, experiment.goniometer, experiment.detector
@@ -942,7 +969,7 @@ class _:
             self["qe"] = qe
         return lp
 
-    def extract_shoeboxes(self, imageset, mask=None, nthreads=1):
+    def extract_shoeboxes(self, imageset, mask=None):
         """
         Helper function to read a load of shoebox data.
 
@@ -1110,9 +1137,9 @@ class _:
                 )
                 assert len(identifiers) == len(set(experiments.identifiers()))
                 for experiment in experiments:
-                    assert (
-                        experiment.identifier in identifiers.values()
-                    ), experiment.identifier
+                    assert experiment.identifier in identifiers.values(), (
+                        experiment.identifier
+                    )
 
     def are_experiment_identifiers_consistent(self, experiments=None):
         """
@@ -1130,7 +1157,6 @@ class _:
         """
         self["miller_index_asu"] = cctbx.array_family.flex.miller_index(len(self))
         for idx, experiment in enumerate(experiments):
-
             # Create the crystal symmetry object
             uc = experiment.crystal.get_unit_cell()
             sg = experiment.crystal.get_space_group()
@@ -1156,22 +1182,21 @@ class _:
         """
         # First get the reverse of the map i.e. ids for a given exp_identifier
         id_values = []
-        for exp_id in list_of_identifiers:
-            for k in self.experiment_identifiers().keys():
-                if self.experiment_identifiers()[k] == exp_id:
-                    id_values.append(k)
-                    break
+        for k, v in zip(
+            self.experiment_identifiers().keys(), self.experiment_identifiers().values()
+        ):
+            if v in list_of_identifiers:
+                id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
-            raise KeyError(
-                """Not all requested identifiers
+            logger.warning(
+                f"""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested %s:
-Found %s"""
-                % (list_of_identifiers, id_values)
+Requested {list_of_identifiers}:
+Found {id_values}"""
             )
         # Build up a selection and use this
         sel = cctbx.array_family.flex.bool(self.size(), False)
-        for id_val, exp_id in zip(id_values, list_of_identifiers):
+        for id_val in id_values:
             id_sel = self["id"] == id_val
             sel.set_selected(id_sel, True)
         self = self.select(sel)
@@ -1187,20 +1212,20 @@ Found %s"""
         identifiers (strings).
         """
         # First get the reverse of the map i.e. ids for a given exp_identifier
-        assert "id" in self
+        if len(self):
+            assert "id" in self
         id_values = []
-        for exp_id in list_of_identifiers:
-            for k in self.experiment_identifiers().keys():
-                if self.experiment_identifiers()[k] == exp_id:
-                    id_values.append(k)
-                    break
+        for k, v in zip(
+            self.experiment_identifiers().keys(), self.experiment_identifiers().values()
+        ):
+            if v in list_of_identifiers:
+                id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
-            raise KeyError(
-                """Not all requested identifiers
+            logger.warning(
+                f"""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
-Requested %s:
-Found %s"""
-                % (list_of_identifiers, id_values)
+Requested {list_of_identifiers}:
+Found {id_values}"""
             )
         # Now delete the selections, also removing the entry from the map
         for id_val in id_values:
@@ -1227,9 +1252,11 @@ Found %s"""
         numbered 0 .. n-1.
         """
         reverse_map = {v: k for k, v in self.experiment_identifiers()}
-        orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
+        if not len(self):
+            return
+        orig_id = self["id"].deep_copy()
         for i_exp, exp_id in enumerate(reverse_map.keys()):
             sel_exp = orig_id == reverse_map[exp_id]
             self["id"].set_selected(sel_exp, i_exp)
@@ -1306,15 +1333,30 @@ Found %s"""
             for i_panel in range(len(expt.detector)):
                 sel = sel_expt & (panel_numbers == i_panel)
                 if calculated:
-                    x, y, rot_angle = self["xyzcal.mm"].select(sel).parts()
+                    x, y, z = self["xyzcal.mm"].select(sel).parts()
                 else:
-                    x, y, rot_angle = self["xyzobs.mm.value"].select(sel).parts()
+                    x, y, z = self["xyzobs.mm.value"].select(sel).parts()
                 s1 = expt.detector[i_panel].get_lab_coord(
                     cctbx.array_family.flex.vec2_double(x, y)
                 )
-                s1 = s1 / s1.norms() * (1 / expt.beam.get_wavelength())
+
+                if (
+                    expt.get_type() == ExperimentType.LAUE
+                    or expt.get_type() == ExperimentType.TOF
+                ):
+                    if calculated and "wavelength_cal" in self and "s0_cal" in self:
+                        wavelength = self["wavelength_cal"].select(sel)
+                        s0 = self["s0_cal"].select(sel)
+                    elif "wavelength" in self and "s0" in self:
+                        wavelength = self["wavelength"].select(sel)
+                        s0 = self["s0"].select(sel)
+                else:
+                    wavelength = expt.beam.get_wavelength()
+                    s0 = expt.beam.get_s0()
+
+                s1 = s1 / s1.norms() * (1 / wavelength)
                 self["s1"].set_selected(sel, s1)
-                S = s1 - expt.beam.get_s0()
+                S = s1 - s0
                 if expt.goniometer is not None:
                     setting_rotation = matrix.sqr(
                         expt.goniometer.get_setting_rotation()
@@ -1325,12 +1367,13 @@ Found %s"""
                         sample_rotation *= matrix.sqr(expt.crystal.get_U())
 
                     self["rlp"].set_selected(sel, tuple(setting_rotation.inverse()) * S)
-                    self["rlp"].set_selected(
-                        sel,
-                        self["rlp"]
-                        .select(sel)
-                        .rotate_around_origin(rotation_axis, -rot_angle),
-                    )
+                    if expt.scan is not None and expt.scan.has_property("oscillation"):
+                        self["rlp"].set_selected(
+                            sel,
+                            self["rlp"]
+                            .select(sel)
+                            .rotate_around_origin(rotation_axis, -z),
+                        )
                     self["rlp"].set_selected(
                         sel, tuple(sample_rotation.inverse()) * self["rlp"].select(sel)
                     )
@@ -1364,8 +1407,14 @@ Found %s"""
             if not experiment.goniometer:
                 continue
             axis = matrix.col(experiment.goniometer.get_rotation_axis())
-            s0 = matrix.col(experiment.beam.get_s0())
-            vec = s0.cross(axis)
+            if "s0" in self:
+                s0 = self["s0"]
+                vec = cctbx.array_family.flex.vec3_double(len(self))
+                for i in range(len(s0)):
+                    vec[i] = matrix.col(s0[i]).cross(axis)
+            else:
+                s0 = matrix.col(experiment.beam.get_s0())
+                vec = s0.cross(axis)
             sel = self["id"] == iexp
             enterings.set_selected(sel, self["s1"].dot(vec) < 0.0)
 

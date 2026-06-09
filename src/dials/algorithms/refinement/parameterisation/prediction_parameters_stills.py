@@ -79,7 +79,6 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
         # loop through the parameters
         for der in ds0_dbeam_p:
-
             if der is None:
                 dpv_dp.append(None)
                 dDeltaPsi_dp.append(None)
@@ -144,7 +143,6 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
         # loop through the parameters
         for der in dU_dxlo_p:
-
             if der is None:
                 dpv_dp.append(None)
                 dDeltaPsi_dp.append(None)
@@ -213,7 +211,6 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
         # loop through the parameters
         for der in dB_dxluc_p:
-
             if der is None:
                 dpv_dp.append(None)
                 dDeltaPsi_dp.append(None)
@@ -359,7 +356,6 @@ class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisa
 
         # loop through the parameters
         for der in ds0_dbeam_p:
-
             if der is None:
                 dpv_dp.append(None)
                 dDeltaPsi_dp.append(None)
@@ -416,7 +412,6 @@ class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisa
 
         # loop through the parameters
         for der in dU_dxlo_p:
-
             if der is None:
                 dpv_dp.append(None)
                 dDeltaPsi_dp.append(None)
@@ -471,7 +466,6 @@ class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisa
 
         # loop through the parameters
         for der in dB_dxluc_p:
-
             if der is None:
                 dpv_dp.append(None)
                 dDeltaPsi_dp.append(None)

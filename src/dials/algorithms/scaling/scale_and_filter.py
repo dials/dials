@@ -354,7 +354,10 @@ def make_filtering_merging_stats_plots(merging_stats):
                     },
                     "yaxis": {
                         "title": "R-pim",
-                        "range": [0, min(1.5, max(r_pim_bins))],
+                        "range": [
+                            0,
+                            min(1.5, max(r for r in r_pim_bins if r is not None)),
+                        ],
                     },
                 },
             }
@@ -382,7 +385,10 @@ def make_filtering_merging_stats_plots(merging_stats):
                     },
                     "yaxis": {
                         "title": "R-merge",
-                        "range": [0, min(1.5, max(r_merge_bins))],
+                        "range": [
+                            0,
+                            min(1.5, max(r for r in r_merge_bins if r is not None)),
+                        ],
                     },
                 },
             }
@@ -498,8 +504,14 @@ def make_histogram_plots(cycle_results):
         )
 
     for c, deltas in enumerate(delta_cc_half_lists):
+        flex_deltas = flex.double(deltas)  # convert list to flex array
+        if flex_deltas.all_eq(flex_deltas[0]):
+            continue
         hist = flex.histogram(
-            flex.double(deltas) * 100, min(deltas) * 100, max(deltas) * 100, n_slots=40
+            flex_deltas * 100,
+            flex.min(flex_deltas) * 100,
+            flex.max(flex_deltas) * 100,
+            n_slots=40,
         )
         _add_new_histogram(d, hist, c)
     return d

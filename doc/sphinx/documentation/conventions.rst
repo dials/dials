@@ -213,8 +213,14 @@ software and for an agreed definition of what the laboratory consists of
 (incompatible definitions can be reasonably argued for, such as that it should
 be either fixed to the detector, or to the rotation axis and beam).
 
-In the interests of standardisation, we choose to adopt the Image CIF (imgCIF)
-reference frame [#Bernstein2006]_, [#Hammersley2006]_.
+In the interests of both standardisation and practicality, we choose to adopt the Image CIF (imgCIF)
+reference frame [#Bernstein2006]_, [#Hammersley2006]_ for cases with a single
+axis horizontal goniometer. For beamlines with a vertical goniometer, we align
+the rotation axis with the :math:`Y` rather than the :math:`X` axis. This ensures
+the axis appears vertical in the image viewer, reducing confusion for the users.
+Such decisions can be made on a case-by-case basis within the specific format
+class used to read the images, giving the freedom to choose the most convenient
+coordinate system for the geometry of each experiment.
 
 Summary of coordinate frames
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

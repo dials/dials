@@ -135,8 +135,14 @@ def write_par_file(file_name, experiment):
             file=f,
         )
         print(f"PIXEL          {round(detector[0].get_pixel_size()[0], 10)}", file=f)
-        print("ROTAXIS        %4.2f %4.2f %4.2f" % rotation.elems, direction, file=f)
-        print("POLAXIS        %4.2f %4.2f %4.2f" % polarization.elems, file=f)
+        print(
+            "ROTAXIS        {:4.2f} {:4.2f} {:4.2f}".format(*rotation.elems),
+            direction,
+            file=f,
+        )
+        print(
+            "POLAXIS        {:4.2f} {:4.2f} {:4.2f}".format(*polarization.elems), file=f
+        )
         print("GAIN               1.00", file=f)  # correct for Pilatus images
         # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/FAQ#You_said_that_the_XDS_deals_with_high_mosaicity._How_high_mosaicity_is_still_manageable.3F
         # http://journals.iucr.org/d/issues/2012/01/00/wd5161/index.html
@@ -148,11 +154,16 @@ def write_par_file(file_name, experiment):
         print(f"WAVELENGTH      {beam.get_wavelength():.5f}", file=f)
         print(f"POLARISATION    {beam.get_polarization_fraction():7.5f}", file=f)
         print(f"SYMMETRY       {space_group_symbol(cryst.get_space_group())}", file=f)
-        print("UB             %9.6f %9.6f %9.6f" % UB_mosflm[:3], file=f)
-        print("               %9.6f %9.6f %9.6f" % UB_mosflm[3:6], file=f)
-        print("               %9.6f %9.6f %9.6f" % UB_mosflm[6:], file=f)
-        print("CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f" % uc_params, file=f)
+        print("UB             {:9.6f} {:9.6f} {:9.6f}".format(*UB_mosflm[:3]), file=f)
+        print("               {:9.6f} {:9.6f} {:9.6f}".format(*UB_mosflm[3:6]), file=f)
+        print("               {:9.6f} {:9.6f} {:9.6f}".format(*UB_mosflm[6:]), file=f)
+        print(
+            "CELL           {:8.2f} {:8.2f} {:8.2f} {:6.2f} {:6.2f} {:6.2f}".format(
+                *uc_params
+            ),
+            file=f,
+        )
         print("RASTER           %i %i %i %i %i" % (nxs, nys, nc, nrx, nry), file=f)
         print(f"SEPARATION      {spot_diameter:.3f}  {spot_diameter:.3f}", file=f)
-        print("BEAM           %8.3f %8.3f" % beam_centre, file=f)
+        print("BEAM           {:8.3f} {:8.3f}".format(*beam_centre), file=f)
         print("# end of parameter file for BEST", file=f)

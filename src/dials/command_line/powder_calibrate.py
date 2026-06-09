@@ -28,12 +28,11 @@ from __future__ import annotations
 import logging
 import os
 from sys import exit
-from typing import List, NamedTuple, Optional, Tuple, Union
+from typing import NamedTuple
 
 import numpy as np
 import numpy.ma as ma
 from matplotlib import pyplot as plt
-from matplotlib.colors import SymLogNorm
 from matplotlib.widgets import Button, Slider
 
 try:
@@ -110,12 +109,12 @@ class ExptParams(NamedTuple):
     """
 
     input_file: str
-    s0: Tuple[float, float, float]
+    s0: tuple[float, float, float]
     beam_on_detector: Point
     wavelength: float
     distance: float
-    img_size: Tuple[int, int]
-    pix_size: Tuple[float, float]
+    img_size: tuple[int, int]
+    pix_size: tuple[float, float]
     image: np.ndarray
 
 
@@ -130,9 +129,7 @@ class Output(NamedTuple):
     strt_lines: str
 
 
-def _convert_units(
-    val: Union[float, Point], unit_in: str, unit_out: str
-) -> Union[float, Point]:
+def _convert_units(val: float | Point, unit_in: str, unit_out: str) -> float | Point:
     """Keep units sanity for pyFAI <--> DIALS conversions
     Most parameters will be kept in SI units internally
 
@@ -168,8 +165,13 @@ def get_expt_params(expts: ExperimentList) -> ExptParams:
     img_size = detector.get_image_size()[::-1]
     image = np.array(expt.imageset.get_corrected_data(0)[0]).reshape(img_size)
 
+    if hasattr(expt.imageset, "get_template"):
+        file_name = expt.imageset.get_template()
+    else:
+        file_name = expt.imageset.data().get_master_path()
+
     expt_params = ExptParams(
-        input_file=expt.imageset.get_template(),
+        input_file=file_name,
         s0=s0,
         beam_on_detector=Point(*beam_on_detector),
         wavelength=wavelength,
@@ -274,14 +276,14 @@ class Geometry(pfGeometry):
 
     def update_beam_pos(
         self,
-        beam_coords_px: Optional[Point] = None,
-        beam_dist_mm: Optional[float] = None,
+        beam_coords_px: Point | None = None,
+        beam_dist_mm: float | None = None,
     ):
         """
         Update beam position
 
         :param beam_coords_px: new beam position in pixels
-        :param beam_dist: new detector distance along beam direction
+        :param beam_dist_mm: new detector distance along beam direction
         """
 
         self.beam_px = beam_coords_px
@@ -320,7 +322,7 @@ class Geometry(pfGeometry):
 
     def save_to_expt(self, output: str | os.PathLike):
         """
-        Update the geometry from start_geometry.expt and save to new output
+        Update the geometry from start_geometry.expt and save to new output.
         Output is passed either as a path or str
         """
         new_params = self.modify_geom_params()
@@ -342,7 +344,7 @@ class EyeballWidget:
         coarse_geom: str,
     ):
         """Eyeball widget
-        :param image: 2D array of the image
+        :param expt_params: experimental parameters
         :param start_geometry: initial geometry
         :param calibrant: the standard used for calibration
         :param coarse_geom: the file name to which the eyeballed geometry is to saved
@@ -382,12 +384,8 @@ class EyeballWidget:
         # ignore them for calibration purposes
         self.image[self.image <= 0] = 0
 
-        colornorm = SymLogNorm(
-            1, base=10, vmin=np.nanmin(self.image), vmax=np.nanmax(self.image)
-        )
-
         fig, ax = plt.subplots()
-        ax.imshow(self.image, origin="lower", cmap="inferno", norm=colornorm)
+        ax.imshow(np.arcsinh(self.image), origin="lower", cmap="inferno")
 
         ax.set_xlabel("fast position [pixels]")
         ax.set_ylabel("slow position [pixels]")
@@ -432,8 +430,8 @@ class EyeballWidget:
             slider = Slider(
                 ax=ax_beam_dist,
                 label="Detector beam distance [mm]",
-                valmin=min(100, self.geometry.beam_distance),
-                valmax=max(1000, self.geometry.beam_distance),
+                valmin=min(100.0, self.geometry.beam_distance),
+                valmax=max(1000.0, self.geometry.beam_distance),
                 valinit=self.geometry.beam_distance,
                 orientation="vertical",
             )
@@ -497,7 +495,7 @@ class EyeballWidget:
         # Finally, show widget
         plt.show()
 
-    def calibrant_rings(self, geometry: Optional[Geometry] = None) -> np.ndarray:
+    def calibrant_rings(self, geometry: Geometry | None = None) -> np.ndarray:
         """
         Make a masked array for the calibration rings. If a geometry parameters
         is given then use that geometry for the calibrant, otherwise use the
@@ -515,8 +513,8 @@ class EyeballWidget:
         else:
             cal_img = self.calibrant.fake_calibration_image(self.geometry, W=w)
 
-        # TODO: fix that hardcoded value
-        cal_img_masked = ma.masked_where(cal_img <= 1e-3, cal_img)
+        # get rid of background
+        cal_img_masked = ma.masked_where(cal_img == 0, cal_img)
 
         return cal_img_masked
 
@@ -524,7 +522,7 @@ class EyeballWidget:
         cal_img_masked = self.calibrant_rings()
 
         rings_img = self.ax.imshow(
-            cal_img_masked, alpha=0.2, cmap="inferno", origin="lower"
+            np.arcsinh(cal_img_masked), alpha=0.2, cmap="inferno", origin="lower"
         )
 
         # Add the beam position
@@ -584,7 +582,7 @@ class PowderCalibrator:
         over the measured ones. The widget part can be turned off setting "eyeball=False".
 
         :param expts: ExperimentList
-                experiement list containing starting geometry
+                experiment list containing starting geometry
         :param standard: str
                 calibrating standard name in periodic table name format.
                 Call calibrator.show_calibrants to see available calibrants.
@@ -595,7 +593,7 @@ class PowderCalibrator:
         :param pyfai_improvement: str
                 optional, file name used for saving the before and after pyfai calibration
         :param straight_lines: str
-                optional, file name used for saving the cake plot, if fir was succesful
+                optional, file name used for saving the cake plot, if fir was successful
                 these lines should be straight
 
         Examples
@@ -671,9 +669,7 @@ class PowderCalibrator:
 
         # Tell me what calibrant I am using
         logger.info(
-            f"Starting calibration using {self.standard}:\n"
-            f"-----\n"
-            f"{self.calibrant}\n"
+            f"Starting calibration using {self.standard}:\n-----\n{self.calibrant}\n"
         )
 
     def show_pyfai_improvement(
@@ -746,7 +742,7 @@ class PowderCalibrator:
     def refine_with_pyfai(
         self,
         num_rings: int = 5,
-        fix: Tuple = ("rot1", "rot2", "rot3", "wavelength"),
+        fix: tuple = ("rot1", "rot2", "rot3", "wavelength"),
         pts_per_deg: float = 1.0,
         Imin: float = 10.0,
         plots: bool = True,
@@ -762,9 +758,9 @@ class PowderCalibrator:
                 in order to calibrate both a higher number of rings must be used.
         :param pts_per_deg: float
                 number of spots per radial degree to be searched for.
-                If rings are sparse the number should be lower
+                If rings are sparse lower the number
         :param Imin: float
-                minimum intensity for deciding somenthins is a peak
+                minimum intensity for deciding something is a peak
         :param plots: bool
                 show the fitting plots or keep it quiet
         """
@@ -807,12 +803,12 @@ class PowderCalibrator:
         self.geometry.update_from_ai(ai)
         self.geometry.save_to_expt(output=self.output.calibrated_geom)
 
-        logger.info(f"Geometry fitted by pyFAI:\n" f"-----\n" f"{self.geometry}\n")
+        logger.info(f"Geometry fitted by pyFAI:\n-----\n{self.geometry}\n")
         self.show_straight_lines(ai, show=plots)
 
 
 @dials.util.show_mail_handle_errors()
-def run(args: List[str] = None, phil: scope = phil_scope) -> None:
+def run(args: list[str] = None, phil: scope = phil_scope) -> None:
     """
     Check command-line input and do the sequence of
     function calls.

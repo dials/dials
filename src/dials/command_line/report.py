@@ -7,28 +7,21 @@ import math
 
 import numpy as np
 
+import libtbx.phil
 from cctbx import uctbx
 
 import dials.util.log
+from dials.algorithms.merging.merge import MergingStatisticsData
 from dials.algorithms.scaling.model.model import plot_scaling_models
+from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.algorithms.scaling.scaling_library import (
     merging_stats_from_scaled_array,
     scaled_data_as_miller_array,
 )
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 from dials.array_family import flex
-from dials.report.analysis import combined_table_to_batch_dependent_properties
-from dials.report.plots import (
-    AnomalousPlotter,
-    IntensityStatisticsPlots,
-    ResolutionPlotsAndStats,
-    i_over_sig_i_vs_batch_plot,
-    i_over_sig_i_vs_i_plot,
-    make_image_range_table,
-    scale_rmerge_vs_batch_plot,
-)
+from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import show_mail_handle_errors
-from dials.util.batch_handling import batch_manager
 from dials.util.command_line import Command
 
 RAD2DEG = 180 / math.pi
@@ -52,8 +45,6 @@ Examples::
 
   dials.report integrated.refl integrated.expt
 """
-
-import libtbx.phil
 
 # Create the phil parameters
 phil_scope = libtbx.phil.parse(
@@ -181,7 +172,6 @@ class ScanVaryingCrystalAnalyser:
         # cell plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -338,7 +328,6 @@ the refinement algorithm accounting for unmodelled features in the data.
         # orientation plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -817,10 +806,10 @@ class CentroidAnalyser:
 
         nonzeros = np.nonzero(H)
         z1 = np.empty(H.shape)
-        z1[:] = np.NAN
+        z1[:] = np.nan
         z1[nonzeros] = H1[nonzeros] / H[nonzeros]
         z2 = np.empty(H.shape)
-        z2[:] = np.NAN
+        z2[:] = np.nan
         z2[nonzeros] = H2[nonzeros] / H[nonzeros]
 
         return {
@@ -924,6 +913,7 @@ class CentroidAnalyser:
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
         mask = I_over_S > threshold
+        mask &= ~rlist.get_flags(rlist.flags.not_suitable_for_refinement)
         if mask.count(True) == 0:
             return {}
         rlist = rlist.select(mask)
@@ -1141,7 +1131,6 @@ class CentroidAnalyser:
         d["residuals_xy"]["layout"]["title"] = "Centroid residuals in X and Y"
 
         if not is_stills:
-
             d["residuals_zy"] = {
                 "data": [
                     {
@@ -1221,7 +1210,6 @@ class IntensityAnalyser:
     """Analyse the intensities."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
-
         self.grid_size = grid_size
         self.pixels_per_bin = pixels_per_bin
 
@@ -1333,7 +1321,7 @@ class IntensityAnalyser:
 
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -1449,7 +1437,7 @@ class IntensityAnalyser:
 
         nonzeros = np.nonzero(H)
         z1 = np.empty(H.shape)
-        z1[:] = np.NAN
+        z1[:] = np.nan
         z1[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -1973,7 +1961,7 @@ class ReferenceProfileAnalyser:
 
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H1[nonzeros] / H[nonzeros]
 
         return {
@@ -2090,87 +2078,38 @@ class ReferenceProfileAnalyser:
         }
 
 
-class ScalingModelAnalyser:
-    """Analyse a scaling-model."""
-
-    def __call__(self, experiments):
-        """Analyse the strong spots."""
-
-        print("Analysing scaling model")
-
-        d = {}
-
-        if experiments is not None and len(experiments):
-            for i, exp in enumerate(experiments):
-                model = exp.scaling_model
-                if model is not None:
-                    scaling_model_plots = plot_scaling_models(model)
-                    if scaling_model_plots:
-                        for name, plot in scaling_model_plots.items():
-                            d.update({name + "_" + str(i): plot})
-        return {"scaling_model": d}
-
-
-def merging_stats_results(reflections, experiments):
-    if "inverse_scale_factor" not in reflections:
-        return [], [], {}, {}, []
-
+def merging_stats_data(reflections, experiments):
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
-    scaled_array = scaled_data_as_miller_array([reflections], experiments)
-    try:
-        result, anom_result = merging_stats_from_scaled_array(scaled_array)
-    except DialsMergingStatisticsError as e:
-        print(e)
-        return [], [], {}, {}, []
 
-    is_centric = experiments[0].crystal.get_space_group().is_centric()
-
-    plotter = ResolutionPlotsAndStats(result, anom_result, is_centric)
-    resolution_plots = plotter.make_all_plots()
-    summary_table, results_table = plotter.statistics_tables()
-
-    (
-        batches,
-        rvb,
-        isigivb,
-        svb,
-        batch_data,
-    ) = combined_table_to_batch_dependent_properties(reflections, experiments)
-
-    bm = batch_manager(batches, batch_data)
-
-    batch_plots = scale_rmerge_vs_batch_plot(bm, rvb, svb)
-    batch_plots.update(i_over_sig_i_vs_batch_plot(bm, isigivb))
-    image_range_table = make_image_range_table(experiments, bm)
-
+    reflections = (
+        reflections.split_by_experiment_id()
+    )  # needed to get correct batch plots
+    scaled_array = scaled_data_as_miller_array(reflections, experiments)
+    stats_data = MergingStatisticsData(
+        experiments, scaled_array, reflections=reflections
+    )
+    stats, anom_stats = merging_stats_from_scaled_array(
+        scaled_array,
+        n_bins=20,
+        use_internal_variance=False,
+    )
+    stats_data.merging_statistics_result = stats
+    stats_data.anom_merging_statistics_result = anom_stats
+    stats_plots = make_merging_stats_plots(stats_data, run_xtriage_analysis=True)
+    intensity_plots = stats_plots["anom_plots"]
+    intensity_plots.update(
+        i_over_sig_i_vs_i_plot(scaled_array.data(), scaled_array.sigmas())
+    )
     return (
-        summary_table,
-        results_table,
-        resolution_plots,
-        batch_plots,
-        image_range_table,
+        stats_plots["resolution_plots"],
+        stats_plots["xtriage_output"],
+        stats_plots["misc_plots"],
+        intensity_plots,
+        stats_plots["batch_plots"],
+        stats_plots["image_range_tables"],
+        stats_plots["scaling_tables"],
     )
-
-
-def intensity_statistics(reflections, experiments):
-    if "inverse_scale_factor" not in reflections:
-        return {}, {}, {}
-    reflections["intensity"] = reflections["intensity.scale.value"]
-    reflections["variance"] = reflections["intensity.scale.variance"]
-    print("Generating intensity statistics plots")
-    scaled_array = scaled_data_as_miller_array([reflections], experiments)
-    plotter = IntensityStatisticsPlots(scaled_array)
-    d_min = uctbx.d_star_sq_as_d(plotter.binner.limits())[2]
-    resolution_plots = plotter.generate_resolution_dependent_plots()
-    misc_plots = plotter.generate_miscellanous_plots()
-    intensity_plots = i_over_sig_i_vs_i_plot(scaled_array.data(), scaled_array.sigmas())
-    scaled_array = scaled_data_as_miller_array(
-        [reflections], experiments, anomalous_flag=True
-    )
-    anom_plotter = AnomalousPlotter(scaled_array, strong_cutoff=d_min)
-    intensity_plots.update(anom_plotter.make_plots())
-    return resolution_plots, misc_plots, intensity_plots
 
 
 class Analyser:
@@ -2214,27 +2153,54 @@ class Analyser:
             analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
             json_data.update(analyse(experiments))
             crystal_table, expt_geom_table = self.experiments_table(experiments)
-            analyse = ScalingModelAnalyser()
-            json_data.update(analyse(experiments))
-            print("Calculating and generating merging statistics plots")
-            (
-                summary,
-                scaling_table_by_resolution,
-                resolution_plots,
-                batch_plots,
-                image_range_table,
-            ) = merging_stats_results(rlist, experiments)
-            rplots, misc_plots, scaled_intensity_plots = intensity_statistics(
-                rlist, experiments
+            json_data.update(
+                {
+                    "scaling_model": {},
+                    "xtriage_output": {},
+                    "resolution_graphs": {},
+                    "batch_graphs": {},
+                    "misc_graphs": {},
+                    "scaled_intensity_graphs": {},
+                    "scaling_tables": [],
+                    "image_range_tables": [],
+                }
             )
-            resolution_plots.update(rplots)
-            json_data["resolution_graphs"] = resolution_plots
-            json_data["batch_graphs"] = batch_plots
-            json_data["misc_graphs"] = misc_plots
-            json_data["scaled_intensity_graphs"] = scaled_intensity_plots
+            if any(experiments.scaling_models()):
+                print("Analysing scaling model")
+                d = {}
+                for i, model in enumerate(experiments.scaling_models()):
+                    if model is not None:
+                        scaling_model_plots = plot_scaling_models(model)
+                        if scaling_model_plots:
+                            for name, plot in scaling_model_plots.items():
+                                d.update({name + "_" + str(i): plot})
+                json_data["scaling_model"] = d
+
+            if rlist:
+                if "inverse_scale_factor" in rlist:
+                    print("Calculating and generating merging statistics plots")
+                    try:
+                        (
+                            resolution_plots,
+                            xtriage_output,
+                            misc_plots,
+                            scaled_intensity_plots,
+                            batch_plots,
+                            image_range_tables,
+                            scaling_tables,
+                        ) = merging_stats_data(rlist, experiments)
+                    except DialsMergingStatisticsError as e:
+                        print(f"Error merging stats data: {e}")
+                    else:
+                        json_data["resolution_graphs"] = resolution_plots
+                        json_data["xtriage_output"] = xtriage_output
+                        json_data["batch_graphs"] = batch_plots
+                        json_data["misc_graphs"] = misc_plots
+                        json_data["scaled_intensity_graphs"] = scaled_intensity_plots
+                        json_data["scaling_tables"] = scaling_tables
+                        json_data["image_range_tables"] = image_range_tables
 
         if self.params.output.html is not None:
-
             from jinja2 import ChoiceLoader, Environment, PackageLoader
 
             loader = ChoiceLoader(
@@ -2261,18 +2227,19 @@ class Analyser:
                 page_title="DIALS analysis report",
                 scan_varying_graphs=graphs["scan_varying"],
                 scaling_model_graphs=graphs["scaling_model"],
-                resolution_plots=resolution_plots,
-                batch_graphs=batch_plots,
-                image_range_tables=[image_range_table],
-                misc_plots=misc_plots,
-                scaled_intensity_plots=scaled_intensity_plots,
+                xtriage_output=graphs["xtriage_output"],
+                resolution_plots=graphs["resolution_graphs"],
+                batch_graphs=graphs["batch_graphs"],
+                image_range_tables=graphs["image_range_tables"],
+                misc_plots=graphs["misc_graphs"],
+                scaled_intensity_plots=graphs["scaled_intensity_graphs"],
                 strong_graphs=graphs["strong"],
                 centroid_graphs=graphs["centroid"],
                 intensity_graphs=graphs["intensity"],
                 reference_graphs=graphs["reference"],
                 crystal_table=crystal_table,
                 geometry_table=expt_geom_table,
-                scaling_tables=(summary, scaling_table_by_resolution),
+                scaling_tables=graphs["scaling_tables"],
                 static_dir=static_dir,
             )
 
@@ -2282,7 +2249,7 @@ class Analyser:
 
         if self.params.output.json is not None:
             print(f"Writing json data to: {self.params.output.json}")
-            with open(self.params.output.json, "w") as f:
+            with open(self.params.output.json, "w", encoding="utf-8") as f:
                 json.dump(json_data, f)
 
     def experiments_table(self, experiments):
@@ -2310,7 +2277,7 @@ class Analyser:
                     (
                         "<strong>Panel %i</strong>:" % (panel_id + 1),
                         "Pixel size (mm):",
-                        "%.4f, %.4f" % panel.get_pixel_size(),
+                        "{:.4f}, {:.4f}".format(*panel.get_pixel_size()),
                         "Image size (pixels):",
                         "%i, %i" % panel.get_image_size(),
                     )
@@ -2319,7 +2286,7 @@ class Analyser:
                     (
                         "",
                         "Trusted range:",
-                        "%g, %g" % panel.get_trusted_range(),
+                        "{:g}, {:g}".format(*panel.get_trusted_range()),
                         "Thickness (mm):",
                         f"{panel.get_thickness():g}",
                     )
@@ -2379,7 +2346,9 @@ class Analyser:
                         "Image range:",
                         "%i, %i" % expt.scan.get_image_range(),
                         "Oscillation:",
-                        "%.2f&deg;, %+.2f&deg;/frame" % expt.scan.get_oscillation(),
+                        "{:.2f}&deg;, {:+.2f}&deg;/frame".format(
+                            *expt.scan.get_oscillation()
+                        ),
                     )
                 )
 

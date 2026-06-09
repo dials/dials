@@ -4,7 +4,6 @@ dxtbx
 .. toctree::
    :maxdepth: 2
 
-   datablock
    imageset
 
    beam

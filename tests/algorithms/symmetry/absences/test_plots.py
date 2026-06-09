@@ -30,6 +30,7 @@ def test_plot_screw_axes():
         "i_over_sigma": [0.5, 20.0, 0.2, 10.0, 0.4, 15.0],
         "intensities": [0.5, 20.0, 0.2, 10.0, 0.4, 15.0],
         "sigmas": [1.0] * 6,
+        "fourier_space_data": {},
     }
     plots = plot_screw_axes({"21a": data})
     for pl in plots.values():

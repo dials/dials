@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 
-import procrunner
 import pytest
 
 from dials.array_family import flex
@@ -10,8 +9,8 @@ from dials.command_line import detect_blanks
 
 
 def test_strong(dials_data, capsys, run_in_tmp_path):
-    expts_file = dials_data("insulin_processed", pathlib=True) / "imported.expt"
-    refl_file = dials_data("insulin_processed", pathlib=True) / "strong.refl"
+    expts_file = dials_data("insulin_processed") / "imported.expt"
+    refl_file = dials_data("insulin_processed") / "strong.refl"
     refl = flex.reflection_table.from_file(refl_file)
     z = refl["xyzobs.px.value"].parts()[2]
     refl_subset = refl.select((z < 10) | (z > 20))
@@ -31,8 +30,8 @@ def test_strong(dials_data, capsys, run_in_tmp_path):
 
 
 def test_integrated(dials_data, capsys, run_in_tmp_path):
-    expts_file = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
-    refl_file = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
+    expts_file = dials_data("insulin_processed") / "integrated.expt"
+    refl_file = dials_data("insulin_processed") / "integrated.refl"
     refl = flex.reflection_table.from_file(refl_file)
     z = refl["xyzobs.px.value"].parts()[2]
     sel = z < 40
@@ -73,26 +72,10 @@ Potential blank images: 41 -> 45
 
 
 def test_passing_still_images_raises_sysexit(dials_data, run_in_tmp_path):
-    path = dials_data("thaumatin_grid_scan", pathlib=True)
+    path = dials_data("vmxi_thaumatin_grid_index")
 
-    # Import the data
-    result = procrunner.run(
-        ["dials.import", "output.experiments=imported.expt"]
-        + list(path.glob("*.cbf*")),
-        working_directory=run_in_tmp_path,
-    )
-    assert not result.returncode and not result.stderr
-    expts_file = run_in_tmp_path / "imported.expt"
-    assert expts_file.is_file()
-
-    # Find the spots
-    result = procrunner.run(
-        ["dials.find_spots", "imported.expt", "min_spot_size=3", "nproc=1"],
-        working_directory=run_in_tmp_path,
-    )
-    assert not result.returncode and not result.stderr
-    refl_file = run_in_tmp_path / "strong.refl"
-    assert refl_file.is_file()
+    expts_file = path / "split_07602.expt"
+    refl_file = path / "split_07602.refl"
 
     # Now test that passing stills raises a sys.exit
     with pytest.raises(SystemExit):

@@ -2,6 +2,7 @@ import libtbx.load_env
 import os
 import platform
 from libtbx.env_config import get_boost_library_with_python_version
+from pathlib import Path
 
 Import("env_etc")
 
@@ -11,6 +12,12 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
     Import("env_no_includes_boost_python_ext")
     env = env_no_includes_boost_python_ext.Clone()
     env_etc.enable_more_warnings(env=env)
+
+    system_includes = [x for x in env_etc.conda_cpppath if x] if libtbx.env.build_options.use_conda else []
+    system_includes.append(str(Path(env_etc.scitbx_dist).parent))
+    env.Append(CXXFLAGS=[f"-isystem{x}" for x in system_includes])
+    env.Append(SHCXXFLAGS=[f"-isystem{x}" for x in system_includes])
+
     include_paths = [
         env_etc.libtbx_include,
         env_etc.scitbx_include,
@@ -23,11 +30,12 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         env_etc.dxtbx_include,
         env_etc.dials_include,
     ]
-    # following lines can be removed once Python2.7 compatibility is dropped
-    msgpack = os.path.join(env_etc.dials_include, "msgpack-3.1.1", "include")
-    if os.path.exists(str(msgpack)):
-        include_paths.append(msgpack)
-    ########################################################################
+
+    # Handle cctbx bootstrap builds that pull a fixed msgpack version into modules/
+    msgpack = Path(libtbx.env.dist_path("dials")).parent / "msgpack-3.1.1" / "include"
+    if msgpack.is_dir():
+        include_paths.append(str(msgpack))
+
     if libtbx.env.build_options.use_conda:
         boost_python = get_boost_library_with_python_version(
             "boost_python", env_etc.conda_libpath
@@ -41,6 +49,17 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         LIBS=env_etc.libm
         + ["scitbx_boost_python", boost_python, "boost_thread", "cctbx"],
     )
+
+    # Fix the build environment so that it doesn't break on modern C++
+    for path in list(env["CPPPATH"]):
+        if "msvc9.0_include" in path:
+            env["CPPPATH"].remove(path)
+
+    # Fix compilation errors on windows, caused by function redefinition
+    # See: https://github.com/boostorg/system/issues/32#issuecomment-462912013
+    if env_etc.compiler == "win32_cl":
+        env.Append(CPPDEFINES="HAVE_SNPRINTF")
+
     env.SConscript("src/dials/model/SConscript", exports={"env": env})
     env.SConscript("src/dials/array_family/SConscript", exports={"env": env})
     env.SConscript("src/dials/algorithms/SConscript", exports={"env": env})

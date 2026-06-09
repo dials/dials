@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import dials.algorithms.profile_model.modeller  # noqa: F401; lgtm; true import dependency
+import dials.algorithms.profile_model.modeller  # noqa: F401 # true import dependency
 from dials.algorithms.profile_model.gaussian_rs.model import Model, phil_scope
 from dials_algorithms_profile_model_gaussian_rs_ext import (
     BBoxCalculator2D,
@@ -69,7 +69,7 @@ def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
 
 
 def MaskCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
-    """Return the relevant partiality calculator."""
+    """Return the relevant mask calculator."""
     if goniometer is None or scan is None or scan.is_still():
         algorithm = MaskCalculator2D(beam, detector, delta_b, delta_m)
     else:

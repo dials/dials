@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import pickle
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -46,9 +47,6 @@ output {
     mask = pixels.mask
         .type = path
         .help = "Output mask file name"
-    png = pixels.png
-        .type = path
-        .help = "Bad pixel mask as image"
     print_values = False
         .type = bool
         .help = "Print bad pixel values"
@@ -103,9 +101,9 @@ def find_constant_signal_pixels(imageset, images):
 
         data = data.as_double()
 
-        spot_params = spot_phil.fetch(
-            source=iotbx.phil.parse("min_spot_size=1")
-        ).extract()
+        spot_params = spot_phil.extract()
+        spot_params.spotfinder.filter.min_spot_size = 1
+        spot_params.spotfinder.threshold.algorithm = "dispersion"
         threshold_function = SpotFinderFactory.configure_threshold(spot_params)
         peak_pixels = threshold_function.compute_threshold(data, ~bad)
 
@@ -196,6 +194,19 @@ def run(args=None):
 
     for h in hot_pixels:
         print(f"mask: {h // nfast} {h % nfast} 16")
+
+    if params.output.mask:
+        mask = flex.bool(
+            flex.grid(reversed(imageset.get_detector()[0].get_image_size())), True
+        )
+
+        for h in hot_pixels:
+            mask[h // nfast, h % nfast] = False
+
+        with open(params.output.mask, "wb") as fh:
+            pickle.dump(mask, fh, pickle.HIGHEST_PROTOCOL)
+
+        print(f"Wrote pixel mask to {params.output.mask}")
 
 
 if __name__ == "__main__":

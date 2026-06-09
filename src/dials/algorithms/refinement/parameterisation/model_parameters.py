@@ -93,7 +93,9 @@ class Parameter:
         except TypeError:
             msg += "    Type: " + str(self.param_type) + "\n"
         try:
-            msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
+            msg += (
+                "    Axis: ({:5.3f}, {:5.3f}, {:5.3f})".format(*tuple(self.axis)) + "\n"
+            )
         except TypeError:
             msg += "    Axis: " + str(self.axis) + "\n"
         msg += f"    Value: {self.value:5.3f}" + "\n"
@@ -198,7 +200,6 @@ class ModelParameterisation:
         """
 
         if only_free:
-
             return [x for x in self._param if not x.get_fixed()]
 
         else:
@@ -214,7 +215,6 @@ class ModelParameterisation:
         """
 
         if only_free:
-
             return [x.value for x in self._param if not x.get_fixed()]
 
         else:

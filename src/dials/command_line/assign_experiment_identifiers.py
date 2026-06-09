@@ -35,9 +35,11 @@ phil_scope = phil.parse(
 @show_mail_handle_errors()
 def run(args=None):
     """Run assign experiment identifiers from the command line."""
-    usage = (
-        """Usage: dials.assign_experiment_identifiers observations.refl models.expt"""
-    )
+    usage = """
+    dials.assign_experiment_identifiers observations.refl models.expt
+
+    dials.assign_experiment_identifiers observations.refl models.expt identifiers="0 1 2"
+"""
     parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
@@ -59,8 +61,7 @@ def run(args=None):
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
         raise Sorry(
-            "Mismatched number of experiments and reflection tables found: %s & %s."
-            % (len(experiments), len(reflections))
+            f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
         )
     try:
         experiments, reflections = assign_unique_identifiers(

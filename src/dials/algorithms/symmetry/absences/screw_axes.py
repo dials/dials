@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import math
 
+import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
+from scipy.stats import norm
 
 from scitbx.array_family import flex
 
@@ -25,6 +27,8 @@ class ScrewAxisObserver(Observer):
             "i_over_sigma": screw_axis.i_over_sigma,
             "intensities": screw_axis.intensities,
             "sigmas": screw_axis.sigmas,
+            "fourier_space_data": screw_axis.fourier_space_data,
+            "axis_repeat": screw_axis.axis_repeat,
         }
 
     def generate_html_report(self, filename):
@@ -57,7 +61,7 @@ class ScrewAxis(Subject):
     name = None
 
     def __init__(self):
-        super().__init__(events=["selected data for scoring"])
+        super().__init__(events=["scored axis"])
         self.equivalent_axes = []
         self.n_refl_used = (0.0, 0.0)
         self.miller_axis_vals = []
@@ -68,6 +72,7 @@ class ScrewAxis(Subject):
         self.mean_I_sigma = 0.0
         self.mean_I_abs = 0.0
         self.mean_I = 0.0
+        self.fourier_space_data = {}
 
     def add_equivalent_axis(self, equivalent):
         """Add a symmetry equivalent axis."""
@@ -84,7 +89,6 @@ class ScrewAxis(Subject):
             selection = (h == 0) & (k == 0)
         return selection
 
-    @Subject.notify_event(event="selected data for scoring")
     def get_all_suitable_reflections(self, reflection_table):
         """Select suitable reflections for testing the screw axis."""
         refl = reflection_table
@@ -108,9 +112,151 @@ class ScrewAxis(Subject):
                 self.intensities.extend(intensities)
                 self.sigmas.extend(sigmas)
 
-    def score_axis(self, reflection_table, significance_level=0.95):
-        """Score the axis give a reflection table of data."""
-        assert significance_level in [0.95, 0.975, 0.99]
+    @Subject.notify_event(event="scored axis")
+    def score_axis(
+        self,
+        reflection_table,
+        significance_level=0.95,
+        method="direct",
+        fourier_oversample=50,
+    ):
+        """Score the axis given a reflection table of data."""
+        if method == "direct":
+            return self.score_axis_direct(reflection_table, significance_level)
+        else:
+            return self.score_axis_fourier(
+                reflection_table, significance_level, oversample=fourier_oversample
+            )
+
+    @staticmethod
+    def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat, oversample=50):
+        """
+        Score screw axis based on selected miller indices and I over SigI values
+
+        Parameters
+        ----------
+        miller_index : np.array
+            Vector of miller indices along the chosen axis.
+        i_over_sigma : np.array
+            Vector of signal to noise ratios with the same shape as miller_indices.
+        axis_repeat : int
+            The expected periodicity of the screw axis. Must be one of {2, 3, 4, 6}.
+        oversample : int
+            The amount of oversampling to use in smoothing the fourier power spectrum.
+            This must be greater than zero.
+        """
+        if axis_repeat not in {2, 3, 4, 6}:
+            raise ValueError(
+                f"Received axis_repeat, {axis_repeat}, but expected an integer in {2, 3, 4, 6}"
+            )
+
+        # We must take care to make sure the length of the fourier transformed vector is divisible by 6
+        miller_index = miller_index - miller_index.min()
+        n = miller_index.max() + 1
+        n = 6 * ((n // 6) + 1)
+
+        direct_space = np.zeros(n)
+        direct_space[miller_index] = i_over_sigma
+
+        # Zero pad the fft input
+        direct_space = np.concatenate(
+            (
+                direct_space,
+                np.zeros_like(
+                    direct_space,
+                    shape=len(direct_space) * oversample,
+                ),
+            )
+        )
+
+        # Fourier transform i over sigma
+        fourier_space = np.abs(np.fft.fft(direct_space))
+
+        # Indices for Fourier frequencies which may correspond to screw periodicities
+        # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
+        d = len(fourier_space)
+        if axis_repeat == 2:
+            peak_locations = [0, d // 2, d - 1]
+        elif axis_repeat == 3:
+            peak_locations = [0, d // 3, 2 * d // 3, d - 1]
+        elif axis_repeat == 4:
+            peak_locations = [0, d // 4, d // 2, 3 * d // 4, d - 1]
+        else:
+            peak_locations = [0, d // 6, d // 3, d // 2, 2 * d // 3, 5 * d // 6, d - 1]
+
+        # Creates a boolean mask len(peak_locations) by len(fourier_space)
+        # This mask takes the value True in the vicinity of expected peaks
+        peak_mask = []
+        for loc in peak_locations:
+            peak = np.zeros(d, dtype="bool")
+            peak[loc] = True
+            peak = np.convolve(peak, np.ones(oversample, dtype=bool), mode="same")
+            peak_mask.append(peak)
+        peak_mask = np.stack(peak_mask)
+
+        # Combine all peak regions
+        screw_idx = peak_mask.any(0)
+        null_idx = ~screw_idx
+
+        # To determine the probability of a screw axis, use the frequencies which do not
+        # correspond to any screw axis periodicity to form a null model. Then ask what
+        # the probability of the candidate frequency is under the null model.
+        # In this case, we will use the nonparametric, wilcoxon ranksums test.
+
+        from scipy.stats import ranksums
+
+        p_peaks = []
+        for peak in peak_mask:
+            stat = ranksums(
+                fourier_space[peak],
+                fourier_space[null_idx],
+                alternative="greater",  # hypothesis: peak > null
+            )
+            p_peaks.append(1.0 - stat.pvalue)
+
+        # Final p-value is the product of each peak's p-value
+        p_screw = np.prod(p_peaks)
+
+        fourier_space_data = {"fourier_space": fourier_space, "n": n}
+        return p_screw, fourier_space_data
+
+    def score_axis_fourier(
+        self, reflection_table, significance_level=0.95, oversample=50
+    ):
+        """Estimate the probability of a screw axis using Fourier analysis."""
+
+        self.get_all_suitable_reflections(reflection_table)
+        expected_sel = self.miller_axis_vals.iround() % self.axis_repeat == 0
+
+        expected = self.i_over_sigma.select(expected_sel)
+        expected_abs = self.i_over_sigma.select(~expected_sel)
+        self.n_refl_used = (expected.size(), expected_abs.size())
+
+        if not expected or not expected_abs:
+            return 0.0
+
+        # Log these quantities for reporting.
+        self.mean_I_sigma_abs = flex.mean(expected_abs)
+        self.mean_I_sigma = flex.mean(expected)
+        self.mean_I = flex.mean(self.intensities.select(expected_sel))
+        self.mean_I_abs = flex.mean(self.intensities.select(~expected_sel))
+
+        i_over_sigma = np.array(self.i_over_sigma)
+        miller_index = np.array(self.miller_axis_vals.iround())
+        p_screw, fourier_space_data = self._score_axis_fourier(
+            miller_index, i_over_sigma, self.axis_repeat, oversample=oversample
+        )
+        # Record the fourier data for reporting.
+        self.fourier_space_data = fourier_space_data
+        # Zero out the probability if it is less than the significance_level
+        if p_screw < significance_level:
+            return 0.0
+
+        return p_screw
+
+    def score_axis_direct(self, reflection_table, significance_level=0.95):
+        """Score the axis given a reflection table of data."""
+
         self.get_all_suitable_reflections(reflection_table)
 
         expected_sel = self.miller_axis_vals.iround() % self.axis_repeat == 0
@@ -142,8 +288,7 @@ class ScrewAxis(Subject):
         # sanity check - is most of intensity in 'expected' channel?
         intensity_test = self.mean_I_sigma > (20.0 * self.mean_I_sigma_abs)
 
-        cutoffs = {0.95: 1.645, 0.975: 1.960, 0.99: 2.326}
-        cutoff = cutoffs[significance_level]
+        cutoff = norm.ppf(significance_level)
 
         if z_score_absent > cutoff and not intensity_test:
             # z > 1.65 in only 5% of cases for normal dist

@@ -11,7 +11,8 @@
 #ifndef DIALS_ALGORITHMS_SIMULATION_RECIPROCAL_SPACE_HELPERS_H
 #define DIALS_ALGORITHMS_SIMULATION_RECIPROCAL_SPACE_HELPERS_H
 
-#include <boost/random.hpp>
+#include <ctime>
+#include <random>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
@@ -21,7 +22,6 @@
 #include <dxtbx/model/scan.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
-#include <ctime>
 #include <dials/model/data/shoebox.h>
 
 namespace dials { namespace algorithms {
@@ -41,26 +41,26 @@ namespace dials { namespace algorithms {
    * space.
    */
   int simulate_reciprocal_space_gaussian(
-    const BeamBase &beam,
-    const Detector &detector,
-    const Goniometer &goniometer,
-    const Scan &scan,
+    const BeamBase& beam,
+    const Detector& detector,
+    const Goniometer& goniometer,
+    const Scan& scan,
     double sigma_b,
     double sigma_m,
     const vec3<double> s1,
     double phi,
-    const int6 &bbox,
+    const int6& bbox,
     std::size_t I,
     af::ref<double, af::c_grid<3> > shoebox,
-    const af::const_ref<int, af::c_grid<3> > &mask) {
+    const af::const_ref<uint8_t, af::c_grid<3> >& mask) {
     vec3<double> s0 = beam.get_s0();
     vec3<double> m2 = goniometer.get_rotation_axis();
 
     // Seed the random number generator
-    boost::random::mt19937 gen(time(0));
-    boost::random::normal_distribution<double> dist_x(0, sigma_b);
-    boost::random::normal_distribution<double> dist_y(0, sigma_b);
-    boost::random::normal_distribution<double> dist_z(0, sigma_m);
+    std::mt19937 gen(time(0));
+    std::normal_distribution<double> dist_x(0, sigma_b);
+    std::normal_distribution<double> dist_y(0, sigma_b);
+    std::normal_distribution<double> dist_z(0, sigma_m);
 
     // Do the simulation
     int counts = 0;
@@ -108,25 +108,25 @@ namespace dials { namespace algorithms {
    * space. Estimate the expected intensity within the masked region.
    */
   int integrate_reciprocal_space_gaussian(
-    const BeamBase &beam,
-    const Detector &detector,
-    const Goniometer &goniometer,
-    const Scan &scan,
+    const BeamBase& beam,
+    const Detector& detector,
+    const Goniometer& goniometer,
+    const Scan& scan,
     double sigma_b,
     double sigma_m,
     const vec3<double> s1,
     double phi,
-    const int6 &bbox,
+    const int6& bbox,
     std::size_t I,
-    const af::const_ref<int, af::c_grid<3> > &mask) {
+    const af::const_ref<uint8_t, af::c_grid<3> >& mask) {
     vec3<double> s0 = beam.get_s0();
     vec3<double> m2 = goniometer.get_rotation_axis();
 
     // Seed the random number generator
-    boost::random::mt19937 gen(time(0));
-    boost::random::normal_distribution<double> dist_x(0, sigma_b);
-    boost::random::normal_distribution<double> dist_y(0, sigma_b);
-    boost::random::normal_distribution<double> dist_z(0, sigma_m);
+    std::mt19937 gen(time(0));
+    std::normal_distribution<double> dist_x(0, sigma_b);
+    std::normal_distribution<double> dist_y(0, sigma_b);
+    std::normal_distribution<double> dist_z(0, sigma_m);
 
     // Do the simulation
     int counts = 0;

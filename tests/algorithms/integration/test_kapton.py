@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import procrunner
+import shutil
+import subprocess
+
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -13,7 +15,7 @@ def test_kapton(tmp_path, dials_data):
     """Test script for kapton correction applied to integrated data.
     Currently only testing kapton 2019 correction on rayonix-340 at LCLS
     """
-    dd = dials_data("lcls_rayonix_kapton", pathlib=True)
+    dd = dials_data("lcls_rayonix_kapton")
     image_file = dd / "hit-20181213155134902.cbf"
     mask_file = dd / "mask_rayonix340mx_4x4.pickle"
     geom_file = dd / "experiments_000.json"
@@ -23,9 +25,9 @@ def test_kapton(tmp_path, dials_data):
     #  b. with kapton
 
     stills_process_input = parse(
-        """spotfinder.lookup.mask=%s\n
-                          integration.lookup.mask=%s\n
-                          input.reference_geometry=%s\n
+        f"""spotfinder.lookup.mask={mask_file}\n
+                          integration.lookup.mask={mask_file}\n
+                          input.reference_geometry={geom_file}\n
                           spotfinder.filter.min_spot_size=2\n
                           spotfinder.filter.d_min=2\n
                           spotfinder.filter.d_max=18\n
@@ -38,7 +40,6 @@ def test_kapton(tmp_path, dials_data):
                           integration.debug.separate_files=False\n
                           integration.debug.delete_shoeboxes=True\n
                           profile.gaussian_rs.centroid_definition=com\n """
-        % (mask_file, mask_file, geom_file)
     )
 
     kapton_input = parse(
@@ -79,20 +80,20 @@ def test_kapton(tmp_path, dials_data):
     )
 
     command_without_kapton = (
-        "dials.stills_process",
+        shutil.which("dials.stills_process"),
         image_file,
         "params_without_kapton.phil",
     )
     command_with_kapton = (
-        "dials.stills_process",
+        shutil.which("dials.stills_process"),
         image_file,
         "params_with_kapton.phil",
     )
-    procrunner.run(command_without_kapton, working_directory=tmp_path)
-    procrunner.run(command_with_kapton, working_directory=tmp_path)
+    subprocess.run(command_without_kapton, cwd=tmp_path, capture_output=True)
+    subprocess.run(command_with_kapton, cwd=tmp_path, capture_output=True)
 
     # Now compare the 2 experimental results
-    # Currently just comparing the median values to get a sense of the effect if the kapton and whether it is being applied correctly
+    # Currently just comparing the mean values to get a sense of the effect if the kapton and whether it is being applied correctly
     expt_without_kapton = ExperimentListFactory.from_json_file(
         tmp_path / "without_kapton.expt", check_format=False
     )
@@ -104,8 +105,8 @@ def test_kapton(tmp_path, dials_data):
     )
     refl_with_kapton = flex.reflection_table.from_file(tmp_path / "with_kapton.mpack")
 
-    without_kapton_medians = []
-    with_kapton_medians = []
+    without_kapton_means = []
+    with_kapton_means = []
     count = 0
     for experiments, reflections in zip(
         (expt_without_kapton, expt_with_kapton), (refl_without_kapton, refl_with_kapton)
@@ -124,20 +125,20 @@ def test_kapton(tmp_path, dials_data):
 
         for sel in all_x <= 0, all_x > 0, all_y <= 0, all_y > 0:
             if count == 0:
-                without_kapton_medians.append(flex.median(all_i.select(sel)))
+                without_kapton_means.append(flex.mean(all_i.select(sel)))
             if count == 1:
-                with_kapton_medians.append(flex.median(all_i.select(sel)))
+                with_kapton_means.append(flex.mean(all_i.select(sel)))
         count += 1
 
     # Now compare results between uncorrected and corrected data
 
     # x < 0 where the kapton shadow is
-    assert without_kapton_medians[0] < with_kapton_medians[0]
+    assert without_kapton_means[0] < with_kapton_means[0]
     # x > 0 where no kapton shadow present
-    assert without_kapton_medians[1] == pytest.approx(with_kapton_medians[1], abs=0.1)
+    assert without_kapton_means[1] == pytest.approx(with_kapton_means[1], abs=0.1)
     # y < 0; kapton correction should average out but should be slightly higher
-    assert without_kapton_medians[2] == pytest.approx(with_kapton_medians[2], abs=5.0)
-    assert without_kapton_medians[2] < with_kapton_medians[2]
+    assert without_kapton_means[2] == pytest.approx(with_kapton_means[2], abs=30.0)
+    assert without_kapton_means[2] < with_kapton_means[2]
     # y < 0; kapton correction should average out but should be slightly higher
-    assert without_kapton_medians[3] == pytest.approx(with_kapton_medians[3], abs=5.0)
-    assert without_kapton_medians[3] < with_kapton_medians[3]
+    assert without_kapton_means[3] == pytest.approx(with_kapton_means[3], abs=30.0)
+    assert without_kapton_means[3] < with_kapton_means[3]

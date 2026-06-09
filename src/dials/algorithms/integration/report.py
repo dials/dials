@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dials.array_family import flex
 from dials.array_family.flex import Binner
+from dials.constants import FULL_PARTIALITY
 from dials.util.report import Array, Report, Table
 
 
@@ -91,7 +92,6 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         return report
 
     def binned_report(binner, index, data):
-
         # Create the indexers
         indexer_all = binner.indexer(index)
         indexer_sum = binner.indexer(index.select(data["sum"]))
@@ -158,7 +158,6 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         return report
 
     def resolution_bins(experiment, hkl, nbins):
-
         # Create the crystal symmetry object
         cs = crystal.symmetry(
             space_group=experiment.crystal.get_space_group(),
@@ -213,7 +212,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
             data[key] = reflections[key]
 
     # Compute some flag stuff
-    data["full"] = data["partiality"] > 0.997300203937
+    data["full"] = data["partiality"] >= FULL_PARTIALITY
     data["over"] = reflections.get_flags(flags.overloaded)
     data["ice"] = reflections.get_flags(flags.in_powder_ring)
     data["sum"] = reflections.get_flags(flags.integrated_sum)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import copy
 import itertools
+import logging
 import os
 import pickle
 import sys
@@ -11,7 +12,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from glob import glob
 
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
@@ -25,6 +26,13 @@ from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
 )
 from dials.util.phil import FilenameDataWrapper
+
+
+class InvalidPhilError(ValueError):
+    pass
+
+
+logger = logging.getLogger(__name__)
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -226,7 +234,7 @@ class Importer:
                 message=str(exception),
                 traceback=traceback.format_exc(),
                 type=type,
-                exception=exception,
+                exception=exception.__class__.__name__,
             )
         )
 
@@ -261,26 +269,36 @@ class Importer:
         for arg in args:
             # Don't expand wildcards if URI-style filename
             if "*" in arg and not get_url_scheme(arg):
-                args_new.extend(glob(arg))
+                filenames = glob(arg, recursive=True)
+                if filenames:
+                    args_new.extend(filenames)
+                else:
+                    logger.warning(f"No files found with pattern {arg}")
             else:
                 args_new.append(arg)
         args = args_new
 
         unhandled = []
-        experiments = ExperimentListFactory.from_filenames(
-            args,
-            unhandled=unhandled,
-            compare_beam=compare_beam,
-            compare_detector=compare_detector,
-            compare_goniometer=compare_goniometer,
-            scan_tolerance=scan_tolerance,
-            format_kwargs=format_kwargs,
-            load_models=load_models,
-        )
-        if experiments:
-            self.experiments.append(
-                FilenameDataWrapper(filename="<image files>", data=experiments)
+
+        try:
+            experiments = ExperimentListFactory.from_filenames(
+                args,
+                unhandled=unhandled,
+                compare_beam=compare_beam,
+                compare_detector=compare_detector,
+                compare_goniometer=compare_goniometer,
+                scan_tolerance=scan_tolerance,
+                format_kwargs=format_kwargs,
+                load_models=load_models,
             )
+        except FileNotFoundError as e:
+            logger.error(f"File {e.filename} not found")
+        else:
+            if experiments:
+                self.experiments.append(
+                    FilenameDataWrapper(filename="<image files>", data=experiments)
+                )
+
         return unhandled
 
     def try_read_experiments(self, args, check_format, verbose):
@@ -441,7 +459,7 @@ class PhilCommandParser:
         # Parse the command line phil parameters
         user_phils = []
         unhandled = []
-        interpretor = self.system_phil.command_line_argument_interpreter()
+        interpreter = self.system_phil.command_line_argument_interpreter()
 
         def _is_a_phil_file(filename):
             return any(
@@ -465,7 +483,7 @@ class PhilCommandParser:
             # Treat "has a schema" as "looks like a URL (not phil)
             elif "=" in arg and not get_url_scheme(arg):
                 try:
-                    user_phils.append(interpretor.process_arg(arg=arg))
+                    user_phils.append(interpreter.process_arg(arg=arg))
                 except Exception:
                     if return_unhandled:
                         unhandled.append(arg)
@@ -486,7 +504,10 @@ class PhilCommandParser:
             raise RuntimeError(f"The following definitions were not recognised\n{msg}")
 
         # Extract the parameters
-        params = self._phil.extract()
+        try:
+            params = self._phil.extract()
+        except Exception as e:
+            raise InvalidPhilError(e)
 
         # Stop at this point if quick_parse is set. A second pass may be needed.
         if quick_parse:
@@ -851,12 +872,15 @@ class ArgumentParser(ArgumentParserBase):
             exit(0)
 
         # Parse the phil parameters
-        params, args = self._phil_parser.parse_args(
-            args,
-            options.verbose > 0,
-            return_unhandled=return_unhandled,
-            quick_parse=quick_parse,
-        )
+        try:
+            params, args = self._phil_parser.parse_args(
+                args,
+                options.verbose > 0,
+                return_unhandled=return_unhandled,
+                quick_parse=quick_parse,
+            )
+        except InvalidPhilError as e:
+            self.error(message=f"Invalid phil parameter: {e}")
 
         # Print the diff phil
         if show_diff_phil:
@@ -914,9 +938,7 @@ class ArgumentParser(ArgumentParserBase):
                     )
                 elif isinstance(err[0].exception, Sorry):
                     msg.append(
-                        '  "{}" failed during {} processing:\n    {}\n'.format(
-                            arg, err[0].type, err[0].message
-                        )
+                        f'  "{arg}" failed during {err[0].type} processing:\n    {err[0].message}\n'
                     )
                 else:
                     msg.append(
@@ -1113,9 +1135,10 @@ class ArgumentParser(ArgumentParserBase):
 class OptionParser(ArgumentParser):
     def __init__(self, *args, **kwargs):
         # Backwards compatibility 2021-11-10; 2022-04-06
+        # Remove after Dec 2022
         warnings.warn(
             "OptionParser is deprecated, use ArgumentParser instead",
-            DeprecationWarning,
+            UserWarning,
             stacklevel=2,
         )
         super().__init__(*args, **kwargs)

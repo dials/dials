@@ -11,7 +11,6 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
-import json
 import multiprocessing.pool
 import os
 import platform
@@ -24,14 +23,20 @@ import sys
 import tarfile
 import threading
 import time
-import warnings
 import zipfile
+import multiprocessing
 
 try:  # Python 3
     from urllib.error import HTTPError, URLError
     from urllib.request import Request, urlopen
 except ImportError:  # Python 2
     from urllib2 import HTTPError, Request, URLError, urlopen
+
+try:
+    # On windows, sometimes the python install is missing certificates
+    import certifi  # noqa: F401
+except ImportError:
+    pass
 
 # Clean environment for subprocesses
 clean_env = {
@@ -44,7 +49,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2021.9"  # October 2021 release
+_prebuilt_cctbx_base = "2026"
 
 
 def make_executable(filepath):
@@ -55,27 +60,57 @@ def make_executable(filepath):
         os.chmod(filepath, mode)
 
 
-def install_micromamba(python, include_cctbx):
+def _run_conda_retry(command_list):
+    for retry in range(5):
+        retry += 1
+        try:
+            run_command(
+                command=command_list,
+                workdir=".",
+            )
+        except Exception:
+            print(
+                """
+*******************************************************************************
+There was a failure in constructing the conda environment.
+Attempt {retry} of 5 will start {retry} minute(s) from {t}.
+*******************************************************************************
+""".format(retry=retry, t=time.asctime())
+            )
+            time.sleep(retry * 60)
+        else:
+            break
+    else:
+        sys.exit(
+            """
+The conda environment could not be constructed. Please check that there is a
+working network connection for downloading conda packages.
+"""
+        )
+
+
+def install_micromamba(python, cmake):
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
+        conda_arch = "linux-64"
         member = "bin/micromamba"
-        url = "https://micromamba.snakepit.net/api/micromamba/linux-64/latest"
     elif sys.platform == "darwin":
         conda_platform = "macos"
         member = "bin/micromamba"
         if platform.machine() == "arm64":
-            url = "https://micromamba.snakepit.net/api/micromamba/osx-arm64/latest"
+            conda_arch = "osx-arm64"
         else:
-            url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+            conda_arch = "osx-64"
     elif os.name == "nt":
         conda_platform = "windows"
         member = "Library/bin/micromamba.exe"
-        url = "https://micromamba.snakepit.net/api/micromamba/win-64/latest"
+        conda_arch = "win-64"
     else:
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
+    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -95,13 +130,16 @@ def install_micromamba(python, include_cctbx):
         conda_info = conda_info.decode("latin-1")
     print("Using Micromamba version", conda_info.strip())
 
-    # identify packages required for environment
-    filename = os.path.join(
-        "modules",
-        "dials",
-        ".conda-envs",
-        "{platform}.txt".format(platform=conda_platform),
-    )
+    # Identify packages required for environment
+    env_dir = os.path.join("modules", "dials", ".conda-envs")
+    # First, check to see if we have an architecture-and-python-specific environment file
+    filename = os.path.join(env_dir, "{0}_py{1}.txt".format(conda_arch, python))
+    if not os.path.isfile(filename):
+        # Otherwise, check if we have an architecture-specific environment file
+        filename = os.path.join(env_dir, "{0}.txt".format(conda_arch))
+    if not os.path.isfile(filename):
+        # Otherwise, use the platform-specific fallback
+        filename = os.path.join(env_dir, conda_platform + ".txt")
     if not os.path.isfile(filename):
         raise RuntimeError(
             "The environment file {filename} is not available".format(filename=filename)
@@ -132,247 +170,55 @@ def install_micromamba(python, include_cctbx):
         "--channel",
         "conda-forge",
         "--override-channels",
+        "mamba",
         python_requirement,
     ]
-    if include_cctbx:
-        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
+    extra_deps = []
+    if cmake:
+        extra_deps = [
+            "cctbx-base=" + _prebuilt_cctbx_base,
+            "pycbf",
+            "cmake",
+            "pre-commit",
+        ]
+        if _prebuilt_cctbx_base == "2024.7":
+            # Known minor incompatibility causes this to otherwise be removed
+            extra_deps.append("libboost-python-devel")
+        # If we're running from an explicit requirements file, then we
+        # need to install extra dependencies in a separate stage
+        with open(filename) as dep_file:
+            is_explicit_reqs = "@EXPLICIT" in dep_file.read()
+
+        if not is_explicit_reqs:
+            command_list.extend(extra_deps)
+            extra_deps = []
 
     print(
         "{text} dials environment from {filename} with Python {python}".format(
             text=text_messages[0], filename=filename, python=python
         )
     )
-    for retry in range(5):
-        retry += 1
-        try:
-            run_command(
-                command=command_list,
-                workdir=".",
-            )
-        except Exception:
-            print(
-                """
-*******************************************************************************
-There was a failure in constructing the conda environment.
-Attempt {retry} of 5 will start {retry} minute(s) from {t}.
-*******************************************************************************
-""".format(
-                    retry=retry, t=time.asctime()
-                )
-            )
-            time.sleep(retry * 60)
-        else:
-            break
-    else:
-        sys.exit(
-            """
-The conda environment could not be constructed. Please check that there is a
-working network connection for downloading conda packages.
-"""
-        )
-    print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
-    with open(os.path.join(prefix, ".condarc"), "w") as fh:
-        fh.write(
-            """
-changeps1: False
-channels:
-  - conda-forge
-""".lstrip()
-        )
 
-
-def install_miniconda(location):
-    """Download and install Miniconda3"""
-    if sys.platform.startswith("linux"):
-        filename = "Miniconda3-latest-Linux-x86_64.sh"
-    elif sys.platform == "darwin":
-        filename = "Miniconda3-latest-MacOSX-x86_64.sh"
-    elif os.name == "nt":
-        filename = "Miniconda3-latest-Windows-x86_64.exe"
-    else:
-        raise NotImplementedError(
-            "Unsupported platform %s / %s" % (os.name, sys.platform)
-        )
-    url = "https://repo.anaconda.com/miniconda/" + filename
-    filename = os.path.join(location, filename)
-
-    print("Downloading {url}:".format(url=url), end=" ")
-    result = download_to_file(url, filename)
-    if result in (0, -1):
-        sys.exit("Miniconda download failed")
-
-    # run the installer
-    if os.name == "nt":
-        command = [
-            filename,
-            "/InstallationType=JustMe",
-            "/RegisterPython=0",
-            "/AddToPath=0",
-            "/S",
-            "/D=" + location,
-        ]
-    else:
-        command = ["/bin/sh", filename, "-b", "-u", "-p", location]
-
-    print("Installing Miniconda")
-    run_command(command=command, workdir=".")
-
-
-def install_conda(python, include_cctbx):
-    # Find relevant conda base installation
-    conda_base = os.path.realpath("miniconda")
-    if os.name == "nt":
-        conda_exe = os.path.join(conda_base, "Scripts", "conda.exe")
-    else:
-        conda_exe = os.path.join(conda_base, "bin", "conda")
-
-    # default environment file for users
-    environment_file = os.path.join(
-        os.path.expanduser("~"), ".conda", "environments.txt"
-    )
-
-    def get_environments():
-        """Return a set of existing conda environment paths"""
-        try:
-            with open(environment_file) as f:
-                paths = f.readlines()
-        except IOError:
-            paths = []
-        environments = set(  # noqa; C401, Python 2.7 compatibility
-            os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
-        )
-        env_dirs = (
-            os.path.join(conda_base, "envs"),
-            os.path.join(os.path.expanduser("~"), ".conda", "envs"),
-        )
-        for env_dir in env_dirs:
-            if os.path.isdir(env_dir):
-                for d in os.listdir(env_dir):
-                    d = os.path.join(env_dir, d)
-                    if os.path.isdir(d):
-                        environments.add(d)
-
-        return environments
-
-    if os.path.isdir(conda_base) and os.path.isfile(conda_exe):
-        print("Using miniconda installation from", conda_base)
-    else:
-        print("Installing miniconda into", conda_base)
-        install_miniconda(conda_base)
-
-    # verify consistency and check conda version
-    if not os.path.isfile(conda_exe):
-        sys.exit("Conda executable not found at " + conda_exe)
-
-    environments = get_environments()
-
-    conda_info = subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
-    if sys.version_info.major > 2:
-        conda_info = conda_info.decode("latin-1")
-    conda_info = json.loads(conda_info)
-    for env in environments:
-        if env not in conda_info["envs"]:
-            print("Consistency check:", env, "not in environments:")
-            print(conda_info["envs"])
-            warnings.warn(
-                """
-There is a mismatch between the conda settings in your home directory
-and what "conda info" is reporting. This is not a fatal error, but if
-an error is encountered, please check that your conda installation and
-environments exist and are working.
-""",
-                RuntimeWarning,
-            )
-
-    # identify packages required for environment
-    if os.name == "nt":
-        conda_platform = "windows"
-    elif sys.platform == "darwin":
-        conda_platform = "macos"
-    else:
-        conda_platform = "linux"
-    filename = os.path.join(
-        "modules",
-        "dials",
-        ".conda-envs",
-        "{platform}.txt".format(platform=conda_platform),
-    )
-    if not os.path.isfile(filename):
-        raise RuntimeError(
-            "The file {filename} is not available".format(filename=filename)
-        )
-
-    python_requirement = "conda-forge::python=%s.*" % python
-
-    # make a new environment directory
-    prefix = os.path.realpath("conda_base")
-
-    # install a new environment or update and existing one
-    if prefix in environments:
-        command = "install"
-        text_messages = ["Updating", "update of"]
-    else:
-        command = "create"
-        text_messages = ["Installing", "installation into"]
-    command_list = [
-        conda_exe,
-        command,
-        "--prefix",
-        prefix,
-        "--file",
-        filename,
-        "--yes",
-        "--channel",
-        "conda-forge",
-        "--override-channels",
-        python_requirement,
-    ]
-    if include_cctbx:
-        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
-    if os.name == "nt":
+    _run_conda_retry(command_list)
+    # If we wanted extra dependencies, and couldn't install them directly, run again
+    if extra_deps:
         command_list = [
-            "cmd.exe",
-            "/C",
-            " ".join(
-                [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
-                + command_list
-            )
-            .replace("<", "^<")
-            .replace(">", "^>"),
-        ]
-    print(
-        "{text} dials environment from {filename} with Python {python}".format(
-            text=text_messages[0], filename=filename, python=python
-        )
-    )
-    for retry in range(5):
-        retry += 1
-        try:
-            run_command(
-                command=command_list,
-                workdir=".",
-            )
-        except Exception:
-            print(
-                """
-*******************************************************************************
-There was a failure in constructing the conda environment.
-Attempt {retry} of 5 will start {retry} minute(s) from {t}.
-*******************************************************************************
-""".format(
-                    retry=retry, t=time.asctime()
-                )
-            )
-            time.sleep(retry * 60)
-        else:
-            break
-    else:
-        sys.exit(
-            """
-The conda environment could not be constructed. Please check that there is a
-working network connection for downloading conda packages.
-"""
-        )
+            mamba,
+            "--no-env",
+            "--no-rc",
+            "--prefix",
+            prefix,
+            "--root-prefix",
+            mamba_prefix,
+            "install",
+            "--yes",
+            "--channel",
+            "conda-forge",
+            "--override-channels",
+            "mamba",
+        ] + extra_deps
+        _run_conda_retry(command_list)
+
     print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
     with open(os.path.join(prefix, ".condarc"), "w") as fh:
         fh.write(
@@ -991,31 +837,37 @@ def update_sources(options):
         except OSError:
             pass
 
-    repositories = {
-        source.split("/")[1]: {"base-repository": source, "branch-local": branch}
-        for source, branch in (
-            ("cctbx/annlib_adaptbx", "master"),
-            ("cctbx/cctbx_project", "master"),
-            ("cctbx/dxtbx", "main"),
-            ("dials/annlib", "master"),
-            ("dials/cbflib", "master"),
-            ("dials/ccp4io", "master"),
-            ("dials/ccp4io_adaptbx", "master"),
-            ("dials/dials", "main"),
-            ("dials/gui_resources", "master"),
-            ("xia2/xia2", "main"),
-        )
-    }
-    if options.prebuilt_cctbx:
-        repositories["cctbx_project"]["branch-local"] = (
-            "releases/" + _prebuilt_cctbx_base
-        )
-    else:
+    if not options.cmake:
+        repositories = {
+            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            for source, branch in (
+                ("cctbx/annlib_adaptbx", "master"),
+                ("cctbx/cctbx_project", "master"),
+                ("cctbx/dxtbx", "main"),
+                ("dials/annlib", "master"),
+                ("dials/cbflib", "CBFlib-0.9.8"),
+                ("dials/ccp4io", "master"),
+                ("dials/ccp4io_adaptbx", "master"),
+                ("dials/dials", "main"),
+                ("dials/gui_resources", "master"),
+                ("xia2/xia2", "main"),
+            )
+        }
         repositories["cctbx_project"] = {
             "base-repository": "cctbx/cctbx_project",
             "effective-repository": "dials/cctbx",
             "branch-remote": "master",
             "branch-local": "stable",
+        }
+    else:
+        # Only what we need for CMake
+        repositories = {
+            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            for source, branch in (
+                ("cctbx/dxtbx", "main"),
+                ("dials/dials", "main"),
+                ("xia2/xia2", "main"),
+            )
         }
 
     for source, setting in options.branch:
@@ -1106,31 +958,176 @@ def run_tests():
     )
 
 
-def refresh_build(prebuilt_cctbx):
+def refresh_build():
     print("Running libtbx.refresh")
     run_indirect_command(
-        "libtbx.refresh" if prebuilt_cctbx else os.path.join("bin", "libtbx.refresh"),
+        os.path.join("bin", "libtbx.refresh"),
         args=[],
     )
 
 
-def install_precommit():
+def install_precommit(cmake=False):
     print("Installing precommits")
-    run_indirect_command(
-        os.path.join("bin", "libtbx.precommit"),
-        args=["install"],
-    )
+    if cmake:
+        # Just find all repository directories under modules, since we
+        # don't have a central registry
+        subdirs = []
+        for sub in os.listdir("modules"):
+            if os.path.isdir(os.path.join("modules", sub, ".git")):
+                subdirs.append(os.path.abspath(os.path.join("modules", sub)))
+
+        conda_base_root = os.path.join(os.path.abspath("."), "conda_base")
+        if os.name == "nt":
+            precommit_command = os.path.join(
+                conda_base_root, "Scripts", "libtbx.precommit.exe"
+            )
+        else:
+            precommit_command = os.path.join(conda_base_root, "bin", "libtbx.precommit")
+        run_indirect_command(
+            precommit_command,
+            args=["install"] + subdirs,
+        )
+    else:
+        run_indirect_command(
+            os.path.join("bin", "libtbx.precommit"),
+            args=["install"],
+        )
 
 
-def configure_build(config_flags, prebuilt_cctbx):
+def _get_base_python():
     if os.name == "nt":
         conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
     elif sys.platform.startswith("darwin"):
         conda_python = os.path.join(
-            "..", "conda_base", "python.app", "Contents", "MacOS", "python"
+            "conda_base", "python.app", "Contents", "MacOS", "python"
         )
     else:
-        conda_python = os.path.join("..", "conda_base", "bin", "python")
+        conda_python = os.path.join("conda_base", "bin", "python")
+    return os.path.abspath(conda_python)
+
+
+def _get_cmake_exe():
+    if os.name == "nt":
+        return os.path.abspath(
+            os.path.join("conda_base", "Library", "bin", "cmake.exe")
+        )
+    else:
+        return os.path.abspath(os.path.join("conda_base", "bin", "cmake"))
+
+
+def refresh_build_cmake():
+    conda_python = _get_base_python()
+    run_indirect_command(
+        conda_python,
+        [
+            "-mpip",
+            "install",
+            "--no-deps",
+            "-e",
+            "../modules/dxtbx",
+            "-e",
+            "../modules/dials",
+            "-e",
+            "../modules/xia2",
+        ],
+    )
+
+
+def configure_build_cmake(extra_args):
+    # type: (list[str] | None) -> None
+    cmake_exe = _get_cmake_exe()
+    python_exe = _get_base_python()
+
+    # Get the location of site-packages
+    site_path = subprocess.check_output(
+        [
+            python_exe,
+            "-c",
+            "import os, site; print(os.path.abspath(site.getsitepackages()[0]))",
+        ]
+    ).strip()
+    if not isinstance(site_path, str):
+        site_path = site_path.decode()
+
+    # Write a .pth file here pointing to the build/lib folder. This
+    # is a somewhat "clever" convenience such that the PYTHONPATH doesn't
+    # need to be explicitly set before running code.
+    lib_pth = os.path.join(site_path, "__bootstrap__.dials.pth")
+    print("Writing libdir .pth file to: " + lib_pth)
+    # Best-guess work out where the libraries are put by the build
+    if os.name == "nt":
+        build_lib_dir = os.path.join(os.getcwd(), "build", "lib", "RelWithDebInfo")
+    else:
+        build_lib_dir = os.path.join(os.getcwd(), "build", "lib")
+
+    with open(lib_pth, "w") as f:
+        f.write(build_lib_dir)
+
+    # write a new-style environment setup script
+    if os.name == "nt":
+        activate = os.path.join(os.getcwd(), "conda_base", "condabin", "activate.bat")
+        with open("dials.bat", "w") as f:
+            f.write(
+                """\
+rem enable conda environment
+call {}
+conda activate {}
+""".format(
+                    activate,
+                    os.path.join(os.getcwd(), "conda_base"),
+                )
+            )
+    else:
+        with open("dials", "w") as f:
+            f.write(
+                """\
+# enable conda environment
+source {dist_root}/conda_base/etc/profile.d/conda.sh
+conda activate {dist_root}/conda_base
+""".format(
+                    dist_root=os.getcwd(),
+                )
+            )
+
+    # Write a compound CMakeLists.txt, if one doesn't exist
+    if not os.path.isfile("modules/CMakeLists.txt"):
+        with open("modules/CMakeLists.txt", "w") as f:
+            f.write(
+                """\
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+project(dials)
+
+if (MSVC)
+    # Windows can fail because of too many objects
+    add_compile_options(/bigobj)
+endif()
+
+add_subdirectory(dxtbx)
+add_subdirectory(dials)
+"""
+            )
+
+    # run_indirect runs inside the build folder with an activated environment
+    conda_base_root = os.path.join(os.path.abspath("."), "conda_base")
+    assert os.path.isdir(conda_base_root)
+    extra_args = extra_args or []
+    if os.name == "nt":
+        extra_args.append("-DPython_ROOT_DIR=" + conda_base_root)
+    sys.stdout.flush()
+    run_indirect_command(
+        cmake_exe,
+        [
+            "../modules",
+            "-DCMAKE_INSTALL_PREFIX=" + conda_base_root,
+            "-DHDF5_DIR=" + conda_base_root,
+            "-DPython_ROOT_DIR=" + conda_base_root,
+        ]
+        + extra_args,
+    )
+
+
+def configure_build(config_flags):
+    conda_python = _get_base_python()
 
     # write a new-style environment setup script
     with open(("dials.bat" if os.name == "nt" else "dials"), "w"):
@@ -1140,18 +1137,13 @@ def configure_build(config_flags, prebuilt_cctbx):
         flag.startswith("--compiler=") for flag in config_flags
     ):
         config_flags.append("--compiler=conda")
-    if "--enable_cxx11" not in config_flags:
-        config_flags.append("--enable_cxx11")
     if "--use_conda" not in config_flags:
         config_flags.append("--use_conda")
+    # Default to C++14 if otherwise unspecified
+    if not any(x.startswith("--cxxstd") for x in config_flags):
+        config_flags.append("--cxxstd=c++14")
 
     print("Setting up build directory")
-    if prebuilt_cctbx:
-        run_indirect_command(
-            command="libtbx.configure",
-            args=["cbflib", "dials", "dxtbx", "prime", "xia2"],
-        )
-        return
 
     configcmd = [
         os.path.join("..", "modules", "cctbx_project", "libtbx", "configure.py"),
@@ -1168,8 +1160,8 @@ def configure_build(config_flags, prebuilt_cctbx):
         "xfel",
         "dials",
         "xia2",
-        "prime",
         "--skip_phenix_dispatchers",
+        "--use_environment",
     ] + config_flags
 
     run_indirect_command(
@@ -1178,20 +1170,32 @@ def configure_build(config_flags, prebuilt_cctbx):
     )
 
 
-def make_build(prebuilt_cctbx):
+def make_build():
     try:
         nproc = len(os.sched_getaffinity(0))
     except AttributeError:
         nproc = multiprocessing.cpu_count()
-    if prebuilt_cctbx:
-        command = "libtbx.scons"
-    else:
-        command = os.path.join("bin", "libtbx.scons")
+    command = os.path.join("bin", "libtbx.scons")
 
     run_indirect_command(command, args=["-j", str(nproc)])
-    if not prebuilt_cctbx:
-        # run build again to make sure everything is built
-        run_indirect_command(command, args=["-j", str(nproc)])
+    # run build again to make sure everything is built
+    run_indirect_command(command, args=["-j", str(nproc)])
+
+
+def make_build_cmake():
+    cmake_exe = _get_cmake_exe()
+    if os.name == "nt":
+        run_indirect_command(cmake_exe, ["--build", ".", "--config", "RelWithDebInfo"])
+    else:
+        parallel = []
+        if "CMAKE_GENERATOR" not in os.environ:
+            if hasattr(os, "sched_getaffinity"):
+                cpu = len(os.sched_getaffinity(0))
+            else:
+                cpu = multiprocessing.cpu_count()
+            if isinstance(cpu, int):
+                parallel = ["--parallel", str(cpu)]
+        run_indirect_command(cmake_exe, ["--build", "."] + parallel)
 
 
 def repository_at_tag(string):
@@ -1257,17 +1261,17 @@ def run():
     )
     parser.add_argument(
         "--config-flags",
-        help="""Pass flags to the configuration step. Flags should
+        help="""Pass flags to the configuration step (CMake or libtbx). Flags should
 be passed separately with quotes to avoid confusion (e.g
---config_flags="--build=debug" --config_flags="--another_flag")""",
+--config-flags="--build=debug" --config-flags="--another_flag")""",
         action="append",
         default=[],
     )
     parser.add_argument(
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
-        default="3.9",
-        choices=("3.8", "3.9", "3.10"),
+        default="3.13",
+        choices=("3.11", "3.12", "3.13"),
     )
     parser.add_argument(
         "--branch",
@@ -1280,27 +1284,28 @@ be passed separately with quotes to avoid confusion (e.g
         ),
     )
     parser.add_argument(
-        "--conda",
-        help="Use miniconda instead of micromamba for the base installation step",
-        default=False,
-        action="store_true",
-    )
-    parser.add_argument(
         "--clean",
         help="Remove temporary conda environments and package caches after installation",
         default=False,
         action="store_true",
     )
     parser.add_argument(
-        # Use the conda-forge cctbx package instead of compiling cctbx from scratch
-        # This is not currently supported outside of CI builds
-        "--prebuilt-cctbx",
-        help=argparse.SUPPRESS,
-        default=False,
+        "--libtbx",
+        help="Use the libtbx build system, compiling cctbx from scratch.",
+        action="store_false",
+        dest="cmake",
+    )
+    parser.add_argument(
+        "--cmake",
         action="store_true",
+        dest="removed_cmake",
+        help=argparse.SUPPRESS,
     )
 
     options = parser.parse_args()
+    if options.removed_cmake:
+        # User passed the obsolete parameter
+        sys.exit("Error: --cmake is now the default, please remove --cmake.")
 
     print("Performing actions:", " ".join(options.actions))
 
@@ -1310,21 +1315,24 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Build base packages
     if "base" in options.actions:
-        if options.conda:
-            install_conda(options.python, include_cctbx=options.prebuilt_cctbx)
-            if options.clean:
-                shutil.rmtree(os.path.realpath("miniconda"))
-        else:
-            install_micromamba(options.python, include_cctbx=options.prebuilt_cctbx)
-            if options.clean:
-                shutil.rmtree(os.path.realpath("micromamba"))
+        install_micromamba(
+            options.python,
+            cmake=options.cmake,
+        )
+        if options.clean:
+            shutil.rmtree(os.path.realpath("micromamba"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:
-        configure_build(options.config_flags, prebuilt_cctbx=options.prebuilt_cctbx)
-        make_build(prebuilt_cctbx=options.prebuilt_cctbx)
-        refresh_build(prebuilt_cctbx=options.prebuilt_cctbx)
-        install_precommit()
+        if options.cmake:
+            refresh_build_cmake()
+            configure_build_cmake(options.config_flags)
+            make_build_cmake()
+        else:
+            configure_build(options.config_flags)
+            make_build()
+            refresh_build()
+        install_precommit(options.cmake)
 
     # Tests, tests
     if "test" in options.actions:

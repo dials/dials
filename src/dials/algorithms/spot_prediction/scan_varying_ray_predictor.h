@@ -85,9 +85,9 @@ namespace dials { namespace algorithms {
      * @param step The step to predict over.
      * @returns The ray if predicted
      */
-    boost::optional<Ray> operator()(const miller_index &h,
-                                    const mat3<double> &A1,
-                                    const mat3<double> &A2,
+    boost::optional<Ray> operator()(const miller_index& h,
+                                    const mat3<double>& A1,
+                                    const mat3<double>& A2,
                                     int image,
                                     std::size_t step) const {
       // Calculate the reciprocal space vectors
@@ -148,11 +148,11 @@ namespace dials { namespace algorithms {
      * @param step The step to predict over.
      * @returns The ray if predicted
      */
-    boost::optional<Ray> operator()(const miller_index &h,
-                                    const mat3<double> &A1,
-                                    const mat3<double> &A2,
-                                    const vec3<double> &s0a,
-                                    const vec3<double> &s0b,
+    boost::optional<Ray> operator()(const miller_index& h,
+                                    const mat3<double>& A1,
+                                    const mat3<double>& A2,
+                                    const vec3<double>& s0a,
+                                    const vec3<double>& s0b,
                                     int image,
                                     std::size_t step) const {
       // Calculate the reciprocal space vectors

@@ -93,6 +93,11 @@ phil_str = """
     .help = "Combined filter to select only fully integrated and"
             "trustworthy intensities"
 
+    remove_by_index = None
+      .type = ints(value_min=0)
+      .help = "Remove reflections by row index in the table"
+      .expert_level = 6
+
     dead_time
     {
     value = 0
@@ -207,9 +212,7 @@ def run_filtering(params, experiments, reflections):
                 sel = reflections["id"] >= 0
                 if sel.count(False) > 0:
                     print(
-                        "Removing {} reflections with negative experiment id".format(
-                            sel.count(False)
-                        )
+                        f"Removing {sel.count(False)} reflections with negative experiment id"
                     )
                 reflections = reflections.select(sel)
                 reflections.compute_d(experiments)
@@ -305,6 +308,13 @@ def run_filtering(params, experiments, reflections):
             )
         except ValueError as e:
             raise Sorry(e)
+
+    if params.remove_by_index:
+        to_remove = flex.size_t(params.remove_by_index)
+        filter = flex.bool(len(reflections), True)
+        filter.set_selected(to_remove, False)
+        reflections = reflections.select(filter)
+        print("Selected %d reflections after removing by index" % (len(reflections)))
 
     # Dead time filter
     if params.dead_time.value > 0:

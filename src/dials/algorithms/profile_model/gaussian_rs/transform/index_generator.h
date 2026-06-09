@@ -17,11 +17,8 @@
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
-namespace dials {
-  namespace algorithms {
-    namespace profile_model {
-      namespace gaussian_rs {
-  namespace transform {
+namespace dials { namespace algorithms { namespace profile_model {
+  namespace gaussian_rs { namespace transform {
 
     using scitbx::vec2;
     using scitbx::vec3;
@@ -39,10 +36,10 @@ namespace dials {
        * @param y0 The y offset
        * @param s1_map The map of detector s1 vectors.
        */
-      CoordinateGenerator(const CoordinateSystem &cs,
+      CoordinateGenerator(const CoordinateSystem& cs,
                           int x0,
                           int y0,
-                          const af::versa<vec3<double>, af::c_grid<2> > &s1_map)
+                          const af::versa<vec3<double>, af::c_grid<2> >& s1_map)
           : s1_(cs.s1()),
             e1_(cs.e1_axis() / s1_.length()),
             e2_(cs.e2_axis() / s1_.length()),
@@ -89,12 +86,12 @@ namespace dials {
        * @param grid_half_size The grid size
        * @param s1_map The map of detector s1 vectors.
        */
-      GridIndexGenerator(const CoordinateSystem &cs,
+      GridIndexGenerator(const CoordinateSystem& cs,
                          int x0,
                          int y0,
                          vec2<double> step_size,
                          std::size_t grid_half_size,
-                         const af::versa<vec3<double>, af::c_grid<2> > &s1_map)
+                         const af::versa<vec3<double>, af::c_grid<2> >& s1_map)
           : coordinate_(cs, x0, y0, s1_map),
             step_size_(step_size),
             grid_half_size_(grid_half_size) {

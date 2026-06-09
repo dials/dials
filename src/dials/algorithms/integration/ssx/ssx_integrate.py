@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import functools
+import pathlib
 from abc import ABC, abstractmethod
 
 import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
-from scitbx.array_family import flex
+from dxtbx.format.FormatMultiImage import FormatMultiImage
+
+import dials.extensions
+from dials.array_family import flex
 
 
 def generate_html_report(plots_data, filename):
@@ -27,12 +32,23 @@ def generate_html_report(plots_data, filename):
 
 
 class SimpleIntegrator(ABC):
-
     """Define an interface for ssx prediction/integration processing"""
 
     def __init__(self, params):
         self.params = params
         self.collector = NullCollector()
+        BackgroundAlgorithm = dials.extensions.Background.load(
+            params.integration.background.algorithm
+        )
+        flex.reflection_table.background_algorithm = staticmethod(
+            functools.partial(BackgroundAlgorithm, params)
+        )
+        CentroidAlgorithm = dials.extensions.Centroid.load(
+            params.integration.centroid.algorithm
+        )
+        flex.reflection_table.centroid_algorithm = staticmethod(
+            functools.partial(CentroidAlgorithm, params)
+        )
 
     @abstractmethod
     def run(self, experiment, table):
@@ -62,8 +78,7 @@ class SimpleIntegrator(ABC):
         pass
 
 
-class NullCollector(object):
-
+class NullCollector:
     """
     Defines a null data collector for cases where you don't want
     to record data during the process.
@@ -88,8 +103,7 @@ class NullCollector(object):
         pass
 
 
-class OutputCollector(object):
-
+class OutputCollector:
     """
     Defines a data collector to log common quantities for all algorithm choices
     for an individual image.
@@ -102,6 +116,14 @@ class OutputCollector(object):
     # for integration of a single image.
 
     def initial_collect(self, experiment, reflection_table):
+        # for things like nexus files, we want image to be expressed like
+        # experiment_001.nxs-50, experiment_001.nxs-62, etc.
+        # for things like cbfs, we want image to be expressed like
+        # experiment_0050.cbf, experiment_0062.cbf, etc.
+        self.data["image"] = pathlib.Path(experiment.imageset.paths()[0]).name
+        if issubclass(experiment.imageset.get_format_class(), FormatMultiImage):
+            index = experiment.imageset.indices()[0] + 1
+            self.data["image"] += f"-{index}"
         self.data["initial_n_refl"] = reflection_table.size()
         xobs, yobs, _ = reflection_table["xyzobs.px.value"].parts()
         xcal, ycal, _ = reflection_table["xyzcal.px"].parts()
@@ -134,7 +156,6 @@ class OutputCollector(object):
 
 
 class OutputAggregator:
-
     """
     Simple aggregator class to aggregate data from all images and generate
     json data for output/plotting.
@@ -146,6 +167,18 @@ class OutputAggregator:
     def add_dataset(self, collector, index):
         if collector.data:
             self.data[index] = collector.data
+
+    def make_history_json(self):
+        if not self.data:
+            return {}
+        history = {}
+        for i, d in enumerate(self.data.values()):
+            history[i] = {}
+            if "likelihood" in d:
+                history[i]["likelihood_per_iteration"] = d["likelihood"]
+            if "parameters" in d:
+                history[i]["active_parameters_per_iteration"] = d["parameters"]
+        return history
 
     def make_plots(self):
         # just make some simple plots for now as a test
@@ -256,26 +289,47 @@ class OutputAggregator:
             for k, v in sigma.items():
                 mosaicities["M_" + k][i] = v
         data = []
+        data_angular = []
         for k, v in mosaicities.items():
-            data.append(
-                {
-                    "x": n,
-                    "y": list(v),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "name": k,
-                }
-            )
+            if "angular" in k:
+                data_angular.append(
+                    {
+                        "x": n,
+                        "y": list(v),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": k,
+                        "yaxis": "y2",
+                    }
+                )
+            else:
+                data.append(
+                    {
+                        "x": n,
+                        "y": list(v),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": k,
+                    }
+                )
         mosaic_plots = {
             "mosaicities": {
                 "data": data,
                 "layout": {
                     "title": "Profile model mosaicities per image",
                     "xaxis": {"title": "image number"},
-                    "yaxis": {"title": "Mosaicity (degrees)"},
+                    "yaxis": {"title": "Invariant crystal mosaicity (Å⁻¹)"},
                 },
             },
         }
+        if data_angular:
+            mosaic_plots["mosaicities"]["layout"]["yaxis2"] = {
+                "anchor": "x",
+                "side": "right",
+                "title": "Angular mosaicity (degrees)",
+                "overlaying": "y",
+            }
+            mosaic_plots["mosaicities"]["data"].extend(data_angular)
         plots_dict.update(mosaic_plots)
 
         return plots_dict

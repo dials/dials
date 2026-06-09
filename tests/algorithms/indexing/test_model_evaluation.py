@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import copy
 import functools
-import os
 
 import pytest
 
+import scitbx.matrix
 from cctbx import sgtbx, uctbx
 from dxtbx.model import Crystal
 from dxtbx.serialize import load
 
 from dials.algorithms.indexing import model_evaluation
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
-from dials.algorithms.refinement.refiner import phil_scope as refine_phil
 from dials.array_family import flex
+from dials.command_line.index import phil_scope as index_phil
 
 
 def test_ModelRank():
@@ -149,11 +149,11 @@ def test_ModelRank():
     )
 
 
-def test_ModelEvaluation(dials_regression, tmpdir):
+def test_ModelEvaluation(dials_data):
     # thaumatin
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_import.json")
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    sequence_path = data_dir / "experiments_import.json"
 
     input_reflections = flex.reflection_table.from_file(pickle_path)
     input_experiments = load.experiment_list(sequence_path, check_format=False)
@@ -166,8 +166,8 @@ def test_ModelEvaluation(dials_regression, tmpdir):
     input_reflections["imageset_id"] = flex.size_t(input_reflections.size(), 0)
     input_reflections["id"] = flex.int(input_reflections.size(), -1)
 
-    refine_params = refine_phil.fetch().extract()
-    evaluator = model_evaluation.ModelEvaluation(refinement_params=refine_params)
+    indexer_params = index_phil.fetch().extract()
+    evaluator = model_evaluation.ModelEvaluation(params=indexer_params)
 
     experiments = copy.deepcopy(input_experiments)
     reflections = copy.deepcopy(input_reflections)
@@ -192,13 +192,11 @@ def test_ModelEvaluation(dials_regression, tmpdir):
     assert result.n_indexed == 7313
     assert result.fraction_indexed == pytest.approx(0.341155066244)
     assert result.rmsds == pytest.approx(
-        (0.10215787570953785, 0.12954412140128563, 0.0010980583382102509)
+        (0.10214846695020922, 0.12958139231286528, 0.001097870074690081)
     )
 
 
 def test_filter_doubled_cell():
-    import scitbx.matrix
-
     sgi = sgtbx.space_group_info("P1")
     uc1 = sgi.any_compatible_unit_cell(volume=1000)
     params = uc1.parameters()
@@ -209,7 +207,7 @@ def test_filter_doubled_cell():
         fraction_indexed=None,
         hkl_offset=None,
     )
-    for (m1, m2, m3) in (
+    for m1, m2, m3 in (
         (2, 1, 1),
         (1, 2, 1),
         (1, 1, 2),

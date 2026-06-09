@@ -1,0 +1,6 @@
+add_subdirectory(centroid)
+add_subdirectory(connected_components)
+add_subdirectory(fill_holes)
+add_subdirectory(filter)
+add_subdirectory(threshold)
+add_subdirectory(distortion)

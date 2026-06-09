@@ -11,43 +11,31 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import List
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 import iotbx.phil
-from cctbx import sgtbx
+from cctbx import miller, sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from scitbx import matrix
+from scitbx.array_family import flex
 
 import dials.util
+import dials.util.system
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
-from dials.algorithms.symmetry import symmetry_base
+from dials.algorithms.symmetry import median_unit_cell, symmetry_base
 from dials.algorithms.symmetry.cosym import engine as cosym_engine
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
+from dials.util.reference import intensities_from_reference_file
 
 logger = logging.getLogger(__name__)
 
-phil_scope = iotbx.phil.parse(
-    """\
-
-normalisation = kernel quasi *ml_iso ml_aniso
-  .type = choice
-
-d_min = Auto
-  .type = float(value_min=0)
-
-min_i_mean_over_sigma_mean = 4
-  .type = float(value_min=0)
-  .short_caption = "Minimum <I>/<σ>"
-
-min_cc_half = 0.6
-  .type = float(value_min=0, value_max=1)
-  .short_caption = "Minimum CC½"
-
+# these parameters are only required if running the cosym procedure in symmetry analysis mode.
+symmetry_analysis_phil = """
 lattice_group = None
   .type = space_group
   .short_caption = "Lattice group"
@@ -65,6 +53,30 @@ best_monoclinic_beta = True
   .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
           "it gives a less oblique cell (i.e. smaller beta angle)."
   .short_caption = "Best monoclinic β"
+"""
+
+# these parameters are required for the core cosym procedure for e.g. non-symmetry based isomorphism analysis
+cosym_scope = """
+min_reflections = 10
+  .type = int(value_min=0)
+  .help = "The minimum number of merged reflections per experiment required to perform cosym analysis."
+
+seed = 230
+  .type = int(value_min=0)
+
+normalisation = kernel quasi *ml_iso ml_aniso
+  .type = choice
+
+d_min = Auto
+  .type = float(value_min=0)
+
+min_i_mean_over_sigma_mean = 4
+  .type = float(value_min=0)
+  .short_caption = "Minimum <I>/<σ>"
+
+min_cc_half = 0.6
+  .type = float(value_min=0, value_max=1)
+  .short_caption = "Minimum CC½"
 
 dimensions = Auto
   .type = int(value_min=2)
@@ -74,9 +86,18 @@ use_curvatures = True
   .type = bool
   .short_caption = "Use curvatures"
 
-weights = count standard_error
+weights = *count standard_error
   .type = choice
   .short_caption = "Weights"
+  .help = "If not None, a weights matrix is used in the cosym procedure."
+          "weights=count uses the number of reflections used to calculate a pairwise correlation coefficient as its weight"
+          "weights=standard_error uses the reciprocal of the standard error as the weight. The standard error is given by"
+          "(1-CC*2)/sqrt(N), where N=(n-2) or N=(neff-1) depending on the cc_weights option."
+cc_weights = None sigma
+  .type = choice
+  .help = "If not None, a weighted cc-half formula is used for calculating pairwise correlation coefficients and degrees of"
+          "freedom in the cosym procedure."
+          "weights=sigma uses the intensity uncertainties to perform inverse variance weighting during the cc calculation."
 
 min_pairs = 3
   .type = int(value_min=1)
@@ -97,11 +118,18 @@ minimization
     .short_caption = "Maximum number of calls"
 }
 
-nproc = None
+nproc = Auto
   .type = int(value_min=1)
-  .help = "Deprecated"
-  .deprecated = True
+  .help = "Number of processes"
 """
+
+
+phil_scope = iotbx.phil.parse(
+    f"""\
+{cosym_scope}
+{symmetry_analysis_phil}
+""",
+    process_includes=True,
 )
 
 
@@ -115,14 +143,32 @@ class CosymAnalysis(symmetry_base, Subject):
     the presence of an indexing ambiguity.
     """
 
-    def __init__(self, intensities, params):
+    def __init__(
+        self,
+        intensities,
+        params,
+        seed_dataset: int | None = None,
+        apply_sigma_correction=True,
+    ):
         """Initialise a CosymAnalysis object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
             cosym analysis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
+          seed_dataset (int): The index into the intensities list to use when
+            choosing a seed dataset for the reindexing analysis (the x,y,z reindex
+            mode will be used for this dataset).
+            If None, a high density cluster point is chosen.
         """
+        self.seed_dataset = seed_dataset
+        if self.seed_dataset:
+            self.seed_dataset = int(self.seed_dataset)
+            assert 0 <= seed_dataset < len(intensities), (
+                "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+            )
+
+        max_id = len(intensities) - 1
         super().__init__(
             intensities,
             normalisation=params.normalisation,
@@ -133,52 +179,71 @@ class CosymAnalysis(symmetry_base, Subject):
             relative_length_tolerance=None,
             absolute_angle_tolerance=None,
             best_monoclinic_beta=params.best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
         Subject.__init__(
             self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
         )
 
+        # remove those with less than min_reflections after setup.
+        if params.min_reflections:
+            to_remove = []
+            min_id = 0
+            histy = flex.histogram(
+                self.dataset_ids.as_double(),
+                min_id - 0.5,
+                max_id + 0.5,
+                n_slots=max_id + 1 - min_id,
+            )
+            vals = histy.slots()
+            for i, _ in enumerate(range(min_id, max_id + 1)):
+                n = vals[i]
+                if n < params.min_reflections:
+                    to_remove.append(i)
+            if to_remove:
+                logger.info(
+                    f"Removing datasets {', '.join(str(i) for i in to_remove)} with < {params.min_reflections} reflections"
+                )
+                sel = flex.bool(self.intensities.size(), True)
+                for i in to_remove:
+                    sel.set_selected(self.dataset_ids == i, False)
+                self.intensities = self.intensities.select(sel)
+                self.dataset_ids = self.dataset_ids.select(sel)
+
         self.params = params
+
+        def _map_space_group_to_input_cell(intensities, space_group):
+            from cctbx.sgtbx.bravais_types import bravais_lattice
+
+            best_subgroup = find_matching_symmetry(
+                intensities.unit_cell(),
+                space_group,
+                best_monoclinic_beta=str(bravais_lattice(group=space_group)) == "mI",
+            )
+            cb_op_inp_best = best_subgroup["cb_op_inp_best"]
+            best_subsym = best_subgroup["best_subsym"]
+            cb_op_best_primitive = best_subsym.change_of_basis_op_to_primitive_setting()
+
+            sg_cb_op_inp_primitive = (
+                space_group.info().change_of_basis_op_to_primitive_setting()
+            )
+            sg_primitive = space_group.change_basis(sg_cb_op_inp_primitive)
+            sg_best = sg_primitive.change_basis(cb_op_best_primitive.inverse())
+            # best_subgroup above is the bravais type, so create thin copy here with the
+            # user-input space group instead
+            best_subsym = best_subsym.customized_copy(space_group_info=sg_best.info())
+            best_subgroup = {
+                "subsym": best_subsym.change_basis(cb_op_inp_best.inverse()),
+                "best_subsym": best_subsym,
+                "cb_op_inp_best": cb_op_inp_best,
+            }
+
+            intensities = intensities.customized_copy(
+                space_group_info=sg_best.change_basis(cb_op_inp_best.inverse()).info()
+            )
+            return intensities, best_subgroup
+
         if self.params.space_group is not None:
-
-            def _map_space_group_to_input_cell(intensities, space_group):
-                from cctbx.sgtbx.bravais_types import bravais_lattice
-
-                best_subgroup = find_matching_symmetry(
-                    intensities.unit_cell(),
-                    space_group,
-                    best_monoclinic_beta=str(bravais_lattice(group=space_group))
-                    == "mI",
-                )
-                cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-                best_subsym = best_subgroup["best_subsym"]
-                cb_op_best_primitive = (
-                    best_subsym.change_of_basis_op_to_primitive_setting()
-                )
-
-                sg_cb_op_inp_primitive = (
-                    space_group.info().change_of_basis_op_to_primitive_setting()
-                )
-                sg_primitive = space_group.change_basis(sg_cb_op_inp_primitive)
-                sg_best = sg_primitive.change_basis(cb_op_best_primitive.inverse())
-                # best_subgroup above is the bravais type, so create thin copy here with the
-                # user-input space group instead
-                best_subsym = best_subsym.customized_copy(
-                    space_group_info=sg_best.info()
-                )
-                best_subgroup = {
-                    "subsym": best_subsym.change_basis(cb_op_inp_best.inverse()),
-                    "best_subsym": best_subsym,
-                    "cb_op_inp_best": cb_op_inp_best,
-                }
-
-                intensities = intensities.customized_copy(
-                    space_group_info=sg_best.change_basis(
-                        cb_op_inp_best.inverse()
-                    ).info()
-                )
-                return intensities, best_subgroup
-
             self.intensities, self.best_subgroup = _map_space_group_to_input_cell(
                 self.intensities, self.params.space_group.group()
             )
@@ -186,6 +251,21 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.best_subgroup["cb_op_inp_best"] * self.cb_op_inp_min
             )
             self.input_space_group = self.intensities.space_group()
+
+            # ensure still unique after mapping - merge equivalents in the higher symmetry
+            new_intensities = None
+            new_dataset_ids = flex.int([])
+            for d in set(self.dataset_ids):
+                sel = self.dataset_ids == d
+                these_i = self.intensities.select(sel)
+                these_merged = these_i.merge_equivalents().array()
+                if not new_intensities:
+                    new_intensities = these_merged
+                else:
+                    new_intensities = new_intensities.concatenate(these_merged)
+                new_dataset_ids.extend(flex.int(these_merged.size(), d))
+            self.intensities = new_intensities
+            self.dataset_ids = new_dataset_ids
 
         else:
             self.input_space_group = None
@@ -195,6 +275,11 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
+        # nproc is currently only used for parallelising calculations in
+        # the target initialisation.
+        if self.params.nproc is Auto:
+            self.params.nproc = dials.util.system.CPU_COUNT
+            logger.info(f"Setting nproc={self.params.nproc}")
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -216,67 +301,79 @@ class CosymAnalysis(symmetry_base, Subject):
             lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
+            cc_weights=self.params.cc_weights,
+            nproc=self.params.nproc,
         )
 
-    def _determine_dimensions(self):
-        if self.params.dimensions is Auto and self.target.dim == 2:
-            self.params.dimensions = 2
-        elif self.params.dimensions is Auto:
-            logger.info("=" * 80)
-            logger.info(
-                "\nAutomatic determination of number of dimensions for analysis"
+    def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
+        logger.info("=" * 80)
+        logger.info("\nAutomatic determination of number of dimensions for analysis")
+        dimensions = []
+        functional = []
+        for dim in range(1, dims_to_test + 1):
+            logger.info(f"Testing dimension: {dim}/{dims_to_test}")
+            self.target.set_dimensions(dim)
+            max_calls = self.params.minimization.max_calls
+            self._optimise(
+                self.params.minimization.engine,
+                max_iterations=self.params.minimization.max_iterations,
+                max_calls=min(20, max_calls) if max_calls else max_calls,
             )
-            dimensions = []
-            functional = []
-            for dim in range(1, self.target.dim + 1):
-                logger.debug("Testing dimension: %i", dim)
-                self.target.set_dimensions(dim)
-                max_calls = self.params.minimization.max_calls
-                self._optimise(
-                    self.params.minimization.engine,
-                    max_iterations=self.params.minimization.max_iterations,
-                    max_calls=min(20, max_calls) if max_calls else max_calls,
-                )
-                dimensions.append(dim)
-                functional.append(self.minimizer.fun)
 
-            # Find the elbow point of the curve, in the same manner as that used by
-            # distl spotfinder for resolution method 1 (Zhang et al 2006).
-            # See also dials/algorithms/spot_finding/per_image_analysis.py
-
-            x = np.array(dimensions)
-            y = np.array(functional)
-            slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
-            p_m = slopes.argmin()
-
-            x1 = matrix.col((x[p_m], y[p_m]))
-            x2 = matrix.col((x[-1], y[-1]))
-
-            gaps = []
-            v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
-
-            for i in range(p_m, len(x)):
-                x0 = matrix.col((x[i], y[i]))
-                r = x1 - x0
-                g = abs(v.dot(r))
-                gaps.append(g)
-
-            p_g = np.array(gaps).argmax()
-
-            x_g = x[p_g + p_m]
-
-            logger.info(
-                dials.util.tabulate(
-                    zip(dimensions, functional), headers=("Dimensions", "Functional")
+            dimensions.append(dim)
+            functional.append(
+                self.target.compute_functional_score_for_dimension_assessment(
+                    self.minimizer.x, outlier_rejection
                 )
             )
-            logger.info("Best number of dimensions: %i", x_g)
+
+        # Find the elbow point of the curve, in the same manner as that used by
+        # distl spotfinder for resolution method 1 (Zhang et al 2006).
+        # See also dials/algorithms/spot_finding/per_image_analysis.py
+
+        x = np.array(dimensions)
+        y = np.array(functional)
+        slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
+        p_m = slopes.argmin()
+
+        x1 = matrix.col((x[p_m], y[p_m]))
+        x2 = matrix.col((x[-1], y[-1]))
+
+        gaps = []
+        v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
+
+        for i in range(p_m, len(x)):
+            x0 = matrix.col((x[i], y[i]))
+            r = x1 - x0
+            g = abs(v.dot(r))
+            gaps.append(g)
+
+        p_g = np.array(gaps).argmax()
+
+        x_g = x[p_g + p_m]
+
+        logger.info(
+            dials.util.tabulate(
+                zip(dimensions, functional), headers=("Dimensions", "Functional")
+            )
+        )
+
+        logger.info("Best number of dimensions: %i", x_g)
+        if int(x_g) < 2:
+            logger.info(
+                "As a minimum of 2-dimensions is required, dimensions have been set to 2."
+            )
+            self.target.set_dimensions(2)
+        else:
             self.target.set_dimensions(int(x_g))
-            logger.info("Using %i dimensions for analysis", self.target.dim)
+        logger.info("Using %i dimensions for analysis", self.target.dim)
+
+        return dimensions, functional
 
     def run(self):
         self._intialise_target()
-        self._determine_dimensions()
+        if self.params.dimensions is Auto and self.target.dim != 2:
+            self._determine_dimensions(self.target.dim)
         self._optimise(
             self.params.minimization.engine,
             max_iterations=self.params.minimization.max_iterations,
@@ -288,6 +385,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
+        np.random.seed(self.params.seed)
         NN = len(set(self.dataset_ids))
         n_sym_ops = len(self.target.sym_ops)
 
@@ -313,11 +411,15 @@ class CosymAnalysis(symmetry_base, Subject):
             self.target.dim, NN * n_sym_ops
         ).transpose()
 
-    def _principal_component_analysis(self):
+    def _principal_component_analysis(self, cluster=False):
         # Perform PCA
         from sklearn.decomposition import PCA
 
-        pca = PCA().fit(self.coords)
+        if cluster:
+            logger.info(f"Dimensions used for clustering PCA: {self.target.dim}")
+            pca = PCA(n_components=self.target.dim).fit(self.coords)
+        else:
+            pca = PCA().fit(self.coords)
         logger.info("Principal component analysis:")
         logger.info(
             "Explained variance: "
@@ -329,9 +431,10 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.explained_variance = pca.explained_variance_
         self.explained_variance_ratio = pca.explained_variance_ratio_
-        if self.target.dim > 3:
+        if self.target.dim > 3 and not cluster:
             pca.n_components = 3
         self.coords_reduced = pca.fit_transform(self.coords)
+        self.pca_components = pca.components_
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
@@ -357,9 +460,9 @@ class CosymAnalysis(symmetry_base, Subject):
     def _reindexing_ops(
         self,
         coords: np.ndarray,
-        sym_ops: List[sgtbx.rt_mx],
+        sym_ops: list[sgtbx.rt_mx],
         cosets: sgtbx.cosets.left_decomposition,
-    ) -> List[sgtbx.change_of_basis_op]:
+    ) -> list[sgtbx.change_of_basis_op]:
         """Identify the reindexing operator for each dataset.
 
         Args:
@@ -382,15 +485,22 @@ class CosymAnalysis(symmetry_base, Subject):
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets
 
-        # choose a high density point as seed
-        X = coords
-        nbrs = NearestNeighbors(
-            n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
-        ).fit(X)
-        distances, indices = nbrs.kneighbors(X)
-        average_distance = np.array([dist[1:].mean() for dist in distances])
-        i = average_distance.argmin()
-        xis = np.array([X[i]])
+        if self.seed_dataset is not None:
+            # if seed dataset was specified, use the reindexing op xyz as seed
+            sel = np.where(dataset_ids == self.seed_dataset)
+            xis = np.array([coords[sel][0]])
+        else:
+            # choose a high density point as seed
+            X = coords
+            nbrs = NearestNeighbors(
+                n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
+            ).fit(X)
+            distances, indices = nbrs.kneighbors(X)
+            average_distance = np.array([dist[1:].mean() for dist in distances])
+            i = average_distance.argmin()
+            xis = np.array([X[i]])
+        coordstr = ",".join(str(round(i, 4)) for i in xis[0])
+        logger.debug(f"Coordinate of cluster seed dataset: {coordstr}")
 
         for j in range(n_datasets):
             sel = np.where(dataset_ids == j)
@@ -465,7 +575,6 @@ class CosymAnalysis(symmetry_base, Subject):
 
 class SymmetryAnalysis:
     def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
-
         import scipy.spatial.distance as ssd
 
         self.subgroups = subgroups
@@ -575,6 +684,7 @@ class SymmetryAnalysis:
     @staticmethod
     def summary_table(d):
         best_subgroup = d["subgroup_scores"][0]
+        cell = ", ".join(f"{i:.3f}" for i in best_subgroup["unit_cell"])
         return (
             (
                 "Best solution",
@@ -584,10 +694,7 @@ class SymmetryAnalysis:
                     ).info()
                 ),
             ),
-            (
-                "Unit cell",
-                "%.3f %.3f %.3f %.1f %.1f %.1f" % tuple(best_subgroup["unit_cell"]),
-            ),
+            ("Unit cell", cell),
             ("Reindex operator", best_subgroup["cb_op"]),
             ("Laue group probability", f"{best_subgroup['likelihood']:.3f}"),
             ("Laue group confidence", f"{best_subgroup['confidence']:.3f}"),
@@ -611,9 +718,11 @@ class SymmetryAnalysis:
             "Best solution: %s"
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
-        output.append(
-            f"Unit cell: {str(self.best_solution.subgroup['best_subsym'].unit_cell())}"
+        cell = ", ".join(
+            f"{i:.3f}"
+            for i in self.best_solution.subgroup["best_subsym"].unit_cell().parameters()
         )
+        output.append(f"Unit cell: {cell}")
         output.append(
             "Reindex operator: %s"
             % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
@@ -831,3 +940,94 @@ class ScoreSubGroup:
             "cb_op": f"{self.subgroup['cb_op_inp_best']}",
             "stars": self.stars,
         }
+
+
+def extract_reference_intensities(
+    params: iotbx.phil.scope_extract, wavelength: float
+) -> miller.array:
+    # Extract/calculate a set of intensities from a reference.
+    if params.d_min not in {Auto, None}:
+        reference_intensities = intensities_from_reference_file(
+            params.reference,
+            d_min=params.d_min,
+            wavelength=wavelength,
+            k_sol=params.reference_model.k_sol,
+            b_sol=params.reference_model.b_sol,
+        )
+    else:
+        reference_intensities = intensities_from_reference_file(
+            params.reference,
+            wavelength=wavelength,
+            k_sol=params.reference_model.k_sol,
+            b_sol=params.reference_model.b_sol,
+        )
+    initial_space_group_info = reference_intensities.space_group_info()
+    group = metric_subgroups(
+        reference_intensities.crystal_symmetry(),
+        params.lattice_symmetry_max_delta,
+        enforce_max_delta_for_generated_two_folds=True,
+    ).result_groups[0]
+    ref_cb_op = (
+        group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        * group["cb_op_inp_best"]
+    )
+
+    reference_intensities = (
+        reference_intensities.change_basis(
+            ref_cb_op,
+        )
+        .expand_to_p1()
+        .as_non_anomalous_array()
+        .merge_equivalents()
+        .array()
+    )
+    if not reference_intensities.sigmas():
+        reference_intensities.set_sigmas(reference_intensities.data() ** 0.5)
+    return reference_intensities, initial_space_group_info
+
+
+def change_of_basis_op_to_best_cell(
+    experiments,
+    max_delta,
+    relative_length_tolerance,
+    absolute_angle_tolerance,
+    best_subgroup,
+):
+    """
+    Compute change of basis op to map experiments from P1 cell to the best cell
+    that matches the best subgroup
+    """
+
+    median_cell = median_unit_cell(experiments)
+    groups = metric_subgroups(
+        experiments[0]
+        .crystal.get_crystal_symmetry()
+        .customized_copy(unit_cell=median_cell),
+        max_delta,
+        enforce_max_delta_for_generated_two_folds=True,
+    )
+    match = None
+    for g in groups.result_groups:
+        if (
+            g["best_subsym"]
+            .unit_cell()
+            .is_similar_to(
+                best_subgroup["best_subsym"].unit_cell(),
+                relative_length_tolerance=relative_length_tolerance,
+                absolute_angle_tolerance=absolute_angle_tolerance,
+            )
+        ) and (
+            sgtbx.lattice_symmetry_group(g["best_subsym"].unit_cell(), max_delta=0)
+            == sgtbx.lattice_symmetry_group(
+                best_subgroup["best_subsym"].unit_cell(), max_delta=0
+            )
+        ):
+            match = g
+            break
+    if not match:
+        raise RuntimeError(
+            "Unable to determine reindexing operator from minumum cells to best cell.\n"
+            + "This may be fixed by increasing relative_length_tolerance or absolute_angle_tolerance."
+        )
+    cb_op = match["cb_op_inp_best"]
+    return cb_op

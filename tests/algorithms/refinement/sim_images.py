@@ -1,7 +1,6 @@
 """Simulate a rotation dataset with a smoothly-varying beam position for
 refinement testing. Script based on tst_nanoBragg_basic.py"""
 
-
 from __future__ import annotations
 
 import math
@@ -31,7 +30,6 @@ END
 
 class Simulation:
     def __init__(self, override_fdp=None):
-
         # Set up detector
         distance = 100
         pixel_size = 0.1

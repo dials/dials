@@ -3,12 +3,14 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import warnings
 
 import libtbx
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.indexer import Indexer
+from dials.algorithms.indexing.indexer import phil_scope as defaults_phil_scope
 from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch, LatticeSearch
 from dials.algorithms.indexing.nave_parameters import NaveParameters
@@ -63,22 +65,22 @@ def plot_displacements(reflections, predictions, experiments):
 
 
 def e_refine(params, experiments, reflections, graph_verbose=False):
-    # Stills-specific parameters we always want
-    assert params.refinement.reflections.outlier.algorithm in (
-        None,
-        "null",
-    ), "Cannot index, set refinement.reflections.outlier.algorithm=null"  # we do our own outlier rejection
-
     from dials.algorithms.refinement.refiner import RefinerFactory
 
-    refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments
-    )
+    outlier_algorithm = params.refinement.reflections.outlier.algorithm
+    if outlier_algorithm == "sauter_poon":
+        params.refinement.reflections.outlier.algorithm = "null"
 
-    refiner.run()
+    try:
+        refiner = RefinerFactory.from_parameters_data_experiments(
+            params, reflections, experiments
+        )
+        refiner.run()
+    except ValueError:
+        params.refinement.reflections.outlier.algorithm = outlier_algorithm
+        raise
 
-    ref_sel = refiner.selection_used_for_refinement()
-    assert ref_sel.count(True) == len(reflections)
+    params.refinement.reflections.outlier.algorithm = outlier_algorithm
 
     if not graph_verbose:
         return refiner
@@ -94,9 +96,9 @@ class StillsIndexer(Indexer):
 
     def __init__(self, reflections, experiments, params=None):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
-            # The stills_indexer provides its own outlier rejection
-            params.refinement.reflections.outlier.algorithm = "null"
+            params.refinement.reflections.outlier.algorithm = "sauter_poon"
         super().__init__(reflections, experiments, params)
+        self.warn_if_setting_unused_refinement_protocol_params()
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -109,12 +111,10 @@ class StillsIndexer(Indexer):
         while True:
             self.d_min = self.params.refinement_protocol.d_min_start
             max_lattices = self.params.multiple_lattice_search.max_lattices
-            if max_lattices is not None and len(experiments) >= max_lattices:
+            if max_lattices is not None and len(experiments.crystals()) >= max_lattices:
                 break
             if len(experiments) > 0:
-                cutoff_fraction = (
-                    self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
-                )
+                cutoff_fraction = self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
                 d_spacings = 1 / self.reflections["rlp"].norms()
                 d_min_indexed = flex.min(d_spacings.select(self.indexed_reflections))
                 min_reflections_for_indexing = cutoff_fraction * len(
@@ -168,7 +168,7 @@ class StillsIndexer(Indexer):
                 )
 
             # discard nearly overlapping lattices on the same shot
-            if self._check_have_similar_crystal_models(experiments):
+            if self._remove_similar_crystal_models(experiments):
                 break
 
             self.indexed_reflections = self.reflections["id"] > -1
@@ -180,7 +180,9 @@ class StillsIndexer(Indexer):
                 isel = (lengths >= self.d_min).iselection()
                 sel.set_selected(isel, True)
                 sel.set_selected(self.reflections["id"] > -1, False)
-            self.unindexed_reflections = self.reflections.select(sel)
+            # N.B. we don't set self.unindexed_reflections here, as we don't want to overwrite yet
+            # if the refinement below fails
+            unindexed_reflections = self.reflections.select(sel)
 
             reflections_for_refinement = self.reflections.select(
                 self.indexed_reflections
@@ -196,11 +198,8 @@ class StillsIndexer(Indexer):
                 isoform_experiments = ExperimentList()
                 isoform_reflections = flex.reflection_table()
                 # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
-                self.all_params.refinement.reflections.outlier.algorithm = "null"
                 self.all_params.refinement.parameterisation.crystal.fix = "cell"
-                self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = (
-                    []
-                )
+                self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
 
                 for expt_id, experiment in enumerate(experiments):
                     reflections = reflections_for_refinement.select(
@@ -308,7 +307,6 @@ class StillsIndexer(Indexer):
                 reflections_for_refinement = isoform_reflections
 
             if self.params.refinement_protocol.mode == "repredict_only":
-
                 from dials.algorithms.indexing.nave_parameters import NaveParameters
                 from dials.algorithms.refinement.prediction.managed_predictors import (
                     ExperimentsPredictorFactory,
@@ -353,6 +351,9 @@ class StillsIndexer(Indexer):
                 )
 
             else:
+                reflections_for_refinement["_reflection_id"] = flex.size_t(
+                    range(reflections_for_refinement.size())
+                )
                 try:
                     refined_experiments, refined_reflections = self.refine(
                         experiments, reflections_for_refinement
@@ -363,14 +364,46 @@ class StillsIndexer(Indexer):
                         raise DialsIndexRefineError(e)
                     logger.info("Refinement failed:")
                     logger.info(s)
-                    del experiments[-1]
+                    # need to remove crystals - may be shared?!
+                    models_to_remove = experiments.where(
+                        crystal=experiments[-1].crystal
+                    )
+                    for model_id in sorted(models_to_remove, reverse=True):
+                        del experiments[model_id]
+                    # no need to update self.unindexed_reflections, self.refined_reflections,
+                    # as they hold the state from the previous refinement with one fewer lattice.
                     break
+                else:
+                    # extend the unindexed reflections table with any data that was
+                    # rejected during refinement.
+                    sel = flex.bool(reflections_for_refinement.size(), True)
+                    sel.set_selected(refined_reflections["_reflection_id"], False)
+                    del refined_reflections["_reflection_id"]
+                    del reflections_for_refinement["_reflection_id"]
+                    unindexed_reflections.extend(reflections_for_refinement.select(sel))
 
             self._unit_cell_volume_sanity_check(experiments, refined_experiments)
 
-            self.refined_reflections = refined_reflections.select(
-                refined_reflections["id"] > -1
+            # Processing was successful, so set/update self.refined_reflections, self.unindexed_reflections
+            if -1 in set(refined_reflections["id"]):  # is this ever the case?
+                sel = refined_reflections["id"] < 0
+                refined_reflections.unset_flags(
+                    sel,
+                    refined_reflections.flags.indexed,
+                )
+                refined_reflections["miller_index"].set_selected(sel, (0, 0, 0))
+                unindexed_reflections.extend(refined_reflections.select(sel))
+                refined_reflections.del_selected(sel)
+            self.refined_reflections = refined_reflections
+            unindexed_reflections.unset_flags(
+                flex.bool(unindexed_reflections.size(), True),
+                unindexed_reflections.flags.indexed,
             )
+            unindexed_reflections["id"] = flex.int(unindexed_reflections.size(), -1)
+            unindexed_reflections["miller_index"] = flex.miller_index(
+                unindexed_reflections.size(), (0, 0, 0)
+            )
+            self.unindexed_reflections = unindexed_reflections
 
             for i, expt in enumerate(self.experiments):
                 ref_sel = self.refined_reflections.select(
@@ -428,14 +461,13 @@ class StillsIndexer(Indexer):
         for i, crystal_model in enumerate(self.refined_experiments.crystals()):
             n_indexed = 0
             for _ in experiments.where(crystal=crystal_model):
-                n_indexed += (self.reflections["id"] == i).count(True)
+                n_indexed += (self.refined_reflections["id"] == i).count(True)
             logger.info("model %i (%i reflections):", i + 1, n_indexed)
             logger.info(crystal_model)
 
         if (
             "xyzcal.mm" in self.refined_reflections
         ):  # won't be there if refine_all_candidates = False and no isoforms
-
             self._xyzcal_mm_to_px(self.experiments, self.refined_reflections)
 
     def experiment_list_for_crystal(self, crystal):
@@ -553,9 +585,9 @@ class StillsIndexer(Indexer):
                         graph_verbose=False,
                     )
                     crystal_model = nv()
-                    assert (
-                        len(crystal_model) == 1
-                    ), "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
+                    assert len(crystal_model) == 1, (
+                        "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
+                    )
                     crystal_model = crystal_model[0]
 
                     # Drop candidates that after refinement can no longer be converted to the known target space group
@@ -638,8 +670,20 @@ class StillsIndexer(Indexer):
         best = candidates[flex.min_index(results)]
         logger.info(best)
 
+        if params.indexing.basis_vector_combinations.xy_rmsd_threshold is libtbx.Auto:
+            # Set default to the same as the old parameter params.indexing.stills.rmsd_min_px
+            params.indexing.basis_vector_combinations.xy_rmsd_threshold = 2.0
+        if params.indexing.stills.rmsd_min_px != 2.0:
+            warnings.warn(
+                "The parameter indexing.stills.rmsd_min_px is deprecated. Please use indexing.basis_vector_combinations.xy_rmsd_threshold instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            params.indexing.basis_vector_combinations.xy_rmsd_threshold = (
+                params.indexing.stills.rmsd_min_px
+            )
         if params.indexing.stills.refine_all_candidates:
-            if best.rmsd > params.indexing.stills.rmsd_min_px:
+            if best.rmsd > params.indexing.basis_vector_combinations.xy_rmsd_threshold:
                 raise DialsIndexError(f"RMSD too high, {best.rmsd:f}")
 
             if len(candidates) > 1:
@@ -663,6 +707,9 @@ class StillsIndexer(Indexer):
         refiner = e_refine(params, experiments, indexed, graph_verbose=False)
 
         RR = refiner.predict_for_reflection_table(indexed)
+
+        if params.refinement.reflections.outlier.algorithm != "sauter_poon":
+            return refiner.selection_used_for_refinement()
 
         px_sz = experiments[0].detector[0].get_pixel_size()
 
@@ -698,7 +745,9 @@ class StillsIndexer(Indexer):
         from rstbx.indexing_api import outlier_detection
 
         od = outlier_detection.find_outliers_from_matches(
-            matches, verbose=True, horizon_phil=hardcoded_phil
+            matches,
+            verbose=self.all_params.refinement.reflections.outlier.sauter_poon.verbose,
+            horizon_phil=hardcoded_phil,
         )
 
         if hardcoded_phil.indexing.outlier_detection.pdf is not None:
@@ -756,15 +805,12 @@ class StillsIndexer(Indexer):
             graph_verbose=False,
         )
         nv()
-        rmsd, _ = calc_2D_rmsd_and_displacements(
-            R.predict_for_reflection_table(reflections)
-        )
 
-        matches = R.get_matches()
+        predicted = R.predict_for_indexed()
         xyzcal_mm = flex.vec3_double(len(reflections))
-        xyzcal_mm.set_selected(matches["iobs"], matches["xyzcal.mm"])
+        xyzcal_mm.set_selected(predicted["iobs"], predicted["xyzcal.mm"])
         reflections["xyzcal.mm"] = xyzcal_mm
-        reflections.set_flags(matches["iobs"], reflections.flags.used_in_refinement)
+        reflections.set_flags(predicted["iobs"], reflections.flags.used_in_refinement)
         reflections["entering"] = flex.bool(len(reflections), False)
 
         if self.all_params.indexing.stills.set_domain_size_ang_value is not None:
@@ -779,6 +825,18 @@ class StillsIndexer(Indexer):
                 )
 
         return ref_experiments, reflections
+
+    def warn_if_setting_unused_refinement_protocol_params(self):
+        warning_message = (
+            "Warning: the value of indexing.refinement_protocol.{} has been "
+            "changed to {}, but this parameter is unused by stills indexer."
+        )
+        unused_param_keys = ["n_macro_cycles", "d_min_step", "d_min_final"]
+        defaults = defaults_phil_scope.extract().indexing.refinement_protocol
+        for key in unused_param_keys:
+            value = getattr(self.params.refinement_protocol, key)
+            if value != getattr(defaults, key):
+                logger.warning(warning_message.format(key, str(value)))
 
 
 """Mixin class definitions that override the dials indexing class methods specific to stills"""

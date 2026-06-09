@@ -82,7 +82,7 @@ To specify which intensity choice to use, there are a couple of options:
 
 **Adjusting the uncertainties/errors**
 All scaling programs adjust the uncertainties (sigmas) of the integrated data, to
-account for additional systematic errors not suffiently modelled during integration.
+account for additional systematic errors not sufficiently modelled during integration.
 :samp:`dials.scale` adjusts the intensity errors by refining a two-component error model
 (see the output log or :samp:`dials.scale.html` for the values). While this is
 an important correction and should improve the data quality for typical
@@ -162,7 +162,7 @@ In this case, it is assumed that the intensity and variance columns of the mtz
 file have already been scaled. Reference scaling would be run with the following
 command::
 
-  dials.scale integrated.refl integrated.expt target_mtz=scaled.mtz
+  dials.scale integrated.refl integrated.expt reference=scaled.mtz
 
 The reference scaling algorithm is the same regardless of the target datafile type.
 

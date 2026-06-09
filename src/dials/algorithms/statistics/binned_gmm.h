@@ -95,9 +95,9 @@ namespace dials { namespace algorithms {
      * @param epsilon The convergence tolerance
      * @param max_iter The maximum number of iterations
      */
-    BinnedGMMSingle1DFixedMean(const af::const_ref<double> &a,
-                               const af::const_ref<double> &b,
-                               const af::const_ref<double> &n,
+    BinnedGMMSingle1DFixedMean(const af::const_ref<double>& a,
+                               const af::const_ref<double>& b,
+                               const af::const_ref<double>& n,
                                double mu,
                                double sigma,
                                double epsilon,
@@ -229,9 +229,9 @@ namespace dials { namespace algorithms {
      * @param epsilon The convergence tolerance
      * @param max_iter The maximum number of iterations
      */
-    BinnedGMMSingle1D(const af::const_ref<double> &a,
-                      const af::const_ref<double> &b,
-                      const af::const_ref<double> &n,
+    BinnedGMMSingle1D(const af::const_ref<double>& a,
+                      const af::const_ref<double>& b,
+                      const af::const_ref<double>& n,
                       double mu,
                       double sigma,
                       double epsilon,

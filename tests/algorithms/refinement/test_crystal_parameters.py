@@ -55,7 +55,6 @@ def test():
     # random initial orientations with a random parameter shift at each
     attempts = 100
     for i in range(attempts):
-
         # make a random P1 crystal and parameterise it
         a = random.uniform(10, 50) * random_direction_close_to(matrix.col((1, 0, 0)))
         b = random.uniform(10, 50) * random_direction_close_to(matrix.col((0, 1, 0)))

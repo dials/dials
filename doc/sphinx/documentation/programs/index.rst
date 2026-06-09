@@ -19,6 +19,7 @@ Main processing commands:
    dials_symmetry
    dials_scale
    dials_export
+   dials_merge
    xia2_multiplex
 
 Utilities:
@@ -28,7 +29,6 @@ Utilities:
 
    dials_show
    dials_image_viewer
-   dials_reciprocal_lattice_viewer
    dials_generate_mask
    dials_check_indexing_symmetry
    dials_search_beam_position
@@ -52,6 +52,8 @@ Utilities:
    dials_anvil_correction
    dials_missing_reflections
    dials_filter_reflections
+   dials_import_xds
+   dials_correlation_matrix
 
 Printable command line reference:
 

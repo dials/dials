@@ -44,7 +44,6 @@ def iobs():
 
 
 def test_AnomalousPlotter():
-
     "Make a larger array to allow all plots to be made"
     cs = crystal.symmetry(space_group_symbol="P1", unit_cell=(6, 6, 6, 90, 90, 90))
     ms = miller.build_set(cs, anomalous_flag=True, d_min=1.0)
@@ -179,7 +178,13 @@ def test_ResolutionPlotsAndStats(iobs):
     )
 
     tables = plotter.statistics_tables()
-    assert len(tables) == 2  # overall and per resolution
+    for expected in [
+        "overall",
+        "resolution_binned",
+        "cc_half_significance_level",
+        "overall_summary_data",
+    ]:
+        assert expected in tables  # overall and per resolution
 
     # test plots individually
     d = plotter.cc_one_half_plot()

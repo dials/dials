@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dials.array_family.flex import reflection_table
 from dials.model.data import MultiPanelImageVolume
-from dials_algorithms_integration_sum_ext import *  # noqa: F403; lgtm
+from dials_algorithms_integration_sum_ext import *  # noqa: F403
 from dials_algorithms_integration_sum_ext import sum_image_volume
 
 __all__ = (  # noqa: F405

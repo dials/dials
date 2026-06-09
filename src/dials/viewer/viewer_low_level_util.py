@@ -105,7 +105,6 @@ class TupTable(gridlib.GridTableBase):
 
 class MyGrid(gridlib.Grid):
     def __init__(self, parent_frame):
-
         self.parent_fr = parent_frame
         super().__init__(parent_frame)
 
@@ -245,7 +244,7 @@ class flex_arr_img_panel(wx.Panel):
 
             self.local_bbox = self.table[self.row_pos]["bbox"]
 
-        except Exception:
+        except KeyError:
             self.first_lst_in, self.segn_lst_in = None, None
 
     def _mi_list_of_wxbitmaps(self, re_scaling=False):
@@ -395,7 +394,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.SetScrollRate(1, 1)
 
     def OnMouseMotion(self, event):
-
         self.Mouse_Pos_x, self.Mouse_Pos_y = event.GetPosition()
 
     def OnMouseWheel(self, event):
@@ -413,20 +411,18 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.y_uni = float(View_start_y + self.Mouse_Pos_y) / float(v_size_y)
 
     def img_refresh(self, i_bmp_new):
-
         self.lst_2d_bmp = i_bmp_new
         self.set_scroll_content()
 
     def OnIdle(self, event):
         if self.scroll_rot != 0:
-
             self.SetScrollRate(1, 1)
 
             self.parent_panel.to_re_zoom(self.scroll_rot)
             self.scroll_rot = 0
             v_size_x, v_size_y = self.GetVirtualSize()
-            new_scroll_pos_x = float(self.x_uni * v_size_x - self.Mouse_Pos_x)
-            new_scroll_pos_y = float(self.y_uni * v_size_y - self.Mouse_Pos_y)
+            new_scroll_pos_x = int(self.x_uni * v_size_x - self.Mouse_Pos_x)
+            new_scroll_pos_y = int(self.y_uni * v_size_y - self.Mouse_Pos_y)
 
             self.Scroll(new_scroll_pos_x, new_scroll_pos_y)
 
@@ -515,7 +511,6 @@ class buttons_panel(wx.Panel):
             self.parent_panel.to_change_palette("hot descend")
 
     def OnItsCheckbox(self, event):
-
         if event.IsChecked():
             self.parent_panel.to_show_nums()
         else:

@@ -99,6 +99,8 @@ def random_background_plane2(sbox, a, b, c, d):
     dz, dy, dx = sbox.focus()
 
     if b == c == d == 0.0:
+        if a == 0:
+            return
         g = variate(poisson_distribution(mean=a))
         for k in range(dz):
             for j in range(dy):
@@ -109,8 +111,9 @@ def random_background_plane2(sbox, a, b, c, d):
             for j in range(dy):
                 for i in range(dx):
                     pixel = a + b * (i + 0.5) + c * (j + 0.5) + d * (k + 0.5)
-                    g = variate(poisson_distribution(mean=pixel))
-                    sbox[k, j, i] += next(g)
+                    if pixel != 0:
+                        g = variate(poisson_distribution(mean=pixel))
+                        sbox[k, j, i] += next(g)
     return
 
 
@@ -191,12 +194,12 @@ def simple_gaussian_spots(params):
     p.finished("Generating %d reflections" % params.nrefl)
     intensity = flex.double(params.nrefl)
     shoebox = flex.shoebox(panel, bbox)
-    shoebox.allocate_with_value(MaskCode.Valid)
+    shoebox.allocate_data_with_value(MaskCode.Valid)
+    shoebox.allocate_background()
 
     p = ProgressBar(title="Generating shoeboxes")
 
     for i in range(len(rlist)):
-
         p.update(i * 100.0 / params.nrefl)
         mask = shoebox[i].mask
 

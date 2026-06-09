@@ -117,7 +117,7 @@ which will integrate each sweep in sequence, again using all available cores. Af
 
 .. code-block:: bash
 
-  dials.reciprocal_lattice_viewer integrated.refl integrated.expt
+  dials.image_viewer integrated.refl integrated.expt
 
 
 
@@ -131,6 +131,8 @@ So far the data were processed with a triclinic unit cell, which is usually OK b
   dials.symmetry integrated.refl integrated.expt
 
 This will look at the shape of the unit cell and determine the maximum possible symmetry based on the cell parameters, with some tolerance. Each of the possible symmetry operations will be individually tested and scored, and those operations identified as being present will be composed into the point group to be assigned to the data. An attempt is then made to estimate the space group from the presence or absence of axial reflections: this is rather less reliable than the point group determination but also less important for the scaling. After the point group has been determined the reflections will be reindexed automatically to match the correct setting, ensuring that the data are correctly prepared for scaling.
+
+.. note:: ``dials.symmetry`` will only suggest one of the 65 Sohncke space groups relevant for chiral molecules. It will not detect mirrors or glide planes.
 
 
 Scaling
@@ -225,19 +227,14 @@ However these may be useful in later structure refinement.
 Exporting
 ---------
 
-The output data are by default saved in the standard DIALS reflection format, which is not particularly useful. In MX, a standard format is MTZ which includes the unit cell and symmetry information with the reflection data. This is created with
+The output data are by default saved in the standard DIALS reflection format, which is not particularly useful. DIALS is able to convert this to SHELX format though. This can be done by
 
 .. code-block:: bash
 
-  dials.export scaled.refl scaled.expt
+  dials.export scaled.refl scaled.expt format=shelx shelx.ins=lcys.ins shelx.hklout=lcys.hkl composition=CHNOS
 
-And there is a useful "jiffy" included with xia2 to convert this to SHELX format and generate .ins and .hkl files for structure solution and refinement viz:
 
-.. code-block:: bash
-
-  xia2.to_shelx scaled.mtz lcys CHNOS
-
-Such that you can then run
+So that you can then run
 
 .. code-block:: bash
 

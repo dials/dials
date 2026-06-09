@@ -8,19 +8,19 @@
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/args.hpp>
 #include <boost/python/return_arg.hpp>
-#include <boost/format.hpp>
-#include <scitbx/array_family/boost_python/flex_helpers.h>
 #include <cctbx/uctbx.h>
 #include <cctbx/miller.h>
 #include <dials/error.h>
+
+#include "flex_helpers.h"
 
 namespace dials { namespace af { namespace boost_python {
 
   using cctbx::uctbx::unit_cell;
 
   scitbx::af::shared<double> d(
-    const scitbx::af::const_ref<unit_cell> &self,
-    const scitbx::af::const_ref<cctbx::miller::index<> > &hkl,
+    const scitbx::af::const_ref<unit_cell>& self,
+    const scitbx::af::const_ref<cctbx::miller::index<> >& hkl,
     const scitbx::af::const_ref<std::size_t> index) {
     DIALS_ASSERT(index.size() == hkl.size());
     scitbx::af::shared<double> result(hkl.size());

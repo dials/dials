@@ -59,6 +59,10 @@ class spot_wrapper:
 
         from dials.util.image_viewer.spotfinder_frame import SpotFrame
 
+        try:
+            wx.App.GTKSuppressDiagnostics(-1)
+        except AttributeError:
+            pass
         app = wx.App()
 
         self.frame = SpotFrame(
@@ -93,7 +97,7 @@ class spot_wrapper:
             self._shutdown_zmq_endpoint()
 
     def load_image(self, filename):
-        from dials.util.spotfinder_frame import create_load_image_event
+        from dials.util.image_viewer.spotfinder_frame import create_load_image_event
 
         if self.frame is not None:
             create_load_image_event(self.frame, filename)

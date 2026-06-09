@@ -9,6 +9,8 @@ import json
 import logging
 import time
 
+from libtbx import Auto
+
 from dials.algorithms.scaling.observers import (
     ScalingHTMLContextManager,
     ScalingSummaryContextManager,
@@ -16,8 +18,7 @@ from dials.algorithms.scaling.observers import (
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.algorithms.scaling.scaler_factory import MultiScalerFactory, create_scaler
 from dials.algorithms.scaling.scaling_library import (
-    create_datastructures_for_structural_model,
-    create_datastructures_for_target_mtz,
+    create_datastructures_for_reference_file,
     create_scaling_model,
     determine_best_unit_cell,
     merging_stats_from_scaled_array,
@@ -60,6 +61,12 @@ def prepare_input(params, experiments, reflections):
 
     #### First exclude any datasets, before the dataset is split into
     #### individual reflection tables and expids set.
+    if (params.dataset_selection.include_datasets is not None) and (
+        params.dataset_selection.use_datasets is None
+    ):
+        params.dataset_selection.use_datasets = (
+            params.dataset_selection.include_datasets
+        )
     if (
         params.dataset_selection.exclude_datasets
         or params.dataset_selection.use_datasets
@@ -95,6 +102,29 @@ def prepare_input(params, experiments, reflections):
         raise ValueError(
             "Mismatched number of experiments and reflection tables found."
         )
+
+    #### Sort out deprecated options
+    if params.scaling_options.target_model or params.scaling_options.target_mtz:
+        if params.scaling_options.reference:
+            raise ValueError(
+                "Can't specify reference in addition to target_mtz/target_model"
+            )
+        if params.scaling_options.target_model and params.scaling_options.target_mtz:
+            raise ValueError(
+                "Can only specify one of target_mtz/target_model (both deprecated, use reference=)"
+            )
+        if params.scaling_options.target_model:
+            logger.warning(
+                "Warning: target_model option is deprecated and will be removed, please use reference="
+            )
+            params.scaling_options.reference = params.scaling_options.target_model
+            params.scaling_options.target_model = None
+        elif params.scaling_options.target_mtz:
+            logger.warning(
+                "Warning: target_mtz option is deprecated and will be removed, please use reference="
+            )
+            params.scaling_options.reference = params.scaling_options.target_mtz
+            params.scaling_options.target_mtz = None
 
     #### Assign experiment identifiers.
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
@@ -141,20 +171,22 @@ def prepare_input(params, experiments, reflections):
 
     #### If doing targeted scaling, extract data and append an experiment
     #### and reflection table to the lists
-    if params.scaling_options.target_model:
-        logger.info("Extracting data from structural model.")
-        exp, reflection_table = create_datastructures_for_structural_model(
-            reflections, experiments, params.scaling_options.target_model
+    if params.scaling_options.reference:
+        # Set a suitable d_min in the case when we might have a model file
+        d_min_for_structure_model = None
+        if params.cut_data.d_min not in (None, Auto):
+            d_min_for_structure_model = params.cut_data.d_min
+        else:
+            d_min_for_structure_model = min(flex.min(r["d"]) for r in reflections)
+        expt, reflection_table = create_datastructures_for_reference_file(
+            experiments,
+            params.scaling_options.reference,
+            params.anomalous,
+            d_min=d_min_for_structure_model,
+            k_sol=params.scaling_options.reference_model.k_sol,
+            b_sol=params.scaling_options.reference_model.b_sol,
         )
-        experiments.append(exp)
-        reflections.append(reflection_table)
-
-    elif params.scaling_options.target_mtz:
-        logger.info("Extracting data from merged mtz.")
-        exp, reflection_table = create_datastructures_for_target_mtz(
-            experiments, params.scaling_options.target_mtz, anomalous=params.anomalous
-        )
-        experiments.append(exp)
+        experiments.append(expt)
         reflections.append(reflection_table)
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
@@ -199,6 +231,8 @@ class ScalingAlgorithm:
         )
         logger.info("\nScaling models have been initialised for all experiments.")
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
+        if len(self.experiments) == 1 and self.experiments[0].scaling_model.id_ == "KB":
+            raise RuntimeError("Invalid model option (KB) for scaling a single dataset")
 
         self.experiments = set_image_ranges_in_scaling_models(self.experiments)
 
@@ -240,10 +274,8 @@ class ScalingAlgorithm:
 
             if (
                 self.params.scaling_options.only_target
-                or self.params.scaling_options.target_model
-                or self.params.scaling_options.target_mtz
+                or self.params.scaling_options.reference
             ):
-
                 self.scaler = targeted_scaling_algorithm(self.scaler)
                 return
             # Now pass to a multiscaler ready for next round of scaling.
@@ -259,12 +291,11 @@ class ScalingAlgorithm:
         from the scaler during scaling."""
         # first remove target refl/exps
         if (
-            self.params.scaling_options.target_model
-            or self.params.scaling_options.target_mtz
+            self.params.scaling_options.reference
             or self.params.scaling_options.only_target
         ):
             # now remove things that were used as the target:
-            n_target = len(self.experiments) - len(self.scaler.active_scalers)
+            n_target = len(self.experiments) - self.scaler.n_initial_active_scalers
             self.experiments = self.experiments[:-n_target]
             self.reflections = self.reflections[:-n_target]
         # remove any bad datasets:
@@ -298,6 +329,7 @@ class ScalingAlgorithm:
                 self.scaled_miller_array,
                 self.params.output.merging.nbins,
                 self.params.output.use_internal_variance,
+                additional_stats=self.params.output.additional_stats,
             )
         except DialsMergingStatisticsError as e:
             logger.warning(e, exc_info=True)
@@ -327,7 +359,13 @@ class ScalingAlgorithm:
 
         # update imageset ids before combining reflection tables.
         self.reflections = update_imageset_ids(self.experiments, self.reflections)
-        joint_table = flex.reflection_table.concat(self.reflections)
+        # Note, we don't use flex.reflection_table.concat below on purpose, so
+        # that the dataset ids in the table are consistent from input to output
+        # when datasets are removed, e.g. by filtering, exclude_datasets= etc.
+        joint_table = flex.reflection_table()
+        for i in range(len(self.reflections)):
+            joint_table.extend(self.reflections[i])
+            self.reflections[i] = 0  # del reference from initial list
 
         # remove reflections with very low scale factors
         sel = (
@@ -371,9 +409,11 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
                 if counter == 1:
                     results.initial_expids_and_image_ranges = [
-                        (exp.identifier, exp.scan.get_image_range())
-                        if exp.scan
-                        else None
+                        (
+                            (exp.identifier, exp.scan.get_image_range())
+                            if exp.scan
+                            else None
+                        )
                         for exp in self.experiments
                     ]
 
@@ -549,7 +589,6 @@ def scaling_algorithm(scaler):
         scaler.params.reflection_selection.intensity_choice == "combine"
         or scaler.params.scaling_options.outlier_rejection
     ):
-
         expand_and_do_outlier_rejection(scaler)
 
         do_intensity_combination(scaler, reselect=True)
@@ -570,7 +609,6 @@ def scaling_algorithm(scaler):
         need_to_rescale = True
 
     if scaler.params.scaling_options.full_matrix:
-
         scaler.perform_scaling(
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,
@@ -606,6 +644,9 @@ def targeted_scaling_algorithm(scaler):
         scaler.make_ready_for_scaling()
         scaler.perform_scaling()
 
+        expand_and_do_outlier_rejection(scaler, calc_cov=True)
+        do_error_analysis(scaler, reselect=True)
+
     if scaler.params.scaling_options.full_matrix and (
         scaler.params.scaling_refinery.engine == "SimpleLBFGS"
     ):
@@ -613,9 +654,11 @@ def targeted_scaling_algorithm(scaler):
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,
         )
+    else:
+        scaler.perform_scaling()
 
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
-    # do_error_analysis(scaler, reselect=False)
+    do_error_analysis(scaler, reselect=False)
 
     scaler.prepare_reflection_tables_for_output()
     return scaler

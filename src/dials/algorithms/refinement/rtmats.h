@@ -12,7 +12,7 @@
 #define DIALS_REFINEMENT_RTMATS_H
 
 #ifndef DEG2RAD
-#define DEG2RAD(x) ((x)*0.01745329251994329575)
+#define DEG2RAD(x) ((x) * 0.01745329251994329575)
 #endif
 
 #include <cmath>
@@ -33,9 +33,9 @@ namespace dials { namespace refinement {
    * Here the rotation is taken to be in a right-handed sense around the axis
    * whereas RTMATS uses a left-handed rotation.
    */
-  mat3<double> dR_from_axis_and_angle(const vec3<double> &axis,
-                                      double angle,
-                                      bool deg = false) {
+  inline mat3<double> dR_from_axis_and_angle(const vec3<double>& axis,
+                                             double angle,
+                                             bool deg = false) {
     if (deg) angle = DEG2RAD(angle);
     vec3<double> axis_ = axis.normalize();
     double ca = cos(angle);

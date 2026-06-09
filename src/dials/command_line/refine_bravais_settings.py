@@ -29,7 +29,6 @@ Examples::
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 """
 
-
 from __future__ import annotations
 
 import collections
@@ -38,7 +37,7 @@ import logging
 import os
 import sys
 
-import libtbx.phil
+import iotbx.phil
 from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
 from dxtbx.model import ExperimentList
@@ -54,7 +53,7 @@ from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 
-phil_scope = libtbx.phil.parse(
+phil_scope = iotbx.phil.parse(
     """
 include scope dials.algorithms.indexing.bravais_settings.phil_scope
 
@@ -73,6 +72,26 @@ output {
 """,
     process_includes=True,
 )
+
+# Override default parameterisation to fix beam and detector models
+phil_overrides = phil_scope.fetch(
+    source=iotbx.phil.parse(
+        """\
+refinement {
+    parameterisation {
+      beam {
+        fix=all
+      }
+      detector {
+        fix=all
+      }
+    }
+}
+"""
+    )
+)
+
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def bravais_lattice_to_space_groups(chiral_only=True):
@@ -130,10 +149,17 @@ def map_to_primitive(experiments, reflections):
         .info()
         .change_of_basis_op_to_primitive_setting()
     )
-    experiments[0].crystal.update(
-        experiments[0].crystal.change_basis(cb_op_to_primitive)
-    )
-    reflections["miller_index"] = cb_op_to_primitive.apply(reflections["miller_index"])
+    if not cb_op_to_primitive.is_identity_op():
+        logger.info(
+            f"Reindexing to primitive setting with cb_op = {cb_op_to_primitive.as_abc()}"
+        )
+        experiments[0].crystal.update(
+            experiments[0].crystal.change_basis(cb_op_to_primitive)
+        )
+        reflections["miller_index"] = cb_op_to_primitive.apply(
+            reflections["miller_index"]
+        )
+    return cb_op_to_primitive
 
 
 def select_datasets_on_crystal_id(experiments, reflections, crystal_id):
@@ -156,7 +182,7 @@ def run(args=None):
 
     parser = ArgumentParser(
         usage=usage,
-        phil=phil_scope,
+        phil=working_phil,
         read_experiments=True,
         read_reflections=True,
         check_format=False,
@@ -205,10 +231,25 @@ def run(args=None):
             )
 
     reflections = eliminate_sys_absent(experiments, reflections)
-    map_to_primitive(experiments, reflections)
+    cb_op_to_primitive = map_to_primitive(experiments, reflections)
+
+    # Since we will only use the used_in_refinement reflections for the
+    # calculation, select them here: old test data may not have the
+    # used in refinement flag
+
+    sel = reflections.get_flags(reflections.flags.used_in_refinement)
+    if sel.count(True):
+        n0 = len(reflections)
+        reflections = reflections.select(sel)
+        n1 = len(reflections)
+        if n1 != n0:
+            logger.info(f"Selected {n1} / {n0} reflections for calculation")
 
     refined_settings = refined_settings_from_refined_triclinic(
-        experiments, reflections, params
+        experiments,
+        reflections,
+        params,
+        cb_op_to_primitive=cb_op_to_primitive,
     )
     possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
     bravais_lattice_to_space_group_table(possible_bravais_settings)

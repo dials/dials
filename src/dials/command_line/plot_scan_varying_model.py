@@ -118,7 +118,6 @@ class Script:
         # cell plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -171,7 +170,6 @@ class Script:
         # orientation plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -212,7 +210,6 @@ class Script:
         # beam centre plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             beam = exp.beam
             detector = exp.detector
             scan = exp.scan
@@ -388,8 +385,8 @@ class Script:
             ymax = max(ymax, max(bc["beam_centre_x"]) + 0.1)
             plt.axis(ymin=ymin, ymax=ymax)
         plt.xlabel(r"rotation angle $\left(^\circ\right)$")
-        plt.ylabel(r"X (pixels)")
-        plt.title(r"Beam centre X (pixels)")
+        plt.ylabel("X (pixels)")
+        plt.title("Beam centre X (pixels)")
 
         ax = plt.subplot(gs[1, 0])
         ax.ticklabel_format(useOffset=False)
@@ -400,8 +397,8 @@ class Script:
             ymax = max(ymax, max(bc["beam_centre_y"]) + 0.1)
             plt.axis(ymin=ymin, ymax=ymax)
         plt.xlabel(r"rotation angle $\left(^\circ\right)$")
-        plt.ylabel(r"Y (pixels)")
-        plt.title(r"Beam centre Y (pixels)")
+        plt.ylabel("Y (pixels)")
+        plt.title("Beam centre Y (pixels)")
 
         basename = os.path.join(self._directory, "beam_centre")
         fullname = basename + self._format

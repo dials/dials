@@ -1,6 +1,5 @@
 """Test decomposition of rotation matrices around arbitrary axes"""
 
-
 from __future__ import annotations
 
 import math
@@ -15,7 +14,6 @@ from dials.algorithms.refinement.rotation_decomposition import (
 
 
 def _test_rotation_matrices(phi1, phi2, phi3):
-
     # compose rotation matrix
     R1 = matrix.col((1, 0, 0)).axis_and_angle_as_r3_rotation_matrix(phi1, deg=False)
     R2 = matrix.col((0, 1, 0)).axis_and_angle_as_r3_rotation_matrix(phi2, deg=False)
@@ -70,7 +68,6 @@ def _test_rotation_matrices(phi1, phi2, phi3):
 
 
 def _test_vs_euler_angles_xyz_angles(phi1, phi2, phi3):
-
     from scitbx.math import euler_angles_xyz_angles
 
     # compose rotation matrix
@@ -105,7 +102,7 @@ def random_vector():
 
 def _test_random_axes_and_angles():
     # random axes
-    e1, e2, e3 = [random_vector() for i in range(3)]
+    e1, e2, e3 = (random_vector() for i in range(3))
 
     # random angles
     phi1 = random.uniform(-math.pi, math.pi)
@@ -144,7 +141,6 @@ def test():
 
     # tests using principal axes, and angles in the range +/-30 deg
     for i in range(n_tests):
-
         phi1 = random.uniform(-math.pi / 6, math.pi / 6)
         phi2 = random.uniform(-math.pi / 6, math.pi / 6)
         phi3 = random.uniform(-math.pi / 6, math.pi / 6)

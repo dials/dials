@@ -14,6 +14,9 @@ from scipy.stats import norm
 
 from cctbx import uctbx
 from dxtbx import flumpy
+from iotbx.merging_statistics import dataset_statistics
+from libtbx.utils import Sorry
+from mmtbx.scaling import printed_output
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
@@ -33,7 +36,7 @@ def make_image_range_table(experiments, batch_manager):
         ]
     ]
     for i, exp in enumerate(experiments):
-        if exp.scan:
+        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
             valid_image_ranges = ",".join(
                 str(j) for j in exp.scan.get_valid_image_ranges(exp.identifier)
             )
@@ -105,7 +108,6 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
 
 
 def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
-
     reduced_batches = batch_manager.reduced_batches
     shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
     if len(annotations) > 30:
@@ -148,7 +150,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
     )
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
-    z[:] = np.NAN
+    z[:] = np.nan
     z[nonzeros] = H[nonzeros]
     key = f"i_over_sig_i_vs_i_{label}" if label is not None else "i_over_sig_i_vs_i"
     title = "I/σ(I) vs I"
@@ -195,6 +197,69 @@ def d_star_sq_to_d_ticks(d_star_sq, nticks):
     return tickvals, ticktext
 
 
+class _xtriage_output(printed_output):
+    def __init__(self, out):
+        super().__init__(out)
+        self.gui_output = True
+        self._out_orig = self.out
+        self.out = StringIO()
+        self._sub_header_to_out = {}
+
+    def show_big_header(self, text):
+        pass
+
+    def show_header(self, text):
+        self._out_orig.write(self.out.getvalue())
+        self.out = StringIO()
+        super().show_header(text)
+
+    def show_sub_header(self, title):
+        self._out_orig.write(self.out.getvalue())
+        self.out = StringIO()
+        self._current_sub_header = title
+        assert title not in self._sub_header_to_out
+        self._sub_header_to_out[title] = self.out
+
+    def flush(self):
+        self._out_orig.write(self.out.getvalue())
+        self.out.flush()
+        self._out_orig.flush()
+
+
+def xtriage_output(xanalysis):
+    with StringIO() as xs:
+        xout = _xtriage_output(xs)
+        try:
+            xanalysis.show(out=xout)
+            sub_header_to_out = xout._sub_header_to_out
+            issues = xanalysis.summarize_issues()
+        except Exception:
+            return {}
+        finally:
+            xout.flush()
+
+    xtriage_success = []
+    xtriage_warnings = []
+    xtriage_danger = []
+
+    for level, text, sub_header in issues._issues:
+        with StringIO() as tmp_out:
+            summary = sub_header_to_out.get(sub_header, tmp_out).getvalue()
+        d = {"level": level, "text": text, "summary": summary, "header": sub_header}
+        if level == 0:
+            xtriage_success.append(d)
+        elif level == 1:
+            xtriage_warnings.append(d)
+        elif level == 2:
+            xtriage_danger.append(d)
+
+    return {
+        "xtriage_success": xtriage_success,
+        "xtriage_warnings": xtriage_warnings,
+        "xtriage_danger": xtriage_danger,
+    }
+
+
 class IntensityStatisticsPlots:
     """Generate plots for intensity-derived statistics."""
 
@@ -233,9 +298,14 @@ class IntensityStatisticsPlots:
                     text_out="silent",
                     params=xtriage_params,
                 )
-            except RuntimeError:
+            except (RuntimeError, Sorry):
                 logger.warning("Xtriage analysis failed.", exc_info=True)
                 self._xanalysis = None
+
+    def generate_xtriage_output(self):
+        if not self._xanalysis:
+            return {}
+        return xtriage_output(self._xanalysis)
 
     def generate_resolution_dependent_plots(self):
         d = self.second_moments_plot()
@@ -451,7 +521,6 @@ class IntensityStatisticsPlots:
         }
 
     def second_moments_plot(self):
-
         acentric = self.merged_intensities.select_acentric()
         centric = self.merged_intensities.select_centric()
         if acentric.size():
@@ -532,7 +601,10 @@ class ResolutionPlotsAndStats:
     """
 
     def __init__(
-        self, dataset_statistics, anomalous_dataset_statistics, is_centric=False
+        self,
+        dataset_statistics: type[dataset_statistics],
+        anomalous_dataset_statistics: type[dataset_statistics],
+        is_centric=False,
     ):
         self.dataset_statistics = dataset_statistics
         self.anomalous_dataset_statistics = anomalous_dataset_statistics
@@ -552,6 +624,58 @@ class ResolutionPlotsAndStats:
         d.update(self.completeness_plot())
         d.update(self.multiplicity_vs_resolution_plot())
         d.update(self.r_pim_plot())
+        d.update(self.additional_stats_plot())
+        return d
+
+    def additional_stats_plot(self):
+        d = {}
+        # 'binner' attribute only exists for ExtendedDatasetStatistics, make sure
+        # this function also works with regular iotbx dataset_statistics with this check.
+        if (
+            not hasattr(self.dataset_statistics, "binner")
+            or not self.dataset_statistics.binner
+        ):
+            return d
+        d_star_sq_bins = []
+        for bin in self.dataset_statistics.binner.range_used():
+            d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+            d_star_sq_bins.append(
+                0.5
+                * (
+                    uctbx.d_as_d_star_sq(d_max_min[0])
+                    + uctbx.d_as_d_star_sq(d_max_min[1])
+                )
+            )
+        d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(
+            d_star_sq_bins, nticks=5
+        )
+        if self.dataset_statistics.r_split:
+            d.update(
+                {
+                    "r_split": {
+                        "data": [
+                            {
+                                "x": d_star_sq_bins,  # d_star_sq
+                                "y": self.dataset_statistics.r_split_binned,
+                                "type": "scatter",
+                                "name": "R<sub>split</sub> vs resolution",
+                            }
+                        ],
+                        "layout": {
+                            "title": "R<sub>split</sub> vs resolution",
+                            "xaxis": {
+                                "title": "Resolution (Å)",
+                                "tickvals": d_star_sq_tickvals,
+                                "ticktext": d_star_sq_ticktext,
+                            },
+                            "yaxis": {
+                                "title": "R<sub>split</sub>",
+                                "rangemode": "tozero",
+                            },
+                        },
+                    }
+                }
+            )
         return d
 
     def cc_one_half_plot(self, method=None):
@@ -559,15 +683,19 @@ class ResolutionPlotsAndStats:
 
         if method == "sigma_tau":
             cc_one_half_bins = [
-                bin_stats.cc_one_half_sigma_tau
-                if bin_stats.cc_one_half_sigma_tau
-                else 0.0
+                (
+                    bin_stats.cc_one_half_sigma_tau
+                    if bin_stats.cc_one_half_sigma_tau
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
-                bin_stats.cc_one_half_sigma_tau_critical_value
-                if bin_stats.cc_one_half_sigma_tau_critical_value
-                else 0.0
+                (
+                    bin_stats.cc_one_half_sigma_tau_critical_value
+                    if bin_stats.cc_one_half_sigma_tau_critical_value
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
         else:
@@ -576,9 +704,11 @@ class ResolutionPlotsAndStats:
                 for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
-                bin_stats.cc_one_half_critical_value
-                if bin_stats.cc_one_half_critical_value
-                else 0.0
+                (
+                    bin_stats.cc_one_half_critical_value
+                    if bin_stats.cc_one_half_critical_value
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
         cc_anom_bins = [
@@ -586,9 +716,11 @@ class ResolutionPlotsAndStats:
             for bin_stats in self.dataset_statistics.bins
         ]
         cc_anom_critical_value_bins = [
-            bin_stats.cc_anom_critical_value
-            if bin_stats.cc_anom_critical_value
-            else 0.0
+            (
+                bin_stats.cc_anom_critical_value
+                if bin_stats.cc_anom_critical_value
+                else 0.0
+            )
             for bin_stats in self.dataset_statistics.bins
         ]
 
@@ -598,9 +730,9 @@ class ResolutionPlotsAndStats:
                 cc_half=cc_one_half_bins,
                 cc_anom=cc_anom_bins if not self.is_centric else None,
                 cc_half_critical_values=cc_one_half_critical_value_bins,
-                cc_anom_critical_values=cc_anom_critical_value_bins
-                if not self.is_centric
-                else None,
+                cc_anom_critical_values=(
+                    cc_anom_critical_value_bins if not self.is_centric else None
+                ),
                 cc_half_fit=None,
                 d_min=None,
             )
@@ -747,7 +879,6 @@ class ResolutionPlotsAndStats:
         }
 
     def merging_statistics_table(self, cc_half_method=None):
-
         headers = [
             "Resolution (Å)",
             "N(obs)",
@@ -764,12 +895,19 @@ class ResolutionPlotsAndStats:
         ]
         if not self.is_centric:
             headers.append("CC<sub>ano</sub>")
+        r_split_vals = []
+        if (
+            hasattr(self.dataset_statistics, "r_split")
+            and self.dataset_statistics.r_split_binned
+        ):
+            headers.insert(-2, "R<sub>split</sub>")
+            r_split_vals = self.dataset_statistics.r_split_binned
         rows = []
 
         def safe_format(format_str, item):
             return format_str % item if item is not None else ""
 
-        for bin_stats in self.dataset_statistics.bins:
+        for i, bin_stats in enumerate(self.dataset_statistics.bins):
             row = [
                 f"{bin_stats.d_max:.2f} - {bin_stats.d_min:.2f}",
                 bin_stats.n_obs,
@@ -783,18 +921,18 @@ class ResolutionPlotsAndStats:
                 safe_format("%.3f", bin_stats.r_pim),
                 safe_format("%.3f", bin_stats.r_anom),
             ]
+            if r_split_vals:
+                row.append(f"{r_split_vals[i]:.3f}")
             if cc_half_method == "sigma_tau":
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half_sigma_tau,
                         "*" if bin_stats.cc_one_half_sigma_tau_significance else "",
                     )
                 )
             else:
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half,
                         "*" if bin_stats.cc_one_half_significance else "",
                     )
@@ -802,8 +940,9 @@ class ResolutionPlotsAndStats:
 
             if not self.is_centric:
                 row.append(
-                    "%.3f%s"
-                    % (bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else "")
+                    "{:.3f}{}".format(
+                        bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else ""
+                    )
                 )
             rows.append(row)
 
@@ -813,7 +952,6 @@ class ResolutionPlotsAndStats:
         return merging_stats_table
 
     def overall_statistics_table(self, cc_half_method=None):
-
         headers = ["", "Overall", "Low resolution", "High resolution"]
 
         stats = (
@@ -834,6 +972,16 @@ class ResolutionPlotsAndStats:
             ["R<sub>meas</sub>"] + [f"{s.r_meas:.3f}" for s in stats],
             ["R<sub>pim</sub>"] + [f"{s.r_pim:.3f}" for s in stats],
         ]
+        if (
+            hasattr(self.dataset_statistics, "r_split")
+            and self.dataset_statistics.r_split is not None
+        ):
+            rsplits = (
+                self.dataset_statistics.r_split,
+                self.dataset_statistics.r_split_binned[0],
+                self.dataset_statistics.r_split_binned[-1],
+            )
+            rows.append(["R<sub>split</sub>"] + [f"{rs:.3f}" for rs in rsplits])
 
         if cc_half_method == "sigma_tau":
             rows.append(
@@ -848,9 +996,39 @@ class ResolutionPlotsAndStats:
 
         return overall_stats_table
 
+    def overall_statistics_summary_data(self):
+        o = self.dataset_statistics.overall
+        h = self.dataset_statistics.bins[-1]
+        data = {
+            "Resolution range (Å)": f"{o.d_max:.2f} - {o.d_min:.2f} ({h.d_max:.2f} - {h.d_min:.2f})",
+            "Completeness (%)": f"{(o.completeness * 100):.2f} ({(h.completeness * 100):.2f})",
+            "Multiplicity": f"{o.mean_redundancy:.2f} ({h.mean_redundancy:.2f})",
+            "CC-half": f"{o.cc_one_half:.4f} ({h.cc_one_half:.4f})",
+            "I/sigma": f"{o.i_over_sigma_mean:.2f} ({h.i_over_sigma_mean:.2f})",
+            "Rmerge(I)": f"{o.r_merge:.4f} ({h.r_merge:.4f})",
+        }
+        if self.anomalous_dataset_statistics:
+            o_anom = self.anomalous_dataset_statistics.overall
+            h_anom = self.anomalous_dataset_statistics.bins[-1]
+            data["Anomalous completeness (%)"] = (
+                f"{(o_anom.anom_completeness * 100):.2f} ({(h_anom.anom_completeness * 100):.2f})"
+            )
+            data["Anomalous multiplicity"] = (
+                f"{o_anom.mean_redundancy:.2f} ({h_anom.mean_redundancy:.2f})"
+            )
+        else:
+            data["Anomalous completeness (%)"] = "-"
+            data["Anomalous multiplicity"] = "-"
+        return data
+
     def statistics_tables(self):
         """Generate the overall and by-resolution tables."""
-        return (self.overall_statistics_table(), self.merging_statistics_table())
+        return {
+            "overall": self.overall_statistics_table(),
+            "resolution_binned": self.merging_statistics_table(),
+            "cc_half_significance_level": 0.01,  # Note - in dials.scale and dials.merge, this is a hardcoded value
+            "overall_summary_data": self.overall_statistics_summary_data(),
+        }
 
 
 class AnomalousPlotter:
@@ -884,7 +1062,6 @@ class AnomalousPlotter:
         return d
 
     def del_anom_correlation_ratio(self, unmerged_intensities):
-
         acentric = unmerged_intensities.select_acentric()
         centric = unmerged_intensities.select_centric()
         correl_ratios_acentric, correl_ratios_centric = ([], [])
@@ -908,7 +1085,11 @@ class AnomalousPlotter:
                         rmsd_1min1 = (
                             flex.sum(flex.pow2(dano1 + dano2)) / (2.0 * dano1.size())
                         ) ** 0.5
-                        correl_ratios.append(rmsd_1min1 / rmsd_11)
+                        if abs(rmsd_11) < 1e-6:
+                            # possible for sparse data if a few dano values approx equal
+                            correl_ratios.append(1e6)
+                        else:
+                            correl_ratios.append(rmsd_1min1 / rmsd_11)
                     else:
                         correl_ratios.append(0.0)
                 else:
@@ -1067,7 +1248,7 @@ https://doi.org/10.1107/S0907444905036693
         H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H[nonzeros]
 
         # also make a histogram
@@ -1150,6 +1331,9 @@ def cc_half_plot(
     d_min=None,
 ):
     d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(d_star_sq, nticks=5)
+    min_y = min([cc if cc is not None else 0 for cc in cc_half] + [0])
+    if cc_anom:
+        min_y = min([min_y, min([cc if cc is not None else 0 for cc in cc_anom])])
     return {
         "data": [
             {
@@ -1228,7 +1412,7 @@ def cc_half_plot(
             },
             "yaxis": {
                 "title": "CC<sub>½</sub>",
-                "range": [min(cc_half + cc_anom if cc_anom else [] + [0]), 1],
+                "range": [min_y, 1],
             },
         },
         "help": """\

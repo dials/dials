@@ -6,9 +6,10 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 
 from cctbx import uctbx
 from dxtbx import flumpy
@@ -71,8 +72,7 @@ def assert_is_json_serialisable(thing, name, path=None):
             json.dumps(thing)
         except TypeError as e:
             raise TypeError(
-                "JSON serialisation error '%s' for value '%s' type %s in %s%s"
-                % (
+                "JSON serialisation error '{}' for value '{}' type {} in {}{}".format(
                     e,
                     str(thing),
                     type(thing),
@@ -99,16 +99,11 @@ def print_scaling_summary(script):
     valid_ranges = get_valid_image_ranges(script.experiments)
     image_ranges = get_image_ranges(script.experiments)
     msg = []
-    for (img, valid, refl) in zip(image_ranges, valid_ranges, script.reflections):
+    for img, valid, refl in zip(image_ranges, valid_ranges, script.reflections):
         if valid:
             if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                 msg.append(
-                    "Excluded images for experiment id: %s, image range: %s, limited range: %s"
-                    % (
-                        refl.experiment_identifiers().keys()[0],
-                        list(img),
-                        list(valid),
-                    )
+                    f"Excluded images for experiment id: {refl.experiment_identifiers().keys()[0]}, image range: {list(img)}, limited range: {list(valid)}"
                 )
     if msg:
         msg = ["Summary of image ranges removed:"] + msg
@@ -152,7 +147,10 @@ were considered for use when refining the scaling model.
             anom_stats = script.anom_merging_statistics_result
         logger.info(make_merging_statistics_summary(stats))
         try:
-            d_min = resolution_cc_half(stats, limit=0.3).d_min
+            if script.params.cut_data.d_min is None:
+                d_min = resolution_cc_half(stats, limit=0.3).d_min
+            else:
+                d_min = script.params.cut_data.d_min
         except RuntimeError as e:
             logger.debug(f"Resolution fit failed: {e}")
         else:
@@ -160,9 +158,9 @@ were considered for use when refining the scaling model.
             if d_min and d_min - max_current_res > 0.005:
                 logger.info(
                     "Resolution limit suggested from CC"
-                    + "\u00BD"
+                    + "\u00bd"
                     + " fit (limit CC"
-                    + "\u00BD"
+                    + "\u00bd"
                     + "=0.3): %.2f",
                     d_min,
                 )
@@ -171,6 +169,7 @@ were considered for use when refining the scaling model.
                         script.scaled_miller_array.resolution_filter(d_min=d_min),
                         script.params.output.merging.nbins,
                         script.params.output.use_internal_variance,
+                        additional_stats=script.params.output.additional_stats,
                     )
                 except DialsMergingStatisticsError:
                     pass
@@ -238,7 +237,7 @@ def _make_scaling_html(scaling_script):
             f.write(html.encode("utf-8", "xmlcharrefreplace"))
     if json_file:
         logger.info("Writing html report data to %s", json_file)
-        with open(json_file, "w") as outfile:
+        with open(json_file, "w", encoding="utf-8") as outfile:
             json.dump(data, outfile)
 
 
@@ -277,18 +276,20 @@ def print_scaling_model_error_summary(experiments):
                     )
                     p_sigmas.extend(flex.abs(params - null_value) / sigmas)
         log_p_sigmas = flex.log(p_sigmas)
-        frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
+        frac_high_uncertainty = (log_p_sigmas < math.log(2)).count(True) / len(
+            log_p_sigmas
+        )
         if frac_high_uncertainty > 0.5:
             msg = (
-                "Warning: Over half ({:.2f}%) of model parameters have significant\n"
+                f"Warning: Over half ({frac_high_uncertainty * 100:.2f}%) of model parameters have significant\n"
                 "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
                 "poorly-determined scaling problem or overparameterisation.\n"
-            ).format(frac_high_uncertainty * 100)
+            )
         else:
             msg = (
-                "{:.2f}% of model parameters have significant uncertainty\n"
+                f"{frac_high_uncertainty * 100:.2f}% of model parameters have significant uncertainty\n"
                 "(sigma/abs(parameter) > 0.5)\n"
-            ).format(frac_high_uncertainty * 100)
+            )
     return msg
 
 
@@ -298,7 +299,7 @@ def make_outlier_plots(reflection_tables, experiments):
     for j, (table, expt) in enumerate(zip(reflection_tables, experiments)):
         outliers = table.get_flags(table.flags.outlier_in_scaling)
         x, y, z = table["xyzobs.px.value"].select(outliers).parts()
-        if expt.scan:
+        if expt.scan and (expt.scan.get_oscillation()[1] != 0.0):
             zrange = [
                 i / expt.scan.get_oscillation()[1]
                 for i in expt.scan.get_oscillation_range()
@@ -338,7 +339,7 @@ def make_error_model_plots(params, experiments):
             for i, e in enumerate(unique_error_models):
                 indices = [str(j + 1) for j, x in enumerate(error_models) if e is x]
                 d["error_model_summary"] += (
-                    f"\nError model {i+1}, applied to sweeps {', '.join(indices)}:"
+                    f"\nError model {i + 1}, applied to sweeps {', '.join(indices)}:"
                     + str(e)
                 )
         for em in unique_error_models:
@@ -391,29 +392,33 @@ def make_filtering_plots(script):
     return {"filter_plots": {}}
 
 
-def make_merging_stats_plots(script):
+def make_merging_stats_plots(script, run_xtriage_analysis=False, make_batch_plots=True):
     """Make merging stats plots for HTML report"""
     d = {
-        "scaling_tables": ([], []),
+        "scaling_tables": {},
         "resolution_plots": {},
         "batch_plots": {},
         "misc_plots": {},
         "anom_plots": {},
         "image_range_tables": [],
     }
-    (
-        batches,
-        rvb,
-        isigivb,
-        svb,
-        batch_data,
-    ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
-        script.reflections,
-        script.experiments,
-        script.scaled_miller_array,
-    )
-    bm = batch_manager(batches, batch_data)
-    image_range_tables = make_image_range_table(script.experiments, bm)
+    if make_batch_plots:
+        (
+            batches,
+            rvb,
+            isigivb,
+            svb,
+            batch_data,
+        ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+            script.reflections,
+            script.experiments,
+            script.scaled_miller_array,
+        )
+        bm = batch_manager(batches, batch_data)
+        image_range_tables = make_image_range_table(script.experiments, bm)
+        d["image_range_tables"] = [image_range_tables]
+        d["batch_plots"].update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
+        d["batch_plots"].update(i_over_sig_i_vs_batch_plot(bm, isigivb))
 
     if script.merging_statistics_result:
         stats = script.merging_statistics_result
@@ -423,11 +428,10 @@ def make_merging_stats_plots(script):
         plotter = ResolutionPlotsAndStats(stats, anom_stats, is_centric)
         d["resolution_plots"].update(plotter.make_all_plots())
         d["scaling_tables"] = plotter.statistics_tables()
-        d["batch_plots"].update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
-        d["batch_plots"].update(i_over_sig_i_vs_batch_plot(bm, isigivb))
         plotter = IntensityStatisticsPlots(
-            script.scaled_miller_array, run_xtriage_analysis=False
+            script.scaled_miller_array, run_xtriage_analysis=run_xtriage_analysis
         )
+        d["xtriage_output"] = plotter.generate_xtriage_output()
         d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
         if d["resolution_plots"]["cc_one_half"]["data"][2]:
             cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
@@ -449,5 +453,4 @@ def make_merging_stats_plots(script):
         )
         anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
         d["anom_plots"].update(anom_plotter.make_plots())
-    d["image_range_tables"] = [image_range_tables]
     return d

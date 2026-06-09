@@ -5,17 +5,19 @@ from __future__ import annotations
 import logging
 import pickle
 import sys
-import warnings
-from collections import namedtuple
+from collections import defaultdict, namedtuple
+
+from ordered_set import OrderedSet
 
 import dxtbx.model.compare as compare
 import libtbx.phil
-from dxtbx.imageset import ImageGrid, ImageSequence
+from dxtbx.imageset import ImageSequence
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
@@ -81,7 +83,7 @@ phil_scope = libtbx.phil.parse(
 
     experiments = imported.expt
       .type = str
-      .help = "The output JSON or pickle file"
+      .help = "The output experiment file"
 
     log = 'dials.import.log'
       .type = str
@@ -89,7 +91,7 @@ phil_scope = libtbx.phil.parse(
 
     compact = False
       .type = bool
-      .help = "For JSON output use compact representation"
+      .help = "For experiment output use compact JSON representation"
 
   }
 
@@ -112,6 +114,10 @@ phil_scope = libtbx.phil.parse(
       .type = str
       .help = "A directory with images"
       .multiple = True
+
+    split = None
+      .type = ints
+      .help = "Scan split: either frames_per_block or 1-indexed start,end,frames_per_block"
 
     reference_geometry = None
       .type = path
@@ -147,13 +153,6 @@ phil_scope = libtbx.phil.parse(
       .type = bool
       .help = "If False, raise an error if multiple sequences are found"
 
-    as_grid_scan = False
-      .type = bool
-      .help = "Import as grid scan"
-
-    grid_size = None
-      .type = ints(size=2)
-      .help = "If importing as a grid scan set the size"
   }
 
   include scope dials.util.options.format_phil_scope
@@ -208,7 +207,6 @@ def _extract_or_read_imagesets(params):
 
     # Check we have some filenames
     if len(experiments) == 0:
-
         # FIXME Should probably make this smarter since it requires editing here
         # and in dials.import phil scope
         try:
@@ -222,7 +220,6 @@ def _extract_or_read_imagesets(params):
         # Check if a template has been set and print help if not, otherwise try to
         # import the images based on the template input
         if len(params.input.template) > 0:
-
             experiments = ExperimentListFactory.from_templates(
                 params.input.template,
                 image_range=params.geometry.scan.image_range,
@@ -294,6 +291,7 @@ class ReferenceGeometryUpdater:
         # Load reference geometry
         reference_detector = None
         reference_beam = None
+        reference_goniometer = None
         if params.input.reference_geometry is not None:
             from dxtbx.serialize import load
 
@@ -303,20 +301,23 @@ class ReferenceGeometryUpdater:
             )
             assert experiments, "Could not import reference geometry"
             assert len(experiments.detectors()) >= 1
-            assert len(experiments.beams()) >= 1
             if len(experiments.detectors()) > 1:
                 raise Sorry(
                     "The reference geometry file contains %d detector definitions, but only a single definition is allowed."
                     % len(experiments.detectors())
                 )
-            if len(experiments.beams()) > 1:
-                raise Sorry(
-                    "The reference geometry file contains %d beam definitions, but only a single definition is allowed."
-                    % len(experiments.beams())
-                )
             reference_detector = experiments.detectors()[0]
-            reference_beam = experiments.beams()[0]
-            reference_goniometer = experiments.goniometers()[0]
+            if self.params.input.use_beam_reference:
+                assert len(experiments.beams()) >= 1
+                if len(experiments.beams()) > 1:
+                    raise Sorry(
+                        "The reference geometry file contains %d beam definitions, but only a single definition is allowed."
+                        % len(experiments.beams())
+                    )
+                reference_beam = experiments.beams()[0]
+            if self.params.input.use_gonio_reference:
+                assert len(experiments.goniometers()) >= 1
+                reference_goniometer = experiments.goniometers()[0]
         Reference = namedtuple("Reference", ["detector", "beam", "goniometer"])
         return Reference(
             detector=reference_detector,
@@ -335,6 +336,7 @@ class ManualGeometryUpdater:
         Save the params
         """
         self.params = params
+        self.touched = set()
 
     def __call__(self, imageset):
         """
@@ -352,23 +354,32 @@ class ManualGeometryUpdater:
 
         if self.params.geometry.convert_sequences_to_stills:
             imageset = ImageSetFactory.imageset_from_anyset(imageset)
-            for j in imageset.indices():
+            for j in range(len(imageset)):
                 imageset.set_scan(None, j)
                 imageset.set_goniometer(None, j)
-        if not isinstance(imageset, ImageSequence):
-            if self.params.geometry.convert_stills_to_sequences:
-                imageset = self.convert_stills_to_sequence(imageset)
+
+        beam = imageset.get_beam()
+        detector = imageset.get_detector()
+        goniometer = imageset.get_goniometer()
+        scan = imageset.get_scan()
+
+        # Create a new model with updated geometry for each model that is not
+        # already in the touched set
         if isinstance(imageset, ImageSequence):
-            beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
-            detector = DetectorFactory.from_phil(
-                self.params.geometry, imageset.get_detector(), beam
-            )
-            goniometer = GoniometerFactory.from_phil(
-                self.params.geometry, imageset.get_goniometer()
-            )
-            scan = ScanFactory.from_phil(
-                self.params.geometry, deepcopy(imageset.get_scan())
-            )
+            if beam and beam not in self.touched:
+                beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
+            if detector and detector not in self.touched:
+                detector = DetectorFactory.from_phil(
+                    self.params.geometry, imageset.get_detector(), beam
+                )
+            if goniometer and goniometer not in self.touched:
+                goniometer = GoniometerFactory.from_phil(
+                    self.params.geometry, imageset.get_goniometer()
+                )
+            if scan and scan not in self.touched:
+                scan = ScanFactory.from_phil(
+                    self.params.geometry, deepcopy(imageset.get_scan())
+                )
             i0, i1 = scan.get_array_range()
             j0, j1 = imageset.get_scan().get_array_range()
             if i0 < j0 or i1 > j1:
@@ -386,18 +397,37 @@ class ManualGeometryUpdater:
                 imageset.set_scan(scan)
         else:
             for i in range(len(imageset)):
-                beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam(i))
-                detector = DetectorFactory.from_phil(
-                    self.params.geometry, imageset.get_detector(i), beam
-                )
-                goniometer = GoniometerFactory.from_phil(
-                    self.params.geometry, imageset.get_goniometer(i)
-                )
-                scan = ScanFactory.from_phil(self.params.geometry, imageset.get_scan(i))
+                if beam and beam not in self.touched:
+                    beam = BeamFactory.from_phil(
+                        self.params.geometry, imageset.get_beam(i)
+                    )
+                if detector and detector not in self.touched:
+                    detector = DetectorFactory.from_phil(
+                        self.params.geometry, imageset.get_detector(i), beam
+                    )
+                if goniometer and goniometer not in self.touched:
+                    goniometer = GoniometerFactory.from_phil(
+                        self.params.geometry, imageset.get_goniometer(i)
+                    )
+                if scan and scan not in self.touched:
+                    scan = ScanFactory.from_phil(
+                        self.params.geometry, imageset.get_scan(i)
+                    )
                 imageset.set_beam(beam, i)
                 imageset.set_detector(detector, i)
                 imageset.set_goniometer(goniometer, i)
                 imageset.set_scan(scan, i)
+
+        # Add the models from this imageset to the touched set, so they will not
+        # have their geometry updated again
+        if beam:
+            self.touched.add(beam)
+        if detector:
+            self.touched.add(detector)
+        if goniometer:
+            self.touched.add(goniometer)
+        if scan:
+            self.touched.add(scan)
         return imageset
 
     def extrapolate_imageset(
@@ -417,59 +447,6 @@ class ManualGeometryUpdater:
             format_kwargs=imageset.params(),
         )
         return sequence
-
-    def convert_stills_to_sequence(self, imageset):
-        from dxtbx.model import Scan
-
-        assert self.params.geometry.scan.oscillation is not None
-        beam = imageset.get_beam(index=0)
-        detector = imageset.get_detector(index=0)
-        goniometer = imageset.get_goniometer(index=0)
-        for i in range(1, len(imageset)):
-            b_i = imageset.get_beam(i)
-            d_i = imageset.get_detector(i)
-            g_i = imageset.get_goniometer(i)
-            assert (beam is None and b_i is None) or beam.is_similar_to(
-                imageset.get_beam(index=i),
-                wavelength_tolerance=self.params.input.tolerance.beam.wavelength,
-                direction_tolerance=self.params.input.tolerance.beam.direction,
-                polarization_normal_tolerance=self.params.input.tolerance.beam.polarization_normal,
-                polarization_fraction_tolerance=self.params.input.tolerance.beam.polarization_fraction,
-            )
-            assert (detector is None and d_i is None) or detector.is_similar_to(
-                imageset.get_detector(index=i),
-                fast_axis_tolerance=self.params.input.tolerance.detector.fast_axis,
-                slow_axis_tolerance=self.params.input.tolerance.detector.slow_axis,
-                origin_tolerance=self.params.input.tolerance.detector.origin,
-            )
-            assert (goniometer is None and g_i is None) or goniometer.is_similar_to(
-                imageset.get_goniometer(index=i),
-                rotation_axis_tolerance=self.params.input.tolerance.goniometer.rotation_axis,
-                fixed_rotation_tolerance=self.params.input.tolerance.goniometer.fixed_rotation,
-                setting_rotation_tolerance=self.params.input.tolerance.goniometer.setting_rotation,
-            )
-        oscillation = self.params.geometry.scan.oscillation
-        from dxtbx.imageset import ImageSetFactory
-        from dxtbx.sequence_filenames import template_regex_from_list
-
-        template, indices = template_regex_from_list(imageset.paths())
-        image_range = (min(indices), max(indices))
-        assert (image_range[1] + 1 - image_range[0]) == len(indices)
-        scan = Scan(image_range=image_range, oscillation=oscillation)
-        if template is None:
-            paths = [imageset.get_path(i) for i in range(len(imageset))]
-            assert len(set(paths)) == 1
-            template = paths[0]
-        new_sequence = ImageSetFactory.make_sequence(
-            template=template,
-            indices=indices,
-            format_class=imageset.reader().get_format_class(),
-            beam=beam,
-            detector=detector,
-            goniometer=goniometer,
-            scan=scan,
-        )
-        return new_sequence
 
 
 class MetaDataUpdater:
@@ -515,16 +492,11 @@ class MetaDataUpdater:
         # Import the lookup data
         lookup = self.import_lookup_data(self.params)
 
-        # Convert all to ImageGrid
-        if self.params.input.as_grid_scan:
-            imageset_list = self.convert_to_grid_scan(imageset_list, self.params)
-
         # Create the experiments
         experiments = ExperimentList()
 
         # Loop through imagesets
         for imageset in imageset_list:
-
             # Set the external lookups
             imageset = self.update_lookup(imageset, lookup)
 
@@ -559,7 +531,7 @@ class MetaDataUpdater:
             ].count(None) == 1:
                 raise Sorry(
                     """
-          Only 1 offset map is set. Need to set both dx and d
+          Only 1 offset map is set. Need to set both dx and dy
         """
                 )
 
@@ -573,12 +545,12 @@ class MetaDataUpdater:
                     # that these are in people numbers (1...) and are inclusive
                     if self.params.geometry.scan.image_range:
                         user_start, user_end = self.params.geometry.scan.image_range
-                        offset = imageset.get_scan().get_array_range()[0]
                         start, end = user_start - 1, user_end
                     else:
                         start, end = imageset.get_scan().get_array_range()
-                        offset = 0
 
+                    # offset to get 0-based indexing into the imageset
+                    offset = imageset.get_scan().get_array_range()[0]
                     for j in range(start, end):
                         subset = imageset[j - offset : j - offset + 1]
                         experiments.append(
@@ -615,6 +587,69 @@ class MetaDataUpdater:
                             crystal=None,
                         )
                     )
+
+        if self.params.geometry.convert_stills_to_sequences:
+            if any(not isinstance(i, ImageSequence) for i in experiments.imagesets()):
+                files_to_beams = defaultdict(list)
+                formats = []
+                detectors = []
+                iset_params = []
+                existing_isets_sequences = []
+                for i, iset in enumerate(experiments.imagesets()):
+                    if not isinstance(iset, ImageSequence):
+                        assert len(iset) == 1
+
+                        path = iset.get_path(0)
+                        if path not in files_to_beams:
+                            detectors.append(iset.get_detector())
+                            formats.append(iset.get_format_class())
+                            iset_params.append(iset.params())
+                        files_to_beams[iset.get_path(0)].append(iset.get_beam())
+                    else:
+                        existing_isets_sequences.append(iset)
+
+                from dxtbx.imageset import ImageSetFactory
+                from dxtbx.model import GoniometerFactory, Scan
+
+                new_experiments = ExperimentList()
+                for i, (file, beams) in enumerate(files_to_beams.items()):
+                    n = len(beams)
+                    if self.params.geometry.scan.image_range:
+                        user_start, user_end = self.params.geometry.scan.image_range
+                        first, last = user_start, user_end
+                    else:
+                        first, last = 1, n
+                    iset_params[i].update({"lazy": False})
+                    sequence = ImageSetFactory.make_sequence(
+                        template=file,
+                        indices=list(range(first, last + 1)),
+                        format_class=formats[i],
+                        beam=beams[0],  # does not matter; updated later
+                        detector=detectors[i],
+                        goniometer=GoniometerFactory.make_goniometer(
+                            (0.0, 1.0, 0.0), (1, 0, 0, 0, 1, 0, 0, 0, 1)
+                        ),
+                        scan=Scan(image_range=(first, last), oscillation=(0.0, 0.0)),
+                        format_kwargs=iset_params[i],
+                    )
+                    sequence = self.update_lookup(sequence, lookup)  # for mask etc
+                    for j in range(len(sequence)):
+                        subset = sequence[j : j + 1]
+                        new_experiments.append(
+                            Experiment(
+                                imageset=sequence,
+                                beam=beams[j - first + 1],  # first is 1-indexed
+                                detector=sequence.get_detector(),
+                                goniometer=sequence.get_goniometer(),
+                                scan=subset.get_scan(),
+                                crystal=None,
+                            )
+                        )
+                if existing_isets_sequences:
+                    for expt in experiments:
+                        if expt.imageset in existing_isets_sequences:
+                            new_experiments.append(expt)
+                experiments = new_experiments
 
         if self.params.identifier_type:
             generate_experiment_identifiers(experiments, self.params.identifier_type)
@@ -707,7 +742,7 @@ class MetaDataUpdater:
                     assert s == d.all(), "Incompatible size"
         if params.lookup.dy is not None:
             dy_filename = params.lookup.dy
-            with open(dx_filename, "rb") as fh:
+            with open(dy_filename, "rb") as fh:
                 dy = _pickle_load(fh)
             if not isinstance(dy, tuple):
                 dy = (dy,)
@@ -727,19 +762,6 @@ class MetaDataUpdater:
             dx=Item(data=dx, filename=dx_filename),
             dy=Item(data=dy, filename=dy_filename),
         )
-
-    def convert_to_grid_scan(self, imageset_list, params):
-        """
-        Convert the imagesets to grid scans
-        """
-        if params.input.grid_size is None:
-            raise Sorry("The input.grid_size parameter is required")
-        result = []
-        for imageset in imageset_list:
-            result.append(
-                ImageGrid.from_imageset(imageset.as_imageset(), params.input.grid_size)
-            )
-        return result
 
 
 def print_sequence_diff(sequence1, sequence2, params):
@@ -784,7 +806,6 @@ def assert_single_sequence(experiments, params):
     ]
 
     if len(sequences) > 1:
-
         # Print some info about multiple sequences
         diagnose_multiple_sequences(sequences, params)
 
@@ -869,6 +890,41 @@ def do_import(
     metadata_updater = MetaDataUpdater(params)
     experiments = metadata_updater(imagesets)
 
+    # If the user has requested splitting, split - these are in human numbers
+    # so need to subtract 1 from start
+    if params.input.split:
+        if len(params.input.split) == 3:
+            split_start, split_end, step = params.input.split
+            split_start -= 1
+        elif len(params.input.split) == 1:
+            split_start = 0
+            split_end = 0
+            step = params.input.split[0]
+        else:
+            sys.exit("split=frames_per_block or split=start,end,frames_per_block")
+
+        new_experiments = ExperimentList()
+        for experiment in experiments:
+            if split_start == 0 and split_end == 0:
+                _split_start, _split_end = experiment.scan.get_image_range()
+                _split_start -= 1
+            else:
+                _split_start = split_start
+                _split_end = split_end
+
+            for chunk_start in range(_split_start, _split_end, step):
+                end = chunk_start + step
+                if end > _split_end:
+                    end = _split_end
+
+                tmp = ExperimentListFactory.from_imageset_and_crystal(
+                    experiment.imageset, crystal=None
+                )[0]
+                tmp.scan = experiment.scan[chunk_start:end]
+                tmp.imageset = experiment.imageset[chunk_start:end]
+                new_experiments.append(tmp)
+        experiments = new_experiments
+
     # Compute some numbers
     num_sweeps = 0
     num_still_sequences = 0
@@ -892,12 +948,27 @@ def do_import(
         num_images += len(e.imageset)
         counted_imagesets.append(e.imageset)
 
-    format_list = {str(e.imageset.get_format_class()) for e in experiments}
+    unique_formats = OrderedSet()
+    unique_templates = OrderedSet()
+    for imgset in counted_imagesets:
+        unique_formats.add(imgset.get_format_class())
+        if scan := imgset.get_scan():
+            start, end = scan.get_image_range()
+            unique_templates.add(f"{imgset.get_template()}:{start}:{end}")
+        else:
+            paths = imgset.reader().paths()
+            if len(paths) == 1:
+                unique_templates.add(paths[0])
+            else:
+                template, _ = template_regex_from_list(paths)
+                unique_templates.add(template)
 
     # Print out some bulk info
     logger.info("-" * 80)
-    for f in format_list:
-        logger.info("  format: %s", f)
+    for fmt in unique_formats:
+        logger.info("  format: %s", fmt)
+    for template in unique_templates:
+        logger.info("  template: %s", template)
     logger.info("  num images: %d", num_images)
     logger.info("  sequences:")
     logger.info("    still:    %d", num_still_sequences)
@@ -906,7 +977,6 @@ def do_import(
 
     # Print out info for all experiments
     for experiment in experiments:
-
         # Print some experiment info - override the output of image range
         # if appropriate
         image_range = params.geometry.scan.image_range
@@ -941,37 +1011,6 @@ def do_import(
 @show_mail_handle_errors()
 def run(args=None, *, phil=phil_scope):
     do_import(args, phil=phil, configure_logging=True)
-
-
-class ImageImporter:
-    def __init__(self, phil=phil_scope) -> None:
-        # Deprecated: Remove after August 2022
-        warnings.warn(
-            "ImageImporter class is deprecated. Please use dials.command_line.dials_import.do_import instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self._phil = phil
-
-    def import_image(self, args=None):
-        configure_logging = __name__ == "__main__"
-        return do_import(args, phil=self._phil, configure_logging=configure_logging)
-
-    @staticmethod
-    def print_sequence_diff(*args, **kwargs):
-        return print_sequence_diff(*args, **kwargs)
-
-    @staticmethod
-    def diagnose_multiple_sequences(*args, **kwargs):
-        return diagnose_multiple_sequences(*args, **kwargs)
-
-    @staticmethod
-    def write_experiments(*args, **kwargs):
-        return write_experiments(*args, **kwargs)
-
-    @staticmethod
-    def assert_single_sequence(*args, **kwargs):
-        return assert_single_sequence(*args, **kwargs)
 
 
 if __name__ == "__main__":

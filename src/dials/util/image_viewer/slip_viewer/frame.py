@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-import imp
 import math
 import os
+from importlib.machinery import SourceFileLoader
 
 import wx
 
@@ -89,9 +89,9 @@ class XrayFrame(XFBaseClass):
         ]
         self.plugins = {}
         for name in plugin_names:
-            self.plugins[name] = imp.load_source(
+            self.plugins[name] = SourceFileLoader(
                 name, os.path.join(slip_viewer_dir, name + ".py")
-            )
+            ).load_module()
         if len(plugin_names) > 0:
             print("Loaded plugins: " + ", ".join(plugin_names))
 
@@ -115,7 +115,9 @@ class XrayFrame(XFBaseClass):
         self._ring_frame = None
         self._uc_frame = None
         self._score_frame = None
-        self._plugins_frame = {key: None for key in self.plugins}
+        self._line_frame = None
+        self._ellipse_frame = None
+        self._plugins_frame = dict.fromkeys(self.plugins)
         self.zoom_frame = None
         self.plot_frame = None
 
@@ -143,6 +145,8 @@ class XrayFrame(XFBaseClass):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIRing, id=self._id_ring)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIUC, id=self._id_uc)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIScore, id=self._id_score)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUILine, id=self._id_line)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIEllipse, id=self._id_ellipse)
         for p in self.plugins:
             self.Bind(
                 wx.EVT_UPDATE_UI,
@@ -202,23 +206,24 @@ class XrayFrame(XFBaseClass):
                 lon, lat
             )
 
-            posn_str = "Picture:  fast={:.3f} / slow={:.3f} pixels.".format(
-                fast_picture,
-                slow_picture,
-            )
+            posn_str = f"Picture:  fast={fast_picture + 0.5:.3f} / slow={slow_picture + 0.5:.3f} pixels."
             coords = self.pyslip.tiles.get_flex_pixel_coordinates(lon, lat)
             if len(coords) >= 2:
                 if len(coords) == 3:
                     readout = int(round(coords[2]))
                 else:
                     readout = -1
-
+                # the dials convention is that the center of the pixel is 0.5,0.5, so the extent
+                # of the 0,0 pixel is from 0.0,0.0 to 1.0,1.0 in pixel space.  However
+                # get_flex_pixel_coordinates defines the center of the pixel as 0.0,0.0, so we
+                # are a half pixel off
+                coords[0] += 0.5
+                coords[1] += 0.5
                 coords_str = f"fast={coords[1]:.3f} / slow={coords[0]:.3f} pixels"
                 if len(coords) == 2:
                     posn_str += " Readout: " + coords_str + "."
                 elif readout >= 0:
                     posn_str += " Readout %d: %s." % (readout, coords_str)
-
                 possible_intensity = None
                 fi = self.pyslip.tiles.raw_image
                 detector = fi.get_detector()
@@ -307,6 +312,16 @@ class XrayFrame(XFBaseClass):
         item = self._actions_menu.Append(self._id_score, " ")
         self.Bind(wx.EVT_MENU, self.OnScore, source=item)
 
+        # XXX Placement
+        self._id_line = wx.NewId()
+        item = self._actions_menu.Append(self._id_line, " ")
+        self.Bind(wx.EVT_MENU, self.OnLine, source=item)
+
+        # XXX Placement
+        self._id_ellipse = wx.NewId()
+        item = self._actions_menu.Append(self._id_ellipse, " ")
+        self.Bind(wx.EVT_MENU, self.OnEllipse, source=item)
+
         self._id_plugins = {}
         for p in self.plugins:
             self._id_plugins[p] = wx.NewId()
@@ -335,7 +350,7 @@ class XrayFrame(XFBaseClass):
         if self.image_chooser.GetCount() >= self.CHOOSER_SIZE:
             self.image_chooser.Delete(0)
         i = self.image_chooser.GetCount()
-        if type(file_name_or_data) is dict:
+        if isinstance(file_name_or_data, dict):
             self.image_chooser.Insert(key, i, None)
         elif isinstance(file_name_or_data, chooser_wrapper):
             self.image_chooser.Insert(key, i, file_name_or_data)
@@ -360,7 +375,7 @@ class XrayFrame(XFBaseClass):
         # FIXME assumes all detector elements use the same millimeter-to-pixel convention
         try:
             # determine if the beam intersects one of the panels
-            panel_id, (x_mm, y_mm) = detector.get_ray_intersection(beam.get_s0())
+            panel_id, (x_mm, y_mm) = detector.get_ray_intersection(beam.get_unit_s0())
         except RuntimeError as e:
             if not ("DXTBX_ASSERT(" in str(e) and ") failure" in str(e)):
                 # unknown exception from dxtbx
@@ -370,11 +385,17 @@ class XrayFrame(XFBaseClass):
             lowest_res = 0
             for p_id, panel in enumerate(detector):
                 w, h = panel.get_image_size()
-                res = panel.get_resolution_at_pixel(beam.get_s0(), (w // 2, h // 2))
+                res = panel.get_resolution_at_pixel(beam, (w // 2, h // 2))
                 if res > lowest_res:
                     panel_id = p_id
                     lowest_res = res
-            x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_s0())
+            try:
+                x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_unit_s0())
+            except RuntimeError:
+                # cope with cases like https://github.com/dials/dials/issues/2478
+                x_mm, y_mm = detector[panel_id].get_bidirectional_ray_intersection(
+                    beam.get_s0()
+                )
 
         beam_pixel_fast, beam_pixel_slow = detector[panel_id].millimeter_to_pixel(
             (x_mm, y_mm)
@@ -573,6 +594,36 @@ class XrayFrame(XFBaseClass):
         else:
             self._score_frame.Destroy()
 
+    def OnLine(self, event):
+        from .line_frame import LineSettingsFrame
+
+        if not self._line_frame:
+            self._line_frame = LineSettingsFrame(
+                self,
+                wx.ID_ANY,
+                "Line tool",
+                style=wx.CAPTION | wx.CLOSE_BOX | wx.RESIZE_BORDER,
+            )
+            self._line_frame.Show()
+            self._line_frame.Raise()
+        else:
+            self._line_frame.Destroy()
+
+    def OnEllipse(self, event):
+        from .ellipse_frame import EllipseSettingsFrame
+
+        if not self._ellipse_frame:
+            self._ellipse_frame = EllipseSettingsFrame(
+                self,
+                wx.ID_ANY,
+                "Ellipse tool",
+                style=wx.CAPTION | wx.CLOSE_BOX | wx.RESIZE_BORDER,
+            )
+            self._ellipse_frame.Show()
+            self._ellipse_frame.Raise()
+        else:
+            self._ellipse_frame.Destroy()
+
     def OnPluginWrapper(self, p):
         def OnPlugin(event):
             if not self._plugins_frame[p]:
@@ -642,6 +693,22 @@ class XrayFrame(XFBaseClass):
             event.SetText("Hide score tool")
         else:
             event.SetText("Show score tool")
+
+    def OnUpdateUILine(self, event):
+        # Toggle the menu item text depending on the state of the tool.
+
+        if self._line_frame:
+            event.SetText("Hide line tool")
+        else:
+            event.SetText("Show line tool")
+
+    def OnUpdateUIEllipse(self, event):
+        # Toggle the menu item text depending on the state of the tool.
+
+        if self._line_frame:
+            event.SetText("Hide ellipse tool")
+        else:
+            event.SetText("Show ellipse tool")
 
     def OnUpdateUIPluginWrapper(self, p):
         def OnUpdateUIPlugin(event):
@@ -772,7 +839,7 @@ class XrayFrame(XFBaseClass):
                 row_list = range(start_y_tile, stop_y_tile)
                 y_pix_start = start_y_tile * self.pyslip.tile_size_y - y_offset
 
-                bitmap = wx.Bitmap(x2 - x1, y2 - y1)
+                bitmap = wx.Bitmap(int(x2 - x1), int(y2 - y1))
                 dc = wx.MemoryDC()
                 dc.SelectObject(bitmap)
 
@@ -781,7 +848,10 @@ class XrayFrame(XFBaseClass):
                     y_pix = y_pix_start
                     for y in row_list:
                         dc.DrawBitmap(
-                            self.pyslip.tiles.GetTile(x, y), x_pix, y_pix, False
+                            self.pyslip.tiles.GetTile(x, y),
+                            int(x_pix),
+                            int(y_pix),
+                            False,
                         )
                         y_pix += self.pyslip.tile_size_y
                     x_pix += self.pyslip.tile_size_x

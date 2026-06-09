@@ -9,7 +9,7 @@ Introduction
 Basic parameters
 ----------------
 
-.. phil:: dials.command_line.refine.phil_scope
+.. phil:: dials.command_line.refine.working_phil
    :expert-level: 0
    :attributes-level: 0
 
@@ -17,6 +17,6 @@ Basic parameters
 Full parameter definitions
 --------------------------
 
-.. phil:: dials.command_line.refine.phil_scope
+.. phil:: dials.command_line.refine.working_phil
    :expert-level: 2
    :attributes-level: 2

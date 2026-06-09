@@ -126,10 +126,12 @@ phil_scope = iotbx.phil.parse(
       .help = "Value below which reflections are removed from the dataset due"
               "to low I/sigI in either profile or summation intensity estimates"
       .expert_level = 1
-    small_scale_cutoff = 1e-9
+    small_scale_cutoff = 0.001
       .type = float
       .help = "After scaling, remove reflections with scale factors below this"
-              "value, in order to avoid reflections with negative scale factors."
+              "value, in order to avoid reflections with negative scale factors,"
+              "and to avoid reflections being greatly scaled when model parameters"
+              "refine to very low values."
       .expert_level = 3
   }
   scaling_options {
@@ -155,13 +157,23 @@ phil_scope = iotbx.phil.parse(
       .expert_level = 2
     target_model = None
       .type = path
-      .help = "Path to cif or pdb file to use to calculate target intensities for
-              scaling."
+      .help = "Path to cif or pdb file to use to calculate target intensities for"
+              "scaling."
+              "Deprecated, please use the reference= option instead."
       .expert_level = 2
     target_mtz = None
       .type = path
       .help = "Path to merged mtz file to use as a target for scaling."
+              "Deprecated, please use the reference= option instead."
       .expert_level = 2
+    reference = None
+      .type = path
+      .help = "Path to a file to use as a reference for scaling. This can be a"
+              "data file containing intensities/amplitudes (.mtz or .cif), or a"
+              "model file containing a structure that can be used to calculate"
+              "intensities (.cif or .pdb)".
+      .expert_level = 2
+    include scope dials.util.reference.reference_phil_str
     nproc = 1
       .type = int(value_min=1)
       .help = "Number of blocks to divide the data into for minimisation.
@@ -206,5 +218,6 @@ phil_scope = iotbx.phil.parse(
       .help = "Reject reflections with normalised intensities E^2 > emax^2"
       .expert_level = 2
   }
-  """
+  """,
+    process_includes=True,
 )

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import os
 import random
 
 import pytest
@@ -82,7 +81,7 @@ def experiment():
         slow_direction="-y",
         pixel_size=(0.172, 0.172),
         image_size=(2463, 2527),
-        trusted_range=(-1, 1e8),
+        trusted_range=(0, 1e8),
     )
 
     goniometer = GoniometerFactory.single_axis()
@@ -175,7 +174,6 @@ def test_assign_indices(space_group_symbol, experiment, crystal_factory):
 
 class CompareGlobalLocal:
     def __init__(self, experiment, reflections, expected_miller_indices):
-
         index_reflections_global = AssignIndicesGlobal()
         index_reflections_local = AssignIndicesLocal()
 
@@ -200,6 +198,7 @@ class CompareGlobalLocal:
         # index reflections using xds-style "local" method
         self.reflections_local = copy.deepcopy(reflections)
         self.reflections_local["id"] = flex.int(len(self.reflections_local), -1)
+        self.reflections_local["imageset_id"] = flex.int(len(self.reflections_local), 0)
         index_reflections_local(self.reflections_local, ExperimentList([experiment]))
         non_zero_sel = self.reflections_local["miller_index"] != (0, 0, 0)
         assert self.reflections_local["id"].select(~non_zero_sel).all_eq(-1)
@@ -226,16 +225,12 @@ class CompareGlobalLocal:
         )
 
 
-def test_index_reflections(dials_regression):
-    experiments_json = os.path.join(
-        dials_regression, "indexing_test_data", "i04_weak_data", "experiments.json"
+def test_index_reflections(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    experiments = load.experiment_list(
+        data_dir / "experiments.json", check_format=False
     )
-    experiments = load.experiment_list(experiments_json, check_format=False)
-    reflections = flex.reflection_table.from_file(
-        os.path.join(
-            dials_regression, "indexing_test_data", "i04_weak_data", "full.pickle"
-        )
-    )
+    reflections = flex.reflection_table.from_file(data_dir / "full.pickle")
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
     reflections["imageset_id"] = flex.int(len(reflections), 0)
@@ -250,7 +245,7 @@ def test_local_multiple_rotations(dials_data):
     """Test the fix for https://github.com/dials/dials/issues/1458"""
 
     experiments = load.experiment_list(
-        dials_data("insulin_processed", pathlib=True) / "indexed.expt",
+        dials_data("insulin_processed") / "indexed.expt",
         check_format=False,
     )
     # Override the scan range to ensure we have 4 full rotations

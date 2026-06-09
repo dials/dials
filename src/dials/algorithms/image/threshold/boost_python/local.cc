@@ -72,8 +72,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__call__", &DispersionThreshold::threshold_w_gain<double>);
 
     class_<DispersionThresholdDebug>("DispersionThresholdDebug", no_init)
-      .def(init<const af::const_ref<double, af::c_grid<2> > &,
-                const af::const_ref<bool, af::c_grid<2> > &,
+      .def(init<const af::const_ref<double, af::c_grid<2> >&,
+                const af::const_ref<bool, af::c_grid<2> >&,
                 int2,
                 double,
                 double,
@@ -85,9 +85,9 @@ namespace dials { namespace algorithms { namespace boost_python {
                       arg("n_sigma_s"),
                       arg("threshold"),
                       arg("min_count"))))
-      .def(init<const af::const_ref<double, af::c_grid<2> > &,
-                const af::const_ref<bool, af::c_grid<2> > &,
-                const af::const_ref<double, af::c_grid<2> > &,
+      .def(init<const af::const_ref<double, af::c_grid<2> >&,
+                const af::const_ref<bool, af::c_grid<2> >&,
+                const af::const_ref<double, af::c_grid<2> >&,
                 int2,
                 double,
                 double,
@@ -110,8 +110,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<DispersionExtendedThresholdDebug>("DispersionExtendedThresholdDebug",
                                              no_init)
-      .def(init<const af::const_ref<double, af::c_grid<2> > &,
-                const af::const_ref<bool, af::c_grid<2> > &,
+      .def(init<const af::const_ref<double, af::c_grid<2> >&,
+                const af::const_ref<bool, af::c_grid<2> >&,
                 int2,
                 double,
                 double,
@@ -123,9 +123,9 @@ namespace dials { namespace algorithms { namespace boost_python {
                       arg("n_sigma_s"),
                       arg("threshold"),
                       arg("min_count"))))
-      .def(init<const af::const_ref<double, af::c_grid<2> > &,
-                const af::const_ref<bool, af::c_grid<2> > &,
-                const af::const_ref<double, af::c_grid<2> > &,
+      .def(init<const af::const_ref<double, af::c_grid<2> >&,
+                const af::const_ref<bool, af::c_grid<2> >&,
+                const af::const_ref<double, af::c_grid<2> >&,
                 int2,
                 double,
                 double,

@@ -4,12 +4,12 @@ import logging.config
 import os
 import sys
 import time
-from typing import List
 
 try:
     from colorlog import ColoredFormatter
 except ImportError:
     ColoredFormatter = None
+
 
 # https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
 class DialsLogfileFormatter:
@@ -72,6 +72,10 @@ def config(verbosity=0, logfile=None):
 
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
+    dxtbx_logger = logging.getLogger("dxtbx")
+    dxtbx_logger.addHandler(console)
+    xfel_logger = logging.getLogger("xfel")
+    xfel_logger.addHandler(console)
 
     logging.captureWarnings(True)
     warning_logger = logging.getLogger("py.warnings")
@@ -87,10 +91,13 @@ def config(verbosity=0, logfile=None):
         fh.setLevel(loglevel)
         fh.setFormatter(DialsLogfileFormatter(timed=verbosity))
         dials_logger.addHandler(fh)
+        dxtbx_logger.addHandler(fh)
+        xfel_logger.addHandler(fh)
         warning_logger.addHandler(fh)
 
     dials_logger.setLevel(loglevel)
-    #   logging.getLogger("dxtbx").setLevel(logging.DEBUG)
+    dxtbx_logger.setLevel(loglevel)
+    xfel_logger.setLevel(loglevel)
     console.setLevel(loglevel)
 
     print_banner(use_logging=True)
@@ -135,7 +142,7 @@ def config_simple_cached():
     )
 
 
-def rehandle_cached_records(records: List[logging.LogRecord]) -> None:
+def rehandle_cached_records(records: list[logging.LogRecord]) -> None:
     """
     Submit cached log records to the relevant loggers for handling.
 

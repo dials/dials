@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import math
 import os
-from typing import List
 
 import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
@@ -59,10 +58,10 @@ def make_summary_table(results_summary: dict) -> tabulate:
         show_lattices = False
     for k in sorted(results_summary.keys()):
         for j, cryst in enumerate(results_summary[k]):
-            if not cryst["n_indexed"]:
+            if not cryst["n_indexed"] or not cryst["n_strong"]:
                 continue
             n_idx, n_strong = (cryst["n_indexed"], cryst["n_strong"])
-            frac_idx = f"{n_idx}/{n_strong} ({100*n_idx/n_strong:2.1f}%)"
+            frac_idx = f"{n_idx}/{n_strong} ({100 * n_idx / n_strong:2.1f}%)"
             row = [
                 cryst["Image"],
                 str(total),
@@ -80,7 +79,7 @@ def make_summary_table(results_summary: dict) -> tabulate:
     return summary_table
 
 
-def combine_results_dicts(results_summaries: List[dict]) -> dict:
+def combine_results_dicts(results_summaries: list[dict]) -> dict:
     """For a list of dictionaries, each with keys 0..n-1,
     combine into a single dictionary with keys 0..ntot-1"""
     combined_summary = {}
@@ -93,7 +92,7 @@ def combine_results_dicts(results_summaries: List[dict]) -> dict:
     return combined_summary
 
 
-def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
+def make_cluster_plots(large_clusters: list[Cluster]) -> dict:
     cluster_plots = {}
     for n, cluster in enumerate(large_clusters):
         uc_params = [flex.double() for i in range(6)]
@@ -102,24 +101,32 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
             for i in range(6):
                 uc_params[i].append(ucp[i])
         d_this = cluster_plotter.plot_uc_histograms(uc_params)
-        d_this["uc_scatter"]["layout"]["title"] += f" cluster {n+1}"
-        d_this["uc_hist"]["layout"]["title"] += f" cluster {n+1}"
+        d_this["uc_scatter"]["layout"]["title"] += f" cluster {n + 1}"
+        d_this["uc_hist"]["layout"]["title"] += f" cluster {n + 1}"
+        if "uc_angle_hist" in d_this:
+            d_this["uc_angle_hist"]["layout"]["title"] += f" cluster {n + 1}"
         d_this[f"uc_scatter_{n}"] = d_this.pop("uc_scatter")
         d_this[f"uc_hist_{n}"] = d_this.pop("uc_hist")
+        if "uc_angle_hist" in d_this:
+            d_this[f"uc_angle_hist_{n}"] = d_this.pop("uc_angle_hist")
         cluster_plots.update(d_this)
     return cluster_plots
 
 
-def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
+def report_on_crystal_clusters(crystal_symmetries, make_plots=True, threshold=5000):
     clustering = cluster_unit_cells(
         crystal_symmetries,
-        threshold=5000,
+        threshold=threshold,
     )
     cluster_plots = {}
+    large_clusters = []
     min_cluster_pc = 5
-    threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
-    large_clusters = [c for c in clustering.clusters if len(c) > threshold]
-    large_clusters.sort(key=len, reverse=True)
+    if not clustering:  # could happen e.g. if only one unit cell
+        large_clusters = [Cluster(crystal_symmetries)]
+    else:
+        threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
+        large_clusters = [c for c in clustering.clusters if len(c) > threshold]
+        large_clusters.sort(key=len, reverse=True)
 
     if large_clusters:
         logger.info(
@@ -146,12 +153,14 @@ def generate_plots(summary_data: dict) -> dict:
     rmsd_z_arrays = [np.zeros(len(summary_data))]
     n_total_indexed = np.zeros(len(summary_data))
     n_strong_array = np.zeros(len(summary_data))
-    images = np.arange(1, len(summary_data) + 1)
     n_lattices = 1
 
-    for k in sorted(summary_data.keys()):
+    sorted_keys = sorted(summary_data.keys())
+    images = np.array(sorted_keys)
+
+    for i, k in enumerate(sorted_keys):
         n_lattices_this = len(summary_data[k])
-        n_strong_array[k] = summary_data[k][0]["n_strong"]
+        n_strong_array[i] = summary_data[k][0]["n_strong"]
         for j, cryst in enumerate(summary_data[k]):
             if not cryst["n_indexed"]:
                 continue
@@ -162,11 +171,11 @@ def generate_plots(summary_data: dict) -> dict:
                     rmsd_y_arrays.append(np.zeros(len(summary_data)))
                     rmsd_z_arrays.append(np.zeros(len(summary_data)))
                 n_lattices = n_lattices_this
-            n_indexed_arrays[j][k] = cryst["n_indexed"]
-            rmsd_x_arrays[j][k] = cryst["RMSD_X"]
-            rmsd_y_arrays[j][k] = cryst["RMSD_Y"]
-            rmsd_z_arrays[j][k] = cryst["RMSD_dPsi"]
-            n_total_indexed[k] += cryst["n_indexed"]
+            n_indexed_arrays[j][i] = cryst["n_indexed"]
+            rmsd_x_arrays[j][i] = cryst["RMSD_X"]
+            rmsd_y_arrays[j][i] = cryst["RMSD_Y"]
+            rmsd_z_arrays[j][i] = cryst["RMSD_dPsi"]
+            n_total_indexed[i] += cryst["n_indexed"]
 
     n_indexed_data = [
         {
@@ -202,11 +211,16 @@ def generate_plots(summary_data: dict) -> dict:
             "name": "RMSD dPsi",
         },
     ]
+    if not rmsdz_data[0][
+        "x"
+    ]:  # e.g. if using indexer that doesn't produce an estimate of this quantity
+        rmsdz_data = []
     if n_lattices > 1:
         n_indexed_data[0]["name"] += " (lattice 1)"
         rmsd_data[0]["name"] += " (lattice 1)"
         rmsd_data[1]["name"] += " (lattice 1)"
-        rmsdz_data[0]["name"] += " (lattice 1)"
+        if rmsdz_data:
+            rmsdz_data[0]["name"] += " (lattice 1)"
         for i, arr in enumerate(n_indexed_arrays[1:]):
             sub_images = images[arr > 0]
             sub_data = arr[arr > 0]
@@ -216,7 +230,7 @@ def generate_plots(summary_data: dict) -> dict:
                     "y": sub_data.tolist(),
                     "type": "scatter",
                     "mode": "markers",
-                    "name": f"N indexed (lattice {i+2})",
+                    "name": f"N indexed (lattice {i + 2})",
                 }
             )
         for i, arr in enumerate(rmsd_x_arrays[1:]):
@@ -229,7 +243,7 @@ def generate_plots(summary_data: dict) -> dict:
                     "y": sub_data_x.tolist(),
                     "type": "scatter",
                     "mode": "markers",
-                    "name": f"RMSD X (lattice {i+2})",
+                    "name": f"RMSD X (lattice {i + 2})",
                 },
             )
             rmsd_data.append(
@@ -238,21 +252,22 @@ def generate_plots(summary_data: dict) -> dict:
                     "y": sub_data_y.tolist(),
                     "type": "scatter",
                     "mode": "markers",
-                    "name": f"RMSD Y (lattice {i+2})",
+                    "name": f"RMSD Y (lattice {i + 2})",
                 },
             )
-        for i, arr in enumerate(rmsd_z_arrays[1:]):
-            sub_images = images[arr > 0]
-            sub_data = arr[arr > 0]
-            rmsdz_data.append(
-                {
-                    "x": sub_images.tolist(),
-                    "y": sub_data.tolist(),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "name": f"RMSD dPsi (lattice {i+2})",
-                },
-            )
+        if rmsdz_data:
+            for i, arr in enumerate(rmsd_z_arrays[1:]):
+                sub_images = images[arr > 0]
+                sub_data = arr[arr > 0]
+                rmsdz_data.append(
+                    {
+                        "x": sub_images.tolist(),
+                        "y": sub_data.tolist(),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": f"RMSD dPsi (lattice {i + 2})",
+                    },
+                )
     percent_indexed = np.zeros(shape=(n_total_indexed.size,))
     sel = n_strong_array > 0
     sel_n_tot = n_total_indexed[sel]
@@ -275,10 +290,15 @@ def generate_plots(summary_data: dict) -> dict:
     def _generate_hist_data(rmsd_arrays, step=0.01):
         all_rmsd = np.concatenate(rmsd_arrays)
         all_rmsd = all_rmsd[all_rmsd > 0]
+        if len(all_rmsd) == 1:
+            return (
+                np.array([0, 1, 0]),
+                np.array([all_rmsd[0] - step, all_rmsd[0], all_rmsd[0] + step]),
+            )
         mult = int(1 / 0.01)
         start = math.floor(np.min(all_rmsd) * mult) / mult
         stop = math.ceil(np.max(all_rmsd) * mult) / mult
-        nbins = int((stop - start) / step)
+        nbins = max(1, int((stop - start) / step))
         hist, bin_edges = np.histogram(
             all_rmsd,
             bins=nbins,
@@ -289,7 +309,10 @@ def generate_plots(summary_data: dict) -> dict:
 
     hist_x, bin_centers_x = _generate_hist_data(rmsd_x_arrays)
     hist_y, bin_centers_y = _generate_hist_data(rmsd_y_arrays)
-    hist_z, bin_centers_z = _generate_hist_data(rmsd_z_arrays, 0.001)
+    if rmsdz_data:
+        hist_z, bin_centers_z = _generate_hist_data(rmsd_z_arrays, 0.001)
+    else:
+        hist_z, bin_centers_z = None, None
 
     plots = {
         "n_indexed": {
@@ -339,14 +362,18 @@ def generate_plots(summary_data: dict) -> dict:
                 "yaxis": {"title": "RMSD (px)"},
             },
         },
-        "rmsdz": {
-            "data": rmsdz_data,
-            "layout": {
-                "title": "RMSD (dPsi) per image",
-                "xaxis": {"title": "image number"},
-                "yaxis": {"title": "RMSD dPsi (deg)"},
-            },
-        },
+        "rmsdz": (
+            {
+                "data": rmsdz_data,
+                "layout": {
+                    "title": "RMSD (dPsi) per image",
+                    "xaxis": {"title": "image number"},
+                    "yaxis": {"title": "RMSD dPsi (deg)"},
+                },
+            }
+            if rmsdz_data
+            else {}
+        ),
         "rmsdxy_hist": {
             "data": [
                 {
@@ -372,21 +399,25 @@ def generate_plots(summary_data: dict) -> dict:
                 "barmode": "overlay",
             },
         },
-        "rmsdz_hist": {
-            "data": [
-                {
-                    "x": bin_centers_z.tolist(),
-                    "y": hist_z.tolist(),
-                    "type": "bar",
-                    "name": "RMSD dPsi",
+        "rmsdz_hist": (
+            {
+                "data": [
+                    {
+                        "x": bin_centers_z.tolist(),
+                        "y": hist_z.tolist(),
+                        "type": "bar",
+                        "name": "RMSD dPsi",
+                    },
+                ],
+                "layout": {
+                    "title": "Distribution of RMSDs (dPsi)",
+                    "xaxis": {"title": "RMSD dPsi (deg)"},
+                    "yaxis": {"title": "Number of images"},
+                    "bargap": 0,
                 },
-            ],
-            "layout": {
-                "title": "Distribution of RMSDs (dPsi)",
-                "xaxis": {"title": "RMSD dPsi (deg)"},
-                "yaxis": {"title": "Number of images"},
-                "bargap": 0,
-            },
-        },
+            }
+            if rmsdz_data
+            else {}
+        ),
     }
     return plots

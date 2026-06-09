@@ -1,0 +1,1 @@
+``dials.export format=mtz/mmcif``: Use calculated xdet and ydet positions for output to be consistent with other programs

@@ -24,7 +24,7 @@ namespace dials { namespace model {
 
   namespace detail {
 
-    inline bool lessthan(const vec3<int> &a, const vec3<int> &b) {
+    inline bool lessthan(const vec3<int>& a, const vec3<int>& b) {
       return (
         a[0] < b[0]
           ? true
@@ -58,8 +58,8 @@ namespace dials { namespace model {
      * @param mask The pixel mask
      */
     PixelList(int frame,
-              const af::const_ref<int, af::c_grid<2> > &image,
-              const af::const_ref<bool, af::c_grid<2> > &mask) {
+              const af::const_ref<int, af::c_grid<2> >& image,
+              const af::const_ref<bool, af::c_grid<2> >& mask) {
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 
       frame_ = frame;
@@ -89,8 +89,8 @@ namespace dials { namespace model {
      * @param mask The pixel mask
      */
     PixelList(int frame,
-              const af::const_ref<double, af::c_grid<2> > &image,
-              const af::const_ref<bool, af::c_grid<2> > &mask) {
+              const af::const_ref<double, af::c_grid<2> >& image,
+              const af::const_ref<bool, af::c_grid<2> >& mask) {
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 
       frame_ = frame;
@@ -179,7 +179,7 @@ namespace dials { namespace model {
      * Add a pixel list
      * @param pixel_list The pixel list
      */
-    void add(const PixelList &pixel_list) {
+    void add(const PixelList& pixel_list) {
       // Check the frame number
       if (last_frame_ == first_frame_) {
         first_frame_ = pixel_list.frame();

@@ -1,4 +1,5 @@
 """Definition of systematic absences check algorithm."""
+
 from __future__ import annotations
 
 import logging
@@ -16,7 +17,7 @@ logger = logging.getLogger("dials")
 
 
 def run_systematic_absences_checks(
-    experiments, merged_reflections, significance_level=0.95
+    experiments, merged_reflections, significance_level=0.95, method="direct"
 ):
     """Check for systematic absences in the data for the laue group.
 
@@ -34,12 +35,12 @@ def run_systematic_absences_checks(
 
     # Score the screw axes.
     screw_axes, screw_axis_scores = score_screw_axes(
-        laue_groups[laue_group], merged_reflections, significance_level
+        laue_groups[laue_group], merged_reflections, significance_level, method
     )
 
     logger.info(
-        "%s",
-        tabulate(
+        f"Scoring method: {method}\n"
+        + tabulate(
             [
                 [
                     a.name,
