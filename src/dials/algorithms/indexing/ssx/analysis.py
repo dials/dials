@@ -189,14 +189,14 @@ def generate_plots(summary_data: dict) -> dict:
     rmsd_data = [
         {
             "x": images[rmsd_x_arrays[0] > 0].tolist(),
-            "y": rmsd_x_arrays[0][rmsd_x_arrays[0] > 0].tolist(),
+            "y": [round(e, 3) for e in rmsd_x_arrays[0][rmsd_x_arrays[0] > 0].tolist()],
             "type": "scatter",
             "mode": "markers",
             "name": "RMSD X",
         },
         {
             "x": images[rmsd_y_arrays[0] > 0].tolist(),
-            "y": rmsd_y_arrays[0][rmsd_y_arrays[0] > 0].tolist(),
+            "y": [round(e, 3) for e in rmsd_y_arrays[0][rmsd_y_arrays[0] > 0].tolist()],
             "type": "scatter",
             "mode": "markers",
             "name": "RMSD Y",
@@ -205,7 +205,7 @@ def generate_plots(summary_data: dict) -> dict:
     rmsdz_data = [
         {
             "x": images[rmsd_z_arrays[0] > 0].tolist(),
-            "y": rmsd_z_arrays[0][rmsd_z_arrays[0] > 0].tolist(),
+            "y": [round(e, 3) for e in rmsd_z_arrays[0][rmsd_z_arrays[0] > 0].tolist()],
             "type": "scatter",
             "mode": "markers",
             "name": "RMSD dPsi",
@@ -240,7 +240,7 @@ def generate_plots(summary_data: dict) -> dict:
             rmsd_data.append(
                 {
                     "x": sub_images.tolist(),
-                    "y": sub_data_x.tolist(),
+                    "y": [round(e, 3) for e in sub_data_x.tolist()],
                     "type": "scatter",
                     "mode": "markers",
                     "name": f"RMSD X (lattice {i + 2})",
@@ -249,7 +249,7 @@ def generate_plots(summary_data: dict) -> dict:
             rmsd_data.append(
                 {
                     "x": sub_images.tolist(),
-                    "y": sub_data_y.tolist(),
+                    "y": [round(e, 3) for e in sub_data_y.tolist()],
                     "type": "scatter",
                     "mode": "markers",
                     "name": f"RMSD Y (lattice {i + 2})",
@@ -262,7 +262,7 @@ def generate_plots(summary_data: dict) -> dict:
                 rmsdz_data.append(
                     {
                         "x": sub_images.tolist(),
-                        "y": sub_data.tolist(),
+                        "y": [round(e, 3) for e in sub_data.tolist()],
                         "type": "scatter",
                         "mode": "markers",
                         "name": f"RMSD dPsi (lattice {i + 2})",
@@ -327,7 +327,7 @@ def generate_plots(summary_data: dict) -> dict:
             "data": [
                 {
                     "x": images,
-                    "y": percent_indexed.tolist(),
+                    "y": [round(e, 3) for e in percent_indexed.tolist()],
                     "type": "scatter",
                     "mode": "markers",
                     "name": "Percentage of strong spots indexed",

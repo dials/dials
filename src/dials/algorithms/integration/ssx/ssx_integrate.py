@@ -203,7 +203,7 @@ class OutputAggregator:
                     (
                         {
                             "x": n,
-                            "y": I_over_sigma,
+                            "y": [round(e, 3) for e in I_over_sigma],
                             "type": "scatter",
                             "mode": "markers",
                         }
@@ -259,14 +259,14 @@ class OutputAggregator:
                 "data": [
                     {
                         "x": n,
-                        "y": overall_rmsd,
+                        "y": [round(e, 3) for e in overall_rmsd],
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Initial 2D rmsd of strong spots",
                     },
                     {
                         "x": n,
-                        "y": overall_rmsd_preprocessed,
+                        "y": [round(e, 3) for e in overall_rmsd_preprocessed],
                         "type": "scatter",
                         "mode": "markers",
                         "name": "2D rmsd after preprocess",
@@ -295,7 +295,7 @@ class OutputAggregator:
                 data_angular.append(
                     {
                         "x": n,
-                        "y": list(v),
+                        "y": [round(e, 3) for e in v],
                         "type": "scatter",
                         "mode": "markers",
                         "name": k,
@@ -306,7 +306,7 @@ class OutputAggregator:
                 data.append(
                     {
                         "x": n,
-                        "y": list(v),
+                        "y": [round(e, 3) for e in v],
                         "type": "scatter",
                         "mode": "markers",
                         "name": k,

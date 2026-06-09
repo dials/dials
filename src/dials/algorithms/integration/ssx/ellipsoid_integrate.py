@@ -255,28 +255,28 @@ class EllipsoidOutputAggregator(OutputAggregator):
                 "data": [
                     {
                         "x": n,
-                        "y": initial_rmsds_x,
+                        "y": [round(e, 3) for e in initial_rmsds_x],
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Initial rmsd_x",
                     },
                     {
                         "x": n,
-                        "y": final_rmsds_x,
+                        "y": [round(e, 3) for e in final_rmsds_x],
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Final rmsd_x",
                     },
                     {
                         "x": n,
-                        "y": initial_rmsds_y,
+                        "y": [round(e, 3) for e in initial_rmsds_y],
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Initial rmsd_y",
                     },
                     {
                         "x": n,
-                        "y": final_rmsds_y,
+                        "y": [round(e, 3) for e in final_rmsds_y],
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Final rmsd_y",
@@ -293,7 +293,7 @@ class EllipsoidOutputAggregator(OutputAggregator):
                     (
                         {
                             "x": list(bins),
-                            "y": list(hist),
+                            "y": [round(e, 3) for e in hist],
                             "type": "scatter",
                             "mode": "markers",
                         }
