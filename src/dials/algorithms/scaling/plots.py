@@ -371,7 +371,7 @@ def plot_absorption_parameters(physical_model):
     if param_esds:
         d["absorption_parameters"]["data"][-1]["error_y"] = {
             "type": "data",
-            "array": list(param_esds),
+            "array": round_for_json(list(param_esds)),
         }
 
     light_grey = "#d3d3d3"
@@ -634,7 +634,7 @@ x-axis.""",
     d["absorption_corrections"] = {
         "data": [
             {
-                "x": list(hist.slot_centers()),
+                "x": round_for_json(hist.slot_centers()),
                 "y": list(hist.slots()),
                 "type": "bar",
                 "name": "Applied absorption corrections",
