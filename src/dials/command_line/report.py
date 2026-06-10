@@ -615,7 +615,7 @@ ice rings, or poor spot-finding parameters.
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(H.transpose().tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "n_unindexed",
                         "colorbar": {
@@ -654,7 +654,7 @@ ice rings, or poor spot-finding parameters.
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(H.transpose().tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "n_indexed",
                         "colorbar": {
