@@ -348,7 +348,9 @@ class Statistics:
                 "line": {"width": 3},
             }
         )
-        rd_data.append({"x": x, "y": list(self.rd), "type": "scatter", "name": "Rd"})
+        rd_data.append(
+            {"x": x, "y": round_for_json(self.rd), "type": "scatter", "name": "Rd"}
+        )
 
         anomalous = self.intensities.anomalous_flag()
         completeness_data.append(

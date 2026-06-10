@@ -849,9 +849,9 @@ def normal_probability_plot(data, label=None):
         key: {
             "data": [
                 {
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": z.transpose().tolist(),
+                    "x": round_for_json(xedges.tolist()),
+                    "y": round_for_json(yedges.tolist()),
+                    "z": round_for_json(z.transpose().tolist()),
                     "type": "heatmap",
                     "name": "normalised deviations",
                     "colorbar": {

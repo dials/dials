@@ -378,14 +378,14 @@ def generate_plots(summary_data: dict) -> dict:
         "rmsdxy_hist": {
             "data": [
                 {
-                    "x": bin_centers_x.tolist(),
+                    "x": round_for_json(bin_centers_x.tolist()),
                     "y": hist_x.tolist(),
                     "type": "bar",
                     "name": "RMSD X",
                     "opacity": 0.6,
                 },
                 {
-                    "x": bin_centers_y.tolist(),
+                    "x": round_for_json(bin_centers_y.tolist()),
                     "y": hist_y.tolist(),
                     "type": "bar",
                     "name": "RMSD Y",
@@ -404,7 +404,7 @@ def generate_plots(summary_data: dict) -> dict:
             {
                 "data": [
                     {
-                        "x": bin_centers_z.tolist(),
+                        "x": round_for_json(bin_centers_z.tolist(), ndigits=4),
                         "y": hist_z.tolist(),
                         "type": "bar",
                         "name": "RMSD dPsi",

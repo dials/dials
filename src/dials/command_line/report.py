@@ -410,15 +410,15 @@ incorrectly.
             d["scan_varying_orientation"]["data"].extend(
                 [
                     {
-                        "x": ori["phi"],
-                        "y": ori["phi1"],
+                        "x": round_for_json(ori["phi"]),
+                        "y": round_for_json(ori["phi1"]),
                         "type": "scatter",
                         "name": "Φ1 (°)",
                         "marker": {"color": next(colors)},
                     },
                     {
-                        "x": ori["phi"],
-                        "y": ori["phi2"],
+                        "x": round_for_json(ori["phi"]),
+                        "y": round_for_json(ori["phi2"]),
                         "type": "scatter",
                         "name": "Φ2 (°)",
                         "xaxis": "x2",
@@ -426,8 +426,8 @@ incorrectly.
                         "marker": {"color": next(colors)},
                     },
                     {
-                        "x": ori["phi"],
-                        "y": ori["phi3"],
+                        "x": round_for_json(ori["phi"]),
+                        "y": round_for_json(ori["phi3"]),
                         "type": "scatter",
                         "name": "Φ3 (°)",
                         "xaxis": "x3",
@@ -613,8 +613,8 @@ ice rings, or poor spot-finding parameters.
             "n_unindexed_vs_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
                         "z": H.transpose().tolist(),
                         "type": "heatmap",
                         "name": "n_unindexed",
@@ -823,9 +823,9 @@ class CentroidAnalyser:
                 "data": [
                     {
                         "name": "centroid_differences_x",
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z1.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": round_for_json(z1.transpose().tolist()),
                         "type": "heatmap",
                         "colorbar": {
                             "title": "Difference in X position (pixels)",
@@ -846,9 +846,9 @@ class CentroidAnalyser:
                 "data": [
                     {
                         "name": "centroid_differences_y",
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z2.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": round_for_json(z2.transpose().tolist()),
                         "type": "heatmap",
                         "colorbar": {
                             "title": "Difference in Y position (pixels)",
@@ -891,9 +891,9 @@ class CentroidAnalyser:
             "centroid_differences_z": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": round_for_json(H.transpose().tolist()),
                         "type": "heatmap",
                         "name": "centroid_differences_z",
                         "colorbar": {
@@ -1103,8 +1103,8 @@ class CentroidAnalyser:
             "residuals_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
                         "z": Hxy.transpose().tolist(),
                         "name": "density",
                         "colorscale": "Hot",
@@ -1114,7 +1114,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": list(histx.slot_centers()),
+                        "x": round_for_json(histx.slot_centers()),
                         "y": list(histx.slots()),
                         "name": "dx histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1122,7 +1122,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": list(histy.slot_centers()),
+                        "y": round_for_json(histy.slot_centers()),
                         "x": list(histy.slots()),
                         "name": "dy histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1140,8 +1140,8 @@ class CentroidAnalyser:
             d["residuals_zy"] = {
                 "data": [
                     {
-                        "x": zedges.tolist(),
-                        "y": yedges.tolist(),
+                        "x": round_for_json(zedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
                         "z": Hzy.transpose().tolist(),
                         "name": "density",
                         "colorscale": "Hot",
@@ -1151,7 +1151,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": list(histz.slot_centers()),
+                        "x": round_for_json(histz.slot_centers()),
                         "y": list(histz.slots()),
                         "name": "dz histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1159,7 +1159,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": list(histy.slot_centers()),
+                        "y": round_for_json(histy.slot_centers()),
                         "x": list(histy.slots()),
                         "name": "dy histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1176,8 +1176,8 @@ class CentroidAnalyser:
             d["residuals_xz"] = {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": zedges.tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(zedges.tolist()),
                         "z": Hxz.transpose().tolist(),
                         "name": "density",
                         "colorscale": "Hot",
@@ -1187,7 +1187,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": list(histx.slot_centers()),
+                        "x": round_for_json(histx.slot_centers()),
                         "y": list(histx.slots()),
                         "name": "dx histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1195,7 +1195,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": list(histz.slot_centers()),
+                        "y": round_for_json(histz.slot_centers()),
                         "x": list(histz.slots()),
                         "name": "dz histogram",
                         "marker": {"color": "rgb(102,0,0)"},
