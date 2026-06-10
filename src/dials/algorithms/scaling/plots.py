@@ -470,9 +470,9 @@ def plot_absorption_plots(physical_model, reflection_table=None):
             counter += 1
     d["absorption_surface"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": round_for_json(Intensity.T.tolist(), ndigits=4),
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
@@ -508,9 +508,9 @@ corresponds to the laboratory x-axis.
 
     d["undiffracted_absorption_surface"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(undiffracted_intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": round_for_json(undiffracted_intensity.T.tolist(), ndigits=4),
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
@@ -683,8 +683,8 @@ def plot_outliers(data):
         "outliers_vs_z": {
             "data": [
                 {
-                    "x": list(hist.slot_centers()),
-                    "y": list(hist.slots()),
+                    "x": round_for_json(list(hist.slot_centers()), ndigits=4),
+                    "y": round_for_json(list(hist.slots()), ndigits=4),
                     "type": "bar",
                     "name": "outliers vs rotation",
                 }

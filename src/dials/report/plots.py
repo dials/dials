@@ -671,7 +671,9 @@ class ResolutionPlotsAndStats:
                             "title": "R<sub>split</sub> vs resolution",
                             "xaxis": {
                                 "title": "Resolution (Å)",
-                                "tickvals": d_star_sq_tickvals,
+                                "tickvals": round_for_json(
+                                    d_star_sq_tickvals, ndigits=6
+                                ),
                                 "ticktext": d_star_sq_ticktext,
                             },
                             "yaxis": {
@@ -1134,8 +1136,8 @@ class AnomalousPlotter:
                 "data": [
                     (
                         {
-                            "x": list(d_star_sq_acentric),
-                            "y": correl_ratios_acentric,
+                            "x": round_for_json(d_star_sq_acentric, ndigits=6),
+                            "y": round_for_json(correl_ratios_acentric),
                             "type": "lines",
                             "name": "Anomalous correlation ratio (acentric)",
                         }
@@ -1144,8 +1146,8 @@ class AnomalousPlotter:
                     ),
                     (
                         {
-                            "x": list(d_star_sq_centric),
-                            "y": correl_ratios_centric,
+                            "x": round_for_json(d_star_sq_centric, ndigits=6),
+                            "y": round_for_json(correl_ratios_centric),
                             "type": "lines",
                             "name": "Anomalous correlation ratio (centric)",
                         }
@@ -1157,7 +1159,7 @@ class AnomalousPlotter:
                     "title": "Anomalous R.M.S. correlation ratio (acentric reflections)",
                     "xaxis": {
                         "title": "Resolution (Å)",
-                        "tickvals": tickvals,
+                        "tickvals": round_for_json(tickvals, ndigits=6),
                         "ticktext": ticktext,
                     },
                     "yaxis": {"anchor": "x", "title": "rms correlation ratio"},
@@ -1280,9 +1282,9 @@ https://doi.org/10.1107/S0907444905036693
             plotname: {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist(), ndigits=4),
+                        "y": round_for_json(yedges.tolist(), ndigits=4),
+                        "z": round_for_json(z.transpose().tolist(), ndigits=4),
                         "type": "heatmap",
                         "name": "normalised deviations",
                         "colorbar": {
@@ -1414,7 +1416,7 @@ def cc_half_plot(
             "title": "CC<sub>½</sub> vs resolution",
             "xaxis": {
                 "title": "Resolution (Å)",
-                "tickvals": d_star_sq_tickvals,
+                "tickvals": round_for_json(d_star_sq_tickvals, ndigits=6),
                 "ticktext": d_star_sq_ticktext,
             },
             "yaxis": {
