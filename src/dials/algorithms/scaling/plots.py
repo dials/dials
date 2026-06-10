@@ -14,7 +14,7 @@ from dxtbx import flumpy
 from scitbx import math as scitbxmath
 
 from dials.array_family import flex
-from dials.util import round_for_json
+from dials.util.plotly_utils import round_for_json
 from dials_scaling_ext import calc_lookup_index, calc_theta_phi
 
 
