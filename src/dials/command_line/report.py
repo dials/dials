@@ -1910,7 +1910,7 @@ class ReferenceProfileAnalyser:
             "n_reference_profiles_vs_z": {
                 "data": [
                     {
-                        "x": round_for_json(hist.slot_centers()),
+                        "x": round_for_json(list(hist.slot_centers())),
                         "y": list(hist.slots()),
                         "type": "bar",
                         "name": "n_reference_profiles",
@@ -1934,8 +1934,8 @@ class ReferenceProfileAnalyser:
             f"{filename}_correlations_histogram": {
                 "data": [
                     {
-                        "x": round_for_json(hist.slot_centers()),
-                        "y": hist.slots(),
+                        "x": round_for_json(list(hist.slot_centers())),
+                        "y": list(hist.slots()),
                         "type": "bar",
                         "name": f"{filename}_correlations",
                     }

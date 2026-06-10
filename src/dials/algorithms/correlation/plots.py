@@ -242,8 +242,8 @@ def to_plotly_json(
         "data": [
             {
                 "name": "%s_matrix" % matrix_type,
-                "x": round_for_json(range(D.shape[0]), ndigits=4),
-                "y": round_for_json(range(D.shape[1]), ndigits=4),
+                "x": round_for_json(list(range(D.shape[0])), ndigits=4),
+                "y": round_for_json(list(range(D.shape[1])), ndigits=4),
                 "z": round_for_json(D.tolist(), ndigits=4),
                 "type": "heatmap",
                 "colorbar": {
