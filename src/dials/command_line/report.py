@@ -825,7 +825,7 @@ class CentroidAnalyser:
                         "name": "centroid_differences_x",
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(z1.transpose().tolist()),
+                        "z": [round_for_json(e) for e in z1.transpose().tolist()],
                         "type": "heatmap",
                         "colorbar": {
                             "title": "Difference in X position (pixels)",
@@ -848,7 +848,7 @@ class CentroidAnalyser:
                         "name": "centroid_differences_y",
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(z2.transpose().tolist()),
+                        "z": [round_for_json(e) for e in z2.transpose().tolist()],
                         "type": "heatmap",
                         "colorbar": {
                             "title": "Difference in Y position (pixels)",
