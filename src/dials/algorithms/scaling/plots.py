@@ -192,7 +192,10 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
         }
     )
     if parameter_esds:
-        data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
+        data[-1]["error_y"] = {
+            "type": "data",
+            "array": round_for_json(list(parameter_esds)),
+        }
     return data
 
 
@@ -307,7 +310,10 @@ def plot_smooth_scales(physical_model):
             }
         )
         if parameter_esds:
-            data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
+            data[-1]["error_y"] = {
+                "type": "data",
+                "array": round_for_json(list(parameter_esds)),
+            }
 
         data = _add_decay_model_scales_to_data(
             physical_model, data, yaxis="y", resolution=3.0
@@ -472,7 +478,7 @@ def plot_absorption_plots(physical_model, reflection_table=None):
         {
             "x": round_for_json(azimuth_ * 180.0 / np.pi),
             "y": round_for_json(polar_ * 180.0 / np.pi),
-            "z": round_for_json(Intensity.T.tolist(), ndigits=4),
+            "z": [round_for_json(e, ndigits=4) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
@@ -510,7 +516,7 @@ corresponds to the laboratory x-axis.
         {
             "x": round_for_json(azimuth_ * 180.0 / np.pi),
             "y": round_for_json(polar_ * 180.0 / np.pi),
-            "z": round_for_json(undiffracted_intensity.T.tolist(), ndigits=4),
+            "z": [round_for_json(e, ndigits=4) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
@@ -580,7 +586,7 @@ x-axis.""",
         {
             "x": round_for_json(azimuth_ * 180.0 / np.pi),
             "y": round_for_json(polar_ * 180.0 / np.pi),
-            "z": round_for_json(Intensity.T.tolist(), ndigits=4),
+            "z": [round_for_json(e, ndigits=4) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "showscale": False,
@@ -611,7 +617,7 @@ x-axis.""",
         {
             "x": round_for_json(azimuth_ * 180.0 / np.pi),
             "y": round_for_json(polar_ * 180.0 / np.pi),
-            "z": round_for_json(Intensity.T.tolist(), ndigits=4),
+            "z": [round_for_json(e, ndigits=4) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "showscale": False,
