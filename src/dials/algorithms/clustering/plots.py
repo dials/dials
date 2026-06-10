@@ -37,9 +37,9 @@ def heatmap_unit_cell_scatter_plots(uc_params, nbins=100, mask_zeros=True):
     return {
         "data": [
             {
-                "x": x1.tolist(),
-                "y": y1.tolist(),
-                "z": z1.tolist(),
+                "x": round_for_json(x1.tolist(), ndigits=6),
+                "y": round_for_json(y1.tolist(), ndigits=6),
+                "z": round_for_json(z1.tolist(), ndigits=6),
                 "type": "heatmap",
                 "mode": "markers",
                 "name": "a vs. b",
