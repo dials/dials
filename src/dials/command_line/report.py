@@ -893,7 +893,7 @@ class CentroidAnalyser:
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(H.transpose().tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "centroid_differences_z",
                         "colorbar": {
@@ -1105,7 +1105,7 @@ class CentroidAnalyser:
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": Hxy.transpose().tolist(),
+                        "z": [round_for_json(e) for e in Hxy.transpose().tolist()],
                         "name": "density",
                         "colorscale": "Hot",
                         "reversescale": True,
@@ -1142,7 +1142,7 @@ class CentroidAnalyser:
                     {
                         "x": round_for_json(zedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": Hzy.transpose().tolist(),
+                        "z": [round_for_json(e) for e in Hzy.transpose().tolist()],
                         "name": "density",
                         "colorscale": "Hot",
                         "reversescale": True,
@@ -1178,7 +1178,7 @@ class CentroidAnalyser:
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(zedges.tolist()),
-                        "z": Hxz.transpose().tolist(),
+                        "z": [round_for_json(e) for e in Hxz.transpose().tolist()],
                         "name": "density",
                         "colorscale": "Hot",
                         "reversescale": True,
@@ -1334,9 +1334,9 @@ class IntensityAnalyser:
             f"i_over_sigma_{intensity_type}_vs_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in z.transpose().tolist()],
                         "zmin": -1,
                         "zauto": False,
                         "type": "heatmap",
@@ -1373,7 +1373,7 @@ class IntensityAnalyser:
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(H.transpose().tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "i_over_sigma",
                         "colorbar": {
@@ -1453,7 +1453,7 @@ class IntensityAnalyser:
                         "name": "qe_map",
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(z1.transpose().tolist()),
+                        "z": [round_for_json(e) for e in z1.transpose().tolist()],
                         "type": "heatmap",
                         "colorbar": {"title": "QE", "titleside": "right"},
                         "colorscale": "Viridis",
@@ -1881,7 +1881,7 @@ class ReferenceProfileAnalyser:
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(H.transpose().tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "n_reference_profiles",
                         "colorbar": {
@@ -1976,7 +1976,7 @@ class ReferenceProfileAnalyser:
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(z.transpose().tolist()),
+                        "z": [round_for_json(e) for e in z.transpose().tolist()],
                         "type": "heatmap",
                         "name": f"{filename}_correlations",
                         "colorbar": {
@@ -2014,7 +2014,7 @@ class ReferenceProfileAnalyser:
                     {
                         "x": round_for_json(xedges.tolist()),
                         "y": round_for_json(yedges.tolist()),
-                        "z": round_for_json(H.transpose().tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": f"{filename}_correlations",
                         "colorbar": {
@@ -2060,9 +2060,9 @@ class ReferenceProfileAnalyser:
             f"{filename}_correlations_vs_ios": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": f"{filename}_correlations",
                         "colorbar": {
