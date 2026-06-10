@@ -25,6 +25,7 @@ from dials.algorithms.profile_model.ellipsoid.refiner import (
     BadSpotForIntegrationException,
 )
 from dials.constants import FULL_PARTIALITY
+from dials.util.plotly_utils import round_for_json
 
 
 class ToFewReflections(Exception):
@@ -255,28 +256,28 @@ class EllipsoidOutputAggregator(OutputAggregator):
                 "data": [
                     {
                         "x": n,
-                        "y": [round(e, 3) for e in initial_rmsds_x],
+                        "y": round_for_json(initial_rmsds_x),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Initial rmsd_x",
                     },
                     {
                         "x": n,
-                        "y": [round(e, 3) for e in final_rmsds_x],
+                        "y": round_for_json(final_rmsds_x),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Final rmsd_x",
                     },
                     {
                         "x": n,
-                        "y": [round(e, 3) for e in initial_rmsds_y],
+                        "y": round_for_json(initial_rmsds_y),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Initial rmsd_y",
                     },
                     {
                         "x": n,
-                        "y": [round(e, 3) for e in final_rmsds_y],
+                        "y": round_for_json(final_rmsds_y),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Final rmsd_y",
@@ -293,7 +294,7 @@ class EllipsoidOutputAggregator(OutputAggregator):
                     (
                         {
                             "x": list(bins),
-                            "y": [round(e, 3) for e in hist],
+                            "y": round_for_json(hist),
                             "type": "scatter",
                             "mode": "markers",
                         }

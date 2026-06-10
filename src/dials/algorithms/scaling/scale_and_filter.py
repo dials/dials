@@ -8,6 +8,7 @@ from libtbx import phil
 from scitbx.array_family import flex
 
 from dials.report.plots import d_star_sq_to_d_ticks
+from dials.util.plotly_utils import round_for_json
 
 phil_scope = phil.parse(
     """
@@ -244,7 +245,7 @@ def make_filtering_merging_stats_plots(merging_stats):
         "cc_one_half_vs_cycle": {
             "data": [
                 {
-                    "y": [round(e, 3) for e in overall_ccs],
+                    "y": round_for_json(overall_ccs),
                     "x": list(range(1, n_datasets + 1)),
                     "type": "scatter",
                     "mode": "lines",
@@ -259,7 +260,7 @@ def make_filtering_merging_stats_plots(merging_stats):
         "r_pim_vs_cycle": {
             "data": [
                 {
-                    "y": [round(e, 3) for e in overall_rpim],
+                    "y": round_for_json(overall_rpim),
                     "x": list(range(1, n_datasets + 1)),
                     "type": "scatter",
                     "mode": "lines",
@@ -274,7 +275,7 @@ def make_filtering_merging_stats_plots(merging_stats):
         "i_over_sigma_vs_cycle": {
             "data": [
                 {
-                    "y": [round(e, 3) for e in overall_ioversigma],
+                    "y": round_for_json(overall_ioversigma),
                     "x": list(range(1, n_datasets + 1)),
                     "type": "scatter",
                     "mode": "lines",
@@ -289,7 +290,7 @@ def make_filtering_merging_stats_plots(merging_stats):
         "completeness_vs_cycle": {
             "data": [
                 {
-                    "y": [round(e, 3) for e in overall_completeness],
+                    "y": round_for_json(overall_completeness),
                     "x": list(range(1, n_datasets + 1)),
                     "type": "scatter",
                     "mode": "lines",
@@ -312,8 +313,8 @@ def make_filtering_merging_stats_plots(merging_stats):
             "cc_one_half_filter": {
                 "data": [
                     {
-                        "x": [round(e, 3) for e in resolution],  # d_star_sq
-                        "y": [round(e, 3) for e in cc_one_half_bins],
+                        "x": round_for_json(resolution),  # d_star_sq
+                        "y": round_for_json(cc_one_half_bins),
                         "type": "scatter",
                         "name": legends[0],
                         "mode": "lines",
@@ -337,8 +338,8 @@ def make_filtering_merging_stats_plots(merging_stats):
             "r_pim_filter": {
                 "data": [
                     {
-                        "x": [round(e, 3) for e in resolution],  # d_star_sq
-                        "y": [round(e, 3) for e in r_pim_bins],
+                        "x": round_for_json(resolution),  # d_star_sq
+                        "y": round_for_json(r_pim_bins),
                         "type": "scatter",
                         "name": legends[0],
                         "mode": "lines",
@@ -368,8 +369,8 @@ def make_filtering_merging_stats_plots(merging_stats):
             "r_merge_filter": {
                 "data": [
                     {
-                        "x": [round(e, 3) for e in resolution],  # d_star_sq
-                        "y": [round(e, 3) for e in r_merge_bins],
+                        "x": round_for_json(resolution),  # d_star_sq
+                        "y": round_for_json(r_merge_bins),
                         "type": "scatter",
                         "name": legends[0],
                         "mode": "lines",
@@ -401,8 +402,8 @@ def make_filtering_merging_stats_plots(merging_stats):
         resolution = [1.0 / x**2 for x in stats["d_min"]]
         d["cc_one_half_filter"]["data"].append(
             {
-                "x": [round(e, 3) for e in resolution],  # d_star_sq
-                "y": [round(e, 3) for e in cc_one_half_bins],
+                "x": round_for_json(resolution),  # d_star_sq
+                "y": round_for_json(cc_one_half_bins),
                 "type": "scatter",
                 "name": legends[c + 1],
                 "line": {"color": colors[c + 1]},
@@ -410,8 +411,8 @@ def make_filtering_merging_stats_plots(merging_stats):
         )
         d["r_pim_filter"]["data"].append(
             {
-                "x": [round(e, 3) for e in resolution],  # d_star_sq
-                "y": [round(e, 3) for e in r_pim_bins],
+                "x": round_for_json(resolution),  # d_star_sq
+                "y": round_for_json(r_pim_bins),
                 "type": "scatter",
                 "name": legends[c + 1],
                 "line": {"color": colors[c + 1]},
@@ -419,8 +420,8 @@ def make_filtering_merging_stats_plots(merging_stats):
         )
         d["r_merge_filter"]["data"].append(
             {
-                "x": [round(e, 3) for e in resolution],  # d_star_sq
-                "y": [round(e, 3) for e in r_merge_bins],
+                "x": round_for_json(resolution),  # d_star_sq
+                "y": round_for_json(r_merge_bins),
                 "type": "scatter",
                 "name": legends[c + 1],
                 "line": {"color": colors[c + 1]},
@@ -442,7 +443,7 @@ def make_histogram_plots(cycle_results):
         "mean_cc_one_half_vs_cycle": {
             "data": [
                 {
-                    "y": [round(e, 3) for e in overall_mean_ccs],
+                    "y": round_for_json(overall_mean_ccs),
                     "x": list(range(1, n + 1)),
                     "type": "scatter",
                     "mode": "lines",
@@ -524,7 +525,9 @@ def make_per_dataset_plot(delta_cchalf_i):
         "per_dataset_plot": {
             "data": [
                 {
-                    "y": [round(i * 100, 3) for i in list(delta_cchalf_i.values())],
+                    "y": round_for_json(
+                        [i * 100 for i in list(delta_cchalf_i.values())]
+                    ),
                     "x": list(delta_cchalf_i.keys()),
                     "type": "scatter",
                     "mode": "lines",

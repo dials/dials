@@ -23,6 +23,7 @@ from dials.array_family import flex
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
+from dials.util.plotly_utils import round_for_json
 
 RAD2DEG = 180 / math.pi
 
@@ -187,18 +188,17 @@ class ScanVaryingCrystalAnalyser:
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
-            a = [round(i, ndigits=3) for i in aa]
-            b = [round(i, ndigits=3) for i in bb]
-            c = [round(i, ndigits=3) for i in cc]
-            aa = [round(i, ndigits=3) for i in aa]
-            bb = [round(i, ndigits=3) for i in bb]
-            cc = [round(i, ndigits=3) for i in cc]
+            a = round_for_json(aa)
+            b = round_for_json(bb)
+            c = round_for_json(cc)
+            aa = round_for_json(aa)
+            bb = round_for_json(bb)
+            cc = round_for_json(cc)
             start, stop = scan.get_array_range()
-            phi = [
-                round(scan.get_angle_from_array_index(t), ndigits=3)
-                for t in range(start, stop + 1)
-            ]
-            vol = [round(e.volume(), ndigits=3) for e in cells]
+            phi = round_for_json(
+                [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
+            )
+            vol = round_for_json([e.volume() for e in cells])
             cell_dat = {
                 "phi": phi,
                 "a": a,
@@ -964,22 +964,22 @@ class CentroidAnalyser:
             "centroid_mean_differences_vs_phi": {
                 "data": [
                     {
-                        "x": [round(e, 3) for e in phi],
-                        "y": [round(e, 3) for e in mean_residuals_x],
+                        "x": round_for_json(phi),
+                        "y": round_for_json(mean_residuals_x),
                         "type": "scatter",
                         "name": "mean_dx",
                     },
                     {
-                        "x": [round(e, 3) for e in phi],
-                        "y": [round(e, 3) for e in mean_residuals_y],
+                        "x": round_for_json(phi),
+                        "y": round_for_json(mean_residuals_y),
                         "type": "scatter",
                         "name": "mean_dy",
                         "xaxis": "x2",
                         "yaxis": "y2",
                     },
                     {
-                        "x": [round(e, 3) for e in phi],
-                        "y": [round(e, 3) for e in mean_residuals_phi],
+                        "x": round_for_json(phi),
+                        "y": round_for_json(mean_residuals_phi),
                         "type": "scatter",
                         "name": "mean_dphi",
                         "xaxis": "x3",
@@ -999,22 +999,22 @@ class CentroidAnalyser:
             "centroid_rmsd_vs_phi": {
                 "data": [
                     {
-                        "x": [round(e, 3) for e in phi],
-                        "y": [round(e, 3) for e in rmsd_x],
+                        "x": round_for_json(phi),
+                        "y": round_for_json(rmsd_x),
                         "type": "scatter",
                         "name": "rmsd_dx",
                     },
                     {
-                        "x": [round(e, 3) for e in phi],
-                        "y": [round(e, 3) for e in rmsd_y],
+                        "x": round_for_json(phi),
+                        "y": round_for_json(rmsd_y),
                         "type": "scatter",
                         "name": "rmsd_dy",
                         "xaxis": "x2",
                         "yaxis": "y2",
                     },
                     {
-                        "x": [round(e, 3) for e in phi],
-                        "y": [round(e, 3) for e in rmsd_phi],
+                        "x": round_for_json(phi),
+                        "y": round_for_json(rmsd_phi),
                         "type": "scatter",
                         "name": "rmsd_dphi",
                         "xaxis": "x3",
@@ -1844,8 +1844,8 @@ class ReferenceProfileAnalyser:
             "reflection_cc_vs_resolution": {
                 "data": [
                     {
-                        "x": [round(e, 3) for e in d_star_sq_bins],  # d_star_sq
-                        "y": [round(e, 3) for e in ccs],
+                        "x": round_for_json(d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(ccs),
                         "type": "scatter",
                         "name": "profile_correlation",
                     }

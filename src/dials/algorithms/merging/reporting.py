@@ -27,6 +27,7 @@ from dials.report.analysis import (
 )
 from dials.report.plots import d_star_sq_to_d_ticks
 from dials.util import tabulate
+from dials.util.plotly_utils import round_for_json
 
 logger = logging.getLogger("dials")
 
@@ -270,7 +271,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         data["dF"]["dano"]["data"].append(
             {
                 "x": d_star_sq_bins,
-                "y": [round(e, 3) for e in dFsdF],
+                "y": round_for_json(dFsdF),
                 "type": "scatter",
                 "name": "\u03bb" + f"={wave:.4f}",
             }

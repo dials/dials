@@ -14,6 +14,7 @@ from dxtbx import flumpy
 from scitbx import math as scitbxmath
 
 from dials.array_family import flex
+from dials.util import round_for_json
 from dials_scaling_ext import calc_lookup_index, calc_theta_phi
 
 
@@ -100,7 +101,7 @@ def plot_relative_Bs(relative_Bs):
             "data": [
                 {
                     "x": list(range(0, len(relative_Bs))),
-                    "y": [round(e, 3) for e in relative_Bs],
+                    "y": round_for_json(relative_Bs),
                     "type": "scatter",
                     "name": "Relative B-factor per dataset",
                     "mode": "markers",
@@ -171,8 +172,8 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
 
     data.append(
         {
-            "x": [round(e, 3) for e in sample_values],
-            "y": [round(e, 3) for e in sample_scales],
+            "x": round_for_json(sample_values),
+            "y": round_for_json(sample_scales),
             "type": "line",
             "name": "smoothly-varying <br>scale correction",
             "xaxis": "x",
@@ -181,8 +182,8 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
     )
     data.append(
         {
-            "x": [round(e, 3) for e in smoother_phis],
-            "y": [round(e, 3) for e in parameters],
+            "x": round_for_json(smoother_phis),
+            "y": round_for_json(parameters),
             "type": "scatter",
             "mode": "markers",
             "name": "smoothly-varying <br>scale parameters",
@@ -286,8 +287,8 @@ def plot_smooth_scales(physical_model):
 
         data.append(
             {
-                "x": [round(e, 3) for e in sample_values],
-                "y": [round(e, 3) for e in np.log(sample_scales) * 2.0],
+                "x": round_for_json(sample_values),
+                "y": round_for_json(np.log(sample_scales) * 2.0),
                 "type": "line",
                 "name": "smoothly-varying <br>B-factor correction",
                 "xaxis": "x",
@@ -296,8 +297,8 @@ def plot_smooth_scales(physical_model):
         )
         data.append(
             {
-                "x": [round(e, 3) for e in smoother_phis],
-                "y": [round(e, 3) for e in parameters],
+                "x": round_for_json(smoother_phis),
+                "y": round_for_json(parameters),
                 "type": "scatter",
                 "mode": "markers",
                 "name": "smoothly-varying <br>B-factor parameters",
@@ -345,7 +346,7 @@ def plot_absorption_parameters(physical_model):
             "data": [
                 {
                     "x": [i + 0.5 for i in range(len(params))],
-                    "y": [round(e, 3) for e in params],
+                    "y": round_for_json(params),
                     "type": "scatter",
                     "name": "absorption parameters",
                     "xaxis": "x",
@@ -721,7 +722,7 @@ def error_model_variance_plot(data, label=None):
             "data": [
                 {
                     "x": x,
-                    "y": [round(e, 3) for e in initial_variances][::-1],
+                    "y": round_for_json(initial_variances[::-1]),
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -730,7 +731,7 @@ def error_model_variance_plot(data, label=None):
                 },
                 {
                     "x": x,
-                    "y": [round(e, 3) for e in bin_variances][::-1],
+                    "y": round_for_json(bin_variances[::-1]),
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -778,15 +779,15 @@ def error_regression_plot(data, label=None):
         key: {
             "data": [
                 {
-                    "x": [round(e, 3) for e in x],
-                    "y": [round(e, 3) for e in y],
+                    "x": round_for_json(x),
+                    "y": round_for_json(y),
                     "type": "scatter",
                     "mode": "markers",
                     "name": "expected vs observed",
                 },
                 {
-                    "x": [round(e, 3) for e in x],
-                    "y": [round(e, 3) for e in fit],
+                    "x": round_for_json(x),
+                    "y": round_for_json(fit),
                     "type": "scatter",
                     "name": "best least-squares fit",
                 },
@@ -886,14 +887,14 @@ the line due to wide tails of the distribution.
         key_hist: {
             "data": [
                 {
-                    "x": [round(e, 3) for e in histy.slot_centers()],
+                    "x": round_for_json(histy.slot_centers()),
                     "y": list(histy.slots()),
                     "type": "bar",
                     "name": "dataset normalised deviations",
                 },
                 {
-                    "x": [round(e, 3) for e in histy.slot_centers()],
-                    "y": [round(e, 3) for e in gaussian],
+                    "x": round_for_json(histy.slot_centers()),
+                    "y": round_for_json(gaussian),
                     "type": "scatter",
                     "name": "Ideal normal distribution",
                 },

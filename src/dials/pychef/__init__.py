@@ -8,6 +8,7 @@ from iotbx.data_plots import table_data
 from libtbx import phil
 
 from dials.util import resolution_analysis
+from dials.util.plotly_utils import round_for_json
 from dials_pychef_ext import ChefStatistics, Observations
 
 __all__ = [
@@ -332,7 +333,7 @@ class Statistics:
         scp_data.append(
             {
                 "x": x,
-                "y": [round(e, 3) for e in self.scp],
+                "y": round_for_json(self.scp),
                 "type": "scatter",
                 "name": "Scp overall",
                 "line": {"width": 3},
@@ -341,7 +342,7 @@ class Statistics:
         rcp_data.append(
             {
                 "x": x,
-                "y": [round(e, 3) for e in self.rcp],
+                "y": round_for_json(self.rcp),
                 "type": "scatter",
                 "name": "Rcp overall",
                 "line": {"width": 3},
@@ -353,7 +354,7 @@ class Statistics:
         completeness_data.append(
             {
                 "x": x,
-                "y": [round(e, 3) for e in self.ieither_comp_overall],
+                "y": round_for_json(self.ieither_comp_overall),
                 "type": "scatter",
                 "name": "I",
                 "line": {"width": 3},
@@ -363,7 +364,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": [round(e, 3) for e in self.iboth_comp_overall],
+                    "y": round_for_json(self.iboth_comp_overall),
                     "type": "scatter",
                     "name": "dI",
                     "line": {"width": 3},
@@ -372,7 +373,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": [round(e, 3) for e in self.iplus_comp_overall],
+                    "y": round_for_json(self.iplus_comp_overall),
                     "type": "scatter",
                     "name": "I+",
                     "line": {"width": 3},
@@ -381,7 +382,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": [round(e, 3) for e in self.iminus_comp_overall],
+                    "y": round_for_json(self.iminus_comp_overall),
                     "type": "scatter",
                     "name": "I-",
                     "line": {"width": 3},
@@ -396,7 +397,7 @@ class Statistics:
                 scp_data.append(
                     {
                         "x": x,
-                        "y": [round(e, 3) for e in self.scp_bins[j : j + 1, :].as_1d()],
+                        "y": round_for_json(self.scp_bins[j : j + 1, :].as_1d()),
                         "type": "scatter",
                         "name": "Scp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -405,7 +406,7 @@ class Statistics:
                 rcp_data.append(
                     {
                         "x": x,
-                        "y": [round(e, 3) for e in self.rcp_bins[j : j + 1, :].as_1d()],
+                        "y": round_for_json(self.rcp_bins[j : j + 1, :].as_1d()),
                         "type": "scatter",
                         "name": "Rcp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -415,10 +416,9 @@ class Statistics:
                 completeness_data.append(
                     {
                         "x": x,
-                        "y": [
-                            round(e, 3)
-                            for e in self.ieither_comp_bins[j : j + 1, :].as_1d()
-                        ],
+                        "y": round_for_json(
+                            self.ieither_comp_bins[j : j + 1, :].as_1d()
+                        ),
                         "type": "scatter",
                         "name": "I" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},

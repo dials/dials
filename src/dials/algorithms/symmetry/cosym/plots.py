@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from dials.util.plotly_utils import round_for_json
+
 
 def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
     coord_x = coords[:, dim1]
@@ -32,8 +34,8 @@ def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
         isel = np.where(labels == k)[0]
         data.append(
             {
-                "x": [round(e, 3) for e in coord_x[isel].tolist()],
-                "y": [round(e, 3) for e in coord_y[isel].tolist()],
+                "x": round_for_json(coord_x[isel].tolist()),
+                "y": round_for_json(coord_y[isel].tolist()),
                 "mode": "markers",
                 "type": "scatter",
                 "marker": {

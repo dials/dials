@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dials.util.plotly_utils import round_for_json
+
 
 def color_axis_data(name, miller_axis_vals):
     """Generate a sequence for coloring the datapoints for a screw axis."""
@@ -26,7 +28,7 @@ def plot_screw_axes(screw_axes_data):
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),
-                            "y": [round(e, 3) for e in data["i_over_sigma"]],
+                            "y": round_for_json(data["i_over_sigma"]),
                             "type": "scatter",
                             "name": name,
                             "xaxis": "x",
@@ -71,7 +73,7 @@ def plot_screw_axes(screw_axes_data):
                     "data": [
                         {
                             "x": list(range(len(y))),
-                            "y": [round(e, 3) for e in y],
+                            "y": round_for_json(y),
                             "type": "scatter",
                             "name": "Fourier amplitudes",
                             "xaxis": "x",
@@ -138,7 +140,7 @@ are indicated by vertical lines.""",
                     "data": [
                         {
                             "x": list(data["miller_axis_vals"]),
-                            "y": [round(e, 3) for e in data["intensities"]],
+                            "y": round_for_json(data["intensities"]),
                             "type": "scatter",
                             "name": "intensity",
                             "xaxis": "x",
@@ -153,7 +155,7 @@ are indicated by vertical lines.""",
                         },
                         {
                             "x": list(data["miller_axis_vals"]),
-                            "y": [round(e, 3) for e in data["sigmas"]],
+                            "y": round_for_json(data["sigmas"]),
                             "type": "scatter",
                             "name": "sigma",
                             "xaxis": "x",
