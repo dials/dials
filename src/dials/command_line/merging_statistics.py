@@ -139,6 +139,10 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
                 for ma in miller_arrays:
                     if ma.info().labels == ["I", "SIGI"]:
                         intensities = ma
+                    elif ma.info().labels == ["I", "SigI"]:
+                        intensities = ma
+                    elif ma.info().labels == ["IOBS", "SIGIOBS"]:
+                        intensities = ma
                     elif ma.info().labels == ["I(+)", "SIGI(+)", "I(-)", "SIGI(-)"]:
                         intensities = ma
                 if not intensities:
