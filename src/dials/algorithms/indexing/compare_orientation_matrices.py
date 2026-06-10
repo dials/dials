@@ -6,7 +6,9 @@ from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 
-def difference_rotation_matrix_axis_angle(crystal_a, crystal_b, target_angle=0):
+def difference_rotation_matrix_axis_angle(
+    crystal_a, crystal_b, target_angle=0, ops=None
+):
     from cctbx import sgtbx
 
     # assert crystal_a.get_space_group() == crystal_b.get_space_group()
@@ -16,7 +18,10 @@ def difference_rotation_matrix_axis_angle(crystal_a, crystal_b, target_angle=0):
     best_axis = None
     best_angle = 1e8
     # iterate over space group ops to find smallest differences
-    for i_op, op in enumerate(space_group.build_derived_laue_group().all_ops()):
+    if ops is None:
+        ops = space_group.build_derived_laue_group().all_ops()
+
+    for i_op, op in enumerate(ops):
         if op.r().determinant() < 0:
             continue
         elif not op.t().is_zero():
