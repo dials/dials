@@ -228,8 +228,8 @@ def _add_decay_model_scales_to_data(model, data, yaxis="y", resolution=3.0):
         s = decay_SF.calculate_scales()
     data.append(
         {
-            "x": list(sample_values),
-            "y": list(s),
+            "x": round_for_json(sample_values),
+            "y": round_for_json(s, ndigits=4),
             "type": "line",
             "name": f"Decay scale factor <br>at {resolution} Angstrom",
             "xaxis": "x",
@@ -578,9 +578,9 @@ x-axis.""",
 
     d["vector_directions"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": round_for_json(Intensity.T.tolist(), ndigits=4),
             "type": "heatmap",
             "colorscale": "Viridis",
             "showscale": False,
@@ -609,9 +609,9 @@ x-axis.""",
 
     d["vector_directions"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": round_for_json(Intensity.T.tolist(), ndigits=4),
             "type": "heatmap",
             "colorscale": "Viridis",
             "showscale": False,
@@ -658,8 +658,8 @@ def plot_outliers(data):
         "outlier_xy_positions": {
             "data": [
                 {
-                    "x": data["x"],
-                    "y": data["y"],
+                    "x": round_for_json(data["x"], ndigits=2),
+                    "y": round_for_json(data["y"], ndigits=2),
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -947,9 +947,9 @@ def plot_array_modulation_plot(array_model):
         "array_modulation_plot": {
             "data": [
                 {
-                    "x": list(x_vals),
-                    "y": list(y_vals),
-                    "z": list(z),
+                    "x": round_for_json(x_vals, ndigits=4),
+                    "y": round_for_json(y_vals, ndigits=4),
+                    "z": round_for_json(z, ndigits=4),
                     "type": "heatmap",
                     "colorscale": "Viridis",
                 }
@@ -1027,9 +1027,9 @@ def plot_array_absorption_plot(array_model):
         "array_absorption_plot": {
             "data": [
                 {
-                    "x": list(xs),
-                    "y": list(ys),
-                    "z": list(z),
+                    "x": round_for_json(xs, ndigits=4),
+                    "y": round_for_json(ys, ndigits=4),
+                    "z": round_for_json(z, ndigits=4),
                     "type": "heatmap",
                     "colorscale": "Viridis",
                 }
@@ -1091,9 +1091,9 @@ def plot_array_decay_plot(array_model):
         "array_decay_plot": {
             "data": [
                 {
-                    "x": list(x),
-                    "y": list(y),
-                    "z": list(z),
+                    "x": round_for_json(x, ndigits=4),
+                    "y": round_for_json(y, ndigits=4),
+                    "z": round_for_json(z, ndigits=4),
                     "type": "heatmap",
                     "colorscale": "Viridis",
                 }
