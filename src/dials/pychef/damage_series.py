@@ -143,8 +143,8 @@ class DamageSeriesPlots:
             ]
             plots_dict["r_pim"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.r_pim for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.r_pim for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",
@@ -152,8 +152,8 @@ class DamageSeriesPlots:
             )
             plots_dict["cc_half"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.cc_one_half for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.cc_one_half for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",
@@ -161,8 +161,8 @@ class DamageSeriesPlots:
             )
             plots_dict["i_over_sigma"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.i_over_sigma_mean for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.i_over_sigma_mean for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",
@@ -170,8 +170,8 @@ class DamageSeriesPlots:
             )
             plots_dict["completeness"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.completeness for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.completeness for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",
