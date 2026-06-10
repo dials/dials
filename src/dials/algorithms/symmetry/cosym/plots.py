@@ -97,7 +97,7 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram", min_x=-1, bins=100
         key: {
             "data": [
                 {
-                    "x": bin_centers.tolist(),
+                    "x": round_for_json(bin_centers.tolist()),
                     "y": hist.tolist(),
                     "type": "bar",
                     "name": "Rij histogram",

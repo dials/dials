@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from dials.util.plotly_utils import round_for_json
+
 
 def flex_double_as_string(flex_array, n_digits=None):
     if n_digits is not None:
@@ -296,7 +298,7 @@ def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None, help
         data.append(
             {
                 "x": x,
-                "y": y,
+                "y": round_for_json(y, ndigits=6),
                 "marker": {"color": colors.get(color_list[k])},
                 "mode": "lines",
             }
