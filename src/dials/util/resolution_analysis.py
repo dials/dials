@@ -506,6 +506,7 @@ def plot_result(metric, result):
         d_star_sq_tickvals, d_star_sq_ticktext = plots.d_star_sq_to_d_ticks(
             result.d_star_sq, 5
         )
+        d_star_sq_tickvals = round_for_json(d_star_sq_tickvals, ndigits=6)
         return {
             "data": [
                 {

@@ -617,6 +617,8 @@ class ResolutionPlotsAndStats:
         self.d_star_sq_tickvals, self.d_star_sq_ticktext = d_star_sq_to_d_ticks(
             self.d_star_sq_bins, nticks=5
         )
+        self.d_star_sq_tickvals = round_for_json(self.d_star_sq_tickvals, ndigits=6)
+
         self.is_centric = is_centric
 
     def make_all_plots(self, cc_one_half_method=None):
@@ -1335,13 +1337,14 @@ def cc_half_plot(
     d_min=None,
 ):
     d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(d_star_sq, nticks=5)
+    d_star_sq_tickvals = round_for_json(d_star_sq_tickvals, ndigits=6)
     min_y = min([cc if cc is not None else 0 for cc in cc_half] + [0])
     if cc_anom:
         min_y = min([min_y, min([cc if cc is not None else 0 for cc in cc_anom])])
     return {
         "data": [
             {
-                "x": round_for_json(d_star_sq),
+                "x": round_for_json(d_star_sq, ndigits=6),
                 "y": round_for_json(cc_half),
                 "type": "scatter",
                 "name": "CC<sub>½</sub>",
@@ -1350,7 +1353,7 @@ def cc_half_plot(
             },
             (
                 {
-                    "x": round_for_json(d_star_sq),
+                    "x": round_for_json(d_star_sq, ndigits=6),
                     "y": round_for_json(cc_half_critical_values),
                     "type": "scatter",
                     "name": "CC<sub>½</sub> critical value (p=0.01)",
@@ -1361,7 +1364,7 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": round_for_json(d_star_sq),
+                    "x": round_for_json(d_star_sq, ndigits=6),
                     "y": round_for_json(cc_anom),
                     "type": "scatter",
                     "name": "CC-anom",
@@ -1373,7 +1376,7 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": round_for_json(d_star_sq),
+                    "x": round_for_json(d_star_sq, ndigits=6),
                     "y": round_for_json(cc_anom_critical_values),
                     "type": "scatter",
                     "name": "CC-anom critical value (p=0.01)",
@@ -1385,7 +1388,7 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": round_for_json(d_star_sq),
+                    "x": round_for_json(d_star_sq, ndigits=6),
                     "y": round_for_json(cc_half_fit),
                     "type": "scatter",
                     "name": "CC<sub>½</sub> fit",

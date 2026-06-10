@@ -270,7 +270,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         )
         data["dF"]["dano"]["data"].append(
             {
-                "x": d_star_sq_bins,
+                "x": round_for_json(d_star_sq_bins, ndigits=6),
                 "y": round_for_json(dFsdF),
                 "type": "scatter",
                 "name": "\u03bb" + f"={wave:.4f}",
@@ -280,7 +280,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         return data
     data["dF"]["dano"]["data"].append(
         {
-            "x": d_star_sq_bins,
+            "x": round_for_json(d_star_sq_bins, ndigits=6),
             "y": [0.8] * len(d_star_sq_bins),
             "type": "scatter",
             "mode": "lines",
@@ -289,7 +289,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
     )
     data["dF"]["dano"]["data"].append(
         {
-            "x": d_star_sq_bins,
+            "x": round_for_json(d_star_sq_bins, ndigits=6),
             "y": [1.2] * len(d_star_sq_bins),
             "type": "scatter",
             "mode": "lines",
@@ -301,7 +301,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         "title": "<|ΔF|/σ(ΔF)> vs resolution",
         "xaxis": {
             "title": "Resolution (Å)",
-            "tickvals": d_star_sq_tickvals,
+            "tickvals": round_for_json(d_star_sq_tickvals, ndigits=6),
             "ticktext": d_star_sq_ticktext,
         },
         "yaxis": {"title": "<|ΔF|/σ(ΔF)>", "rangemode": "tozero"},
