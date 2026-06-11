@@ -343,7 +343,7 @@ def generate_plots(summary_data: dict) -> dict:
         "percent_indexed_hist": {
             "data": [
                 {
-                    "x": percent_bins.tolist(),
+                    "x": round_for_json(percent_bins.tolist()),
                     "y": percent_hist.tolist(),
                     "type": "bar",
                 }
