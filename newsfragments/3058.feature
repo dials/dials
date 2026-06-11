@@ -1,1 +1,1 @@
-Add Biso and program DOIs to mmcif output
+Add Biso and program DOIs to mmcif output.

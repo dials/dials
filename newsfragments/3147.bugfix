@@ -1,1 +1,1 @@
-``dials.integrate``: use ``max_memory_usage=None`` to guarantee the value of ``nproc`` will be respected.
+``dials.integrate``: Added ``max_memory_usage=None`` to guarantee the value of ``nproc=`` will be respected.

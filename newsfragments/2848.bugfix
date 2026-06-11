@@ -1,1 +1,1 @@
-``dials.find_spots``: fix the chunk size calculation to actually be correct rather than always leaving a little remainder.
+``dials.find_spots``: Fix the chunk size calculation to avoid always leaving a little remainder.

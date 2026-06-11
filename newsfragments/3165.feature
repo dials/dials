@@ -1,1 +1,1 @@
-Add support for custom sorting of LCLS data in dials.stills_process
+``dials.stills_process``: Add support for custom sorting of LCLS data.

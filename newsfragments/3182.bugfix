@@ -1,1 +1,1 @@
-``dials.export format=mmcif``: Fix crash on ssx data introduced in #3131
+``dials.export format=mmcif``: Fix crash on ssx data introduced in #3131.
