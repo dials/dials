@@ -163,7 +163,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
                 {
                     "x": round_for_json(xedges.tolist()),
                     "y": round_for_json(yedges.tolist()),
-                    "z": round_for_json(z.transpose().tolist()),
+                    "z": [round_for_json(e) for e in z.transpose().tolist()],
                     "type": "heatmap",
                     "name": "Isigma distribution",
                     "colorbar": {
@@ -1284,7 +1284,7 @@ https://doi.org/10.1107/S0907444905036693
                     {
                         "x": round_for_json(xedges.tolist(), ndigits=4),
                         "y": round_for_json(yedges.tolist(), ndigits=4),
-                        "z": round_for_json(z.transpose().tolist(), ndigits=4),
+                        "z": [round_for_json(e) for e in z.transpose().tolist()],
                         "type": "heatmap",
                         "name": "normalised deviations",
                         "colorbar": {
