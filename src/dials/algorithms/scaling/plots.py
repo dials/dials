@@ -634,7 +634,7 @@ x-axis.""",
     d["absorption_corrections"] = {
         "data": [
             {
-                "x": round_for_json(hist.slot_centers()),
+                "x": round_for_json(hist.slot_centers(), ndigits=5),
                 "y": list(hist.slots()),
                 "type": "bar",
                 "name": "Applied absorption corrections",
