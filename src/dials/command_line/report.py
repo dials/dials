@@ -1114,7 +1114,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": round_for_json(histx.slot_centers()),
+                        "x": round_for_json(histx.slot_centers(), ndigits=4),
                         "y": list(histx.slots()),
                         "name": "dx histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1122,7 +1122,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": round_for_json(histy.slot_centers()),
+                        "y": round_for_json(histy.slot_centers(), ndigits=4),
                         "x": list(histy.slots()),
                         "name": "dy histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1151,7 +1151,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": round_for_json(histz.slot_centers()),
+                        "x": round_for_json(histz.slot_centers(), ndigits=4),
                         "y": list(histz.slots()),
                         "name": "dz histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1159,7 +1159,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": round_for_json(histy.slot_centers()),
+                        "y": round_for_json(histy.slot_centers(), ndigits=4),
                         "x": list(histy.slots()),
                         "name": "dy histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1187,7 +1187,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": round_for_json(histx.slot_centers()),
+                        "x": round_for_json(histx.slot_centers(), ndigits=4),
                         "y": list(histx.slots()),
                         "name": "dx histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1195,7 +1195,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": round_for_json(histz.slot_centers()),
+                        "y": round_for_json(histz.slot_centers(), ndigits=4),
                         "x": list(histz.slots()),
                         "name": "dz histogram",
                         "marker": {"color": "rgb(102,0,0)"},
