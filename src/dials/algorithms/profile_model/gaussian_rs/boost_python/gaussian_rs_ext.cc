@@ -219,7 +219,7 @@ namespace dials { namespace algorithms { namespace profile_model {
           (arg("bbox"),
            arg("margin_min") = 3,
            arg("margin_max") = 16,
-           arg("min_added_volume") = 4096),
+           arg("min_added_volume") = 3600),
           "Inflate x/y extents of bounding boxes by a margin targeting a minimum pixel "
           "volume.");
 

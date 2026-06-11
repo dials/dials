@@ -516,7 +516,7 @@ class Model(ProfileModelExt):
                 margin_range = bbox_params.margin_range
         else:
             sigma_b_multiplier = 1.0
-            min_added_volume = 4096
+            min_added_volume = 3600
             margin_range = 3, 16
 
         assert sigma_b_multiplier >= 1.0

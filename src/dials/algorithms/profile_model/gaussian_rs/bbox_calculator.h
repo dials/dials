@@ -418,7 +418,7 @@ namespace dials { namespace algorithms { namespace profile_model {
     af::shared<int6> inflate_bboxes(const af::const_ref<int6>& bbox,
                                     int margin_min = 3,
                                     int margin_max = 16,
-                                    int min_added_volume = 4096) {
+                                    int min_added_volume = 3600) {
       DIALS_ASSERT(margin_min >= 0);
       DIALS_ASSERT(margin_max >= margin_min);
       DIALS_ASSERT(min_added_volume > 0);
