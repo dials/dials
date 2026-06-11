@@ -188,12 +188,12 @@ class ScanVaryingCrystalAnalyser:
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
-            a = round_for_json(aa)
-            b = round_for_json(bb)
-            c = round_for_json(cc)
-            aa = round_for_json(aa)
-            bb = round_for_json(bb)
-            cc = round_for_json(cc)
+            a = round_for_json(a, ndigits=4)
+            b = round_for_json(b, ndigits=4)
+            c = round_for_json(c, ndigits=4)
+            aa = round_for_json(aa, ndigits=4)
+            bb = round_for_json(bb, ndigits=4)
+            cc = round_for_json(cc, ndigits=4)
             start, stop = scan.get_array_range()
             phi = round_for_json(
                 [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
