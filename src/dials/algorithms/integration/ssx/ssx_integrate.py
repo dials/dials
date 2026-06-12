@@ -307,7 +307,7 @@ class OutputAggregator:
                 data.append(
                     {
                         "x": n,
-                        "y": round_for_json(v),
+                        "y": round_for_json(v, ndigits=6),
                         "type": "scatter",
                         "mode": "markers",
                         "name": k,
