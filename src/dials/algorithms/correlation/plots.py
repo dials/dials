@@ -8,6 +8,7 @@ import numpy as np
 from scipy.cluster import hierarchy
 
 from dials.algorithms.clustering.plots import scipy_dendrogram_to_plotly_json
+from dials.util.plotly_utils import round_for_json
 
 
 def linkage_matrix_to_dict(linkage_matrix: np.ndarray) -> OrderedDict:
@@ -241,9 +242,9 @@ def to_plotly_json(
         "data": [
             {
                 "name": "%s_matrix" % matrix_type,
-                "x": list(range(D.shape[0])),
-                "y": list(range(D.shape[1])),
-                "z": D.tolist(),
+                "x": round_for_json(list(range(D.shape[0])), ndigits=4),
+                "y": round_for_json(list(range(D.shape[1])), ndigits=4),
+                "z": round_for_json(D.tolist(), ndigits=4),
                 "type": "heatmap",
                 "colorbar": {
                     "title": (

@@ -11,6 +11,7 @@ from dxtbx.format.FormatMultiImage import FormatMultiImage
 
 import dials.extensions
 from dials.array_family import flex
+from dials.util.plotly_utils import round_for_json
 
 
 def generate_html_report(plots_data, filename):
@@ -203,7 +204,7 @@ class OutputAggregator:
                     (
                         {
                             "x": n,
-                            "y": I_over_sigma,
+                            "y": round_for_json(I_over_sigma),
                             "type": "scatter",
                             "mode": "markers",
                         }
@@ -259,14 +260,14 @@ class OutputAggregator:
                 "data": [
                     {
                         "x": n,
-                        "y": overall_rmsd,
+                        "y": round_for_json(overall_rmsd),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Initial 2D rmsd of strong spots",
                     },
                     {
                         "x": n,
-                        "y": overall_rmsd_preprocessed,
+                        "y": round_for_json(overall_rmsd_preprocessed),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "2D rmsd after preprocess",
@@ -295,7 +296,7 @@ class OutputAggregator:
                 data_angular.append(
                     {
                         "x": n,
-                        "y": list(v),
+                        "y": round_for_json(v, ndigits=6),
                         "type": "scatter",
                         "mode": "markers",
                         "name": k,
@@ -306,7 +307,7 @@ class OutputAggregator:
                 data.append(
                     {
                         "x": n,
-                        "y": list(v),
+                        "y": round_for_json(v, ndigits=6),
                         "type": "scatter",
                         "mode": "markers",
                         "name": k,
