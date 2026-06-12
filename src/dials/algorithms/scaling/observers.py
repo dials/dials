@@ -239,7 +239,7 @@ def _make_scaling_html(scaling_script):
     if json_file:
         logger.info("Writing html report data to %s", json_file)
         with open(json_file, "w", encoding="utf-8") as outfile:
-            json.dump(data, outfile)
+            json.dump(data, outfile, indent=2)
 
 
 def make_scaling_model_plots(experiments, reflection_tables):

@@ -333,7 +333,7 @@ class Statistics:
         scp_data.append(
             {
                 "x": x,
-                "y": round_for_json(self.scp),
+                "y": round_for_json(self.scp, ndigits=4),
                 "type": "scatter",
                 "name": "Scp overall",
                 "line": {"width": 3},
@@ -342,21 +342,26 @@ class Statistics:
         rcp_data.append(
             {
                 "x": x,
-                "y": round_for_json(self.rcp),
+                "y": round_for_json(self.rcp, ndigits=4),
                 "type": "scatter",
                 "name": "Rcp overall",
                 "line": {"width": 3},
             }
         )
         rd_data.append(
-            {"x": x, "y": round_for_json(self.rd), "type": "scatter", "name": "Rd"}
+            {
+                "x": x,
+                "y": round_for_json(self.rd, ndigits=4),
+                "type": "scatter",
+                "name": "Rd",
+            }
         )
 
         anomalous = self.intensities.anomalous_flag()
         completeness_data.append(
             {
                 "x": x,
-                "y": round_for_json(self.ieither_comp_overall),
+                "y": round_for_json(self.ieither_comp_overall, ndigits=4),
                 "type": "scatter",
                 "name": "I",
                 "line": {"width": 3},
@@ -366,7 +371,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": round_for_json(self.iboth_comp_overall),
+                    "y": round_for_json(self.iboth_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "dI",
                     "line": {"width": 3},
@@ -375,7 +380,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": round_for_json(self.iplus_comp_overall),
+                    "y": round_for_json(self.iplus_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "I+",
                     "line": {"width": 3},
@@ -384,7 +389,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": round_for_json(self.iminus_comp_overall),
+                    "y": round_for_json(self.iminus_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "I-",
                     "line": {"width": 3},
@@ -399,7 +404,9 @@ class Statistics:
                 scp_data.append(
                     {
                         "x": x,
-                        "y": round_for_json(self.scp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.scp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "Scp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -408,7 +415,9 @@ class Statistics:
                 rcp_data.append(
                     {
                         "x": x,
-                        "y": round_for_json(self.rcp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.rcp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "Rcp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -419,7 +428,7 @@ class Statistics:
                     {
                         "x": x,
                         "y": round_for_json(
-                            self.ieither_comp_bins[j : j + 1, :].as_1d()
+                            self.ieither_comp_bins[j : j + 1, :].as_1d(), ndigits=4
                         ),
                         "type": "scatter",
                         "name": "I" + bin_range_suffix,
