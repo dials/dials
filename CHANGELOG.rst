@@ -1,3 +1,44 @@
+DIALS 3.29.0 (2026-06-12)
+=========================
+
+Features
+--------
+
+- Add Biso and program DOIs to mmcif output. (`#3058 <https://github.com/dials/dials/issues/3058>`_)
+- ``dials.symmetry``: Add ``small_molecule=True`` option, to trigger analysis using the refstat algorithm. (`#3126 <https://github.com/dials/dials/issues/3126>`_)
+- ``dials.ssx_index``: Add experimental ``retain_unindexed_experiments=`` option to keep models and data for all images, regardless of indexing success, to allow viewing in the image viewer. (`#3161 <https://github.com/dials/dials/issues/3161>`_)
+- ``dials.stills_process``: Add support for custom sorting of LCLS data. (`#3165 <https://github.com/dials/dials/issues/3165>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.export``: Fix error calculating batch offsets. (`#2806 <https://github.com/dials/dials/issues/2806>`_)
+- ``dials.find_spots``: Fix the chunk size calculation to avoid always leaving a little remainder. (`#2848 <https://github.com/dials/dials/issues/2848>`_)
+- ``dials.integrate``: Reduced the memory footprint by changing the ``Shoebox`` mask array to use one byte per pixel. (`#3119 <https://github.com/dials/dials/issues/3119>`_)
+- ``dials.export format=mtz/mmcif``: Use calculated xdet and ydet positions for output, to be consistent with other programs. (`#3131 <https://github.com/dials/dials/issues/3131>`_)
+- ``dials.stills_process``: Add explicit garbage collection to prevent memory problems in large jobs with subsampling. (`#3141 <https://github.com/dials/dials/issues/3141>`_)
+- ``dials.integrate``: Added ``max_memory_usage=None`` to guarantee the value of ``nproc=`` will be respected. (`#3147 <https://github.com/dials/dials/issues/3147>`_)
+- ``dials.integrate``: Allocate shoebox background arrays just ahead of use rather than much earlier, for a significant peak memory saving. (`#3148 <https://github.com/dials/dials/issues/3148>`_)
+- Add missing checks in `tof_integrate.h` for reflections with `DontIntegrate` flags (`#3149 <https://github.com/dials/dials/issues/3149>`_)
+- ``dials.import``: Correctly load lookup.dy pickle map, was loading lookup.dx for both dx and dy. (`#3163 <https://github.com/dials/dials/issues/3163>`_)
+- Adopt a new dxtbx method for detector ray-intersection checks. The new method avoids slow error-handling paths and saves up to 5 minutes on large integration jobs. (`#3177 <https://github.com/dials/dials/issues/3177>`_)
+- ``dials.correlation_matrix``: Set minimum number of bins for rij histogram to account for matrices with little-to-no variation. (`#3180 <https://github.com/dials/dials/issues/3180>`_)
+- ``dials.export format=mmcif``: Fix crash on ssx data introduced in #3131. (`#3182 <https://github.com/dials/dials/issues/3182>`_)
+
+
+Improved Documentation
+----------------------
+
+- Added links to the DIALS category on the RS-Station Forum. (`#3152 <https://github.com/dials/dials/issues/3152>`_)
+
+
+Misc
+----
+
+- `#1702 <https://github.com/dials/dials/issues/1702>`_, `#3144 <https://github.com/dials/dials/issues/3144>`_, `#3159 <https://github.com/dials/dials/issues/3159>`_, `#3160 <https://github.com/dials/dials/issues/3160>`_, `#3168 <https://github.com/dials/dials/issues/3168>`_, `#3170 <https://github.com/dials/dials/issues/3170>`_, `#3184 <https://github.com/dials/dials/issues/3184>`_, `#3189 <https://github.com/dials/dials/issues/3189>`_, `#3191 <https://github.com/dials/dials/issues/3191>`_
+
+
 DIALS 3.28.1 (2026-05-22)
 =========================
 
