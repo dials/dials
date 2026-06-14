@@ -388,13 +388,39 @@ def do_import(filename, load_models=True):
     return all_experiments
 
 
+def _collect_leaf_panels(node):
+    """Depth-first list of leaf panel nodes under (and including) `node`."""
+    if node.is_panel():
+        return [node]
+    panels = []
+    for child in node:
+        panels.extend(_collect_leaf_panels(child))
+    return panels
+
+
 def sync_geometry(src, dest):
-    dest.set_local_frame(
-        src.get_local_fast_axis(), src.get_local_slow_axis(), src.get_local_origin()
-    )
-    if not src.is_panel():
-        for src_child, dest_child in zip(src, dest):
-            sync_geometry(src_child, dest_child)
+    """Transfer refined geometry from `src` onto `dest`, hierarchy-topology-safe.
+
+    Copies each leaf panel's *global* frame (set_frame, which recomputes the local
+    frame against whatever parent the dest panel has) in depth-first leaf order, so
+    `src` and `dest` need NOT share tree depth or grouping -- only the same number of
+    leaf panels in the same order. This avoids the silent mis-pairing a structural
+    (local-frame, zip-by-child) copy produces when the two topologies differ.
+    """
+    src_panels = _collect_leaf_panels(src)
+    dest_panels = _collect_leaf_panels(dest)
+    if len(src_panels) != len(dest_panels):
+        raise ValueError(
+            "sync_geometry: reference detector has %d leaf panels but target has %d; "
+            "cannot transfer geometry between detectors with different panel counts."
+            % (len(src_panels), len(dest_panels))
+        )
+    for src_panel, dest_panel in zip(src_panels, dest_panels):
+        dest_panel.set_frame(
+            src_panel.get_fast_axis(),
+            src_panel.get_slow_axis(),
+            src_panel.get_origin(),
+        )
 
 
 class Script:
