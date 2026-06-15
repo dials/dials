@@ -55,12 +55,9 @@ class FFT1D(Strategy):
                 reflections, using at most 0.029 radians.
         """
         super().__init__(max_cell, params=params, *args, **kwargs)
-        import iotbx.phil
-        from rstbx.phil.phil_preferences import indexing_api_defs
+        from dials.algorithms.indexing import rstbx_indexing_api_phil_scope
 
-        self._hardcoded_phil = iotbx.phil.parse(
-            input_string=indexing_api_defs
-        ).extract()
+        self._hardcoded_phil = rstbx_indexing_api_phil_scope().extract()
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
