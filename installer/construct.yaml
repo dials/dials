@@ -1,0 +1,9 @@
+{% set version = environ.get("DIALS_VERSION", "3.29.0") %}
+name: DIALS
+version: "{{ version }}"
+channels:
+  - "https://conda.anaconda.org/conda-forge/"
+post_install: post.sh
+specs:
+  - dials =={{ version }}
+  - xia2
