@@ -3,7 +3,10 @@ name: DIALS
 version: "{{ version }}"
 channels:
   - "https://conda.anaconda.org/conda-forge/"
-post_install: post.sh
+post_install: post.sh  # [unix]
+post_install: post.bat # [win]
+default_prefix: "$HOME/dials/v{{ version }}"  # [unix]
+installer_type: all
 specs:
   - dials =={{ version }}
   - xia2
