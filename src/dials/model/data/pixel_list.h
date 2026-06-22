@@ -116,6 +116,37 @@ namespace dials { namespace model {
     /**
      * Initialise the list
      * @param frame The current frame
+     * @param image The image values
+     * @param mask The pixel mask
+     */
+    PixelList(int frame,
+              const af::const_ref<float, af::c_grid<2> >& image,
+              const af::const_ref<bool, af::c_grid<2> >& mask) {
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+
+      frame_ = frame;
+      size_ = image.accessor();
+
+      std::size_t num = 0;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if (mask[i]) num++;
+      }
+
+      value_.resize(num);
+      index_.resize(num);
+
+      for (std::size_t i = 0, j = 0; i < mask.size(); ++i) {
+        if (mask[i]) {
+          value_[j] = image[i];
+          index_[j] = i;
+          j++;
+        }
+      }
+    }
+
+    /**
+     * Initialise the list
+     * @param frame The current frame
      * @param size The size of the image
      * @param value The list of pixel values
      * @param index The list of pixel indices

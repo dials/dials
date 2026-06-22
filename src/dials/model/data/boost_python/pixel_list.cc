@@ -45,6 +45,10 @@ namespace dials { namespace model { namespace boost_python {
                 const af::const_ref<bool, af::c_grid<2> >&>(
         (arg("frame"), arg("size"), arg("value"), arg("index"))))
       .def(init<int,
+                const af::const_ref<float, af::c_grid<2> >&,
+                const af::const_ref<bool, af::c_grid<2> >&>(
+        (arg("frame"), arg("size"), arg("value"), arg("index"))))
+      .def(init<int,
                 const af::const_ref<double, af::c_grid<2> >&,
                 const af::const_ref<bool, af::c_grid<2> >&>(
         (arg("frame"), arg("size"), arg("value"), arg("index"))))

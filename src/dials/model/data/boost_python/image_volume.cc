@@ -147,6 +147,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("background", &Class::background)
       .def("mask", &Class::mask)
       .def("set_image", &Class::template set_image<int>)
+      .def("set_image", &Class::template set_image<float>)
       .def("set_image", &Class::template set_image<double>)
       .def("is_consistent", &Class::is_consistent)
       .def("extract_data", &Class::extract_data)
@@ -164,6 +165,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("add", &Class::add)
       .def("get", &Class::get)
       .def("set_image", &Class::template set_image<int>)
+      .def("set_image", &Class::template set_image<float>)
       .def("set_image", &Class::template set_image<double>)
       .def("update_reflection_info",
            &MultiPanelImageVolume_update_reflection_info<FloatType>)
