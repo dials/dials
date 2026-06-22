@@ -24,6 +24,32 @@
 namespace dials { namespace algorithms {
 
   /**
+   * Element-wise cast of a 2D double image to float (used to store diagnostic
+   * maps at half precision).
+   */
+  inline af::versa<float, af::c_grid<2> > as_float_image(
+    const af::const_ref<double, af::c_grid<2> >& a) {
+    af::versa<float, af::c_grid<2> > r(a.accessor());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      r[i] = static_cast<float>(a[i]);
+    }
+    return r;
+  }
+
+  /**
+   * Element-wise cast of a 2D float image back to double (used to preserve the
+   * double-precision Python API of the diagnostic *Debug classes).
+   */
+  inline af::versa<double, af::c_grid<2> > as_double_image(
+    const af::const_ref<float, af::c_grid<2> >& a) {
+    af::versa<double, af::c_grid<2> > r(a.accessor());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      r[i] = static_cast<double>(a[i]);
+    }
+    return r;
+  }
+
+  /**
    * Threshold the image using the niblack method.
    *
    * pixel > mean + n_sigma * sdev ? object : background
@@ -353,11 +379,14 @@ namespace dials { namespace algorithms {
      * Enable more efficient memory usage by putting components required for the
      * summed area table closer together in memory
      */
-    template <typename T>
+    // The summed-area table is stored in single precision to halve its memory
+    // footprint (it is the largest per-panel intermediate). The running row
+    // accumulators and all discriminant locals are kept in double precision;
+    // only the stored table fields are float.
     struct Data {
       int m;
-      T x;
-      T y;
+      float x;
+      float y;
     };
 
     DispersionThreshold(int2 image_size,
@@ -387,7 +416,7 @@ namespace dials { namespace algorithms {
       }
 
       // Allocate the buffer
-      std::size_t element_size = sizeof(Data<double>);
+      std::size_t element_size = sizeof(Data);
       buffer_.resize(element_size * image_size[0] * image_size[1]);
     }
 
@@ -397,7 +426,7 @@ namespace dials { namespace algorithms {
      * @param mask The mask array
      */
     template <typename T>
-    void compute_sat(af::ref<Data<T> > table,
+    void compute_sat(af::ref<Data > table,
                      const af::const_ref<T, af::c_grid<2> >& src,
                      const af::const_ref<bool, af::c_grid<2> >& mask) {
       // Largest value to consider
@@ -410,8 +439,8 @@ namespace dials { namespace algorithms {
       // Create the summed area table
       for (std::size_t j = 0, k = 0; j < ysize; ++j) {
         int m = 0;
-        T x = 0;
-        T y = 0;
+        double x = 0;
+        double y = 0;
         for (std::size_t i = 0; i < xsize; ++i, ++k) {
           int mm = (mask[k] && src[k] < BIG) ? 1 : 0;
           m += mm;
@@ -437,7 +466,7 @@ namespace dials { namespace algorithms {
      * @param dst The output array
      */
     template <typename T>
-    void compute_threshold(af::ref<Data<T> > table,
+    void compute_threshold(af::ref<Data > table,
                            const af::const_ref<T, af::c_grid<2> >& src,
                            const af::const_ref<bool, af::c_grid<2> >& mask,
                            af::ref<bool, af::c_grid<2> > dst) {
@@ -466,24 +495,24 @@ namespace dials { namespace algorithms {
           double x = 0;
           double y = 0;
           if (i0 >= 0 && j0 >= 0) {
-            const Data<T>& d00 = table[k0 + i0];
-            const Data<T>& d10 = table[k1 + i0];
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d00 = table[k0 + i0];
+            const Data& d10 = table[k1 + i0];
+            const Data& d01 = table[k0 + i1];
             m += d00.m - (d10.m + d01.m);
             x += d00.x - (d10.x + d01.x);
             y += d00.y - (d10.y + d01.y);
           } else if (i0 >= 0) {
-            const Data<T>& d10 = table[k1 + i0];
+            const Data& d10 = table[k1 + i0];
             m -= d10.m;
             x -= d10.x;
             y -= d10.y;
           } else if (j0 >= 0) {
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d01 = table[k0 + i1];
             m -= d01.m;
             x -= d01.x;
             y -= d01.y;
           }
-          const Data<T>& d11 = table[k1 + i1];
+          const Data& d11 = table[k1 + i1];
           m += d11.m;
           x += d11.x;
           y += d11.y;
@@ -508,11 +537,11 @@ namespace dials { namespace algorithms {
      * @param gain - The gain array
      * @param dst The output array
      */
-    template <typename T>
-    void compute_threshold(af::ref<Data<T> > table,
+    template <typename T, typename G>
+    void compute_threshold(af::ref<Data > table,
                            const af::const_ref<T, af::c_grid<2> >& src,
                            const af::const_ref<bool, af::c_grid<2> >& mask,
-                           const af::const_ref<double, af::c_grid<2> >& gain,
+                           const af::const_ref<G, af::c_grid<2> >& gain,
                            af::ref<bool, af::c_grid<2> > dst) {
       // Get the size of the image
       std::size_t ysize = src.accessor()[0];
@@ -539,24 +568,24 @@ namespace dials { namespace algorithms {
           double x = 0;
           double y = 0;
           if (i0 >= 0 && j0 >= 0) {
-            const Data<T>& d00 = table[k0 + i0];
-            const Data<T>& d10 = table[k1 + i0];
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d00 = table[k0 + i0];
+            const Data& d10 = table[k1 + i0];
+            const Data& d01 = table[k0 + i1];
             m += d00.m - (d10.m + d01.m);
             x += d00.x - (d10.x + d01.x);
             y += d00.y - (d10.y + d01.y);
           } else if (i0 >= 0) {
-            const Data<T>& d10 = table[k1 + i0];
+            const Data& d10 = table[k1 + i0];
             m -= d10.m;
             x -= d10.x;
             y -= d10.y;
           } else if (j0 >= 0) {
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d01 = table[k0 + i1];
             m -= d01.m;
             x -= d01.x;
             y -= d01.y;
           }
-          const Data<T>& d11 = table[k1 + i1];
+          const Data& d11 = table[k1 + i1];
           m += d11.m;
           x += d11.x;
           y += d11.y;
@@ -593,7 +622,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sizeof(T) <= sizeof(double));
 
       // Cast the buffer to the table type
-      af::ref<Data<T> > table(reinterpret_cast<Data<T>*>(&buffer_[0]), buffer_.size());
+      af::ref<Data > table(reinterpret_cast<Data*>(&buffer_[0]), buffer_.size());
 
       // compute the summed area table
       compute_sat(table, src, mask);
@@ -609,10 +638,10 @@ namespace dials { namespace algorithms {
      * @param gain - The gain array
      * @param dst - The destination array.
      */
-    template <typename T>
+    template <typename T, typename G>
     void threshold_w_gain(const af::const_ref<T, af::c_grid<2> >& src,
                           const af::const_ref<bool, af::c_grid<2> >& mask,
-                          const af::const_ref<double, af::c_grid<2> >& gain,
+                          const af::const_ref<G, af::c_grid<2> >& gain,
                           af::ref<bool, af::c_grid<2> > dst) {
       // check the input
       DIALS_ASSERT(src.accessor().all_eq(image_size_));
@@ -624,7 +653,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sizeof(T) <= sizeof(double));
 
       // Cast the buffer to the table type
-      af::ref<Data<T> > table((Data<T>*)&buffer_[0], buffer_.size());
+      af::ref<Data > table((Data*)&buffer_[0], buffer_.size());
 
       // compute the summed area table
       compute_sat(table, src, mask);
@@ -693,17 +722,17 @@ namespace dials { namespace algorithms {
 
     /** @returns The mean map */
     af::versa<double, af::c_grid<2> > mean() const {
-      return mean_;
+      return as_double_image(mean_.const_ref());
     }
 
     /** @returns The variance map. */
     af::versa<double, af::c_grid<2> > variance() const {
-      return variance_;
+      return as_double_image(variance_.const_ref());
     }
 
     /** @returns The index of dispersion map */
     af::versa<double, af::c_grid<2> > index_of_dispersion() const {
-      return cv_;
+      return as_double_image(cv_.const_ref());
     }
 
     /** @returns The thresholded index of dispersion mask */
@@ -750,9 +779,9 @@ namespace dials { namespace algorithms {
       // Calculate the masked index_of_dispersion filtered image
       IndexOfDispersionFilterMasked<double> filter(
         image, temp.const_ref(), size, min_count);
-      mean_ = filter.mean();
-      variance_ = filter.sample_variance();
-      cv_ = filter.index_of_dispersion();
+      mean_ = as_float_image(filter.mean().const_ref());
+      variance_ = as_float_image(filter.sample_variance().const_ref());
+      cv_ = as_float_image(filter.index_of_dispersion().const_ref());
       af::versa<int, af::c_grid<2> > count = filter.count();
       temp = filter.mask();
 
@@ -773,9 +802,9 @@ namespace dials { namespace algorithms {
       }
     }
 
-    af::versa<double, af::c_grid<2> > mean_;
-    af::versa<double, af::c_grid<2> > variance_;
-    af::versa<double, af::c_grid<2> > cv_;
+    af::versa<float, af::c_grid<2> > mean_;
+    af::versa<float, af::c_grid<2> > variance_;
+    af::versa<float, af::c_grid<2> > cv_;
     af::versa<bool, af::c_grid<2> > global_mask_;
     af::versa<bool, af::c_grid<2> > cv_mask_;
     af::versa<bool, af::c_grid<2> > value_mask_;
@@ -832,17 +861,17 @@ namespace dials { namespace algorithms {
 
     /** @returns The mean map */
     af::versa<double, af::c_grid<2> > mean() const {
-      return mean_;
+      return as_double_image(mean_.const_ref());
     }
 
     /** @returns The variance map. */
     af::versa<double, af::c_grid<2> > variance() const {
-      return variance_;
+      return as_double_image(variance_.const_ref());
     }
 
     /** @returns The index of dispersion map */
     af::versa<double, af::c_grid<2> > index_of_dispersion() const {
-      return cv_;
+      return as_double_image(cv_.const_ref());
     }
 
     /** @returns The thresholded index of dispersion mask */
@@ -889,9 +918,9 @@ namespace dials { namespace algorithms {
       // Calculate the masked index_of_dispersion filtered image
       IndexOfDispersionFilterMasked<double> filter(
         image, temp.const_ref(), size, min_count);
-      mean_ = filter.mean();
-      variance_ = filter.sample_variance();
-      cv_ = filter.index_of_dispersion();
+      mean_ = as_float_image(filter.mean().const_ref());
+      variance_ = as_float_image(filter.sample_variance().const_ref());
+      cv_ = as_float_image(filter.index_of_dispersion().const_ref());
       af::versa<int, af::c_grid<2> > count = filter.count();
       temp = filter.mask();
 
@@ -931,7 +960,8 @@ namespace dials { namespace algorithms {
       // Widen the kernel slightly and compute the mean image without strong pixels
       size[0] += 2;
       size[1] += 2;
-      mean2_ = mean_filter_masked(image, temp_mask.ref(), size, 2, false);
+      mean2_ =
+        as_float_image(mean_filter_masked(image, temp_mask.ref(), size, 2, false).const_ref());
 
       // Compute the final thresholds
       for (std::size_t i = 0; i < image.size(); ++i) {
@@ -944,10 +974,10 @@ namespace dials { namespace algorithms {
       }
     }
 
-    af::versa<double, af::c_grid<2> > mean_;
-    af::versa<double, af::c_grid<2> > mean2_;
-    af::versa<double, af::c_grid<2> > variance_;
-    af::versa<double, af::c_grid<2> > cv_;
+    af::versa<float, af::c_grid<2> > mean_;
+    af::versa<float, af::c_grid<2> > mean2_;
+    af::versa<float, af::c_grid<2> > variance_;
+    af::versa<float, af::c_grid<2> > cv_;
     af::versa<bool, af::c_grid<2> > global_mask_;
     af::versa<bool, af::c_grid<2> > cv_mask_;
     af::versa<bool, af::c_grid<2> > value_mask_;
@@ -963,11 +993,14 @@ namespace dials { namespace algorithms {
      * Enable more efficient memory usage by putting components required for the
      * summed area table closer together in memory
      */
-    template <typename T>
+    // The summed-area table is stored in single precision to halve its memory
+    // footprint (it is the largest per-panel intermediate). The running row
+    // accumulators and all discriminant locals are kept in double precision;
+    // only the stored table fields are float.
     struct Data {
       int m;
-      T x;
-      T y;
+      float x;
+      float y;
     };
 
     DispersionExtendedThreshold(int2 image_size,
@@ -997,7 +1030,7 @@ namespace dials { namespace algorithms {
       }
 
       // Allocate the buffer
-      std::size_t element_size = sizeof(Data<double>);
+      std::size_t element_size = sizeof(Data);
       buffer_.resize(element_size * image_size[0] * image_size[1]);
     }
 
@@ -1007,7 +1040,7 @@ namespace dials { namespace algorithms {
      * @param mask The mask array
      */
     template <typename T>
-    void compute_sat(af::ref<Data<T> > table,
+    void compute_sat(af::ref<Data > table,
                      const af::const_ref<T, af::c_grid<2> >& src,
                      const af::const_ref<bool, af::c_grid<2> >& mask) {
       // Largest value to consider
@@ -1020,8 +1053,8 @@ namespace dials { namespace algorithms {
       // Create the summed area table
       for (std::size_t j = 0, k = 0; j < ysize; ++j) {
         int m = 0;
-        T x = 0;
-        T y = 0;
+        double x = 0;
+        double y = 0;
         for (std::size_t i = 0; i < xsize; ++i, ++k) {
           int mm = (mask[k] && src[k] < BIG) ? 1 : 0;
           m += mm;
@@ -1047,7 +1080,7 @@ namespace dials { namespace algorithms {
      * @param dst The output array
      */
     template <typename T>
-    void compute_dispersion_threshold(af::ref<Data<T> > table,
+    void compute_dispersion_threshold(af::ref<Data > table,
                                       const af::const_ref<T, af::c_grid<2> >& src,
                                       const af::const_ref<bool, af::c_grid<2> >& mask,
                                       af::ref<bool, af::c_grid<2> > dst) {
@@ -1076,24 +1109,24 @@ namespace dials { namespace algorithms {
           double x = 0;
           double y = 0;
           if (i0 >= 0 && j0 >= 0) {
-            const Data<T>& d00 = table[k0 + i0];
-            const Data<T>& d10 = table[k1 + i0];
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d00 = table[k0 + i0];
+            const Data& d10 = table[k1 + i0];
+            const Data& d01 = table[k0 + i1];
             m += d00.m - (d10.m + d01.m);
             x += d00.x - (d10.x + d01.x);
             y += d00.y - (d10.y + d01.y);
           } else if (i0 >= 0) {
-            const Data<T>& d10 = table[k1 + i0];
+            const Data& d10 = table[k1 + i0];
             m -= d10.m;
             x -= d10.x;
             y -= d10.y;
           } else if (j0 >= 0) {
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d01 = table[k0 + i1];
             m -= d01.m;
             x -= d01.x;
             y -= d01.y;
           }
-          const Data<T>& d11 = table[k1 + i1];
+          const Data& d11 = table[k1 + i1];
           m += d11.m;
           x += d11.x;
           y += d11.y;
@@ -1122,11 +1155,11 @@ namespace dials { namespace algorithms {
      * @param gain - The gain array
      * @param dst The output array
      */
-    template <typename T>
-    void compute_dispersion_threshold(af::ref<Data<T> > table,
+    template <typename T, typename G>
+    void compute_dispersion_threshold(af::ref<Data > table,
                                       const af::const_ref<T, af::c_grid<2> >& src,
                                       const af::const_ref<bool, af::c_grid<2> >& mask,
-                                      const af::const_ref<double, af::c_grid<2> >& gain,
+                                      const af::const_ref<G, af::c_grid<2> >& gain,
                                       af::ref<bool, af::c_grid<2> > dst) {
       // Get the size of the image
       std::size_t ysize = src.accessor()[0];
@@ -1153,24 +1186,24 @@ namespace dials { namespace algorithms {
           double x = 0;
           double y = 0;
           if (i0 >= 0 && j0 >= 0) {
-            const Data<T>& d00 = table[k0 + i0];
-            const Data<T>& d10 = table[k1 + i0];
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d00 = table[k0 + i0];
+            const Data& d10 = table[k1 + i0];
+            const Data& d01 = table[k0 + i1];
             m += d00.m - (d10.m + d01.m);
             x += d00.x - (d10.x + d01.x);
             y += d00.y - (d10.y + d01.y);
           } else if (i0 >= 0) {
-            const Data<T>& d10 = table[k1 + i0];
+            const Data& d10 = table[k1 + i0];
             m -= d10.m;
             x -= d10.x;
             y -= d10.y;
           } else if (j0 >= 0) {
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d01 = table[k0 + i1];
             m -= d01.m;
             x -= d01.x;
             y -= d01.y;
           }
-          const Data<T>& d11 = table[k1 + i1];
+          const Data& d11 = table[k1 + i1];
           m += d11.m;
           x += d11.x;
           y += d11.y;
@@ -1281,7 +1314,7 @@ namespace dials { namespace algorithms {
      * @param dst The output array
      */
     template <typename T>
-    void compute_final_threshold(af::ref<Data<T> > table,
+    void compute_final_threshold(af::ref<Data > table,
                                  const af::const_ref<T, af::c_grid<2> >& src,
                                  const af::const_ref<bool, af::c_grid<2> >& mask,
                                  af::ref<bool, af::c_grid<2> > dst) {
@@ -1309,21 +1342,21 @@ namespace dials { namespace algorithms {
           double m = 0;
           double x = 0;
           if (i0 >= 0 && j0 >= 0) {
-            const Data<T>& d00 = table[k0 + i0];
-            const Data<T>& d10 = table[k1 + i0];
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d00 = table[k0 + i0];
+            const Data& d10 = table[k1 + i0];
+            const Data& d01 = table[k0 + i1];
             m += d00.m - (d10.m + d01.m);
             x += d00.x - (d10.x + d01.x);
           } else if (i0 >= 0) {
-            const Data<T>& d10 = table[k1 + i0];
+            const Data& d10 = table[k1 + i0];
             m -= d10.m;
             x -= d10.x;
           } else if (j0 >= 0) {
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d01 = table[k0 + i1];
             m -= d01.m;
             x -= d01.x;
           }
-          const Data<T>& d11 = table[k1 + i1];
+          const Data& d11 = table[k1 + i1];
           m += d11.m;
           x += d11.x;
 
@@ -1354,11 +1387,11 @@ namespace dials { namespace algorithms {
      * @param mask - The mask array
      * @param dst The output array
      */
-    template <typename T>
-    void compute_final_threshold(af::ref<Data<T> > table,
+    template <typename T, typename G>
+    void compute_final_threshold(af::ref<Data > table,
                                  const af::const_ref<T, af::c_grid<2> >& src,
                                  const af::const_ref<bool, af::c_grid<2> >& mask,
-                                 const af::const_ref<double, af::c_grid<2> >& gain,
+                                 const af::const_ref<G, af::c_grid<2> >& gain,
                                  af::ref<bool, af::c_grid<2> > dst) {
       // Get the size of the image
       std::size_t ysize = src.accessor()[0];
@@ -1384,21 +1417,21 @@ namespace dials { namespace algorithms {
           double m = 0;
           double x = 0;
           if (i0 >= 0 && j0 >= 0) {
-            const Data<T>& d00 = table[k0 + i0];
-            const Data<T>& d10 = table[k1 + i0];
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d00 = table[k0 + i0];
+            const Data& d10 = table[k1 + i0];
+            const Data& d01 = table[k0 + i1];
             m += d00.m - (d10.m + d01.m);
             x += d00.x - (d10.x + d01.x);
           } else if (i0 >= 0) {
-            const Data<T>& d10 = table[k1 + i0];
+            const Data& d10 = table[k1 + i0];
             m -= d10.m;
             x -= d10.x;
           } else if (j0 >= 0) {
-            const Data<T>& d01 = table[k0 + i1];
+            const Data& d01 = table[k0 + i1];
             m -= d01.m;
             x -= d01.x;
           }
-          const Data<T>& d11 = table[k1 + i1];
+          const Data& d11 = table[k1 + i1];
           m += d11.m;
           x += d11.x;
 
@@ -1442,7 +1475,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sizeof(T) <= sizeof(double));
 
       // Cast the buffer to the table type
-      af::ref<Data<T> > table(reinterpret_cast<Data<T>*>(&buffer_[0]), buffer_.size());
+      af::ref<Data > table(reinterpret_cast<Data*>(&buffer_[0]), buffer_.size());
 
       // compute the summed area table
       compute_sat(table, src, mask);
@@ -1471,10 +1504,10 @@ namespace dials { namespace algorithms {
      * @param gain - The gain array
      * @param dst - The destination array.
      */
-    template <typename T>
+    template <typename T, typename G>
     void threshold_w_gain(const af::const_ref<T, af::c_grid<2> >& src,
                           const af::const_ref<bool, af::c_grid<2> >& mask,
-                          const af::const_ref<double, af::c_grid<2> >& gain,
+                          const af::const_ref<G, af::c_grid<2> >& gain,
                           af::ref<bool, af::c_grid<2> > dst) {
       // check the input
       DIALS_ASSERT(src.accessor().all_eq(image_size_));
@@ -1486,7 +1519,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sizeof(T) <= sizeof(double));
 
       // Cast the buffer to the table type
-      af::ref<Data<T> > table((Data<T>*)&buffer_[0], buffer_.size());
+      af::ref<Data > table((Data*)&buffer_[0], buffer_.size());
 
       // compute the summed area table
       compute_sat(table, src, mask);

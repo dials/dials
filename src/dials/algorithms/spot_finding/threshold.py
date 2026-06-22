@@ -71,10 +71,15 @@ class DispersionThresholdStrategy(ThresholdStrategy):
             )
             self.algorithm[image.all()] = algorithm
 
-        # Set the gain
+        # Set the gain. Match the gain map's precision to the image's so it
+        # stays half-size for float images (and so the gain dtype matches a
+        # bound (image, gain) threshold overload).
         if self._gain is not None:
             assert self._gain > 0
-            self._gain_map = flex.double(image.accessor(), self._gain)
+            if isinstance(image, flex.float):
+                self._gain_map = flex.float(image.accessor(), self._gain)
+            else:
+                self._gain_map = flex.double(image.accessor(), self._gain)
             self._gain = None
 
         # Compute the threshold
@@ -140,10 +145,15 @@ class DispersionExtendedThresholdStrategy(ThresholdStrategy):
             )
             self.algorithm[image.all()] = algorithm
 
-        # Set the gain
+        # Set the gain. Match the gain map's precision to the image's so it
+        # stays half-size for float images (and so the gain dtype matches a
+        # bound (image, gain) threshold overload).
         if self._gain is not None:
             assert self._gain > 0
-            self._gain_map = flex.double(image.accessor(), self._gain)
+            if isinstance(image, flex.float):
+                self._gain_map = flex.float(image.accessor(), self._gain)
+            else:
+                self._gain_map = flex.double(image.accessor(), self._gain)
             self._gain = None
 
         # Compute the threshold

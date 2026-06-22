@@ -67,9 +67,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<DispersionThreshold>("DispersionThreshold", no_init)
       .def(init<int2, int2, double, double, double, int>())
       .def("__call__", &DispersionThreshold::threshold<int>)
+      .def("__call__", &DispersionThreshold::threshold<float>)
       .def("__call__", &DispersionThreshold::threshold<double>)
-      .def("__call__", &DispersionThreshold::threshold_w_gain<int>)
-      .def("__call__", &DispersionThreshold::threshold_w_gain<double>);
+      .def("__call__", &DispersionThreshold::threshold_w_gain<int, double>)
+      .def("__call__", &DispersionThreshold::threshold_w_gain<float, float>)
+      .def("__call__", &DispersionThreshold::threshold_w_gain<double, double>);
 
     class_<DispersionThresholdDebug>("DispersionThresholdDebug", no_init)
       .def(init<const af::const_ref<double, af::c_grid<2> >&,
@@ -150,9 +152,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<DispersionExtendedThreshold>("DispersionExtendedThreshold", no_init)
       .def(init<int2, int2, double, double, double, int>())
       /* .def("__call__", &DispersionExtendedThreshold::threshold<int>) */
+      .def("__call__", &DispersionExtendedThreshold::threshold<float>)
       .def("__call__", &DispersionExtendedThreshold::threshold<double>)
-      /* .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<int>) */
-      .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<double>);
+      /* .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<int, double>) */
+      .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<float, float>)
+      .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<double, double>);
   }
 
 }}}  // namespace dials::algorithms::boost_python

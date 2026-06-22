@@ -15,6 +15,24 @@ from dials.algorithms.image.threshold import (
     DispersionThresholdDebug,
 )
 
+# The DispersionThreshold / DispersionExtendedThreshold summed-area table is
+# stored in single precision to halve its memory footprint. On a large image the
+# cumulative sums exceed float's exact-integer range, so the table-based result
+# can differ from the double-precision filter reference (and is no longer exactly
+# invariant under transpose) on a handful of pixels sitting right at the
+# threshold. Allow a small fraction of such borderline disagreements.
+MASK_DIFF_TOLERANCE = 1e-4
+
+
+def assert_masks_close(a, b, tolerance=MASK_DIFF_TOLERANCE):
+    """Assert two bool masks agree except for a small fraction of pixels."""
+    assert a.all() == b.all()
+    ndiff = (a != b).count(True)
+    assert ndiff <= tolerance * a.size(), (
+        f"masks differ in {ndiff} / {a.size()} pixels "
+        f"(> {tolerance:.0e} tolerance)"
+    )
+
 
 class Test:
     def setup_class(self):
@@ -187,8 +205,10 @@ class Test:
         result4 = flex.bool(flex.grid(self.image.all()))
         algorithm(self.image, self.mask, result3)
         algorithm(self.image, self.mask, self.gain, result4)
-        assert result1 == result3
-        assert result2 == result4
+        # result1/result2 come from the double-precision filter reference;
+        # result3/result4 from the float summed-area-table implementation.
+        assert_masks_close(result1, result3)
+        assert_masks_close(result2, result4)
 
     def test_dispersion_extended_threshold(self):
         from dials.algorithms.image.threshold import (
@@ -212,7 +232,9 @@ class Test:
         )
         result3 = debug.final_mask()
 
-        assert result1.all_eq(result3)
+        # result1 uses the float summed-area table; result3 the double-precision
+        # filter reference.
+        assert_masks_close(result1, result3)
 
         debug = DispersionExtendedThresholdDebug(
             self.image,
@@ -225,7 +247,37 @@ class Test:
             self.min_count,
         )
         result4 = debug.final_mask()
-        assert result2 == result4
+        assert_masks_close(result2, result4)
+
+    @pytest.mark.parametrize(
+        "algorithm", [DispersionThreshold, DispersionExtendedThreshold]
+    )
+    def test_float_double_image_consistency(self, algorithm):
+        # The summed-area table is stored in float regardless of the image
+        # dtype, so thresholding a float image and the equivalent double image
+        # must give bit-identical masks (both with and without a gain map).
+        from dials.array_family import flex
+
+        nsig_b = 3
+        nsig_s = 3
+        image_f = self.image.as_float()
+        gain_f = self.gain.as_float()
+
+        thresholder = algorithm(
+            self.image.all(), self.size, nsig_b, nsig_s, 0, self.min_count
+        )
+
+        r_double = flex.bool(flex.grid(self.image.all()))
+        r_float = flex.bool(flex.grid(self.image.all()))
+        thresholder(self.image, self.mask, r_double)
+        thresholder(image_f, self.mask, r_float)
+        assert r_float.all_eq(r_double)
+
+        r_double_g = flex.bool(flex.grid(self.image.all()))
+        r_float_g = flex.bool(flex.grid(self.image.all()))
+        thresholder(self.image, self.mask, self.gain, r_double_g)
+        thresholder(image_f, self.mask, gain_f, r_float_g)
+        assert r_float_g.all_eq(r_double_g)
 
     @pytest.mark.parametrize(
         "algorithm", [DispersionThreshold, DispersionExtendedThreshold]
@@ -259,7 +311,10 @@ class Test:
         thresholder(image_t, mask_t, result2)
         result2_t = transpose_a_flex_bool(result2)
 
-        assert (result1 == result2_t).all_eq(True)
+        # The float summed-area table accumulates in row-major order, so its
+        # rounding is not exactly invariant under transpose; allow a small
+        # fraction of borderline pixels to differ.
+        assert_masks_close(result1, result2_t)
 
     @pytest.mark.parametrize(
         "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug]
