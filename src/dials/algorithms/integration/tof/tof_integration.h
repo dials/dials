@@ -405,12 +405,12 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for incident data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.incident_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask =
         incident_params.incident_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -420,16 +420,16 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       incident_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     // Get shoeboxes for empty data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.empty_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -439,7 +439,7 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       empty_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
@@ -796,12 +796,12 @@ namespace dials { namespace algorithms {
 
     // Get shoeboxes for incident data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.incident_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask =
         incident_params.incident_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -811,16 +811,16 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       incident_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     // Get shoeboxes for empty data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.empty_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -830,7 +830,7 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       empty_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     dials::af::shared<Shoebox<>> shoeboxes = reflection_table["shoebox"];
@@ -1668,12 +1668,12 @@ namespace dials { namespace algorithms {
 
     // Get shoebox for incident data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.incident_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask =
         incident_params.incident_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -1683,16 +1683,16 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       incident_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     // Get shoeboxes for empty data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.empty_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -1702,7 +1702,7 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       empty_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     // Mask codes
@@ -1987,12 +1987,12 @@ namespace dials { namespace algorithms {
 
     // Get shoebox for incident data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.incident_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask =
         incident_params.incident_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -2002,16 +2002,16 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       incident_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     // Get shoeboxes for empty data
     for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-      dxtbx::format::Image<double> img =
+      dxtbx::format::Image<float> img =
         incident_params.empty_data->get_corrected_data(img_num);
       dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-      dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+      dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
         n_panels);
       dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
         n_panels);
@@ -2021,7 +2021,7 @@ namespace dials { namespace algorithms {
         output_mask[i] = mask.tile(i).data();
       }
       empty_shoebox_processor.next_data_only(
-        dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+        dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
     }
 
     // Mask codes

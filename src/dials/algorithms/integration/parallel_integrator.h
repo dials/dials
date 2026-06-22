@@ -117,7 +117,7 @@ namespace dials { namespace algorithms {
      * @param data The image data
      * @param index The image index
      */
-    void copy(const Image<double>& data, std::size_t index) {
+    void copy(const Image<float>& data, std::size_t index) {
       DIALS_ASSERT(data.n_tiles() == data_.size());
       for (std::size_t i = 0; i < data.n_tiles(); ++i) {
         copy(data.tile(i).data().const_ref(), data_[i].ref(), index);
@@ -130,7 +130,7 @@ namespace dials { namespace algorithms {
      * @param data The image data
      * @param index The image index
      */
-    void copy(const Image<double>& data, bool mask, std::size_t index) {
+    void copy(const Image<float>& data, bool mask, std::size_t index) {
       DIALS_ASSERT(data.n_tiles() == data_.size());
       if (mask) {
         copy(data, index);
@@ -147,7 +147,7 @@ namespace dials { namespace algorithms {
      * @param mask The mask data
      * @param index The image index
      */
-    void copy(const Image<double>& data, const Image<bool>& mask, std::size_t index) {
+    void copy(const Image<float>& data, const Image<bool>& mask, std::size_t index) {
       DIALS_ASSERT(data.n_tiles() == mask.n_tiles());
       DIALS_ASSERT(data.n_tiles() == data_.size());
       for (std::size_t i = 0; i < data.n_tiles(); ++i) {
@@ -306,7 +306,7 @@ namespace dials { namespace algorithms {
      * @param data The image data
      * @param index The image index
      */
-    void copy(const Image<double>& data, std::size_t index) {
+    void copy(const Image<float>& data, std::size_t index) {
       DIALS_ASSERT(index < num_images_);
       DIALS_ASSERT(index >= buffer_range_[0]);
       DIALS_ASSERT(index <= buffer_range_[1]);
@@ -327,7 +327,7 @@ namespace dials { namespace algorithms {
      * @param mask The mask data
      * @param index The image index
      */
-    void copy(const Image<double>& data, bool mask, std::size_t index) {
+    void copy(const Image<float>& data, bool mask, std::size_t index) {
       DIALS_ASSERT(index < num_images_);
       DIALS_ASSERT(index >= buffer_range_[0]);
       DIALS_ASSERT(index <= buffer_range_[1]);
@@ -348,7 +348,7 @@ namespace dials { namespace algorithms {
      * @param mask The mask data
      * @param index The image index
      */
-    void copy(const Image<double>& data, const Image<bool>& mask, std::size_t index) {
+    void copy(const Image<float>& data, const Image<bool>& mask, std::size_t index) {
       DIALS_ASSERT(index < num_images_);
       DIALS_ASSERT(index >= buffer_range_[0]);
       DIALS_ASSERT(index <= buffer_range_[1]);
@@ -864,7 +864,7 @@ namespace dials { namespace algorithms {
      * @param data The image data
      * @param index The image index
      */
-    void copy_when_ready(const Image<double>& data, std::size_t index) {
+    void copy_when_ready(const Image<float>& data, std::size_t index) {
       if (index >= max_images_) {
         while (!notifier_.complete(buffer_.buffer_range()[0]))
           ;
@@ -878,7 +878,7 @@ namespace dials { namespace algorithms {
      * @param mask A single value mask
      * @param index The image index
      */
-    void copy_when_ready(const Image<double>& data, bool mask, std::size_t index) {
+    void copy_when_ready(const Image<float>& data, bool mask, std::size_t index) {
       if (index >= max_images_) {
         while (!notifier_.complete(buffer_.buffer_range()[0]))
           ;
@@ -892,7 +892,7 @@ namespace dials { namespace algorithms {
      * @param mask The image mask
      * @param index The image index
      */
-    void copy_when_ready(const Image<double>& data,
+    void copy_when_ready(const Image<float>& data,
                          const Image<bool>& mask,
                          std::size_t index) {
       if (index >= max_images_) {

@@ -408,10 +408,10 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for image data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = data.get_corrected_data(img_num);
+    dxtbx::format::Image<float> img = data.get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = data.get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+    dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
       n_panels);
     dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
@@ -421,7 +421,7 @@ void tof_extract_shoeboxes_to_reflection_table(
       output_mask[i] = mask.tile(i).data();
     }
     shoebox_processor.next_data_only(
-      dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+      dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
   }
 
   if (!apply_lorentz_correction) {
@@ -534,10 +534,10 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for image data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = data.get_corrected_data(img_num);
+    dxtbx::format::Image<float> img = data.get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = data.get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+    dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
       n_panels);
     dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
@@ -547,16 +547,16 @@ void tof_extract_shoeboxes_to_reflection_table(
       output_mask[i] = mask.tile(i).data();
     }
     shoebox_processor.next_data_only(
-      dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+      dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
   }
 
   // Get shoeboxes for incident data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img =
+    dxtbx::format::Image<float> img =
       incident_params.incident_data->get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = incident_params.incident_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+    dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
       n_panels);
     dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
@@ -566,16 +566,16 @@ void tof_extract_shoeboxes_to_reflection_table(
       output_mask[i] = mask.tile(i).data();
     }
     incident_shoebox_processor.next_data_only(
-      dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+      dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
   }
 
   // Get shoeboxes for empty data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img =
+    dxtbx::format::Image<float> img =
       incident_params.empty_data->get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+    dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
       n_panels);
     dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
@@ -585,7 +585,7 @@ void tof_extract_shoeboxes_to_reflection_table(
       output_mask[i] = mask.tile(i).data();
     }
     empty_shoebox_processor.next_data_only(
-      dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+      dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
   }
 
   // Now correct each pixel for each shoebox
@@ -711,10 +711,10 @@ void tof_extract_shoeboxes_to_reflection_table(
 
   // Get shoeboxes for image data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img = data.get_corrected_data(img_num);
+    dxtbx::format::Image<float> img = data.get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = data.get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+    dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
       n_panels);
     dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
@@ -724,16 +724,16 @@ void tof_extract_shoeboxes_to_reflection_table(
       output_mask[i] = mask.tile(i).data();
     }
     shoebox_processor.next_data_only(
-      dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+      dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
   }
 
   // Get shoeboxes for incident data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img =
+    dxtbx::format::Image<float> img =
       incident_params.incident_data->get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = incident_params.incident_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+    dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
       n_panels);
     dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
@@ -743,16 +743,16 @@ void tof_extract_shoeboxes_to_reflection_table(
       output_mask[i] = mask.tile(i).data();
     }
     incident_shoebox_processor.next_data_only(
-      dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+      dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
   }
 
   // Get shoeboxes for empty data
   for (std::size_t img_num = 0; img_num < num_images; ++img_num) {
-    dxtbx::format::Image<double> img =
+    dxtbx::format::Image<float> img =
       incident_params.empty_data->get_corrected_data(img_num);
     dxtbx::format::Image<bool> mask = incident_params.empty_data->get_mask(img_num);
 
-    dials::af::shared<scitbx::af::versa<double, scitbx::af::c_grid<2>>> output_data(
+    dials::af::shared<scitbx::af::versa<float, scitbx::af::c_grid<2>>> output_data(
       n_panels);
     dials::af::shared<scitbx::af::versa<bool, scitbx::af::c_grid<2>>> output_mask(
       n_panels);
@@ -762,7 +762,7 @@ void tof_extract_shoeboxes_to_reflection_table(
       output_mask[i] = mask.tile(i).data();
     }
     empty_shoebox_processor.next_data_only(
-      dials::model::Image<double>(output_data.const_ref(), output_mask.const_ref()));
+      dials::model::Image<float>(output_data.const_ref(), output_mask.const_ref()));
   }
 
   // Now correct each pixel for each shoebox
