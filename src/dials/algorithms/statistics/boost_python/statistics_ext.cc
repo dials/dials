@@ -63,6 +63,21 @@ namespace dials { namespace algorithms { namespace boost_python {
     return boost::python::make_tuple(result.first, result.second);
   }
 
+  template <typename ValueType>
+  void register_binned_statistics(const char* name) {
+    class_<BinnedStatistics<ValueType> >(name, no_init)
+      .def(init<const af::const_ref<ValueType>&,
+                const af::const_ref<std::size_t>&,
+                std::size_t>())
+      .def("bin_is_empty", &BinnedStatistics<ValueType>::bin_is_empty)
+      .def("bin_is_sorted", &BinnedStatistics<ValueType>::bin_is_sorted)
+      .def("get_medians", &BinnedStatistics<ValueType>::get_medians)
+      .def("get_iqrs", &BinnedStatistics<ValueType>::get_iqrs)
+      .def("get_values_in_bin",
+           &BinnedStatistics<ValueType>::get_values_in_bin,
+           (arg("i")));
+  }
+
   BOOST_PYTHON_MODULE(dials_algorithms_statistics_ext) {
     def("kolmogorov_smirnov_one_sided_cdf", &kolmogorov_smirnov_one_sided_cdf<double>);
     def("kolmogorov_smirnov_two_sided_cdf", &kolmogorov_smirnov_two_sided_cdf<double>);
@@ -105,15 +120,10 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("mu", &BinnedGMMSingle1D::mu)
       .def("sigma", &BinnedGMMSingle1D::sigma);
 
-    class_<BinnedStatistics>("BinnedStatistics", no_init)
-      .def(init<const af::const_ref<double>&,
-                const af::const_ref<std::size_t>&,
-                std::size_t>())
-      .def("bin_is_empty", &BinnedStatistics::bin_is_empty)
-      .def("bin_is_sorted", &BinnedStatistics::bin_is_sorted)
-      .def("get_medians", &BinnedStatistics::get_medians)
-      .def("get_iqrs", &BinnedStatistics::get_iqrs)
-      .def("get_values_in_bin", &BinnedStatistics::get_values_in_bin, (arg("i")));
+    // BinnedStatistics keeps its historical (double) name; BinnedStatisticsFloat
+    // lets the radial-profile spotfinder bin a single-precision image natively.
+    register_binned_statistics<double>("BinnedStatistics");
+    register_binned_statistics<float>("BinnedStatisticsFloat");
   }
 
 }}}  // namespace dials::algorithms::boost_python

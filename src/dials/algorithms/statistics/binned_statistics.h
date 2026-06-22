@@ -6,9 +6,16 @@
 
 namespace dials { namespace algorithms {
 
+  // Templated on the value type so the radial-profile spotfinder can bin a
+  // single-precision (float) image without first promoting it to double. The
+  // bins are always std::size_t; only the binned values follow ValueType. The
+  // quantile interpolation in get_iqrs() is carried out in double and narrowed
+  // to ValueType on storage, mirroring how the rest of the float spotfinding
+  // path keeps reductions in double while storing single precision.
+  template <typename ValueType>
   class BinnedStatistics {
   public:
-    BinnedStatistics(scitbx::af::const_ref<double> values,
+    BinnedStatistics(scitbx::af::const_ref<ValueType> values,
                      scitbx::af::const_ref<std::size_t> bins,
                      std::size_t n_bins)
         : values_(values), bins_(bins), n_bins_(n_bins) {
@@ -16,7 +23,7 @@ namespace dials { namespace algorithms {
       binned_values.reserve(n_bins_);
       is_sorted.reserve(n_bins_);
       for (std::size_t i = 0; i < n_bins; i++) {
-        binned_values.push_back(scitbx::af::shared<double>());
+        binned_values.push_back(scitbx::af::shared<ValueType>());
         is_sorted.push_back(false);
       }
       for (std::size_t i = 0; i < values.size(); i++) {
@@ -24,7 +31,7 @@ namespace dials { namespace algorithms {
       }
     };
 
-    scitbx::af::shared<double> get_values_in_bin(std::size_t i) const {
+    scitbx::af::shared<ValueType> get_values_in_bin(std::size_t i) const {
       DIALS_ASSERT(i < n_bins_);
       return binned_values[i];
     };
@@ -41,8 +48,8 @@ namespace dials { namespace algorithms {
       return is_sorted;
     };
 
-    scitbx::af::shared<double> get_medians() {
-      scitbx::af::shared<double> median;
+    scitbx::af::shared<ValueType> get_medians() {
+      scitbx::af::shared<ValueType> median;
       for (std::size_t i = 0; i < n_bins_; i++) {
         if (!is_sorted[i]) {
           std::sort(binned_values[i].begin(), binned_values[i].end());
@@ -57,11 +64,11 @@ namespace dials { namespace algorithms {
         else if (n == 2)
           median.push_back((binned_values[i][0] + binned_values[i][1]) / 2);
         else {
-          double* const k = binned_values[i].begin() + n / 2;
+          ValueType* const k = binned_values[i].begin() + n / 2;
           if (n % 2)
             median.push_back(*k);
           else {
-            double* const k1 = binned_values[i].begin() + n / 2 - 1;
+            ValueType* const k1 = binned_values[i].begin() + n / 2 - 1;
             median.push_back((*k + *k1) / 2);
           }
         }
@@ -69,9 +76,9 @@ namespace dials { namespace algorithms {
       return median;
     };
 
-    scitbx::af::shared<double> get_iqrs() {
+    scitbx::af::shared<ValueType> get_iqrs() {
       // https://stackoverflow.com/questions/11964552/finding-quartiles
-      scitbx::af::shared<double> iqr;
+      scitbx::af::shared<ValueType> iqr;
       for (std::size_t i = 0; i < n_bins_; i++) {
         if (!is_sorted[i]) {
           std::sort(binned_values[i].begin(), binned_values[i].end());
@@ -107,11 +114,11 @@ namespace dials { namespace algorithms {
     };
 
   private:
-    scitbx::af::const_ref<double> values_;
+    scitbx::af::const_ref<ValueType> values_;
     scitbx::af::const_ref<std::size_t> bins_;
     std::size_t n_bins_;
 
-    std::vector<scitbx::af::shared<double> > binned_values;
+    std::vector<scitbx::af::shared<ValueType> > binned_values;
     scitbx::af::shared<bool> is_sorted;
   };
 

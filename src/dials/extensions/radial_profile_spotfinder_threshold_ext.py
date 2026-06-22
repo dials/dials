@@ -3,7 +3,7 @@ from __future__ import annotations
 from scitbx.array_family import flex
 
 from dials.algorithms.image.filter import convolve
-from dials.algorithms.statistics import BinnedStatistics
+from dials.algorithms.statistics import BinnedStatistics, BinnedStatisticsFloat
 
 # Module-level definition imported by the image viewer
 phil_str = """
@@ -99,7 +99,15 @@ class RadialProfileSpotFinderThresholdExt:
         """
 
         if self.kernel:
-            image = convolve(image, self.kernel)
+            # Match the kernel dtype to the image so the convolve overload
+            # resolves: on the float spotfinding path the corrected image is
+            # single precision, so use a single-precision kernel too.
+            kernel = (
+                self.kernel.as_float()
+                if isinstance(image, flex.float)
+                else self.kernel
+            )
+            image = convolve(image, kernel)
 
         panel = imageset.get_detector()[i_panel]
         beam = imageset.get_beam()
@@ -122,7 +130,17 @@ class RadialProfileSpotFinderThresholdExt:
         # Calculate median intensity and IQR within each bin of masked values
         masked_lookup = lookup.select(mask.as_1d())
         masked_image = image.select(mask.as_1d())
-        binned_statistics = BinnedStatistics(masked_image, masked_lookup, n_bins)
+        # Bin natively in the image precision so a single-precision image is not
+        # promoted to double here; medians/IQRs (no accumulation, just sorting)
+        # are numerically safe in float.
+        binned_statistics_class = (
+            BinnedStatisticsFloat
+            if isinstance(image, flex.float)
+            else BinnedStatistics
+        )
+        binned_statistics = binned_statistics_class(
+            masked_image, masked_lookup, n_bins
+        )
         med_I = binned_statistics.get_medians()
         iqr = binned_statistics.get_iqrs()
 
