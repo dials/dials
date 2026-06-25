@@ -146,12 +146,14 @@ def filter_known_symmetry(
 
     if target_symmetry.unit_cell() is not None:
         target_symmetry_primitive = target_symmetry.change_basis(cb_op_ref_to_primitive)
+        target_unit_cell = target_symmetry.as_reference_setting().best_cell().unit_cell()
     else:
         target_symmetry_primitive = target_symmetry.customized_copy(
             space_group_info=target_symmetry.space_group_info().change_basis(
                 cb_op_ref_to_primitive
             )
         )
+        target_unit_cell = None
     target_bravais_str = str(
         bravais_lattice(
             group=target_symmetry_primitive.space_group_info()
@@ -160,7 +162,6 @@ def filter_known_symmetry(
         )
     )
 
-    target_unit_cell = target_symmetry.as_reference_setting().best_cell().unit_cell()
     for model in crystal_models:
         uc = model.get_unit_cell()
         best_subgroup = find_matching_symmetry(
