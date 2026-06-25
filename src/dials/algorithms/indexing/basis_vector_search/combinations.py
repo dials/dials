@@ -146,7 +146,9 @@ def filter_known_symmetry(
 
     if target_symmetry.unit_cell() is not None:
         target_symmetry_primitive = target_symmetry.change_basis(cb_op_ref_to_primitive)
-        target_unit_cell = target_symmetry.as_reference_setting().best_cell().unit_cell()
+        target_unit_cell = (
+            target_symmetry.as_reference_setting().best_cell().unit_cell()
+        )
     else:
         target_symmetry_primitive = target_symmetry.customized_copy(
             space_group_info=target_symmetry.space_group_info().change_basis(
