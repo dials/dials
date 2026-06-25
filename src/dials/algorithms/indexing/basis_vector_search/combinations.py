@@ -160,6 +160,7 @@ def filter_known_symmetry(
         )
     )
 
+    target_unit_cell = target_symmetry.as_reference_setting().best_cell().unit_cell()
     for model in crystal_models:
         uc = model.get_unit_cell()
         best_subgroup = find_matching_symmetry(
@@ -170,7 +171,7 @@ def filter_known_symmetry(
                 best_subgroup["best_subsym"]
                 .unit_cell()
                 .is_similar_to(
-                    target_symmetry.as_reference_setting().best_cell().unit_cell(),
+                    target_unit_cell,
                     relative_length_tolerance=relative_length_tolerance,
                     absolute_angle_tolerance=absolute_angle_tolerance,
                 )
