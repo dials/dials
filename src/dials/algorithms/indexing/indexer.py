@@ -130,10 +130,10 @@ indexing {
   }
 
   index_assignment {
-    method = *simple local
+    method = *simple local polychromatic
       .type = choice
-      .help = "Choose between simple 'global' index assignment and xds-style "
-              "'local' index assignment."
+      .help = "Choose between simple 'global' index assignment, xds-style "
+              "'local' index assignment, or polychromatic index assignment."
       .expert_level = 1
     simple {
       hkl_tolerance = 0.3
@@ -155,6 +155,23 @@ indexing {
         .help = "This corresponds to the xds parameter INDEX_QUALITY="
       nearest_neighbours = 20
         .type = int(value_min=1)
+    }
+    polychromatic {
+      d_min = 1.0
+        .type = float
+        .help = "The resolution limit for d-spacing."
+      wavelength_min = 0.95
+        .type = float
+        .help = "The minimum wavelength of the beam spectrum in Angstroms."
+      wavelength_max = 1.20
+        .type = float
+        .help = "The maximum wavelength of the beam spectrum in Angstroms."
+      wavelength_peak = 1.05
+        .type = float
+        .help = "The peak wavelength of the beam spectrum in Angstroms."
+      n_macrocycles = 5
+        .type = int
+        .help = "Number of macrocycles for index assignment and orientation refinement to run."
     }
   }
   check_misindexing {
@@ -325,6 +342,13 @@ class Indexer:
                 l_min=self.params.index_assignment.local.l_min,
                 nearest_neighbours=self.params.index_assignment.local.nearest_neighbours,
             )
+        elif self.params.index_assignment.method == "polychromatic":
+            self._assign_indices = assign_indices.AssignIndicesPolychromatic(
+                lam_min=self.params.index_assignment.polychromatic.wavelength_min,
+                lam_max=self.params.index_assignment.polychromatic.wavelength_max,
+                lam_peak=self.params.index_assignment.polychromatic.wavelength_peak,
+                d_min=self.params.index_assignment.polychromatic.d_min,
+            )
         else:
             self._assign_indices = assign_indices.AssignIndicesGlobal(
                 tolerance=self.params.index_assignment.simple.hkl_tolerance
@@ -392,6 +416,10 @@ class Indexer:
         else:
             has_stills = False
             has_sequences = False
+            if params.indexing.index_assignment.method == "polychromatic":
+                is_polychromatic = True
+            else:
+                is_polychromatic = False
             for expt in experiments:
                 if isinstance(expt.imageset, ImageSequence):
                     has_sequences = True
@@ -400,7 +428,11 @@ class Indexer:
 
             if has_stills and has_sequences:
                 raise ValueError(
-                    "Please provide only stills or only sequences, not both"
+                    "Please provide only stills or only sequences, not both."
+                )
+            if is_polychromatic and has_sequences:
+                raise ValueError(
+                    "We do not support polychromatic sequence data. Use stills only."
                 )
 
             use_stills_indexer = has_stills
