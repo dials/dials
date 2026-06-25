@@ -6,10 +6,10 @@ from itertools import combinations as iter_combinations
 
 import numpy as np
 
+from cctbx import sgtbx
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.uctbx.reduction_base import iteration_limit_exceeded
 from dxtbx.model import Crystal
-from scitbx import matrix as scitbx_matrix
 
 from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.compare_orientation_matrices import (
@@ -98,11 +98,13 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
 
     # Crystal creation and Niggli reduction are C++ and cannot be batched.
     # The loop runs only over the fraction of combinations that passed the filters.
-    for a_row, b_row, c_row in zip(a_arr, b_arr, c_arr):
-        a = scitbx_matrix.col(a_row.tolist())
-        b = scitbx_matrix.col(b_row.tolist())
-        c = scitbx_matrix.col(c_row.tolist())
-        model = Crystal(a, b, c, space_group_symbol="P 1")
+    # Pass the real-space vectors as plain Python lists (one bulk .tolist() per
+    # array) straight to the C++ Crystal constructor, and reuse a single P 1 space
+    # group, rather than round-tripping each row through scitbx.matrix.col and
+    # re-parsing the "P 1" symbol on every iteration.
+    sg_p1 = sgtbx.space_group()
+    for a_row, b_row, c_row in zip(a_arr.tolist(), b_arr.tolist(), c_arr.tolist()):
+        model = Crystal(a_row, b_row, c_row, space_group=sg_p1)
         uc = model.get_unit_cell()
         try:
             cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
