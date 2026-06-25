@@ -4,8 +4,10 @@ import logging
 import math
 from itertools import combinations as iter_combinations
 
+import gemmi
 import numpy as np
 
+from cctbx.sgtbx import rt_mx
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.uctbx.reduction_base import iteration_limit_exceeded
 from dxtbx.model import Crystal
@@ -188,13 +190,20 @@ def filter_known_symmetry(
 
 
 def filter_similar_orientations(
-    crystal_models, other_crystal_models, minimum_angular_separation=5
+    crystal_models, other_crystal_models, minimum_angular_separation=5, max_obliq=3.0
 ):
     for cryst in crystal_models:
         orientation_too_similar = False
+
+        cell = gemmi.UnitCell(*cryst.get_unit_cell().parameters())
+        sg = gemmi.SpaceGroup(cryst.get_space_group().type().lookup_symbol())
+        gemmi_ops = gemmi.find_twin_laws(cell, sg, max_obliq=max_obliq, all_ops=True)
+        sgtbx_ops = [rt_mx("x,y,z")]
+        sgtbx_ops.extend([rt_mx(op.triplet()) for op in gemmi_ops])
+
         for cryst_a in other_crystal_models:
             R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
-                cryst_a, cryst
+                cryst_a, cryst, ops=sgtbx_ops
             )
             if abs(angle) < minimum_angular_separation:  # degrees
                 orientation_too_similar = True
