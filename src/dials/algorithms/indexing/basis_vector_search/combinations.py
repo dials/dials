@@ -146,12 +146,16 @@ def filter_known_symmetry(
 
     if target_symmetry.unit_cell() is not None:
         target_symmetry_primitive = target_symmetry.change_basis(cb_op_ref_to_primitive)
+        target_unit_cell = (
+            target_symmetry.as_reference_setting().best_cell().unit_cell()
+        )
     else:
         target_symmetry_primitive = target_symmetry.customized_copy(
             space_group_info=target_symmetry.space_group_info().change_basis(
                 cb_op_ref_to_primitive
             )
         )
+        target_unit_cell = None
     target_bravais_str = str(
         bravais_lattice(
             group=target_symmetry_primitive.space_group_info()
@@ -170,7 +174,7 @@ def filter_known_symmetry(
                 best_subgroup["best_subsym"]
                 .unit_cell()
                 .is_similar_to(
-                    target_symmetry.as_reference_setting().best_cell().unit_cell(),
+                    target_unit_cell,
                     relative_length_tolerance=relative_length_tolerance,
                     absolute_angle_tolerance=absolute_angle_tolerance,
                 )
