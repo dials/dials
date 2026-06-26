@@ -5,7 +5,7 @@ c-compiler
 colorlog
 conda
 cxx-compiler
-dials-data>=2.4.123
+dials-data>=2.4.142
 docutils
 eigen
 future

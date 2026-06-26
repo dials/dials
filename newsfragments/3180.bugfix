@@ -1,1 +1,0 @@
-``dials.correlation_matrix``: Set minimum number of bins for rij histogram to account for matrices with little-to-no variation.
