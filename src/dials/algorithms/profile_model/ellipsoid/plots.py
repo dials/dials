@@ -5,6 +5,8 @@ import numpy as np
 from scitbx import matrix
 from scitbx.array_family import flex
 
+from dials.util.plotly_utils import round_for_json
+
 
 def plot_distance_from_ewald_sphere(experiment, reflection_table, prefix):
     """Plot distance from Ewald sphere"""
@@ -24,7 +26,7 @@ def plot_distance_from_ewald_sphere(experiment, reflection_table, prefix):
             "data": [
                 (
                     {
-                        "x": bin_centers.tolist(),
+                        "x": round_for_json(bin_centers.tolist()),
                         "y": hist.tolist(),
                         "type": "bar",
                     }
@@ -54,7 +56,7 @@ def plot_partiality(reflection_table):
             "data": [
                 (
                     {
-                        "x": bin_centers.tolist(),
+                        "x": round_for_json(bin_centers.tolist()),
                         "y": hist.tolist(),
                         "type": "bar",
                     }

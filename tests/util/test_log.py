@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import pytest
-
 import dials.util.log
 from dials.util.mp import batch_multi_node_parallel_map, multi_node_parallel_map
 
@@ -61,11 +59,6 @@ def log_something(_: Any) -> list[logging.LogRecord]:
     return handler.records
 
 
-@pytest.mark.xfail(
-    "os.name == 'nt'",
-    reason="https://github.com/dials/dials/issues/1650",
-    raises=AttributeError,
-)
 def test_cached_log_records(caplog):
     # Generate some cached log messages in easy_mp child processes.
     results = multi_node_parallel_map(

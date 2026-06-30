@@ -446,6 +446,8 @@ class ExtractSpots:
         """
         Compute the chunk size for a given number of images and processes
         """
+        if nproc * min_chunksize >= nimg:
+            return min_chunksize
         chunksize = int(math.ceil(nimg / nproc))
         remainder = nimg % (chunksize * nproc)
         test_chunksize = chunksize - 1
@@ -455,7 +457,15 @@ class ExtractSpots:
                 chunksize = test_chunksize
                 remainder = test_remainder
             test_chunksize -= 1
-        return chunksize
+        remainder = nimg % (chunksize * nproc)
+        if remainder == 0:
+            return chunksize
+        else:
+            # work out the remainder at the chunksize to avoid a small amount leftover
+            # how many full batches we will have after correction
+            n_batches = nimg // (chunksize * nproc)
+            extra = int(math.ceil(remainder / (chunksize * n_batches)))
+            return chunksize + extra
 
     def _find_spots(self, imageset):
         """

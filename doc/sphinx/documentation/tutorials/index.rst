@@ -38,6 +38,7 @@ Advanced command-line tutorials
    multi_lattice_tutorial
    metrology_corrections
    br_lyso_multi
+   intensity_based_clustering
 
 DIALS for 3DED/MicroED
 

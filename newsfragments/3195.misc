@@ -1,0 +1,1 @@
+Raise in sync_geometry if the reference geometry has a different hierarchy than the source.

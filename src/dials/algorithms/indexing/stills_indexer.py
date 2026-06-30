@@ -100,11 +100,11 @@ class StillsIndexer(Indexer):
         super().__init__(reflections, experiments, params)
         self.warn_if_setting_unused_refinement_protocol_params()
 
-        import iotbx.phil
         from rstbx.indexing_api.outlier_procedure import OutlierPlotPDF
-        from rstbx.phil.phil_preferences import indexing_api_defs
 
-        self.hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
+        from dials.algorithms.indexing import rstbx_indexing_api_phil_scope
+
+        self.hardcoded_phil = rstbx_indexing_api_phil_scope().extract()
         # comment this in if PDF graph is desired:
         # self.hardcoded_phil.indexing.outlier_detection.pdf = "outlier.pdf"
         # new code for outlier rejection inline here

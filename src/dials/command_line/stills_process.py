@@ -18,6 +18,7 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     ExperimentListFactory,
 )
+from dxtbx.util import ersatz_uuid4
 from libtbx.phil import parse
 from libtbx.utils import Abort, Sorry
 
@@ -168,7 +169,8 @@ def _control_phil_str():
     psana_identifiers = False
       .type = bool
       .expert_level = 3
-      .help = Add psana timestamps to the experiment identifiers
+      .help = Add psana timestamps to the experiment identifiers. This allows \
+              sorting of LCLS XFEL data for certain experiments.
   }
 
   include scope dials.util.options.lookup_phil_scope
@@ -393,6 +395,24 @@ def do_import(filename, load_models=True):
 
 
 def sync_geometry(src, dest):
+    """Copy the refined local geometry from `src` onto `dest` node-by-node.
+
+    This faithfully reproduces the `src` hierarchy (including intermediate group
+    nodes and leaf-panel local frames) onto `dest`, which requires the two trees
+    to have the same shape. A `ValueError` is raised if the shapes differ, rather
+    than silently mis-pairing nodes (which the previous `zip`-by-child copy did).
+    """
+    if src.is_panel() != dest.is_panel():
+        raise ValueError(
+            "sync_geometry: reference and target detector hierarchies have "
+            "different shapes (panel/group mismatch); cannot transfer geometry."
+        )
+    if not src.is_panel() and len(src) != len(dest):
+        raise ValueError(
+            "sync_geometry: reference node has %d children but target has %d; "
+            "the detector hierarchies have different shapes and geometry cannot "
+            "be transferred." % (len(src), len(dest))
+        )
     dest.set_local_frame(
         src.get_local_fast_axis(), src.get_local_slow_axis(), src.get_local_origin()
     )
@@ -1005,7 +1025,6 @@ class Processor:
 
             self.setup_filenames(composite_tag)
 
-        self.spot_finder_factory = None
         self.idxr_known_crystal_models = None
         self.idxr = None
         if self.params.indexing.stills.method_list:
@@ -1125,14 +1144,14 @@ class Processor:
         self.debug_start(tag)
 
         for experiment in experiments:
-           if experiment.identifier == "":
-               experiment.identifier = ersatz_uuid4()
-               fmt = experiment.imageset.get_format_class().get_instance(
-                   experiment.imageset.paths()[0]
-               )
-               if self.params.output.psana_identifiers:
-                   ts = fmt.get_psana_timestamp(experiment.imageset.indices()[0])
-                   experiment.identifier = ts + "_" + experiment.identifier
+            if experiment.identifier == "":
+                experiment.identifier = ersatz_uuid4()
+            if self.params.output.psana_identifiers:
+                fmt = experiment.imageset.get_format_class().get_instance(
+                    experiment.imageset.paths()[0]
+                )
+                ts = fmt.get_psana_timestamp(experiment.imageset.indices()[0])
+                experiment.identifier = ts + "_" + experiment.identifier
 
         if self.params.output.experiments_filename:
             if self.params.output.composite_output:
