@@ -8,6 +8,7 @@ from iotbx.data_plots import table_data
 from libtbx import phil
 
 from dials.util import resolution_analysis
+from dials.util.plotly_utils import round_for_json
 from dials_pychef_ext import ChefStatistics, Observations
 
 __all__ = [
@@ -332,7 +333,7 @@ class Statistics:
         scp_data.append(
             {
                 "x": x,
-                "y": list(self.scp),
+                "y": round_for_json(self.scp, ndigits=4),
                 "type": "scatter",
                 "name": "Scp overall",
                 "line": {"width": 3},
@@ -341,19 +342,26 @@ class Statistics:
         rcp_data.append(
             {
                 "x": x,
-                "y": list(self.rcp),
+                "y": round_for_json(self.rcp, ndigits=4),
                 "type": "scatter",
                 "name": "Rcp overall",
                 "line": {"width": 3},
             }
         )
-        rd_data.append({"x": x, "y": list(self.rd), "type": "scatter", "name": "Rd"})
+        rd_data.append(
+            {
+                "x": x,
+                "y": round_for_json(self.rd, ndigits=4),
+                "type": "scatter",
+                "name": "Rd",
+            }
+        )
 
         anomalous = self.intensities.anomalous_flag()
         completeness_data.append(
             {
                 "x": x,
-                "y": list(self.ieither_comp_overall),
+                "y": round_for_json(self.ieither_comp_overall, ndigits=4),
                 "type": "scatter",
                 "name": "I",
                 "line": {"width": 3},
@@ -363,7 +371,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iboth_comp_overall),
+                    "y": round_for_json(self.iboth_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "dI",
                     "line": {"width": 3},
@@ -372,7 +380,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iplus_comp_overall),
+                    "y": round_for_json(self.iplus_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "I+",
                     "line": {"width": 3},
@@ -381,7 +389,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iminus_comp_overall),
+                    "y": round_for_json(self.iminus_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "I-",
                     "line": {"width": 3},
@@ -396,7 +404,9 @@ class Statistics:
                 scp_data.append(
                     {
                         "x": x,
-                        "y": list(self.scp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.scp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "Scp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -405,7 +415,9 @@ class Statistics:
                 rcp_data.append(
                     {
                         "x": x,
-                        "y": list(self.rcp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.rcp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "Rcp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -415,7 +427,9 @@ class Statistics:
                 completeness_data.append(
                     {
                         "x": x,
-                        "y": list(self.ieither_comp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.ieither_comp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "I" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},

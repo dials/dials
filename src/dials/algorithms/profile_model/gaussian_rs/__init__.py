@@ -69,7 +69,7 @@ def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
 
 
 def MaskCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
-    """Return the relevant partiality calculator."""
+    """Return the relevant mask calculator."""
     if goniometer is None or scan is None or scan.is_still():
         algorithm = MaskCalculator2D(beam, detector, delta_b, delta_m)
     else:

@@ -14,6 +14,7 @@ from dials.pychef import interpret_images_to_doses_options
 from dials.report.plots import d_star_sq_to_d_ticks
 from dials.util.export_mtz import MTZWriterBase
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.plotly_utils import round_for_json
 
 logger = logging.getLogger("dials.command_line.damage_analysis")
 
@@ -123,6 +124,9 @@ class DamageSeriesPlots:
                 self.d_star_sq_tickvals, self.d_star_sq_ticktext = d_star_sq_to_d_ticks(
                     self.d_star_sq_bins, nticks=5
                 )
+                self.d_star_sq_tickvals = round_for_json(
+                    self.d_star_sq_tickvals, ndigits=6
+                )
                 for k in self._damage_series.values():
                     k["layout"]["xaxis"]["tickvals"] = self.d_star_sq_tickvals
                     k["layout"]["xaxis"]["ticktext"] = self.d_star_sq_ticktext
@@ -139,8 +143,8 @@ class DamageSeriesPlots:
             ]
             plots_dict["r_pim"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.r_pim for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.r_pim for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",
@@ -148,8 +152,8 @@ class DamageSeriesPlots:
             )
             plots_dict["cc_half"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.cc_one_half for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.cc_one_half for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",
@@ -157,8 +161,8 @@ class DamageSeriesPlots:
             )
             plots_dict["i_over_sigma"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.i_over_sigma_mean for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.i_over_sigma_mean for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",
@@ -166,8 +170,8 @@ class DamageSeriesPlots:
             )
             plots_dict["completeness"]["data"].append(
                 {
-                    "x": d_star_sq_bins_this,
-                    "y": [b.completeness for b in result.bins],
+                    "x": round_for_json(d_star_sq_bins_this, ndigits=6),
+                    "y": round_for_json([b.completeness for b in result.bins]),
                     "type": "scatter",
                     "name": label,
                     "mode": "lines",

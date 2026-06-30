@@ -32,6 +32,7 @@ from dials.util.batch_handling import (
 )
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.normalisation import quasi_normalisation
+from dials.util.plotly_utils import round_for_json
 
 logger = logging.getLogger(__name__)
 
@@ -505,18 +506,19 @@ def plot_result(metric, result):
         d_star_sq_tickvals, d_star_sq_ticktext = plots.d_star_sq_to_d_ticks(
             result.d_star_sq, 5
         )
+        d_star_sq_tickvals = round_for_json(d_star_sq_tickvals, ndigits=6)
         return {
             "data": [
                 {
-                    "x": list(result.d_star_sq),  # d_star_sq
-                    "y": list(result.y_obs),
+                    "x": round_for_json(result.d_star_sq),  # d_star_sq
+                    "y": round_for_json(result.y_obs),
                     "type": "scatter",
                     "name": "y_obs",
                 },
                 (
                     {
-                        "x": list(result.d_star_sq),
-                        "y": list(result.y_fit),
+                        "x": round_for_json(result.d_star_sq),
+                        "y": round_for_json(result.y_fit),
                         "type": "scatter",
                         "name": "y_fit",
                         "line": {"color": "rgb(47, 79, 79)"},

@@ -164,7 +164,7 @@ namespace dials { namespace model {
     /**
      * @returns The mask array
      */
-    af::versa<int, af::c_grid<3>> mask() const {
+    af::versa<uint8_t, af::c_grid<3>> mask() const {
       return mask_;
     }
 
@@ -254,7 +254,7 @@ namespace dials { namespace model {
     /**
      * Extract data with the given bbox
      */
-    af::versa<int, af::c_grid<3>> extract_mask(int6 bbox, std::size_t index) const {
+    af::versa<uint8_t, af::c_grid<3>> extract_mask(int6 bbox, std::size_t index) const {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -267,7 +267,7 @@ namespace dials { namespace model {
       std::size_t xsize = bbox[1] - bbox[0];
       std::size_t ysize = bbox[3] - bbox[2];
       std::size_t zsize = bbox[5] - bbox[4];
-      af::versa<int, af::c_grid<3>> result(af::c_grid<3>(zsize, ysize, xsize));
+      af::versa<uint8_t, af::c_grid<3>> result(af::c_grid<3>(zsize, ysize, xsize));
       std::size_t i0 = bbox[0];
       std::size_t j0 = bbox[2];
       std::size_t k0 = bbox[4] - frame0_;
@@ -275,7 +275,7 @@ namespace dials { namespace model {
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
             std::size_t l = grid_(k + k0, j + j0, i + i0);
-            int value = mask_[l];
+            uint8_t value = mask_[l];
             if (value & Foreground) {
               const Label& label = label_[l];
               if (!label.contains(index)) {
@@ -358,7 +358,7 @@ namespace dials { namespace model {
      */
     void set_mask(int6 bbox,
                   std::size_t index,
-                  const af::const_ref<int, af::c_grid<3>>& mask) {
+                  const af::const_ref<uint8_t, af::c_grid<3>>& mask) {
       DIALS_ASSERT(bbox[0] >= 0);
       DIALS_ASSERT(bbox[2] >= 0);
       DIALS_ASSERT(bbox[4] >= frame0_);
@@ -392,11 +392,11 @@ namespace dials { namespace model {
     void set_mask_value(std::size_t k,
                         std::size_t j,
                         std::size_t i,
-                        int value,
+                        uint8_t value,
                         std::size_t index) {
       std::size_t l = grid_(k, j, i);
-      int value1 = mask_[l];
-      int value2 = value;
+      uint8_t value1 = mask_[l];
+      uint8_t value2 = value;
       if (value1 & Foreground) {
         value2 &= ~Background;
       }
@@ -457,7 +457,7 @@ namespace dials { namespace model {
     af::c_grid<3> grid_;
     af::versa<FloatType, af::c_grid<3>> data_;
     af::versa<FloatType, af::c_grid<3>> background_;
-    af::versa<int, af::c_grid<3>> mask_;
+    af::versa<uint8_t, af::c_grid<3>> mask_;
     af::versa<Label, af::c_grid<3>> label_;
   };
 

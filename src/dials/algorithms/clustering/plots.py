@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from dials.util.plotly_utils import round_for_json
+
 
 def flex_double_as_string(flex_array, n_digits=None):
     if n_digits is not None:
@@ -35,9 +37,9 @@ def heatmap_unit_cell_scatter_plots(uc_params, nbins=100, mask_zeros=True):
     return {
         "data": [
             {
-                "x": x1.tolist(),
-                "y": y1.tolist(),
-                "z": z1.tolist(),
+                "x": round_for_json(x1.tolist(), ndigits=6),
+                "y": round_for_json(y1.tolist(), ndigits=6),
+                "z": round_for_json(z1.tolist(), ndigits=6),
                 "type": "heatmap",
                 "mode": "markers",
                 "name": "a vs. b",
@@ -49,9 +51,9 @@ def heatmap_unit_cell_scatter_plots(uc_params, nbins=100, mask_zeros=True):
                 "zmax": maxz,
             },
             {
-                "x": x2.tolist(),
-                "y": y2.tolist(),
-                "z": z2.tolist(),
+                "x": round_for_json(x2.tolist(), ndigits=6),
+                "y": round_for_json(y2.tolist(), ndigits=6),
+                "z": round_for_json(z2.tolist(), ndigits=6),
                 "type": "heatmap",
                 "mode": "markers",
                 "name": "b vs. c",
@@ -63,9 +65,9 @@ def heatmap_unit_cell_scatter_plots(uc_params, nbins=100, mask_zeros=True):
                 "zmax": maxz,
             },
             {
-                "x": x3.tolist(),
-                "y": y3.tolist(),
-                "z": z3.tolist(),
+                "x": round_for_json(x3.tolist(), ndigits=6),
+                "y": round_for_json(y3.tolist(), ndigits=6),
+                "z": round_for_json(z3.tolist(), ndigits=6),
                 "type": "heatmap",
                 "mode": "markers",
                 "name": "c vs. a",
@@ -296,7 +298,7 @@ def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None, help
         data.append(
             {
                 "x": x,
-                "y": y,
+                "y": round_for_json(y, ndigits=6),
                 "marker": {"color": colors.get(color_list[k])},
                 "mode": "lines",
             }

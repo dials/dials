@@ -14,6 +14,7 @@ from cctbx import miller
 from cctbx.sgtbx import bravais_types
 from iotbx.merging_statistics import dataset_statistics
 from libtbx import Auto
+from mmtbx.scaling import data_statistics as mmtbx_dataset_statistics
 from scitbx.array_family import flex
 
 import dials.util.version
@@ -31,6 +32,33 @@ RAD2DEG = 180.0 / math.pi
 dials_version = dials.util.version.dials_version()
 
 
+stats_formats = {
+    "_reflns.d_resolution_high": "{:.3f}",
+    "_reflns.d_resolution_low": "{:.3f}",
+    "_reflns.pdbx_CC_half": "{:.4f}",
+    "_reflns.pdbx_Rmerge_I_obs": "{:.4f}",
+    "_reflns.pdbx_Rpim_I_all": "{:.4f}",
+    "_reflns.pdbx_Rrim_I_all": "{:.4f}",
+    "_reflns.pdbx_netI_over_sigmaI": "{:.3f}",
+    "_reflns.pdbx_netI_over_av_sigmaI": "{:.3f}",
+    "_reflns.pdbx_redundancy": "{:.3f}",
+    "_reflns.percent_possible_obs": "{:.3f}",
+}
+
+stats_array_formats = {
+    "_reflns_shell.d_res_high": "{:.3f}",
+    "_reflns_shell.d_res_low": "{:.3f}",
+    "_reflns_shell.pdbx_CC_half": "{:.4f}",
+    "_reflns_shell.Rmerge_I_obs": "{:.4f}",
+    "_reflns_shell.pdbx_Rpim_I_all": "{:.4f}",
+    "_reflns_shell.pdbx_Rrim_I_all": "{:.4f}",
+    "_reflns_shell.pdbx_netI_over_sigmaI_obs": "{:.3f}",
+    "_reflns_shell.meanI_over_sigI_obs": "{:.3f}",
+    "_reflns_shell.pdbx_redundancy": "{:.3f}",
+    "_reflns_shell.percent_possible_obs": "{:.3f}",
+}
+
+
 class MMCIFOutputFile:
     """
     Class to output experiments and reflections as MMCIF file
@@ -43,7 +71,7 @@ class MMCIFOutputFile:
         self._cif = iotbx.cif.model.cif()
         self.params = params
         self._v5_next_fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
-        self._v5_0_fmt = "%2i %6i %-2i %-2i %-2i %6i %5.3f %5.3f"
+        self._v5_0_fmt = "%2i %6i %-2i %-2i %-2i %5.3f %5.3f"
 
     def write(self, experiments, reflections):
         """
@@ -128,6 +156,7 @@ class MMCIFOutputFile:
             "_software.type",
             "_software.classification",
             "_software.description",
+            "_software.pdbx_reference_DOI",
         )
 
         mmcif_citations_header = (
@@ -210,6 +239,7 @@ class MMCIFOutputFile:
         # _diffrn_detector.type = (full name of detector e.g. DECTRIS PILATUS3 2M)
         # One date is required, so if multiple just use the first date.
         cif_block["_diffrn_detector.diffrn_id"] = 1
+        cif_block["_diffrn_detector.id"] = 1
         if epochs:  # some still expts have scans, but some don't
             min_epoch = min(epochs)
             date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
@@ -256,7 +286,6 @@ class MMCIFOutputFile:
             "_diffrn_refln.index_h",
             "_diffrn_refln.index_k",
             "_diffrn_refln.index_l",
-            "_diffrn_refln.pdbx_image_id",
             "_diffrn_refln.pdbx_detector_x",
             "_diffrn_refln.pdbx_detector_y",
         )
@@ -373,13 +402,103 @@ class MMCIFOutputFile:
                 eliminate_sys_absent=False,
                 assert_is_not_unique_set_under_symmetry=False,
             )
+            merged = i_obs.merge_equivalents(use_internal_variance=False)
+            # Also estimate the Wilson B factor.
+            iso_b_wilson = mmtbx_dataset_statistics.wilson_scaling(
+                miller_array=merged.array(), n_residues=200
+            ).iso_b_wilson
             merged_block = iotbx.cif.model.block()
             merged_block["_reflns.pdbx_ordinal"] = 1
             merged_block["_reflns.pdbx_diffrn_id"] = 1
             merged_block["_reflns.entry_id"] = "DIALS"
             merged_data = result.as_cif_block()
+            # Apply custom formatting.
+            for k in list(merged_data.keys()):
+                if k in stats_formats:
+                    merged_data[k] = stats_formats[k].format(float(merged_data[k]))
+                elif k in stats_array_formats:
+                    merged_data[k] = flex.std_string(
+                        [
+                            stats_array_formats[k].format(float(i))
+                            for i in merged_data[k]
+                        ]
+                    )
+            merged_block["_reflns.B_iso_Wilson_estimate"] = f"{iso_b_wilson:.3f}"
             merged_block.update(merged_data)
             cif_block.update(merged_block)
+
+        # Write the necessary metadata to link the scans to the detector/dataset
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_detector_element.detector_id",
+                "_diffrn_detector_element.id",
+            )
+        )
+        cif_loop.add_row((1, 1))
+        cif_block.add_loop(cif_loop)
+        detector_axis_cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_detector_axis.detector_id",
+                "_diffrn_detector_axis.axis_id",
+            )
+        )
+        diffrn_frame_cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_data_frame.detector_element_id",
+                "_diffrn_data_frame.id",
+            )
+        )
+
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_diffrn_scan_axis.scan_id",
+                "_diffrn_scan_axis.axis_id",
+                "_diffrn_scan_axis.angle_start",
+                "_diffrn_scan_axis.angle_increment",
+            )
+        )
+        scan_loop = iotbx.cif.model.loop(
+            header=[
+                "_diffrn_scan.id",
+                "_diffrn_scan.frame_id_start",
+                "_diffrn_scan.frame_id_end",
+                "_diffrn_scan.frames",
+            ]
+        )
+
+        for i, exp in enumerate(experiments):
+            scan = exp.scan
+            if scan:
+                image_range = scan.get_image_range()
+                start, increment = scan.get_oscillation(deg=True)
+            else:
+                image_range = (1, 1)
+                start, increment = (0, 0)
+            scan_loop.add_row(
+                (
+                    i + 1,
+                    f"scan_{i + 1}_frame_start",
+                    f"scan_{i + 1}_frame_end",
+                    image_range[1] - image_range[0] + 1,
+                )
+            )
+            # for h, v in zip(header, vals):
+            #    cif_block[h] = v
+            cif_loop.add_row(
+                (
+                    i + 1,
+                    i + 1,
+                    start,
+                    increment,
+                )
+            )
+            diffrn_frame_cif_loop.add_row((1, f"scan_{i + 1}_frame_start"))
+            diffrn_frame_cif_loop.add_row((1, f"scan_{i + 1}_frame_end"))
+            detector_axis_cif_loop.add_row((1, i + 1))
+        cif_block.add_loop(diffrn_frame_cif_loop)
+        cif_block.add_loop(detector_axis_cif_loop)
+        cif_block.add_loop(scan_loop)
+        cif_block.add_loop(cif_loop)
 
         # Write the crystal information
         # if v5, that's all so return
@@ -388,17 +507,15 @@ class MMCIFOutputFile:
                 hkl.iround()
                 for hkl in reflections["miller_index"].as_vec3_double().parts()
             )
-            # Note, use observed position, so that we are within the
-            # allowed bounds (lower bound 0) for image_id
-            det_x, det_y, det_z = reflections["xyzobs.px.value"].parts()
-            image_id = flex.ceil(det_z).iround()
+            # Det_x, det_y are expected to be calculated positions
+            # according to the dictionary definition.
+            det_x, det_y, _ = reflections["xyzcal.px"].parts()
             loop_values = [
                 flex.int(len(reflections), 1),  # diffn id
                 flex.size_t_range(1, len(reflections) + 1),  # refln id
                 h,
                 k,
                 l,
-                image_id,
                 det_x,
                 det_y,
             ] + [reflections[name] for name in variables_present]
@@ -453,8 +570,12 @@ class MMCIFOutputFile:
         for i, exp in enumerate(experiments):
             scan = exp.scan
             crystal_id = crystal_to_id[exp.crystal]
-            image_range = scan.get_image_range()
-            osc_range = scan.get_oscillation_range(deg=True)
+            if scan:
+                image_range = scan.get_image_range()
+                osc_range = scan.get_oscillation_range(deg=True)
+            else:
+                image_range = (1, 1)
+                osc_range = (0, 0)
             cif_loop.add_row(
                 (
                     i + 1,

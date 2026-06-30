@@ -117,7 +117,8 @@ def generate_phil_scope():
         max_memory_usage = 0.80
           .type = float(value_min=0.0,value_max=1.0)
           .help = "The maximum fraction of available memory to use for"
-                  "allocating shoebox arrays."
+                  "allocating shoebox arrays. Set to None to disable"
+                  "nproc throttling."
 
       }
 

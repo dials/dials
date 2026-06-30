@@ -110,8 +110,8 @@ namespace dials { namespace algorithms { namespace shoebox {
                           Shoebox<>& b,
                           vec3<double> coord_b) const {
       // Get the reflection mask arrays
-      af::ref<int, af::c_grid<3> > mask_a = a.mask.ref();
-      af::ref<int, af::c_grid<3> > mask_b = b.mask.ref();
+      af::ref<uint8_t, af::c_grid<3> > mask_a = a.mask.ref();
+      af::ref<uint8_t, af::c_grid<3> > mask_b = b.mask.ref();
 
       // Get the sizes of the masks
       af::c_grid<3> size_a = mask_a.accessor();

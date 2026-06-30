@@ -37,7 +37,7 @@ namespace dials { namespace algorithms {
     typedef CentroidMaskedImage3d<FloatType> Centroider;
 
     // The mask code to use
-    int mask_code = Valid | Foreground;
+    uint8_t mask_code = Valid | Foreground;
 
     // Trim the bbox
     bbox = volume.trim_bbox(bbox);
@@ -45,7 +45,7 @@ namespace dials { namespace algorithms {
     // Get some arrays
     af::versa<FloatType, af::c_grid<3> > data = volume.extract_data(bbox);
     af::versa<FloatType, af::c_grid<3> > bgrd = volume.extract_background(bbox);
-    af::versa<int, af::c_grid<3> > mask = volume.extract_mask(bbox, index);
+    af::versa<uint8_t, af::c_grid<3> > mask = volume.extract_mask(bbox, index);
 
     // Compute the foreground boolean mask and background subtracted data
     af::versa<FloatType, af::c_grid<3> > foreground_data(mask.accessor());

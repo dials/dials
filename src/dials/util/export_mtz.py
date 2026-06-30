@@ -361,9 +361,7 @@ def write_columns(mtz, reflection_table):
 
     nref = len(reflection_table["miller_index"])
     assert nref
-    xdet, ydet, _ = (
-        flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
-    )
+    xdet, ydet, _ = (flex.double(x) for x in reflection_table["xyzcal.px"].parts())
 
     type_table = {
         "H": "H",
@@ -651,7 +649,7 @@ def export_mtz(
         if expt.scan is not None
     ]
     unique_offsets = set(batch_offsets)
-    if len(set(unique_offsets)) <= 1:
+    if not unique_offsets or len(unique_offsets) != len(batch_offsets):
         logger.debug("Calculating new batches")
         batch_offsets = calculate_batch_offsets(experiment_list)
         batch_starts = [

@@ -21,7 +21,8 @@ def test_consistent():
     assert shoebox.is_consistent() == flex.bool(10, False)
 
     for i in range(10):
-        shoebox[i].allocate()
+        shoebox[i].allocate_data()
+        shoebox[i].allocate_background()
 
     assert shoebox.is_consistent() == flex.bool(10, True)
 
@@ -110,7 +111,8 @@ def test_count_mask_values():
         z1 = random.randint(1, 10) + z0
 
         shoebox[i] = Shoebox((x0, x1, y0, y1, z0, z1))
-        shoebox[i].allocate()
+        shoebox[i].allocate_data()
+        shoebox[i].allocate_background()
         maxnum = len(shoebox[i].mask)
         num[i] = random.randint(1, maxnum)
         indices = random.sample(list(range(maxnum)), num[i])

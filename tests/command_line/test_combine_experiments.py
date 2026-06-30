@@ -9,8 +9,10 @@ import os
 import shutil
 import subprocess
 
+import numpy as np
 import pytest
 
+from dxtbx import flumpy
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
@@ -320,6 +322,53 @@ def narrow_wedge_input_with_identifiers(dials_data, tmp_path):
         for i, _ in enumerate(input_range)
     )
     return phil_input
+
+
+def test_n_refl_panel_list(dials_data, tmp_path):
+    data_dir = dials_data("refinement_test_data")
+    panel_list = [1, 3, 4, 5]
+    n_subset = 3
+
+    # First work out what we expected the outcome to be for these parameters
+    input_data = flex.reflection_table.from_file(
+        f"{data_dir}/multi_stills_combined.pickle"
+    )
+    refls_per_dataset = np.bincount(flumpy.to_numpy(input_data["id"]))
+    sel = flex.bool(input_data.size(), False)
+    for i in panel_list:
+        sel |= input_data["panel"] == i
+    refls_per_dataset_for_panel_selection = np.bincount(
+        flumpy.to_numpy(input_data.select(sel)["id"])
+    )
+    datasets_with_highest_counts = sorted(
+        np.argsort(refls_per_dataset_for_panel_selection)[-n_subset:]
+    )
+    # set as order not guaranteed to be preserved.
+    expected_n_out_per_dataset = {
+        refls_per_dataset[i] for i in datasets_with_highest_counts
+    }
+
+    panel_list_str = ",".join(f"{i}" for i in panel_list)
+    args = [
+        f"{data_dir}/multi_stills_combined.json",
+        f"{data_dir}/multi_stills_combined.pickle",
+        f"n_subset={n_subset}",
+        "n_subset_method=n_refl",
+        f"n_refl_panel_list={panel_list_str}",
+    ]
+
+    result = subprocess.run(
+        [shutil.which("dials.combine_experiments")] + args,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    refls = flex.reflection_table.from_file(tmp_path / "combined.refl")
+    assert len(set(refls["id"])) == n_subset
+    n_refls_out = set()
+    for i, id_ in enumerate(sorted(set(refls["id"]))):
+        n_refls_out.add(len(refls.select(refls["id"] == id_)))
+    assert n_refls_out == expected_n_out_per_dataset
 
 
 @pytest.mark.parametrize("min_refl", ["None", "100"])

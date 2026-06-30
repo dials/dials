@@ -26,6 +26,7 @@ class SoftwareAndCitation:
     software_type: str
     software_classification: str
     software_description: str
+    pdbx_reference_DOI: str
 
     def mmcif_software_loop_data(self) -> tuple:
         return (
@@ -34,6 +35,7 @@ class SoftwareAndCitation:
             self.software_type,
             self.software_classification,
             self.software_description,
+            self.pdbx_reference_DOI,
         )
 
     def mmcif_citation_loop_data(self) -> tuple:
@@ -59,8 +61,9 @@ dials_citation = SoftwareAndCitation(
     "DIALS",
     dials_version,
     "package",
-    "data processing",
+    "data reduction",
     "Data processing and integration within the DIALS software package",
+    "10.1107/S2059798317017235",
 )
 
 dials_scale_citation = SoftwareAndCitation(
@@ -76,6 +79,7 @@ dials_scale_citation = SoftwareAndCitation(
     "program",
     "data scaling",
     "Data scaling and merging within the DIALS software package",
+    "10.1107/S2059798320003198",
 )
 
 xds_citation = SoftwareAndCitation(
@@ -91,6 +95,7 @@ xds_citation = SoftwareAndCitation(
     "package",
     "data reduction",
     "Data integration with the XDS package",
+    "10.1107/S0907444909047337",
 )
 
 ssx_citation = SoftwareAndCitation(
@@ -106,4 +111,5 @@ ssx_citation = SoftwareAndCitation(
     "program",
     "data reduction",
     "Data integration of still-shot data within the DIALS package",
+    "10.1016/bs.mie.2024.10.004",
 )

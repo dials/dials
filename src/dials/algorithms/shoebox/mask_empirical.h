@@ -84,7 +84,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       // Generate the mask for each query reflection
       for (std::size_t query_iter = 0; query_iter < table.size(); ++query_iter) {
         Shoebox<> table_shoebox = table_shoeboxes[query_iter];
-        af::ref<int, af::c_grid<3> > table_mask = table_shoebox.mask.ref();
+        af::ref<uint8_t, af::c_grid<3> > table_mask = table_shoebox.mask.ref();
         int6 table_bbox = table_shoebox.bbox;
         int tblx1 = table_bbox[0];
         int tbly1 = table_bbox[2];
@@ -104,7 +104,8 @@ namespace dials { namespace algorithms { namespace shoebox {
              nn_iter < (query_iter * nn_window) + nn_window;
              ++nn_iter) {
           Shoebox<> reference_shoebox = reference_shoeboxes[A.nn[nn_iter]];
-          af::ref<int, af::c_grid<3> > reference_mask = reference_shoebox.mask.ref();
+          af::ref<uint8_t, af::c_grid<3> > reference_mask =
+            reference_shoebox.mask.ref();
           int6 bbox_nn = reference_shoebox.bbox;
           int nnx1 = bbox_nn[0];
           int nny1 = bbox_nn[2];
