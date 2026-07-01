@@ -473,15 +473,99 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Break a tie between equally-bright pixels by choosing the one nearest the
+   * shoebox centroid, rather than relying on pixel ordering (see
+   * https://github.com/dials/dials/issues/3014). Falls back to first_max (the
+   * first pixel at the maximum, in z, y, x order) when the centroid is
+   * degenerate / non-finite, e.g. for an all-zero shoebox.
+   */
+  template <typename FloatType>
+  std::size_t peak_index_nearest_centroid(
+    const Shoebox<FloatType>& shoebox,
+    const af::const_ref<FloatType, af::c_grid<3> >& data,
+    FloatType max_value,
+    std::size_t first_max) {
+    // Intensity-weighted centroid of the shoebox, in global pixel coordinates.
+    vec3<double> c = shoebox.centroid_all().px.position;
+    if (!std::isfinite(c[0]) || !std::isfinite(c[1]) || !std::isfinite(c[2])) {
+      return first_max;
+    }
+
+    af::c_grid<3> accessor = data.accessor();
+    std::size_t chosen = first_max;
+    double best = -1.0;  // negative sentinel: no candidate measured yet
+
+    // No tied pixel can precede the first maximum, so start the scan there.
+    for (std::size_t j = first_max; j < data.size(); ++j) {
+      // Only the pixels tied at the maximum value are candidates.
+      if (data[j] != max_value) {
+        continue;
+      }
+
+      // Pixel centre in global (x, y, z); the accessor is z, y, x ordered,
+      // hence cd[2]/cd[1]/cd[0] map to x/y/z.
+      tiny<std::size_t, 3> cd = accessor.index_nd(j);
+      vec3<double> p((double)shoebox.bbox[0] + cd[2] + 0.5,
+                     (double)shoebox.bbox[2] + cd[1] + 0.5,
+                     (double)shoebox.bbox[4] + cd[0] + 0.5);
+
+      // Squared distance to the centroid (squared avoids a per-pixel sqrt).
+      double d2 = (p - c).length_sq();
+
+      // Keep the closest candidate; the strict comparison means an equal
+      // distance does not displace an earlier pixel, so ties stay deterministic.
+      if (best >= 0.0 && d2 >= best) {
+        continue;
+      }
+      best = d2;
+      chosen = j;
+    }
+    return chosen;
+  }
+
+  /**
    * Get the maximum index of each shoebox
    */
   template <typename FloatType>
   shared<vec3<double> > peak_coordinates(ref<Shoebox<FloatType> > a) {
     shared<vec3<double> > result(a.size(), af::init_functor_null<vec3<double> >());
     for (std::size_t i = 0; i < a.size(); ++i) {
-      std::size_t index = af::max_index(a[i].data.const_ref());
-      af::c_grid<3> accessor = a[i].data.accessor();
-      tiny<std::size_t, 3> coord = accessor.index_nd(index);
+      af::const_ref<FloatType, af::c_grid<3> > data = a[i].data.const_ref();
+      // The loop below seeds from data[0], so requires a non-empty
+      // array. This restores the empty-array guard that af::max_index
+      // enforced internally throwing on size 0
+      DIALS_ASSERT(data.size() > 0);
+
+      // Single pass to find the maximum value, the first index
+      // attaining it (preserving the historic z, y, x ordering for the
+      // common, untied case) and how many pixels share that maximum
+      // value. This is the same scan af::max_index performed (update
+      // only on a strictly greater value, so the first maximum is
+      // kept), with the sole addition of counting ties in n_max so we
+      // know whether the centroid tie-break below is needed.
+      FloatType max_value = data[0];
+      std::size_t max_index = 0;
+      std::size_t n_max = 1;
+      for (std::size_t j = 1; j < data.size(); ++j) {
+        if (data[j] > max_value) {
+          max_value = data[j];
+          max_index = j;
+          n_max = 1;
+        } else if (data[j] == max_value) {
+          ++n_max;
+        }
+      }
+
+      af::c_grid<3> accessor = data.accessor();
+
+      // The centroid tie-break is only computed in the rare tied case, keeping
+      // the common single-peak path cheap.
+      std::size_t chosen = max_index;
+      if (n_max > 1) {
+        chosen = peak_index_nearest_centroid(a[i], data, max_value, max_index);
+      }
+
+      tiny<std::size_t, 3> coord = accessor.index_nd(chosen);
       result[i][0] = (FloatType)a[i].bbox[0] + (FloatType)coord[2] + 0.5;
       result[i][1] = (FloatType)a[i].bbox[2] + (FloatType)coord[1] + 0.5;
       result[i][2] = (FloatType)a[i].bbox[4] + (FloatType)coord[0] + 0.5;

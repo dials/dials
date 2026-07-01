@@ -122,6 +122,53 @@ def test_count_mask_values():
     assert shoebox.count_mask_values(value) == num
 
 
+def test_peak_coordinates_unique_maximum():
+    from dials.array_family import flex
+    from dials.model.data import Shoebox
+
+    # A shoebox with a single, unique brightest pixel: the peak must be that
+    # pixel's global coordinate (bbox origin + index + 0.5). This covers the
+    # cheap, untied path which must behave exactly as before.
+    bbox = (10, 14, 20, 24, 30, 34)
+    shoebox = flex.shoebox(1)
+    shoebox[0] = Shoebox(bbox)
+    shoebox[0].allocate_data()
+    data = shoebox[0].data  # shape (z, y, x)
+    data[1, 2, 3] = 100
+
+    peak = shoebox.peak_coordinates()
+    assert peak[0] == (10 + 3 + 0.5, 20 + 2 + 0.5, 30 + 1 + 0.5)
+
+
+def test_peak_coordinates_ties_resolved_by_centroid():
+    from dials.array_family import flex
+    from dials.model.data import Shoebox
+
+    # Two pixels share the maximum value. Place the intensity mass (and hence the
+    # centroid) near one of them; the tie must be broken in favour of the pixel
+    # nearest the centroid rather than the z, y, x-first pixel. On the previous
+    # (max_index only) implementation this returned the far corner instead.
+    # See https://github.com/dials/dials/issues/3014.
+    bbox = (0, 6, 0, 6, 0, 1)  # single frame, 6x6 in y, x
+    shoebox = flex.shoebox(1)
+    shoebox[0] = Shoebox(bbox)
+    shoebox[0].allocate_data()
+    data = shoebox[0].data  # shape (z=1, y=6, x=6)
+
+    # Build a blob of intensity in the high-y, high-x corner so the centroid sits
+    # there. Two equal maxima: one at the near corner (in the blob) and one at
+    # the far (low-y, low-x) corner which is first in z, y, x order.
+    for y in range(3, 6):
+        for x in range(3, 6):
+            data[0, y, x] = 5
+    data[0, 0, 0] = 10  # far, z/y/x-first maximum
+    data[0, 5, 5] = 10  # near the centroid
+
+    peak = shoebox.peak_coordinates()
+    # Expect the near-centroid pixel (x=5, y=5), not the (0, 0) corner.
+    assert peak[0] == (5 + 0.5, 5 + 0.5, 0 + 0.5)
+
+
 def test_bounding_boxes():
     from dials.array_family import flex
     from dials.model.data import Shoebox
