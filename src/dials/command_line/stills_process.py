@@ -1025,6 +1025,8 @@ class Processor:
 
             self.setup_filenames(composite_tag)
 
+        self.spot_finder_factory = None
+
         self.idxr_known_crystal_models = None
         self.idxr = None
         if self.params.indexing.stills.method_list:
@@ -1155,7 +1157,11 @@ class Processor:
 
         if self.params.output.experiments_filename:
             if self.params.output.composite_output:
-                self.all_imported_experiments.extend(experiments)
+                if not self.params.dispatch.find_spots:
+                    # find_spots() will not run, so coordinate the append here.
+                    # When find_spots() does run, it appends to
+                    # all_imported_experiments inside its per-experiment loop
+                    self.all_imported_experiments.extend(experiments)
             else:
                 experiments.as_json(self.params.output.experiments_filename)
 
@@ -1318,9 +1324,12 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             for i, experiment in enumerate(experiments):
                 refls = observed.select(observed["id"] == i)
                 refls["id"] = flex.int(len(refls), n)
-                del refls.experiment_identifiers()[i]
+                if i in refls.experiment_identifiers():
+                    del refls.experiment_identifiers()[i]
                 refls.experiment_identifiers()[n] = experiment.identifier
                 self.all_strong_reflections.extend(refls)
+                if self.params.output.experiments_filename:
+                    self.all_imported_experiments.append(experiment)
                 n += 1
         else:
             # Save the reflections to file
@@ -1961,6 +1970,13 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         def extend_with_bookkeeping(
                             src_expts, src_refls, dest_expts, dest_refls
                         ):
+                            assert len(src_expts) == len(
+                                src_refls.experiment_identifiers()
+                            ), (
+                                "experiment/reflection identifier mismatch from sender: "
+                                f"{len(src_expts)} experiments vs "
+                                f"{len(src_refls.experiment_identifiers())} identifier-map entries"
+                            )
                             n = len(dest_refls.experiment_identifiers())
                             src_refls["id"] += n
                             idents = src_refls.experiment_identifiers()
