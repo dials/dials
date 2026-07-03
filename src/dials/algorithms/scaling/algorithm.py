@@ -422,6 +422,9 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                 delta_cc_params.group_size = (
                     self.params.filtering.deltacchalf.group_size
                 )
+                delta_cc_params.partiality_threshold = (
+                    self.params.cut_data.partiality_cutoff
+                )
                 delta_cc_params.stdcutoff = self.params.filtering.deltacchalf.stdcutoff
                 logger.info("\nPerforming a round of filtering.\n")
 

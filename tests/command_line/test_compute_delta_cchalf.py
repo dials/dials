@@ -45,6 +45,7 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmp_path):
         "stdcutoff=0.0",
         "output.reflections=filtered.refl",
         "output.experiments=filtered.expt",
+        "partiality_threshold=0.99",
     ]
     result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
