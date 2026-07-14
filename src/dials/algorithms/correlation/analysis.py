@@ -921,15 +921,18 @@ class CorrelationMatrix:
 
         self.rij_graphs = OrderedDict()
 
-        bins = max(
-            20,
-            (
-                int(
-                    (self.correlation_matrix.max() - self.correlation_matrix.min())
-                    / 0.005
-                )
-                * 2
+        bins = min(
+            max(
+                20,
+                (
+                    int(
+                        (self.correlation_matrix.max() - self.correlation_matrix.min())
+                        / 0.005
+                    )
+                    * 2
+                ),
             ),
+            60,
         )
 
         self.rij_graphs.update(
