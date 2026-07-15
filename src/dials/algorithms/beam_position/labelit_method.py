@@ -382,7 +382,7 @@ def discover_better_experimental_model(
                 solution_lists.append(None)
                 amax_list.append(None)
 
-    if not solution_lists:
+    if all(x is None for x in solution_lists):
         raise Sorry("No solutions found")
 
     new_experiments = optimize_origin_offset_local_scope(
