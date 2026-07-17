@@ -295,6 +295,10 @@ class CentroidOutlier:
         indices = job["indices"]
         nref = len(indices)
 
+        # Set the flex random seed in the ProcessPoolExecutor function to ensure reproducibility
+        # (https://github.com/dials/dials/issues/3214)
+        flex.set_random_seed(42)
+
         msg = None
         if nref >= self._min_num_obs:
             # get the subset of data as a list of columns
