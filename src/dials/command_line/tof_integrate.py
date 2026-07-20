@@ -202,6 +202,15 @@ bbox_xy_padding = 1
 keep_shoeboxes = False
     .type = bool
     .help = "Retain shoeboxes in output reflection table"
+
+wavelength_range = None
+    .type = floats(size=2)
+    .help = "Reflections outside of this wavelength range are not considered (A)"
+
+tof_range = None
+    .type = floats(size=2)
+    .help = "Reflections outside of this time-of-flight range are not considered (usec)"
+
 """
 )
 
@@ -386,6 +395,38 @@ def remove_overlapping_reflections(
         overlap_sel[i1] = True
     logger.info("Rejecting %i overlapping bounding boxes", overlap_sel.count(True))
     reflections = reflections.select(~overlap_sel)
+    return reflections
+
+
+def remove_out_of_range_reflections(
+    reflections: flex.reflection_table, params: libtbx.phil.scope_extract
+) -> flex.reflection_table:
+
+    if params.wavelength_range is not None:
+        min_wavelength = float(params.wavelength_range[0])
+        max_wavelength = float(params.wavelength_range[1])
+        wavelength_sel = (reflections["wavelength_cal"] >= min_wavelength) & (
+            reflections["wavelength_cal"] <= max_wavelength
+        )
+        logger.info(
+            f"Removing {wavelength_sel.count(False)} reflections outside of range ({min_wavelength}, {max_wavelength}) (A)"
+        )
+        reflections = reflections.select(wavelength_sel)
+
+    if params.tof_range is not None:
+        min_tof = float(params.tof_range[0])
+        max_tof = float(params.tof_range[1])
+        tof_sel = (reflections["tof_cal"] >= min_tof) & (
+            reflections["tof_cal"] <= max_tof
+        )
+        logger.info(
+            f"Removing {tof_sel.count(False)} reflections outside of range ({min_tof}, {max_tof}) (usec)"
+        )
+        reflections = reflections.select(tof_sel)
+
+    assert len(reflections) > 0, (
+        "No reflections left after filtering wavelength/tof range"
+    )
     return reflections
 
 
@@ -775,8 +816,13 @@ def run_integrate(
         predicted_reflections = get_predicted_calculated_reflections(
             params=params, experiments=experiments, reflections=reflections
         )
+    else:
+        raise NotImplementedError(f"Unknown integration type {params.integration_type}")
 
     predicted_reflections = remove_overlapping_reflections(predicted_reflections)
+    predicted_reflections = remove_out_of_range_reflections(
+        predicted_reflections, params
+    )
 
     corrections_data = get_corrections_data(experiments=experiments, params=params)
 
