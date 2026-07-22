@@ -186,8 +186,25 @@ def prepare_input(params, experiments, reflections):
             k_sol=params.scaling_options.reference_model.k_sol,
             b_sol=params.scaling_options.reference_model.b_sol,
         )
+        if params.cut_data.small_scale_cutoff is Auto:
+            mean_ref_intensity = flex.mean(reflection_table["intensity"])
+            mean_data_intensities = [
+                flex.mean(r["intensity.sum.value"]) for r in reflections
+            ]
+            n_refls = [r.size() for r in reflections]
+            mean_data_intensity = sum(
+                n * m for n, m in zip(mean_data_intensities, n_refls)
+            ) / sum(n_refls)
+            ratio = mean_ref_intensity / mean_data_intensity
+            params.cut_data.small_scale_cutoff = round(1e-5 / ratio, 12)
+            logger.info(
+                f"Set small scale cutoff to {params.cut_data.small_scale_cutoff}"
+            )
         experiments.append(expt)
         reflections.append(reflection_table)
+    elif params.cut_data.small_scale_cutoff is Auto:
+        params.cut_data.small_scale_cutoff = 0.001
+        logger.info(f"Set small scale cutoff to {params.cut_data.small_scale_cutoff}")
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
     best_unit_cell = params.reflection_selection.best_unit_cell
