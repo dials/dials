@@ -429,7 +429,7 @@ def export_xdsascii(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    _check_input(experiments, reflections, params=params, check_intensities=True)
+    _check_input(experiments, reflections, params=params, check_intensities=False)
 
     from dials.util.export_xds_ascii import export_xds_ascii
 
