@@ -216,7 +216,7 @@ class TOFReflectionPredictor:
                 tof = tof_helpers.tof_from_wavelength(
                     wavelength, L0 + expt_L1[idx] * 10**-3
                 )
-                expt_tof_cal[idx] = tof
+                expt_tof_cal[idx] = tof * 10**6  # (usec)
             tof_cal.set_selected(sel, expt_tof_cal)
             L1.set_selected(sel, expt_L1)
 

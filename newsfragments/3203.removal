@@ -1,0 +1,1 @@
+Removed ``dials.util.export_text``, which was incomplete and unused.

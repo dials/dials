@@ -14,9 +14,6 @@ Util
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.util.export_text
-    :members:
-    :undoc-members:
     :show-inheritance:
 
 .. automodule:: dials.util.image
@@ -43,4 +40,3 @@ Util
     :members:
     :undoc-members:
     :show-inheritance:
-

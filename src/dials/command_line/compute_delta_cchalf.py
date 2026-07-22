@@ -77,6 +77,11 @@ phil_scope = parse(
     .type = float
     .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"
 
+  partiality_threshold = 0.4
+    .type = float
+    .help = "All reflections with partiality values above the partiality"
+            "threshold will be used for the delta cc half calculation."
+
   output {
     log = 'dials.compute_delta_cchalf.log'
       .type = str
