@@ -189,7 +189,10 @@ def prepare_input(params, experiments, reflections):
         if params.cut_data.small_scale_cutoff is Auto:
             mean_ref_intensity = flex.mean(reflection_table["intensity"])
             mean_data_intensities = [
-                flex.mean(r["intensity.sum.value"]) for r in reflections
+                flex.mean(
+                    r["intensity.sum.value"].select(r.get_flags(r.flags.integrated_sum))
+                )
+                for r in reflections
             ]
             n_refls = [r.size() for r in reflections]
             mean_data_intensity = sum(
