@@ -1,0 +1,1 @@
+Fix a crash when dials.search_beam_position cannot index some sweeps.
