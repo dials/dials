@@ -73,7 +73,10 @@ def _export_experiment(
     # export for xds_ascii can be on scaled or unscaled intensities
     # extract I, sigI, var_model
     if "scale" in params.intensity:
-        assert "intensity.scale.value" in integrated_data
+        if "intensity.scale.value" not in integrated_data:
+            raise Sorry(
+                "Requested scaled intensity data but only unscaled data present."
+            )
         filtered_data = filter_reflection_table(
             integrated_data,
             intensity_choice=params.intensity,
