@@ -112,6 +112,35 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path, indexer):
             len(experiments) == 5
         )  # all 5 get indexed, albeit some with questionably high rmsds.
 
+    ## Now test that you can run dials.ssx_refine as follow on to dials.ssx_index
+    args = [shutil.which("dials.ssx_refine"), "indexed.expt", "indexed.refl"]
+    result = subprocess.run(
+        args,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "refined.refl").is_file()
+    assert (tmp_path / "refined.expt").is_file()
+    # test that the output can be used as a reference import
+    ssx_images = dials_data("cunir_serial")
+    args = [
+        shutil.which("dials.import"),
+        f"{ssx_images}/merlin0047_1700*.cbf",
+        "reference_geometry=refined.expt",
+        "use_beam_reference=False",
+        "use_gonio_reference=False",
+        "convert_stills_to_sequences=True",
+    ]
+    result = subprocess.run(
+        args,
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "imported.expt").is_file()
+
 
 def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
     ssx = dials_data("cunir_serial_processed")
