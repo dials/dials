@@ -970,6 +970,7 @@ def test_scale_handle_bad_dataset(dials_data, tmp_path):
         "reflection_selection.method=intensity_ranges",
         "Isigma_range=90.0,1000",
         "partiality_cutoff=0.4",
+        "min_partiality=0.95",
     ]
     for i in range(1, 6):
         command.append(location / f"experiments_{i}.json")
@@ -996,6 +997,7 @@ def test_target_scale_handle_bad_dataset(dials_data, tmp_path):
         "Isigma_range=18.0,0.0",
         "full_matrix=None",
         "partiality_cutoff=0.4",
+        "min_partiality=0.95",
         os.fspath(location / "integrated.refl"),
         os.fspath(location / "integrated.expt"),
         f"reference={os.fspath(pdb)}",
