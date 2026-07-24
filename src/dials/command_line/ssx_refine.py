@@ -43,6 +43,9 @@ refinement {
     }
   }
 }
+output {
+    log = "dials.ssx_refine.log"
+}
 """
 )
 
