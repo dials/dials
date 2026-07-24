@@ -141,6 +141,29 @@ def prepare_input(params, experiments, reflections):
         reflections, experiments, params.exclude_images
     )
 
+    is_ssx_data = any(e.is_still() for e in experiments)
+    if params.scaling_options.full_matrix is Auto:
+        if is_ssx_data:
+            params.scaling_options.full_matrix = False
+        elif len(experiments) > 10:
+            params.scaling_options.full_matrix = False
+        else:
+            params.scaling_options.full_matrix = True
+        logger.info(
+            f"Set scaling_options.full_matrix={params.scaling_options.full_matrix}"
+        )
+
+    if (
+        params.reflection_selection.method == "auto"
+    ):  # auto parsed differently if choice type
+        if is_ssx_data:
+            params.reflection_selection.method = "intensity_ranges"
+        else:
+            params.reflection_selection.method = "quasi_random"
+        logger.info(
+            f"Set reflection_selection.method={params.reflection_selection.method}"
+        )
+
     #### Allow checking of consistent indexing, useful for
     #### targeted / incremental scaling.
     if params.scaling_options.check_consistent_indexing:

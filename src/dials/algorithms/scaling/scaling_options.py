@@ -17,7 +17,7 @@ phil_scope = iotbx.phil.parse(
     .help = "If True, create new scaling models for all datasets"
     .expert_level = 0
   reflection_selection {
-    method = *quasi_random intensity_ranges use_all random
+    method = quasi_random intensity_ranges use_all random *auto
       .type = choice
       .help = "Method to use when choosing a reflection subset for scaling model"
               "minimisation."
@@ -57,7 +57,7 @@ phil_scope = iotbx.phil.parse(
       .help = "Minimum and maximum normalised E^2 value to used to select a"
               "subset of reflections for minimisation."
       .expert_level = 1
-    Isigma_range = -5.0, 0.0
+    Isigma_range = 2.0, 0.0
       .type = floats(size=2)
       .help = "Minimum and maximum I/sigma values used to select a subset of"
               "reflections for minimisation. A value of 0.0 for the maximum"
@@ -68,7 +68,7 @@ phil_scope = iotbx.phil.parse(
       .help = "Minimum and maximum d-values used to select a subset of"
               "reflections for minimisation."
       .expert_level = 1
-    min_partiality = 0.95
+    min_partiality = 0.25
       .type = float
       .help = "Minimum partiality to use when selecting reflections to use"
               "to determine the scaling model and error model."
@@ -116,7 +116,7 @@ phil_scope = iotbx.phil.parse(
       .help = "Option to apply a low resolution cutoff for the dataset (i.e.
                the chosen reflections have d < d_max)."
       .expert_level = 1
-    partiality_cutoff = 0.4
+    partiality_cutoff = 0.25
       .type = float
       .help = "Value below which reflections are removed from the dataset due
                to low partiality."
@@ -199,7 +199,7 @@ phil_scope = iotbx.phil.parse(
       .help = "Offset for choosing unique groups for the free set from the whole
                set of unique groups."
       .expert_level = 2
-    full_matrix = True
+    full_matrix = auto
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine
                error estimates on scale factors."
