@@ -67,6 +67,7 @@ def optimize_origin_offset_local_scope(
                     experiment,
                 )
                 for i, experiment in enumerate(experiments)
+                if solution_lists[i] is not None
             )
 
         scores = flex.double(
@@ -119,6 +120,9 @@ def optimize_origin_offset_local_scope(
                 trial_origin_offset += self.wide_search_offset
             target = 0
             for i, experiment in enumerate(experiments):
+                if solution_lists[i] is None:
+                    continue
+
                 target -= _get_origin_offset_score(
                     trial_origin_offset,
                     solution_lists[i],
@@ -139,6 +143,8 @@ def optimize_origin_offset_local_scope(
                 new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                 score = 0
                 for i, experiment in enumerate(experiments):
+                    if solution_lists[i] is None:
+                        continue
                     score += _get_origin_offset_score(
                         new_origin_offset,
                         solution_lists[i],
@@ -321,6 +327,7 @@ def discover_better_experimental_model(
     # The detector/beam of the first experiment is used to define the basis
     # for the optimisation, so assert that the beam intersects with
     # the detector
+    # FIXME: this assumption is unnecessary and the code should be generalized
     detector = experiments[0].detector
     beam = experiments[0].beam
     beam_panel = detector.get_panel_intersection(beam.get_s0())
@@ -371,8 +378,11 @@ def discover_better_experimental_model(
             if result.get("solutions"):
                 solution_lists.append(result["solutions"])
                 amax_list.append(result["amax"])
+            else:
+                solution_lists.append(None)
+                amax_list.append(None)
 
-    if not solution_lists:
+    if all(x is None for x in solution_lists):
         raise Sorry("No solutions found")
 
     new_experiments = optimize_origin_offset_local_scope(
