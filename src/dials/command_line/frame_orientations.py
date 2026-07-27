@@ -10,7 +10,7 @@ Usage: dials.frame_orientations refined.expt
 from __future__ import annotations
 
 import sys
-from itertools import tee
+from itertools import pairwise
 
 import matplotlib
 
@@ -22,14 +22,6 @@ from dials.util.options import ArgumentParser, flatten_experiments
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
-
-# An itertools recipe in Python 3.7, but a module function in 3.10
-def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
 
 
 class Script:
