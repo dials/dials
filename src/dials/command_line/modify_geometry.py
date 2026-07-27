@@ -65,7 +65,6 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         parser.print_help()
         exit(0)
 
-    # update with any manual parameters set.
     new_experiments = update(experiments, params)
 
     if len(new_experiments):

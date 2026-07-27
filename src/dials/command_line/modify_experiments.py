@@ -120,26 +120,31 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         ref_expts = load.experiment_list(params.input.reference_geometry)
         if params.input.use_detector_reference:
             ref_det = ref_expts[0].detector
-            current_detectors = experiments.detectors()
+            current_detectors = [deepcopy(d) for d in experiments.detectors()]
             # we want to retain the structure of the models i.e. shared or not.
             new_detectors = [deepcopy(ref_det) for _ in range(len(current_detectors))]
             for expt in experiments:
-                expt.detector = new_detectors[current_detectors.index(expt.detector)]
+                expt.imageset.set_detector(
+                    new_detectors[current_detectors.index(expt.detector)]
+                )
         if params.input.use_beam_reference:
             ref_beam = ref_expts[0].beam
-            current_beams = experiments.beams()
+            current_beams = [deepcopy(b) for b in experiments.beams()]
             # we want to retain the structure of the models i.e. shared or not.
             new_beams = [deepcopy(ref_beam) for _ in range(len(current_beams))]
             for expt in experiments:
-                expt.beam = new_beams[current_beams.index(expt.beam)]
+                expt.imageset.set_beam(new_beams[current_beams.index(expt.beam)])
         if params.input.use_gonio_reference:
             ref_gonio = ref_expts[0].goniometer
-            current_gonios = experiments.goniometers()
+            current_gonios = [deepcopy(g) for g in experiments.goniometers()]
             # we want to retain the structure of the models i.e. shared or not.
             new_gonios = [deepcopy(ref_gonio) for _ in range(len(current_gonios))]
             for expt in experiments:
-                expt.goniometer = new_gonios[current_gonios.index(expt.goniometer)]
+                expt.imageset.set_goniometer(
+                    new_gonios[current_gonios.index(expt.goniometer)]
+                )
 
+    # update with any manual parameters set.
     new_experiments = update(experiments, params)
 
     if len(new_experiments):
