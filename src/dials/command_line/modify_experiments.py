@@ -88,8 +88,9 @@ def update(
         experiment.detector = imageset.get_detector()
         experiment.beam = imageset.get_beam()
         experiment.goniometer = imageset.get_goniometer()
-        experiment.scan = imageset.get_scan()
-        experiment.scan.set_valid_image_ranges(experiment.identifier, [])
+        if not experiment.scan.is_still():
+            experiment.scan = imageset.get_scan()
+            experiment.scan.set_valid_image_ranges(experiment.identifier, [])
         crystal = CrystalFactory.from_phil(new_params, experiment.crystal)
         experiment.crystal = crystal
         experiments[iexp] = experiment
