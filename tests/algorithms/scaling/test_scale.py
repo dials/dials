@@ -580,6 +580,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
         "max_cycles=6",
         "d_min=2.0",
         "group_size=5",
+        "partiality_cutoff=0.4",
         "unmerged_mtz=unmerged.mtz",
         "scale_and_filter_results=analysis_results.json",
         "error_model=None",
@@ -623,6 +624,7 @@ def test_scale_and_filter_termination(dials_data, tmp_path):
         "scale_and_filter_results=analysis_results.json",
         "error_model=None",
         "full_matrix=False",
+        "partiality_cutoff=0.4",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location / f"experiments_{i}.json")
@@ -679,7 +681,12 @@ def test_scale_when_a_dataset_is_filtered_out(dials_data, tmp_path):
     refls = flex.reflection_table.from_file(location / "reflections_3.pickle")
     refls["partiality"] = flex.double(refls.size(), 0.3)
     refls.as_file(tmp_path / "modified_3.refl")
-    command = [shutil.which("dials.scale"), "d_min=2.0", tmp_path / "modified_3.refl"]
+    command = [
+        shutil.which("dials.scale"),
+        "d_min=2.0",
+        tmp_path / "modified_3.refl",
+        "partiality_cutoff=0.4",
+    ]
     for i in [1, 2, 3, 4]:
         command.append(location / f"experiments_{i}.json")
     for i in [1, 2, 4]:
@@ -754,6 +761,7 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
         "scale_and_filter_results=analysis_results.json",
         "unmerged_mtz=unmerged.mtz",
         "error_model=None",
+        "partiality_cutoff=0.4",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location / f"experiments_{i}.json")
@@ -961,6 +969,8 @@ def test_scale_handle_bad_dataset(dials_data, tmp_path):
         shutil.which("dials.scale"),
         "reflection_selection.method=intensity_ranges",
         "Isigma_range=90.0,1000",
+        "partiality_cutoff=0.4",
+        "min_partiality=0.95",
     ]
     for i in range(1, 6):
         command.append(location / f"experiments_{i}.json")
@@ -986,6 +996,8 @@ def test_target_scale_handle_bad_dataset(dials_data, tmp_path):
         "reflection_selection.method=intensity_ranges",
         "Isigma_range=18.0,0.0",
         "full_matrix=None",
+        "partiality_cutoff=0.4",
+        "min_partiality=0.95",
         os.fspath(location / "integrated.refl"),
         os.fspath(location / "integrated.expt"),
         f"reference={os.fspath(pdb)}",
