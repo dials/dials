@@ -20,7 +20,8 @@ phil_scope = iotbx.phil.parse(
     method = quasi_random intensity_ranges use_all random *auto
       .type = choice
       .help = "Method to use when choosing a reflection subset for scaling model"
-              "minimisation."
+              "minimisation. The auto option chooses intensity_ranges for still shot"
+              "data and quasi_random for rotation data."
               "The quasi_random option randomly selects reflections groups"
               "within a dataset, and also selects groups which have good"
               "connectedness across datasets for multi-dataset cases. The random"
@@ -201,8 +202,9 @@ phil_scope = iotbx.phil.parse(
       .expert_level = 2
     full_matrix = auto
       .type = bool
-      .help = "Option to turn off GN/LM refinement round used to determine
-               error estimates on scale factors."
+      .help = "Use GN/LM refinement round used to determine error estimates on scale factors."
+              "This can be computationally expensive. The auto value is False for still-shot"
+              "data or if there are more than 10 datasets."
       .expert_level = 2
     outlier_rejection = *standard simple
       .type = choice
