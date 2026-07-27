@@ -1,0 +1,1 @@
+Refactoring to extract a reusable class ``FrameOrientations`` from ``dials.frame_orientations``
