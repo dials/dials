@@ -22,6 +22,8 @@ Examples::
 
   dials.modify_experiments models.expt distance=100.0
 
+  dials.modify_experiments models.expt reference_geometry=reference.expt
+
   dials.modify_experiments models.expt select_experiments=0,1 A_matrix=-0.076948,0.058256,0.104294,-0.010462,0.113451,-0.081650,-0.112936,-0.050201,-0.063496
 """
 
@@ -35,8 +37,9 @@ select_experiments = None
 input {
    reference_geometry = None
        .type = path
-        help = "Experimental geometry from this models.expt "
-              "will override the geometry from the input file"
+        help = "Experimental geometry from the first experiment in this models.expt"
+               "will override the geometry from the input file. The model structure"
+               "in the input file will be maintained (no combining or splitting of models)."
     use_beam_reference = True
       .type = bool
       .expert_level = 2
