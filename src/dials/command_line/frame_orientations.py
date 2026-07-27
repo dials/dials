@@ -40,19 +40,13 @@ class FrameOrientations:
         self.images = list(range(image_range[0], image_range[1] + 1))
         num_scan_points = scan.get_num_images() + 1
 
+        # Extract experiment data at each scan point
         if beam.num_scan_points > 0:
-            us0 = []
+            s0 = []
             for i in range(beam.num_scan_points):
-                s0 = matrix.col(beam.get_s0_at_scan_point(i))
-                us0.append(s0.normalize())
+                s0.append(matrix.col(beam.get_s0_at_scan_point(i)))
         else:
-            us0 = [matrix.col(beam.get_unit_s0()) for _ in range(num_scan_points)]
-
-        # Store the beam direction at the frame centres by averaging the beam
-        # direction at the scan points.
-        self.us0 = []
-        for d1, d2 in pairwise(us0):
-            self.us0.append(((d1 + d2) / 2).normalize())
+            s0 = [matrix.col(beam.get_s0()) for _ in range(num_scan_points)]
 
         if gonio.num_scan_points > 0:
             S_mats = [
@@ -88,9 +82,16 @@ class FrameOrientations:
             U_mats = [matrix.sqr(crystal.get_U()) for _ in range(num_scan_points)]
             B_mats = [matrix.sqr(crystal.get_B()) for _ in range(num_scan_points)]
 
-        check = {len(x) for x in (us0, S_mats, F_mats, R_mats, U_mats)}
+        # Sanity check that the number of scan points matches the number of images
+        check = {len(x) for x in (s0, S_mats, F_mats, R_mats, U_mats)}
         assert len(check) == 1
         assert check.pop() == len(self.images) + 1
+
+        # Store the beam vector at the frame centres by averaging between the scan points.
+        self.s0 = []
+        for d1, d2 in pairwise(s0):
+            s0_frame = (d1 + d2) / 2
+            self.s0.append(s0_frame)
 
         # Construct full orientation matrix in the lab frame for each scan-point
         SRFU = (S * R * F * U for S, R, F, U in zip(S_mats, R_mats, F_mats, U_mats))
@@ -271,7 +272,8 @@ def extract_experiment_data(exp, scale=1):
 
     # Calculate zone axes, which also requires the beam directions at the frame
     # centres
-    us0_frames = fo.us0
+    s0_frames = fo.s0
+    us0_frames = [s0.normalize() for s0 in s0_frames]
     zone_axes = [frac * (d * scale) for frac, d in zip(frac_mats, us0_frames)]
 
     # Now get the real space orthogonalisation matrix to calculate the real
