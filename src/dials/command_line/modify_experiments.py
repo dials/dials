@@ -5,6 +5,7 @@ from copy import deepcopy
 import libtbx.phil
 from dxtbx.model import ExperimentList
 from dxtbx.model.crystal import CrystalFactory
+from dxtbx.serialize import load
 
 import dials.util
 from dials.command_line.dials_import import ManualGeometryUpdater
@@ -31,6 +32,27 @@ include scope dxtbx.model.crystal.crystal_phil_scope
 select_experiments = None
     .type = ints
     .help = "A list of experiment ids to select for modification. If None, all experiments are modified."
+input {
+   reference_geometry = None
+       .type = path
+        help = "Experimental geometry from this models.expt "
+              "will override the geometry from the input file"
+    use_beam_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the beam from reference_geometry will override "
+              "the beam from the input file."
+    use_gonio_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the goniometer from reference_geometry will override "
+              "the goniometer from the input file."
+    use_detector_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the detector from reference_geometry will override "
+              "the detector from the input file"
+}
 output {
   experiments = modified.expt
     .type = path
@@ -93,6 +115,30 @@ def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     if len(experiments) == 0:
         parser.print_help()
         exit(0)
+
+    if params.input.reference_geometry:
+        ref_expts = load.experiment_list(params.input.reference_geometry)
+        if params.input.use_detector_reference:
+            ref_det = ref_expts[0].detector
+            current_detectors = experiments.detectors()
+            # we want to retain the structure of the models i.e. shared or not.
+            new_detectors = [deepcopy(ref_det) for _ in range(len(current_detectors))]
+            for expt in experiments:
+                expt.detector = new_detectors[current_detectors.index(expt.detector)]
+        if params.input.use_beam_reference:
+            ref_beam = ref_expts[0].beam
+            current_beams = experiments.beams()
+            # we want to retain the structure of the models i.e. shared or not.
+            new_beams = [deepcopy(ref_beam) for _ in range(len(current_beams))]
+            for expt in experiments:
+                expt.beam = new_beams[current_beams.index(expt.beam)]
+        if params.input.use_gonio_reference:
+            ref_gonio = ref_expts[0].goniometer
+            current_gonios = experiments.goniometers()
+            # we want to retain the structure of the models i.e. shared or not.
+            new_gonios = [deepcopy(ref_gonio) for _ in range(len(current_gonios))]
+            for expt in experiments:
+                expt.goniometer = new_gonios[current_gonios.index(expt.goniometer)]
 
     new_experiments = update(experiments, params)
 
