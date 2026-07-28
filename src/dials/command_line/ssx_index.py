@@ -16,8 +16,10 @@ file and a single experiment list file, with a joint detector and beam model.
 
 Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
-Usage:
+Usage::
+
     dials.ssx_index imported.expt strong.refl
+
     dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
 """
 

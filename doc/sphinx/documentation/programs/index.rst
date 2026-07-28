@@ -22,6 +22,15 @@ Main processing commands:
    dials_merge
    xia2_multiplex
 
+Still-shot-specific processing commands:
+
+.. toctree::
+   :maxdepth: 1
+
+   dials_ssx_index
+   dials_ssx_refine
+   dials_ssx_integrate
+
 Utilities:
 
 .. toctree::
@@ -49,6 +58,7 @@ Utilities:
    dials_stereographic_projection
    dials_combine_experiments
    dials_align_crystal
+   dials_modify_experiments
    dials_anvil_correction
    dials_missing_reflections
    dials_filter_reflections
