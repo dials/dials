@@ -21,9 +21,12 @@ and clutering statistics.
 
 Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
-Usage:
+Usage::
+
     dials.ssx_integrate indexed.expt indexed.refl
+
     dials.ssx_integrate refined.expt refined.refl
+
     dials.ssx_integrate indexed.expt indexed.refl algorithm=stills
 """
 
