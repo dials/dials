@@ -397,7 +397,9 @@ class MergingStatistic:
     neff_binned: Optional[list[float]] = None
 
 
-def overall_sigma_tau(sigma_tau_binned):
+# CC1/2 sigma-tau overall is calculated as a weighted
+# mean of the bin values.
+def binned_to_merging_statistic(sigma_tau_binned):
     sigma_tau_values = []
     # do weighted sum
     n_tot = 0
@@ -410,8 +412,10 @@ def overall_sigma_tau(sigma_tau_binned):
         n_tot += n
         n_per_res.append(n)
         sigma_tau_values.append(cc)
-
-    overall = sumval / n_tot
+    if n_tot:
+        overall = sumval / n_tot
+    else:
+        overall = 0
     return MergingStatistic(
         overall, sigma_tau_values[1:-1], neff=n_tot, neff_binned=n_per_res[1:-1]
     )
@@ -420,7 +424,9 @@ def overall_sigma_tau(sigma_tau_binned):
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
-    def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
+    def __init__(
+        self, *args, additional_stats=False, sigma_tau_stats=False, seed=0, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.binner = None
@@ -436,8 +442,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         self.cchalf_sigma_tau = None
         self.cchalf_anom_sigma_tau = None
 
-        # FIXME implemented weighted sigma-tau
-
         if not additional_stats:
             return
         i_obs = kwargs.get("i_obs")
@@ -447,54 +451,18 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
         i_obs_copy = i_obs.customized_copy()
         i_obs_copy.setup_binner(n_bins=n_bins)
-        print("Resolution bin ranges:")
+        logger.debug("Resolution bin ranges:")
         for ibin in i_obs_copy.binner().range_used():
             r = i_obs_copy.binner().bin_d_range(ibin)
-            print(f"{r[0]:.2f}-{r[1]:.2f}")
+            logger.debug(f"{r[0]:.2f}-{r[1]:.2f}")
+
         i_obs_copy2 = i_obs.customized_copy()
-        i_obs_copy2.setup_binner(n_bins=n_bins)
         i_obs_copy3 = i_obs.customized_copy()
-        i_obs_copy3.setup_binner(n_bins=n_bins)
-        i_obs_copy3 = i_obs_copy3.map_to_asu()
-        i_obs_copy3 = i_obs_copy3.sort("packed_indices")
-        i_obs_copy3.setup_binner(n_bins=n_bins)
-        ## CC1/2 sigam-tau
-        self.cchalf_sigma_tau = overall_sigma_tau(
-            self.calculate_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
-        )
-        ## CC1/2 sigam-tau sigma-weighted
-        self.weighted_cchalf_sigma_tau = overall_sigma_tau(
-            self.calculate_weighted_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
-        )
-
-        self.cchalf_anom_sigma_tau = overall_sigma_tau(
-            self.calculate_cchalf_anom_sigma_tau(
-                i_obs_copy3, use_binning=True, weighted=False
-            )
-        )
-
-        self.weighted_cchalf_anom_sigma_tau = overall_sigma_tau(
-            self.calculate_cchalf_anom_sigma_tau(
-                i_obs_copy3, use_binning=True, weighted=True
-            )
-        )
-        """# do weighted sum
-        n_tot = 0
-        sumval = 0
-        for i_bin, cc in zip(i_obs_copy3.binner().range_all(), sigma_tau_binned_anom):
-            sel = i_obs_copy3.binner().selection(i_bin)
-            n = sel.count(True)
-            sumval += cc * n
-            n_tot += n
-
-        overall = sumval / n_tot
-        self.weighted_cchalf_anom_sigma_tau = MergingStatistic(
-            overall, sigma_tau_binned_anom[1:-1]
-        )"""
 
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
 
+        ## Create merged half datasets for R-split and CC1/2 calculations.
         split = split_unmerged(
             unmerged_indices=i_obs.indices(),
             unmerged_data=i_obs.data(),
@@ -560,9 +528,12 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         )
 
         # now do weighted cc anom
+        i_obs_copy2.setup_binner(n_bins=n_bins)
         weighted_cc_anom, neff_overall_anom = weighted_anom_correlation(i_obs_copy2)
         weighted_cc_half_anom_binned, neff_anom_binned = weighted_anom_correlation(
-            i_obs_copy2, use_binning=True, n_bins=n_bins, plot_label="weighted_anom"
+            i_obs_copy2,
+            use_binning=True,
+            n_bins=n_bins,
         )
         self.weighted_cc_anom_data = MergingStatistic(
             weighted_cc_anom,
@@ -570,6 +541,30 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             neff_overall_anom,
             neff_anom_binned,
         )
+
+        if sigma_tau_stats:
+            ## Optionally calculate sigma-tau values
+            ## CC1/2 sigma-tau - unweighted, weighted, anom-unweighted, anom-weighted
+            i_obs_copy3.setup_binner(n_bins=n_bins)
+            i_obs_copy3 = i_obs_copy3.map_to_asu()
+            i_obs_copy3 = i_obs_copy3.sort("packed_indices")
+            i_obs_copy3.setup_binner(n_bins=n_bins)
+            self.cchalf_sigma_tau = binned_to_merging_statistic(
+                self.calculate_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
+            )
+            self.weighted_cchalf_sigma_tau = binned_to_merging_statistic(
+                self.calculate_weighted_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
+            )
+            self.cchalf_anom_sigma_tau = binned_to_merging_statistic(
+                self.calculate_cchalf_anom_sigma_tau(
+                    i_obs_copy3, use_binning=True, weighted=False
+                )
+            )
+            self.weighted_cchalf_anom_sigma_tau = binned_to_merging_statistic(
+                self.calculate_cchalf_anom_sigma_tau(
+                    i_obs_copy3, use_binning=True, weighted=True
+                )
+            )
 
     def as_dict(self):
         d = super().as_dict()
@@ -732,9 +727,9 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
     @classmethod
     def calculate_cchalf_sigma_tau(cls, i_obs, use_binning=False):
-        # To validate the calculations
+        """To validate the calculations
         # CCTBX calculation:
-        """intensities_copy = self.customized_copy(
+        intensities_copy = self.customized_copy(
         sigmas=flex.double(self.size(), 1))
         merging_internal = intensities_copy.merge_equivalents(
             use_internal_variance=True)
@@ -809,12 +804,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
     @classmethod
     def weighted_cchalf(
-        cls,
-        this,
-        other,
-        assume_index_matching=False,
-        use_binning=False,
-        plot_label=None,
+        cls, this, other, assume_index_matching=False, use_binning=False
     ) -> list[Tuple]:
         if not use_binning:
             assert other.data().size() == this.data().size()
@@ -835,8 +825,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 return [(None, 1)]
             v_o = flex.pow2(o.sigmas())
             v_c = flex.pow2(c.sigmas())
-            tausq = 0.01 * np.median(np.array(v_o + v_c))
-            joint_w = 1.0 / (v_o + v_c + tausq)
+            joint_w = 1.0 / (v_o + v_c)
             sumjw = flex.sum(joint_w)
             norm_jw = joint_w / sumjw
             xbar = flex.sum(o.data() * norm_jw)
@@ -858,24 +847,20 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
         assert this.binner is not None
         results = []
-        for i, i_bin in enumerate(this.binner().range_all()):
+        for i_bin in this.binner().range_all():
             sel = this.binner().selection(i_bin)
-            label = None
-            if plot_label:
-                label = f"{plot_label}_{i}"
             results.append(
                 cls.weighted_cchalf(
                     this.select(sel),
                     other.select(sel),
                     assume_index_matching=assume_index_matching,
                     use_binning=False,
-                    plot_label=label,
                 )[0]
             )
         return results
 
 
-def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=None):
+def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
     tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
     tmp_array = tmp_array.sort("packed_indices")
     if not use_binning:
@@ -903,7 +888,9 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=Non
         dano2 = m2.anomalous_differences()
         assert dano1.indices().all_eq(dano2.indices())
         cc, neff = ExtendedDatasetStatistics.weighted_cchalf(
-            dano1, dano2, assume_index_matching=True, plot_label=plot_label
+            dano1,
+            dano2,
+            assume_index_matching=True,
         )[0]
         return cc, neff
     tmp_array.setup_binner(n_bins=n_bins)
@@ -912,14 +899,11 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20, plot_label=Non
     for i, i_bin in enumerate(tmp_array.binner().range_used()):
         sel = tmp_array.binner().selection(i_bin)
         bin_array = tmp_array.select(sel)
-        label = None
-        if plot_label:
-            label = f"{plot_label}_{i}"
         if bin_array.size() == 0:
             ccs.append(None)
             neffs.append(None)
         else:
-            cc, neff = weighted_anom_correlation(bin_array, plot_label=label)
+            cc, neff = weighted_anom_correlation(bin_array)
             ccs.append(cc)
             neffs.append(neff)
     return ccs, neffs
@@ -932,6 +916,7 @@ def merging_stats_from_scaled_array(
     anomalous=True,
     additional_stats=False,
     cc_one_half_significance_level=0.01,
+    sigma_tau_stats=False,
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -950,6 +935,7 @@ def merging_stats_from_scaled_array(
             use_internal_variance=use_internal_variance,
             cc_one_half_significance_level=cc_one_half_significance_level,
             additional_stats=additional_stats,
+            sigma_tau_stats=sigma_tau_stats,
         )
     except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
@@ -979,6 +965,7 @@ def merging_stats_from_scaled_array(
                     eliminate_sys_absent=False,
                     use_internal_variance=use_internal_variance,
                     additional_stats=additional_stats,
+                    sigma_tau_stats=sigma_tau_stats,
                 )
             except (RuntimeError, Sorry) as e:
                 logger.warning(

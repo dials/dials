@@ -705,34 +705,35 @@ class ResolutionPlotsAndStats:
             )
 
             ccst_data = self.dataset_statistics.cchalf_sigma_tau
-            ccst_anom_data = self.dataset_statistics.cchalf_anom_sigma_tau
-            _, critical_vals = compute_cc_significance_levels(
-                ccst_data.value_binned,
-                ccst_data.neff_binned,
-            )
-            _, ccanom_critical_vals = compute_cc_significance_levels(
-                ccst_anom_data.value_binned,
-                ccst_anom_data.neff_binned,
-            )
-            d.update(
-                {
-                    "cc_one_half_sigma_tau": cc_half_plot(
-                        d_star_sq=d_star_sq_bins,
-                        cc_half=ccst_data.value_binned,
-                        cc_half_fit=None,
-                        d_min=None,
-                        cc_half_critical_values=critical_vals,
-                        cc_anom=ccst_anom_data.value_binned,
-                        cc_anom_critical_values=ccanom_critical_vals,
-                    )
-                }
-            )
-            d["cc_one_half_sigma_tau"]["layout"]["yaxis"]["title"] = (
-                "CC<sub>½</sub>(sigma-tau)"
-            )
-            d["cc_one_half_sigma_tau"]["layout"]["title"] = (
-                "CC<sub>½</sub>(sigma-tau) vs resolution"
-            )
+            if ccst_data:
+                ccst_anom_data = self.dataset_statistics.cchalf_anom_sigma_tau
+                _, critical_vals = compute_cc_significance_levels(
+                    ccst_data.value_binned,
+                    ccst_data.neff_binned,
+                )
+                _, ccanom_critical_vals = compute_cc_significance_levels(
+                    ccst_anom_data.value_binned,
+                    ccst_anom_data.neff_binned,
+                )
+                d.update(
+                    {
+                        "cc_one_half_sigma_tau": cc_half_plot(
+                            d_star_sq=d_star_sq_bins,
+                            cc_half=ccst_data.value_binned,
+                            cc_half_fit=None,
+                            d_min=None,
+                            cc_half_critical_values=critical_vals,
+                            cc_anom=ccst_anom_data.value_binned,
+                            cc_anom_critical_values=ccanom_critical_vals,
+                        )
+                    }
+                )
+                d["cc_one_half_sigma_tau"]["layout"]["yaxis"]["title"] = (
+                    "CC<sub>½</sub>(sigma-tau)"
+                )
+                d["cc_one_half_sigma_tau"]["layout"]["title"] = (
+                    "CC<sub>½</sub>(sigma-tau) vs resolution"
+                )
         if self.dataset_statistics.weighted_cchalf_sigma_tau:
             wcc_data = self.dataset_statistics.weighted_cchalf_sigma_tau
             wccanom_data = self.dataset_statistics.weighted_cchalf_anom_sigma_tau

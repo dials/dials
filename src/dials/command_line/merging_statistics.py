@@ -32,6 +32,9 @@ phil_scope = iotbx.phil.parse("""\
 n_bins = 10
     .type = int
     .help = "The number of resolution bins for merging statistics calculations"
+output.sigma_tau = False
+    .type = bool
+    .help = "Additionally calculate CC1/2 statistics with the sigma-tau method."
 output.log=dials.merging_statistics.log
     .type = str
     .help = "The log filename"
@@ -155,7 +158,10 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         sys.exit(f"Error: {e}")
     else:
         stats, anom_stats = merging_stats_from_scaled_array(
-            iobs, additional_stats=True, n_bins=params.n_bins
+            iobs,
+            additional_stats=True,
+            n_bins=params.n_bins,
+            sigma_tau_stats=params.output.sigma_tau,
         )
         from dials.report.plots import ResolutionPlotsAndStats
 

@@ -353,16 +353,16 @@ can be processed with dials.merge"""
 Only scaled data can be processed with dials.merge"""
             )
 
-    # try:
-    if params.output.json or params.output.html:
-        mtz_file, json_data = merge_data_to_mtz_with_report_collection(
-            params, experiments, reflections
-        )
-    else:
-        mtz_file = merge_data_to_mtz(params, experiments, reflections)
-        json_data = {}
-    # except ValueError as e:
-    #    raise Sorry(e)
+    try:
+        if params.output.json or params.output.html:
+            mtz_file, json_data = merge_data_to_mtz_with_report_collection(
+                params, experiments, reflections
+            )
+        else:
+            mtz_file = merge_data_to_mtz(params, experiments, reflections)
+            json_data = {}
+    except ValueError as e:
+        raise Sorry(e)
 
     logger.info("\nWriting reflections to %s", (params.output.mtz))
     log_summary(mtz_file)
