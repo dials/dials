@@ -421,6 +421,36 @@ def binned_to_merging_statistic(sigma_tau_binned):
     )
 
 
+def merge_half_datasets(i_obs, seed=0):
+    ## Create merged half datasets for R-split and CC1/2 calculations.
+    split = split_unmerged(
+        unmerged_indices=i_obs.indices(),
+        unmerged_data=i_obs.data(),
+        unmerged_sigmas=i_obs.sigmas(),
+        seed=seed,
+    )
+    indices = split.indices()
+    m1 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.data1(),
+        sigmas=split.sigma1(),
+    )
+    m2 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.data2(),
+        sigmas=split.sigma2(),
+    )
+    n1 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.n1(),
+    )
+    n2 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.n2(),
+    )
+    return MergedHalfDatasets(m1, m2, n1, n2)
+
+
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
@@ -465,61 +495,55 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
 
-        ## Create merged half datasets for R-split and CC1/2 calculations.
-        split = split_unmerged(
-            unmerged_indices=i_obs.indices(),
-            unmerged_data=i_obs.data(),
-            unmerged_sigmas=i_obs.sigmas(),
-            seed=seed,
-        )
-        indices = split.indices()
-        m1 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.data1(),
-            sigmas=split.sigma1(),
-        )
-        m2 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.data2(),
-            sigmas=split.sigma2(),
-        )
-        n1 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.n1(),
-        )
-        n2 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.n2(),
-        )
-        self.merged_half_datasets = MergedHalfDatasets(m1, m2, n1, n2)
+        self.merged_half_datasets = merge_half_datasets(i_obs, seed=seed)
         assert i_obs_copy.binner() is not None
         self.binner = i_obs_copy.binner()
-        m1.use_binning(self.binner)
-        m2.use_binning(self.binner)
+        self.merged_half_datasets.data1.use_binning(self.binner)
+        self.merged_half_datasets.data2.use_binning(self.binner)
 
         r_split = self.calc_rsplit(
-            m1, m2, assume_index_matching=True, use_binning=False
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=False,
         )
         r_split_binned = self.calc_rsplit(
-            m1, m2, assume_index_matching=True, use_binning=True
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=True,
         )
         self.r_split = MergingStatistic(r_split, r_split_binned)
         # now do weighted rsplit
         weighted_r_split = self.calc_rsplit(
-            m1, m2, assume_index_matching=True, use_binning=False, weighted=True
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=False,
+            weighted=True,
         )
         weighted_r_split_binned = self.calc_rsplit(
-            m1, m2, assume_index_matching=True, use_binning=True, weighted=True
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=True,
+            weighted=True,
         )
         self.weighted_r_split = MergingStatistic(
             weighted_r_split, weighted_r_split_binned
         )
 
         weighted_cc_half, neff_overall = ExtendedDatasetStatistics.weighted_cchalf(
-            m1, m2, assume_index_matching=True, use_binning=False
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=False,
         )[0]
         results = ExtendedDatasetStatistics.weighted_cchalf(
-            m1, m2, assume_index_matching=True, use_binning=True
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=True,
         )
         weighted_cc_half_binned = [i[0] for i in results]
         neff_binned = [i[1] for i in results]
@@ -901,7 +925,7 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
     tmp_array.setup_binner(n_bins=n_bins)
     ccs = []
     neffs = []
-    for i, i_bin in enumerate(tmp_array.binner().range_used()):
+    for i_bin in tmp_array.binner().range_used():
         sel = tmp_array.binner().selection(i_bin)
         bin_array = tmp_array.select(sel)
         if bin_array.size() == 0:
