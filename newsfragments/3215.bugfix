@@ -1,0 +1,1 @@
+``dials.refine``: ensure deterministic outcomes by setting the random seed for outlier rejection.

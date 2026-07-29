@@ -141,6 +141,29 @@ def prepare_input(params, experiments, reflections):
         reflections, experiments, params.exclude_images
     )
 
+    is_ssx_data = any(e.is_still() for e in experiments)
+    if params.scaling_options.full_matrix is Auto:
+        if is_ssx_data:
+            params.scaling_options.full_matrix = False
+        elif len(experiments) > 10:
+            params.scaling_options.full_matrix = False
+        else:
+            params.scaling_options.full_matrix = True
+        logger.info(
+            f"Set scaling_options.full_matrix={params.scaling_options.full_matrix}"
+        )
+
+    if (
+        params.reflection_selection.method == "auto"
+    ):  # auto parsed differently if choice type
+        if is_ssx_data:
+            params.reflection_selection.method = "intensity_ranges"
+        else:
+            params.reflection_selection.method = "quasi_random"
+        logger.info(
+            f"Set reflection_selection.method={params.reflection_selection.method}"
+        )
+
     #### Allow checking of consistent indexing, useful for
     #### targeted / incremental scaling.
     if params.scaling_options.check_consistent_indexing:
@@ -186,8 +209,28 @@ def prepare_input(params, experiments, reflections):
             k_sol=params.scaling_options.reference_model.k_sol,
             b_sol=params.scaling_options.reference_model.b_sol,
         )
+        if params.cut_data.small_scale_cutoff is Auto:
+            mean_ref_intensity = flex.mean(reflection_table["intensity"])
+            mean_data_intensities = [
+                flex.mean(
+                    r["intensity.sum.value"].select(r.get_flags(r.flags.integrated_sum))
+                )
+                for r in reflections
+            ]
+            n_refls = [r.size() for r in reflections]
+            mean_data_intensity = sum(
+                n * m for n, m in zip(mean_data_intensities, n_refls)
+            ) / sum(n_refls)
+            ratio = mean_ref_intensity / mean_data_intensity
+            params.cut_data.small_scale_cutoff = round(1e-5 / ratio, 12)
+            logger.info(
+                f"Set small scale cutoff to {params.cut_data.small_scale_cutoff}"
+            )
         experiments.append(expt)
         reflections.append(reflection_table)
+    elif params.cut_data.small_scale_cutoff is Auto:
+        params.cut_data.small_scale_cutoff = 0.001
+        logger.info(f"Set small scale cutoff to {params.cut_data.small_scale_cutoff}")
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
     best_unit_cell = params.reflection_selection.best_unit_cell
@@ -421,6 +464,9 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                 delta_cc_params.mode = self.params.filtering.deltacchalf.mode
                 delta_cc_params.group_size = (
                     self.params.filtering.deltacchalf.group_size
+                )
+                delta_cc_params.partiality_threshold = (
+                    self.params.cut_data.partiality_cutoff
                 )
                 delta_cc_params.stdcutoff = self.params.filtering.deltacchalf.stdcutoff
                 logger.info("\nPerforming a round of filtering.\n")

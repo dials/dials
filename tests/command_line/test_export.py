@@ -355,8 +355,8 @@ def test_mmcif_p1_narrow_wedge(dials_data, tmp_path):
     assert (tmp_path / "scaled.mmcif").is_file()
 
     model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
-    assert model["dials"]["_reflns.pdbx_redundancy"] == "1.0"
-    assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0"
+    assert model["dials"]["_reflns.pdbx_redundancy"] == "1.000"
+    assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0000"
 
 
 def test_xds_ascii(dials_data, tmp_path):
@@ -392,6 +392,37 @@ def test_xds_ascii(dials_data, tmp_path):
                 continue
             psi = float(tokens[-1])
             assert psi == pytest.approx(psi_values[hkl], abs=0.1)
+
+
+def test_xds_ascii_scaled(dials_data, tmp_path):
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "format=xds_ascii",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.expt",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "DIALS.HKL").is_file()
+
+    intensity_values = {
+        (-7, 2, 11): 352.20 / 1.08375,
+        (-8, 0, 2): 144.477 / 0.8753,
+    }
+
+    with (tmp_path / "DIALS.HKL").open() as fh:
+        for record in fh:
+            if record.startswith("!"):
+                continue
+            tokens = record.split()
+            hkl = tuple(map(int, tokens[:3]))
+            if hkl not in intensity_values:
+                continue
+            intensity = float(tokens[3])
+            assert intensity == pytest.approx(intensity_values[hkl], abs=0.1)
 
 
 def test_sadabs(dials_data, tmp_path):

@@ -1,1 +1,0 @@
-Simplify the symmetry groups cache to key directly on the space_group object, avoiding redundant space_group_type construction on each lookup.

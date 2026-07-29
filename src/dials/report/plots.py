@@ -22,6 +22,8 @@ from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_inform
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
 
+from dials.util.plotly_utils import round_for_json
+
 logger = logging.getLogger("dials")
 
 
@@ -72,7 +74,7 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
                 (
                     {
                         "x": reduced_batches,
-                        "y": scales_vs_b,
+                        "y": round_for_json(scales_vs_b),
                         "type": "scatter",
                         "name": "Scale",
                         "opacity": 0.75,
@@ -83,7 +85,7 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
                 ),
                 {
                     "x": reduced_batches,
-                    "y": rmerge_vs_b,
+                    "y": round_for_json(rmerge_vs_b),
                     "yaxis": "y2",
                     "type": "scatter",
                     "name": "R<sub>merge</sub>",
@@ -120,7 +122,7 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
             "data": [
                 {
                     "x": reduced_batches,
-                    "y": i_sig_i_vs_batch,
+                    "y": round_for_json(i_sig_i_vs_batch),
                     "type": "scatter",
                     "name": "I/sigI vs batch",
                     "opacity": 0.75,
@@ -160,9 +162,9 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
         key: {
             "data": [
                 {
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": z.transpose().tolist(),
+                    "x": round_for_json(xedges.tolist()),
+                    "y": round_for_json(yedges.tolist()),
+                    "z": [round_for_json(e) for e in z.transpose().tolist()],
                     "type": "heatmap",
                     "name": "Isigma distribution",
                     "colorbar": {
@@ -405,14 +407,14 @@ class IntensityStatisticsPlots:
                 "data": (
                     [
                         {
-                            "x": list(dstarsq),
-                            "y": list(observed),
+                            "x": round_for_json(dstarsq),
+                            "y": round_for_json(observed),
                             "type": "scatter",
                             "name": "Observed",
                         },
                         {
-                            "x": list(dstarsq),
-                            "y": list(mean_I_obs_theory),
+                            "x": round_for_json(dstarsq),
+                            "y": round_for_json(mean_I_obs_theory),
                             "type": "scatter",
                             "name": "Expected",
                         },
@@ -438,24 +440,24 @@ class IntensityStatisticsPlots:
             "cumulative_intensity_distribution": {
                 "data": [
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.ac_obs),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.ac_obs),
                         "type": "scatter",
                         "name": "Acentric observed",
                         "mode": "lines",
                         "line": {"color": "rgb(31, 119, 180)"},
                     },
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.c_obs),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.c_obs),
                         "type": "scatter",
                         "name": "Centric observed",
                         "mode": "lines",
                         "line": {"color": "rgb(255, 127, 14)"},
                     },
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.ac_untwinned),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.ac_untwinned),
                         "type": "scatter",
                         "name": "Acentric theory",
                         "mode": "lines",
@@ -463,8 +465,8 @@ class IntensityStatisticsPlots:
                         "opacity": 0.8,
                     },
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.c_untwinned),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.c_untwinned),
                         "type": "scatter",
                         "name": "Centric theory",
                         "mode": "lines",
@@ -488,16 +490,16 @@ class IntensityStatisticsPlots:
             "l_test": {
                 "data": [
                     {
-                        "x": list(l_test.l_values),
-                        "y": list(l_test.l_cumul_untwinned),
+                        "x": round_for_json(l_test.l_values),
+                        "y": round_for_json(l_test.l_cumul_untwinned),
                         "type": "scatter",
                         "name": "Untwinned",
                         "mode": "lines",
                         "line": {"color": "rgb(31, 119, 180)", "dash": "dashdot"},
                     },
                     {
-                        "x": list(l_test.l_values),
-                        "y": list(l_test.l_cumul_perfect_twin),
+                        "x": round_for_json(l_test.l_values),
+                        "y": round_for_json(l_test.l_cumul_perfect_twin),
                         "type": "scatter",
                         "name": "Perfect twin",
                         "mode": "lines",
@@ -505,8 +507,8 @@ class IntensityStatisticsPlots:
                         "opacity": 0.8,
                     },
                     {
-                        "x": list(l_test.l_values),
-                        "y": list(l_test.l_cumul),
+                        "x": round_for_json(l_test.l_values),
+                        "y": round_for_json(l_test.l_cumul),
                         "type": "scatter",
                         "name": "Observed",
                         "mode": "lines",
@@ -555,10 +557,10 @@ class IntensityStatisticsPlots:
                 "data": [
                     (
                         {
-                            "x": list(
+                            "x": round_for_json(
                                 second_moments_acentric.binner.bin_centers(2)
                             ),  # d_star_sq
-                            "y": second_moments_acentric.data[1:-1],
+                            "y": round_for_json(second_moments_acentric.data[1:-1]),
                             "type": "scatter",
                             "name": "<I<sup>2</sub>> acentric",
                         }
@@ -567,10 +569,10 @@ class IntensityStatisticsPlots:
                     ),
                     (
                         {
-                            "x": list(
+                            "x": round_for_json(
                                 second_moments_centric.binner.bin_centers(2)
                             ),  # d_star_sq
-                            "y": second_moments_centric.data[1:-1],
+                            "y": round_for_json(second_moments_centric.data[1:-1]),
                             "type": "scatter",
                             "name": "<I<sup>2</sub>> centric",
                         }
@@ -646,6 +648,8 @@ class ResolutionPlotsAndStats:
         self.d_star_sq_tickvals, self.d_star_sq_ticktext = d_star_sq_to_d_ticks(
             self.d_star_sq_bins, nticks=5
         )
+        self.d_star_sq_tickvals = round_for_json(self.d_star_sq_tickvals, ndigits=6)
+
         self.is_centric = is_centric
 
     def make_all_plots(self, cc_one_half_method=None):
@@ -848,8 +852,10 @@ class ResolutionPlotsAndStats:
                     "r_split": {
                         "data": [
                             {
-                                "x": d_star_sq_bins,  # d_star_sq
-                                "y": self.dataset_statistics.r_split.value_binned,
+                                "x": round_for_json(d_star_sq_bins),  # d_star_sq
+                                "y": round_for_json(
+                                    self.dataset_statistics.r_split.value_binned
+                                ),
                                 "type": "scatter",
                                 "name": "R<sub>split</sub> vs resolution",
                             }
@@ -858,7 +864,9 @@ class ResolutionPlotsAndStats:
                             "title": "R<sub>split</sub> vs resolution",
                             "xaxis": {
                                 "title": "Resolution (Å)",
-                                "tickvals": d_star_sq_tickvals,
+                                "tickvals": round_for_json(
+                                    d_star_sq_tickvals, ndigits=6
+                                ),
                                 "ticktext": d_star_sq_ticktext,
                             },
                             "yaxis": {
@@ -941,8 +949,8 @@ class ResolutionPlotsAndStats:
             "i_over_sig_i": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,  # d_star_sq
-                        "y": i_over_sig_i_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(i_over_sig_i_bins),
                         "type": "scatter",
                         "name": "I/sigI vs resolution",
                     }
@@ -967,8 +975,8 @@ class ResolutionPlotsAndStats:
             "r_pim": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,  # d_star_sq
-                        "y": r_pim_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(r_pim_bins),
                         "type": "scatter",
                         "name": "R<sub>pim</sub> vs resolution",
                     }
@@ -1000,15 +1008,15 @@ class ResolutionPlotsAndStats:
             "completeness": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,
-                        "y": completeness_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(completeness_bins),
                         "type": "scatter",
                         "name": "Completeness",
                     },
                     (
                         {
-                            "x": self.d_star_sq_bins,
-                            "y": anom_completeness_bins,
+                            "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                            "y": round_for_json(anom_completeness_bins),
                             "type": "scatter",
                             "name": "Anomalous completeness",
                         }
@@ -1043,15 +1051,15 @@ class ResolutionPlotsAndStats:
             "multiplicity_vs_resolution": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,
-                        "y": multiplicity_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(multiplicity_bins),
                         "type": "scatter",
                         "name": "Multiplicity",
                     },
                     (
                         {
-                            "x": self.d_star_sq_bins,
-                            "y": anom_multiplicity_bins,
+                            "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                            "y": round_for_json(anom_multiplicity_bins),
                             "type": "scatter",
                             "name": "Anomalous multiplicity",
                         }
@@ -1341,8 +1349,8 @@ class AnomalousPlotter:
                 "data": [
                     (
                         {
-                            "x": list(d_star_sq_acentric),
-                            "y": correl_ratios_acentric,
+                            "x": round_for_json(d_star_sq_acentric, ndigits=6),
+                            "y": round_for_json(correl_ratios_acentric),
                             "type": "lines",
                             "name": "Anomalous correlation ratio (acentric)",
                         }
@@ -1351,8 +1359,8 @@ class AnomalousPlotter:
                     ),
                     (
                         {
-                            "x": list(d_star_sq_centric),
-                            "y": correl_ratios_centric,
+                            "x": round_for_json(d_star_sq_centric, ndigits=6),
+                            "y": round_for_json(correl_ratios_centric),
                             "type": "lines",
                             "name": "Anomalous correlation ratio (centric)",
                         }
@@ -1364,7 +1372,7 @@ class AnomalousPlotter:
                     "title": "Anomalous R.M.S. correlation ratio (acentric reflections)",
                     "xaxis": {
                         "title": "Resolution (Å)",
-                        "tickvals": tickvals,
+                        "tickvals": round_for_json(tickvals, ndigits=6),
                         "ticktext": ticktext,
                     },
                     "yaxis": {"anchor": "x", "title": "rms correlation ratio"},
@@ -1409,8 +1417,8 @@ https://doi.org/10.1107/S0907444905036693
             plotname: {
                 "data": [
                     {
-                        "x": list(dano1.data()),
-                        "y": list(dano2.data()),
+                        "x": round_for_json(dano1.data()),
+                        "y": round_for_json(dano2.data()),
                         "type": "scatter",
                         "mode": "markers",
                         "size": 1,
@@ -1487,9 +1495,9 @@ https://doi.org/10.1107/S0907444905036693
             plotname: {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist(), ndigits=4),
+                        "y": round_for_json(yedges.tolist(), ndigits=4),
+                        "z": [round_for_json(e) for e in z.transpose().tolist()],
                         "type": "heatmap",
                         "name": "normalised deviations",
                         "colorbar": {
@@ -1544,14 +1552,15 @@ def cc_half_plot(
     d_min=None,
 ):
     d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(d_star_sq, nticks=5)
+    d_star_sq_tickvals = round_for_json(d_star_sq_tickvals, ndigits=6)
     min_y = min([cc if cc is not None else 0 for cc in cc_half] + [0])
     if cc_anom:
         min_y = min([min_y, min([cc if cc is not None else 0 for cc in cc_anom])])
     return {
         "data": [
             {
-                "x": list(d_star_sq),
-                "y": list(cc_half),
+                "x": round_for_json(d_star_sq, ndigits=6),
+                "y": round_for_json(cc_half),
                 "type": "scatter",
                 "name": "CC<sub>½</sub>",
                 "mode": "lines",
@@ -1559,8 +1568,8 @@ def cc_half_plot(
             },
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_half_critical_values),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_half_critical_values),
                     "type": "scatter",
                     "name": "CC<sub>½</sub> critical value (p=0.01)",
                     "line": {"color": "rgb(31, 119, 180)", "dash": "dot"},
@@ -1570,8 +1579,8 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_anom),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_anom),
                     "type": "scatter",
                     "name": "CC-anom",
                     "mode": "lines",
@@ -1582,8 +1591,8 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_anom_critical_values),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_anom_critical_values),
                     "type": "scatter",
                     "name": "CC-anom critical value (p=0.01)",
                     "mode": "lines",
@@ -1594,8 +1603,8 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_half_fit),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_half_fit),
                     "type": "scatter",
                     "name": "CC<sub>½</sub> fit",
                     "line": {"color": "rgb(47, 79, 79)"},
@@ -1620,7 +1629,7 @@ def cc_half_plot(
             "title": "CC<sub>½</sub> vs resolution",
             "xaxis": {
                 "title": "Resolution (Å)",
-                "tickvals": d_star_sq_tickvals,
+                "tickvals": round_for_json(d_star_sq_tickvals, ndigits=6),
                 "ticktext": d_star_sq_ticktext,
             },
             "yaxis": {

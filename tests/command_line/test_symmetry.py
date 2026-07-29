@@ -557,7 +557,47 @@ def test_x4wide(dials_data, tmp_path):
     assert str(exps[0].crystal.get_space_group().info()) == "P 41 21 2"
 
 
-def test_small_molecule(dials_data, tmp_path):
+def test_small_molecule_nidppe(dials_data, tmp_path):
+    nidppe = dials_data("nidppe_processed")
+
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    result = subprocess.run(
+        (
+            shutil.which("dials.symmetry"),
+            nidppe / "integrated.expt",
+            nidppe / "integrated.refl.gz",
+            "small_molecule=True",
+            "normalisation=ml_iso",  # stability
+        ),
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
+        encoding="utf-8",
+    )
+    assert result.returncode == 0
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 1 21/c 1    | ✔         |            50 |        29 |  5.081 |     330 |          0.01 |       328 |            2.48 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+Selected results in Laue group P 1 2/m 1: P 1 21/c 1
+Saving reindexed experiments to symmetrized.expt in space group P 1 21/c 1
+Saving 29680 reindexed reflections to symmetrized.refl
+""")
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
+    assert str(exps[0].crystal.get_space_group().info()) == "P 1 21/c 1"
+
+
+def test_small_molecule_quartz(dials_data, tmp_path):
     quartz = dials_data("quartz_processed")
 
     # Set Windows UTF-8 mode explicitly in the environment
@@ -595,3 +635,7 @@ Selected results in Laue group P -3 m 1: P 31 2 1, P 32 2 1
 Saving reindexed experiments to symmetrized.expt in space group P 31 2 1
 Saving 1653 reindexed reflections to symmetrized.refl
 """)
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
+    assert str(exps[0].crystal.get_space_group().info()) == "P 31 2 1"

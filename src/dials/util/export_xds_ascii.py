@@ -57,44 +57,78 @@ def _export_experiment(
         params: The PHIL configuration object
         var_model:
     """
-    # export for xds_ascii should only be for non-scaled reflections
-    assert any(
-        i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]
-    )
-    # Handle requesting profile intensities (default via auto) but no column
-    if "profile" in params.intensity and "intensity.prf.value" not in integrated_data:
-        raise Sorry(
-            "Requested profile intensity data but only summed present. Use intensity=sum."
-        )
-
-    integrated_data = filter_reflection_table(
-        integrated_data,
-        intensity_choice=params.intensity,
-        partiality_threshold=params.mtz.partiality_threshold,
-        combine_partials=params.mtz.combine_partials,
-        min_isigi=params.mtz.min_isigi,
-        filter_ice_rings=params.mtz.filter_ice_rings,
-        d_min=params.mtz.d_min,
-    )
-
+    # sort data before output
+    indices = flex.size_t_range(integrated_data.size())
+    unique = copy.deepcopy(integrated_data["miller_index"])
+    map_to_asu(experiment.crystal.get_space_group().type(), False, unique)
+    perm = sorted(indices, key=lambda k: unique[k])
+    integrated_data = integrated_data.select(flex.size_t(perm))
     # calculate the scl = lp/dqe correction for outputting but don't apply it as
-    # it has already been applied in filter_reflection_table
+    # it gets applied in filter_reflection_table
     (
         integrated_data,
         scl,
     ) = FilteringReductionMethods.calculate_lp_qe_correction_and_filter(integrated_data)
 
-    # sort data before output
-    nref = len(integrated_data["miller_index"])
-    indices = flex.size_t_range(nref)
+    # export for xds_ascii can be on scaled or unscaled intensities
+    # extract I, sigI, var_model
+    if "scale" in params.intensity:
+        if "intensity.scale.value" not in integrated_data:
+            raise Sorry(
+                "Requested scaled intensity data but only unscaled data present."
+            )
+        filtered_data = filter_reflection_table(
+            integrated_data,
+            intensity_choice=params.intensity,
+            partiality_threshold=params.mtz.partiality_threshold,
+            combine_partials=params.mtz.combine_partials,
+            min_isigi=params.mtz.min_isigi,
+            filter_ice_rings=params.mtz.filter_ice_rings,
+            d_min=params.mtz.d_min,
+        )
+        I = filtered_data["intensity.scale.value"]  # scale factor has been applied
+        sigI = flex.sqrt(filtered_data["intensity.scale.variance"])
+        if (
+            experiment.scaling_model._configdict["error_model_type"]
+            == "BasicErrorModel"
+        ):
+            a, b = experiment.scaling_model._configdict["error_model_parameters"]
+            var_model = (a**2, b**2)  # convert between XDS and dials formulae
+    else:
+        assert any(
+            i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]
+        )
+        # Handle requesting profile intensities (default via auto) but no column
+        if (
+            "profile" in params.intensity
+            and "intensity.prf.value" not in integrated_data
+        ):
+            raise Sorry(
+                "Requested profile intensity data but only summed present. Use intensity=sum."
+            )
+        filtered_data = filter_reflection_table(
+            integrated_data,
+            intensity_choice=params.intensity,
+            partiality_threshold=params.mtz.partiality_threshold,
+            combine_partials=params.mtz.combine_partials,
+            min_isigi=params.mtz.min_isigi,
+            filter_ice_rings=params.mtz.filter_ice_rings,
+            d_min=params.mtz.d_min,
+        )
 
-    unique = copy.deepcopy(integrated_data["miller_index"])
-
-    map_to_asu(experiment.crystal.get_space_group().type(), False, unique)
-
-    perm = sorted(indices, key=lambda k: unique[k])
-    integrated_data = integrated_data.select(flex.size_t(perm))
-
+        if "intensity.sum.value" in filtered_data:
+            I = filtered_data["intensity.sum.value"]
+            V = filtered_data["intensity.sum.variance"]
+            assert V.all_gt(0)
+            V = var_model[0] * (V + var_model[1] * I * I)
+            sigI = flex.sqrt(V)
+        else:
+            I = filtered_data["intensity.prf.value"]
+            V = filtered_data["intensity.prf.variance"]
+            assert V.all_gt(0)
+            V = var_model[0] * (V + var_model[1] * I * I)
+            sigI = flex.sqrt(V)
+    nref = len(I)
     if experiment.goniometer is None:
         print("Warning: No goniometer. Experimentally exporting with (1 0 0) axis")
 
@@ -109,35 +143,19 @@ def _export_experiment(
         phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
 
     # gather the required information for the reflection file
-
-    nref = len(integrated_data["miller_index"])
-
-    miller_index = integrated_data["miller_index"]
+    miller_index = filtered_data["miller_index"]
 
     # profile correlation
-    if "profile.correlation" in integrated_data:
-        prof_corr = 100.0 * integrated_data["profile.correlation"]
+    if "profile.correlation" in filtered_data:
+        prof_corr = 100.0 * filtered_data["profile.correlation"]
     else:
         prof_corr = flex.double(nref, 100.0)
 
     # partiality
-    if "partiality" in integrated_data:
-        partiality = 100 * integrated_data["partiality"]
+    if "partiality" in filtered_data:
+        partiality = 100 * filtered_data["partiality"]
     else:
         prof_corr = flex.double(nref, 100.0)
-
-    if "intensity.sum.value" in integrated_data:
-        I = integrated_data["intensity.sum.value"]
-        V = integrated_data["intensity.sum.variance"]
-        assert V.all_gt(0)
-        V = var_model[0] * (V + var_model[1] * I * I)
-        sigI = flex.sqrt(V)
-    else:
-        I = integrated_data["intensity.prf.value"]
-        V = integrated_data["intensity.prf.variance"]
-        assert V.all_gt(0)
-        V = var_model[0] * (V + var_model[1] * I * I)
-        sigI = flex.sqrt(V)
 
     fout = open(filename, "w")
 
@@ -232,7 +250,7 @@ def _export_experiment(
     s0 = Rd * matrix.col(experiment.beam.get_s0())
 
     for j in range(nref):
-        x, y, z = integrated_data["xyzcal.px"][j]
+        x, y, z = filtered_data["xyzcal.px"][j]
         phi = phi_start + z * phi_range
         h, k, l = miller_index[j]
         X = (UB * (h, k, l)).rotate(axis, phi, deg=True)

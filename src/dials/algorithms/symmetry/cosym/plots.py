@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from dials.util.plotly_utils import round_for_json
+
 
 def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
     coord_x = coords[:, dim1]
@@ -32,8 +34,8 @@ def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
         isel = np.where(labels == k)[0]
         data.append(
             {
-                "x": coord_x[isel].tolist(),
-                "y": coord_y[isel].tolist(),
+                "x": round_for_json(coord_x[isel].tolist()),
+                "y": round_for_json(coord_y[isel].tolist()),
                 "mode": "markers",
                 "type": "scatter",
                 "marker": {
@@ -95,7 +97,7 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram", min_x=-1, bins=100
         key: {
             "data": [
                 {
-                    "x": bin_centers.tolist(),
+                    "x": round_for_json(bin_centers.tolist()),
                     "y": hist.tolist(),
                     "type": "bar",
                     "name": "Rij histogram",

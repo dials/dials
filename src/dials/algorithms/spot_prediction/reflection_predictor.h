@@ -296,27 +296,24 @@ namespace dials { namespace algorithms {
                           int frame) const {
       af::small<Ray, 2> rays = predict_rays_(h, ub);
       for (std::size_t i = 0; i < rays.size(); ++i) {
-        try {
-          Detector::coord_type impact = detector_.get_ray_intersection(rays[i].s1);
-          std::size_t panel = impact.first;
-          vec2<double> mm = impact.second;
-          vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
-          af::shared<vec2<double> > frames =
-            scan_.get_array_indices_with_angle(rays[i].angle, padding_, true);
-          for (std::size_t j = 0; j < frames.size(); ++j) {
-            if (frame < frames[j][1] && frame + 1 > frames[j][1]) {
-              p.hkl.push_back(h);
-              p.enter.push_back(rays[i].entering);
-              p.s1.push_back(rays[i].s1);
-              p.panel.push_back(panel);
-              p.flags.push_back(af::Predicted);
-              p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], frames[j][0]));
-              p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j][1]));
-              break;
-            }
+        auto impact = detector_.try_get_ray_intersection(rays[i].s1);
+        if (!impact) continue;
+        std::size_t panel = impact->first;
+        vec2<double> mm = impact->second;
+        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+        af::shared<vec2<double> > frames =
+          scan_.get_array_indices_with_angle(rays[i].angle, padding_, true);
+        for (std::size_t j = 0; j < frames.size(); ++j) {
+          if (frame < frames[j][1] && frame + 1 > frames[j][1]) {
+            p.hkl.push_back(h);
+            p.enter.push_back(rays[i].entering);
+            p.s1.push_back(rays[i].s1);
+            p.panel.push_back(panel);
+            p.flags.push_back(af::Predicted);
+            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], frames[j][0]));
+            p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j][1]));
+            break;
           }
-        } catch (dxtbx::error const&) {
-          // do nothing
         }
       }
     }
@@ -326,24 +323,21 @@ namespace dials { namespace algorithms {
                           const miller_index& h) const {
       af::small<Ray, 2> rays = predict_rays_(h, ub);
       for (std::size_t i = 0; i < rays.size(); ++i) {
-        try {
-          Detector::coord_type impact = detector_.get_ray_intersection(rays[i].s1);
-          std::size_t panel = impact.first;
-          vec2<double> mm = impact.second;
-          vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
-          af::shared<vec2<double> > frames =
-            scan_.get_array_indices_with_angle(rays[i].angle, padding_, true);
-          for (std::size_t j = 0; j < frames.size(); ++j) {
-            p.hkl.push_back(h);
-            p.enter.push_back(rays[i].entering);
-            p.s1.push_back(rays[i].s1);
-            p.panel.push_back(panel);
-            p.flags.push_back(af::Predicted);
-            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], frames[j][0]));
-            p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j][1]));
-          }
-        } catch (dxtbx::error const&) {
-          // do nothing
+        auto impact = detector_.try_get_ray_intersection(rays[i].s1);
+        if (!impact) continue;
+        std::size_t panel = impact->first;
+        vec2<double> mm = impact->second;
+        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+        af::shared<vec2<double> > frames =
+          scan_.get_array_indices_with_angle(rays[i].angle, padding_, true);
+        for (std::size_t j = 0; j < frames.size(); ++j) {
+          p.hkl.push_back(h);
+          p.enter.push_back(rays[i].entering);
+          p.s1.push_back(rays[i].s1);
+          p.panel.push_back(panel);
+          p.flags.push_back(af::Predicted);
+          p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], frames[j][0]));
+          p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j][1]));
         }
       }
     }
@@ -361,13 +355,13 @@ namespace dials { namespace algorithms {
         if (rays[i].entering == entering) {
           p.s1.push_back(rays[i].s1);
           double frame = scan_.get_array_index_from_angle(rays[i].angle);
-          try {
-            vec2<double> mm = detector_[panel].get_ray_intersection(rays[i].s1);
-            vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
-            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle));
+          auto mm = detector_[panel].try_get_ray_intersection(rays[i].s1);
+          if (mm) {
+            vec2<double> px = detector_[panel].millimeter_to_pixel(*mm);
+            p.xyz_mm.push_back(vec3<double>((*mm)[0], (*mm)[1], rays[i].angle));
             p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
             p.flags.push_back(af::Predicted);
-          } catch (dxtbx::error const&) {
+          } else {
             p.xyz_mm.push_back(vec3<double>(0, 0, rays[i].angle));
             p.xyz_px.push_back(vec3<double>(0, 0, frame));
             p.flags.push_back(0);
@@ -836,28 +830,24 @@ namespace dials { namespace algorithms {
                         const miller_index& h,
                         const Ray& ray,
                         int panel) const {
-      try {
-        // Get the impact on the detector
-        Detector::coord_type impact = detector_.get_ray_intersection(ray.s1);
-        std::size_t panel = impact.first;
-        vec2<double> mm = impact.second;
-        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+      // Get the impact on the detector
+      auto impact = detector_.try_get_ray_intersection(ray.s1);
+      if (!impact) return;
+      std::size_t panel_idx = impact->first;
+      vec2<double> mm = impact->second;
+      vec2<double> px = detector_[panel_idx].millimeter_to_pixel(mm);
 
-        // Get the frame
-        double frame = scan_.get_array_index_from_angle(ray.angle);
+      // Get the frame
+      double frame = scan_.get_array_index_from_angle(ray.angle);
 
-        // Get the frames that a reflection with this angle will be observed at
-        p.hkl.push_back(h);
-        p.enter.push_back(ray.entering);
-        p.s1.push_back(ray.s1);
-        p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], ray.angle));
-        p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
-        p.panel.push_back(panel);
-        p.flags.push_back(af::Predicted);
-
-      } catch (dxtbx::error const&) {
-        // do nothing
-      }
+      // Get the frames that a reflection with this angle will be observed at
+      p.hkl.push_back(h);
+      p.enter.push_back(ray.entering);
+      p.s1.push_back(ray.s1);
+      p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], ray.angle));
+      p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
+      p.panel.push_back(panel_idx);
+      p.flags.push_back(af::Predicted);
     }
 
     /**
@@ -893,16 +883,16 @@ namespace dials { namespace algorithms {
         if (rays[i].entering == entering) {
           p.s1.push_back(rays[i].s1);
           double frame = scan_.get_array_index_from_angle(rays[i].angle);
-          try {
-            // Need a local panel with the right D matrix
-            Panel local_panel(detector_[panel]);
-            local_panel.set_frame(d.get_column(0), d.get_column(1), d.get_column(2));
-            vec2<double> mm = local_panel.get_ray_intersection(rays[i].s1);
-            vec2<double> px = local_panel.millimeter_to_pixel(mm);
-            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle));
+          // Need a local panel with the right D matrix
+          Panel local_panel(detector_[panel]);
+          local_panel.set_frame(d.get_column(0), d.get_column(1), d.get_column(2));
+          auto mm = local_panel.try_get_ray_intersection(rays[i].s1);
+          if (mm) {
+            vec2<double> px = local_panel.millimeter_to_pixel(*mm);
+            p.xyz_mm.push_back(vec3<double>((*mm)[0], (*mm)[1], rays[i].angle));
             p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
             p.flags.push_back(af::Predicted);
-          } catch (dxtbx::error const&) {
+          } else {
             p.xyz_mm.push_back(vec3<double>(0, 0, rays[i].angle));
             p.xyz_px.push_back(vec3<double>(0, 0, frame));
             p.flags.push_back(0);
@@ -1134,41 +1124,38 @@ namespace dials { namespace algorithms {
                         const Ray& ray,
                         int panel,
                         double delpsi) const {
-      try {
-        // Get the impact on the detector
-        Detector::coord_type impact = get_ray_intersection(ray.s1, panel);
-        std::size_t panel = impact.first;
-        vec2<double> mm = impact.second;
-        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+      // Get the impact on the detector
+      auto impact = try_get_ray_intersection(ray.s1, panel);
+      if (!impact) return;
+      std::size_t panel_idx = impact->first;
+      vec2<double> mm = impact->second;
+      vec2<double> px = detector_[panel_idx].millimeter_to_pixel(mm);
 
-        // Add the reflections to the table
-        p.hkl.push_back(h);
-        p.enter.push_back(ray.entering);
-        p.s1.push_back(ray.s1);
-        p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
-        p.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
-        p.panel.push_back(panel);
-        p.flags.push_back(af::Predicted);
-        p.delpsi.push_back(delpsi);
-
-      } catch (dxtbx::error const&) {
-        // do nothing
-      }
+      // Add the reflections to the table
+      p.hkl.push_back(h);
+      p.enter.push_back(ray.entering);
+      p.s1.push_back(ray.s1);
+      p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
+      p.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
+      p.panel.push_back(panel_idx);
+      p.flags.push_back(af::Predicted);
+      p.delpsi.push_back(delpsi);
     }
 
   private:
     /**
      * Helper function to do ray intersection with/without panel set.
+     * Returns boost::none on miss.
      */
-    Detector::coord_type get_ray_intersection(vec3<double> s1, int panel) const {
-      Detector::coord_type coord;
+    boost::optional<Detector::coord_type> try_get_ray_intersection(vec3<double> s1,
+                                                                   int panel) const {
       if (panel < 0) {
-        coord = detector_.get_ray_intersection(s1);
+        return detector_.try_get_ray_intersection(s1);
       } else {
-        coord.first = panel;
-        coord.second = detector_[panel].get_ray_intersection(s1);
+        auto mm = detector_[panel].try_get_ray_intersection(s1);
+        if (!mm) return boost::none;
+        return Detector::coord_type(panel, *mm);
       }
-      return coord;
     }
 
   protected:
@@ -1400,15 +1387,10 @@ namespace dials { namespace algorithms {
         // Calculate the Ray (default zero angle and 'entering' as false)
         vec3<double> s1 = s0 + q;
 
-        int panel = detector_.get_panel_intersection(s1);
-        if (panel == -1) {
-          continue;
-        }
-
-        Detector::coord_type coord;
-        coord.first = panel;
-        coord.second = detector_[panel].get_ray_intersection(s1);
-        vec2<double> mm = coord.second;
+        auto impact = detector_.try_get_ray_intersection(s1);
+        if (!impact) continue;
+        std::size_t panel = impact->first;
+        vec2<double> mm = impact->second;
         vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
 
         // Add the reflections to the table
@@ -1590,42 +1572,39 @@ namespace dials { namespace algorithms {
                         int panel,
                         double wavelength,
                         vec3<double> s0) const {
-      try {
-        // Get the impact on the detector
-        Detector::coord_type impact = get_ray_intersection(ray.s1, panel);
-        std::size_t panel = impact.first;
-        vec2<double> mm = impact.second;
-        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+      // Get the impact on the detector
+      auto impact = try_get_ray_intersection(ray.s1, panel);
+      if (!impact) return;
+      std::size_t panel_idx = impact->first;
+      vec2<double> mm = impact->second;
+      vec2<double> px = detector_[panel_idx].millimeter_to_pixel(mm);
 
-        // Add the reflections to the table
-        p.hkl.push_back(h);
-        p.enter.push_back(ray.entering);
-        p.s1.push_back(ray.s1);
-        p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
-        p.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
-        p.panel.push_back(panel);
-        p.flags.push_back(af::Predicted);
-        p.wavelength_cal.push_back(wavelength);
-        p.s0_cal.push_back(s0);
-
-      } catch (dxtbx::error const&) {
-        // do nothing
-      }
+      // Add the reflections to the table
+      p.hkl.push_back(h);
+      p.enter.push_back(ray.entering);
+      p.s1.push_back(ray.s1);
+      p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
+      p.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
+      p.panel.push_back(panel_idx);
+      p.flags.push_back(af::Predicted);
+      p.wavelength_cal.push_back(wavelength);
+      p.s0_cal.push_back(s0);
     }
 
   private:
     /**
      * Helper function to do ray intersection with/without panel set.
+     * Returns boost::none on miss.
      */
-    Detector::coord_type get_ray_intersection(vec3<double> s1, int panel) const {
-      Detector::coord_type coord;
+    boost::optional<Detector::coord_type> try_get_ray_intersection(vec3<double> s1,
+                                                                   int panel) const {
       if (panel < 0) {
-        coord = detector_.get_ray_intersection(s1);
+        return detector_.try_get_ray_intersection(s1);
       } else {
-        coord.first = panel;
-        coord.second = detector_[panel].get_ray_intersection(s1);
+        auto mm = detector_[panel].try_get_ray_intersection(s1);
+        if (!mm) return boost::none;
+        return Detector::coord_type(panel, *mm);
       }
-      return coord;
     }
 
   protected:

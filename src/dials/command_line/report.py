@@ -23,6 +23,7 @@ from dials.array_family import flex
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
+from dials.util.plotly_utils import round_for_json
 
 RAD2DEG = 180 / math.pi
 
@@ -187,12 +188,17 @@ class ScanVaryingCrystalAnalyser:
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
-            aa = [round(i, ndigits=6) for i in aa]
-            bb = [round(i, ndigits=6) for i in bb]
-            cc = [round(i, ndigits=6) for i in cc]
+            a = round_for_json(a, ndigits=4)
+            b = round_for_json(b, ndigits=4)
+            c = round_for_json(c, ndigits=4)
+            aa = round_for_json(aa, ndigits=4)
+            bb = round_for_json(bb, ndigits=4)
+            cc = round_for_json(cc, ndigits=4)
             start, stop = scan.get_array_range()
-            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
-            vol = [e.volume() for e in cells]
+            phi = round_for_json(
+                [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
+            )
+            vol = round_for_json([e.volume() for e in cells])
             cell_dat = {
                 "phi": phi,
                 "a": a,
@@ -404,15 +410,15 @@ incorrectly.
             d["scan_varying_orientation"]["data"].extend(
                 [
                     {
-                        "x": ori["phi"],
-                        "y": ori["phi1"],
+                        "x": round_for_json(ori["phi"]),
+                        "y": round_for_json(ori["phi1"]),
                         "type": "scatter",
                         "name": "Φ1 (°)",
                         "marker": {"color": next(colors)},
                     },
                     {
-                        "x": ori["phi"],
-                        "y": ori["phi2"],
+                        "x": round_for_json(ori["phi"]),
+                        "y": round_for_json(ori["phi2"]),
                         "type": "scatter",
                         "name": "Φ2 (°)",
                         "xaxis": "x2",
@@ -420,8 +426,8 @@ incorrectly.
                         "marker": {"color": next(colors)},
                     },
                     {
-                        "x": ori["phi"],
-                        "y": ori["phi3"],
+                        "x": round_for_json(ori["phi"]),
+                        "y": round_for_json(ori["phi3"]),
                         "type": "scatter",
                         "name": "Φ3 (°)",
                         "xaxis": "x3",
@@ -607,9 +613,9 @@ ice rings, or poor spot-finding parameters.
             "n_unindexed_vs_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "n_unindexed",
                         "colorbar": {
@@ -646,9 +652,9 @@ ice rings, or poor spot-finding parameters.
             "n_indexed_vs_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "n_indexed",
                         "colorbar": {
@@ -817,9 +823,9 @@ class CentroidAnalyser:
                 "data": [
                     {
                         "name": "centroid_differences_x",
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z1.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in z1.transpose().tolist()],
                         "type": "heatmap",
                         "colorbar": {
                             "title": "Difference in X position (pixels)",
@@ -840,9 +846,9 @@ class CentroidAnalyser:
                 "data": [
                     {
                         "name": "centroid_differences_y",
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z2.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in z2.transpose().tolist()],
                         "type": "heatmap",
                         "colorbar": {
                             "title": "Difference in Y position (pixels)",
@@ -885,9 +891,9 @@ class CentroidAnalyser:
             "centroid_differences_z": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "centroid_differences_z",
                         "colorbar": {
@@ -958,22 +964,22 @@ class CentroidAnalyser:
             "centroid_mean_differences_vs_phi": {
                 "data": [
                     {
-                        "x": list(phi),
-                        "y": list(mean_residuals_x),
+                        "x": round_for_json(phi),
+                        "y": round_for_json(mean_residuals_x),
                         "type": "scatter",
                         "name": "mean_dx",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(mean_residuals_y),
+                        "x": round_for_json(phi),
+                        "y": round_for_json(mean_residuals_y),
                         "type": "scatter",
                         "name": "mean_dy",
                         "xaxis": "x2",
                         "yaxis": "y2",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(mean_residuals_phi),
+                        "x": round_for_json(phi),
+                        "y": round_for_json(mean_residuals_phi),
                         "type": "scatter",
                         "name": "mean_dphi",
                         "xaxis": "x3",
@@ -993,22 +999,22 @@ class CentroidAnalyser:
             "centroid_rmsd_vs_phi": {
                 "data": [
                     {
-                        "x": list(phi),
-                        "y": list(rmsd_x),
+                        "x": round_for_json(phi),
+                        "y": round_for_json(rmsd_x),
                         "type": "scatter",
                         "name": "rmsd_dx",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(rmsd_y),
+                        "x": round_for_json(phi),
+                        "y": round_for_json(rmsd_y),
                         "type": "scatter",
                         "name": "rmsd_dy",
                         "xaxis": "x2",
                         "yaxis": "y2",
                     },
                     {
-                        "x": list(phi),
-                        "y": list(rmsd_phi),
+                        "x": round_for_json(phi),
+                        "y": round_for_json(rmsd_phi),
                         "type": "scatter",
                         "name": "rmsd_dphi",
                         "xaxis": "x3",
@@ -1097,9 +1103,9 @@ class CentroidAnalyser:
             "residuals_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": Hxy.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in Hxy.transpose().tolist()],
                         "name": "density",
                         "colorscale": "Hot",
                         "reversescale": True,
@@ -1108,7 +1114,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": list(histx.slot_centers()),
+                        "x": round_for_json(histx.slot_centers(), ndigits=4),
                         "y": list(histx.slots()),
                         "name": "dx histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1116,7 +1122,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": list(histy.slot_centers()),
+                        "y": round_for_json(histy.slot_centers(), ndigits=4),
                         "x": list(histy.slots()),
                         "name": "dy histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1134,9 +1140,9 @@ class CentroidAnalyser:
             d["residuals_zy"] = {
                 "data": [
                     {
-                        "x": zedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": Hzy.transpose().tolist(),
+                        "x": round_for_json(zedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in Hzy.transpose().tolist()],
                         "name": "density",
                         "colorscale": "Hot",
                         "reversescale": True,
@@ -1145,7 +1151,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": list(histz.slot_centers()),
+                        "x": round_for_json(histz.slot_centers(), ndigits=4),
                         "y": list(histz.slots()),
                         "name": "dz histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1153,7 +1159,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": list(histy.slot_centers()),
+                        "y": round_for_json(histy.slot_centers(), ndigits=4),
                         "x": list(histy.slots()),
                         "name": "dy histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1170,9 +1176,9 @@ class CentroidAnalyser:
             d["residuals_xz"] = {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": zedges.tolist(),
-                        "z": Hxz.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(zedges.tolist()),
+                        "z": [round_for_json(e) for e in Hxz.transpose().tolist()],
                         "name": "density",
                         "colorscale": "Hot",
                         "reversescale": True,
@@ -1181,7 +1187,7 @@ class CentroidAnalyser:
                         "zsmooth": "best",
                     },
                     {
-                        "x": list(histx.slot_centers()),
+                        "x": round_for_json(histx.slot_centers(), ndigits=4),
                         "y": list(histx.slots()),
                         "name": "dx histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1189,7 +1195,7 @@ class CentroidAnalyser:
                         "type": "bar",
                     },
                     {
-                        "y": list(histz.slot_centers()),
+                        "y": round_for_json(histz.slot_centers(), ndigits=4),
                         "x": list(histz.slots()),
                         "name": "dz histogram",
                         "marker": {"color": "rgb(102,0,0)"},
@@ -1328,9 +1334,9 @@ class IntensityAnalyser:
             f"i_over_sigma_{intensity_type}_vs_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in z.transpose().tolist()],
                         "zmin": -1,
                         "zauto": False,
                         "type": "heatmap",
@@ -1365,9 +1371,9 @@ class IntensityAnalyser:
             "i_over_sigma_vs_z": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "i_over_sigma",
                         "colorbar": {
@@ -1445,9 +1451,9 @@ class IntensityAnalyser:
                 "data": [
                     {
                         "name": "qe_map",
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z1.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in z1.transpose().tolist()],
                         "type": "heatmap",
                         "colorbar": {"title": "QE", "titleside": "right"},
                         "colorscale": "Viridis",
@@ -1838,8 +1844,8 @@ class ReferenceProfileAnalyser:
             "reflection_cc_vs_resolution": {
                 "data": [
                     {
-                        "x": list(d_star_sq_bins),  # d_star_sq
-                        "y": list(ccs),
+                        "x": round_for_json(d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(ccs),
                         "type": "scatter",
                         "name": "profile_correlation",
                     }
@@ -1873,9 +1879,9 @@ class ReferenceProfileAnalyser:
             "n_reference_profiles_vs_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": "n_reference_profiles",
                         "colorbar": {
@@ -1904,7 +1910,7 @@ class ReferenceProfileAnalyser:
             "n_reference_profiles_vs_z": {
                 "data": [
                     {
-                        "x": list(hist.slot_centers()),
+                        "x": round_for_json(list(hist.slot_centers())),
                         "y": list(hist.slots()),
                         "type": "bar",
                         "name": "n_reference_profiles",
@@ -1928,7 +1934,7 @@ class ReferenceProfileAnalyser:
             f"{filename}_correlations_histogram": {
                 "data": [
                     {
-                        "x": list(hist.slot_centers()),
+                        "x": round_for_json(list(hist.slot_centers())),
                         "y": list(hist.slots()),
                         "type": "bar",
                         "name": f"{filename}_correlations",
@@ -1968,9 +1974,9 @@ class ReferenceProfileAnalyser:
             f"{filename}_correlations_xy": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in z.transpose().tolist()],
                         "type": "heatmap",
                         "name": f"{filename}_correlations",
                         "colorbar": {
@@ -2006,9 +2012,9 @@ class ReferenceProfileAnalyser:
             f"{filename}_correlations_vs_z": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": f"{filename}_correlations",
                         "colorbar": {
@@ -2054,9 +2060,9 @@ class ReferenceProfileAnalyser:
             f"{filename}_correlations_vs_ios": {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": H.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist()),
+                        "y": round_for_json(yedges.tolist()),
+                        "z": [round_for_json(e) for e in H.transpose().tolist()],
                         "type": "heatmap",
                         "name": f"{filename}_correlations",
                         "colorbar": {

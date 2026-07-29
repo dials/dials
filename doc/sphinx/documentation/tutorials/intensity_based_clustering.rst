@@ -297,4 +297,4 @@ can be scaled and merged (with cluster output) using the below command.
 .. _Thompson, A. J. et al. (2025) Acta Cryst. D81, 278-290: https://doi.org/10.1107/S2059798325004589
 .. _Diederichs, K. (2017) Acta Cryst. D73, 286-293: https://doi.org/10.1107/S2059798317000699
 .. _OPTICS: https://scikit-learn.org/stable/modules/generated/sklearn.cluster.OPTICS.html 
-.. _tutorial: https://xia2.github.io/multiplex-multi-crystal.html 
+.. _tutorial: https://xia2.github.io/multiplex/index.html 

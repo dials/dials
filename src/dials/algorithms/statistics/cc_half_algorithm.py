@@ -167,7 +167,9 @@ class CCHalfFromDials:
         self.datasetid_to_groups = defaultdict(list)
 
         table, unit_cell, space_group = self.read_experiments(
-            self.experiments, self.reflection_table
+            self.experiments,
+            self.reflection_table,
+            partiality_threshold=self.params.partiality_threshold,
         )
         self._group_to_batches = []
         self._group_to_dataset_id = []
@@ -475,7 +477,7 @@ class CCHalfFromDials:
         return output_reflections
 
     @staticmethod
-    def read_experiments(experiments, reflection_table):
+    def read_experiments(experiments, reflection_table, partiality_threshold):
         """
         Get information from experiments and reflections
         """
@@ -502,7 +504,10 @@ class CCHalfFromDials:
 
         # Require a dials scaled experiments file.
         filtered_table = filter_reflection_table(
-            reflection_table, ["scale"], combine_partials=False
+            reflection_table,
+            ["scale"],
+            combine_partials=False,
+            partiality_threshold=partiality_threshold,
         )
         filtered_table["intensity"] = filtered_table["intensity.scale.value"]
         filtered_table["variance"] = filtered_table["intensity.scale.variance"]

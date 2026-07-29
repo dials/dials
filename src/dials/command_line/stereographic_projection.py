@@ -15,6 +15,7 @@ from cctbx.array_family import flex
 from scitbx import matrix
 
 import dials.util
+from dials.util.plotly_utils import round_for_json
 
 help_message = """
 
@@ -419,8 +420,8 @@ def projections_as_dict(projections, labels):
     x, y = projections_all.parts()
     data.append(
         {
-            "x": list(x),
-            "y": list(y),
+            "x": round_for_json(list(x)),
+            "y": round_for_json(list(y)),
             "mode": "markers",
             "type": "scatter",
             "name": "stereographic_projections",

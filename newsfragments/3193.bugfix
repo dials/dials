@@ -1,0 +1,1 @@
+Reduced the precision of some data used for plotly graphs to avoid large HTML file sizes
