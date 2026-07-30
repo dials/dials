@@ -90,19 +90,13 @@ namespace dials_scaling { namespace boost_python {
   void export_mean_sample_variance() {
     def("mean_sample_variance",
         &mean_sample_variance,
-        (arg("unmerged_indices"),
-         arg("unmerged_data"),
-         arg("unmerged_sigmas"),
-         arg("weighted")));
+        (arg("unmerged_indices"), arg("unmerged_data"), arg("unmerged_sigmas")));
   }
 
   void export_average_intensity_variance() {
     def("average_intensity_variance",
         &average_intensity_variance,
-        (arg("unmerged_indices"),
-         arg("unmerged_data"),
-         arg("unmerged_sigmas"),
-         arg("weighted")));
+        (arg("unmerged_indices"), arg("unmerged_data"), arg("unmerged_sigmas")));
   }
 
   void export_mean_sample_variance_unweighted() {

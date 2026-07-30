@@ -406,7 +406,6 @@ def binned_to_merging_statistic(sigma_tau_binned):
     sumval = 0
     n_per_res = []
     for val in sigma_tau_binned:
-        print(val)
         cc = val[0]
         n = val[1]
         sumval += cc * n
@@ -670,10 +669,10 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             data_minus = data_minus.sort("packed_indices")
             if weighted:
                 sigma_sq_e_plus, n1 = mean_sample_variance(
-                    data_plus.indices(), data_plus.data(), data_plus.sigmas(), True
+                    data_plus.indices(), data_plus.data(), data_plus.sigmas()
                 )
                 sigma_sq_e_minus, n2 = mean_sample_variance(
-                    data_minus.indices(), data_minus.data(), data_minus.sigmas(), True
+                    data_minus.indices(), data_minus.data(), data_minus.sigmas()
                 )
             else:
                 sigma_sq_e_plus, n1 = mean_sample_variance_unweighted(
@@ -687,7 +686,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             dano = tmp.merge_equivalents().array().anomalous_differences()
             if weighted:
                 sigma_sq_y = average_intensity_variance(
-                    dano.indices(), dano.data(), dano.sigmas(), True
+                    dano.indices(), dano.data(), dano.sigmas()
                 )
             else:
                 sigma_sq_y = average_intensity_variance_unweighted(
@@ -722,19 +721,19 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             data_plus = i_obs.select(plus_sel)
             data_plus = data_plus.sort("packed_indices")
             sigma_sq_e_plus, _ = mean_sample_variance(
-                data_plus.indices(), data_plus.data(), data_plus.sigmas(), True
+                data_plus.indices(), data_plus.data(), data_plus.sigmas()
             )
             data_minus = i_obs.select(minus_sel)
             data_minus = data_minus.sort("packed_indices")
             sigma_sq_e_minus, _ = mean_sample_variance(
-                data_minus.indices(), data_minus.data(), data_minus.sigmas(), True
+                data_minus.indices(), data_minus.data(), data_minus.sigmas()
             )
 
             sigma_sq_e = sigma_sq_e_minus + sigma_sq_e_plus
             tmp = i_obs.customized_copy(anomalous_flag=True)
             dano = tmp.merge_equivalents().array().anomalous_differences()
             sigma_sq_y = average_intensity_variance(
-                dano.indices(), dano.data(), dano.sigmas(), True
+                dano.indices(), dano.data(), dano.sigmas()
             )
             if not sigma_sq_e:
                 return [0.0]
@@ -810,10 +809,10 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # calculated sigmas
             i_obs = i_obs.sort("packed_indices")
             sigma_sq_e, n = mean_sample_variance(
-                i_obs.indices(), i_obs.data(), i_obs.sigmas(), True
+                i_obs.indices(), i_obs.data(), i_obs.sigmas()
             )
             sigma_sq_y = average_intensity_variance(
-                i_obs.indices(), i_obs.data(), i_obs.sigmas(), True
+                i_obs.indices(), i_obs.data(), i_obs.sigmas()
             )
             if not sigma_sq_e:
                 return [(0.0, 0)]
@@ -875,6 +874,7 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
             neff = 1 / flex.sum(flex.pow2(norm_jw))
+            print(neff)
             return [(sxy / ((sx * sy) ** 0.5), neff)]
 
         assert this.binner is not None

@@ -544,35 +544,44 @@ double average_intensity_variance_unweighted(
   scitbx::af::const_ref<double> const& unmerged_data) {
   // Formula based on https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2
   // referred to there as s^2_{y}
-  double intensity_variance_sum = 0.0;
+  if (unmerged_indices.size() == 0) {
+    return 0;
+  }
   double N = 0.0;
   std::size_t group_begin = 0;
   std::size_t group_end = 1;
   double sumx = 0.0;
   double sumx2 = 0.0;
+
+  auto process_group = [&](std::size_t begin, std::size_t end) {
+    std::size_t n = end - begin;
+    // We are calculating the variance of all reflections across the dataset,
+    // which we can include individuals - this is important in the case of
+    // merged data like dano.
+    // if (n < 2) {
+    //  group_begin = group_end;
+    //  continue;
+    //}
+    double group_sumx = 0.0;
+    for (std::size_t i = begin; i < end; ++i) {
+      group_sumx += unmerged_data[i];
+    }
+
+    double xbar = group_sumx / n;
+    sumx += xbar;
+    sumx2 += xbar * xbar;
+    N += 1;
+  };
+  // Processes groups, except final, due to detecting on miller index change
   for (; group_end < unmerged_indices.size(); group_end++) {
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
-      // process a group
-      int n = group_end - group_begin;
-      // We are calculating the variance of all reflections across the dataset,
-      // which we can include individuals - this is important in the case of
-      // merged data like dano.
-      // if (n < 2) {
-      //  group_begin = group_end;
-      //  continue;
-      //}
-      double group_sumx = 0.;
-      for (int index = group_begin; index < group_end; index++) {
-        group_sumx += unmerged_data[index];
-      }
-      double xbar = group_sumx / n;
-      sumx += xbar;
-      sumx2 += (xbar * xbar);
-      N += 1;
+      process_group(group_begin, group_end);
       group_begin = group_end;
     }
   }
-  // now process final group
+  // process the final group
+  process_group(group_begin, unmerged_indices.size());
+
   if (N < 2) {
     return 0;
   }
@@ -582,43 +591,47 @@ double average_intensity_variance_unweighted(
 double average_intensity_variance(
   scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
   scitbx::af::const_ref<double> const& unmerged_data,
-  scitbx::af::const_ref<double> const& unmerged_sigmas,
-  bool weighted = true) {
+  scitbx::af::const_ref<double> const& unmerged_sigmas) {
   // Formula based on https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2
   // referred to there as s^2_{y_w}
-  double intensity_variance_sum = 0.0;
   double N = 0.0;
   CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
+  if (unmerged_indices.size() == 0) {
+    return 0;
+  }
   std::size_t group_begin = 0;
   std::size_t group_end = 1;
-  double group_sumx = 0.0;
+  double sumx = 0.0;
   double sumx2 = 0.0;
+
+  auto process_group = [&](std::size_t begin, std::size_t end) {
+    std::size_t n = end - begin;
+    double sumw = 0.;
+    double sumwx = 0.;
+    for (std::size_t index = begin; index < end; index++) {
+      double invw = 1.0 / std::pow(unmerged_sigmas[index], 2);
+      sumw += invw;
+      sumwx += invw * unmerged_data[index];
+    }
+    double xbar = sumwx / sumw;
+    sumx += xbar;
+    sumx2 += (xbar * xbar);
+    N += 1;
+  };
+
+  // Processes groups, except final, due to detecting on miller index change
   for (; group_end < unmerged_indices.size(); group_end++) {
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
-      // process a group
-      int n = group_end - group_begin;
-      // if (n < 2) {
-      //   group_begin = group_end;
-      //   continue;
-      // }
-      double sumw = 0.;
-      double sumwx = 0.;
-      for (int index = group_begin; index < group_end; index++) {
-        double invw = 1.0 / std::pow(unmerged_sigmas[index], 2);
-        sumw += invw;
-        sumwx += invw * unmerged_data[index];
-      }
-      double xbar = sumwx / sumw;
-      group_sumx += xbar;
-      sumx2 += (xbar * xbar);
-      N += 1;
+      process_group(group_begin, group_end);
       group_begin = group_end;
     }
   }
+  // process the final group
+  process_group(group_begin, unmerged_indices.size());
   if (N < 2) {
     return 0;
   }
-  return (sumx2 - ((group_sumx * group_sumx) / N)) / (N - 1);
+  return (sumx2 - ((sumx * sumx) / N)) / (N - 1);
 }
 
 tuple mean_sample_variance_unweighted(
@@ -626,33 +639,41 @@ tuple mean_sample_variance_unweighted(
   scitbx::af::const_ref<double> const& unmerged_data) {
   double sample_variances_sum = 0.0;
   double N = 0.;
+  if (unmerged_indices.size() == 0) {
+    return make_tuple(0, 0);
+  }
+
+  auto process_group = [&](std::size_t begin, std::size_t end) {
+    std::size_t n = end - begin;
+    if (n < 2) {
+      return;
+    }
+    double sumx2 = 0.;
+    double sumx = 0.;
+    for (std::size_t index = begin; index < end; index++) {
+      sumx2 += unmerged_data[index] * unmerged_data[index];
+      sumx += unmerged_data[index];
+    }
+
+    double a = sumx2;
+    double b = std::pow(sumx, 2) / n;
+    double s_eiw2 = 2.0 * (a - b) / (n * (n - 1));
+    sample_variances_sum += s_eiw2;
+    N += 1;
+  };
+
   std::size_t group_begin = 0;
   std::size_t group_end = 1;
   // Formula based on https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2
   // referred to there as s^2_{ei}
   for (; group_end < unmerged_indices.size(); group_end++) {
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
-      // process a group
-      double n = group_end - group_begin;
-      if (n < 2) {
-        group_begin = group_end;
-        continue;
-      }
-      double sumx2 = 0.;
-      double sumx = 0.;
-      for (int index = group_begin; index < group_end; index++) {
-        sumx2 += unmerged_data[index] * unmerged_data[index];
-        sumx += unmerged_data[index];
-      }
-
-      double a = sumx2;
-      double b = std::pow(sumx, 2) / n;
-      double s_eiw2 = 2.0 * (a - b) / (n * (n - 1));
-      sample_variances_sum += s_eiw2;
-      N += 1;
+      process_group(group_begin, group_end);
       group_begin = group_end;
     }
   }
+  // process the final group
+  process_group(group_begin, unmerged_indices.size());
   if (N == 0) {
     return make_tuple(0, 0);
   }
@@ -662,8 +683,7 @@ tuple mean_sample_variance_unweighted(
 tuple mean_sample_variance(
   scitbx::af::const_ref<cctbx::miller::index<> > const& unmerged_indices,
   scitbx::af::const_ref<double> const& unmerged_data,
-  scitbx::af::const_ref<double> const& unmerged_sigmas,
-  bool weighted = true) {
+  scitbx::af::const_ref<double> const& unmerged_sigmas) {
   // Formula based on  https://doi.org/10.1107/S2059798320006348,
   // which is an updated version of the definition in
   // https://wiki.uni-konstanz.de/xds/index.php?title=CC1/2 referred to there as
@@ -671,48 +691,57 @@ tuple mean_sample_variance(
   double weighted_sample_variances_sum = 0.0;
   double N = 0.;
   CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
+  if (unmerged_indices.size() == 0) {
+    return make_tuple(0, 0);
+  }
+
+  auto process_group = [&](std::size_t begin, std::size_t end) {
+    std::size_t n = end - begin;
+    if (n < 2) {
+      return;
+    }
+    double sumw = 0.;
+    double sumw2 = 0.;
+    double sumwx2 = 0.;
+    double sumwx = 0.;
+    for (std::size_t index = begin; index < end; index++) {
+      double invw = 1.0 / std::pow(unmerged_sigmas[index], 2);
+      sumw += invw;
+      sumw2 += invw * invw;
+      sumwx2 += invw * unmerged_data[index] * unmerged_data[index];
+      sumwx += invw * unmerged_data[index];
+    }
+
+    if (sumw <= 0.0) {
+      return;
+    }
+
+    double a = sumwx2 / sumw;
+    double b = std::pow(sumwx / sumw, 2);
+
+    double c = ((sumw * sumw) / sumw2) - 1;
+    if (c <= 0.0) {
+      return;
+    }
+    double prefactor = 2.0 / c;
+    double s_eiw2 = prefactor * (a - b);
+    weighted_sample_variances_sum += s_eiw2;
+    N += 1;
+  };
+
   std::size_t group_begin = 0;
   std::size_t group_end = 1;
+
+  // Processes groups, except final, due to detecting on miller index change
   for (; group_end < unmerged_indices.size(); group_end++) {
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
-      // process a group
-      double n = group_end - group_begin;
-      if (n < 2) {
-        group_begin = group_end;
-        continue;
-      }
-      double sumw = 0.;
-      double sumw2 = 0.;
-      double sumwx2 = 0.;
-      double sumwx = 0.;
-      for (int index = group_begin; index < group_end; index++) {
-        double invw = 1.0 / std::pow(unmerged_sigmas[index], 2);
-        sumw += invw;
-        sumw2 += invw * invw;
-        sumwx2 += invw * unmerged_data[index] * unmerged_data[index];
-        sumwx += invw * unmerged_data[index];
-      }
-
-      if (sumw <= 0.0) {
-        group_begin = group_end;
-        continue;
-      }
-
-      double a = sumwx2 / sumw;
-      double b = std::pow(sumwx / sumw, 2);
-
-      double c = ((sumw * sumw) / sumw2) - 1;
-      if (c <= 0.0) {
-        group_begin = group_end;
-        continue;
-      }
-      double prefactor = 2.0 / c;
-      double s_eiw2 = prefactor * (a - b);
-      weighted_sample_variances_sum += s_eiw2;
-      N += 1;
+      process_group(group_begin, group_end);
       group_begin = group_end;
     }
   }
+  // process the final group
+  process_group(group_begin, unmerged_indices.size());
+
   if (N == 0) {
     return make_tuple(0, 0);
   }
