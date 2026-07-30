@@ -126,13 +126,13 @@ class RefinedSettingsList(list):
         table_data = [
             [
                 "Solution",
-                "Metric fit",
-                "rmsd",
+                "Metric fit\n(°)",
+                "rmsd\n(mm)",
                 "min/max cc",
                 "#spots",
                 "lattice",
                 "unit_cell",
-                "volume",
+                "volume\n(Å**3)",
                 "cb_op",
             ]
         ]
