@@ -35,6 +35,8 @@ n_bins = 10
 calculate_sigma_tau_stats = False
     .type = bool
     .help = "Additionally calculate CC1/2 statistics with the sigma-tau method."
+variance_floor_fraction=0.01
+    .type = float
 output.log=dials.merging_statistics.log
     .type = str
     .help = "The log filename"
@@ -162,6 +164,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             additional_stats=True,
             n_bins=params.n_bins,
             sigma_tau_stats=params.calculate_sigma_tau_stats,
+            variance_floor_fraction=params.variance_floor_fraction,
         )
         from dials.report.plots import ResolutionPlotsAndStats
 

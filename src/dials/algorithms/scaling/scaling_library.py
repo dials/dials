@@ -455,12 +455,19 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
     def __init__(
-        self, *args, additional_stats=False, sigma_tau_stats=False, seed=0, **kwargs
+        self,
+        *args,
+        additional_stats=False,
+        sigma_tau_stats=False,
+        seed=0,
+        variance_floor_fraction=0.01,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
         self.binner = None
         self.merged_half_datasets = None
+        self.variance_floor_fraction = variance_floor_fraction
 
         # Weighted CC1/2 and CCanom.
         self.weighted_cc_data: MergingStatistic | None = None
@@ -538,12 +545,14 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             self.merged_half_datasets.data2,
             assume_index_matching=True,
             use_binning=False,
+            variance_floor_fraction=self.variance_floor_fraction,
         )[0]
         results = ExtendedDatasetStatistics.weighted_cchalf(
             self.merged_half_datasets.data1,
             self.merged_half_datasets.data2,
             assume_index_matching=True,
             use_binning=True,
+            variance_floor_fraction=self.variance_floor_fraction,
         )
         weighted_cc_half_binned = [i[0] for i in results]
         neff_binned = [i[1] for i in results]
@@ -556,11 +565,14 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
         # now do weighted cc anom
         i_obs_copy2.setup_binner(n_bins=n_bins)
-        weighted_cc_anom, neff_overall_anom = weighted_anom_correlation(i_obs_copy2)
+        weighted_cc_anom, neff_overall_anom = weighted_anom_correlation(
+            i_obs_copy2, variance_floor_fraction=self.variance_floor_fraction
+        )
         weighted_cc_half_anom_binned, neff_anom_binned = weighted_anom_correlation(
             i_obs_copy2,
             use_binning=True,
             n_bins=n_bins,
+            variance_floor_fraction=self.variance_floor_fraction,
         )
         self.weighted_cc_anom_data = MergingStatistic(
             weighted_cc_anom,
@@ -835,7 +847,12 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
 
     @classmethod
     def weighted_cchalf(
-        cls, this, other, assume_index_matching=False, use_binning=False
+        cls,
+        this,
+        other,
+        assume_index_matching=False,
+        use_binning=False,
+        variance_floor_fraction=0,
     ) -> list[Tuple]:
         if not use_binning:
             assert other.data().size() == this.data().size()
@@ -856,7 +873,9 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 return [(None, 1)]
             v_o = flex.pow2(o.sigmas())
             v_c = flex.pow2(c.sigmas())
-            joint_w = 1.0 / (v_o + v_c)
+            tausq = variance_floor_fraction * np.median(np.array(v_o + v_c))
+            joint_w = 1.0 / (v_o + v_c + tausq)
+            # joint_w = 1.0 / (v_o + v_c)
             sumjw = flex.sum(joint_w)
             norm_jw = joint_w / sumjw
             xbar = flex.sum(o.data() * norm_jw)
@@ -874,7 +893,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             # Kish, Leslie. 1965. Survey Sampling New York: Wiley. (R documentation)
             # neff = sum(w)^2 / sum(w^2). But sum(w) == 1 as normalised already
             neff = 1 / flex.sum(flex.pow2(norm_jw))
-            print(neff)
             return [(sxy / ((sx * sy) ** 0.5), neff)]
 
         assert this.binner is not None
@@ -887,12 +905,15 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                     other.select(sel),
                     assume_index_matching=assume_index_matching,
                     use_binning=False,
+                    variance_floor_fraction=variance_floor_fraction,
                 )[0]
             )
         return results
 
 
-def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
+def weighted_anom_correlation(
+    iobs, use_binning=False, n_bins=20, variance_floor_fraction=0.01
+):
     tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
     tmp_array = tmp_array.sort("packed_indices")
     if not use_binning:
@@ -923,6 +944,7 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
             dano1,
             dano2,
             assume_index_matching=True,
+            variance_floor_fraction=variance_floor_fraction,
         )[0]
         return cc, neff
     tmp_array.setup_binner(n_bins=n_bins)
@@ -935,7 +957,9 @@ def weighted_anom_correlation(iobs, use_binning=False, n_bins=20):
             ccs.append(None)
             neffs.append(None)
         else:
-            cc, neff = weighted_anom_correlation(bin_array)
+            cc, neff = weighted_anom_correlation(
+                bin_array, variance_floor_fraction=variance_floor_fraction
+            )
             ccs.append(cc)
             neffs.append(neff)
     return ccs, neffs
@@ -949,6 +973,7 @@ def merging_stats_from_scaled_array(
     additional_stats=False,
     cc_one_half_significance_level=0.01,
     sigma_tau_stats=False,
+    variance_floor_fraction=0.01,
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -968,6 +993,7 @@ def merging_stats_from_scaled_array(
             cc_one_half_significance_level=cc_one_half_significance_level,
             additional_stats=additional_stats,
             sigma_tau_stats=sigma_tau_stats,
+            variance_floor_fraction=variance_floor_fraction,
         )
     except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
@@ -998,6 +1024,7 @@ def merging_stats_from_scaled_array(
                     use_internal_variance=use_internal_variance,
                     additional_stats=additional_stats,
                     sigma_tau_stats=sigma_tau_stats,
+                    variance_floor_fraction=variance_floor_fraction,
                 )
             except (RuntimeError, Sorry) as e:
                 logger.warning(
