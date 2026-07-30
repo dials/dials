@@ -665,6 +665,8 @@ class ResolutionPlotsAndStats:
 
     def weighted_stats_plot(self):
         d = {}
+        if not hasattr(self.dataset_statistics, "weighted_cc_data"):
+            return d
         if self.dataset_statistics.weighted_cc_data:
             wcc_data = self.dataset_statistics.weighted_cc_data
             wccanom_data = self.dataset_statistics.weighted_cc_anom_data
