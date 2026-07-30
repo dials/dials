@@ -406,6 +406,7 @@ def binned_to_merging_statistic(sigma_tau_binned):
     sumval = 0
     n_per_res = []
     for val in sigma_tau_binned:
+        print(val)
         cc = val[0]
         n = val[1]
         sumval += cc * n
@@ -655,7 +656,9 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
         return results
 
     @classmethod
-    def calculate_cchalf_anom_sigma_tau(cls, i_obs, use_binning=False, weighted=False):
+    def calculate_cchalf_anom_sigma_tau(
+        cls, i_obs, use_binning=False, weighted=False
+    ) -> list[tuple]:
         if not use_binning:
             sg_type = i_obs.space_group().type()
             # asu = i_obs.customized_copy(anomalous_flag=True).map_to_asu()
@@ -691,20 +694,20 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                     dano.indices(), dano.data()
                 )
             if not sigma_sq_e:
-                return [0.0, 0]
+                return [(0.0, 0)]
             if not sigma_sq_y:
-                return [0.0, 0]
+                return [(0.0, 0)]
             cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
                 sigma_sq_y + (0.5 * sigma_sq_e)
             )
-            return [cc_half, n1 + n2]
+            return [(cc_half, n1 + n2)]
         results = []
         for i_bin in i_obs.binner().range_all():
             sel = i_obs.binner().selection(i_bin)
             results.append(
                 cls.calculate_cchalf_anom_sigma_tau(
                     i_obs.select(sel), use_binning=False, weighted=weighted
-                )
+                )[0]
             )
         return results
 
@@ -781,9 +784,9 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 i_obs.indices(), i_obs.data()
             )
             if not sigma_sq_e:
-                return [0.0, 0]
+                return [(0.0, 0)]
             if not sigma_sq_y:
-                return [0.0, 0]
+                return [(0.0, 0)]
             cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
                 sigma_sq_y + (0.5 * sigma_sq_e)
             )

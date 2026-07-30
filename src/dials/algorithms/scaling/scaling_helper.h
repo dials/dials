@@ -561,21 +561,22 @@ double average_intensity_variance_unweighted(
       //  group_begin = group_end;
       //  continue;
       //}
-      double sumx = 0.;
+      double group_sumx = 0.;
       for (int index = group_begin; index < group_end; index++) {
-        sumx += unmerged_data[index];
+        group_sumx += unmerged_data[index];
       }
-      double xbar = sumx / n;
+      double xbar = group_sumx / n;
       sumx += xbar;
       sumx2 += (xbar * xbar);
       N += 1;
       group_begin = group_end;
     }
   }
+  // now process final group
   if (N < 2) {
     return 0;
   }
-  return (sumx2 - ((sumx * sumx) / N)) / N - 1;
+  return (sumx2 - ((sumx * sumx) / N)) / (N - 1);
 }
 
 double average_intensity_variance(
@@ -590,7 +591,7 @@ double average_intensity_variance(
   CCTBX_ASSERT(unmerged_sigmas.all_gt(0.0));
   std::size_t group_begin = 0;
   std::size_t group_end = 1;
-  double sumx = 0.0;
+  double group_sumx = 0.0;
   double sumx2 = 0.0;
   for (; group_end < unmerged_indices.size(); group_end++) {
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
@@ -608,7 +609,7 @@ double average_intensity_variance(
         sumwx += invw * unmerged_data[index];
       }
       double xbar = sumwx / sumw;
-      sumx += xbar;
+      group_sumx += xbar;
       sumx2 += (xbar * xbar);
       N += 1;
       group_begin = group_end;
@@ -617,7 +618,7 @@ double average_intensity_variance(
   if (N < 2) {
     return 0;
   }
-  return (sumx2 - ((sumx * sumx) / N)) / N - 1;
+  return (sumx2 - ((group_sumx * group_sumx) / N)) / (N - 1);
 }
 
 tuple mean_sample_variance_unweighted(
