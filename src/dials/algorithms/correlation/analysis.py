@@ -932,7 +932,7 @@ class CorrelationMatrix:
                     * 2
                 ),
             ),
-            60,
+            100,
         )
 
         self.rij_graphs.update(
