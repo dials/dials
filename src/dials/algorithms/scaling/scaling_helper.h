@@ -566,7 +566,6 @@ double average_intensity_variance_unweighted(
     for (std::size_t i = begin; i < end; ++i) {
       group_sumx += unmerged_data[i];
     }
-
     double xbar = group_sumx / n;
     sumx += xbar;
     sumx2 += xbar * xbar;
@@ -581,7 +580,6 @@ double average_intensity_variance_unweighted(
   }
   // process the final group
   process_group(group_begin, unmerged_indices.size());
-
   if (N < 2) {
     return 0;
   }
@@ -654,7 +652,6 @@ tuple mean_sample_variance_unweighted(
       sumx2 += unmerged_data[index] * unmerged_data[index];
       sumx += unmerged_data[index];
     }
-
     double a = sumx2;
     double b = std::pow(sumx, 2) / n;
     double s_eiw2 = 2.0 * (a - b) / (n * (n - 1));
@@ -711,14 +708,11 @@ tuple mean_sample_variance(
       sumwx2 += invw * unmerged_data[index] * unmerged_data[index];
       sumwx += invw * unmerged_data[index];
     }
-
     if (sumw <= 0.0) {
       return;
     }
-
     double a = sumwx2 / sumw;
     double b = std::pow(sumwx / sumw, 2);
-
     double c = ((sumw * sumw) / sumw2) - 1;
     if (c <= 0.0) {
       return;
@@ -731,7 +725,6 @@ tuple mean_sample_variance(
 
   std::size_t group_begin = 0;
   std::size_t group_end = 1;
-
   // Processes groups, except final, due to detecting on miller index change
   for (; group_end < unmerged_indices.size(); group_end++) {
     if (unmerged_indices[group_end] != unmerged_indices[group_begin]) {
@@ -741,7 +734,6 @@ tuple mean_sample_variance(
   }
   // process the final group
   process_group(group_begin, unmerged_indices.size());
-
   if (N == 0) {
     return make_tuple(0, 0);
   }

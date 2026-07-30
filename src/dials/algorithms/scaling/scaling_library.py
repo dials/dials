@@ -873,9 +873,10 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 return [(None, 1)]
             v_o = flex.pow2(o.sigmas())
             v_c = flex.pow2(c.sigmas())
+            # Add a light regularization term to avoid overdependence on a few
+            # observations with a very small variance.
             tausq = variance_floor_fraction * np.median(np.array(v_o + v_c))
             joint_w = 1.0 / (v_o + v_c + tausq)
-            # joint_w = 1.0 / (v_o + v_c)
             sumjw = flex.sum(joint_w)
             norm_jw = joint_w / sumjw
             xbar = flex.sum(o.data() * norm_jw)
@@ -884,7 +885,6 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
             dy = c.data() - ybar
 
             sxy = flex.sum(dx * dy * norm_jw)
-
             sx = flex.sum(flex.pow2(dx) * norm_jw)
             sy = flex.sum(flex.pow2(dy) * norm_jw)
             if sx == 0.0 or sy == 0.0:
