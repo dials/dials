@@ -37,6 +37,10 @@ calculate_sigma_tau_stats = False
     .help = "Additionally calculate CC1/2 statistics with the sigma-tau method."
 variance_floor_fraction=0.01
     .type = float
+    .help = "Set a variance floor fraction of this value, before taking inverse variance"
+            "weights. This adds an extra regularization term at this fraction of the median variance"
+            "to stop a small number of overly precise observations from dominating the"
+            "weighted correlation calculation."
 output.log=dials.merging_statistics.log
     .type = str
     .help = "The log filename"
