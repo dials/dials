@@ -28,6 +28,19 @@ from dials.report.analysis import (
     table_1_summary,
 )
 
+help_message = """
+
+This utility program calculates merging statistics on scaled DIALS datafiles or an unmerged MTZ.
+
+A HTML output report is generated with merging statistics tables and plots.
+
+Examples::
+
+  dials.merging_statistics scaled.expt scaled.refl
+
+  dials.merging_statistics unmerged.mtz
+"""
+
 phil_scope = iotbx.phil.parse("""\
 n_bins = 10
     .type = int
@@ -102,7 +115,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     parser = ArgumentParser(
         usage=usage,
         phil=phil,
-        epilog=__doc__,
+        epilog=help_message,
         read_experiments=True,
         read_reflections=True,
         check_format=False,

@@ -64,6 +64,7 @@ Utilities:
    dials_filter_reflections
    dials_import_xds
    dials_correlation_matrix
+   dials_merging_statistics
 
 Printable command line reference:
 
