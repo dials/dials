@@ -16,6 +16,7 @@ import logging
 import math
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import Optional, Tuple
 from unittest.mock import Mock
 
 import numpy as np
@@ -36,7 +37,14 @@ from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
 from dials.util.reference import intensities_from_reference_file
-from dials_scaling_ext import split_unmerged
+from dials_scaling_ext import (
+    average_intensity_variance,
+    average_intensity_variance_unweighted,
+    mean_sample_variance,
+    mean_sample_variance_unweighted,
+    split_into_hemispheres,
+    split_unmerged,
+)
 
 logger = logging.getLogger("dials")
 
@@ -373,6 +381,36 @@ def determine_best_unit_cell(experiments):
     return best_unit_cell
 
 
+def compute_cc_significance(r, n, p):
+    # https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#Testing_using_Student.27s_t-distribution
+    if r == -1 or n <= 2:
+        significance = False
+        critical_value = 0
+    else:
+        from scitbx.math import distributions
+
+        dist = distributions.students_t_distribution(n - 2)
+        t = dist.quantile(1 - p)
+        critical_value = t / math.sqrt(n - 2 + t**2)
+        significance = r > critical_value
+    return significance, critical_value
+
+
+def compute_cc_significance_levels(cchalfs, neffs, cc_one_half_significance_level=0.01):
+    significances = []
+    critical_vals = []
+    for cc, n in zip(cchalfs, neffs):
+        if cc is not None and n is not None:
+            s, c = compute_cc_significance(
+                cc, int(math.ceil(n)), cc_one_half_significance_level
+            )
+        else:
+            s, c = None, None
+        significances.append(s)
+        critical_vals.append(c)
+    return significances, critical_vals
+
+
 @dataclass
 class MergedHalfDatasets:
     data1: miller.array
@@ -381,74 +419,243 @@ class MergedHalfDatasets:
     multiplicity2: miller.array
 
 
+@dataclass
+class MergingStatistic:
+    value: float
+    value_binned: list[float]
+    neff: Optional[float] = None
+    neff_binned: Optional[list[float]] = None
+    significance_critical_values: Optional[list[float | None]] = None
+
+    def __post_init__(self):
+        if self.neff_binned:
+            _, self.significance_critical_values = compute_cc_significance_levels(
+                self.value_binned, self.neff_binned
+            )
+        else:
+            self.significance_critical_values = [None] * len(self.value_binned)
+
+
+# CC1/2 sigma-tau overall is calculated as a weighted
+# mean of the bin values.
+def binned_to_merging_statistic(sigma_tau_binned):
+    sigma_tau_values = []
+    # do weighted sum
+    n_tot = 0
+    sumval = 0
+    n_per_res = []
+    for val in sigma_tau_binned:
+        cc = val[0]
+        n = val[1]
+        sumval += cc * n
+        n_tot += n
+        n_per_res.append(n)
+        sigma_tau_values.append(cc)
+    if n_tot:
+        overall = sumval / n_tot
+    else:
+        overall = 0
+    return MergingStatistic(
+        overall, sigma_tau_values[1:-1], neff=n_tot, neff_binned=n_per_res[1:-1]
+    )
+
+
+def merge_half_datasets(i_obs, seed=0):
+    ## Create merged half datasets for R-split and CC1/2 calculations.
+    split = split_unmerged(
+        unmerged_indices=i_obs.indices(),
+        unmerged_data=i_obs.data(),
+        unmerged_sigmas=i_obs.sigmas(),
+        seed=seed,
+    )
+    indices = split.indices()
+    m1 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.data1(),
+        sigmas=split.sigma1(),
+    )
+    m2 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.data2(),
+        sigmas=split.sigma2(),
+    )
+    n1 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.n1(),
+    )
+    n2 = miller.array(
+        miller_set=miller.set(i_obs.crystal_symmetry(), indices),
+        data=split.n2(),
+    )
+    return MergedHalfDatasets(m1, m2, n1, n2)
+
+
 class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
     """A class to extend iotbx merging statistics."""
 
-    def __init__(self, *args, additional_stats=False, seed=0, **kwargs):
+    def __init__(
+        self,
+        *args,
+        additional_stats=False,
+        sigma_tau_stats=False,
+        seed=0,
+        variance_floor_fraction=0.01,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
-        self.r_split = None
-        self.r_split_binned = None
+
         self.binner = None
         self.merged_half_datasets = None
+        self.variance_floor_fraction = variance_floor_fraction
+
+        # Weighted CC1/2 and CCanom.
+        self.weighted_cc_data: MergingStatistic | None = None
+        self.weighted_cc_anom_data: MergingStatistic | None = None
+        # R-split and weighted R-split.
+        self.r_split: MergingStatistic | None = None
+        self.weighted_r_split: MergingStatistic | None = None
+
+        # CC1/2 and CCanom, weighted and unweighted, sigma-tau calculation.
+        self.weighted_cchalf_anom_sigma_tau: MergingStatistic | None = None
+        self.weighted_cchalf_sigma_tau: MergingStatistic | None = None
+        self.cchalf_sigma_tau: MergingStatistic | None = None
+        self.cchalf_anom_sigma_tau: MergingStatistic | None = None
+
         if not additional_stats:
             return
         i_obs = kwargs.get("i_obs")
         n_bins = kwargs.get("n_bins", 20)
         if not i_obs:
             return
+
         i_obs_copy = i_obs.customized_copy()
         i_obs_copy.setup_binner(n_bins=n_bins)
+        logger.debug("Resolution bin ranges:")
+        for ibin in i_obs_copy.binner().range_used():
+            r = i_obs_copy.binner().bin_d_range(ibin)
+            logger.debug(f"{r[0]:.2f}-{r[1]:.2f}")
+
+        i_obs_copy2 = i_obs.customized_copy()
+        i_obs_copy3 = i_obs.customized_copy()
+
         i_obs = i_obs.map_to_asu()
         i_obs = i_obs.sort("packed_indices")
 
-        split = split_unmerged(
-            unmerged_indices=i_obs.indices(),
-            unmerged_data=i_obs.data(),
-            unmerged_sigmas=i_obs.sigmas(),
-            seed=seed,
-        )
-        indices = split.indices()
-        m1 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.data1(),
-            sigmas=split.sigma1(),
-        )
-        m2 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.data2(),
-            sigmas=split.sigma2(),
-        )
-        n1 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.n1(),
-        )
-        n2 = miller.array(
-            miller_set=miller.set(i_obs.crystal_symmetry(), indices),
-            data=split.n2(),
-        )
-        self.merged_half_datasets = MergedHalfDatasets(m1, m2, n1, n2)
+        self.merged_half_datasets = merge_half_datasets(i_obs, seed=seed)
         assert i_obs_copy.binner() is not None
         self.binner = i_obs_copy.binner()
-        m1.use_binning(self.binner)
-        m2.use_binning(self.binner)
+        self.merged_half_datasets.data1.use_binning(self.binner)
+        self.merged_half_datasets.data2.use_binning(self.binner)
 
-        self.r_split = self.calc_rsplit(
-            m1, m2, assume_index_matching=True, use_binning=False
+        r_split = self.calc_rsplit(
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=False,
         )
-        self.r_split_binned = self.calc_rsplit(
-            m1, m2, assume_index_matching=True, use_binning=True
+        r_split_binned = self.calc_rsplit(
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=True,
         )
+        self.r_split = MergingStatistic(r_split, r_split_binned)
+        # now do weighted rsplit
+        weighted_r_split = self.calc_rsplit(
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=False,
+            weighted=True,
+        )
+        weighted_r_split_binned = self.calc_rsplit(
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=True,
+            weighted=True,
+        )
+        self.weighted_r_split = MergingStatistic(
+            weighted_r_split, weighted_r_split_binned
+        )
+
+        weighted_cc_half, neff_overall = ExtendedDatasetStatistics.weighted_cchalf(
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=False,
+            variance_floor_fraction=self.variance_floor_fraction,
+        )[0]
+        results = ExtendedDatasetStatistics.weighted_cchalf(
+            self.merged_half_datasets.data1,
+            self.merged_half_datasets.data2,
+            assume_index_matching=True,
+            use_binning=True,
+            variance_floor_fraction=self.variance_floor_fraction,
+        )
+        weighted_cc_half_binned = [i[0] for i in results]
+        neff_binned = [i[1] for i in results]
+        if weighted_cc_half_binned is not None:
+            weighted_cc_half_binned = weighted_cc_half_binned[1:-1]
+            neff_binned = neff_binned[1:-1]
+        self.weighted_cc_data = MergingStatistic(
+            weighted_cc_half, weighted_cc_half_binned, neff_overall, neff_binned
+        )
+
+        # now do weighted cc anom
+        i_obs_copy2.setup_binner(n_bins=n_bins)
+        weighted_cc_anom, neff_overall_anom = weighted_anom_correlation(
+            i_obs_copy2, variance_floor_fraction=self.variance_floor_fraction
+        )
+        weighted_cc_half_anom_binned, neff_anom_binned = weighted_anom_correlation(
+            i_obs_copy2,
+            use_binning=True,
+            n_bins=n_bins,
+            variance_floor_fraction=self.variance_floor_fraction,
+        )
+        self.weighted_cc_anom_data = MergingStatistic(
+            weighted_cc_anom,
+            weighted_cc_half_anom_binned,
+            neff_overall_anom,
+            neff_anom_binned,
+        )
+
+        if sigma_tau_stats:
+            ## Optionally calculate sigma-tau values
+            ## CC1/2 sigma-tau - unweighted, weighted, anom-unweighted, anom-weighted
+            i_obs_copy3.setup_binner(n_bins=n_bins)
+            i_obs_copy3 = i_obs_copy3.map_to_asu()
+            i_obs_copy3 = i_obs_copy3.sort("packed_indices")
+            i_obs_copy3.setup_binner(n_bins=n_bins)
+            self.cchalf_sigma_tau = binned_to_merging_statistic(
+                self.calculate_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
+            )
+            self.weighted_cchalf_sigma_tau = binned_to_merging_statistic(
+                self.calculate_weighted_cchalf_sigma_tau(i_obs_copy3, use_binning=True)
+            )
+            self.cchalf_anom_sigma_tau = binned_to_merging_statistic(
+                self.calculate_cchalf_anom_sigma_tau(
+                    i_obs_copy3, use_binning=True, weighted=False
+                )
+            )
+            self.weighted_cchalf_anom_sigma_tau = binned_to_merging_statistic(
+                self.calculate_cchalf_anom_sigma_tau(
+                    i_obs_copy3, use_binning=True, weighted=True
+                )
+            )
 
     def as_dict(self):
         d = super().as_dict()
         if not self.r_split:
             return d
-        d["overall"]["r_split"] = self.r_split
-        d["r_split"] = self.r_split_binned
+        d["overall"]["r_split"] = self.r_split.value
+        d["r_split"] = self.r_split.value_binned
         return d
 
     @classmethod
-    def calc_rsplit(cls, this, other, assume_index_matching=False, use_binning=False):
+    def calc_rsplit(
+        cls, this, other, assume_index_matching=False, use_binning=False, weighted=False
+    ):
         # based on White, T. A. et al. J. Appl. Cryst. 45, 335-341 (2012).
         # adapted from cctbx_project/xfel/cxi_cc.py
         # Note that compared to the original published definition, we have used random
@@ -463,30 +670,229 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 (o, c) = (this, other)
             else:
                 (o, c) = this.common_sets(other=other, assert_no_singles=True)
-
-            den = 0.5 * flex.sum(o.data() + c.data())
-            if den == 0:  # avoid zero division error
-                return -1
-            return (1.0 / math.sqrt(2)) * flex.sum(flex.abs(o.data() - c.data())) / den
+            if weighted:
+                assert len(o.sigmas())
+                assert len(c.sigmas())
+                joint_var = (o.sigmas() ** 2) + (c.sigmas() ** 2)
+                assert joint_var > 0
+                den = flex.sum((o.data() + c.data()) / joint_var)
+                if den == 0:
+                    return -1
+                return (
+                    math.sqrt(2.0)
+                    * flex.sum(flex.abs(o.data() - c.data()) / joint_var)
+                    / den
+                )
+            else:
+                den = 0.5 * flex.sum(o.data() + c.data())
+                if den == 0:  # avoid zero division error
+                    return -1
+                return (
+                    (1.0 / math.sqrt(2)) * flex.sum(flex.abs(o.data() - c.data())) / den
+                )
 
         assert this.binner is not None
         results = []
         for i_bin in this.binner().range_used():
             sel = this.binner().selection(i_bin)
-            results.append(
-                cls.calc_rsplit(
-                    this.select(sel),
-                    other.select(sel),
-                    assume_index_matching=assume_index_matching,
-                    use_binning=False,
+            r = cls.calc_rsplit(
+                this.select(sel),
+                other.select(sel),
+                assume_index_matching=assume_index_matching,
+                use_binning=False,
+                weighted=weighted,
+            )
+            results.append(r)
+        return results
+
+    @classmethod
+    def calculate_cchalf_anom_sigma_tau(
+        cls, i_obs, use_binning=False, weighted=False
+    ) -> list[tuple]:
+        if not use_binning:
+            sg_type = i_obs.space_group().type()
+            # asu = i_obs.customized_copy(anomalous_flag=True).map_to_asu()
+            # FIXME should we only include data that has a pair?
+            plus_sel, minus_sel = split_into_hemispheres(sg_type, i_obs.indices())
+            data_plus = i_obs.select(plus_sel)
+            data_plus = data_plus.sort("packed_indices")
+            data_minus = i_obs.select(minus_sel)
+            data_minus = data_minus.sort("packed_indices")
+            if weighted:
+                sigma_sq_e_plus, n1 = mean_sample_variance(
+                    data_plus.indices(), data_plus.data(), data_plus.sigmas()
                 )
+                sigma_sq_e_minus, n2 = mean_sample_variance(
+                    data_minus.indices(), data_minus.data(), data_minus.sigmas()
+                )
+            else:
+                sigma_sq_e_plus, n1 = mean_sample_variance_unweighted(
+                    data_plus.indices(), data_plus.data()
+                )
+                sigma_sq_e_minus, n2 = mean_sample_variance_unweighted(
+                    data_minus.indices(), data_minus.data()
+                )
+            sigma_sq_e = sigma_sq_e_minus + sigma_sq_e_plus
+            tmp = i_obs.customized_copy(anomalous_flag=True)
+            dano = tmp.merge_equivalents().array().anomalous_differences()
+            if weighted:
+                sigma_sq_y = average_intensity_variance(
+                    dano.indices(), dano.data(), dano.sigmas()
+                )
+            else:
+                sigma_sq_y = average_intensity_variance_unweighted(
+                    dano.indices(), dano.data()
+                )
+            if not sigma_sq_e:
+                return [(0.0, 0)]
+            if not sigma_sq_y:
+                return [(0.0, 0)]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            return [(cc_half, n1 + n2)]
+        results = []
+        for i_bin in i_obs.binner().range_all():
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_cchalf_anom_sigma_tau(
+                    i_obs.select(sel), use_binning=False, weighted=weighted
+                )[0]
+            )
+        return results
+
+    @classmethod
+    def calculate_weighted_cchalf_anom_sigma_tau(cls, i_obs, use_binning=False) -> list:
+        if not use_binning:
+            # calculated sigmas
+            sg_type = i_obs.space_group().type()
+            # asu = i_obs.customized_copy(anomalous_flag=True).map_to_asu()
+            # FIXME should we only include data that has a pair?
+            plus_sel, minus_sel = split_into_hemispheres(sg_type, i_obs.indices())
+            data_plus = i_obs.select(plus_sel)
+            data_plus = data_plus.sort("packed_indices")
+            sigma_sq_e_plus, _ = mean_sample_variance(
+                data_plus.indices(), data_plus.data(), data_plus.sigmas()
+            )
+            data_minus = i_obs.select(minus_sel)
+            data_minus = data_minus.sort("packed_indices")
+            sigma_sq_e_minus, _ = mean_sample_variance(
+                data_minus.indices(), data_minus.data(), data_minus.sigmas()
+            )
+
+            sigma_sq_e = sigma_sq_e_minus + sigma_sq_e_plus
+            tmp = i_obs.customized_copy(anomalous_flag=True)
+            dano = tmp.merge_equivalents().array().anomalous_differences()
+            sigma_sq_y = average_intensity_variance(
+                dano.indices(), dano.data(), dano.sigmas()
+            )
+            if not sigma_sq_e:
+                return [0.0]
+            if not sigma_sq_y:
+                return [0.0]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            return [cc_half]
+        results = []
+        for i_bin in i_obs.binner().range_all():
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_weighted_cchalf_anom_sigma_tau(
+                    i_obs.select(sel),
+                    use_binning=False,
+                )[0]
+            )
+        return results
+
+    @classmethod
+    def calculate_cchalf_sigma_tau(cls, i_obs, use_binning=False) -> list[tuple]:
+        """To validate the calculations
+        # CCTBX calculation:
+        intensities_copy = self.customized_copy(
+        sigmas=flex.double(self.size(), 1))
+        merging_internal = intensities_copy.merge_equivalents(
+            use_internal_variance=True)
+        merged = merging_internal.array().select(
+            merging_internal.redundancies().data() > 1
+        )
+        if merged.size() <= 1:
+            cc_one_half = 0
+        else:
+            internal_variances = flex.pow2(merged.sigmas())
+            mav = flex.mean_and_variance(merged.data())
+            var_y = mav.unweighted_sample_variance()
+            var_e = 2 * flex.mean(internal_variances)
+            cc_one_half = (var_y - 0.5 * var_e)/(var_y + 0.5 * var_e)"""
+        if not use_binning:
+            # calculated sigmas
+            i_obs = i_obs.sort("packed_indices")
+            sigma_sq_e, n = mean_sample_variance_unweighted(
+                i_obs.indices(), i_obs.data()
+            )
+            sigma_sq_y = average_intensity_variance_unweighted(
+                i_obs.indices(), i_obs.data()
+            )
+            if not sigma_sq_e:
+                return [(0.0, 0)]
+            if not sigma_sq_y:
+                return [(0.0, 0)]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            return [(cc_half, n)]
+        results = []
+        for i, i_bin in enumerate(i_obs.binner().range_all()):
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_cchalf_sigma_tau(
+                    i_obs.select(sel),
+                    use_binning=False,
+                )[0]
+            )
+        return results
+
+    @classmethod
+    def calculate_weighted_cchalf_sigma_tau(
+        cls, i_obs, use_binning=False
+    ) -> list[tuple]:
+        if not use_binning:
+            # calculated sigmas
+            i_obs = i_obs.sort("packed_indices")
+            sigma_sq_e, n = mean_sample_variance(
+                i_obs.indices(), i_obs.data(), i_obs.sigmas()
+            )
+            sigma_sq_y = average_intensity_variance(
+                i_obs.indices(), i_obs.data(), i_obs.sigmas()
+            )
+            if not sigma_sq_e:
+                return [(0.0, 0)]
+            if not sigma_sq_y:
+                return [(0.0, 0)]
+            cc_half = (sigma_sq_y - (0.5 * sigma_sq_e)) / (
+                sigma_sq_y + (0.5 * sigma_sq_e)
+            )
+            return [(cc_half, n)]
+        results = []
+        for i_bin in i_obs.binner().range_all():
+            sel = i_obs.binner().selection(i_bin)
+            results.append(
+                cls.calculate_weighted_cchalf_sigma_tau(
+                    i_obs.select(sel),
+                    use_binning=False,
+                )[0]
             )
         return results
 
     @classmethod
     def weighted_cchalf(
-        cls, this, other, assume_index_matching=False, use_binning=False
-    ) -> list[tuple]:
+        cls,
+        this,
+        other,
+        assume_index_matching=False,
+        use_binning=False,
+        variance_floor_fraction=0,
+    ) -> list[Tuple]:
         if not use_binning:
             assert other.data().size() == this.data().size()
             if this.data().size() == 0:
@@ -506,15 +912,18 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                 return [(None, 1)]
             v_o = flex.pow2(o.sigmas())
             v_c = flex.pow2(c.sigmas())
-            joint_w = 1.0 / (v_o + v_c)
+            # Add a light regularization term to avoid overdependence on a few
+            # observations with a very small variance.
+            tausq = variance_floor_fraction * np.median(np.array(v_o + v_c))
+            joint_w = 1.0 / (v_o + v_c + tausq)
             sumjw = flex.sum(joint_w)
             norm_jw = joint_w / sumjw
             xbar = flex.sum(o.data() * norm_jw)
             ybar = flex.sum(c.data() * norm_jw)
             dx = o.data() - xbar
             dy = c.data() - ybar
-            sxy = flex.sum(dx * dy * norm_jw)
 
+            sxy = flex.sum(dx * dy * norm_jw)
             sx = flex.sum(flex.pow2(dx) * norm_jw)
             sy = flex.sum(flex.pow2(dy) * norm_jw)
             if sx == 0.0 or sy == 0.0:
@@ -535,9 +944,64 @@ class ExtendedDatasetStatistics(iotbx.merging_statistics.dataset_statistics):
                     other.select(sel),
                     assume_index_matching=assume_index_matching,
                     use_binning=False,
+                    variance_floor_fraction=variance_floor_fraction,
                 )[0]
             )
         return results
+
+
+def weighted_anom_correlation(
+    iobs, use_binning=False, n_bins=20, variance_floor_fraction=0.01
+):
+    tmp_array = iobs.customized_copy(anomalous_flag=True).map_to_asu()
+    tmp_array = tmp_array.sort("packed_indices")
+    if not use_binning:
+        seed = 0
+        split = split_unmerged(
+            unmerged_indices=tmp_array.indices(),
+            unmerged_data=tmp_array.data(),
+            unmerged_sigmas=tmp_array.sigmas(),
+            seed=seed,
+        )
+        indices = split.indices()
+        m1 = miller.array(
+            miller_set=miller.set(tmp_array.crystal_symmetry(), indices),
+            data=split.data1(),
+            sigmas=split.sigma1(),
+        ).customized_copy(anomalous_flag=True)
+        m2 = miller.array(
+            miller_set=miller.set(tmp_array.crystal_symmetry(), indices),
+            data=split.data2(),
+            sigmas=split.sigma2(),
+        ).customized_copy(anomalous_flag=True)
+        # m1 = m1.merge_equivalents().array()
+        # m2 = m2.merge_equivalents().array()
+        dano1 = m1.anomalous_differences()
+        dano2 = m2.anomalous_differences()
+        assert dano1.indices().all_eq(dano2.indices())
+        cc, neff = ExtendedDatasetStatistics.weighted_cchalf(
+            dano1,
+            dano2,
+            assume_index_matching=True,
+            variance_floor_fraction=variance_floor_fraction,
+        )[0]
+        return cc, neff
+    tmp_array.setup_binner(n_bins=n_bins)
+    ccs = []
+    neffs = []
+    for i_bin in tmp_array.binner().range_used():
+        sel = tmp_array.binner().selection(i_bin)
+        bin_array = tmp_array.select(sel)
+        if bin_array.size() == 0:
+            ccs.append(None)
+            neffs.append(None)
+        else:
+            cc, neff = weighted_anom_correlation(
+                bin_array, variance_floor_fraction=variance_floor_fraction
+            )
+            ccs.append(cc)
+            neffs.append(neff)
+    return ccs, neffs
 
 
 def merging_stats_from_scaled_array(
@@ -547,6 +1011,8 @@ def merging_stats_from_scaled_array(
     anomalous=True,
     additional_stats=False,
     cc_one_half_significance_level=0.01,
+    sigma_tau_stats=False,
+    variance_floor_fraction=0.01,
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -565,6 +1031,8 @@ def merging_stats_from_scaled_array(
             use_internal_variance=use_internal_variance,
             cc_one_half_significance_level=cc_one_half_significance_level,
             additional_stats=additional_stats,
+            sigma_tau_stats=sigma_tau_stats,
+            variance_floor_fraction=variance_floor_fraction,
         )
     except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
@@ -594,6 +1062,8 @@ def merging_stats_from_scaled_array(
                     eliminate_sys_absent=False,
                     use_internal_variance=use_internal_variance,
                     additional_stats=additional_stats,
+                    sigma_tau_stats=sigma_tau_stats,
+                    variance_floor_fraction=variance_floor_fraction,
                 )
             except (RuntimeError, Sorry) as e:
                 logger.warning(
