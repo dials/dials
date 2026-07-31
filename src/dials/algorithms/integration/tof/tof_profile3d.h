@@ -26,7 +26,7 @@ namespace dials { namespace algorithms {
    * Holds params required for profile3d
    */
 
-  struct TOFProfile3DParams {
+  struct TOFProfile3DGutmannParams {
     double alpha;
     double alpha_min;
     double alpha_max;
@@ -38,16 +38,16 @@ namespace dials { namespace algorithms {
     bool use_central_diff;       // Use more expensive central differences for gradients
     bool show_profile_failures;  // Prints debugging information
 
-    TOFProfile3DParams(double alpha,
-                       double alpha_min,
-                       double alpha_max,
-                       double beta,
-                       double beta_min,
-                       double beta_max,
-                       int n_restarts,
-                       bool optimize_profile,
-                       bool use_central_diff,
-                       bool show_profile_failures)
+    TOFProfile3DGutmannParams(double alpha,
+                              double alpha_min,
+                              double alpha_max,
+                              double beta,
+                              double beta_min,
+                              double beta_max,
+                              int n_restarts,
+                              bool optimize_profile,
+                              bool use_central_diff,
+                              bool show_profile_failures)
         : alpha(alpha),
           alpha_min(alpha_min),
           alpha_max(alpha_max),
@@ -796,11 +796,11 @@ namespace dials { namespace algorithms {
     }
   };
 
-  bool fit_profile3d(
+  bool fit_profile_3d_gutmann(
     scitbx::af::const_ref<vec3<double>, af::c_grid<3>> coords,
     const scitbx::af::versa<double, af::c_grid<3>> intensities,
     const scitbx::af::versa<double, af::c_grid<3>> background_variances,
-    TOFProfile3DParams& profile_params,
+    TOFProfile3DGutmannParams& profile_params,
     double& I_prf_out,
     boost::optional<scitbx::af::versa<double, af::c_grid<3>>> profile_3d_out =
       boost::none,

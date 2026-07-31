@@ -25,7 +25,7 @@ namespace dials { namespace algorithms {
   /*
    * Holds params required for profile1d
    */
-  struct TOFProfile1DParams {
+  struct TOFProfile1DIBIXParams {
     double A;
     double alpha;
     double alpha_min;
@@ -37,16 +37,16 @@ namespace dials { namespace algorithms {
     bool optimize_profile;       // If false the profile is generated with input params
     bool show_profile_failures;  // Prints debugging information
 
-    TOFProfile1DParams(double A,
-                       double alpha,
-                       double alpha_min,
-                       double alpha_max,
-                       double beta,
-                       double beta_min,
-                       double beta_max,
-                       int n_restarts,
-                       bool optimize_profile,
-                       bool show_profile_failures)
+    TOFProfile1DIBIXParams(double A,
+                           double alpha,
+                           double alpha_min,
+                           double alpha_max,
+                           double beta,
+                           double beta_min,
+                           double beta_max,
+                           int n_restarts,
+                           bool optimize_profile,
+                           bool show_profile_failures)
 
         : A(A),
           alpha(alpha),
@@ -96,17 +96,17 @@ namespace dials { namespace algorithms {
     return out;
   }
 
-  struct TOFProfileFunctor {
+  struct IBIXProfileFunctor {
     scitbx::af::const_ref<double> tof;
     scitbx::af::const_ref<double> y_norm;  // Assumed normalized
     std::array<double, 5> min_bounds;      // parameter bounds
     std::array<double, 5> max_bounds;      // parameter bounds
     int num_data_points, num_params;
 
-    TOFProfileFunctor(scitbx::af::const_ref<double> tof_,
-                      scitbx::af::const_ref<double> y_norm_,
-                      const std::array<double, 5>& minb,
-                      const std::array<double, 5>& maxb)
+    IBIXProfileFunctor(scitbx::af::const_ref<double> tof_,
+                       scitbx::af::const_ref<double> y_norm_,
+                       const std::array<double, 5>& minb,
+                       const std::array<double, 5>& maxb)
         : tof(tof_), y_norm(y_norm_) {
       min_bounds = minb;
       max_bounds = maxb;
@@ -180,7 +180,7 @@ namespace dials { namespace algorithms {
     }
   };
 
-  class TOFProfile1D {
+  class TOFProfile1DIBIX {
   public:
     scitbx::af::const_ref<double> tof;
     scitbx::af::const_ref<double> intensities;  // raw intensities
@@ -193,15 +193,15 @@ namespace dials { namespace algorithms {
     std::array<double, 5> min_bounds;
     std::array<double, 5> max_bounds;
 
-    TOFProfile1D(scitbx::af::const_ref<double> tof_,
-                 scitbx::af::const_ref<double> intensities_,
-                 double A_,
-                 double alpha_,
-                 double beta_,
-                 double T_ph_,
-                 const std::array<double, 2> alpha_bounds,
-                 const std::array<double, 2> beta_bounds,
-                 int n_restarts_)
+    TOFProfile1DIBIX(scitbx::af::const_ref<double> tof_,
+                     scitbx::af::const_ref<double> intensities_,
+                     double A_,
+                     double alpha_,
+                     double beta_,
+                     double T_ph_,
+                     const std::array<double, 2> alpha_bounds,
+                     const std::array<double, 2> beta_bounds,
+                     int n_restarts_)
         : tof(tof_),
           intensities(intensities_),
           A(A_),
@@ -359,8 +359,8 @@ namespace dials { namespace algorithms {
       const int ndata = static_cast<int>(tof.size());
       if (ndata < 5) return false;
 
-      TOFProfileFunctor functor(tof, y_norm.const_ref(), min_bounds, max_bounds);
-      typedef Eigen::LevenbergMarquardt<TOFProfileFunctor, double> LM;
+      IBIXProfileFunctor functor(tof, y_norm.const_ref(), min_bounds, max_bounds);
+      typedef Eigen::LevenbergMarquardt<IBIXProfileFunctor, double> LM;
 
       auto run_single_fit = [&](const Eigen::VectorXd& x_init,
                                 double& final_error) -> bool {
@@ -535,10 +535,10 @@ namespace dials { namespace algorithms {
     }
   };
 
-  bool fit_profile1d(
+  bool fit_profile_1d_ibix(
     scitbx::af::const_ref<double> projected_intensity,
     scitbx::af::const_ref<double> tof_z,
-    TOFProfile1DParams& profile_params,
+    TOFProfile1DIBIXParams& profile_params,
     double& I_prf_out,
     boost::optional<scitbx::af::shared<double>> line_profile_out = boost::none,
     bool update_params = false) {
@@ -560,15 +560,15 @@ namespace dials { namespace algorithms {
     const std::array<double, 2> beta_bounds = {profile_params.beta_min,
                                                profile_params.beta_max};
 
-    TOFProfile1D profile(tof_z,
-                         projected_intensity,
-                         profile_params.A,
-                         profile_params.alpha,
-                         profile_params.beta,
-                         T_ph,
-                         alpha_bounds,
-                         beta_bounds,
-                         profile_params.n_restarts);
+    TOFProfile1DIBIX profile(tof_z,
+                             projected_intensity,
+                             profile_params.A,
+                             profile_params.alpha,
+                             profile_params.beta,
+                             T_ph,
+                             alpha_bounds,
+                             beta_bounds,
+                             profile_params.n_restarts);
 
     bool profile_success = true;
     if (profile_params.optimize_profile) {

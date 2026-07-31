@@ -31,8 +31,8 @@ from dials.util.options import ArgumentParser, reflections_and_experiments_from_
 from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
-    TOFProfile1DParams,
-    TOFProfile3DParams,
+    TOFProfile1DIBIXParams,
+    TOFProfile3DGutmannParams,
     integrate_reflection_table,
     tof_calculate_ellipse_shoebox_mask,
     tof_calculate_seed_skewness_shoebox_mask,
@@ -331,8 +331,8 @@ def integrate_reflection_table_for_experiment(
     **kwargs: Dict,
 ) -> flex.reflection_table:
     apply_lorentz = params.corrections.lorentz
-    profile1d_params = None
-    profile3d_params = None
+    profile_1d_ibix_params = None
+    profile_3d_gutmann_params = None
     incident_params = None
     absorption_params = None
 
@@ -348,7 +348,7 @@ def integrate_reflection_table_for_experiment(
         min_beta = params.profile_1d_ibix.min_beta
         max_beta = params.profile_1d_ibix.max_beta
         n_restarts = params.profile_1d_ibix.n_restarts
-        profile1d_params = TOFProfile1DParams(
+        profile_1d_ibix_params = TOFProfile1DIBIXParams(
             A,
             alpha,
             min_alpha,
@@ -371,7 +371,7 @@ def integrate_reflection_table_for_experiment(
         use_central_diff = (
             params.profile_3d_gutmann.gradient_method == "central_difference"
         )
-        profile3d_params = TOFProfile3DParams(
+        profile_3d_gutmann_params = TOFProfile3DGutmannParams(
             alpha,
             min_alpha,
             max_alpha,
@@ -409,8 +409,8 @@ def integrate_reflection_table_for_experiment(
         absorption_params,
         apply_lorentz,
         params.mp.nproc,
-        profile1d_params,
-        profile3d_params,
+        profile_1d_ibix_params,
+        profile_3d_gutmann_params,
     )
 
     return expt_reflections
