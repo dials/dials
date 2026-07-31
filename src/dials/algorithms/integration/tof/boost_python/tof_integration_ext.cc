@@ -3,8 +3,8 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/integration/tof/tof_mask_calculator.h>
 #include <dials/algorithms/integration/tof/tof_integration.h>
-#include <dials/algorithms/integration/tof/tof_profile1d.h>
-#include <dials/algorithms/integration/tof/tof_profile3d.h>
+#include <dials/algorithms/integration/tof/tof_profile_1d_ibix.h>
+#include <dials/algorithms/integration/tof/tof_profile_3d_gutmann.h>
 #include <dials/algorithms/scaling/tof/tof_scaling.h>
 
 namespace dials { namespace algorithms { namespace boost_python {

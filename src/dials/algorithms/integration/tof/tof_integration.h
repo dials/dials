@@ -15,8 +15,8 @@
 #include <scitbx/vec3.h>
 #include <scitbx/constants.h>
 #include <dials/model/data/mask_code.h>
-#include <dials/algorithms/integration/tof/tof_profile1d.h>
-#include <dials/algorithms/integration/tof/tof_profile3d.h>
+#include <dials/algorithms/integration/tof/tof_profile_1d_ibix.h>
+#include <dials/algorithms/integration/tof/tof_profile_3d_gutmann.h>
 #include <dials/algorithms/scaling/tof/tof_scaling.h>
 #include <dials/util/thread_pool.h>
 
