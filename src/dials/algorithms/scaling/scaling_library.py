@@ -34,7 +34,6 @@ from dials.algorithms.scaling.scaling_utilities import (
     calculate_prescaling_correction,
 )
 from dials.array_family import flex
-from dials.report.plots import compute_cc_significance_levels
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
 from dials.util.reference import intensities_from_reference_file
@@ -380,6 +379,36 @@ def determine_best_unit_cell(experiments):
     if len(experiments) > 1:
         logger.info("Using median unit cell across experiments : %s", best_unit_cell)
     return best_unit_cell
+
+
+def compute_cc_significance(r, n, p):
+    # https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#Testing_using_Student.27s_t-distribution
+    if r == -1 or n <= 2:
+        significance = False
+        critical_value = 0
+    else:
+        from scitbx.math import distributions
+
+        dist = distributions.students_t_distribution(n - 2)
+        t = dist.quantile(1 - p)
+        critical_value = t / math.sqrt(n - 2 + t**2)
+        significance = r > critical_value
+    return significance, critical_value
+
+
+def compute_cc_significance_levels(cchalfs, neffs, cc_one_half_significance_level=0.01):
+    significances = []
+    critical_vals = []
+    for cc, n in zip(cchalfs, neffs):
+        if cc is not None and n is not None:
+            s, c = compute_cc_significance(
+                cc, int(math.ceil(n)), cc_one_half_significance_level
+            )
+        else:
+            s, c = None, None
+        significances.append(s)
+        critical_vals.append(c)
+    return significances, critical_vals
 
 
 @dataclass
