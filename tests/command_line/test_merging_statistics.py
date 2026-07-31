@@ -15,7 +15,7 @@ def test_merging_statistics(dials_data, tmp_path):
         shutil.which("dials.merging_statistics"),
         refls,
         expts,
-        "calculate_sigma_tau_stats=True",
+        "sigma_tau_stats=True",
         "additional_stats=True",
     ]
     result = subprocess.run(command, cwd=tmp_path, capture_output=True)
@@ -40,7 +40,7 @@ def test_merging_statistics_mtz(dials_data, tmp_path):
     command = [
         shutil.which("dials.merging_statistics"),
         "scaled.mtz",
-        "calculate_sigma_tau_stats=True",
+        "sigma_tau_stats=True",
         "additional_stats=True",
     ]
     result = subprocess.run(command, cwd=tmp_path, capture_output=True)

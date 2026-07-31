@@ -34,6 +34,7 @@ from dials.algorithms.scaling.scaling_utilities import (
     calculate_prescaling_correction,
 )
 from dials.array_family import flex
+from dials.report.plots import compute_cc_significance_levels
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
 from dials.util.reference import intensities_from_reference_file
@@ -395,6 +396,15 @@ class MergingStatistic:
     value_binned: list[float]
     neff: Optional[float] = None
     neff_binned: Optional[list[float]] = None
+    significance_critical_values: Optional[list[float | None]] = None
+
+    def __post_init__(self):
+        if self.neff_binned:
+            _, self.significance_critical_values = compute_cc_significance_levels(
+                self.value_binned, self.neff_binned
+            )
+        else:
+            self.significance_critical_values = [None] * len(self.value_binned)
 
 
 # CC1/2 sigma-tau overall is calculated as a weighted

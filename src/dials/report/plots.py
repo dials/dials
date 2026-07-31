@@ -671,15 +671,9 @@ class ResolutionPlotsAndStats:
             wcc_data = self.dataset_statistics.weighted_cc_data
             wccanom_data = self.dataset_statistics.weighted_cc_anom_data
             d_star_sq_bins = []
+            critical_vals = wcc_data.significance_critical_values
+            critical_anom_vals = wccanom_data.significance_critical_values
 
-            _, critical_vals = compute_cc_significance_levels(
-                wcc_data.value_binned,
-                wcc_data.neff_binned,
-            )
-            _, critical_anom_vals = compute_cc_significance_levels(
-                wccanom_data.value_binned,
-                wccanom_data.neff_binned,
-            )
             for bin in self.dataset_statistics.binner.range_used():
                 d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
 
@@ -713,14 +707,8 @@ class ResolutionPlotsAndStats:
             ccst_data = self.dataset_statistics.cchalf_sigma_tau
             if ccst_data:
                 ccst_anom_data = self.dataset_statistics.cchalf_anom_sigma_tau
-                _, critical_vals = compute_cc_significance_levels(
-                    ccst_data.value_binned,
-                    ccst_data.neff_binned,
-                )
-                _, ccanom_critical_vals = compute_cc_significance_levels(
-                    ccst_anom_data.value_binned,
-                    ccst_anom_data.neff_binned,
-                )
+                critical_vals = ccst_data.significance_critical_values
+                ccanom_critical_vals = ccst_anom_data.significance_critical_values
                 d.update(
                     {
                         "cc_one_half_sigma_tau": cc_half_plot(
@@ -735,24 +723,18 @@ class ResolutionPlotsAndStats:
                     }
                 )
                 d["cc_one_half_sigma_tau"]["layout"]["yaxis"]["title"] = (
-                    "CC<sub>½</sub>(sigma-tau)"
+                    "CC<sub>½</sub>(\u03c3-\u03c4)"
                 )
                 d["cc_one_half_sigma_tau"]["layout"]["title"] = (
-                    "CC<sub>½</sub>(sigma-tau) vs resolution"
+                    "CC<sub>½</sub>(\u03c3-\u03c4) vs resolution"
                 )
         if self.dataset_statistics.weighted_cchalf_sigma_tau:
             wcc_data = self.dataset_statistics.weighted_cchalf_sigma_tau
             wccanom_data = self.dataset_statistics.weighted_cchalf_anom_sigma_tau
             d_star_sq_bins = []
+            critical_vals = wcc_data.significance_critical_values
+            critical_anom_vals = wccanom_data.significance_critical_values
 
-            _, critical_vals = compute_cc_significance_levels(
-                wcc_data.value_binned,
-                wcc_data.neff_binned,
-            )
-            _, critical_anom_vals = compute_cc_significance_levels(
-                wccanom_data.value_binned,
-                wccanom_data.neff_binned,
-            )
             for bin in self.dataset_statistics.binner.range_used():
                 d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
 
@@ -777,10 +759,10 @@ class ResolutionPlotsAndStats:
                 }
             )
             d["cc_one_half_weighted_sigma_tau"]["layout"]["yaxis"]["title"] = (
-                "CC<sub>½</sub>(\u03c3-weighted(sigma-tau))"
+                "CC<sub>½</sub>(\u03c3-\u03c4)(\u03c3-weighted)"
             )
             d["cc_one_half_weighted_sigma_tau"]["layout"]["title"] = (
-                "CC<sub>½</sub>(\u03c3-weighted(sigma-tau)) vs resolution"
+                "CC<sub>½</sub>(\u03c3-\u03c4)(\u03c3-weighted) vs resolution"
             )
 
         if self.dataset_statistics.weighted_r_split:
@@ -1099,21 +1081,19 @@ class ResolutionPlotsAndStats:
         if not self.is_centric:
             headers.append("CC<sub>ano</sub>")
         r_split_vals = []
-        weighted_cc_vals = []
-        weighted_cc_anom_vals = []
+        weighted_cc_data = None
+        weighted_cc_anom_data = None
         if (
             hasattr(self.dataset_statistics, "r_split")
             and self.dataset_statistics.r_split
         ):
             headers.insert(-2, "R<sub>split</sub>")
             r_split_vals = self.dataset_statistics.r_split.value_binned
-            weighted_cc_vals = self.dataset_statistics.weighted_cc_data.value_binned
+            weighted_cc_data = self.dataset_statistics.weighted_cc_data
             headers.append("CC<sub>½</sub>(σ-w)")
             if not self.is_centric:
                 headers.append("CC<sub>ano</sub>(σ-w)")
-                weighted_cc_anom_vals = (
-                    self.dataset_statistics.weighted_cc_anom_data.value_binned
-                )
+                weighted_cc_anom_data = self.dataset_statistics.weighted_cc_anom_data
         rows = []
 
         def safe_format(format_str, item):
@@ -1157,15 +1137,25 @@ class ResolutionPlotsAndStats:
                         bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else ""
                     )
                 )
-            if weighted_cc_vals:
+            if weighted_cc_data:
                 row.append(
-                    f"{weighted_cc_vals[i]:.3f}" if weighted_cc_vals[i] else "0.000"
+                    "{:.3f}{}".format(
+                        weighted_cc_data.value_binned[i]
+                        if weighted_cc_data.value_binned[i]
+                        else 0.000,
+                        "*" if weighted_cc_data.significance_critical_values[i] else "",
+                    )
                 )
-            if weighted_cc_anom_vals:
+            if weighted_cc_anom_data:
                 row.append(
-                    f"{weighted_cc_anom_vals[i]:.3f}"
-                    if weighted_cc_anom_vals[i]
-                    else "0.000"
+                    "{:.3f}{}".format(
+                        weighted_cc_anom_data.value_binned[i]
+                        if weighted_cc_anom_data.value_binned[i]
+                        else 0.000,
+                        "*"
+                        if weighted_cc_anom_data.significance_critical_values[i]
+                        else "",
+                    )
                 )
             rows.append(row)
 
