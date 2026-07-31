@@ -197,6 +197,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             "anom_plots": {},
             "image_range_tables": [],
         }
+        d["scaling_tables"] = plotter.statistics_tables()
         d["resolution_plots"].update(plotter.make_all_plots())
         json_data = {"main": d}
         generate_html_report(json_data, "dials.merging_statistics.html")
