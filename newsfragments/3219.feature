@@ -1,1 +1,1 @@
-Enable user to set wavelength/ToF range during tof_integrate.
+``dials.tof_integrate``: Enable user to set wavelength/ToF range.

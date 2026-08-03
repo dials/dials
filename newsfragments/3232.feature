@@ -1,1 +1,1 @@
-Add reference_geometry option to dials.modify_experiments
+``dials.modify_experiments``: Add ``reference_geometry=`` option.
