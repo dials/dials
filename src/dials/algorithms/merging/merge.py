@@ -7,6 +7,7 @@ import time
 from contextlib import contextmanager
 from io import StringIO
 
+import gemmi
 import numpy as np
 import pandas as pd
 
@@ -19,13 +20,6 @@ from iotbx.reflection_file_editor import is_rfree_array
 from iotbx.reflection_file_utils import get_r_free_flags_scores
 from libtbx import env
 from mmtbx.scaling import data_statistics
-
-from dials.util.version import dials_version
-
-try:
-    import gemmi
-except ModuleNotFoundError:
-    gemmi = None
 
 from dials.algorithms.merging.reporting import (
     MergeJSONCollector,
@@ -45,9 +39,9 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
 )
 from dials.array_family import flex
-from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.resolution_analysis import resolution_cc_half
+from dials.util.version import dials_version
 
 from .french_wilson import french_wilson
 
@@ -463,53 +457,9 @@ def make_merged_mtz_file(mtz_datasets, r_free_array: miller.array = None):
             experiment.
 
     Returns:
-        A gemmi.Mtz object or an iotbx mtz object, if gemmi is not available.
+        A gemmi.Mtz object.
     """
 
-    if gemmi:
-        return make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array)
-
-    if len(mtz_datasets) > 1:
-        writer = MADMergedMTZWriter
-    else:
-        writer = MergedMTZWriter
-
-    mtz_writer = writer(
-        mtz_datasets[0].merged_array.space_group(),
-        mtz_datasets[0].merged_array.unit_cell(),
-    )
-
-    if r_free_array:
-        mtz_writer.add_crystal(crystal_name="HKL_base", project_name="HKL_base")
-        mtz_writer.add_empty_dataset(wavelength=0, name="HKL_base")
-        mtz_writer.add_dataset(
-            r_free_array=r_free_array,
-        )
-
-    #### Add each wavelength as a new crystal.
-    for i, dataset in enumerate(mtz_datasets):
-        mtz_writer.add_crystal(
-            crystal_name=dataset.crystal_name, project_name=dataset.project_name
-        )
-        mtz_writer.add_empty_dataset(dataset.wavelength, name=dataset.dataset_name)
-        mtz_writer.add_dataset(
-            dataset.merged_array,
-            dataset.merged_anomalous_array,
-            dataset.amplitudes,
-            dataset.anomalous_amplitudes,
-            dataset.dano,
-            dataset.multiplicities,
-            dataset.anomalous_multiplicities,
-            half_datasets=dataset.merged_half_datasets,
-            suffix=f"_WAVE{i + 1}" if len(mtz_datasets) > 1 else "",
-        )
-
-    return mtz_writer.mtz_file
-
-
-def make_merged_mtz_file_with_gemmi(mtz_datasets, r_free_array=None):
-    # XXX This should replace the code in make_merged_mtz_file when
-    # MergedMTZWriter and MADMergedMTZWriter are removed
     writer = MergedMTZCreator
 
     mtz_writer = writer(
