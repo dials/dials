@@ -54,7 +54,12 @@ def test_tof_integration(dials_data, tmp_path):
 
     # 1D profile fitting
     result = subprocess.run(
-        [shutil.which("dials.tof_integrate"), expt_path, refl_path, "method=profile1d"],
+        [
+            shutil.which("dials.tof_integrate"),
+            expt_path,
+            refl_path,
+            "method=profile_1d_ibix",
+        ],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -62,7 +67,12 @@ def test_tof_integration(dials_data, tmp_path):
 
     # 3D profile fitting
     result = subprocess.run(
-        [shutil.which("dials.tof_integrate"), expt_path, refl_path, "method=profile3d"],
+        [
+            shutil.which("dials.tof_integrate"),
+            expt_path,
+            refl_path,
+            "method=profile_3d_gutmann",
+        ],
         cwd=tmp_path,
         capture_output=True,
     )

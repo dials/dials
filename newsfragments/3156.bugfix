@@ -1,1 +1,0 @@
-Fix a pickling error when running dials.stills_process with mp.method=multiprocessing.

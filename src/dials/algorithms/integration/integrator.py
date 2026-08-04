@@ -36,7 +36,6 @@ from dials.array_family import flex
 # constants
 from dials.constants import EPS, FULL_PARTIALITY
 from dials.util import Sorry, phil, pprint, tabulate
-from dials.util.command_line import heading
 from dials.util.report import Report
 from dials.util.system import MEMORY_LIMIT
 from dials_algorithms_integration_integrator_ext import (
@@ -1010,7 +1009,7 @@ class Integrator:
         if profile_fitting:
             logger.info("=" * 80)
             logger.info("")
-            logger.info(heading("Modelling reflection profiles"))
+            logger.info("Modelling reflection profiles")
             logger.info("")
 
             # Get the selection
@@ -1187,7 +1186,7 @@ class Integrator:
         # Heading
         logger.info("=" * 80)
         logger.info("")
-        logger.info(heading("Processing reflections"))
+        logger.info("Processing reflections")
         logger.info("")
 
         # Print the summary
@@ -1218,7 +1217,7 @@ class Integrator:
 
         logger.info("=" * 80)
         logger.info("")
-        logger.info(heading("Integrating reflections"))
+        logger.info("Integrating reflections")
         logger.info("")
 
         # Create the data processor
@@ -1500,7 +1499,7 @@ class Integrator3DThreaded:
         # Heading
         logger.info("=" * 80)
         logger.info("")
-        logger.info(heading("Processing reflections"))
+        logger.info("Processing reflections")
         logger.info("")
 
         # Create summary format
@@ -1535,7 +1534,7 @@ class Integrator3DThreaded:
         if self.params.integration.profile.fitting:
             logger.info("=" * 80)
             logger.info("")
-            logger.info(heading("Modelling reflection profiles"))
+            logger.info("Modelling reflection profiles")
             logger.info("")
 
             # Compute the reference profiles
@@ -1552,7 +1551,7 @@ class Integrator3DThreaded:
 
         logger.info("=" * 80)
         logger.info("")
-        logger.info(heading("Integrating reflections"))
+        logger.info("Integrating reflections")
         logger.info("")
 
         integrator = IntegratorProcessor(

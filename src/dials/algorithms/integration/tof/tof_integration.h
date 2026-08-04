@@ -15,8 +15,8 @@
 #include <scitbx/vec3.h>
 #include <scitbx/constants.h>
 #include <dials/model/data/mask_code.h>
-#include <dials/algorithms/integration/tof/tof_profile1d.h>
-#include <dials/algorithms/integration/tof/tof_profile3d.h>
+#include <dials/algorithms/integration/tof/tof_profile_1d_ibix.h>
+#include <dials/algorithms/integration/tof/tof_profile_3d_gutmann.h>
 #include <dials/algorithms/scaling/tof/tof_scaling.h>
 #include <dials/util/thread_pool.h>
 
@@ -52,15 +52,16 @@ namespace dials { namespace algorithms {
     ImageSequence& data,
     const bool& apply_lorentz_correction,
     int n_threads,
-    boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
-    boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
+    boost::optional<TOFProfile1DIBIXParams> profile_params_1d_ibix = boost::none,
+    boost::optional<TOFProfile3DGutmannParams> profile_params_3d_gutmann =
+      boost::none) {
     /*
      * Updates reflection_table with intensities and variances with
      * optional Lorentz correction
      */
 
     // Only one profile fitting method allowed
-    DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
+    DIALS_ASSERT(!(profile_params_1d_ibix && profile_params_3d_gutmann));
 
     std::size_t n_reflections = reflection_table.size();
 
@@ -97,7 +98,7 @@ namespace dials { namespace algorithms {
     dials::af::shared<double> intensities_prf;
     dials::af::shared<double> variances_prf;
 
-    if (profile_params_1d || profile_params_3d) {
+    if (profile_params_1d_ibix || profile_params_3d_gutmann) {
       succeeded_prf.resize(reflection_table.size());
       intensities_prf.resize(reflection_table.size());
       variances_prf.resize(reflection_table.size());
@@ -239,7 +240,7 @@ namespace dials { namespace algorithms {
 
               intensity_z += I;
 
-              if (profile_params_3d) {
+              if (profile_params_3d_gutmann) {
                 intensity_3d(x, y, z) = I;
                 background_var_3d(x, y, z) = var_B;
                 double x_c = x + shoebox.xoffset() + 0.5;
@@ -260,7 +261,7 @@ namespace dials { namespace algorithms {
             }
           }
 
-          if (profile_params_1d) {  // Doing 1D profile fitting
+          if (profile_params_1d_ibix) {  // Doing 1D profile fitting
             projected_intensity[z] = intensity_z;
           }
         }
@@ -270,28 +271,28 @@ namespace dials { namespace algorithms {
         intensities[i] = intensity;
         variances[i] = variance;
 
-        if (profile_params_1d && success) {
+        if (profile_params_1d_ibix && success) {
           bool profile_success = false;
           double I_prf;
-          profile_success = fit_profile1d(projected_intensity.const_ref(),
-                                          tof_z.const_ref(),
-                                          *profile_params_1d,
-                                          I_prf);
+          profile_success = fit_profile_1d_ibix(projected_intensity.const_ref(),
+                                                tof_z.const_ref(),
+                                                *profile_params_1d_ibix,
+                                                I_prf);
           if (profile_success) {
             intensities_prf[i] = I_prf;
             variances_prf[i] = variance;  // Use summation variance as approximation
           }
           succeeded_prf[i] = profile_success;
 
-        } else if (profile_params_3d && success) {
+        } else if (profile_params_3d_gutmann && success) {
           bool profile_success = false;
 
           double I_prf, var_prf;
-          profile_success = fit_profile3d(coords_3d.const_ref(),
-                                          intensity_3d,
-                                          background_var_3d,
-                                          *profile_params_3d,
-                                          I_prf);
+          profile_success = fit_profile_3d_gutmann(coords_3d.const_ref(),
+                                                   intensity_3d,
+                                                   background_var_3d,
+                                                   *profile_params_3d_gutmann,
+                                                   I_prf);
           if (profile_success) {
             intensities_prf[i] = I_prf;
             variances_prf[i] = variance;  // Use summation variance as approximation
@@ -317,7 +318,7 @@ namespace dials { namespace algorithms {
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
 
-    if (profile_params_1d || profile_params_3d) {
+    if (profile_params_1d_ibix || profile_params_3d_gutmann) {
       reflection_table["intensity.prf.value"] = intensities_prf;
       reflection_table["intensity.prf.variance"] = variances_prf;
     }
@@ -333,7 +334,7 @@ namespace dials { namespace algorithms {
         flags[i] &= ~dials::af::IntegratedSum;
         flags[i] |= dials::af::FailedDuringSummation;
       }
-      if (profile_params_1d || profile_params_3d) {
+      if (profile_params_1d_ibix || profile_params_3d_gutmann) {
         if (succeeded_prf[i]) {
           flags[i] &= ~dials::af::FailedDuringProfileFitting;
           flags[i] |= dials::af::IntegratedPrf;
@@ -352,15 +353,16 @@ namespace dials { namespace algorithms {
     const dials_scaling::TOFIncidentSpectrumParams& incident_params,
     const bool& apply_lorentz_correction,
     int n_threads,
-    boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
-    boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
+    boost::optional<TOFProfile1DIBIXParams> profile_params_1d_ibix = boost::none,
+    boost::optional<TOFProfile3DGutmannParams> profile_params_3d_gutmann =
+      boost::none) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, and an optional Lorentz correction
      */
 
     // Only one profile fitting method allowed
-    DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
+    DIALS_ASSERT(!(profile_params_1d_ibix && profile_params_3d_gutmann));
 
     std::size_t n_reflections = reflection_table.size();
     Detector detector = *experiment.get_detector();
@@ -455,7 +457,7 @@ namespace dials { namespace algorithms {
     dials::af::shared<double> intensities_prf;
     dials::af::shared<double> variances_prf;
 
-    if (profile_params_1d || profile_params_3d) {
+    if (profile_params_1d_ibix || profile_params_3d_gutmann) {
       succeeded_prf.resize(reflection_table.size());
       intensities_prf.resize(reflection_table.size());
       variances_prf.resize(reflection_table.size());
@@ -629,7 +631,7 @@ namespace dials { namespace algorithms {
 
               intensity_z += I;
 
-              if (profile_params_3d) {
+              if (profile_params_3d_gutmann) {
                 intensity_3d(x, y, z) = I;
                 background_var_3d(x, y, z) = var_B;
                 double x_c = x + shoebox.xoffset() + 0.5;
@@ -649,7 +651,7 @@ namespace dials { namespace algorithms {
               }
             }
           }
-          if (profile_params_1d) {
+          if (profile_params_1d_ibix) {
             projected_intensity[z] = intensity_z;
           }
         }
@@ -659,27 +661,27 @@ namespace dials { namespace algorithms {
         intensities[i] = intensity;
         variances[i] = variance;
 
-        if (profile_params_1d) {
+        if (profile_params_1d_ibix) {
           bool profile_success = false;
           double I_prf;
-          profile_success = fit_profile1d(projected_intensity.const_ref(),
-                                          tof_z.const_ref(),
-                                          *profile_params_1d,
-                                          I_prf);
+          profile_success = fit_profile_1d_ibix(projected_intensity.const_ref(),
+                                                tof_z.const_ref(),
+                                                *profile_params_1d_ibix,
+                                                I_prf);
           if (profile_success) {
             intensities_prf[i] = I_prf;
             variances_prf[i] = variance;  // Use summation variance as approximation
           }
           succeeded_prf[i] = profile_success;
-        } else if (profile_params_3d) {
+        } else if (profile_params_3d_gutmann) {
           bool profile_success = false;
 
           double I_prf, var_prf;
-          profile_success = fit_profile3d(coords_3d.const_ref(),
-                                          intensity_3d,
-                                          background_var_3d,
-                                          *profile_params_3d,
-                                          I_prf);
+          profile_success = fit_profile_3d_gutmann(coords_3d.const_ref(),
+                                                   intensity_3d,
+                                                   background_var_3d,
+                                                   *profile_params_3d_gutmann,
+                                                   I_prf);
           if (profile_success) {
             intensities_prf[i] = I_prf;
             variances_prf[i] = variance;  // Use summation variance as approximation
@@ -705,7 +707,7 @@ namespace dials { namespace algorithms {
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
 
-    if (profile_params_1d || profile_params_3d) {
+    if (profile_params_1d_ibix || profile_params_3d_gutmann) {
       reflection_table["intensity.prf.value"] = intensities_prf;
       reflection_table["intensity.prf.variance"] = variances_prf;
     }
@@ -721,7 +723,7 @@ namespace dials { namespace algorithms {
         flags[i] &= ~dials::af::IntegratedSum;
         flags[i] |= dials::af::FailedDuringSummation;
       }
-      if (profile_params_1d || profile_params_3d) {
+      if (profile_params_1d_ibix || profile_params_3d_gutmann) {
         if (succeeded_prf[i]) {
           flags[i] &= ~dials::af::FailedDuringProfileFitting;
           flags[i] |= dials::af::IntegratedPrf;
@@ -741,8 +743,9 @@ namespace dials { namespace algorithms {
     const dials_scaling::TOFAbsorptionParams& corrections_data,
     const bool& apply_lorentz_correction,
     int n_threads,
-    boost::optional<TOFProfile1DParams> profile_params_1d = boost::none,
-    boost::optional<TOFProfile3DParams> profile_params_3d = boost::none) {
+    boost::optional<TOFProfile1DIBIXParams> profile_params_1d_ibix = boost::none,
+    boost::optional<TOFProfile3DGutmannParams> profile_params_3d_gutmann =
+      boost::none) {
     /*
      * Updates reflection_table with intensities and variances corrected by
      * incident and empty runs, a spherical absorption correction,
@@ -750,7 +753,7 @@ namespace dials { namespace algorithms {
      */
 
     // Only one profile fitting method allowed
-    DIALS_ASSERT(!(profile_params_1d && profile_params_3d));
+    DIALS_ASSERT(!(profile_params_1d_ibix && profile_params_3d_gutmann));
 
     std::size_t n_reflections = reflection_table.size();
 
@@ -846,7 +849,7 @@ namespace dials { namespace algorithms {
     dials::af::shared<double> intensities_prf;
     dials::af::shared<double> variances_prf;
 
-    if (profile_params_1d || profile_params_3d) {
+    if (profile_params_1d_ibix || profile_params_3d_gutmann) {
       succeeded_prf.resize(reflection_table.size());
       intensities_prf.resize(reflection_table.size());
       variances_prf.resize(reflection_table.size());
@@ -1054,7 +1057,7 @@ namespace dials { namespace algorithms {
 
               intensity_z += I;
 
-              if (profile_params_3d) {
+              if (profile_params_3d_gutmann) {
                 intensity_3d(x, y, z) = I;
                 background_var_3d(x, y, z) = var_B;
                 double x_c = x + shoebox.xoffset() + 0.5;
@@ -1074,7 +1077,7 @@ namespace dials { namespace algorithms {
               }
             }
           }
-          if (profile_params_1d) {
+          if (profile_params_1d_ibix) {
             projected_intensity[z] = intensity_z;
           }
         }
@@ -1084,28 +1087,28 @@ namespace dials { namespace algorithms {
         intensities[i] = intensity;
         variances[i] = variance;
 
-        if (profile_params_1d) {
+        if (profile_params_1d_ibix) {
           bool profile_success = false;
 
           double I_prf, var_prf;
-          profile_success = fit_profile1d(projected_intensity.const_ref(),
-                                          tof_z.const_ref(),
-                                          *profile_params_1d,
-                                          I_prf);
+          profile_success = fit_profile_1d_ibix(projected_intensity.const_ref(),
+                                                tof_z.const_ref(),
+                                                *profile_params_1d_ibix,
+                                                I_prf);
           if (profile_success) {
             intensities_prf[i] = I_prf;
             variances_prf[i] = variance;  // Use summation variance as approximation
           }
           succeeded_prf[i] = profile_success;
-        } else if (profile_params_3d) {
+        } else if (profile_params_3d_gutmann) {
           bool profile_success = false;
 
           double I_prf, var_prf;
-          profile_success = fit_profile3d(coords_3d.const_ref(),
-                                          intensity_3d,
-                                          background_var_3d,
-                                          *profile_params_3d,
-                                          I_prf);
+          profile_success = fit_profile_3d_gutmann(coords_3d.const_ref(),
+                                                   intensity_3d,
+                                                   background_var_3d,
+                                                   *profile_params_3d_gutmann,
+                                                   I_prf);
           if (profile_success) {
             intensities_prf[i] = I_prf;
             variances_prf[i] = variance;  // Use summation variance as approximation
@@ -1131,7 +1134,7 @@ namespace dials { namespace algorithms {
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
 
-    if (profile_params_1d || profile_params_3d) {
+    if (profile_params_1d_ibix || profile_params_3d_gutmann) {
       reflection_table["intensity.prf.value"] = intensities_prf;
       reflection_table["intensity.prf.variance"] = variances_prf;
     }
@@ -1147,7 +1150,7 @@ namespace dials { namespace algorithms {
         flags[i] &= ~dials::af::IntegratedSum;
         flags[i] |= dials::af::FailedDuringSummation;
       }
-      if (profile_params_1d || profile_params_3d) {
+      if (profile_params_1d_ibix || profile_params_3d_gutmann) {
         if (succeeded_prf[i]) {
           flags[i] &= ~dials::af::FailedDuringProfileFitting;
           flags[i] |= dials::af::IntegratedPrf;
@@ -1350,7 +1353,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
     const bool& apply_lorentz_correction,
-    TOFProfile3DParams& profile_params_3d) {
+    TOFProfile3DGutmannParams& profile_params_3d_gutmann) {
     /*
      * Calculates raw_projected_intensity, projected_intensity,
      * projected_background, sum_intensity, sum_variance
@@ -1542,13 +1545,13 @@ namespace dials { namespace algorithms {
       intensity_3d.accessor());
 
     if (sum_success) {
-      profile_success = fit_profile3d(coords_3d.const_ref(),
-                                      intensity_3d,
-                                      background_var_3d,
-                                      profile_params_3d,
-                                      I_prf,
-                                      profile_3d_out,
-                                      true);
+      profile_success = fit_profile_3d_gutmann(coords_3d.const_ref(),
+                                               intensity_3d,
+                                               background_var_3d,
+                                               profile_params_3d_gutmann,
+                                               I_prf,
+                                               profile_3d_out,
+                                               true);
     } else {
       profile_success = false;
     }
@@ -1566,7 +1569,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool& apply_lorentz_correction,
-    TOFProfile1DParams& profile_params_1d) {
+    TOFProfile1DIBIXParams& profile_params_1d_ibix) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -1591,12 +1594,12 @@ namespace dials { namespace algorithms {
     bool profile_success = false;
 
     if (success) {
-      profile_success = fit_profile1d(projected_intensity_out.const_ref(),
-                                      tof_z_out.const_ref(),
-                                      profile_params_1d,
-                                      I_prf,
-                                      line_profile_out,
-                                      true);
+      profile_success = fit_profile_1d_ibix(projected_intensity_out.const_ref(),
+                                            tof_z_out.const_ref(),
+                                            profile_params_1d_ibix,
+                                            I_prf,
+                                            line_profile_out,
+                                            true);
 
     } else {
       profile_success = false;
@@ -1884,7 +1887,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool& apply_lorentz_correction,
-    TOFProfile1DParams& profile_params_1d) {
+    TOFProfile1DIBIXParams& profile_params_1d_ibix) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -1909,12 +1912,12 @@ namespace dials { namespace algorithms {
     double var_prf = 0;
     bool profile_success = false;
     if (success) {
-      profile_success = fit_profile1d(projected_intensity_out.const_ref(),
-                                      tof_z_out.const_ref(),
-                                      profile_params_1d,
-                                      I_prf,
-                                      line_profile_out,
-                                      true);
+      profile_success = fit_profile_1d_ibix(projected_intensity_out.const_ref(),
+                                            tof_z_out.const_ref(),
+                                            profile_params_1d_ibix,
+                                            I_prf,
+                                            line_profile_out,
+                                            true);
 
     } else {
       profile_success = false;
@@ -2240,7 +2243,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool& apply_lorentz_correction,
-    TOFProfile1DParams& profile_params_1d) {
+    TOFProfile1DIBIXParams& profile_params_1d_ibix) {
     /*
      * Calculates raw_projected_intensity, projected_intensity, line_profile
      * projected_background, sum_intensity, sum_variance, prf_intensity, prf_variance
@@ -2266,12 +2269,12 @@ namespace dials { namespace algorithms {
     double var_prf = 0;
     bool profile_success = false;
     if (success) {
-      profile_success = fit_profile1d(projected_intensity_out.const_ref(),
-                                      tof_z_out.const_ref(),
-                                      profile_params_1d,
-                                      I_prf,
-                                      line_profile_out,
-                                      true);
+      profile_success = fit_profile_1d_ibix(projected_intensity_out.const_ref(),
+                                            tof_z_out.const_ref(),
+                                            profile_params_1d_ibix,
+                                            I_prf,
+                                            line_profile_out,
+                                            true);
 
     } else {
       profile_success = false;
