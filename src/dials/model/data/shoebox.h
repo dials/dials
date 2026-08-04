@@ -553,6 +553,114 @@ namespace dials { namespace model {
     }
   };
 
+  /**
+   * A class to hold per-frame results calculated from a shoebox.
+   *
+   * All the results are arrays of length nz, where nz is the number of frames
+   * in the shoebox. They are calculated once, on construction, after which the
+   * object is read-only.
+   */
+  template <typename FloatType = ProfileFloatType>
+  class FrameSlicedShoebox {
+  public:
+    typedef FloatType float_type;
+
+    /**
+     * Initialise an empty object
+     */
+    FrameSlicedShoebox() {}
+
+    /**
+     * Calculate the per-frame results from a shoebox
+     * @param sbox The shoebox, which must have its data and background arrays
+     *             allocated and must not be flat
+     */
+    FrameSlicedShoebox(const Shoebox<FloatType>& sbox) {
+      DIALS_ASSERT(sbox.is_data_allocated());
+      DIALS_ASSERT(sbox.is_background_allocated());
+      DIALS_ASSERT(sbox.is_consistent());
+
+      // A flat shoebox has had its frames summed together, so there is nothing
+      // left to slice
+      DIALS_ASSERT(!sbox.flat);
+
+      std::size_t nz = sbox.zsize();
+      std::size_t ny = sbox.ysize();
+      std::size_t nx = sbox.xsize();
+
+      frames_ = af::shared<int>(nz, 0);
+      foreground_pixel_count_ = af::shared<int>(nz, 0);
+      valid_pixel_count_ = af::shared<int>(nz, 0);
+      foreground_sum_raw_ = af::shared<double>(nz, 0.0);
+      foreground_sum_minus_background_ = af::shared<double>(nz, 0.0);
+
+      for (std::size_t k = 0; k < nz; ++k) {
+        // The shoebox z coordinates are zero-based array indices, whereas image
+        // numbers are one-based, to match FrameOrientations.images
+        frames_[k] = sbox.zoffset() + (int)k + 1;
+        for (std::size_t j = 0; j < ny; ++j) {
+          for (std::size_t i = 0; i < nx; ++i) {
+            uint8_t code = sbox.mask(k, j, i);
+            if ((code & Valid) == Valid) {
+              valid_pixel_count_[k]++;
+            }
+            if ((code & Foreground) == Foreground) {
+              foreground_pixel_count_[k]++;
+            }
+            // NB the sums are over pixels that are both valid and foreground,
+            // whereas foreground_pixel_count counts every foreground pixel,
+            // valid or not. This inconsistency is under review, pending
+            // confirmation of the expected behaviour from downstream consumers
+            uint8_t valid_foreground = Valid | Foreground;
+            if ((code & valid_foreground) == valid_foreground) {
+              foreground_sum_raw_[k] += (double)sbox.data(k, j, i);
+              foreground_sum_minus_background_[k] +=
+                (double)sbox.data(k, j, i) - (double)sbox.background(k, j, i);
+            }
+          }
+        }
+      }
+    }
+
+    /** @returns The number of frames */
+    std::size_t size() const {
+      return frames_.size();
+    }
+
+    /** @returns The one-based image number of each frame */
+    af::shared<int> frames() const {
+      return frames_;
+    }
+
+    /** @returns The number of foreground pixels on each frame */
+    af::shared<int> foreground_pixel_count() const {
+      return foreground_pixel_count_;
+    }
+
+    /** @returns The number of valid pixels on each frame */
+    af::shared<int> valid_pixel_count() const {
+      return valid_pixel_count_;
+    }
+
+    /** @returns The sum of the valid foreground pixels on each frame */
+    af::shared<double> foreground_sum_raw() const {
+      return foreground_sum_raw_;
+    }
+
+    /** @returns The background-subtracted sum of the valid foreground pixels on
+     *           each frame */
+    af::shared<double> foreground_sum_minus_background() const {
+      return foreground_sum_minus_background_;
+    }
+
+  private:
+    af::shared<int> frames_;
+    af::shared<int> foreground_pixel_count_;
+    af::shared<int> valid_pixel_count_;
+    af::shared<double> foreground_sum_raw_;
+    af::shared<double> foreground_sum_minus_background_;
+  };
+
 }};  // namespace dials::model
 
 #endif /* DIALS_MODEL_DATA_SHOEBOX_H */

@@ -4,9 +4,11 @@ import math
 import pickle
 import random
 
+import pytest
+
 from scitbx import matrix
 
-from dials.model.data import Shoebox
+from dials.model.data import FrameSlicedShoebox, Shoebox
 
 
 def random_shoeboxes(num, mask=False):
@@ -313,3 +315,80 @@ def test_all_foreground_valid():
             assert not shoebox.all_foreground_valid()
         else:
             assert shoebox.all_foreground_valid()
+
+
+def frame_sliced_shoebox_test_data():
+    """A 4 x 3 x 3 (x, y, z) shoebox, with the first frame at image 11"""
+    from dials.algorithms.shoebox import MaskCode
+
+    shoebox = Shoebox(0, (0, 4, 0, 3, 10, 13))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+
+    # Every pixel on frame k has a value of k + 1 and a background of 0.5
+    for k in range(3):
+        for j in range(3):
+            for i in range(4):
+                shoebox.data[k, j, i] = k + 1
+                shoebox.background[k, j, i] = 0.5
+                shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Background
+
+    # Two foreground pixels on frame 0 and three on frame 1
+    for k, j, i in [(0, 0, 0), (0, 0, 1), (1, 1, 0), (1, 1, 1), (1, 1, 2)]:
+        shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Foreground
+
+    # A single foreground pixel on frame 2, which is not valid
+    shoebox.mask[2, 2, 3] = MaskCode.Foreground
+
+    return shoebox
+
+
+def test_frame_sliced_shoebox():
+    sliced = FrameSlicedShoebox(frame_sliced_shoebox_test_data())
+
+    assert sliced.size() == 3
+    assert len(sliced) == 3
+    # The shoebox z range is 10 -> 13, which is images 11 -> 13 (one-based)
+    assert list(sliced.frames) == [11, 12, 13]
+    # The invalid foreground pixel on frame 2 is counted, but is excluded from
+    # the sums, which are over valid foreground pixels only
+    assert list(sliced.foreground_pixel_count) == [2, 3, 1]
+    assert list(sliced.valid_pixel_count) == [12, 12, 11]
+    assert list(sliced.foreground_sum_raw) == [2.0, 6.0, 0.0]
+    assert list(sliced.foreground_sum_minus_background) == [1.0, 4.5, 0.0]
+
+
+def test_frame_sliced_shoebox_arrays_are_read_only():
+    sliced = FrameSlicedShoebox(frame_sliced_shoebox_test_data())
+
+    for name in (
+        "frames",
+        "foreground_pixel_count",
+        "valid_pixel_count",
+        "foreground_sum_raw",
+        "foreground_sum_minus_background",
+    ):
+        with pytest.raises(AttributeError):
+            setattr(sliced, name, None)
+
+
+def test_frame_sliced_shoebox_requires_allocated_arrays():
+    # Neither the data nor the background are allocated
+    shoebox = Shoebox(0, (0, 4, 0, 3, 10, 13))
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox)
+
+    # The data is allocated, but the background is not
+    shoebox.allocate_data()
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox)
+
+    shoebox.allocate_background()
+    assert len(FrameSlicedShoebox(shoebox)) == 3
+
+
+def test_frame_sliced_shoebox_rejects_flat_shoebox():
+    shoebox = frame_sliced_shoebox_test_data()
+    shoebox.flatten()
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox)

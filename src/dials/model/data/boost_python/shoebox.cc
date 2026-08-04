@@ -239,8 +239,33 @@ namespace dials { namespace model { namespace boost_python {
     return shoebox;
   }
 
+  template <typename FloatType>
+  class_<FrameSlicedShoebox<FloatType> > frame_sliced_shoebox_wrapper(
+    const char* name) {
+    typedef Shoebox<FloatType> shoebox_type;
+    typedef FrameSlicedShoebox<FloatType> frame_sliced_shoebox_type;
+
+    // The per-frame arrays are read-only, so only getters are exposed
+    class_<frame_sliced_shoebox_type> frame_sliced_shoebox(name);
+    frame_sliced_shoebox.def(init<const frame_sliced_shoebox_type&>())
+      .def(init<const shoebox_type&>((arg("shoebox"))))
+      .add_property("frames", &frame_sliced_shoebox_type::frames)
+      .add_property("foreground_pixel_count",
+                    &frame_sliced_shoebox_type::foreground_pixel_count)
+      .add_property("valid_pixel_count", &frame_sliced_shoebox_type::valid_pixel_count)
+      .add_property("foreground_sum_raw",
+                    &frame_sliced_shoebox_type::foreground_sum_raw)
+      .add_property("foreground_sum_minus_background",
+                    &frame_sliced_shoebox_type::foreground_sum_minus_background)
+      .def("size", &frame_sliced_shoebox_type::size)
+      .def("__len__", &frame_sliced_shoebox_type::size);
+
+    return frame_sliced_shoebox;
+  }
+
   void export_shoebox() {
     shoebox_wrapper<ProfileFloatType>("Shoebox");
+    frame_sliced_shoebox_wrapper<ProfileFloatType>("FrameSlicedShoebox");
   }
 
 }}}  // namespace dials::model::boost_python
