@@ -141,3 +141,69 @@ def test_bounding_boxes():
     bbox2 = shoebox.bounding_boxes()
     for i in range(10):
         assert bbox2[i] == bbox[i]
+
+
+def frame_sliced_shoebox_test_data():
+    """Two shoeboxes with a different number of frames each"""
+    from dials.algorithms.shoebox import MaskCode
+    from dials.array_family import flex
+    from dials.model.data import Shoebox
+
+    shoeboxes = []
+    for z0, nz in ((10, 3), (0, 2)):
+        shoebox = Shoebox(0, (0, 4, 0, 3, z0, z0 + nz))
+        shoebox.allocate_data()
+        shoebox.allocate_background()
+        for k in range(nz):
+            for j in range(3):
+                for i in range(4):
+                    shoebox.data[k, j, i] = k + 1
+                    shoebox.background[k, j, i] = 0.5
+                    shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Foreground
+        shoeboxes.append(shoebox)
+    return flex.shoebox(shoeboxes)
+
+
+def test_frame_sliced_shoebox_from_shoeboxes():
+    from dials.array_family import flex
+
+    sliced = flex.frame_sliced_shoebox(frame_sliced_shoebox_test_data())
+
+    assert len(sliced) == 2
+    assert list(sliced.num_frames()) == [3, 2]
+    assert list(sliced[0].frames) == [11, 12, 13]
+    assert list(sliced[1].frames) == [1, 2]
+    assert list(sliced[0].foreground_sum_raw) == [12.0, 24.0, 36.0]
+    assert list(sliced[1].foreground_sum_minus_background) == [6.0, 18.0]
+
+
+def test_frame_sliced_shoebox_data_arrays_round_trip():
+    from dials.array_family import flex
+
+    sliced = flex.frame_sliced_shoebox(frame_sliced_shoebox_test_data())
+    arrays = sliced.get_frame_sliced_shoebox_data_arrays()
+
+    # The per-frame arrays of every element are concatenated together
+    assert list(arrays[0]) == [11, 12, 13, 1, 2]
+
+    rebuilt = flex.frame_sliced_shoebox(sliced.num_frames(), *arrays)
+    assert list(rebuilt.num_frames()) == list(sliced.num_frames())
+    assert all(a == b for a, b in zip(rebuilt, sliced))
+
+
+def test_frame_sliced_shoebox_is_picklable():
+    import pickle
+
+    from dials.array_family import flex
+
+    sliced = flex.frame_sliced_shoebox(frame_sliced_shoebox_test_data())
+
+    unpickled = pickle.loads(pickle.dumps(sliced, protocol=pickle.HIGHEST_PROTOCOL))
+    assert list(unpickled.num_frames()) == [3, 2]
+    assert all(a == b for a, b in zip(unpickled, sliced))
+
+    # Default constructed elements have no frames at all
+    empty = pickle.loads(
+        pickle.dumps(flex.frame_sliced_shoebox(3), protocol=pickle.HIGHEST_PROTOCOL)
+    )
+    assert list(empty.num_frames()) == [0, 0, 0]

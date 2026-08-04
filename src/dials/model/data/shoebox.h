@@ -622,6 +622,29 @@ namespace dials { namespace model {
       }
     }
 
+    /**
+     * Construct directly from the per-frame arrays.
+     *
+     * This is intended for deserialization only, which has to rebuild an object
+     * without the shoebox it was originally calculated from. It is deliberately
+     * not exposed to Python, so that the object remains read-only there.
+     */
+    FrameSlicedShoebox(const af::shared<int>& frames,
+                       const af::shared<int>& foreground_pixel_count,
+                       const af::shared<int>& valid_pixel_count,
+                       const af::shared<double>& foreground_sum_raw,
+                       const af::shared<double>& foreground_sum_minus_background)
+        : frames_(frames),
+          foreground_pixel_count_(foreground_pixel_count),
+          valid_pixel_count_(valid_pixel_count),
+          foreground_sum_raw_(foreground_sum_raw),
+          foreground_sum_minus_background_(foreground_sum_minus_background) {
+      DIALS_ASSERT(foreground_pixel_count_.size() == frames_.size());
+      DIALS_ASSERT(valid_pixel_count_.size() == frames_.size());
+      DIALS_ASSERT(foreground_sum_raw_.size() == frames_.size());
+      DIALS_ASSERT(foreground_sum_minus_background_.size() == frames_.size());
+    }
+
     /** @returns The number of frames */
     std::size_t size() const {
       return frames_.size();
@@ -651,6 +674,27 @@ namespace dials { namespace model {
      *           each frame */
     af::shared<double> foreground_sum_minus_background() const {
       return foreground_sum_minus_background_;
+    }
+
+    /** @returns True if the per-frame arrays are all equal */
+    bool operator==(const FrameSlicedShoebox& rhs) const {
+      if (size() != rhs.size()) {
+        return false;
+      }
+      return frames_.const_ref().all_eq(rhs.frames_.const_ref())
+             && foreground_pixel_count_.const_ref().all_eq(
+               rhs.foreground_pixel_count_.const_ref())
+             && valid_pixel_count_.const_ref().all_eq(
+               rhs.valid_pixel_count_.const_ref())
+             && foreground_sum_raw_.const_ref().all_eq(
+               rhs.foreground_sum_raw_.const_ref())
+             && foreground_sum_minus_background_.const_ref().all_eq(
+               rhs.foreground_sum_minus_background_.const_ref());
+    }
+
+    /** @returns True if any of the per-frame arrays differ */
+    bool operator!=(const FrameSlicedShoebox& rhs) const {
+      return !(*this == rhs);
     }
 
   private:

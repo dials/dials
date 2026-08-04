@@ -34,6 +34,15 @@ dials_to_nx_names = {
     "profile.rmsd": "prf_rmsd",
 }
 
+frame_sliced_shoebox_names = [
+    "num_frames",
+    "frames",
+    "foreground_pixel_count",
+    "valid_pixel_count",
+    "foreground_sum_raw",
+    "foreground_sum_minus_background",
+]
+
 dials_to_nx_names_split = {
     "miller_index": ["h", "k", "l"],
     "xyzcal.px": ["predicted_px_x", "predicted_px_y", "predicted_frame"],
@@ -143,6 +152,8 @@ class ReflectionListEncoder(object):
                 continue
             if isinstance(data, flex.shoebox):
                 ReflectionListEncoder.encode_shoebox(group, data, key)
+            elif isinstance(data, flex.frame_sliced_shoebox):
+                ReflectionListEncoder.encode_frame_sliced_shoebox(group, data, key)
             elif isinstance(data, flex.int6):
                 s = data.size()
                 this_data = flumpy.to_numpy(data.as_int()).reshape(s, 6)
@@ -215,6 +226,34 @@ class ReflectionListEncoder(object):
             "panel", data=data, shape=data.shape, dtype=data.dtype, compression=lz4
         )
 
+    @staticmethod
+    def encode_frame_sliced_shoebox(
+        group: h5py.Group, data: flex.frame_sliced_shoebox, key: str
+    ):
+        """Encode a column of frame sliced shoeboxes.
+
+        The per-frame arrays vary in length from row to row, so they are stored
+        concatenated, alongside the number of frames of each row.
+        """
+        lz4 = hdf5plugin.LZ4()
+        fss_group = group.create_group(key)
+        arrays = dict(
+            zip(
+                frame_sliced_shoebox_names[1:],
+                data.get_frame_sliced_shoebox_data_arrays(),
+            )
+        )
+        arrays["num_frames"] = data.num_frames()
+        for name in frame_sliced_shoebox_names:
+            this_data = flumpy.to_numpy(arrays[name])
+            fss_group.create_dataset(
+                name,
+                data=this_data,
+                shape=this_data.shape,
+                dtype=this_data.dtype,
+                compression=lz4,
+            )
+
 
 class ReflectionListDecoder(object):
     """Decoder for the reflection data."""
@@ -241,6 +280,12 @@ class ReflectionListDecoder(object):
 
             for key in dataset:
                 if isinstance(dataset[key], h5py.Group):
+                    if "num_frames" in dataset[key]:
+                        # Decode the frame sliced shoebox data
+                        table[key] = ReflectionListDecoder.decode_frame_sliced_shoebox(
+                            dataset[key]
+                        )
+                        continue
                     # Decode all the shoebox data
                     shoebox_arrays: Dict[str, flumpy.FlexArray] = {}
                     names = [
@@ -280,6 +325,19 @@ class ReflectionListDecoder(object):
 
         # Return the list of reflection tables (as stored on disk)
         return tables
+
+    @staticmethod
+    def decode_frame_sliced_shoebox(group: h5py.Group) -> flex.frame_sliced_shoebox:
+        """Decode a group of concatenated per-frame arrays."""
+        for k in group.keys():
+            if k not in frame_sliced_shoebox_names:
+                raise RuntimeError(f"Unrecognised elements {k} in {group}")
+        arrays = {}
+        for name in frame_sliced_shoebox_names:
+            if name not in group:
+                raise RuntimeError(f"Missing element {name} in {group}")
+            arrays[name] = flumpy.from_numpy(group[name][()])
+        return flex.frame_sliced_shoebox(**arrays)
 
     @staticmethod
     def convert_array(data: np.array) -> flumpy.FlexArray:

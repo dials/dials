@@ -27,6 +27,7 @@ inline cctbx::miller::index<> dxtbx::af::init_zero<cctbx::miller::index<> >() {
 
 namespace dials { namespace af {
 
+  using model::FrameSlicedShoebox;
   using model::Shoebox;
   using scitbx::mat3;
   using scitbx::vec2;
@@ -43,7 +44,8 @@ namespace dials { namespace af {
                                          mat3<double>,
                                          int6,
                                          cctbx::miller::index<>,
-                                         Shoebox<> >
+                                         Shoebox<>,
+                                         FrameSlicedShoebox<> >
     reflection_table_type_generator;
 
   typedef reflection_table_type_generator::type reflection_table_types;

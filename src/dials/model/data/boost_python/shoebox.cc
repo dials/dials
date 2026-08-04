@@ -258,7 +258,9 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("foreground_sum_minus_background",
                     &frame_sliced_shoebox_type::foreground_sum_minus_background)
       .def("size", &frame_sliced_shoebox_type::size)
-      .def("__len__", &frame_sliced_shoebox_type::size);
+      .def("__len__", &frame_sliced_shoebox_type::size)
+      .def("__eq__", &frame_sliced_shoebox_type::operator==)
+      .def("__ne__", &frame_sliced_shoebox_type::operator!=);
 
     return frame_sliced_shoebox;
   }
