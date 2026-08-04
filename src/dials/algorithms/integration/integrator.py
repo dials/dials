@@ -957,7 +957,11 @@ class IntegratorExecutor(Executor):
         """
         Support for pickling
         """
-        return (self.experiments, self.profile_fitter)
+        return (
+            self.experiments,
+            self.profile_fitter,
+            self.valid_foreground_threshold,
+        )
 
 
 class Integrator:
