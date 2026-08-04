@@ -31,6 +31,7 @@ from dials.algorithms.integration.report import (
 from dials.algorithms.integration.validation import ValidatedMultiExpProfileModeller
 from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
 from dials.algorithms.shoebox import MaskCode
+from dials.algorithms.spot_prediction.frame_orientations import FrameOrientations
 from dials.array_family import flex
 
 # constants
@@ -49,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "Executor",
+    "FrameSlicedIntegratorExecutor",
     "Integrator",
     "Integrator2D",
     "Integrator3D",
@@ -968,10 +970,47 @@ class IntegratorExecutor(Executor):
         return (self.experiments, self.profile_fitter)
 
 
+class FrameSlicedIntegratorExecutor(IntegratorExecutor):
+    """
+    The class to process the integration data, calculating additional per-frame
+    data for the integrated shoeboxes
+    """
+
+    def __init__(
+        self, experiments, profile_fitter=None, valid_foreground_threshold=0.75
+    ):
+        """
+        Initialize the executor
+
+        :param experiments: The experiment list
+        """
+        super().__init__(experiments, profile_fitter, valid_foreground_threshold)
+
+        # Calculate the experimental orientations at the centre of each frame
+        self.frame_orientations = [
+            FrameOrientations(experiment) for experiment in self.experiments
+        ]
+
+    def process(self, frame, reflections):
+        """
+        Process the reflections on a frame, then calculate the additional
+        per-frame data for the shoeboxes
+
+        :param frame: The frame to process
+        :param reflections: The reflections to process
+        """
+        super().process(frame, reflections)
+
+        # TODO Use self.frame_orientations to calculate the additional per-frame
+        # data for the shoeboxes and write it onto the reflection table.
+
+
 class Integrator:
     """
     The integrator class
     """
+
+    ExecutorClass = IntegratorExecutor
 
     def __init__(self, experiments, reflections, params):
         """
@@ -1221,7 +1260,12 @@ class Integrator:
         logger.info("")
 
         # Create the data processor
-        executor = IntegratorExecutor(
+        ExecutorClass = (
+            FrameSlicedIntegratorExecutor
+            if self.params.frame_slice_shoeboxes
+            else self.ExecutorClass
+        )
+        executor = ExecutorClass(
             self.experiments,
             profile_fitter,
             self.params.profile.valid_foreground_threshold,
@@ -1674,6 +1718,17 @@ def create_integrator(params, experiments, reflections):
     }.get(params.integration.integrator)
     if not IntegratorClass:
         raise ValueError(f"Unknown integration type {params.integration.integrator}")
+
+    # Frame slicing requires the rotation geometry of a scan
+    if params.integration.frame_slice_shoeboxes and any(
+        experiment.is_still() for experiment in experiments
+    ):
+        raise Sorry(
+            """
+      frame_slice_shoeboxes=True cannot be used with still experiments, as
+      there is no rotation scan from which to calculate per-frame data.
+    """
+        )
 
     # Remove scan if stills
     if experiments.all_stills():
