@@ -126,6 +126,10 @@ def generate_phil_scope():
         .type = bool
         .help = "Use dynamic mask if available"
 
+      frame_slice_shoeboxes = False
+        .type = bool
+        .help = "Calculate additional per-frame data for integrated shoeboxes"
+
       debug {
 
         reference {
@@ -381,6 +385,7 @@ class Parameters:
         self.profile = Parameters.Profile()
         self.debug_reference_filename = "reference_profiles.pickle"
         self.debug_reference_output = False
+        self.frame_slice_shoeboxes = False
 
     @staticmethod
     def from_phil(params):
@@ -431,6 +436,9 @@ class Parameters:
 
         result.debug_reference_filename = params.debug.reference.filename
         result.debug_reference_output = params.debug.reference.output
+
+        # Set the frame slicing parameter
+        result.frame_slice_shoeboxes = params.frame_slice_shoeboxes
 
         # Profile parameters
         result.profile.sigma_b_multiplier = params.profile.sigma_b_multiplier
