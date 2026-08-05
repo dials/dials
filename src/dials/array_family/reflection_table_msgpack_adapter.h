@@ -272,7 +272,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         std::stringstream buffer;
 
         // Write the format version once for the whole column
-        write(buffer, (uint8_t)3);
+        write(buffer, (uint8_t)4);
 
         for (iterator it = v.begin(); it != v.end(); ++it) {
           // Write the number of frames, which gives the length of each array
@@ -280,6 +280,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
           write_array(buffer, it->frames());
           write_array(buffer, it->phi());
+          write_array(buffer, it->excitation_error());
           write_array(buffer, it->foreground_pixel_count());
           write_array(buffer, it->valid_pixel_count());
           write_array(buffer, it->foreground_sum_raw());
@@ -612,9 +613,9 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Check the format version
         uint8_t version = read<uint8_t>(buffer);
-        if (version != 3) {
+        if (version != 4) {
           throw DIALS_ERROR(
-            "scitbx::af::ref<FrameSlicedShoebox>: expected version 3, got something "
+            "scitbx::af::ref<FrameSlicedShoebox>: expected version 4, got something "
             "else");
         }
 
@@ -625,6 +626,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
           std::size_t nz = read<uint32_t>(buffer);
           scitbx::af::shared<int> frames = read_array<int>(buffer, nz);
           scitbx::af::shared<double> phi = read_array<double>(buffer, nz);
+          scitbx::af::shared<double> excitation_error = read_array<double>(buffer, nz);
           scitbx::af::shared<int> foreground_pixel_count = read_array<int>(buffer, nz);
           scitbx::af::shared<int> valid_pixel_count = read_array<int>(buffer, nz);
           scitbx::af::shared<double> foreground_sum_raw =
@@ -639,6 +641,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
             read_array<bool>(buffer, nz);
           *it = dials::af::FrameSlicedShoebox<T>(frames,
                                                  phi,
+                                                 excitation_error,
                                                  foreground_pixel_count,
                                                  valid_pixel_count,
                                                  foreground_sum_raw,

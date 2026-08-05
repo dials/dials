@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 
 import pytest
@@ -145,12 +146,22 @@ def test_bounding_boxes():
         assert bbox2[i] == bbox[i]
 
 
-def frame_sliced_shoebox_test_phi():
-    """Rotation angles at the centres of images 1 to 13, for a scan of 0.1 radian
-    oscillations beginning at zero, alongside the image number of the first"""
+def frame_sliced_shoebox_test_models():
+    """Everything the frame slicing needs besides the shoeboxes themselves, that
+    is a Miller index per shoebox, then the rotation angles, orientation matrices
+    and beam vectors at the centres of images 1 to 13 with the image number the
+    first of them refers to.
+
+    The scan has 0.1 radian oscillations beginning at zero, the crystal is
+    stationary with a 10 Angstrom cubic cell aligned with the laboratory axes,
+    and the beam is stationary along -z with a wavelength of 1 Angstrom"""
     from dials.array_family import flex
 
-    return flex.double([0.1 * (f - 0.5) for f in range(1, 14)]), 1
+    miller_indices = flex.miller_index([(1, 0, 0), (0, 0, 10)])
+    phi = flex.double([0.1 * (f - 0.5) for f in range(1, 14)])
+    UB = flex.mat3_double([(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1)] * 13)
+    s0 = flex.vec3_double([(0, 0, -1)] * 13)
+    return miller_indices, phi, UB, s0, 1
 
 
 def frame_sliced_shoebox_test_data():
@@ -178,7 +189,7 @@ def test_frame_sliced_shoebox_from_shoeboxes():
     from dials.array_family import flex
 
     sliced = flex.frame_sliced_shoebox(
-        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_models()
     )
 
     assert len(sliced) == 2
@@ -188,6 +199,12 @@ def test_frame_sliced_shoebox_from_shoeboxes():
     # Each shoebox takes the rotation angles of its own frames from the scan
     assert list(sliced[0].phi) == pytest.approx([1.05, 1.15, 1.25])
     assert list(sliced[1].phi) == pytest.approx([0.05, 0.15])
+    # Each shoebox uses its own Miller index. (1, 0, 0) sits just outside the
+    # Ewald sphere, while (0, 0, 10) is at its centre, a whole radius inside
+    assert list(sliced[0].excitation_error) == pytest.approx(
+        [1.0 - math.sqrt(1.01)] * 3
+    )
+    assert list(sliced[1].excitation_error) == pytest.approx([1.0, 1.0])
     assert list(sliced[0].foreground_sum_raw) == [12.0, 24.0, 36.0]
     assert list(sliced[1].foreground_sum_minus_background) == [6.0, 18.0]
 
@@ -203,7 +220,7 @@ def test_frame_sliced_shoebox_data_arrays_round_trip():
     from dials.array_family import flex
 
     sliced = flex.frame_sliced_shoebox(
-        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_models()
     )
     arrays = sliced.get_frame_sliced_shoebox_data_arrays()
 
@@ -221,7 +238,7 @@ def test_frame_sliced_shoebox_is_picklable():
     from dials.array_family import flex
 
     sliced = flex.frame_sliced_shoebox(
-        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_models()
     )
 
     unpickled = pickle.loads(pickle.dumps(sliced, protocol=pickle.HIGHEST_PROTOCOL))

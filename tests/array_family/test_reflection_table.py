@@ -1249,10 +1249,16 @@ def table_with_frame_sliced_shoeboxes():
     )
     table = flex.reflection_table()
     table["id"] = flex.int(len(shoeboxes), 0)
-    # Rotation angles at the centres of images 1 to 12, for a scan of 0.1 radian
-    # oscillations beginning at zero
+    table["miller_index"] = flex.miller_index([(1, 0, 0), (0, 1, 0), (0, 0, 1)])
+    # Experimental models at the centres of images 1 to 12, for a scan of 0.1
+    # radian oscillations beginning at zero, a stationary crystal with a 10
+    # Angstrom cubic cell and a stationary 1 Angstrom beam along -z
     phi = flex.double([0.1 * (f - 0.5) for f in range(1, 13)])
-    table["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(shoeboxes, phi, 1)
+    UB = flex.mat3_double([(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1)] * 12)
+    s0 = flex.vec3_double([(0, 0, -1)] * 12)
+    table["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(
+        shoeboxes, table["miller_index"], phi, UB, s0, 1
+    )
     return table
 
 

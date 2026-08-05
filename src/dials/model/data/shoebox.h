@@ -13,6 +13,8 @@
 
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/small.h>
+#include <scitbx/mat3.h>
+#include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/image/centroid/centroid_image.h>
@@ -33,6 +35,7 @@ namespace dials { namespace model {
   using dials::model::Foreground;
   using dials::model::Intensity;
   using dials::model::Valid;
+  using scitbx::mat3;
   using scitbx::af::int2;
   using scitbx::af::int3;
   using scitbx::af::int6;
@@ -572,16 +575,30 @@ namespace dials { namespace model {
 
     /**
      * Calculate the per-frame results from a shoebox
+     * The arrays of experimental models are indexed by image number rather than
+     * by frame of the shoebox, so that a whole column of shoeboxes can be sliced
+     * without first cutting each of them out.
+     *
      * @param sbox The shoebox, which must have its data and background arrays
      *             allocated and must not be flat
+     * @param h The Miller index of the reflection
      * @param phi The scan rotation angle in radians at the centre of each frame
      *            of the scan, as held by FrameOrientations.phi
-     * @param first_frame The image number that phi[0] refers to, as held by
-     *                    FrameOrientations.images[0]
+     * @param UB The lattice orientation matrix at the centre of each frame of
+     *           the scan, as held by FrameOrientations.UB
+     * @param s0 The beam vector at the centre of each frame of the scan, as
+     *           held by FrameOrientations.s0
+     * @param first_frame The image number that the first element of phi, UB and
+     *                    s0 refers to, as held by FrameOrientations.images[0]
      */
     FrameSlicedShoebox(const Shoebox<FloatType>& sbox,
+                       const cctbx::miller::index<>& h,
                        const af::const_ref<double>& phi,
+                       const af::const_ref<mat3<double> >& UB,
+                       const af::const_ref<vec3<double> >& s0,
                        int first_frame) {
+      DIALS_ASSERT(UB.size() == phi.size());
+      DIALS_ASSERT(s0.size() == phi.size());
       DIALS_ASSERT(sbox.is_data_allocated());
       DIALS_ASSERT(sbox.is_background_allocated());
       DIALS_ASSERT(sbox.is_consistent());
@@ -596,6 +613,7 @@ namespace dials { namespace model {
 
       frames_ = af::shared<int>(nz, 0);
       phi_ = af::shared<double>(nz, 0.0);
+      excitation_error_ = af::shared<double>(nz, 0.0);
       foreground_pixel_count_ = af::shared<int>(nz, 0);
       valid_pixel_count_ = af::shared<int>(nz, 0);
       foreground_sum_raw_ = af::shared<double>(nz, 0.0);
@@ -608,15 +626,24 @@ namespace dials { namespace model {
       // count, as in the Summation class
       uint8_t background_code = Valid | Background | BackgroundUsed;
 
+      vec3<double> hd((double)h[0], (double)h[1], (double)h[2]);
+
       for (std::size_t k = 0; k < nz; ++k) {
         // The shoebox z coordinates are zero-based array indices, whereas image
         // numbers are one-based, to match FrameOrientations.images
         frames_[k] = sbox.zoffset() + (int)k + 1;
 
-        // Look the rotation angle of this frame up by its image number
-        int iphi = frames_[k] - first_frame;
-        DIALS_ASSERT(iphi >= 0 && (std::size_t)iphi < phi.size());
-        phi_[k] = phi[iphi];
+        // Look the experimental models of this frame up by its image number
+        int iframe = frames_[k] - first_frame;
+        DIALS_ASSERT(iframe >= 0 && (std::size_t)iframe < phi.size());
+        phi_[k] = phi[iframe];
+
+        // The reciprocal lattice point and the scattering vector it would give.
+        // The excitation error is the distance of the point from the surface of
+        // the Ewald sphere, positive for a point inside the sphere
+        vec3<double> r = UB[iframe] * hd;
+        vec3<double> s1 = s0[iframe] + r;
+        excitation_error_[k] = s0[iframe].length() - s1.length();
 
         // Accumulators for the summation integration of this frame, named to
         // match the Summation class in algorithms/integration/sum/summation.h
@@ -678,6 +705,7 @@ namespace dials { namespace model {
      */
     FrameSlicedShoebox(const af::shared<int>& frames,
                        const af::shared<double>& phi,
+                       const af::shared<double>& excitation_error,
                        const af::shared<int>& foreground_pixel_count,
                        const af::shared<int>& valid_pixel_count,
                        const af::shared<double>& foreground_sum_raw,
@@ -687,6 +715,7 @@ namespace dials { namespace model {
                        const af::shared<bool>& summation_intensity_valid)
         : frames_(frames),
           phi_(phi),
+          excitation_error_(excitation_error),
           foreground_pixel_count_(foreground_pixel_count),
           valid_pixel_count_(valid_pixel_count),
           foreground_sum_raw_(foreground_sum_raw),
@@ -695,6 +724,7 @@ namespace dials { namespace model {
           summation_intensity_variance_(summation_intensity_variance),
           summation_intensity_valid_(summation_intensity_valid) {
       DIALS_ASSERT(phi_.size() == frames_.size());
+      DIALS_ASSERT(excitation_error_.size() == frames_.size());
       DIALS_ASSERT(foreground_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(valid_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(foreground_sum_raw_.size() == frames_.size());
@@ -717,6 +747,13 @@ namespace dials { namespace model {
     /** @returns The scan rotation angle in radians at the centre of each frame */
     af::shared<double> phi() const {
       return phi_;
+    }
+
+    /** @returns The excitation error at the centre of each frame, that is the
+     *           distance of the reciprocal lattice point from the surface of
+     *           the Ewald sphere, positive if the point is inside the sphere */
+    af::shared<double> excitation_error() const {
+      return excitation_error_;
     }
 
     /** @returns The number of foreground pixels on each frame */
@@ -763,6 +800,7 @@ namespace dials { namespace model {
       }
       return frames_.const_ref().all_eq(rhs.frames_.const_ref())
              && phi_.const_ref().all_eq(rhs.phi_.const_ref())
+             && excitation_error_.const_ref().all_eq(rhs.excitation_error_.const_ref())
              && foreground_pixel_count_.const_ref().all_eq(
                rhs.foreground_pixel_count_.const_ref())
              && valid_pixel_count_.const_ref().all_eq(
@@ -787,6 +825,7 @@ namespace dials { namespace model {
   private:
     af::shared<int> frames_;
     af::shared<double> phi_;
+    af::shared<double> excitation_error_;
     af::shared<int> foreground_pixel_count_;
     af::shared<int> valid_pixel_count_;
     af::shared<double> foreground_sum_raw_;

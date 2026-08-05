@@ -9,6 +9,7 @@ import subprocess
 import pytest
 
 from dxtbx.serialize import load
+from scitbx import matrix
 
 from dials.algorithms.integration.processor import _average_bbox_size
 from dials.array_family import flex
@@ -423,13 +424,32 @@ def test_frame_slice_shoeboxes(dials_data, tmp_path):
 
     # The rotation angle of each frame should be the scan angle at its centre.
     # A one-based image number f covers array indices f - 1 to f
-    scan = load.experiment_list(tmp_path / "integrated.expt")[0].scan
+    expt = load.experiment_list(tmp_path / "integrated.expt")[0]
+    scan = expt.scan
     for i in (0, len(table) // 2, len(table) - 1):
         expected = [
             scan.get_angle_from_array_index(f - 0.5, deg=False)
             for f in sliced[i].frames
         ]
         assert list(sliced[i].phi) == pytest.approx(expected)
+
+    # The excitation error of each frame should be the distance of the rotated
+    # reciprocal lattice point from the surface of the Ewald sphere. Here the
+    # crystal, the beam and the goniometer are all stationary over the scan
+    gonio = expt.goniometer
+    axis = matrix.col(gonio.get_rotation_axis_datum())
+    S = matrix.sqr(gonio.get_setting_rotation())
+    F = matrix.sqr(gonio.get_fixed_rotation())
+    A = matrix.sqr(expt.crystal.get_A())
+    s0 = matrix.col(expt.beam.get_s0())
+    for i in range(len(table)):
+        h = matrix.col(table["miller_index"][i])
+        expected = []
+        for phi in sliced[i].phi:
+            R = matrix.sqr(axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=False))
+            r = S * R * F * A * h
+            expected.append(s0.length() - (s0 + r).length())
+        assert list(sliced[i].excitation_error) == pytest.approx(expected)
 
     # Summing the per-frame background subtracted foreground sums should recover
     # the summation intensity

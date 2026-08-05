@@ -248,10 +248,20 @@ namespace dials { namespace model { namespace boost_python {
     // The per-frame arrays are read-only, so only getters are exposed
     class_<frame_sliced_shoebox_type> frame_sliced_shoebox(name);
     frame_sliced_shoebox.def(init<const frame_sliced_shoebox_type&>())
-      .def(init<const shoebox_type&, const af::const_ref<double>&, int>(
-        (arg("shoebox"), arg("phi"), arg("first_frame"))))
+      .def(init<const shoebox_type&,
+                const cctbx::miller::index<>&,
+                const af::const_ref<double>&,
+                const af::const_ref<mat3<double> >&,
+                const af::const_ref<vec3<double> >&,
+                int>((arg("shoebox"),
+                      arg("miller_index"),
+                      arg("phi"),
+                      arg("UB"),
+                      arg("s0"),
+                      arg("first_frame"))))
       .add_property("frames", &frame_sliced_shoebox_type::frames)
       .add_property("phi", &frame_sliced_shoebox_type::phi)
+      .add_property("excitation_error", &frame_sliced_shoebox_type::excitation_error)
       .add_property("foreground_pixel_count",
                     &frame_sliced_shoebox_type::foreground_pixel_count)
       .add_property("valid_pixel_count", &frame_sliced_shoebox_type::valid_pixel_count)

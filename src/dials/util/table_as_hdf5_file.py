@@ -38,6 +38,7 @@ frame_sliced_shoebox_names = [
     "num_frames",
     "frames",
     "phi",
+    "excitation_error",
     "foreground_pixel_count",
     "valid_pixel_count",
     "foreground_sum_raw",

@@ -995,9 +995,17 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
             FrameOrientations(experiment) for experiment in self.experiments
         ]
 
-        # Cache the rotation angles at the frame centres in the form wanted by
-        # the frame slicing, namely a flex array and the image number it starts at
+        # Cache the models at the frame centres in the form wanted by the frame
+        # slicing, namely flex arrays and the image number they start at
         self._phi = [flex.double(fo.phi) for fo in self.frame_orientations]
+        self._UB = [
+            flex.mat3_double([UB.elems for UB in fo.UB])
+            for fo in self.frame_orientations
+        ]
+        self._s0 = [
+            flex.vec3_double([s0.elems for s0 in fo.s0])
+            for fo in self.frame_orientations
+        ]
         self._first_frame = [fo.images[0] for fo in self.frame_orientations]
 
     def process(self, frame, reflections):
@@ -1010,17 +1018,46 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
         """
         super().process(frame, reflections)
 
-        # Integration jobs are grouped by scan, so every reflection here shares
-        # the same rotation angles, whichever experiment it belongs to
-        expt_id = reflections["id"][0]
+        # An integration job covers a single scan, but that can be shared by more
+        # than one experiment, such as two lattices indexed from the same images.
+        # Each of those has its own crystal, so slice one experiment at a time,
+        # which is still a loop over experiments rather than over reflections
+        ids = reflections["id"]
+        shoeboxes = reflections["shoebox"]
+        miller_indices = reflections["miller_index"]
+        first_id, last_id = flex.min(ids), flex.max(ids)
+        if first_id == last_id:
+            sliced = self._slice_shoeboxes(shoeboxes, miller_indices, first_id)
+        else:
+            sliced = flex.frame_sliced_shoebox(len(reflections))
+            for expt_id in range(first_id, last_id + 1):
+                sel = ids == expt_id
+                if sel.count(True) == 0:
+                    continue
+                sliced.set_selected(
+                    sel,
+                    self._slice_shoeboxes(
+                        shoeboxes.select(sel), miller_indices.select(sel), expt_id
+                    ),
+                )
+        reflections["frame_sliced_shoebox"] = sliced
 
-        # Slice every shoebox in one call, to avoid a loop over reflections here
-        reflections["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(
-            reflections["shoebox"], self._phi[expt_id], self._first_frame[expt_id]
+    def _slice_shoeboxes(self, shoeboxes, miller_indices, expt_id):
+        """
+        Slice a column of shoeboxes that all belong to one experiment
+
+        :param shoeboxes: The shoeboxes to slice
+        :param miller_indices: The Miller index of each shoebox
+        :param expt_id: The experiment the shoeboxes belong to
+        """
+        return flex.frame_sliced_shoebox(
+            shoeboxes,
+            miller_indices,
+            self._phi[expt_id],
+            self._UB[expt_id],
+            self._s0[expt_id],
+            self._first_frame[expt_id],
         )
-
-        # TODO Use self.frame_orientations to add per-frame orientation data to
-        # the frame sliced shoeboxes.
 
 
 class Integrator:
