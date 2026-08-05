@@ -11,6 +11,8 @@
 #ifndef DIALS_MODEL_DATA_SHOEBOX_H
 #define DIALS_MODEL_DATA_SHOEBOX_H
 
+#include <cmath>
+#include <limits>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/small.h>
 #include <scitbx/mat3.h>
@@ -638,12 +640,28 @@ namespace dials { namespace model {
         DIALS_ASSERT(iframe >= 0 && (std::size_t)iframe < phi.size());
         phi_[k] = phi[iframe];
 
-        // The reciprocal lattice point and the scattering vector it would give.
-        // The excitation error is the distance of the point from the surface of
-        // the Ewald sphere, positive for a point inside the sphere
+        // The reciprocal lattice point of the reflection on this frame. The
+        // excitation error is the distance from that point to the surface of
+        // the Ewald sphere, measured along the beam direction, and is positive
+        // for a point inside the sphere.
+        //
+        // Splitting the point into its components along and across the beam,
+        // moving it by e along the beam puts it on the sphere when
+        //
+        //   e = sqrt(|s0|^2 - |r_across|^2) - |s0| - r_along
+        //
+        // If |r_across| > |s0| then the line through the point parallel to the
+        // beam misses the sphere altogether and there is no answer to give. That
+        // can only happen very close to 90 degree scattering, where a distance
+        // measured along the beam diverges, so return NaN there
         vec3<double> r = UB[iframe] * hd;
-        vec3<double> s1 = s0[iframe] + r;
-        excitation_error_[k] = s0[iframe].length() - s1.length();
+        double s0_length = s0[iframe].length();
+        double r_along = r * (s0[iframe] / s0_length);
+        double r_across_sq = r.length_sq() - r_along * r_along;
+        double radicand = s0_length * s0_length - r_across_sq;
+        excitation_error_[k] = radicand >= 0.0
+                                 ? std::sqrt(radicand) - s0_length - r_along
+                                 : std::numeric_limits<double>::quiet_NaN();
 
         // Accumulators for the summation integration of this frame, named to
         // match the Summation class in algorithms/integration/sum/summation.h
@@ -751,7 +769,9 @@ namespace dials { namespace model {
 
     /** @returns The excitation error at the centre of each frame, that is the
      *           distance of the reciprocal lattice point from the surface of
-     *           the Ewald sphere, positive if the point is inside the sphere */
+     *           the Ewald sphere measured along the beam direction, positive if
+     *           the point is inside the sphere. NaN where a line through the
+     *           point parallel to the beam does not reach the sphere */
     af::shared<double> excitation_error() const {
       return excitation_error_;
     }

@@ -371,7 +371,7 @@ def test_frame_sliced_shoebox():
     assert list(sliced.frames) == [11, 12, 13]
     assert list(sliced.phi) == pytest.approx([1.05, 1.15, 1.25])
     # A stationary crystal and beam give the same excitation error on each frame
-    assert list(sliced.excitation_error) == pytest.approx([1.0 - math.sqrt(1.01)] * 3)
+    assert list(sliced.excitation_error) == pytest.approx([math.sqrt(0.99) - 1.0] * 3)
     # The invalid foreground pixel on frame 2 is counted, but is excluded from
     # the sums, which are over valid foreground pixels only
     assert list(sliced.foreground_pixel_count) == [2, 3, 1]
@@ -483,26 +483,53 @@ def test_frame_sliced_shoebox_summation_matches_summation_integration():
 
 def test_frame_sliced_shoebox_excitation_error():
     """The excitation error is the distance of the reciprocal lattice point from
-    the surface of the Ewald sphere, positive if the point is inside it"""
+    the surface of the Ewald sphere along the beam, positive if the point is
+    inside the sphere"""
     shoebox = frame_sliced_shoebox_test_data()
     phi, UB, s0, first_frame = frame_sliced_shoebox_test_models()
 
-    # The 1 Angstrom beam gives an Ewald sphere of unit radius centred on
-    # (0, 0, 1), and the reciprocal lattice point of h is at UB * h
+    # The 1 Angstrom beam along -z gives an Ewald sphere of unit radius centred
+    # on (0, 0, 1), and the reciprocal lattice point of h is at UB * h
 
-    # (10, 0, 10) is at (1, 0, 1), which lies exactly on the sphere
-    sliced = FrameSlicedShoebox(shoebox, (10, 0, 10), phi, UB, s0, first_frame)
+    # (6, 0, 2) is at (0.6, 0, 0.2), which lies exactly on the sphere
+    sliced = FrameSlicedShoebox(shoebox, (6, 0, 2), phi, UB, s0, first_frame)
     assert list(sliced.excitation_error) == pytest.approx([0.0, 0.0, 0.0])
 
-    # (0, 0, 10) is at the centre of the sphere, a whole radius inside it
+    # (0, 0, 10) is at the centre of the sphere. Moving it a whole radius along
+    # the beam, which is -z, brings it to the origin and onto the surface
     sliced = FrameSlicedShoebox(shoebox, (0, 0, 10), phi, UB, s0, first_frame)
     assert list(sliced.excitation_error) == pytest.approx([1.0, 1.0, 1.0])
 
     # (1, 0, 0) is at (0.1, 0, 0), which is just outside the sphere
     sliced = FrameSlicedShoebox(shoebox, (1, 0, 0), phi, UB, s0, first_frame)
-    expected = 1.0 - math.sqrt(1.01)
+    expected = math.sqrt(0.99) - 1.0
     assert expected < 0.0
     assert list(sliced.excitation_error) == pytest.approx([expected] * 3)
+
+
+def test_frame_sliced_shoebox_excitation_error_is_measured_along_the_beam():
+    """The distance is measured along the beam, not radially from the centre of
+    the Ewald sphere, so the two differ away from the beam axis"""
+    shoebox = frame_sliced_shoebox_test_data()
+    phi, UB, s0, first_frame = frame_sliced_shoebox_test_models()
+
+    # (6, 0, 3) is at (0.6, 0, 0.3), which is inside the unit sphere centred on
+    # (0, 0, 1). Moving it 0.1 along the beam brings it to (0.6, 0, 0.2), on the
+    # surface, whereas it is only sqrt(0.85) from the centre of the sphere
+    sliced = FrameSlicedShoebox(shoebox, (6, 0, 3), phi, UB, s0, first_frame)
+    assert list(sliced.excitation_error) == pytest.approx([0.1] * 3)
+    assert 1.0 - math.sqrt(0.85) != pytest.approx(0.1)
+
+
+def test_frame_sliced_shoebox_excitation_error_can_be_undefined():
+    """A point further off the beam axis than the radius of the Ewald sphere is
+    not brought to the surface by any movement along the beam"""
+    shoebox = frame_sliced_shoebox_test_data()
+    phi, UB, s0, first_frame = frame_sliced_shoebox_test_models()
+
+    # (12, 0, 5) is 1.2 from the beam axis, which the unit sphere never reaches
+    sliced = FrameSlicedShoebox(shoebox, (12, 0, 5), phi, UB, s0, first_frame)
+    assert all(math.isnan(e) for e in sliced.excitation_error)
 
 
 def test_frame_sliced_shoebox_excitation_error_is_calculated_per_frame():
@@ -519,7 +546,7 @@ def test_frame_sliced_shoebox_excitation_error_is_calculated_per_frame():
     sliced = FrameSlicedShoebox(shoebox, (1, 0, 0), phi, UB, s0, first_frame)
 
     expected = [
-        1 / w - math.sqrt((1 / a) ** 2 + (1 / w) ** 2)
+        math.sqrt((1 / w) ** 2 - (1 / a) ** 2) - 1 / w
         for a, w in zip(cells, wavelengths)
     ]
     assert list(sliced.excitation_error) == pytest.approx(expected)
@@ -537,7 +564,7 @@ def test_frame_sliced_shoebox_models_are_looked_up_by_image_number():
 
     sliced = FrameSlicedShoebox(shoebox, (1, 0, 0), phi, UB, s0, first_frame)
     assert list(sliced.phi) == pytest.approx([1.05, 1.15, 1.25])
-    expected = [1.0 - math.sqrt(1.0 + (f / 100.0) ** 2) for f in (11, 12, 13)]
+    expected = [math.sqrt(1.0 - (f / 100.0) ** 2) - 1.0 for f in (11, 12, 13)]
     assert list(sliced.excitation_error) == pytest.approx(expected)
 
     # The scan does not reach as far as the last frame of the shoebox

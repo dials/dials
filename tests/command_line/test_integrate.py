@@ -434,21 +434,25 @@ def test_frame_slice_shoeboxes(dials_data, tmp_path):
         assert list(sliced[i].phi) == pytest.approx(expected)
 
     # The excitation error of each frame should be the distance of the rotated
-    # reciprocal lattice point from the surface of the Ewald sphere. Here the
-    # crystal, the beam and the goniometer are all stationary over the scan
+    # reciprocal lattice point from the surface of the Ewald sphere, measured
+    # along the beam. Here the crystal, the beam and the goniometer are all
+    # stationary over the scan
     gonio = expt.goniometer
     axis = matrix.col(gonio.get_rotation_axis_datum())
     S = matrix.sqr(gonio.get_setting_rotation())
     F = matrix.sqr(gonio.get_fixed_rotation())
     A = matrix.sqr(expt.crystal.get_A())
     s0 = matrix.col(expt.beam.get_s0())
+    beam = s0.normalize()
     for i in range(len(table)):
         h = matrix.col(table["miller_index"][i])
         expected = []
         for phi in sliced[i].phi:
             R = matrix.sqr(axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=False))
             r = S * R * F * A * h
-            expected.append(s0.length() - (s0 + r).length())
+            along = r.dot(beam)
+            across_sq = r.length_sq() - along**2
+            expected.append(math.sqrt(s0.length_sq() - across_sq) - s0.length() - along)
         assert list(sliced[i].excitation_error) == pytest.approx(expected)
 
     # Summing the per-frame background subtracted foreground sums should recover

@@ -202,7 +202,7 @@ def test_frame_sliced_shoebox_from_shoeboxes():
     # Each shoebox uses its own Miller index. (1, 0, 0) sits just outside the
     # Ewald sphere, while (0, 0, 10) is at its centre, a whole radius inside
     assert list(sliced[0].excitation_error) == pytest.approx(
-        [1.0 - math.sqrt(1.01)] * 3
+        [math.sqrt(0.99) - 1.0] * 3
     )
     assert list(sliced[1].excitation_error) == pytest.approx([1.0, 1.0])
     assert list(sliced[0].foreground_sum_raw) == [12.0, 24.0, 36.0]
