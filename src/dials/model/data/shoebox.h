@@ -584,8 +584,20 @@ namespace dials { namespace model {
      * @param sbox The shoebox, which must have its data and background arrays
      *             allocated and must not be flat
      * @param h The Miller index of the reflection
+     * @param phi_cal The predicted scan rotation angle in radians of the
+     *                reflection, as held by the third part of the xyzcal.mm
+     *                column
+     * @param sigma_phi The standard deviation in radians of the rocking curve
+     *                  of the reflection in the scan rotation angle. For the
+     *                  Gaussian reciprocal space profile model this is
+     *                  sigma_m / |zeta|
      * @param phi The scan rotation angle in radians at the centre of each frame
      *            of the scan, as held by FrameOrientations.phi
+     * @param phi_scan_points The scan rotation angle in radians at each scan
+     *                        point of the scan, that is at the boundaries
+     *                        between frames, as held by
+     *                        FrameOrientations.phi_scan_points. There is one
+     *                        more of these than there are frames
      * @param UB The lattice orientation matrix at the centre of each frame of
      *           the scan, as held by FrameOrientations.UB
      * @param s0 The beam vector at the centre of each frame of the scan, as
@@ -595,12 +607,17 @@ namespace dials { namespace model {
      */
     FrameSlicedShoebox(const Shoebox<FloatType>& sbox,
                        const cctbx::miller::index<>& h,
+                       double phi_cal,
+                       double sigma_phi,
                        const af::const_ref<double>& phi,
+                       const af::const_ref<double>& phi_scan_points,
                        const af::const_ref<mat3<double> >& UB,
                        const af::const_ref<vec3<double> >& s0,
                        int first_frame) {
       DIALS_ASSERT(UB.size() == phi.size());
       DIALS_ASSERT(s0.size() == phi.size());
+      DIALS_ASSERT(phi_scan_points.size() == phi.size() + 1);
+      DIALS_ASSERT(sigma_phi > 0.0);
       DIALS_ASSERT(sbox.is_data_allocated());
       DIALS_ASSERT(sbox.is_background_allocated());
       DIALS_ASSERT(sbox.is_consistent());
@@ -616,6 +633,7 @@ namespace dials { namespace model {
       frames_ = af::shared<int>(nz, 0);
       phi_ = af::shared<double>(nz, 0.0);
       excitation_error_ = af::shared<double>(nz, 0.0);
+      partiality_ = af::shared<double>(nz, 0.0);
       foreground_pixel_count_ = af::shared<int>(nz, 0);
       valid_pixel_count_ = af::shared<int>(nz, 0);
       foreground_sum_raw_ = af::shared<double>(nz, 0.0);
@@ -629,6 +647,14 @@ namespace dials { namespace model {
       uint8_t background_code = Valid | Background | BackgroundUsed;
 
       vec3<double> hd((double)h[0], (double)h[1], (double)h[2]);
+
+      // The reflection is modelled as rocking through the diffracting condition
+      // with a Gaussian profile of width sigma_phi centred on phi_cal, so the
+      // fraction of it recorded between two rotation angles is the difference
+      // between the values of that Gaussian's cumulative distribution function
+      // there. This scale converts an angle measured from phi_cal into the
+      // argument of the error function
+      double partiality_scale = 1.0 / (std::sqrt(2.0) * sigma_phi);
 
       for (std::size_t k = 0; k < nz; ++k) {
         // The shoebox z coordinates are zero-based array indices, whereas image
@@ -662,6 +688,14 @@ namespace dials { namespace model {
         excitation_error_[k] = radicand >= 0.0
                                  ? std::sqrt(radicand) - s0_length - r_along
                                  : std::numeric_limits<double>::quiet_NaN();
+
+        // The fraction of the reflection recorded between the two boundaries of
+        // this frame. PartialityCalculator3D does the same over the boundaries
+        // of the whole shoebox, so these sum to the partiality of the reflection
+        partiality_[k] =
+          0.5
+          * (std::erf((phi_scan_points[iframe + 1] - phi_cal) * partiality_scale)
+             - std::erf((phi_scan_points[iframe] - phi_cal) * partiality_scale));
 
         // Accumulators for the summation integration of this frame, named to
         // match the Summation class in algorithms/integration/sum/summation.h
@@ -724,6 +758,7 @@ namespace dials { namespace model {
     FrameSlicedShoebox(const af::shared<int>& frames,
                        const af::shared<double>& phi,
                        const af::shared<double>& excitation_error,
+                       const af::shared<double>& partiality,
                        const af::shared<int>& foreground_pixel_count,
                        const af::shared<int>& valid_pixel_count,
                        const af::shared<double>& foreground_sum_raw,
@@ -734,6 +769,7 @@ namespace dials { namespace model {
         : frames_(frames),
           phi_(phi),
           excitation_error_(excitation_error),
+          partiality_(partiality),
           foreground_pixel_count_(foreground_pixel_count),
           valid_pixel_count_(valid_pixel_count),
           foreground_sum_raw_(foreground_sum_raw),
@@ -743,6 +779,7 @@ namespace dials { namespace model {
           summation_intensity_valid_(summation_intensity_valid) {
       DIALS_ASSERT(phi_.size() == frames_.size());
       DIALS_ASSERT(excitation_error_.size() == frames_.size());
+      DIALS_ASSERT(partiality_.size() == frames_.size());
       DIALS_ASSERT(foreground_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(valid_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(foreground_sum_raw_.size() == frames_.size());
@@ -774,6 +811,13 @@ namespace dials { namespace model {
      *           point parallel to the beam does not reach the sphere */
     af::shared<double> excitation_error() const {
       return excitation_error_;
+    }
+
+    /** @returns The fraction of the reflection recorded on each frame, that is
+     *           the portion of its rocking curve that the frame spans. These
+     *           sum to the partiality of the whole reflection */
+    af::shared<double> partiality() const {
+      return partiality_;
     }
 
     /** @returns The number of foreground pixels on each frame */
@@ -821,6 +865,7 @@ namespace dials { namespace model {
       return frames_.const_ref().all_eq(rhs.frames_.const_ref())
              && phi_.const_ref().all_eq(rhs.phi_.const_ref())
              && excitation_error_.const_ref().all_eq(rhs.excitation_error_.const_ref())
+             && partiality_.const_ref().all_eq(rhs.partiality_.const_ref())
              && foreground_pixel_count_.const_ref().all_eq(
                rhs.foreground_pixel_count_.const_ref())
              && valid_pixel_count_.const_ref().all_eq(
@@ -846,6 +891,7 @@ namespace dials { namespace model {
     af::shared<int> frames_;
     af::shared<double> phi_;
     af::shared<double> excitation_error_;
+    af::shared<double> partiality_;
     af::shared<int> foreground_pixel_count_;
     af::shared<int> valid_pixel_count_;
     af::shared<double> foreground_sum_raw_;

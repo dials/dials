@@ -455,6 +455,14 @@ def test_frame_slice_shoeboxes(dials_data, tmp_path):
             expected.append(math.sqrt(s0.length_sq() - across_sq) - s0.length() - along)
         assert list(sliced[i].excitation_error) == pytest.approx(expected)
 
+    # The per-frame partialities partition the rocking curve of the reflection
+    # over its frames, so they should sum to the partiality of the whole
+    # reflection, as calculated independently by PartialityCalculator3D
+    summed_partiality = flex.double(
+        sum(sliced[i].partiality) for i in range(len(table))
+    )
+    assert list(summed_partiality) == pytest.approx(list(table["partiality"]))
+
     # Summing the per-frame background subtracted foreground sums should recover
     # the summation intensity
     integrated = table.get_flags(table.flags.integrated_sum)

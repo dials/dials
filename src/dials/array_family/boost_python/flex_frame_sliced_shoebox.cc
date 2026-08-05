@@ -28,8 +28,18 @@ namespace dials { namespace af { namespace boost_python {
    * ones serve for every shoebox, whichever frames it spans.
    *
    * @param miller_indices The Miller index of each reflection
+   * @param phi_cal The predicted scan rotation angle in radians of each
+   *                reflection, as held by the third part of the xyzcal.mm
+   *                column
+   * @param sigma_phi The standard deviation in radians of the rocking curve of
+   *                  each reflection in the scan rotation angle. For the
+   *                  Gaussian reciprocal space profile model this is
+   *                  sigma_m / |zeta|
    * @param phi The scan rotation angle in radians at the centre of each frame
    *            of the scan, as held by FrameOrientations.phi
+   * @param phi_scan_points The scan rotation angle in radians at each scan
+   *                        point of the scan, that is at the boundaries between
+   *                        frames, as held by FrameOrientations.phi_scan_points
    * @param UB The lattice orientation matrix at the centre of each frame of the
    *           scan, as held by FrameOrientations.UB
    * @param s0 The beam vector at the centre of each frame of the scan, as held
@@ -41,15 +51,27 @@ namespace dials { namespace af { namespace boost_python {
   typename af::flex<FrameSlicedShoebox<FloatType> >::type* from_shoeboxes(
     const af::const_ref<Shoebox<FloatType> >& shoeboxes,
     const af::const_ref<cctbx::miller::index<> >& miller_indices,
+    const af::const_ref<double>& phi_cal,
+    const af::const_ref<double>& sigma_phi,
     const af::const_ref<double>& phi,
+    const af::const_ref<double>& phi_scan_points,
     const af::const_ref<scitbx::mat3<double> >& UB,
     const af::const_ref<scitbx::vec3<double> >& s0,
     int first_frame) {
     DIALS_ASSERT(miller_indices.size() == shoeboxes.size());
+    DIALS_ASSERT(phi_cal.size() == shoeboxes.size());
+    DIALS_ASSERT(sigma_phi.size() == shoeboxes.size());
     af::shared<FrameSlicedShoebox<FloatType> > result(shoeboxes.size());
     for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
-      result[i] = FrameSlicedShoebox<FloatType>(
-        shoeboxes[i], miller_indices[i], phi, UB, s0, first_frame);
+      result[i] = FrameSlicedShoebox<FloatType>(shoeboxes[i],
+                                                miller_indices[i],
+                                                phi_cal[i],
+                                                sigma_phi[i],
+                                                phi,
+                                                phi_scan_points,
+                                                UB,
+                                                s0,
+                                                first_frame);
     }
     return new typename af::flex<FrameSlicedShoebox<FloatType> >::type(
       result, af::flex_grid<>(result.size()));
@@ -82,6 +104,7 @@ namespace dials { namespace af { namespace boost_python {
     const af::const_ref<int>& frames,
     const af::const_ref<double>& phi,
     const af::const_ref<double>& excitation_error,
+    const af::const_ref<double>& partiality,
     const af::const_ref<int>& foreground_pixel_count,
     const af::const_ref<int>& valid_pixel_count,
     const af::const_ref<double>& foreground_sum_raw,
@@ -96,6 +119,7 @@ namespace dials { namespace af { namespace boost_python {
     DIALS_ASSERT(frames.size() == total);
     DIALS_ASSERT(phi.size() == total);
     DIALS_ASSERT(excitation_error.size() == total);
+    DIALS_ASSERT(partiality.size() == total);
     DIALS_ASSERT(foreground_pixel_count.size() == total);
     DIALS_ASSERT(valid_pixel_count.size() == total);
     DIALS_ASSERT(foreground_sum_raw.size() == total);
@@ -115,6 +139,7 @@ namespace dials { namespace af { namespace boost_python {
         af::shared<int>(&frames[k], &frames[k] + nz),
         af::shared<double>(&phi[k], &phi[k] + nz),
         af::shared<double>(&excitation_error[k], &excitation_error[k] + nz),
+        af::shared<double>(&partiality[k], &partiality[k] + nz),
         af::shared<int>(&foreground_pixel_count[k], &foreground_pixel_count[k] + nz),
         af::shared<int>(&valid_pixel_count[k], &valid_pixel_count[k] + nz),
         af::shared<double>(&foreground_sum_raw[k], &foreground_sum_raw[k] + nz),
@@ -146,7 +171,8 @@ namespace dials { namespace af { namespace boost_python {
    * into a single flat array. Use num_frames to split them up again.
    *
    * @returns A tuple of the frames, rotation angles, excitation errors,
-   *          foreground pixel counts, valid pixel counts, raw foreground sums,
+   *          partialities, foreground pixel counts, valid pixel counts, raw
+   *          foreground sums,
    *          background-subtracted foreground sums, summation intensities,
    *          their variances and their validity
    */
@@ -156,6 +182,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<int> frames;
     af::shared<double> phi;
     af::shared<double> excitation_error;
+    af::shared<double> partiality;
     af::shared<int> foreground_pixel_count;
     af::shared<int> valid_pixel_count;
     af::shared<double> foreground_sum_raw;
@@ -167,6 +194,7 @@ namespace dials { namespace af { namespace boost_python {
       extend_data_array(frames, self[i].frames());
       extend_data_array(phi, self[i].phi());
       extend_data_array(excitation_error, self[i].excitation_error());
+      extend_data_array(partiality, self[i].partiality());
       extend_data_array(foreground_pixel_count, self[i].foreground_pixel_count());
       extend_data_array(valid_pixel_count, self[i].valid_pixel_count());
       extend_data_array(foreground_sum_raw, self[i].foreground_sum_raw());
@@ -180,6 +208,7 @@ namespace dials { namespace af { namespace boost_python {
     return boost::python::make_tuple(frames,
                                      phi,
                                      excitation_error,
+                                     partiality,
                                      foreground_pixel_count,
                                      valid_pixel_count,
                                      foreground_sum_raw,
@@ -200,7 +229,7 @@ namespace dials { namespace af { namespace boost_python {
 
     /** Initialise with the version for checking */
     frame_sliced_shoebox_to_string() {
-      unsigned int version = 4;
+      unsigned int version = 5;
       *this << version;
     }
 
@@ -212,6 +241,7 @@ namespace dials { namespace af { namespace boost_python {
       array_to_string(val.frames());
       array_to_string(val.phi());
       array_to_string(val.excitation_error());
+      array_to_string(val.partiality());
       array_to_string(val.foreground_pixel_count());
       array_to_string(val.valid_pixel_count());
       array_to_string(val.foreground_sum_raw());
@@ -245,7 +275,7 @@ namespace dials { namespace af { namespace boost_python {
     frame_sliced_shoebox_from_string(const char* str_ptr)
         : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
-      DIALS_ASSERT(version == 4);
+      DIALS_ASSERT(version == 5);
     }
 
     /** Get a single frame sliced shoebox instance from a string */
@@ -258,6 +288,7 @@ namespace dials { namespace af { namespace boost_python {
       af::shared<int> frames = array_from_string<int>(nz);
       af::shared<double> phi = array_from_string<double>(nz);
       af::shared<double> excitation_error = array_from_string<double>(nz);
+      af::shared<double> partiality = array_from_string<double>(nz);
       af::shared<int> foreground_pixel_count = array_from_string<int>(nz);
       af::shared<int> valid_pixel_count = array_from_string<int>(nz);
       af::shared<double> foreground_sum_raw = array_from_string<double>(nz);
@@ -270,6 +301,7 @@ namespace dials { namespace af { namespace boost_python {
       val = frame_sliced_shoebox_type(frames,
                                       phi,
                                       excitation_error,
+                                      partiality,
                                       foreground_pixel_count,
                                       valid_pixel_count,
                                       foreground_sum_raw,
@@ -307,7 +339,10 @@ namespace dials { namespace af { namespace boost_python {
                               default_call_policies(),
                               (boost::python::arg("shoeboxes"),
                                boost::python::arg("miller_indices"),
+                               boost::python::arg("phi_cal"),
+                               boost::python::arg("sigma_phi"),
                                boost::python::arg("phi"),
+                               boost::python::arg("phi_scan_points"),
                                boost::python::arg("UB"),
                                boost::python::arg("s0"),
                                boost::python::arg("first_frame"))))
@@ -318,6 +353,7 @@ namespace dials { namespace af { namespace boost_python {
                                boost::python::arg("frames"),
                                boost::python::arg("phi"),
                                boost::python::arg("excitation_error"),
+                               boost::python::arg("partiality"),
                                boost::python::arg("foreground_pixel_count"),
                                boost::python::arg("valid_pixel_count"),
                                boost::python::arg("foreground_sum_raw"),

@@ -998,6 +998,9 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
         # Cache the models at the frame centres in the form wanted by the frame
         # slicing, namely flex arrays and the image number they start at
         self._phi = [flex.double(fo.phi) for fo in self.frame_orientations]
+        self._phi_scan_points = [
+            flex.double(fo.phi_scan_points) for fo in self.frame_orientations
+        ]
         self._UB = [
             flex.mat3_double([UB.elems for UB in fo.UB])
             for fo in self.frame_orientations
@@ -1007,6 +1010,12 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
             for fo in self.frame_orientations
         ]
         self._first_frame = [fo.images[0] for fo in self.frame_orientations]
+
+        # Cache the mosaic spread of each experiment, which is a single value
+        # unless the profile model is scan-varying, when it is one per image
+        self._sigma_m = [
+            experiment.profile.sigma_m(deg=False) for experiment in self.experiments
+        ]
 
     def process(self, frame, reflections):
         """
@@ -1023,11 +1032,16 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
         # Each of those has its own crystal, so slice one experiment at a time,
         # which is still a loop over experiments rather than over reflections
         ids = reflections["id"]
-        shoeboxes = reflections["shoebox"]
-        miller_indices = reflections["miller_index"]
+        columns = (
+            reflections["shoebox"],
+            reflections["miller_index"],
+            reflections["xyzcal.mm"].parts()[2],
+            reflections["zeta"],
+            reflections["xyzcal.px"].parts()[2],
+        )
         first_id, last_id = flex.min(ids), flex.max(ids)
         if first_id == last_id:
-            sliced = self._slice_shoeboxes(shoeboxes, miller_indices, first_id)
+            sliced = self._slice_shoeboxes(*columns, first_id)
         else:
             sliced = flex.frame_sliced_shoebox(len(reflections))
             for expt_id in range(first_id, last_id + 1):
@@ -1037,27 +1051,59 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
                 sliced.set_selected(
                     sel,
                     self._slice_shoeboxes(
-                        shoeboxes.select(sel), miller_indices.select(sel), expt_id
+                        *(column.select(sel) for column in columns), expt_id
                     ),
                 )
         reflections["frame_sliced_shoebox"] = sliced
 
-    def _slice_shoeboxes(self, shoeboxes, miller_indices, expt_id):
+    def _slice_shoeboxes(
+        self, shoeboxes, miller_indices, phi_cal, zeta, z_cal, expt_id
+    ):
         """
         Slice a column of shoeboxes that all belong to one experiment
 
         :param shoeboxes: The shoeboxes to slice
         :param miller_indices: The Miller index of each shoebox
+        :param phi_cal: The predicted rotation angle in radians of each shoebox
+        :param zeta: The zeta factor of each shoebox
+        :param z_cal: The predicted centroid frame of each shoebox
         :param expt_id: The experiment the shoeboxes belong to
         """
         return flex.frame_sliced_shoebox(
             shoeboxes,
             miller_indices,
+            phi_cal,
+            self._sigma_phi(zeta, z_cal, expt_id),
             self._phi[expt_id],
+            self._phi_scan_points[expt_id],
             self._UB[expt_id],
             self._s0[expt_id],
             self._first_frame[expt_id],
         )
+
+    def _sigma_phi(self, zeta, z_cal, expt_id):
+        """
+        Calculate the width of the rocking curve of each reflection in the scan
+        rotation angle, that is sigma_m / |zeta|.
+
+        A scan-varying mosaic spread is looked up at the predicted centroid frame
+        of the reflection and used for all of its frames, just as
+        PartialityCalculator3D does, so that the per-frame partialities of a
+        reflection sum to the partiality of the whole reflection.
+
+        :param zeta: The zeta factor of each reflection
+        :param z_cal: The predicted centroid frame of each reflection
+        :param expt_id: The experiment the reflections belong to
+        """
+        sigma_m = self._sigma_m[expt_id]
+        if isinstance(sigma_m, float):
+            sigma_m = flex.double(len(zeta), sigma_m)
+        else:
+            index = flex.floor(z_cal).iround() - (self._first_frame[expt_id] - 1)
+            index.set_selected(index < 0, 0)
+            index.set_selected(index >= len(sigma_m), len(sigma_m) - 1)
+            sigma_m = sigma_m.select(index.as_size_t())
+        return sigma_m / flex.abs(zeta)
 
 
 class Integrator:

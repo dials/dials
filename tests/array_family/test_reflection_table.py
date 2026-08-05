@@ -1254,10 +1254,19 @@ def table_with_frame_sliced_shoeboxes():
     # radian oscillations beginning at zero, a stationary crystal with a 10
     # Angstrom cubic cell and a stationary 1 Angstrom beam along -z
     phi = flex.double([0.1 * (f - 0.5) for f in range(1, 13)])
+    phi_scan_points = flex.double([0.1 * (f - 1) for f in range(1, 14)])
     UB = flex.mat3_double([(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1)] * 12)
     s0 = flex.vec3_double([(0, 0, -1)] * 12)
     table["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(
-        shoeboxes, table["miller_index"], phi, UB, s0, 1
+        shoeboxes,
+        table["miller_index"],
+        flex.double([0.05, 0.65, 1.05]),
+        flex.double(len(shoeboxes), 0.1),
+        phi,
+        phi_scan_points,
+        UB,
+        s0,
+        1,
     )
     return table
 
