@@ -176,6 +176,13 @@ def test_frame_sliced_shoebox_from_shoeboxes():
     assert list(sliced[0].foreground_sum_raw) == [12.0, 24.0, 36.0]
     assert list(sliced[1].foreground_sum_minus_background) == [6.0, 18.0]
 
+    # Every pixel is a valid foreground pixel, so the summation intensity is the
+    # background-subtracted foreground sum, and no frame has a background pixel
+    # to contribute an m/n term to the variance
+    assert list(sliced[0].summation_intensity) == [6.0, 18.0, 30.0]
+    assert list(sliced[0].summation_intensity_variance) == [12.0, 24.0, 36.0]
+    assert list(sliced[1].summation_intensity_valid) == [True, True]
+
 
 def test_frame_sliced_shoebox_data_arrays_round_trip():
     from dials.array_family import flex

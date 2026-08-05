@@ -272,7 +272,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         std::stringstream buffer;
 
         // Write the format version once for the whole column
-        write(buffer, (uint8_t)1);
+        write(buffer, (uint8_t)2);
 
         for (iterator it = v.begin(); it != v.end(); ++it) {
           // Write the number of frames, which gives the length of each array
@@ -283,6 +283,9 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
           write_array(buffer, it->valid_pixel_count());
           write_array(buffer, it->foreground_sum_raw());
           write_array(buffer, it->foreground_sum_minus_background());
+          write_array(buffer, it->summation_intensity());
+          write_array(buffer, it->summation_intensity_variance());
+          write_array(buffer, it->summation_intensity_valid());
         }
 
         // Serialise the string to msgpack binary
@@ -608,9 +611,9 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Check the format version
         uint8_t version = read<uint8_t>(buffer);
-        if (version != 1) {
+        if (version != 2) {
           throw DIALS_ERROR(
-            "scitbx::af::ref<FrameSlicedShoebox>: expected version 1, got something "
+            "scitbx::af::ref<FrameSlicedShoebox>: expected version 2, got something "
             "else");
         }
 
@@ -626,11 +629,20 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
             read_array<double>(buffer, nz);
           scitbx::af::shared<double> foreground_sum_minus_background =
             read_array<double>(buffer, nz);
+          scitbx::af::shared<double> summation_intensity =
+            read_array<double>(buffer, nz);
+          scitbx::af::shared<double> summation_intensity_variance =
+            read_array<double>(buffer, nz);
+          scitbx::af::shared<bool> summation_intensity_valid =
+            read_array<bool>(buffer, nz);
           *it = dials::af::FrameSlicedShoebox<T>(frames,
                                                  foreground_pixel_count,
                                                  valid_pixel_count,
                                                  foreground_sum_raw,
-                                                 foreground_sum_minus_background);
+                                                 foreground_sum_minus_background,
+                                                 summation_intensity,
+                                                 summation_intensity_variance,
+                                                 summation_intensity_valid);
         }
 
         return o;

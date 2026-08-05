@@ -63,7 +63,10 @@ namespace dials { namespace af { namespace boost_python {
     const af::const_ref<int>& foreground_pixel_count,
     const af::const_ref<int>& valid_pixel_count,
     const af::const_ref<double>& foreground_sum_raw,
-    const af::const_ref<double>& foreground_sum_minus_background) {
+    const af::const_ref<double>& foreground_sum_minus_background,
+    const af::const_ref<double>& summation_intensity,
+    const af::const_ref<double>& summation_intensity_variance,
+    const af::const_ref<bool>& summation_intensity_valid) {
     std::size_t total = 0;
     for (std::size_t i = 0; i < num_frames.size(); ++i) {
       total += num_frames[i];
@@ -73,6 +76,9 @@ namespace dials { namespace af { namespace boost_python {
     DIALS_ASSERT(valid_pixel_count.size() == total);
     DIALS_ASSERT(foreground_sum_raw.size() == total);
     DIALS_ASSERT(foreground_sum_minus_background.size() == total);
+    DIALS_ASSERT(summation_intensity.size() == total);
+    DIALS_ASSERT(summation_intensity_variance.size() == total);
+    DIALS_ASSERT(summation_intensity_valid.size() == total);
 
     af::shared<FrameSlicedShoebox<FloatType> > result(num_frames.size());
     std::size_t k = 0;
@@ -87,7 +93,12 @@ namespace dials { namespace af { namespace boost_python {
         af::shared<int>(&valid_pixel_count[k], &valid_pixel_count[k] + nz),
         af::shared<double>(&foreground_sum_raw[k], &foreground_sum_raw[k] + nz),
         af::shared<double>(&foreground_sum_minus_background[k],
-                           &foreground_sum_minus_background[k] + nz));
+                           &foreground_sum_minus_background[k] + nz),
+        af::shared<double>(&summation_intensity[k], &summation_intensity[k] + nz),
+        af::shared<double>(&summation_intensity_variance[k],
+                           &summation_intensity_variance[k] + nz),
+        af::shared<bool>(&summation_intensity_valid[k],
+                         &summation_intensity_valid[k] + nz));
       k += nz;
     }
     return new typename af::flex<FrameSlicedShoebox<FloatType> >::type(
@@ -99,7 +110,8 @@ namespace dials { namespace af { namespace boost_python {
    * into a single flat array. Use num_frames to split them up again.
    *
    * @returns A tuple of the frames, foreground pixel counts, valid pixel counts,
-   *          raw foreground sums and background-subtracted foreground sums
+   *          raw foreground sums, background-subtracted foreground sums,
+   *          summation intensities, their variances and their validity
    */
   template <typename FloatType>
   boost::python::tuple get_frame_sliced_shoebox_data_arrays(
@@ -109,23 +121,35 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<int> valid_pixel_count;
     af::shared<double> foreground_sum_raw;
     af::shared<double> foreground_sum_minus_background;
+    af::shared<double> summation_intensity;
+    af::shared<double> summation_intensity_variance;
+    af::shared<bool> summation_intensity_valid;
     for (std::size_t i = 0; i < self.size(); ++i) {
       af::shared<int> a = self[i].frames();
       af::shared<int> b = self[i].foreground_pixel_count();
       af::shared<int> c = self[i].valid_pixel_count();
       af::shared<double> d = self[i].foreground_sum_raw();
       af::shared<double> e = self[i].foreground_sum_minus_background();
+      af::shared<double> f = self[i].summation_intensity();
+      af::shared<double> g = self[i].summation_intensity_variance();
+      af::shared<bool> h = self[i].summation_intensity_valid();
       frames.extend(a.begin(), a.end());
       foreground_pixel_count.extend(b.begin(), b.end());
       valid_pixel_count.extend(c.begin(), c.end());
       foreground_sum_raw.extend(d.begin(), d.end());
       foreground_sum_minus_background.extend(e.begin(), e.end());
+      summation_intensity.extend(f.begin(), f.end());
+      summation_intensity_variance.extend(g.begin(), g.end());
+      summation_intensity_valid.extend(h.begin(), h.end());
     }
     return boost::python::make_tuple(frames,
                                      foreground_pixel_count,
                                      valid_pixel_count,
                                      foreground_sum_raw,
-                                     foreground_sum_minus_background);
+                                     foreground_sum_minus_background,
+                                     summation_intensity,
+                                     summation_intensity_variance,
+                                     summation_intensity_valid);
   }
 
   /**
@@ -139,7 +163,7 @@ namespace dials { namespace af { namespace boost_python {
 
     /** Initialise with the version for checking */
     frame_sliced_shoebox_to_string() {
-      unsigned int version = 1;
+      unsigned int version = 2;
       *this << version;
     }
 
@@ -153,6 +177,9 @@ namespace dials { namespace af { namespace boost_python {
       array_to_string(val.valid_pixel_count());
       array_to_string(val.foreground_sum_raw());
       array_to_string(val.foreground_sum_minus_background());
+      array_to_string(val.summation_intensity());
+      array_to_string(val.summation_intensity_variance());
+      array_to_string(val.summation_intensity_valid());
 
       return *this;
     }
@@ -179,7 +206,7 @@ namespace dials { namespace af { namespace boost_python {
     frame_sliced_shoebox_from_string(const char* str_ptr)
         : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
-      DIALS_ASSERT(version == 1);
+      DIALS_ASSERT(version == 2);
     }
 
     /** Get a single frame sliced shoebox instance from a string */
@@ -195,12 +222,18 @@ namespace dials { namespace af { namespace boost_python {
       af::shared<double> foreground_sum_raw = array_from_string<double>(nz);
       af::shared<double> foreground_sum_minus_background =
         array_from_string<double>(nz);
+      af::shared<double> summation_intensity = array_from_string<double>(nz);
+      af::shared<double> summation_intensity_variance = array_from_string<double>(nz);
+      af::shared<bool> summation_intensity_valid = array_from_string<bool>(nz);
 
       val = frame_sliced_shoebox_type(frames,
                                       foreground_pixel_count,
                                       valid_pixel_count,
                                       foreground_sum_raw,
-                                      foreground_sum_minus_background);
+                                      foreground_sum_minus_background,
+                                      summation_intensity,
+                                      summation_intensity_variance,
+                                      summation_intensity_valid);
 
       return *this;
     }
@@ -238,7 +271,10 @@ namespace dials { namespace af { namespace boost_python {
                                boost::python::arg("foreground_pixel_count"),
                                boost::python::arg("valid_pixel_count"),
                                boost::python::arg("foreground_sum_raw"),
-                               boost::python::arg("foreground_sum_minus_background"))))
+                               boost::python::arg("foreground_sum_minus_background"),
+                               boost::python::arg("summation_intensity"),
+                               boost::python::arg("summation_intensity_variance"),
+                               boost::python::arg("summation_intensity_valid"))))
         .def("num_frames", &num_frames<FloatType>)
         .def("get_frame_sliced_shoebox_data_arrays",
              &get_frame_sliced_shoebox_data_arrays<FloatType>)

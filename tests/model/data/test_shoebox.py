@@ -357,6 +357,103 @@ def test_frame_sliced_shoebox():
     assert list(sliced.foreground_sum_raw) == [2.0, 6.0, 0.0]
     assert list(sliced.foreground_sum_minus_background) == [1.0, 4.5, 0.0]
 
+    # No pixel is marked as used for the background, so the m/n term of the
+    # variance is zero and the variance is just |I| + |Ib|
+    assert list(sliced.summation_intensity) == [1.0, 4.5, 0.0]
+    assert list(sliced.summation_intensity_variance) == [2.0, 6.0, 0.0]
+    # The foreground pixel on frame 2 could not be summed, as it is not valid
+    assert list(sliced.summation_intensity_valid) == [True, True, False]
+
+
+def test_frame_sliced_shoebox_summation_intensity_counts_background_pixels():
+    from dials.algorithms.shoebox import MaskCode
+
+    # One frame, with two foreground pixels and four background pixels, of which
+    # only two were used to calculate the background
+    shoebox = Shoebox(0, (0, 6, 0, 1, 0, 1))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for i in range(6):
+        shoebox.data[0, 0, i] = 10.0
+        shoebox.background[0, 0, i] = 1.0
+    shoebox.mask[0, 0, 0] = MaskCode.Valid | MaskCode.Foreground
+    shoebox.mask[0, 0, 1] = MaskCode.Valid | MaskCode.Foreground
+    shoebox.mask[0, 0, 2] = (
+        MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+    )
+    shoebox.mask[0, 0, 3] = (
+        MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+    )
+    shoebox.mask[0, 0, 4] = MaskCode.Valid | MaskCode.Background
+    shoebox.mask[0, 0, 5] = MaskCode.Valid | MaskCode.Background
+
+    sliced = FrameSlicedShoebox(shoebox)
+
+    # Two foreground pixels of 10 - 1 each
+    assert list(sliced.summation_intensity) == [18.0]
+    # Only the two BackgroundUsed pixels count, so m/n is 2/2 and the variance
+    # is |18| + |2| * (1 + 1)
+    assert list(sliced.summation_intensity_variance) == [22.0]
+    assert list(sliced.summation_intensity_valid) == [True]
+
+
+def test_frame_sliced_shoebox_overlapped_foreground_is_invalid():
+    from dials.algorithms.shoebox import MaskCode
+
+    shoebox = Shoebox(0, (0, 2, 0, 1, 0, 2))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for k in range(2):
+        for i in range(2):
+            shoebox.data[k, 0, i] = 10.0
+            shoebox.background[k, 0, i] = 1.0
+            shoebox.mask[k, 0, i] = MaskCode.Valid | MaskCode.Foreground
+
+    # A valid foreground pixel on frame 1 that overlaps another reflection
+    shoebox.mask[1, 0, 1] |= MaskCode.Overlapped
+
+    sliced = FrameSlicedShoebox(shoebox)
+
+    # An overlapped pixel is excluded from the sum and invalidates its frame,
+    # even though it is both valid and foreground
+    assert list(sliced.summation_intensity) == [18.0, 9.0]
+    assert list(sliced.summation_intensity_valid) == [True, False]
+    # It is still included in the counts and the foreground sums, which do not
+    # consider overlaps
+    assert list(sliced.foreground_pixel_count) == [2, 2]
+    assert list(sliced.foreground_sum_minus_background) == [18.0, 18.0]
+
+
+def test_frame_sliced_shoebox_summation_matches_summation_integration():
+    """The per-frame results should equal integrating each frame on its own"""
+    from dials.algorithms.shoebox import MaskCode
+
+    shoebox = frame_sliced_shoebox_test_data()
+    # Mark some pixels as used for the background, so that the variance picks up
+    # a non-zero m/n term
+    for k in range(3):
+        for i in range(4):
+            shoebox.mask[k, 2, i] |= MaskCode.BackgroundUsed
+    sliced = FrameSlicedShoebox(shoebox)
+
+    for k in range(3):
+        # Build a shoebox holding frame k alone and integrate it
+        single = Shoebox(0, (0, 4, 0, 3, 10 + k, 11 + k))
+        single.allocate_data()
+        single.allocate_background()
+        for j in range(3):
+            for i in range(4):
+                single.data[0, j, i] = shoebox.data[k, j, i]
+                single.background[0, j, i] = shoebox.background[k, j, i]
+                single.mask[0, j, i] = shoebox.mask[k, j, i]
+        expected = single.summed_intensity()
+
+        assert sliced.summation_intensity[k] == pytest.approx(expected.observed.value)
+        assert sliced.summation_intensity_variance[k] == pytest.approx(
+            expected.observed.variance
+        )
+        assert sliced.summation_intensity_valid[k] == expected.observed.success
+
 
 def test_frame_sliced_shoebox_arrays_are_read_only():
     sliced = FrameSlicedShoebox(frame_sliced_shoebox_test_data())
@@ -367,6 +464,9 @@ def test_frame_sliced_shoebox_arrays_are_read_only():
         "valid_pixel_count",
         "foreground_sum_raw",
         "foreground_sum_minus_background",
+        "summation_intensity",
+        "summation_intensity_variance",
+        "summation_intensity_valid",
     ):
         with pytest.raises(AttributeError):
             setattr(sliced, name, None)

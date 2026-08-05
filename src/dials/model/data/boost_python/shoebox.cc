@@ -257,6 +257,12 @@ namespace dials { namespace model { namespace boost_python {
                     &frame_sliced_shoebox_type::foreground_sum_raw)
       .add_property("foreground_sum_minus_background",
                     &frame_sliced_shoebox_type::foreground_sum_minus_background)
+      .add_property("summation_intensity",
+                    &frame_sliced_shoebox_type::summation_intensity)
+      .add_property("summation_intensity_variance",
+                    &frame_sliced_shoebox_type::summation_intensity_variance)
+      .add_property("summation_intensity_valid",
+                    &frame_sliced_shoebox_type::summation_intensity_valid)
       .def("size", &frame_sliced_shoebox_type::size)
       .def("__len__", &frame_sliced_shoebox_type::size)
       .def("__eq__", &frame_sliced_shoebox_type::operator==)

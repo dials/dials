@@ -41,6 +41,9 @@ frame_sliced_shoebox_names = [
     "valid_pixel_count",
     "foreground_sum_raw",
     "foreground_sum_minus_background",
+    "summation_intensity",
+    "summation_intensity_variance",
+    "summation_intensity_valid",
 ]
 
 dials_to_nx_names_split = {

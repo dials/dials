@@ -593,11 +593,26 @@ namespace dials { namespace model {
       valid_pixel_count_ = af::shared<int>(nz, 0);
       foreground_sum_raw_ = af::shared<double>(nz, 0.0);
       foreground_sum_minus_background_ = af::shared<double>(nz, 0.0);
+      summation_intensity_ = af::shared<double>(nz, 0.0);
+      summation_intensity_variance_ = af::shared<double>(nz, 0.0);
+      summation_intensity_valid_ = af::shared<bool>(nz, true);
+
+      // A pixel must be all of these to contribute to the background pixel
+      // count, as in the Summation class
+      uint8_t background_code = Valid | Background | BackgroundUsed;
 
       for (std::size_t k = 0; k < nz; ++k) {
         // The shoebox z coordinates are zero-based array indices, whereas image
         // numbers are one-based, to match FrameOrientations.images
         frames_[k] = sbox.zoffset() + (int)k + 1;
+
+        // Accumulators for the summation integration of this frame, named to
+        // match the Summation class in algorithms/integration/sum/summation.h
+        double sum_p = 0.0;
+        double sum_b = 0.0;
+        std::size_t n_signal = 0;
+        std::size_t n_background = 0;
+
         for (std::size_t j = 0; j < ny; ++j) {
           for (std::size_t i = 0; i < nx; ++i) {
             uint8_t code = sbox.mask(k, j, i);
@@ -617,8 +632,28 @@ namespace dials { namespace model {
               foreground_sum_minus_background_[k] +=
                 (double)sbox.data(k, j, i) - (double)sbox.background(k, j, i);
             }
+
+            // Summation integration of this frame alone. A foreground pixel
+            // that cannot be summed invalidates the intensity of the frame,
+            // just as it invalidates the whole reflection in Summation
+            if ((code & Foreground) == Foreground) {
+              if ((code & Valid) == Valid && (code & Overlapped) == 0) {
+                sum_p += (double)sbox.data(k, j, i);
+                sum_b += (double)sbox.background(k, j, i);
+                n_signal++;
+              } else {
+                summation_intensity_valid_[k] = false;
+              }
+            } else if ((code & background_code) == background_code) {
+              n_background++;
+            }
           }
         }
+
+        summation_intensity_[k] = sum_p - sum_b;
+        double m_n = n_background > 0 ? (double)n_signal / (double)n_background : 0.0;
+        summation_intensity_variance_[k] =
+          std::abs(summation_intensity_[k]) + std::abs(sum_b) * (1.0 + m_n);
       }
     }
 
@@ -633,16 +668,25 @@ namespace dials { namespace model {
                        const af::shared<int>& foreground_pixel_count,
                        const af::shared<int>& valid_pixel_count,
                        const af::shared<double>& foreground_sum_raw,
-                       const af::shared<double>& foreground_sum_minus_background)
+                       const af::shared<double>& foreground_sum_minus_background,
+                       const af::shared<double>& summation_intensity,
+                       const af::shared<double>& summation_intensity_variance,
+                       const af::shared<bool>& summation_intensity_valid)
         : frames_(frames),
           foreground_pixel_count_(foreground_pixel_count),
           valid_pixel_count_(valid_pixel_count),
           foreground_sum_raw_(foreground_sum_raw),
-          foreground_sum_minus_background_(foreground_sum_minus_background) {
+          foreground_sum_minus_background_(foreground_sum_minus_background),
+          summation_intensity_(summation_intensity),
+          summation_intensity_variance_(summation_intensity_variance),
+          summation_intensity_valid_(summation_intensity_valid) {
       DIALS_ASSERT(foreground_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(valid_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(foreground_sum_raw_.size() == frames_.size());
       DIALS_ASSERT(foreground_sum_minus_background_.size() == frames_.size());
+      DIALS_ASSERT(summation_intensity_.size() == frames_.size());
+      DIALS_ASSERT(summation_intensity_variance_.size() == frames_.size());
+      DIALS_ASSERT(summation_intensity_valid_.size() == frames_.size());
     }
 
     /** @returns The number of frames */
@@ -676,6 +720,22 @@ namespace dials { namespace model {
       return foreground_sum_minus_background_;
     }
 
+    /** @returns The summation integration intensity of each frame */
+    af::shared<double> summation_intensity() const {
+      return summation_intensity_;
+    }
+
+    /** @returns The variance of the summation intensity of each frame */
+    af::shared<double> summation_intensity_variance() const {
+      return summation_intensity_variance_;
+    }
+
+    /** @returns For each frame, whether every foreground pixel could be summed,
+     *           and so whether the summation intensity of that frame is valid */
+    af::shared<bool> summation_intensity_valid() const {
+      return summation_intensity_valid_;
+    }
+
     /** @returns True if the per-frame arrays are all equal */
     bool operator==(const FrameSlicedShoebox& rhs) const {
       if (size() != rhs.size()) {
@@ -689,7 +749,13 @@ namespace dials { namespace model {
              && foreground_sum_raw_.const_ref().all_eq(
                rhs.foreground_sum_raw_.const_ref())
              && foreground_sum_minus_background_.const_ref().all_eq(
-               rhs.foreground_sum_minus_background_.const_ref());
+               rhs.foreground_sum_minus_background_.const_ref())
+             && summation_intensity_.const_ref().all_eq(
+               rhs.summation_intensity_.const_ref())
+             && summation_intensity_variance_.const_ref().all_eq(
+               rhs.summation_intensity_variance_.const_ref())
+             && summation_intensity_valid_.const_ref().all_eq(
+               rhs.summation_intensity_valid_.const_ref());
     }
 
     /** @returns True if any of the per-frame arrays differ */
@@ -703,6 +769,9 @@ namespace dials { namespace model {
     af::shared<int> valid_pixel_count_;
     af::shared<double> foreground_sum_raw_;
     af::shared<double> foreground_sum_minus_background_;
+    af::shared<double> summation_intensity_;
+    af::shared<double> summation_intensity_variance_;
+    af::shared<bool> summation_intensity_valid_;
   };
 
 }};  // namespace dials::model
