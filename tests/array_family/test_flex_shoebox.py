@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import random
 
+import pytest
+
 
 def test_consistent():
     from dials.array_family import flex
@@ -143,6 +145,14 @@ def test_bounding_boxes():
         assert bbox2[i] == bbox[i]
 
 
+def frame_sliced_shoebox_test_phi():
+    """Rotation angles at the centres of images 1 to 13, for a scan of 0.1 radian
+    oscillations beginning at zero, alongside the image number of the first"""
+    from dials.array_family import flex
+
+    return flex.double([0.1 * (f - 0.5) for f in range(1, 14)]), 1
+
+
 def frame_sliced_shoebox_test_data():
     """Two shoeboxes with a different number of frames each"""
     from dials.algorithms.shoebox import MaskCode
@@ -167,12 +177,17 @@ def frame_sliced_shoebox_test_data():
 def test_frame_sliced_shoebox_from_shoeboxes():
     from dials.array_family import flex
 
-    sliced = flex.frame_sliced_shoebox(frame_sliced_shoebox_test_data())
+    sliced = flex.frame_sliced_shoebox(
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+    )
 
     assert len(sliced) == 2
     assert list(sliced.num_frames()) == [3, 2]
     assert list(sliced[0].frames) == [11, 12, 13]
     assert list(sliced[1].frames) == [1, 2]
+    # Each shoebox takes the rotation angles of its own frames from the scan
+    assert list(sliced[0].phi) == pytest.approx([1.05, 1.15, 1.25])
+    assert list(sliced[1].phi) == pytest.approx([0.05, 0.15])
     assert list(sliced[0].foreground_sum_raw) == [12.0, 24.0, 36.0]
     assert list(sliced[1].foreground_sum_minus_background) == [6.0, 18.0]
 
@@ -187,7 +202,9 @@ def test_frame_sliced_shoebox_from_shoeboxes():
 def test_frame_sliced_shoebox_data_arrays_round_trip():
     from dials.array_family import flex
 
-    sliced = flex.frame_sliced_shoebox(frame_sliced_shoebox_test_data())
+    sliced = flex.frame_sliced_shoebox(
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+    )
     arrays = sliced.get_frame_sliced_shoebox_data_arrays()
 
     # The per-frame arrays of every element are concatenated together
@@ -203,7 +220,9 @@ def test_frame_sliced_shoebox_is_picklable():
 
     from dials.array_family import flex
 
-    sliced = flex.frame_sliced_shoebox(frame_sliced_shoebox_test_data())
+    sliced = flex.frame_sliced_shoebox(
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+    )
 
     unpickled = pickle.loads(pickle.dumps(sliced, protocol=pickle.HIGHEST_PROTOCOL))
     assert list(unpickled.num_frames()) == [3, 2]

@@ -1249,7 +1249,10 @@ def table_with_frame_sliced_shoeboxes():
     )
     table = flex.reflection_table()
     table["id"] = flex.int(len(shoeboxes), 0)
-    table["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(shoeboxes)
+    # Rotation angles at the centres of images 1 to 12, for a scan of 0.1 radian
+    # oscillations beginning at zero
+    phi = flex.double([0.1 * (f - 0.5) for f in range(1, 13)])
+    table["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(shoeboxes, phi, 1)
     return table
 
 

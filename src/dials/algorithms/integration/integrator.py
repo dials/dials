@@ -995,6 +995,11 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
             FrameOrientations(experiment) for experiment in self.experiments
         ]
 
+        # Cache the rotation angles at the frame centres in the form wanted by
+        # the frame slicing, namely a flex array and the image number it starts at
+        self._phi = [flex.double(fo.phi) for fo in self.frame_orientations]
+        self._first_frame = [fo.images[0] for fo in self.frame_orientations]
+
     def process(self, frame, reflections):
         """
         Process the reflections on a frame, then calculate the additional
@@ -1005,9 +1010,13 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
         """
         super().process(frame, reflections)
 
+        # Integration jobs are grouped by scan, so every reflection here shares
+        # the same rotation angles, whichever experiment it belongs to
+        expt_id = reflections["id"][0]
+
         # Slice every shoebox in one call, to avoid a loop over reflections here
         reflections["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(
-            reflections["shoebox"]
+            reflections["shoebox"], self._phi[expt_id], self._first_frame[expt_id]
         )
 
         # TODO Use self.frame_orientations to add per-frame orientation data to

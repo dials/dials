@@ -8,6 +8,7 @@ import pytest
 
 from scitbx import matrix
 
+from dials.array_family import flex
 from dials.model.data import FrameSlicedShoebox, Shoebox
 
 
@@ -343,13 +344,27 @@ def frame_sliced_shoebox_test_data():
     return shoebox
 
 
+def frame_sliced_shoebox_test_phi(first_frame=11, nframes=3):
+    """Rotation angles at the centres of nframes images starting at first_frame,
+    for a scan of 0.1 radian oscillations beginning at zero. Returned in the form
+    the FrameSlicedShoebox constructor wants, that is the angles alongside the
+    image number the first of them refers to"""
+    phi = flex.double(
+        [0.1 * (f - 0.5) for f in range(first_frame, first_frame + nframes)]
+    )
+    return phi, first_frame
+
+
 def test_frame_sliced_shoebox():
-    sliced = FrameSlicedShoebox(frame_sliced_shoebox_test_data())
+    sliced = FrameSlicedShoebox(
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+    )
 
     assert sliced.size() == 3
     assert len(sliced) == 3
     # The shoebox z range is 10 -> 13, which is images 11 -> 13 (one-based)
     assert list(sliced.frames) == [11, 12, 13]
+    assert list(sliced.phi) == pytest.approx([1.05, 1.15, 1.25])
     # The invalid foreground pixel on frame 2 is counted, but is excluded from
     # the sums, which are over valid foreground pixels only
     assert list(sliced.foreground_pixel_count) == [2, 3, 1]
@@ -387,7 +402,7 @@ def test_frame_sliced_shoebox_summation_intensity_counts_background_pixels():
     shoebox.mask[0, 0, 4] = MaskCode.Valid | MaskCode.Background
     shoebox.mask[0, 0, 5] = MaskCode.Valid | MaskCode.Background
 
-    sliced = FrameSlicedShoebox(shoebox)
+    sliced = FrameSlicedShoebox(shoebox, *frame_sliced_shoebox_test_phi(1, 1))
 
     # Two foreground pixels of 10 - 1 each
     assert list(sliced.summation_intensity) == [18.0]
@@ -412,7 +427,7 @@ def test_frame_sliced_shoebox_overlapped_foreground_is_invalid():
     # A valid foreground pixel on frame 1 that overlaps another reflection
     shoebox.mask[1, 0, 1] |= MaskCode.Overlapped
 
-    sliced = FrameSlicedShoebox(shoebox)
+    sliced = FrameSlicedShoebox(shoebox, *frame_sliced_shoebox_test_phi(1, 2))
 
     # An overlapped pixel is excluded from the sum and invalidates its frame,
     # even though it is both valid and foreground
@@ -434,7 +449,7 @@ def test_frame_sliced_shoebox_summation_matches_summation_integration():
     for k in range(3):
         for i in range(4):
             shoebox.mask[k, 2, i] |= MaskCode.BackgroundUsed
-    sliced = FrameSlicedShoebox(shoebox)
+    sliced = FrameSlicedShoebox(shoebox, *frame_sliced_shoebox_test_phi())
 
     for k in range(3):
         # Build a shoebox holding frame k alone and integrate it
@@ -455,11 +470,32 @@ def test_frame_sliced_shoebox_summation_matches_summation_integration():
         assert sliced.summation_intensity_valid[k] == expected.observed.success
 
 
+def test_frame_sliced_shoebox_phi_is_looked_up_by_image_number():
+    """The phi array covers a whole scan, not just the frames of the shoebox"""
+    shoebox = frame_sliced_shoebox_test_data()
+
+    # Angles for the whole of a 20 image scan, of which the shoebox covers 11-13
+    phi, first_frame = frame_sliced_shoebox_test_phi(1, 20)
+    sliced = FrameSlicedShoebox(shoebox, phi, first_frame)
+    assert list(sliced.phi) == pytest.approx([1.05, 1.15, 1.25])
+
+    # The scan does not reach as far as the last frame of the shoebox
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox, *frame_sliced_shoebox_test_phi(1, 12))
+
+    # The scan starts after the first frame of the shoebox
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox, *frame_sliced_shoebox_test_phi(12, 3))
+
+
 def test_frame_sliced_shoebox_arrays_are_read_only():
-    sliced = FrameSlicedShoebox(frame_sliced_shoebox_test_data())
+    sliced = FrameSlicedShoebox(
+        frame_sliced_shoebox_test_data(), *frame_sliced_shoebox_test_phi()
+    )
 
     for name in (
         "frames",
+        "phi",
         "foreground_pixel_count",
         "valid_pixel_count",
         "foreground_sum_raw",
@@ -473,22 +509,24 @@ def test_frame_sliced_shoebox_arrays_are_read_only():
 
 
 def test_frame_sliced_shoebox_requires_allocated_arrays():
+    phi, first_frame = frame_sliced_shoebox_test_phi()
+
     # Neither the data nor the background are allocated
     shoebox = Shoebox(0, (0, 4, 0, 3, 10, 13))
     with pytest.raises(RuntimeError):
-        FrameSlicedShoebox(shoebox)
+        FrameSlicedShoebox(shoebox, phi, first_frame)
 
     # The data is allocated, but the background is not
     shoebox.allocate_data()
     with pytest.raises(RuntimeError):
-        FrameSlicedShoebox(shoebox)
+        FrameSlicedShoebox(shoebox, phi, first_frame)
 
     shoebox.allocate_background()
-    assert len(FrameSlicedShoebox(shoebox)) == 3
+    assert len(FrameSlicedShoebox(shoebox, phi, first_frame)) == 3
 
 
 def test_frame_sliced_shoebox_rejects_flat_shoebox():
     shoebox = frame_sliced_shoebox_test_data()
     shoebox.flatten()
     with pytest.raises(RuntimeError):
-        FrameSlicedShoebox(shoebox)
+        FrameSlicedShoebox(shoebox, *frame_sliced_shoebox_test_phi())

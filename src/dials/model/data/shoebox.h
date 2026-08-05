@@ -574,8 +574,14 @@ namespace dials { namespace model {
      * Calculate the per-frame results from a shoebox
      * @param sbox The shoebox, which must have its data and background arrays
      *             allocated and must not be flat
+     * @param phi The scan rotation angle in radians at the centre of each frame
+     *            of the scan, as held by FrameOrientations.phi
+     * @param first_frame The image number that phi[0] refers to, as held by
+     *                    FrameOrientations.images[0]
      */
-    FrameSlicedShoebox(const Shoebox<FloatType>& sbox) {
+    FrameSlicedShoebox(const Shoebox<FloatType>& sbox,
+                       const af::const_ref<double>& phi,
+                       int first_frame) {
       DIALS_ASSERT(sbox.is_data_allocated());
       DIALS_ASSERT(sbox.is_background_allocated());
       DIALS_ASSERT(sbox.is_consistent());
@@ -589,6 +595,7 @@ namespace dials { namespace model {
       std::size_t nx = sbox.xsize();
 
       frames_ = af::shared<int>(nz, 0);
+      phi_ = af::shared<double>(nz, 0.0);
       foreground_pixel_count_ = af::shared<int>(nz, 0);
       valid_pixel_count_ = af::shared<int>(nz, 0);
       foreground_sum_raw_ = af::shared<double>(nz, 0.0);
@@ -605,6 +612,11 @@ namespace dials { namespace model {
         // The shoebox z coordinates are zero-based array indices, whereas image
         // numbers are one-based, to match FrameOrientations.images
         frames_[k] = sbox.zoffset() + (int)k + 1;
+
+        // Look the rotation angle of this frame up by its image number
+        int iphi = frames_[k] - first_frame;
+        DIALS_ASSERT(iphi >= 0 && (std::size_t)iphi < phi.size());
+        phi_[k] = phi[iphi];
 
         // Accumulators for the summation integration of this frame, named to
         // match the Summation class in algorithms/integration/sum/summation.h
@@ -665,6 +677,7 @@ namespace dials { namespace model {
      * not exposed to Python, so that the object remains read-only there.
      */
     FrameSlicedShoebox(const af::shared<int>& frames,
+                       const af::shared<double>& phi,
                        const af::shared<int>& foreground_pixel_count,
                        const af::shared<int>& valid_pixel_count,
                        const af::shared<double>& foreground_sum_raw,
@@ -673,6 +686,7 @@ namespace dials { namespace model {
                        const af::shared<double>& summation_intensity_variance,
                        const af::shared<bool>& summation_intensity_valid)
         : frames_(frames),
+          phi_(phi),
           foreground_pixel_count_(foreground_pixel_count),
           valid_pixel_count_(valid_pixel_count),
           foreground_sum_raw_(foreground_sum_raw),
@@ -680,6 +694,7 @@ namespace dials { namespace model {
           summation_intensity_(summation_intensity),
           summation_intensity_variance_(summation_intensity_variance),
           summation_intensity_valid_(summation_intensity_valid) {
+      DIALS_ASSERT(phi_.size() == frames_.size());
       DIALS_ASSERT(foreground_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(valid_pixel_count_.size() == frames_.size());
       DIALS_ASSERT(foreground_sum_raw_.size() == frames_.size());
@@ -697,6 +712,11 @@ namespace dials { namespace model {
     /** @returns The one-based image number of each frame */
     af::shared<int> frames() const {
       return frames_;
+    }
+
+    /** @returns The scan rotation angle in radians at the centre of each frame */
+    af::shared<double> phi() const {
+      return phi_;
     }
 
     /** @returns The number of foreground pixels on each frame */
@@ -742,6 +762,7 @@ namespace dials { namespace model {
         return false;
       }
       return frames_.const_ref().all_eq(rhs.frames_.const_ref())
+             && phi_.const_ref().all_eq(rhs.phi_.const_ref())
              && foreground_pixel_count_.const_ref().all_eq(
                rhs.foreground_pixel_count_.const_ref())
              && valid_pixel_count_.const_ref().all_eq(
@@ -765,6 +786,7 @@ namespace dials { namespace model {
 
   private:
     af::shared<int> frames_;
+    af::shared<double> phi_;
     af::shared<int> foreground_pixel_count_;
     af::shared<int> valid_pixel_count_;
     af::shared<double> foreground_sum_raw_;

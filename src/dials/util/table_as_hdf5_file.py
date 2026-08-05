@@ -37,6 +37,7 @@ dials_to_nx_names = {
 frame_sliced_shoebox_names = [
     "num_frames",
     "frames",
+    "phi",
     "foreground_pixel_count",
     "valid_pixel_count",
     "foreground_sum_raw",

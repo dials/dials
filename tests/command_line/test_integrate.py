@@ -421,6 +421,16 @@ def test_frame_slice_shoeboxes(dials_data, tmp_path):
     zsize = flex.size_t(bbox[5] - bbox[4] for bbox in table["bbox"])
     assert (sliced.num_frames() == zsize).all_eq(True)
 
+    # The rotation angle of each frame should be the scan angle at its centre.
+    # A one-based image number f covers array indices f - 1 to f
+    scan = load.experiment_list(tmp_path / "integrated.expt")[0].scan
+    for i in (0, len(table) // 2, len(table) - 1):
+        expected = [
+            scan.get_angle_from_array_index(f - 0.5, deg=False)
+            for f in sliced[i].frames
+        ]
+        assert list(sliced[i].phi) == pytest.approx(expected)
+
     # Summing the per-frame background subtracted foreground sums should recover
     # the summation intensity
     integrated = table.get_flags(table.flags.integrated_sum)
