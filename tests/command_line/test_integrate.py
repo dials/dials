@@ -396,6 +396,60 @@ def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
     assert prf_and_zero.count(True) == 0
 
 
+def test_frame_slice_shoeboxes(dials_data, tmp_path):
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
+            # More than one process, so the tables are passed back by pickling
+            "nproc=2",
+            expts,
+            refls,
+            "frame_slice_shoeboxes=True",
+            "prediction.padding=0",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert "frame_sliced_shoebox" in table
+
+    # Every reflection should have been sliced over the frames of its bounding box
+    sliced = table["frame_sliced_shoebox"]
+    zsize = flex.size_t(bbox[5] - bbox[4] for bbox in table["bbox"])
+    assert (sliced.num_frames() == zsize).all_eq(True)
+
+    # Summing the per-frame background subtracted foreground sums should recover
+    # the summation intensity
+    integrated = table.get_flags(table.flags.integrated_sum)
+    summed = flex.double(
+        sum(sliced[i].foreground_sum_minus_background) for i in range(len(table))
+    )
+    difference = flex.abs(summed - table["intensity.sum.value"]).select(integrated)
+    # The shoebox data are single precision, so scale the tolerance accordingly
+    tolerance = 1e-6 * flex.max(flex.abs(table["intensity.sum.value"]))
+    assert (difference < tolerance).all_eq(True)
+
+
+def test_frame_slice_shoeboxes_not_available_for_flat3d(dials_data, tmp_path):
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
+            "nproc=1",
+            dials_data("centroid_test_data") / "indexed.expt",
+            dials_data("centroid_test_data") / "indexed.refl",
+            "frame_slice_shoeboxes=True",
+            "integrator=flat3d",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert result.returncode
+    assert b"cannot be used with integrator=flat3d" in result.stderr
+
+
 def test_multi_sweep(dials_data, tmp_path):
     expts = str(dials_data("centroid_test_data") / "multi_sweep_indexed.expt")
     refls = str(dials_data("centroid_test_data") / "multi_sweep_indexed.refl")

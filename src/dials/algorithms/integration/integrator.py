@@ -1005,8 +1005,13 @@ class FrameSlicedIntegratorExecutor(IntegratorExecutor):
         """
         super().process(frame, reflections)
 
-        # TODO Use self.frame_orientations to calculate the additional per-frame
-        # data for the shoeboxes and write it onto the reflection table.
+        # Slice every shoebox in one call, to avoid a loop over reflections here
+        reflections["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(
+            reflections["shoebox"]
+        )
+
+        # TODO Use self.frame_orientations to add per-frame orientation data to
+        # the frame sliced shoeboxes.
 
 
 class Integrator:
@@ -1731,6 +1736,15 @@ def create_integrator(params, experiments, reflections):
             """
       frame_slice_shoeboxes=True cannot be used with still experiments, as
       there is no rotation scan from which to calculate per-frame data.
+    """
+        )
+
+    # Frame slicing requires shoeboxes that still have their frames
+    if params.integration.frame_slice_shoeboxes and IntegratorClass is IntegratorFlat3D:
+        raise Sorry(
+            """
+      frame_slice_shoeboxes=True cannot be used with integrator=flat3d, as
+      flattened shoeboxes have had their frames summed together.
     """
         )
 
