@@ -129,7 +129,9 @@ def generate_phil_scope():
 
       frame_slice_shoeboxes = False
         .type = bool
-        .help = "Calculate additional per-frame data for integrated shoeboxes"
+        .help = "Calculate additional per-frame data for integrated shoeboxes."
+                "This is particularly intended for comparison with simulations"
+                "of 3D ED rotation data."
 
       debug {
 
