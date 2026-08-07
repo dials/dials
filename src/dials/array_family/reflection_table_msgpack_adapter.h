@@ -272,7 +272,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         std::stringstream buffer;
 
         // Write the format version once for the whole column
-        write(buffer, (uint8_t)6);
+        write(buffer, (uint8_t)1);
 
         for (iterator it = v.begin(); it != v.end(); ++it) {
           // Write the number of frames, which gives the length of each array
@@ -610,9 +610,9 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Check the format version
         uint8_t version = read<uint8_t>(buffer);
-        if (version != 6) {
+        if (version != 1) {
           throw DIALS_ERROR(
-            "scitbx::af::ref<FrameSlicedShoebox>: expected version 6, got something "
+            "scitbx::af::ref<FrameSlicedShoebox>: expected version 1, got something "
             "else");
         }
 

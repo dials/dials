@@ -201,7 +201,7 @@ namespace dials { namespace af { namespace boost_python {
 
     /** Initialise with the version for checking */
     frame_sliced_shoebox_to_string() {
-      unsigned int version = 6;
+      unsigned int version = 1;
       *this << version;
     }
 
@@ -243,7 +243,7 @@ namespace dials { namespace af { namespace boost_python {
     frame_sliced_shoebox_from_string(const char* str_ptr)
         : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
-      DIALS_ASSERT(version == 6);
+      DIALS_ASSERT(version == 1);
     }
 
     /** Get a single frame sliced shoebox instance from a string */
