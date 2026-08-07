@@ -269,13 +269,6 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("phi", &frame_sliced_shoebox_type::phi)
       .add_property("excitation_error", &frame_sliced_shoebox_type::excitation_error)
       .add_property("partiality", &frame_sliced_shoebox_type::partiality)
-      .add_property("foreground_pixel_count",
-                    &frame_sliced_shoebox_type::foreground_pixel_count)
-      .add_property("valid_pixel_count", &frame_sliced_shoebox_type::valid_pixel_count)
-      .add_property("foreground_sum_raw",
-                    &frame_sliced_shoebox_type::foreground_sum_raw)
-      .add_property("foreground_sum_minus_background",
-                    &frame_sliced_shoebox_type::foreground_sum_minus_background)
       .add_property("summation_intensity",
                     &frame_sliced_shoebox_type::summation_intensity)
       .add_property("summation_intensity_variance",

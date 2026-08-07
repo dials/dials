@@ -463,12 +463,10 @@ def test_frame_slice_shoeboxes(dials_data, tmp_path):
     )
     assert list(summed_partiality) == pytest.approx(list(table["partiality"]))
 
-    # Summing the per-frame background subtracted foreground sums should recover
-    # the summation intensity
+    # Summing the per-frame summation intensities should recover the summation
+    # intensity of the whole reflection
     integrated = table.get_flags(table.flags.integrated_sum)
-    summed = flex.double(
-        sum(sliced[i].foreground_sum_minus_background) for i in range(len(table))
-    )
+    summed = flex.double(sum(sliced[i].summation_intensity) for i in range(len(table)))
     difference = flex.abs(summed - table["intensity.sum.value"]).select(integrated)
     # The shoebox data are single precision, so scale the tolerance accordingly
     tolerance = 1e-6 * flex.max(flex.abs(table["intensity.sum.value"]))

@@ -634,10 +634,6 @@ namespace dials { namespace model {
       phi_ = af::shared<double>(nz, 0.0);
       excitation_error_ = af::shared<double>(nz, 0.0);
       partiality_ = af::shared<double>(nz, 0.0);
-      foreground_pixel_count_ = af::shared<int>(nz, 0);
-      valid_pixel_count_ = af::shared<int>(nz, 0);
-      foreground_sum_raw_ = af::shared<double>(nz, 0.0);
-      foreground_sum_minus_background_ = af::shared<double>(nz, 0.0);
       summation_intensity_ = af::shared<double>(nz, 0.0);
       summation_intensity_variance_ = af::shared<double>(nz, 0.0);
       summation_intensity_valid_ = af::shared<bool>(nz, true);
@@ -707,22 +703,6 @@ namespace dials { namespace model {
         for (std::size_t j = 0; j < ny; ++j) {
           for (std::size_t i = 0; i < nx; ++i) {
             uint8_t code = sbox.mask(k, j, i);
-            if ((code & Valid) == Valid) {
-              valid_pixel_count_[k]++;
-            }
-            if ((code & Foreground) == Foreground) {
-              foreground_pixel_count_[k]++;
-            }
-            // NB the sums are over pixels that are both valid and foreground,
-            // whereas foreground_pixel_count counts every foreground pixel,
-            // valid or not. This inconsistency is under review, pending
-            // confirmation of the expected behaviour from downstream consumers
-            uint8_t valid_foreground = Valid | Foreground;
-            if ((code & valid_foreground) == valid_foreground) {
-              foreground_sum_raw_[k] += (double)sbox.data(k, j, i);
-              foreground_sum_minus_background_[k] +=
-                (double)sbox.data(k, j, i) - (double)sbox.background(k, j, i);
-            }
 
             // Summation integration of this frame alone. A foreground pixel
             // that cannot be summed invalidates the intensity of the frame,
@@ -759,10 +739,6 @@ namespace dials { namespace model {
                        const af::shared<double>& phi,
                        const af::shared<double>& excitation_error,
                        const af::shared<double>& partiality,
-                       const af::shared<int>& foreground_pixel_count,
-                       const af::shared<int>& valid_pixel_count,
-                       const af::shared<double>& foreground_sum_raw,
-                       const af::shared<double>& foreground_sum_minus_background,
                        const af::shared<double>& summation_intensity,
                        const af::shared<double>& summation_intensity_variance,
                        const af::shared<bool>& summation_intensity_valid)
@@ -770,20 +746,12 @@ namespace dials { namespace model {
           phi_(phi),
           excitation_error_(excitation_error),
           partiality_(partiality),
-          foreground_pixel_count_(foreground_pixel_count),
-          valid_pixel_count_(valid_pixel_count),
-          foreground_sum_raw_(foreground_sum_raw),
-          foreground_sum_minus_background_(foreground_sum_minus_background),
           summation_intensity_(summation_intensity),
           summation_intensity_variance_(summation_intensity_variance),
           summation_intensity_valid_(summation_intensity_valid) {
       DIALS_ASSERT(phi_.size() == frames_.size());
       DIALS_ASSERT(excitation_error_.size() == frames_.size());
       DIALS_ASSERT(partiality_.size() == frames_.size());
-      DIALS_ASSERT(foreground_pixel_count_.size() == frames_.size());
-      DIALS_ASSERT(valid_pixel_count_.size() == frames_.size());
-      DIALS_ASSERT(foreground_sum_raw_.size() == frames_.size());
-      DIALS_ASSERT(foreground_sum_minus_background_.size() == frames_.size());
       DIALS_ASSERT(summation_intensity_.size() == frames_.size());
       DIALS_ASSERT(summation_intensity_variance_.size() == frames_.size());
       DIALS_ASSERT(summation_intensity_valid_.size() == frames_.size());
@@ -820,27 +788,6 @@ namespace dials { namespace model {
       return partiality_;
     }
 
-    /** @returns The number of foreground pixels on each frame */
-    af::shared<int> foreground_pixel_count() const {
-      return foreground_pixel_count_;
-    }
-
-    /** @returns The number of valid pixels on each frame */
-    af::shared<int> valid_pixel_count() const {
-      return valid_pixel_count_;
-    }
-
-    /** @returns The sum of the valid foreground pixels on each frame */
-    af::shared<double> foreground_sum_raw() const {
-      return foreground_sum_raw_;
-    }
-
-    /** @returns The background-subtracted sum of the valid foreground pixels on
-     *           each frame */
-    af::shared<double> foreground_sum_minus_background() const {
-      return foreground_sum_minus_background_;
-    }
-
     /** @returns The summation integration intensity of each frame */
     af::shared<double> summation_intensity() const {
       return summation_intensity_;
@@ -866,14 +813,6 @@ namespace dials { namespace model {
              && phi_.const_ref().all_eq(rhs.phi_.const_ref())
              && excitation_error_.const_ref().all_eq(rhs.excitation_error_.const_ref())
              && partiality_.const_ref().all_eq(rhs.partiality_.const_ref())
-             && foreground_pixel_count_.const_ref().all_eq(
-               rhs.foreground_pixel_count_.const_ref())
-             && valid_pixel_count_.const_ref().all_eq(
-               rhs.valid_pixel_count_.const_ref())
-             && foreground_sum_raw_.const_ref().all_eq(
-               rhs.foreground_sum_raw_.const_ref())
-             && foreground_sum_minus_background_.const_ref().all_eq(
-               rhs.foreground_sum_minus_background_.const_ref())
              && summation_intensity_.const_ref().all_eq(
                rhs.summation_intensity_.const_ref())
              && summation_intensity_variance_.const_ref().all_eq(
@@ -892,10 +831,6 @@ namespace dials { namespace model {
     af::shared<double> phi_;
     af::shared<double> excitation_error_;
     af::shared<double> partiality_;
-    af::shared<int> foreground_pixel_count_;
-    af::shared<int> valid_pixel_count_;
-    af::shared<double> foreground_sum_raw_;
-    af::shared<double> foreground_sum_minus_background_;
     af::shared<double> summation_intensity_;
     af::shared<double> summation_intensity_variance_;
     af::shared<bool> summation_intensity_valid_;

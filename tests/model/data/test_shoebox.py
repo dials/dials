@@ -399,13 +399,6 @@ def test_frame_sliced_shoebox():
             gaussian_cdf(1.5) - gaussian_cdf(0.5),
         ]
     )
-    # The invalid foreground pixel on frame 2 is counted, but is excluded from
-    # the sums, which are over valid foreground pixels only
-    assert list(sliced.foreground_pixel_count) == [2, 3, 1]
-    assert list(sliced.valid_pixel_count) == [12, 12, 11]
-    assert list(sliced.foreground_sum_raw) == [2.0, 6.0, 0.0]
-    assert list(sliced.foreground_sum_minus_background) == [1.0, 4.5, 0.0]
-
     # No pixel is marked as used for the background, so the m/n term of the
     # variance is zero and the variance is just |I| + |Ib|
     assert list(sliced.summation_intensity) == [1.0, 4.5, 0.0]
@@ -471,10 +464,6 @@ def test_frame_sliced_shoebox_overlapped_foreground_is_invalid():
     # even though it is both valid and foreground
     assert list(sliced.summation_intensity) == [18.0, 9.0]
     assert list(sliced.summation_intensity_valid) == [True, False]
-    # It is still included in the counts and the foreground sums, which do not
-    # consider overlaps
-    assert list(sliced.foreground_pixel_count) == [2, 2]
-    assert list(sliced.foreground_sum_minus_background) == [18.0, 18.0]
 
 
 def test_frame_sliced_shoebox_summation_matches_summation_integration():
@@ -709,10 +698,6 @@ def test_frame_sliced_shoebox_arrays_are_read_only():
         "phi",
         "excitation_error",
         "partiality",
-        "foreground_pixel_count",
-        "valid_pixel_count",
-        "foreground_sum_raw",
-        "foreground_sum_minus_background",
         "summation_intensity",
         "summation_intensity_variance",
         "summation_intensity_valid",

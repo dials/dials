@@ -219,8 +219,6 @@ def test_frame_sliced_shoebox_from_shoeboxes():
         [0.24173033, 0.38292492, 0.24173033]
     )
     assert list(sliced[1].partiality) == pytest.approx([0.34134475, 0.34134475])
-    assert list(sliced[0].foreground_sum_raw) == [12.0, 24.0, 36.0]
-    assert list(sliced[1].foreground_sum_minus_background) == [6.0, 18.0]
 
     # Every pixel is a valid foreground pixel, so the summation intensity is the
     # background-subtracted foreground sum, and no frame has a background pixel

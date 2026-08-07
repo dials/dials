@@ -105,10 +105,6 @@ namespace dials { namespace af { namespace boost_python {
     const af::const_ref<double>& phi,
     const af::const_ref<double>& excitation_error,
     const af::const_ref<double>& partiality,
-    const af::const_ref<int>& foreground_pixel_count,
-    const af::const_ref<int>& valid_pixel_count,
-    const af::const_ref<double>& foreground_sum_raw,
-    const af::const_ref<double>& foreground_sum_minus_background,
     const af::const_ref<double>& summation_intensity,
     const af::const_ref<double>& summation_intensity_variance,
     const af::const_ref<bool>& summation_intensity_valid) {
@@ -120,10 +116,6 @@ namespace dials { namespace af { namespace boost_python {
     DIALS_ASSERT(phi.size() == total);
     DIALS_ASSERT(excitation_error.size() == total);
     DIALS_ASSERT(partiality.size() == total);
-    DIALS_ASSERT(foreground_pixel_count.size() == total);
-    DIALS_ASSERT(valid_pixel_count.size() == total);
-    DIALS_ASSERT(foreground_sum_raw.size() == total);
-    DIALS_ASSERT(foreground_sum_minus_background.size() == total);
     DIALS_ASSERT(summation_intensity.size() == total);
     DIALS_ASSERT(summation_intensity_variance.size() == total);
     DIALS_ASSERT(summation_intensity_valid.size() == total);
@@ -140,11 +132,6 @@ namespace dials { namespace af { namespace boost_python {
         af::shared<double>(&phi[k], &phi[k] + nz),
         af::shared<double>(&excitation_error[k], &excitation_error[k] + nz),
         af::shared<double>(&partiality[k], &partiality[k] + nz),
-        af::shared<int>(&foreground_pixel_count[k], &foreground_pixel_count[k] + nz),
-        af::shared<int>(&valid_pixel_count[k], &valid_pixel_count[k] + nz),
-        af::shared<double>(&foreground_sum_raw[k], &foreground_sum_raw[k] + nz),
-        af::shared<double>(&foreground_sum_minus_background[k],
-                           &foreground_sum_minus_background[k] + nz),
         af::shared<double>(&summation_intensity[k], &summation_intensity[k] + nz),
         af::shared<double>(&summation_intensity_variance[k],
                            &summation_intensity_variance[k] + nz),
@@ -171,10 +158,8 @@ namespace dials { namespace af { namespace boost_python {
    * into a single flat array. Use num_frames to split them up again.
    *
    * @returns A tuple of the frames, rotation angles, excitation errors,
-   *          partialities, foreground pixel counts, valid pixel counts, raw
-   *          foreground sums,
-   *          background-subtracted foreground sums, summation intensities,
-   *          their variances and their validity
+   *          partialities, summation intensities, their variances and their
+   *          validity
    */
   template <typename FloatType>
   boost::python::tuple get_frame_sliced_shoebox_data_arrays(
@@ -183,10 +168,6 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<double> phi;
     af::shared<double> excitation_error;
     af::shared<double> partiality;
-    af::shared<int> foreground_pixel_count;
-    af::shared<int> valid_pixel_count;
-    af::shared<double> foreground_sum_raw;
-    af::shared<double> foreground_sum_minus_background;
     af::shared<double> summation_intensity;
     af::shared<double> summation_intensity_variance;
     af::shared<bool> summation_intensity_valid;
@@ -195,11 +176,6 @@ namespace dials { namespace af { namespace boost_python {
       extend_data_array(phi, self[i].phi());
       extend_data_array(excitation_error, self[i].excitation_error());
       extend_data_array(partiality, self[i].partiality());
-      extend_data_array(foreground_pixel_count, self[i].foreground_pixel_count());
-      extend_data_array(valid_pixel_count, self[i].valid_pixel_count());
-      extend_data_array(foreground_sum_raw, self[i].foreground_sum_raw());
-      extend_data_array(foreground_sum_minus_background,
-                        self[i].foreground_sum_minus_background());
       extend_data_array(summation_intensity, self[i].summation_intensity());
       extend_data_array(summation_intensity_variance,
                         self[i].summation_intensity_variance());
@@ -209,10 +185,6 @@ namespace dials { namespace af { namespace boost_python {
                                      phi,
                                      excitation_error,
                                      partiality,
-                                     foreground_pixel_count,
-                                     valid_pixel_count,
-                                     foreground_sum_raw,
-                                     foreground_sum_minus_background,
                                      summation_intensity,
                                      summation_intensity_variance,
                                      summation_intensity_valid);
@@ -229,7 +201,7 @@ namespace dials { namespace af { namespace boost_python {
 
     /** Initialise with the version for checking */
     frame_sliced_shoebox_to_string() {
-      unsigned int version = 5;
+      unsigned int version = 6;
       *this << version;
     }
 
@@ -242,10 +214,6 @@ namespace dials { namespace af { namespace boost_python {
       array_to_string(val.phi());
       array_to_string(val.excitation_error());
       array_to_string(val.partiality());
-      array_to_string(val.foreground_pixel_count());
-      array_to_string(val.valid_pixel_count());
-      array_to_string(val.foreground_sum_raw());
-      array_to_string(val.foreground_sum_minus_background());
       array_to_string(val.summation_intensity());
       array_to_string(val.summation_intensity_variance());
       array_to_string(val.summation_intensity_valid());
@@ -275,7 +243,7 @@ namespace dials { namespace af { namespace boost_python {
     frame_sliced_shoebox_from_string(const char* str_ptr)
         : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
-      DIALS_ASSERT(version == 5);
+      DIALS_ASSERT(version == 6);
     }
 
     /** Get a single frame sliced shoebox instance from a string */
@@ -289,11 +257,6 @@ namespace dials { namespace af { namespace boost_python {
       af::shared<double> phi = array_from_string<double>(nz);
       af::shared<double> excitation_error = array_from_string<double>(nz);
       af::shared<double> partiality = array_from_string<double>(nz);
-      af::shared<int> foreground_pixel_count = array_from_string<int>(nz);
-      af::shared<int> valid_pixel_count = array_from_string<int>(nz);
-      af::shared<double> foreground_sum_raw = array_from_string<double>(nz);
-      af::shared<double> foreground_sum_minus_background =
-        array_from_string<double>(nz);
       af::shared<double> summation_intensity = array_from_string<double>(nz);
       af::shared<double> summation_intensity_variance = array_from_string<double>(nz);
       af::shared<bool> summation_intensity_valid = array_from_string<bool>(nz);
@@ -302,10 +265,6 @@ namespace dials { namespace af { namespace boost_python {
                                       phi,
                                       excitation_error,
                                       partiality,
-                                      foreground_pixel_count,
-                                      valid_pixel_count,
-                                      foreground_sum_raw,
-                                      foreground_sum_minus_background,
                                       summation_intensity,
                                       summation_intensity_variance,
                                       summation_intensity_valid);
@@ -354,10 +313,6 @@ namespace dials { namespace af { namespace boost_python {
                                boost::python::arg("phi"),
                                boost::python::arg("excitation_error"),
                                boost::python::arg("partiality"),
-                               boost::python::arg("foreground_pixel_count"),
-                               boost::python::arg("valid_pixel_count"),
-                               boost::python::arg("foreground_sum_raw"),
-                               boost::python::arg("foreground_sum_minus_background"),
                                boost::python::arg("summation_intensity"),
                                boost::python::arg("summation_intensity_variance"),
                                boost::python::arg("summation_intensity_valid"))))
