@@ -229,6 +229,28 @@ channels:
 """.lstrip()
         )
 
+def environment_activator():
+    # type: () -> str
+    """Generate a string to write to file to activate the environment"""
+    # conda is lagging support in recent versions of python, so look
+    # for mamba if it is not present
+    for activator in ["conda", "mamba"]:
+        script = "%s/conda_base/etc/profile.d/%s.sh" % (os.getcwd(), activator)
+        if os.path.isfile(script):
+            activate_script = script
+            break
+    else:
+        sys.exit("Error: Could not find conda or mamba activation script")
+
+    # Work out which shell... mamba.sh uses bash 4+ syntax, which the
+    # user might not have if running on macOS; so in these cases we need
+    # to use zsh. If not zsh, then fall back to the old (possibly
+    # incorrect) bash-only behaviour
+    shell = os.getenv("SHELL", "/bin/bash")
+    if not shell.endswith("/zsh"):
+        shell = "/bin/bash"
+
+    return "#!{}\nwhich -a bash\nsource {}\n{} activate {}/conda_base\n".format(shell, activate_script, activator, os.getcwd())
 
 def run_command(command, workdir):
     print("Running %s (in %s)" % (" ".join(command), workdir))
@@ -275,10 +297,9 @@ def run_indirect_command(command, args):
         indirection = ["cmd.exe", "/C", "indirection.cmd"]
     else:
         filename = os.path.join("build", "indirection.sh")
+
         with open(filename, "w") as fh:
-            fh.write("#!/bin/bash\n")
-            fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
-            fh.write("conda activate %s/conda_base\n" % os.getcwd())
+            fh.write(environment_activator())
             fh.write('"$@"\n')
         make_executable(filename)
         indirection = ["./indirection.sh"]
@@ -1079,15 +1100,7 @@ conda activate {}
             )
     else:
         with open("dials", "w") as f:
-            f.write(
-                """\
-# enable conda environment
-source {dist_root}/conda_base/etc/profile.d/conda.sh
-conda activate {dist_root}/conda_base
-""".format(
-                    dist_root=os.getcwd(),
-                )
-            )
+            f.write(environment_activator())
 
     # Write a compound CMakeLists.txt, if one doesn't exist
     if not os.path.isfile("modules/CMakeLists.txt"):
@@ -1271,7 +1284,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.13",
-        choices=("3.11", "3.12", "3.13"),
+        choices=("3.11", "3.12", "3.13", "3.14"),
     )
     parser.add_argument(
         "--branch",
