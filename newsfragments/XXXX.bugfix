@@ -1,0 +1,7 @@
+``dials.stills_process``: the PHIL fields stills indexing overrides are now restored even
+when indexing raises, so a still's result no longer depends on which stills the same
+process handled before it. Previously the first failed refinement left outlier rejection
+disabled for the rest of that process, and ``indexing.max_cell`` -- resolved from ``Auto``
+in place -- was never restored, so every later still reused the first one's estimate.
+Under ``mp.method=mpi`` the image order is decided by timing, so the same job did not
+reproduce run to run, or between different numbers of ranks.
