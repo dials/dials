@@ -1,0 +1,7 @@
+``dials.stills_process``: call ``gc.freeze()`` before the image processing loop starts.
+Everything instantiated up to that point is mostly imports and stays in memory for every
+image, but every collection -- the explicit one after each image, and the more frequent
+ones the interpreter runs on its own -- re-examined all ~200,000 objects of it to reclaim
+of order a hundred. Freezing sets that memory aside permanently, so the collector only
+walks objects instantiated after the call. The same garbage is still collected, in
+0.05-0.18 of the time.
