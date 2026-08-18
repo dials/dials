@@ -1,0 +1,1 @@
+Cache extension entry-point lookups: ``dials.extensions._Extension.load`` re-scanned the entry-point metadata of every installed distribution on each call, which for ``dials.stills_process`` happened several times per image

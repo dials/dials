@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import importlib.metadata
 
 
@@ -19,6 +20,7 @@ class _Extension:
         ]
 
     @classmethod
+    @functools.cache
     def load(cls, name):
         """Get the requested extension class by name.
 
