@@ -652,6 +652,16 @@ namespace dials { namespace model {
       // argument of the error function
       double partiality_scale = 1.0 / (std::sqrt(2.0) * sigma_phi);
 
+      // Accumulators for the summation integration, named to match the
+      // Summation class in algorithms/integration/sum/summation.h. The variance
+      // of a frame depends on the pixel counts of the whole shoebox, so the
+      // sums of each frame are converted into a variance only once every frame
+      // has been visited
+      af::shared<double> sum_p(nz, 0.0);
+      af::shared<double> sum_b(nz, 0.0);
+      std::size_t n_signal = 0;
+      std::size_t n_background = 0;
+
       for (std::size_t k = 0; k < nz; ++k) {
         // The shoebox z coordinates are zero-based array indices, whereas image
         // numbers are one-based, to match FrameOrientations.images
@@ -693,13 +703,6 @@ namespace dials { namespace model {
           * (std::erf((phi_scan_points[iframe + 1] - phi_cal) * partiality_scale)
              - std::erf((phi_scan_points[iframe] - phi_cal) * partiality_scale));
 
-        // Accumulators for the summation integration of this frame, named to
-        // match the Summation class in algorithms/integration/sum/summation.h
-        double sum_p = 0.0;
-        double sum_b = 0.0;
-        std::size_t n_signal = 0;
-        std::size_t n_background = 0;
-
         for (std::size_t j = 0; j < ny; ++j) {
           for (std::size_t i = 0; i < nx; ++i) {
             uint8_t code = sbox.mask(k, j, i);
@@ -709,8 +712,8 @@ namespace dials { namespace model {
             // just as it invalidates the whole reflection in Summation
             if ((code & Foreground) == Foreground) {
               if ((code & Valid) == Valid && (code & Overlapped) == 0) {
-                sum_p += (double)sbox.data(k, j, i);
-                sum_b += (double)sbox.background(k, j, i);
+                sum_p[k] += (double)sbox.data(k, j, i);
+                sum_b[k] += (double)sbox.background(k, j, i);
                 n_signal++;
               } else {
                 summation_intensity_valid_[k] = false;
@@ -721,10 +724,23 @@ namespace dials { namespace model {
           }
         }
 
-        summation_intensity_[k] = sum_p - sum_b;
-        double m_n = n_background > 0 ? (double)n_signal / (double)n_background : 0.0;
-        summation_intensity_variance_[k] =
-          std::abs(summation_intensity_[k]) + std::abs(sum_b) * (1.0 + m_n);
+        summation_intensity_[k] = sum_p[k] - sum_b[k];
+      }
+
+      // Summation::variance() returns |I| + |Ib| (1 + m/n), where m and n are
+      // the numbers of foreground and background pixels. Taking the absolute
+      // values only to guard against a negative result, that is the same as
+      //
+      //   Var(I) = sum_p + sum_b * m / n
+      //
+      // in which both terms are sums over the pixels of the shoebox. The
+      // background of a frame was determined from the background pixels of the
+      // whole shoebox rather than from that frame alone, so m / n here is the
+      // ratio for the whole shoebox too, and the variances of the frames
+      // therefore sum to the variance of the whole reflection
+      double m_n = n_background > 0 ? (double)n_signal / (double)n_background : 0.0;
+      for (std::size_t k = 0; k < nz; ++k) {
+        summation_intensity_variance_[k] = sum_p[k] + sum_b[k] * m_n;
       }
     }
 

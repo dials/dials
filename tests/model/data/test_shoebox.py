@@ -400,7 +400,8 @@ def test_frame_sliced_shoebox():
         ]
     )
     # No pixel is marked as used for the background, so the m/n term of the
-    # variance is zero and the variance is just |I| + |Ib|
+    # variance is zero and the variance is just the sum of the raw foreground
+    # pixel values
     assert list(sliced.summation_intensity) == [1.0, 4.5, 0.0]
     assert list(sliced.summation_intensity_variance) == [2.0, 6.0, 0.0]
     # The foreground pixel on frame 2 could not be summed, as it is not valid
@@ -436,7 +437,8 @@ def test_frame_sliced_shoebox_summation_intensity_counts_background_pixels():
     # Two foreground pixels of 10 - 1 each
     assert list(sliced.summation_intensity) == [18.0]
     # Only the two BackgroundUsed pixels count, so m/n is 2/2 and the variance
-    # is |18| + |2| * (1 + 1)
+    # is the sum of the raw foreground values plus the summed background times
+    # that ratio, 20 + 2 * 1
     assert list(sliced.summation_intensity_variance) == [22.0]
     assert list(sliced.summation_intensity_valid) == [True]
 
@@ -466,16 +468,22 @@ def test_frame_sliced_shoebox_overlapped_foreground_is_invalid():
     assert list(sliced.summation_intensity_valid) == [True, False]
 
 
-def test_frame_sliced_shoebox_summation_matches_summation_integration():
-    """The per-frame results should equal integrating each frame on its own"""
+def frame_sliced_shoebox_test_data_with_background_used():
+    """The test shoebox, with a row of its background pixels marked as used to
+    calculate the background, so that the m/n term of the variance is non-zero"""
     from dials.algorithms.shoebox import MaskCode
 
     shoebox = frame_sliced_shoebox_test_data()
-    # Mark some pixels as used for the background, so that the variance picks up
-    # a non-zero m/n term
     for k in range(3):
         for i in range(4):
             shoebox.mask[k, 2, i] |= MaskCode.BackgroundUsed
+    return shoebox
+
+
+def test_frame_sliced_shoebox_summation_matches_summation_integration():
+    """The intensity of each frame should equal integrating that frame on its
+    own. Its variance should not: see the test below"""
+    shoebox = frame_sliced_shoebox_test_data_with_background_used()
     sliced = FrameSlicedShoebox(
         shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models()
     )
@@ -493,10 +501,29 @@ def test_frame_sliced_shoebox_summation_matches_summation_integration():
         expected = single.summed_intensity()
 
         assert sliced.summation_intensity[k] == pytest.approx(expected.observed.value)
-        assert sliced.summation_intensity_variance[k] == pytest.approx(
-            expected.observed.variance
-        )
         assert sliced.summation_intensity_valid[k] == expected.observed.success
+
+
+def test_frame_sliced_shoebox_summation_variances_sum():
+    """The background of a frame was determined from the background pixels of
+    the whole shoebox, so the m/n term of the variance of a frame uses the pixel
+    counts of the whole shoebox rather than those of the frame alone. That makes
+    the variance a sum over pixels, so the variances of the frames sum to the
+    variance of the whole reflection"""
+    shoebox = frame_sliced_shoebox_test_data_with_background_used()
+    sliced = FrameSlicedShoebox(
+        shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models()
+    )
+
+    # Five valid foreground pixels and eleven pixels used for the background, so
+    # m/n is 5/11. The foreground values sum to 8 and their background to 2.5
+    expected = [2.0 + 1.0 * 5 / 11, 6.0 + 1.5 * 5 / 11, 0.0]
+    assert list(sliced.summation_intensity_variance) == pytest.approx(expected)
+
+    # That is the variance of the summation integration of the whole shoebox
+    assert sum(sliced.summation_intensity_variance) == pytest.approx(
+        shoebox.summed_intensity().observed.variance
+    )
 
 
 def test_frame_sliced_shoebox_excitation_error():

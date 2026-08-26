@@ -472,6 +472,23 @@ def test_frame_slice_shoeboxes(dials_data, tmp_path):
     tolerance = 1e-6 * flex.max(flex.abs(table["intensity.sum.value"]))
     assert (difference < tolerance).all_eq(True)
 
+    # So should summing the per-frame variances. Where the intensity of the
+    # whole reflection is negative though, the variance of the whole reflection
+    # takes its absolute value, which adds twice that intensity to a total that
+    # the frames, which make no such adjustment, cannot reproduce
+    intensity = table["intensity.sum.value"]
+    negative = intensity < 0.0
+    expected = table["intensity.sum.variance"].deep_copy()
+    expected.set_selected(
+        negative, expected.select(negative) + 2.0 * intensity.select(negative)
+    )
+    summed = flex.double(
+        sum(sliced[i].summation_intensity_variance) for i in range(len(table))
+    )
+    difference = flex.abs(summed - expected).select(integrated)
+    tolerance = 1e-6 * flex.max(flex.abs(expected))
+    assert (difference < tolerance).all_eq(True)
+
 
 def test_frame_slice_shoeboxes_not_available_for_flat3d(dials_data, tmp_path):
     result = subprocess.run(
