@@ -1,18 +1,45 @@
-Stable Release: DIALS 3.3.0
-===========================
+Stable Release: DIALS 3.30.0
+============================
 
-The current stable release can be downloaded from `Github <https://github.com/dials/dials/releases/latest>`_,
-where you can also find further `release notes <https://github.com/dials/dials/releases/latest>`_.
+The current stable release can be downloaded from `Github <https://github.com/dials/dials/releases/tag/v3.30.0>`_,
+where you can also find further release notes.
 
-.. button::
-   :text: DIALS 3.3.0 Linux installer
-   :link: https://github.com/dials/dials/releases/download/v3.3.0/dials-v3-3-0-linux-x86_64.tar.xz
+.. list-table::
+   :class: download-matrix
+   :header-rows: 1
 
-.. button::
-   :text: DIALS 3.3.0 Mac installer
-   :link: https://github.com/dials/dials/releases/download/v3.3.0/dials-v3-3-0-macosx.pkg
+   * - Platform
+     - Graphical installer
+     - Shell installer
 
-.. button::
-   :text: DIALS 3.3.0 Mac tar archive
-   :link: https://github.com/dials/dials/releases/download/v3.3.0/dials-v3-3-0-macosx.tar.gz
+   * - Linux (x86-64)
+     -
+     - .. button::
+          :text: .sh
+          :link: https://github.com/dials/dials/releases/download/v3.30.0/DIALS-3.30.0-Linux-x86_64.sh
 
+   * - macOS (Apple silicon)
+     - .. button::
+          :text: .pkg
+          :link: https://github.com/dials/dials/releases/download/v3.30.0/DIALS-3.30.0-MacOSX-arm64.pkg
+     - .. button::
+          :text: .sh
+          :link: https://github.com/dials/dials/releases/download/v3.30.0/DIALS-3.30.0-MacOSX-arm64.sh
+
+   * - macOS (Intel)
+     - .. button::
+          :text: .pkg
+          :link: https://github.com/dials/dials/releases/download/v3.30.0/DIALS-3.30.0-MacOSX-x86_64.pkg
+     - .. button::
+          :text: .sh
+          :link: https://github.com/dials/dials/releases/download/v3.30.0/DIALS-3.30.0-MacOSX-x86_64.sh
+
+   * - Windows (x86-64)
+     - .. button::
+          :text: .exe
+          :link: https://github.com/dials/dials/releases/download/v3.30.0/DIALS-3.30.0-Windows-x86_64.exe
+
+       .. button::
+          :text: .msi
+          :link: https://github.com/dials/dials/releases/download/v3.30.0/DIALS-3.30.0-Windows-x86_64.msi
+     -
