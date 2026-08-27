@@ -368,7 +368,9 @@ class CosymAnalysis(symmetry_base, Subject):
             max_calls=min(20, max_calls) if max_calls else max_calls,
         )
 
-        x = self.minimizer.x.reshape((dims_to_test, self.minimizer.x.size // dims_to_test))
+        x = self.minimizer.x.reshape(
+            (dims_to_test, self.minimizer.x.size // dims_to_test)
+        )
         # Principal axes of the solution, from the small Gram matrix.
         eigenvalues, eigenvectors = np.linalg.eigh(x @ x.T)
         order = np.argsort(eigenvalues)[::-1]
