@@ -34,7 +34,6 @@ from dials.algorithms.integration.integrator import create_integrator
 from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
-from dials.util.command_line import heading
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
@@ -451,7 +450,7 @@ def run_integration(params, experiments, reference=None):
         logger.info(summary)
 
     logger.info("\n".join(("", "=" * 80, "")))
-    logger.info(heading("Initialising"))
+    logger.info("Initialising")
 
     # Load the data
     if reference:
@@ -501,7 +500,7 @@ def run_integration(params, experiments, reference=None):
 
     # Predict the reflections
     logger.info("\n".join(("", "=" * 80, "")))
-    logger.info(heading("Predicting reflections"))
+    logger.info("Predicting reflections")
     predicted = flex.reflection_table.from_predictions_multi(
         experiments,
         dmin=params.prediction.d_min,

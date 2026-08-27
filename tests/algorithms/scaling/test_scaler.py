@@ -106,6 +106,7 @@ def generated_param():
     parser = ArgumentParser(phil=phil_scope, check_format=False)
     parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.model = "KB"
+    parameters.reflection_selection.Isigma_range = -5.0, 0.0
     return parameters
 
 

@@ -539,8 +539,12 @@ def run_dials_refine(experiments, reflections, params):
     return experiments, reflections, refiner, history
 
 
+# The script usage
+usage = "dials.refine [options] [param.phil] models.expt observations.refl"
+
+
 @dials.util.show_mail_handle_errors()
-def run(args=None, phil=working_phil):
+def run(args=None, phil=working_phil, usage=usage, epilog=__doc__):
     """
     Set up refinement from command line options, files and PHIL parameters.
     Run refinement and save output files as specified.
@@ -555,9 +559,6 @@ def run(args=None, phil=working_phil):
         None
     """
 
-    # The script usage
-    usage = "usage: dials.refine [options] [param.phil] models.expt observations.refl"
-
     # Create the parser
     parser = ArgumentParser(
         usage=usage,
@@ -565,7 +566,7 @@ def run(args=None, phil=working_phil):
         read_reflections=True,
         read_experiments=True,
         check_format=False,
-        epilog=__doc__,
+        epilog=epilog,
     )
 
     # Parse the command line

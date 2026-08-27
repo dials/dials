@@ -1,3 +1,42 @@
+DIALS 3.30.0 (2026-08-03)
+=========================
+
+Features
+--------
+
+- ``dials.symmetry``: Tests in ``small_molecule=True`` mode now exercise space groups including a glide plane. (`#3197 <https://github.com/dials/dials/issues/3197>`_)
+- ``dials.compute_delta_cchalf``: Support SSX data by allowing settable ``partiality_threshold=``. (`#3206 <https://github.com/dials/dials/issues/3206>`_)
+- ``dials.tof_integrate``: Enable user to set wavelength/ToF range. (`#3219 <https://github.com/dials/dials/issues/3219>`_)
+- ``dials.scale``: The ``small_scale_cutoff=`` parameter default is now "auto", which sets based on the relative scale of intensities, when scaling against a reference. (`#3224 <https://github.com/dials/dials/issues/3224>`_)
+- ``dials.export``: Add support for exporting scaled data in ``xds_ascii`` format. (`#3225 <https://github.com/dials/dials/issues/3225>`_)
+- Add ``dials.ssx_refine program``, which runs ``dials.refine`` with suitable defaults for ssx joint detector refinement. (`#3228 <https://github.com/dials/dials/issues/3228>`_)
+- ``dials.scale``: Automatically set more sensible default parameters for ssx data scaling. (`#3229 <https://github.com/dials/dials/issues/3229>`_)
+- ``dials.modify_experiments``: Add ``reference_geometry=`` option. (`#3232 <https://github.com/dials/dials/issues/3232>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.stills_process``: Fix a pickling error when running with ``mp.method=multiprocessing``. (`#3156 <https://github.com/dials/dials/issues/3156>`_)
+- Reduced the precision of some data used for plotly graphs to avoid large HTML file sizes in output reports. (`#3193 <https://github.com/dials/dials/issues/3193>`_)
+- ``dials.search_beam_position``: Fix a crash when unable to index some sweeps. (`#3212 <https://github.com/dials/dials/issues/3212>`_)
+- ``dials.refine``: Ensure deterministic outcomes by setting the random seed for outlier rejection. (`#3215 <https://github.com/dials/dials/issues/3215>`_)
+- Fix "tof_cal" in reflection table from spot prediction being given in (s) rather than (usec) (`#3218 <https://github.com/dials/dials/issues/3218>`_)
+- ``dials.show``: Fix error for Laue experiments with a PolychromaticBeam. (`#3227 <https://github.com/dials/dials/issues/3227>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- Removed ``dials.util.export_text``, which was incomplete and unused. (`#3203 <https://github.com/dials/dials/issues/3203>`_)
+
+
+Misc
+----
+
+- `#3158 <https://github.com/dials/dials/issues/3158>`_, `#3195 <https://github.com/dials/dials/issues/3195>`_, `#3199 <https://github.com/dials/dials/issues/3199>`_, `#3200 <https://github.com/dials/dials/issues/3200>`_, `#3230 <https://github.com/dials/dials/issues/3230>`_, `#3231 <https://github.com/dials/dials/issues/3231>`_, `#3234 <https://github.com/dials/dials/issues/3234>`_, `#3236 <https://github.com/dials/dials/issues/3236>`_
+
+
 DIALS 3.29.0 (2026-06-12)
 =========================
 

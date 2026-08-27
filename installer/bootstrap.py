@@ -1161,7 +1161,6 @@ def configure_build(config_flags):
         "dials",
         "xia2",
         "--skip_phenix_dispatchers",
-        "--use_environment",
     ] + config_flags
 
     run_indirect_command(

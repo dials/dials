@@ -23,7 +23,7 @@ mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy
+numpy<=2.4.6
 nxmx>=0.0.6
 optuna
 ordered-set

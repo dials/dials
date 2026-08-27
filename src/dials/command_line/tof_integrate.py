@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import logging
 import multiprocessing
+import re
+import sys
+import warnings
 from copy import deepcopy
 from math import ceil, floor
 from typing import Dict, Tuple
@@ -28,8 +31,8 @@ from dials.util.options import ArgumentParser, reflections_and_experiments_from_
 from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
-    TOFProfile1DParams,
-    TOFProfile3DParams,
+    TOFProfile1DIBIXParams,
+    TOFProfile3DGutmannParams,
     integrate_reflection_table,
     tof_calculate_ellipse_shoebox_mask,
     tof_calculate_seed_skewness_shoebox_mask,
@@ -73,12 +76,12 @@ calculated{
     .help = "The resolution spots are integrated to when using integration_type.calculated"
 
 }
-method = *summation profile1d profile3d
+method = *summation profile_1d_ibix profile_3d_gutmann
     .type = choice
     .help = "Integration method: "
             "summation: shoebox summation"
-            "profile1d: https://doi.org/10.1038/srep36628 "
-            "profile3d: https://doi.org/10.1016/j.nima.2016.12.026"
+            "profile_1d_ibix: https://doi.org/10.1038/srep36628 "
+            "profile_3d_gutmann: https://doi.org/10.1016/j.nima.2016.12.026"
 
 mask = *ellipse seed_skewness
     .type = choice
@@ -136,7 +139,7 @@ corrections{
         }
     }
 }
-profile1d{
+profile_1d_ibix{
     init_alpha = 0.03
         .type = float
         .help = "Initial alpha value before optimization"
@@ -160,7 +163,7 @@ profile1d{
         .help = "If fit fails, number of additional attempts with perturbed params"
 
 }
-profile3d{
+profile_3d_gutmann{
     init_alpha = 1.0
         .type = float
         .help = "Initial alpha value before optimization"
@@ -217,10 +220,38 @@ tof_range = None
 """
 Usage:
 $ dials.tof_integrate.py refined.expt refined.refl
-$ dials.tof_integrate refined.expt refined.refl corrections.incident_run=vanadium_run.nxs corrections.empty_run=empty_run.nxs corrections.lorentz=True bbox_tof_padding=15 bbox_xy_padding=5 mask=ellipse method=profile3d mp.nproc=16 background_model=linear3d
+$ dials.tof_integrate refined.expt refined.refl corrections.incident_run=vanadium_run.nxs corrections.empty_run=empty_run.nxs corrections.lorentz=True bbox_tof_padding=15 bbox_xy_padding=5 mask=ellipse method=profile_3d_gutmann mp.nproc=16 background_model=linear3d
 """
 
 phil_scope.adopt_scope(integrator_phil_scope())
+
+# Temporary parameter name mapping before deprecating
+_DEPRECATED_PARAMETER_NAMES = {
+    "profile1d": "profile_1d_ibix",
+    "profile3d": "profile_3d_gutmann",
+}
+
+
+def _translate_deprecated_args(args):
+    """
+    Rewrite uses of deprecated parameter/choice names to their replacements,
+    issuing a warning for each one found.
+    """
+    translated_args = []
+    for arg in args:
+        for old_name, new_name in _DEPRECATED_PARAMETER_NAMES.items():
+            pattern = rf"(?<![\w.]){re.escape(old_name)}(?!\w)"
+            new_arg = re.sub(pattern, new_name, arg)
+            if new_arg != arg:
+                warnings.warn(
+                    f"'{old_name}' is deprecated and will be removed in a "
+                    f"future release, please use '{new_name}' instead.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                arg = new_arg
+        translated_args.append(arg)
+    return translated_args
 
 
 def get_corrections_data(
@@ -300,24 +331,24 @@ def integrate_reflection_table_for_experiment(
     **kwargs: Dict,
 ) -> flex.reflection_table:
     apply_lorentz = params.corrections.lorentz
-    profile1d_params = None
-    profile3d_params = None
+    profile_1d_ibix_params = None
+    profile_3d_gutmann_params = None
     incident_params = None
     absorption_params = None
 
     logger.info(f"    Integrating using {params.method}")
 
     show_profile_failures = logger.getEffectiveLevel() == logging.DEBUG
-    if params.method == "profile1d":
-        alpha = params.profile1d.init_alpha
-        beta = params.profile1d.init_beta
+    if params.method == "profile_1d_ibix":
+        alpha = params.profile_1d_ibix.init_alpha
+        beta = params.profile_1d_ibix.init_beta
         A = 1.0
-        min_alpha = params.profile1d.min_alpha
-        max_alpha = params.profile1d.max_alpha
-        min_beta = params.profile1d.min_beta
-        max_beta = params.profile1d.max_beta
-        n_restarts = params.profile1d.n_restarts
-        profile1d_params = TOFProfile1DParams(
+        min_alpha = params.profile_1d_ibix.min_alpha
+        max_alpha = params.profile_1d_ibix.max_alpha
+        min_beta = params.profile_1d_ibix.min_beta
+        max_beta = params.profile_1d_ibix.max_beta
+        n_restarts = params.profile_1d_ibix.n_restarts
+        profile_1d_ibix_params = TOFProfile1DIBIXParams(
             A,
             alpha,
             min_alpha,
@@ -329,16 +360,18 @@ def integrate_reflection_table_for_experiment(
             True,
             show_profile_failures,
         )
-    elif params.method == "profile3d":
-        alpha = params.profile3d.init_alpha
-        beta = params.profile3d.init_beta
-        min_alpha = params.profile3d.min_alpha
-        max_alpha = params.profile3d.max_alpha
-        min_beta = params.profile3d.min_beta
-        max_beta = params.profile3d.max_beta
-        n_restarts = params.profile3d.n_restarts
-        use_central_diff = params.profile3d.gradient_method == "central_difference"
-        profile3d_params = TOFProfile3DParams(
+    elif params.method == "profile_3d_gutmann":
+        alpha = params.profile_3d_gutmann.init_alpha
+        beta = params.profile_3d_gutmann.init_beta
+        min_alpha = params.profile_3d_gutmann.min_alpha
+        max_alpha = params.profile_3d_gutmann.max_alpha
+        min_beta = params.profile_3d_gutmann.min_beta
+        max_beta = params.profile_3d_gutmann.max_beta
+        n_restarts = params.profile_3d_gutmann.n_restarts
+        use_central_diff = (
+            params.profile_3d_gutmann.gradient_method == "central_difference"
+        )
+        profile_3d_gutmann_params = TOFProfile3DGutmannParams(
             alpha,
             min_alpha,
             max_alpha,
@@ -376,8 +409,8 @@ def integrate_reflection_table_for_experiment(
         absorption_params,
         apply_lorentz,
         params.mp.nproc,
-        profile1d_params,
-        profile3d_params,
+        profile_1d_ibix_params,
+        profile_3d_gutmann_params,
     )
 
     return expt_reflections
@@ -734,7 +767,8 @@ def run():
         read_reflections=True,
     )
 
-    params, options = parser.parse_args(args=None, show_diff_phil=False)
+    args = _translate_deprecated_args(sys.argv[1:])
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())
