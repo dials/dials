@@ -52,7 +52,8 @@ https://autoed.readthedocs.io/en/latest/pages/beam_position_methods.html
 phil_scope = iotbx.phil.parse(
     """
 
-method = default midpoint maximum inversion
+method = *default midpoint maximum inversion
+    .type = choice
 
 default {
     nproc = Auto
