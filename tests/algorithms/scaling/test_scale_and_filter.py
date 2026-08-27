@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from unittest import mock
 
-from dxtbx.model import Crystal, Experiment, Scan
+from dxtbx.model import Crystal, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import phil
 
@@ -66,6 +66,7 @@ def generate_test_experiments(n=2):
             Experiment(
                 crystal=Crystal.from_dict(exp_dict),
                 scan=Scan(image_range=[1, 10], oscillation=[0.0, 1.0]),
+                goniometer=Goniometer(),
                 scaling_model=get_scaling_model(),
                 identifier=str(i),
             )
