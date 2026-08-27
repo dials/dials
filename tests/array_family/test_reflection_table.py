@@ -1657,3 +1657,61 @@ def test_concat():
     table1 = flex.reflection_table()
     table2 = flex.reflection_table()
     table1 = flex.reflection_table.concat([table1, table2])
+
+
+def test_as_pandas_dataframe():
+    nn = 10
+
+    table = flex.reflection_table()
+    table["miller_index"] = flex.miller_index(
+        flex.int(range(nn)), flex.int(range(nn)), flex.int(range(nn))
+    )
+    table["id"] = flex.int(nn, 0)
+    table["intensity.sum.value"] = flex.double(range(nn))
+    table["xyzobs.px.value"] = flex.vec3_double([(n, n + 1, n + 2) for n in range(nn)])
+    table["bbox"] = flex.int6(*(flex.int(nn, j) for j in range(6)))
+
+    df = table.as_pandas_dataframe()
+
+    assert len(df) == nn
+
+    # single valued columns keep their name
+    assert list(df["id"]) == [0] * nn
+    assert list(df["intensity.sum.value"]) == list(range(nn))
+
+    # multiple valued columns are unpacked, element by element
+    assert list(df["miller_index_0"]) == list(range(nn))
+    assert list(df["miller_index_2"]) == list(range(nn))
+    assert list(df["xyzobs.px.value_1"]) == [n + 1 for n in range(nn)]
+
+    # including those flumpy does not handle directly
+    assert list(df["bbox_0"]) == [0] * nn
+    assert list(df["bbox_5"]) == [5] * nn
+
+    assert "miller_index" not in df
+    assert "bbox" not in df
+
+
+def test_as_pandas_dataframe_selected_columns():
+    nn = 10
+
+    table = flex.reflection_table()
+    table["id"] = flex.int(nn, 0)
+    table["intensity.sum.value"] = flex.double(range(nn))
+
+    df = table.as_pandas_dataframe(columns=["intensity.sum.value"])
+
+    assert list(df.columns) == ["intensity.sum.value"]
+
+    with pytest.raises(KeyError):
+        table.as_pandas_dataframe(columns=["not.a.column"])
+
+
+def test_as_pandas_dataframe_omits_shoebox():
+    table = flex.reflection_table()
+    table["id"] = flex.int(2, 0)
+    table["shoebox"] = flex.shoebox(2)
+
+    df = table.as_pandas_dataframe()
+
+    assert list(df.columns) == ["id"]
