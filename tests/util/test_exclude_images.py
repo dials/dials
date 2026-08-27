@@ -65,6 +65,47 @@ def test_parse_exclude_images_commands():
         _ = _parse_exclude_images_commands([["1:101:a"]], [], tables)
 
 
+def test_parse_exclude_images_commands_wildcard():
+    """Test that * expands to every dataset"""
+    experiments = ExperimentList(
+        [
+            make_scan_experiment(expid="0"),
+            make_scan_experiment(expid="1"),
+            make_scan_experiment(expid="2"),
+        ]
+    )
+    ranges = _parse_exclude_images_commands([["*:21:100"]], experiments, None)
+    assert ranges == [("0", (21, 100)), ("1", (21, 100)), ("2", (21, 100))]
+
+    # mixing a wildcard with an explicit dataset is allowed
+    ranges = _parse_exclude_images_commands([["*:21:100,1:1:5"]], experiments, None)
+    assert ranges == [
+        ("0", (21, 100)),
+        ("1", (21, 100)),
+        ("2", (21, 100)),
+        ("1", (1, 5)),
+    ]
+
+    # with no experiments, fall back on the reflection table identifiers
+    r0 = flex.reflection_table()
+    r0.experiment_identifiers()[0] = "0"
+    r1 = flex.reflection_table()
+    r1.experiment_identifiers()[1] = "1"
+    ranges = _parse_exclude_images_commands([["*:21:100"]], [], [r0, r1])
+    assert ranges == [("0", (21, 100)), ("1", (21, 100))]
+
+
+def test_exclude_image_ranges_wildcard():
+    """Test that a wildcard exclusion is applied to every scan"""
+    experiments = ExperimentList(
+        [make_scan_experiment(expid="0"), make_scan_experiment(expid="1")]
+    )
+    experiments = exclude_image_ranges_from_scans(None, experiments, [["*:21:100"]])
+    ranges = get_valid_image_ranges(experiments)
+    assert list(ranges[0]) == [(1, 20)]
+    assert list(ranges[1]) == [(1, 20)]
+
+
 def test_expand_exclude_multiples():
     """Test for namesake function"""
     explist = ExperimentList(
