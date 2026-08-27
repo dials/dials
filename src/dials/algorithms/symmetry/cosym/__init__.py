@@ -82,6 +82,18 @@ dimensions = Auto
   .type = int(value_min=2)
   .short_caption = "Dimensions"
 
+dimensions_method = *minimization projection
+  .type = choice
+  .short_caption = "Method for automatic determination of dimensions"
+  .help = "How to obtain the functional as a function of the number of"
+          "dimensions, when dimensions=Auto."
+          "minimization minimises once per candidate dimension, each time from"
+          "fresh random coordinates."
+          "projection minimises once, at the largest dimension, and obtains the"
+          "rest of the curve by projecting that solution onto its leading"
+          "principal directions. One minimisation rather than one per"
+          "dimension."
+
 use_curvatures = True
   .type = bool
   .short_caption = "Use curvatures"
@@ -305,9 +317,8 @@ class CosymAnalysis(symmetry_base, Subject):
             nproc=self.params.nproc,
         )
 
-    def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
-        logger.info("=" * 80)
-        logger.info("\nAutomatic determination of number of dimensions for analysis")
+    def _functional_by_minimization(self, dims_to_test, outlier_rejection=False):
+        """Minimise once for each candidate number of dimensions."""
         dimensions = []
         functional = []
         for dim in range(1, dims_to_test + 1):
@@ -325,6 +336,66 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.target.compute_functional_score_for_dimension_assessment(
                     self.minimizer.x, outlier_rejection
                 )
+            )
+        return dimensions, functional
+
+    def _functional_by_projection(self, dims_to_test, outlier_rejection=False):
+        """Minimise once, then project onto the leading principal directions.
+
+        A solution in d dimensions is also a solution in d + 1 with a column of
+        zeros, so the curve can be traced downwards from a single solution
+        rather than by starting again at every dimension. Rotating the
+        coordinates so that their principal axes come first and then keeping the
+        leading d of them gives the best d-dimensional representation of that
+        solution, and the functional evaluated there is what the curve wants.
+
+        The rotation costs nothing worth counting: the coordinates are
+        dims_to_test by N, so their Gram matrix is dims_to_test square, and it
+        is that small matrix which is decomposed, not anything of the size of
+        Rij.
+
+        Like the values the minimisation produces, these are upper bounds on the
+        true minimum at each dimension rather than the minimum itself. Unlike
+        them they are monotonic, as a functional that is minimised over a
+        widening space must be.
+        """
+        logger.info(f"Minimising at {dims_to_test} dimensions and projecting")
+        self.target.set_dimensions(dims_to_test)
+        max_calls = self.params.minimization.max_calls
+        self._optimise(
+            self.params.minimization.engine,
+            max_iterations=self.params.minimization.max_iterations,
+            max_calls=min(20, max_calls) if max_calls else max_calls,
+        )
+
+        x = self.minimizer.x.reshape((dims_to_test, self.minimizer.x.size // dims_to_test))
+        # Principal axes of the solution, from the small Gram matrix.
+        eigenvalues, eigenvectors = np.linalg.eigh(x @ x.T)
+        order = np.argsort(eigenvalues)[::-1]
+        rotated = eigenvectors[:, order].T @ x
+
+        dimensions = []
+        functional = []
+        for dim in range(1, dims_to_test + 1):
+            self.target.set_dimensions(dim)
+            dimensions.append(dim)
+            functional.append(
+                self.target.compute_functional_score_for_dimension_assessment(
+                    rotated[:dim].flatten(), outlier_rejection
+                )
+            )
+        return dimensions, functional
+
+    def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
+        logger.info("=" * 80)
+        logger.info("\nAutomatic determination of number of dimensions for analysis")
+        if self.params.dimensions_method == "projection":
+            dimensions, functional = self._functional_by_projection(
+                dims_to_test, outlier_rejection
+            )
+        else:
+            dimensions, functional = self._functional_by_minimization(
+                dims_to_test, outlier_rejection
             )
 
         # Find the elbow point of the curve, in the same manner as that used by
