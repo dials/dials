@@ -82,18 +82,6 @@ dimensions = Auto
   .type = int(value_min=2)
   .short_caption = "Dimensions"
 
-dimensions_method = *minimization projection
-  .type = choice
-  .short_caption = "Method for automatic determination of dimensions"
-  .help = "How to obtain the functional as a function of the number of"
-          "dimensions, when dimensions=Auto."
-          "minimization minimises once per candidate dimension, each time from"
-          "fresh random coordinates."
-          "projection minimises once, at the largest dimension, and obtains the"
-          "rest of the curve by projecting that solution onto its leading"
-          "principal directions. One minimisation rather than one per"
-          "dimension."
-
 use_curvatures = True
   .type = bool
   .short_caption = "Use curvatures"
@@ -391,7 +379,12 @@ class CosymAnalysis(symmetry_base, Subject):
     def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
         logger.info("=" * 80)
         logger.info("\nAutomatic determination of number of dimensions for analysis")
-        if self.params.dimensions_method == "projection":
+        # dimensions_method belongs to the dials.cosym command line rather than
+        # to this scope: dials.correlation_matrix includes this scope too and
+        # reduces the dimensions itself, so the choice is not appropriate there.
+        # When the parameter is absent the historical behaviour applies.
+        method = getattr(self.params, "dimensions_method", "minimization")
+        if method == "projection":
             dimensions, functional = self._functional_by_projection(
                 dims_to_test, outlier_rejection
             )
