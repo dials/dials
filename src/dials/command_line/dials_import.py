@@ -21,7 +21,11 @@ from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.options import (
+    ArgumentParser,
+    flatten_experiments,
+    format_kwargs_from_params,
+)
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.import")
@@ -207,15 +211,7 @@ def _extract_or_read_imagesets(params):
 
     # Check we have some filenames
     if len(experiments) == 0:
-        # FIXME Should probably make this smarter since it requires editing here
-        # and in dials.import phil scope
-        try:
-            format_kwargs = {
-                "dynamic_shadowing": params.format.dynamic_shadowing,
-                "multi_panel": params.format.multi_panel,
-            }
-        except AttributeError:
-            format_kwargs = None
+        format_kwargs = format_kwargs_from_params(params)
 
         # Check if a template has been set and print help if not, otherwise try to
         # import the images based on the template input

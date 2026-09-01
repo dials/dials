@@ -14,6 +14,7 @@ from glob import glob
 
 from ordered_set import OrderedSet
 
+import dxtbx.model
 import libtbx.phil
 from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -105,30 +106,32 @@ tolerance
 """
 )
 
-geometry_phil_scope = libtbx.phil.parse(
-    """
-geometry
-  .help = "Allow overrides of experimental geometry"
-  .expert_level = 2
-{
-  include scope dxtbx.model.beam.beam_phil_scope
-  include scope dxtbx.model.detector.detector_phil_scope
-  include scope dxtbx.model.goniometer.goniometer_phil_scope
-  include scope dxtbx.model.scan.scan_phil_scope
 
-  convert_stills_to_sequences = False
-    .type = bool
-    .help = "When overriding the scan, convert stills into sequences"
-    .short_caption = "Convert stills into sequences"
+def _build_geometry_phil_scope():
+    # The dxtbx scope, plus the two DIALS-specific conversion options. Composed
+    # from dxtbx.model.geometry rather than re-including the four model scopes, so
+    # that the paths a Format class may declare as missing metadata cannot drift
+    # from the paths dials.import accepts on the command line.
+    scope = copy.deepcopy(dxtbx.model.geometry_phil_scope)
+    scope.objects[0].adopt_scope(
+        libtbx.phil.parse(
+            """
+convert_stills_to_sequences = False
+  .type = bool
+  .help = "When overriding the scan, convert stills into sequences"
+  .short_caption = "Convert stills into sequences"
 
-  convert_sequences_to_stills = False
-    .type = bool
-    .help = "When overriding the scan, convert sequences into stills"
-    .short_caption = "Convert sequences into stills"
-}
-""",
-    process_includes=True,
-)
+convert_sequences_to_stills = False
+  .type = bool
+  .help = "When overriding the scan, convert sequences into stills"
+  .short_caption = "Convert sequences into stills"
+"""
+        )
+    )
+    return scope
+
+
+geometry_phil_scope = _build_geometry_phil_scope()
 
 
 format_phil_scope = libtbx.phil.parse(
@@ -147,6 +150,22 @@ format
 }
 """
 )
+
+
+def format_kwargs_from_params(params):
+    """
+    Collect the keyword arguments to pass on to the Format classes.
+
+    Returns None if params carries no format scope, matching the previous
+    behaviour of the two call sites this replaces.
+    """
+    try:
+        return {
+            "dynamic_shadowing": params.format.dynamic_shadowing,
+            "multi_panel": params.format.multi_panel,
+        }
+    except AttributeError:
+        return None
 
 
 # Simple tuple to hold basic information on why an argument failed
@@ -533,15 +552,7 @@ class PhilCommandParser:
             )
             scan_tolerance = params.input.tolerance.scan.oscillation
 
-            # FIXME Should probably make this smarter since it requires editing here
-            # and in dials.import phil scope
-            try:
-                format_kwargs = {
-                    "dynamic_shadowing": params.format.dynamic_shadowing,
-                    "multi_panel": params.format.multi_panel,
-                }
-            except AttributeError:
-                format_kwargs = None
+            format_kwargs = format_kwargs_from_params(params)
         else:
             compare_beam = None
             compare_detector = None
