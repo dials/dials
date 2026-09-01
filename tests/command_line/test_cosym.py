@@ -221,6 +221,24 @@ def test_synthetic_map_cell_issue(run_in_tmp_path):
         ("P422", (79, 79, 37, 90, 90, 90), None, 10, True, False),
         ("P321", (59.39, 59.39, 28.35, 90, 90, 120), None, 5, False, False),
         ("C2", (56.194, 53.224, 32.156, 90.000, 92.277, 90.000), None, 5, False, False),
+        (
+            "P222",
+            (56, 56, 56, 90.000, 90, 90.000),
+            None,
+            15,
+            False,
+            False,
+        ),  # pseudo cubic - need 6 dims.
+        (
+            "P1",
+            (56, 56, 56, 90.000, 90, 90.000),
+            None,
+            15,
+            False,
+            False,
+        ),  # pseudo cubic - in theory need all
+        # 24 dims to fully resolve, although elbow method chooses 10 dims which still works. Note at 24 dims,
+        # P1 likelihood=0.394, at 10 dims, P1 likelihood=0.139. Proposal incoming to fix.
     ],
 )
 def test_synthetic(
