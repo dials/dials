@@ -6,10 +6,9 @@ import numpy as np
 
 import scitbx.matrix
 import scitbx.random
-from cctbx import crystal, miller, sgtbx
+from cctbx import crystal, sgtbx
 from cctbx.sgtbx.subgroups import subgroups
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
-from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 
 from dials.array_family import flex
 
@@ -150,9 +149,8 @@ def generate_test_data(
     return datasets, reindexing_ops
 
 
-def generate_intensities(
-    crystal_symmetry, anomalous_flag=False, d_min=1, wilson_B=20.0
-):
+def generate_intensities(crystal_symmetry, anomalous_flag=False, d_min=1):
+    from cctbx import miller
 
     indices = miller.index_generator(
         crystal_symmetry.unit_cell(),
@@ -161,36 +159,9 @@ def generate_intensities(
         d_min,
     ).to_array()
     miller_set = crystal_symmetry.miller_set(indices, anomalous_flag)
-
-    # Generate expected intensities for protein that follow a Wilson B-factor decay.
-    dstarsq = 1 / (miller_set.d_spacings().data() ** 2)
-    expected = expected_intensity(
-        scattering_information(n_residues=200),
-        dstarsq,
-        b_wilson=wilson_B,
-        p_scale=0.1,
-    )
-    centric_flags = miller_set.centric_flags().data()
-
-    sigma = 1 / np.sqrt(2)
-    if any(centric_flags):
-        # Expected distribution for acentrics/centrics, mean scaled to the expected intensity for given resolution.
-        intensities = flex.double(
-            [
-                (np.abs(np.random.normal(loc=0, scale=1)) ** 2 * i)
-                if f
-                else (np.random.rayleigh(scale=sigma) ** 2 * i)
-                for i, f in zip(expected.mean_intensity, centric_flags)
-            ]
-        )
-    else:
-        # if all acentrics, expected distribution mean scaled to expected intensity for given resolution.
-        intensities = flex.double(
-            [np.random.rayleigh(scale=sigma) ** 2 * i for i in expected.mean_intensity]
-        )
-
+    intensities = flex.random_double(indices.size()) * 1000
     miller_array = miller.array(
-        miller_set, data=intensities, sigmas=flex.sqrt(intensities) / 10
+        miller_set, data=intensities, sigmas=flex.sqrt(intensities)
     ).set_observation_type_xray_intensity()
     return miller_array
 
