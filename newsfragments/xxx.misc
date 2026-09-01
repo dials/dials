@@ -1,0 +1,1 @@
+Refactor tof_integration.h to simplify branching logic and make it easier to add additional integration methods/corrections.
