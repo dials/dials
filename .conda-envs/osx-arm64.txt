@@ -1,3 +1,5 @@
+# Temporary to provide clang 20.x.x while boostorg/boost#1107 is open.
+
 alabaster
 biopython
 bzip2
