@@ -496,7 +496,7 @@ namespace dials { namespace algorithms {
   // Runs incident/empty scanning/smoothing for one shoebox and builds
   // the PixelCorrector
   struct ShoeboxCorrectorInputs {
-    ShoeboxPixelCount scan;
+    ShoeboxPixelCount shoebox_pixel_count;
     scitbx::af::shared<double> smoothed_incident;
     scitbx::af::shared<double> smoothed_empty;
   };
@@ -508,14 +508,14 @@ namespace dials { namespace algorithms {
     const Shoebox<>* incident_shoebox,
     const Shoebox<>* empty_shoebox) {
     ShoeboxCorrectorInputs inputs;
-    inputs.scan =
+    inputs.shoebox_pixel_count =
       scan_shoebox_pixels(shoebox, bbox, image_size, incident_shoebox, empty_shoebox);
     if (incident_shoebox != nullptr) {
       // Smooth incident and empty to avoid dividing by a noisy signal
       inputs.smoothed_empty =
-        dials_scaling::savitzky_golay(inputs.scan.empty_spectrum, 7, 2);
-      inputs.smoothed_incident =
-        dials_scaling::savitzky_golay(inputs.scan.incident_spectrum, 7, 2);
+        dials_scaling::savitzky_golay(inputs.shoebox_pixel_count.empty_spectrum, 7, 2);
+      inputs.smoothed_incident = dials_scaling::savitzky_golay(
+        inputs.shoebox_pixel_count.incident_spectrum, 7, 2);
     }
     return inputs;
   }
@@ -595,18 +595,19 @@ namespace dials { namespace algorithms {
         ShoeboxCorrectorInputs inputs = prepare_shoebox_corrector_inputs(
           shoebox, bbox, geometry.image_size, i_shoebox_ptr, e_shoebox_ptr);
 
-        PixelCorrector corrector(geometry,
-                                 apply_lorentz_correction,
-                                 inputs.scan.n_signal,
-                                 inputs.scan.n_background,
-                                 incident_params.get_ptr(),
-                                 absorption_params.get_ptr(),
-                                 incident_params ? &inputs.smoothed_incident : nullptr,
-                                 incident_params ? &inputs.smoothed_empty : nullptr,
-                                 incident_params ? &inputs.scan.n_contrib : nullptr);
+        PixelCorrector corrector(
+          geometry,
+          apply_lorentz_correction,
+          inputs.shoebox_pixel_count.n_signal,
+          inputs.shoebox_pixel_count.n_background,
+          incident_params.get_ptr(),
+          absorption_params.get_ptr(),
+          incident_params ? &inputs.smoothed_incident : nullptr,
+          incident_params ? &inputs.smoothed_empty : nullptr,
+          incident_params ? &inputs.shoebox_pixel_count.n_contrib : nullptr);
 
-        ShoeboxIntegrationResult shoebox_result =
-          integrate_shoebox(shoebox, bbox, geometry, corrector, inputs.scan.success);
+        ShoeboxIntegrationResult shoebox_result = integrate_shoebox(
+          shoebox, bbox, geometry, corrector, inputs.shoebox_pixel_count.success);
 
         // Overall values for shoebox summation
         succeeded[i] = shoebox_result.success;
@@ -723,18 +724,19 @@ namespace dials { namespace algorithms {
     ShoeboxCorrectorInputs inputs = prepare_shoebox_corrector_inputs(
       shoebox, bbox, geometry.image_size, i_shoebox_ptr, e_shoebox_ptr);
 
-    PixelCorrector corrector(geometry,
-                             apply_lorentz_correction,
-                             inputs.scan.n_signal,
-                             inputs.scan.n_background,
-                             incident_params.get_ptr(),
-                             absorption_params.get_ptr(),
-                             incident_params ? &inputs.smoothed_incident : nullptr,
-                             incident_params ? &inputs.smoothed_empty : nullptr,
-                             incident_params ? &inputs.scan.n_contrib : nullptr);
+    PixelCorrector corrector(
+      geometry,
+      apply_lorentz_correction,
+      inputs.shoebox_pixel_count.n_signal,
+      inputs.shoebox_pixel_count.n_background,
+      incident_params.get_ptr(),
+      absorption_params.get_ptr(),
+      incident_params ? &inputs.smoothed_incident : nullptr,
+      incident_params ? &inputs.smoothed_empty : nullptr,
+      incident_params ? &inputs.shoebox_pixel_count.n_contrib : nullptr);
 
-    ShoeboxIntegrationResult result =
-      integrate_shoebox(shoebox, bbox, geometry, corrector, inputs.scan.success);
+    ShoeboxIntegrationResult result = integrate_shoebox(
+      shoebox, bbox, geometry, corrector, inputs.shoebox_pixel_count.success);
 
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       raw_projected_intensity_out[z] = result.raw_projected_intensity[z];
@@ -842,18 +844,19 @@ namespace dials { namespace algorithms {
     ShoeboxCorrectorInputs inputs = prepare_shoebox_corrector_inputs(
       shoebox, bbox, geometry.image_size, i_shoebox_ptr, e_shoebox_ptr);
 
-    PixelCorrector corrector(geometry,
-                             apply_lorentz_correction,
-                             inputs.scan.n_signal,
-                             inputs.scan.n_background,
-                             incident_params.get_ptr(),
-                             absorption_params.get_ptr(),
-                             incident_params ? &inputs.smoothed_incident : nullptr,
-                             incident_params ? &inputs.smoothed_empty : nullptr,
-                             incident_params ? &inputs.scan.n_contrib : nullptr);
+    PixelCorrector corrector(
+      geometry,
+      apply_lorentz_correction,
+      inputs.shoebox_pixel_count.n_signal,
+      inputs.shoebox_pixel_count.n_background,
+      incident_params.get_ptr(),
+      absorption_params.get_ptr(),
+      incident_params ? &inputs.smoothed_incident : nullptr,
+      incident_params ? &inputs.smoothed_empty : nullptr,
+      incident_params ? &inputs.shoebox_pixel_count.n_contrib : nullptr);
 
-    ShoeboxIntegrationResult result =
-      integrate_shoebox(shoebox, bbox, geometry, corrector, inputs.scan.success);
+    ShoeboxIntegrationResult result = integrate_shoebox(
+      shoebox, bbox, geometry, corrector, inputs.shoebox_pixel_count.success);
 
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       raw_projected_intensity_out[z] = result.raw_projected_intensity[z];
