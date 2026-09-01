@@ -65,7 +65,7 @@ reference = None
 include scope dials.util.reference.reference_phil_str
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
-dimensions_method = *minimization projection
+dimensions_method = minimization *projection
   .type = choice
   .short_caption = "Method for automatic determination of dimensions"
   .help = "How to obtain the functional as a function of the number of"
