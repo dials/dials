@@ -52,7 +52,8 @@ https://autoed.readthedocs.io/en/latest/pages/beam_position_methods.html
 phil_scope = iotbx.phil.parse(
     """
 
-method = default midpoint maximum inversion
+method = *default midpoint maximum inversion
+    .type = choice
 
 default {
     nproc = Auto
@@ -280,7 +281,7 @@ def run(args=None):
     # Configure the logging
     log.config(logfile=params.output.log)
 
-    if params.method[0] == "default" and not (cond_01 or cond_02):
+    if params.method == "default" and not (cond_01 or cond_02):
         if len(experiments) == 0 or len(reflections) == 0:
             parser.print_help()
             exit(0)
