@@ -1,1 +1,0 @@
-``dials.scale``: Fix SSX processing crash if very small but non-zero oscillation width present.

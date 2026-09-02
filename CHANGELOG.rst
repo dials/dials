@@ -1,3 +1,18 @@
+DIALS 3.30.1 (2026-09-02)
+=========================
+
+Features
+--------
+
+- ``dials.cosym``: improve performance of dimensionality determination (`#3248 <https://github.com/dials/dials/issues/3248>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.scale``: Fix SSX processing crash if very small but non-zero oscillation width present. (`#3250 <https://github.com/dials/dials/issues/3250>`_)
+
+
 DIALS 3.30.0 (2026-08-03)
 =========================
 
