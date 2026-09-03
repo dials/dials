@@ -1,0 +1,1 @@
+``Shoebox.peak_coordinates``: when several pixels share the maximum value, break the tie by selecting the pixel nearest the shoebox centroid rather than the first one in z, y, x order. This stops well-placed reflections being rejected by the peak-centroid distance filter.
