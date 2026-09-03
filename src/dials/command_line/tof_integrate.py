@@ -32,7 +32,10 @@ from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
     TOFProfile1DIBIXParams,
+    TOFProfile1DICParams,
     TOFProfile3DGutmannParams,
+    TOFProfile3DIBIXParams,
+    TOFProfile3DICParams,
     integrate_reflection_table,
     tof_calculate_ellipse_shoebox_mask,
     tof_calculate_seed_skewness_shoebox_mask,
@@ -76,12 +79,18 @@ calculated{
     .help = "The resolution spots are integrated to when using integration_type.calculated"
 
 }
-method = *summation profile_1d_ibix profile_3d_gutmann
+method = *summation profile_1d_ibix profile_1d_ic profile_3d_gutmann profile_3d_ic profile_3d_ibix
     .type = choice
     .help = "Integration method: "
             "summation: shoebox summation"
             "profile_1d_ibix: https://doi.org/10.1038/srep36628 "
+            "profile_1d_ic: Ikeda-Carpenter model, "
+            "https://doi.org/10.1016/0168-9002(85)90033-6"
             "profile_3d_gutmann: https://doi.org/10.1016/j.nima.2016.12.026"
+            "profile_3d_ic: separable Ikeda-Carpenter x bivariate Gaussian model, "
+            "https://doi.org/10.1016/0168-9002(85)90033-6"
+            "profile_3d_ibix: separable iBIX x bivariate Gaussian model, "
+            "https://doi.org/10.1038/srep36628"
 
 mask = *ellipse seed_skewness
     .type = choice
@@ -158,10 +167,51 @@ profile_1d_ibix{
     max_beta = 1.0
         .type = float
         .help = "Max beta value for optimization"
-    n_restarts = 8
+    n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
 
+}
+profile_1d_ic{
+    init_A = 1.0
+        .type = float
+        .help = "Initial fast-neutron decay constant before optimization"
+    min_A = 0.1
+        .type = float
+        .help = "Min fast-neutron decay constant for optimization"
+    max_A = 20.0
+        .type = float
+        .help = "Max fast-neutron decay constant for optimization"
+    init_B = 0.05
+        .type = float
+        .help = "Initial slow-neutron decay constant before optimization"
+    min_B = 1e-4
+        .type = float
+        .help = "Min slow-neutron decay constant for optimization"
+    max_B = 5.0
+        .type = float
+        .help = "Max slow-neutron decay constant for optimization"
+    init_R = 0.5
+        .type = float
+        .help = "Initial fast/slow neutron ratio before optimization"
+    min_R = 0.0
+        .type = float
+        .help = "Min fast/slow neutron ratio for optimization"
+    max_R = 1.0
+        .type = float
+        .help = "Max fast/slow neutron ratio for optimization"
+    hat_width = 1.0
+        .type = float
+        .help = "Initial half-width of the rectangular convolution kernel (ToF bins)"
+    kconv = 0.1
+        .type = float
+        .help = "Initial Gaussian convolution kernel decay rate (per ToF bin^2)"
+    n_restarts = 100
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
+    optimize_convolution_params = False
+        .type = bool
+        .help = "If True, also optimize hat_width and kconv during fitting"
 }
 profile_3d_gutmann{
     init_alpha = 1.0
@@ -182,12 +232,140 @@ profile_3d_gutmann{
     max_beta = 5.0
         .type = float
         .help = "Max beta value for optimization"
-    n_restarts = 8
+    n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
     gradient_method = *forward_difference central_difference
         .type = choice
         .help = "Method used to calculate gradients"
+}
+profile_3d_ic{
+    init_A = 1.0
+        .type = float
+        .help = "Initial fast-neutron decay constant before optimization"
+    min_A = 0.1
+        .type = float
+        .help = "Min fast-neutron decay constant for optimization"
+    max_A = 20.0
+        .type = float
+        .help = "Max fast-neutron decay constant for optimization"
+    init_B = 0.05
+        .type = float
+        .help = "Initial slow-neutron decay constant before optimization"
+    min_B = 1e-4
+        .type = float
+        .help = "Min slow-neutron decay constant for optimization"
+    max_B = 5.0
+        .type = float
+        .help = "Max slow-neutron decay constant for optimization"
+    init_R = 0.5
+        .type = float
+        .help = "Initial fast/slow neutron ratio before optimization"
+    min_R = 0.0
+        .type = float
+        .help = "Min fast/slow neutron ratio for optimization"
+    max_R = 1.0
+        .type = float
+        .help = "Max fast/slow neutron ratio for optimization"
+    min_SigX = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma X for optimization"
+    max_SigX = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma X for optimization"
+    min_SigY = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma Y for optimization"
+    max_SigY = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma Y for optimization"
+    init_SigP = 0.0
+        .type = float
+        .help = "Initial bivariate Gaussian spatial correlation before optimization"
+    min_SigP = -0.99
+        .type = float
+        .help = "Min bivariate Gaussian spatial correlation for optimization"
+    max_SigP = 0.99
+        .type = float
+        .help = "Max bivariate Gaussian spatial correlation for optimization"
+    hat_width = 1.0
+        .type = float
+        .help = "Initial half-width of the rectangular convolution kernel (ToF bins)"
+    kconv = 0.1
+        .type = float
+        .help = "Initial Gaussian convolution kernel decay rate (per ToF bin^2)"
+    n_restarts = 100
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
+    optimize_convolution_params = True
+        .type = bool
+        .help = "If False, fix hat_width and kconv during optimization"
+    optimize_moderator_params = True
+        .type = bool
+        .help = "If False, fix the Ikeda-Carpenter A, B, R (moderator) params so "
+                "only the per-reflection shape/position params are fitted"
+    max_drift_factor = 1.5
+        .type = float
+        .help = "Scales the per-reflection dXdt/dYdt bounds relative to the "
+                "shoebox's spatial extent divided by its ToF extent"
+}
+profile_3d_ibix{
+    init_alpha = 0.03
+        .type = float
+        .help = "Initial alpha value before optimization"
+    min_alpha = 0.02
+        .type = float
+        .help = "Min alpha value for optimization"
+    max_alpha = 1.0
+        .type = float
+        .help = "Max alpha value for optimization"
+    init_beta = 0.03
+        .type = float
+        .help = "Initial beta value before optimization"
+    min_beta = 0.0
+        .type = float
+        .help = "Min beta value for optimization"
+    max_beta = 1.0
+        .type = float
+        .help = "Max beta value for optimization"
+    min_sigma = 0.1
+        .type = float
+        .help = "Min instrument-resolution Gaussian width for optimization"
+    max_sigma = 20.0
+        .type = float
+        .help = "Max instrument-resolution Gaussian width for optimization"
+    min_SigX = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma X for optimization"
+    max_SigX = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma X for optimization"
+    min_SigY = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma Y for optimization"
+    max_SigY = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma Y for optimization"
+    init_SigP = 0.0
+        .type = float
+        .help = "Initial bivariate Gaussian spatial correlation before optimization"
+    min_SigP = -0.99
+        .type = float
+        .help = "Min bivariate Gaussian spatial correlation for optimization"
+    max_SigP = 0.99
+        .type = float
+        .help = "Max bivariate Gaussian spatial correlation for optimization"
+    n_restarts = 100
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
+    optimize_shape_params = True
+        .type = bool
+        .help = "If False, fix the iBIX alpha, beta (moderator) params so only "
+                "the per-reflection shape/position params are fitted"
+    max_drift_factor = 1.5
+        .type = float
+        .help = "Scales the per-reflection dXdt/dYdt bounds relative to the "
+                "shoebox's spatial extent divided by its ToF extent"
 }
 
 mp{
@@ -332,7 +510,10 @@ def integrate_reflection_table_for_experiment(
 ) -> flex.reflection_table:
     apply_lorentz = params.corrections.lorentz
     profile_1d_ibix_params = None
+    profile_1d_ic_params = None
     profile_3d_gutmann_params = None
+    profile_3d_ic_params = None
+    profile_3d_ibix_params = None
     incident_params = None
     absorption_params = None
 
@@ -360,6 +541,28 @@ def integrate_reflection_table_for_experiment(
             True,
             show_profile_failures,
         )
+    elif params.method == "profile_1d_ic":
+        p = params.profile_1d_ic
+        # dict needed due to boost limit of 15 template arguments
+        profile_1d_ic_params = TOFProfile1DICParams(
+            {
+                "A": p.init_A,
+                "A_min": p.min_A,
+                "A_max": p.max_A,
+                "B": p.init_B,
+                "B_min": p.min_B,
+                "B_max": p.max_B,
+                "R": p.init_R,
+                "R_min": p.min_R,
+                "R_max": p.max_R,
+                "HatWidth": p.hat_width,
+                "KConv": p.kconv,
+                "n_restarts": p.n_restarts,
+                "optimize_profile": True,
+                "optimize_convolution_params": p.optimize_convolution_params,
+                "show_profile_failures": show_profile_failures,
+            }
+        )
     elif params.method == "profile_3d_gutmann":
         alpha = params.profile_3d_gutmann.init_alpha
         beta = params.profile_3d_gutmann.init_beta
@@ -382,6 +585,64 @@ def integrate_reflection_table_for_experiment(
             True,
             use_central_diff,
             show_profile_failures,
+        )
+    elif params.method == "profile_3d_ic":
+        p = params.profile_3d_ic
+        # dict needed due to boost limit of 15 template arguments
+        profile_3d_ic_params = TOFProfile3DICParams(
+            {
+                "A": p.init_A,
+                "A_min": p.min_A,
+                "A_max": p.max_A,
+                "B": p.init_B,
+                "B_min": p.min_B,
+                "B_max": p.max_B,
+                "R": p.init_R,
+                "R_min": p.min_R,
+                "R_max": p.max_R,
+                "SigX_min": p.min_SigX,
+                "SigX_max": p.max_SigX,
+                "SigY_min": p.min_SigY,
+                "SigY_max": p.max_SigY,
+                "SigP": p.init_SigP,
+                "SigP_min": p.min_SigP,
+                "SigP_max": p.max_SigP,
+                "HatWidth": p.hat_width,
+                "KConv": p.kconv,
+                "n_restarts": p.n_restarts,
+                "optimize_profile": True,
+                "optimize_convolution_params": p.optimize_convolution_params,
+                "optimize_moderator_params": p.optimize_moderator_params,
+                "max_drift_factor": p.max_drift_factor,
+                "show_profile_failures": show_profile_failures,
+            }
+        )
+    elif params.method == "profile_3d_ibix":
+        p = params.profile_3d_ibix
+        # dict needed due to boost limit of 15 template arguments
+        profile_3d_ibix_params = TOFProfile3DIBIXParams(
+            {
+                "alpha": p.init_alpha,
+                "alpha_min": p.min_alpha,
+                "alpha_max": p.max_alpha,
+                "beta": p.init_beta,
+                "beta_min": p.min_beta,
+                "beta_max": p.max_beta,
+                "sigma_min": p.min_sigma,
+                "sigma_max": p.max_sigma,
+                "SigX_min": p.min_SigX,
+                "SigX_max": p.max_SigX,
+                "SigY_min": p.min_SigY,
+                "SigY_max": p.max_SigY,
+                "SigP": p.init_SigP,
+                "SigP_min": p.min_SigP,
+                "SigP_max": p.max_SigP,
+                "n_restarts": p.n_restarts,
+                "optimize_profile": True,
+                "optimize_shape_params": p.optimize_shape_params,
+                "max_drift_factor": p.max_drift_factor,
+                "show_profile_failures": show_profile_failures,
+            }
         )
 
     if apply_lorentz:
@@ -410,7 +671,10 @@ def integrate_reflection_table_for_experiment(
         apply_lorentz,
         params.mp.nproc,
         profile_1d_ibix_params,
+        profile_1d_ic_params,
         profile_3d_gutmann_params,
+        profile_3d_ic_params,
+        profile_3d_ibix_params,
     )
 
     return expt_reflections
