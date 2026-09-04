@@ -209,9 +209,6 @@ profile_1d_ic{
     n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
-    optimize_convolution_params = False
-        .type = bool
-        .help = "If True, also optimize hat_width and kconv during fitting"
 }
 profile_3d_gutmann{
     init_alpha = 1.0
@@ -297,13 +294,6 @@ profile_3d_ic{
     n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
-    optimize_convolution_params = True
-        .type = bool
-        .help = "If False, fix hat_width and kconv during optimization"
-    optimize_moderator_params = True
-        .type = bool
-        .help = "If False, fix the Ikeda-Carpenter A, B, R (moderator) params so "
-                "only the per-reflection shape/position params are fitted"
     max_drift_factor = 1.5
         .type = float
         .help = "Scales the per-reflection dXdt/dYdt bounds relative to the "
@@ -358,10 +348,6 @@ profile_3d_ibix{
     n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
-    optimize_shape_params = True
-        .type = bool
-        .help = "If False, fix the iBIX alpha, beta (moderator) params so only "
-                "the per-reflection shape/position params are fitted"
     max_drift_factor = 1.5
         .type = float
         .help = "Scales the per-reflection dXdt/dYdt bounds relative to the "
@@ -559,7 +545,6 @@ def integrate_reflection_table_for_experiment(
                 "KConv": p.kconv,
                 "n_restarts": p.n_restarts,
                 "optimize_profile": True,
-                "optimize_convolution_params": p.optimize_convolution_params,
                 "show_profile_failures": show_profile_failures,
             }
         )
@@ -611,8 +596,6 @@ def integrate_reflection_table_for_experiment(
                 "KConv": p.kconv,
                 "n_restarts": p.n_restarts,
                 "optimize_profile": True,
-                "optimize_convolution_params": p.optimize_convolution_params,
-                "optimize_moderator_params": p.optimize_moderator_params,
                 "max_drift_factor": p.max_drift_factor,
                 "show_profile_failures": show_profile_failures,
             }
@@ -639,7 +622,6 @@ def integrate_reflection_table_for_experiment(
                 "SigP_max": p.max_SigP,
                 "n_restarts": p.n_restarts,
                 "optimize_profile": True,
-                "optimize_shape_params": p.optimize_shape_params,
                 "max_drift_factor": p.max_drift_factor,
                 "show_profile_failures": show_profile_failures,
             }

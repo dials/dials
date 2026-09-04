@@ -49,9 +49,6 @@ namespace dials { namespace algorithms {
     // Control
     int n_restarts;              // number of attempts when fitting
     bool optimize_profile;       // If false the profile is generated with input params
-    bool optimize_shape_params;  // If false, fix the iBIX alpha, beta (moderator)
-                                 // params so only the per-reflection shape/position
-                                 // params are fitted
     double max_drift_factor;     // Scales the per-reflection dXdt/dYdt bounds
                                  // relative to the shoebox's spatial extent
                                  // divided by its ToF extent
@@ -74,7 +71,6 @@ namespace dials { namespace algorithms {
                            double SigP_max_,
                            int n_restarts_,
                            bool optimize_profile_,
-                           bool optimize_shape_params_,
                            double max_drift_factor_,
                            bool show_profile_failures_)
         : alpha(alpha_),
@@ -94,7 +90,6 @@ namespace dials { namespace algorithms {
           SigP_max(SigP_max_),
           n_restarts(n_restarts_),
           optimize_profile(optimize_profile_),
-          optimize_shape_params(optimize_shape_params_),
           max_drift_factor(max_drift_factor_),
           show_profile_failures(show_profile_failures_) {}
   };
@@ -139,7 +134,6 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_axis;  // 1D ToF, length = accessor()[2]
     std::array<double, 9> min_bounds, max_bounds;
     int num_data_points, num_params;
-    bool optimize_shape_params;
     mutable double cached_Scale;
     mutable Eigen::VectorXd last_params;
     mutable bool cache_valid;
@@ -162,12 +156,10 @@ namespace dials { namespace algorithms {
       const scitbx::af::versa<double, af::c_grid<3>> intensities_,
       const scitbx::af::versa<double, af::c_grid<3>> background_variances_,
       const std::array<double, 9>& minb,
-      const std::array<double, 9>& maxb,
-      bool opt_shape_params)
+      const std::array<double, 9>& maxb)
         : coords(coords_),
           intensities(intensities_),
           background_variances(background_variances_),
-          optimize_shape_params(opt_shape_params),
           cached_Scale(1.0),
           cache_valid(false) {
       min_bounds = minb;
@@ -303,12 +295,6 @@ namespace dials { namespace algorithms {
       Eigen::VectorXd f0(num_data_points);
       operator()(xc, f0);
       for (int j = 0; j < num_params; ++j) {
-        // Hold the iBIX shape params (alpha=0, beta=1) fixed by giving them a
-        // zero Jacobian column, so LM leaves them unchanged
-        if (!optimize_shape_params && j <= 1) {
-          J.col(j).setZero();
-          continue;
-        }
         Eigen::VectorXd xp = xc;
         const double delta = eps * (1.0 + std::abs(xc[j]));
         xp[j] += delta;
@@ -351,7 +337,6 @@ namespace dials { namespace algorithms {
       const std::array<double, 2>& SigY_bounds,
       const std::array<double, 2>& SigP_bounds,
       int n_restarts_,
-      bool optimize_shape_params,
       double max_drift_factor)
         : coords(get_rel_coords_3d(coords_, intensities_)),
           intensities(intensities_),
@@ -429,12 +414,7 @@ namespace dials { namespace algorithms {
       params[7] = 0.0;  // dXdt: no drift assumed unless the fit finds evidence
       params[8] = 0.0;  // dYdt
 
-      functor.emplace(coords,
-                      y_norm,
-                      background_variances,
-                      min_bounds,
-                      max_bounds,
-                      optimize_shape_params);
+      functor.emplace(coords, y_norm, background_variances, min_bounds, max_bounds);
     }
 
     static double estimate_sigma_from_fwhm(scitbx::af::const_ref<double> tof,
@@ -586,22 +566,15 @@ namespace dials { namespace algorithms {
       std::uniform_real_distribution<double> unit_dist(0.0, 1.0);
       std::normal_distribution<double> norm_dist(0.0, 0.5);
 
-      // Log-scale parameter indices: alpha(0), beta(1), sigma(2), SigX(4),
-      // SigY(5). alpha/beta are only perturbed when the shape is optimised.
-      const bool opt_shape = functor->optimize_shape_params;
+      // Log-scale parameter indices: alpha(0), beta(1), sigma(2), SigX(4), SigY(5).
       const int n_log = 5;
       const int log_idx[5] = {0, 1, 2, 4, 5};
-      auto is_fixed = [&](int j) {
-        if (!opt_shape && (j == 0 || j == 1)) return true;  // alpha, beta fixed
-        return false;
-      };
 
       // T_ph (position), SigP and dXdt/dYdt (peak walk) are not log-scale
       // params, so perturb them additively, scaled by their own bound width,
       // in every tier.
       auto perturb_position = [&](Eigen::VectorXd& x_try, double scale) {
         for (int j : {3, 6, 7, 8}) {
-          if (is_fixed(j)) continue;
           x_try[j] += norm_dist(rng) * scale * (max_bounds[j] - min_bounds[j]);
         }
       };
@@ -612,21 +585,18 @@ namespace dials { namespace algorithms {
         if (i < n_restarts / 3) {
           // Small log-scale perturbations
           for (int j = 0; j < n_log; ++j)
-            if (!is_fixed(log_idx[j]))
-              x_try[log_idx[j]] += std::log(0.8 + 0.4 * unit_dist(rng));
+            x_try[log_idx[j]] += std::log(0.8 + 0.4 * unit_dist(rng));
           perturb_position(x_try, 0.1);
         } else if (i < 2 * n_restarts / 3) {
           // Larger uniform log scale
           const double scale = 0.5 + 1.5 * unit_dist(rng);
           for (int j = 0; j < n_log; ++j)
-            if (!is_fixed(log_idx[j])) x_try[log_idx[j]] += std::log(scale);
+            x_try[log_idx[j]] += std::log(scale);
           perturb_position(x_try, 0.3);
         } else {
           // Random within bounds
           for (int j = 0; j < functor->num_params; ++j)
-            if (!is_fixed(j))
-              x_try[j] =
-                min_bounds[j] + unit_dist(rng) * (max_bounds[j] - min_bounds[j]);
+            x_try[j] = min_bounds[j] + unit_dist(rng) * (max_bounds[j] - min_bounds[j]);
         }
         x_try = functor->clamp_params(x_try);
 
@@ -761,7 +731,6 @@ namespace dials { namespace algorithms {
                              SigY_bounds,
                              SigP_bounds,
                              profile_params.n_restarts,
-                             profile_params.optimize_shape_params,
                              profile_params.max_drift_factor);
 
     bool profile_success = true;

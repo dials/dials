@@ -72,7 +72,6 @@ namespace dials { namespace algorithms { namespace boost_python {
                                                   d("KConv"),
                                                   i("n_restarts"),
                                                   b("optimize_profile"),
-                                                  b("optimize_convolution_params"),
                                                   b("show_profile_failures"));
   }
 
@@ -100,8 +99,6 @@ namespace dials { namespace algorithms { namespace boost_python {
                                                   d("KConv"),
                                                   i("n_restarts"),
                                                   b("optimize_profile"),
-                                                  b("optimize_convolution_params"),
-                                                  b("optimize_moderator_params"),
                                                   d("max_drift_factor"),
                                                   b("show_profile_failures"));
   }
@@ -127,7 +124,6 @@ namespace dials { namespace algorithms { namespace boost_python {
                                                     d("SigP_max"),
                                                     i("n_restarts"),
                                                     b("optimize_profile"),
-                                                    b("optimize_shape_params"),
                                                     d("max_drift_factor"),
                                                     b("show_profile_failures"));
   }
@@ -402,8 +398,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def_readwrite("KConv", &TOFProfile1DICParams::KConv)
       .def_readwrite("n_restarts", &TOFProfile1DICParams::n_restarts)
       .def_readwrite("optimize_profile", &TOFProfile1DICParams::optimize_profile)
-      .def_readwrite("optimize_convolution_params",
-                     &TOFProfile1DICParams::optimize_convolution_params)
       .def_readwrite("show_profile_failures",
                      &TOFProfile1DICParams::show_profile_failures);
 
@@ -445,10 +439,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def_readwrite("KConv", &TOFProfile3DICParams::KConv)
       .def_readwrite("n_restarts", &TOFProfile3DICParams::n_restarts)
       .def_readwrite("optimize_profile", &TOFProfile3DICParams::optimize_profile)
-      .def_readwrite("optimize_convolution_params",
-                     &TOFProfile3DICParams::optimize_convolution_params)
-      .def_readwrite("optimize_moderator_params",
-                     &TOFProfile3DICParams::optimize_moderator_params)
       .def_readwrite("max_drift_factor", &TOFProfile3DICParams::max_drift_factor)
       .def_readwrite("show_profile_failures",
                      &TOFProfile3DICParams::show_profile_failures);
@@ -473,8 +463,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def_readwrite("SigP_max", &TOFProfile3DIBIXParams::SigP_max)
       .def_readwrite("n_restarts", &TOFProfile3DIBIXParams::n_restarts)
       .def_readwrite("optimize_profile", &TOFProfile3DIBIXParams::optimize_profile)
-      .def_readwrite("optimize_shape_params",
-                     &TOFProfile3DIBIXParams::optimize_shape_params)
       .def_readwrite("max_drift_factor", &TOFProfile3DIBIXParams::max_drift_factor)
       .def_readwrite("show_profile_failures",
                      &TOFProfile3DIBIXParams::show_profile_failures);

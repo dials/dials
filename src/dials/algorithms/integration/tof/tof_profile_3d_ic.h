@@ -50,23 +50,18 @@ namespace dials { namespace algorithms {
     double SigY_min, SigY_max;
     double SigP, SigP_min, SigP_max;  // spatial correlation
                                       //
-    // Convolution parameters (optimised by default but can be fixed with
-    // optimize_convolution_params=false)
+    // Convolution parameters (always optimised alongside the other model params)
     double HatWidth;  // half-width of rectangular convolution kernel in ToF bins
     double KConv;     // Gaussian kernel decay rate per ToF bin^2 (sigma =
                       // 1/sqrt(2*KConv) bins)
 
     // Control
-    int n_restarts;         // number of attempts when fitting
-    bool optimize_profile;  // If false the profile is generated with input params
-    bool optimize_convolution_params;  // If false, fix HatWidth and KConv
-    bool optimize_moderator_params;    // If false, fix the Ikeda-Carpenter A, B, R
-                                       // (moderator) params so only the per-reflection
-                                       // shape/position params are fitted
-    double max_drift_factor;           // Scales the per-reflection dXdt/dYdt bounds
-                                       // relative to the shoebox's spatial extent
-                                       // divided by its ToF extent
-    bool show_profile_failures;        // Prints debugging information
+    int n_restarts;              // number of attempts when fitting
+    bool optimize_profile;       // If false the profile is generated with input params
+    double max_drift_factor;     // Scales the per-reflection dXdt/dYdt bounds
+                                 // relative to the shoebox's spatial extent
+                                 // divided by its ToF extent
+    bool show_profile_failures;  // Prints debugging information
 
     TOFProfile3DICParams(double A_,
                          double A_min_,
@@ -88,8 +83,6 @@ namespace dials { namespace algorithms {
                          double KConv_,
                          int n_restarts_,
                          bool optimize_profile_,
-                         bool optimize_convolution_params_,
-                         bool optimize_moderator_params_,
                          double max_drift_factor_,
                          bool show_profile_failures_)
         : A(A_),
@@ -112,8 +105,6 @@ namespace dials { namespace algorithms {
           KConv(KConv_),
           n_restarts(n_restarts_),
           optimize_profile(optimize_profile_),
-          optimize_convolution_params(optimize_convolution_params_),
-          optimize_moderator_params(optimize_moderator_params_),
           max_drift_factor(max_drift_factor_),
           show_profile_failures(show_profile_failures_) {}
   };
@@ -237,11 +228,8 @@ namespace dials { namespace algorithms {
     const scitbx::af::versa<double, af::c_grid<3>> intensities;
     const scitbx::af::versa<double, af::c_grid<3>> background_variances;
     scitbx::af::shared<double> tof_axis;  // 1D ToF, length = accessor()[2]
-    double fixed_hat_width, fixed_kconv;
     std::array<double, 11> min_bounds, max_bounds;
     int num_data_points, num_params;
-    bool optimize_convolution_params;
-    bool optimize_moderator_params;
     mutable double cached_Scale;
     mutable Eigen::VectorXd last_params;
     mutable bool cache_valid;
@@ -257,7 +245,6 @@ namespace dials { namespace algorithms {
      *   x[6] = SigP         BVG correlation (-1,1), clamped
      *   x[7] = dXdt         BVG centre drift in x per unit ToF (peak walk)
      *   x[8] = dYdt         BVG centre drift in y per unit ToF (peak walk)
-     * When optimize_convolution_params:
      *   x[9]  = log(HatWidth)
      *   x[10] = log(KConv)
      */
@@ -267,24 +254,16 @@ namespace dials { namespace algorithms {
       const scitbx::af::versa<double, af::c_grid<3>> intensities_,
       const scitbx::af::versa<double, af::c_grid<3>> background_variances_,
       const std::array<double, 11>& minb,
-      const std::array<double, 11>& maxb,
-      double hat_width,
-      double kconv,
-      bool opt_conv_params,
-      bool opt_moderator_params)
+      const std::array<double, 11>& maxb)
         : coords(coords_),
           intensities(intensities_),
           background_variances(background_variances_),
-          fixed_hat_width(hat_width),
-          fixed_kconv(kconv),
-          optimize_convolution_params(opt_conv_params),
-          optimize_moderator_params(opt_moderator_params),
           cached_Scale(1.0),
           cache_valid(false) {
       min_bounds = minb;
       max_bounds = maxb;
       num_data_points = coords.size();
-      num_params = opt_conv_params ? 11 : 9;
+      num_params = 11;
       last_params =
         Eigen::VectorXd::Constant(num_params, std::numeric_limits<double>::quiet_NaN());
 
@@ -331,8 +310,8 @@ namespace dials { namespace algorithms {
       SigP = xc[6];
       dXdt = xc[7];
       dYdt = xc[8];
-      HatWidth = optimize_convolution_params ? std::exp(xc[9]) : fixed_hat_width;
-      KConv = optimize_convolution_params ? std::exp(xc[10]) : fixed_kconv;
+      HatWidth = std::exp(xc[9]);
+      KConv = std::exp(xc[10]);
     }
 
     double calc_scale(const scitbx::af::shared<double>& ic_conv,
@@ -420,12 +399,6 @@ namespace dials { namespace algorithms {
       Eigen::VectorXd f0(num_data_points);
       operator()(xc, f0);
       for (int j = 0; j < num_params; ++j) {
-        // Hold the Ikeda-Carpenter moderator params (A=0, B=1, R=2) fixed by
-        // giving them a zero Jacobian column, so LM leaves them unchanged
-        if (!optimize_moderator_params && j <= 2) {
-          J.col(j).setZero();
-          continue;
-        }
         Eigen::VectorXd xp = xc;
         const double delta = eps * (1.0 + std::abs(xc[j]));
         xp[j] += delta;
@@ -470,8 +443,6 @@ namespace dials { namespace algorithms {
                    const std::array<double, 2>& SigY_bounds,
                    const std::array<double, 2>& SigP_bounds,
                    int n_restarts_,
-                   bool optimize_convolution_params,
-                   bool optimize_moderator_params,
                    double max_drift_factor)
         : coords(get_rel_coords(coords_, intensities_)),
           intensities(intensities_),
@@ -559,7 +530,7 @@ namespace dials { namespace algorithms {
                     std::log(20.0),
                     std::log(5.0)};
 
-      params.resize(optimize_convolution_params ? 11 : 9);
+      params.resize(11);
       params[0] = std::log(A);
       params[1] = std::log(B);
       params[2] = std::min(std::max(R, R_bounds[0]), R_bounds[1]);
@@ -569,20 +540,10 @@ namespace dials { namespace algorithms {
       params[6] = SigP_init;
       params[7] = 0.0;  // dXdt: no drift assumed unless the fit finds evidence
       params[8] = 0.0;  // dYdt
-      if (optimize_convolution_params) {
-        params[9] = std::log(std::max(HatWidth, 0.5));
-        params[10] = std::log(std::min(std::max(KConv, 0.02), 5.0));
-      }
+      params[9] = std::log(std::max(HatWidth, 0.5));
+      params[10] = std::log(std::min(std::max(KConv, 0.02), 5.0));
 
-      functor.emplace(coords,
-                      y_norm,
-                      background_variances,
-                      min_bounds,
-                      max_bounds,
-                      HatWidth,
-                      KConv,
-                      optimize_convolution_params,
-                      optimize_moderator_params);
+      functor.emplace(coords, y_norm, background_variances, min_bounds, max_bounds);
     }
 
     scitbx::af::versa<vec3<double>, af::c_grid<3>> get_rel_coords(
@@ -637,12 +598,8 @@ namespace dials { namespace algorithms {
       const double A = get_A(), B = get_B(), R = get_R(), T0 = get_T0();
       const double SigX = get_SigX(), SigY = get_SigY(), SigP = get_SigP();
       const double dXdt = get_dXdt(), dYdt = get_dYdt();
-      double HatWidth = functor->fixed_hat_width;
-      double KConv = functor->fixed_kconv;
-      if (functor->optimize_convolution_params && params.size() >= 11) {
-        HatWidth = std::exp(params[9]);
-        KConv = std::exp(params[10]);
-      }
+      const double HatWidth = std::exp(params[9]);
+      const double KConv = std::exp(params[10]);
       const scitbx::af::shared<double> ic_conv =
         ic_profile(functor->tof_axis.const_ref(), A, B, R, T0, HatWidth, KConv);
       const int nx = coords.accessor()[0];
@@ -711,18 +668,12 @@ namespace dials { namespace algorithms {
       std::normal_distribution<double> norm_dist(0.0, 0.5);
 
       // Log-scale params
-      const bool opt_mod = functor->optimize_moderator_params;
-      const int n_log = functor->optimize_convolution_params ? 6 : 4;
+      const int n_log = 6;
       const int log_idx[6] = {0, 1, 4, 5, 9, 10};
-      auto is_fixed = [&](int j) {
-        if (!opt_mod && j <= 2) return true;  // A, B, R fixed
-        return false;
-      };
 
       // Params that are not log scale
       auto perturb_position = [&](Eigen::VectorXd& x_try, double scale) {
         for (int j : {3, 7, 8}) {
-          if (is_fixed(j)) continue;
           x_try[j] += norm_dist(rng) * scale * (max_bounds[j] - min_bounds[j]);
         }
       };
@@ -733,21 +684,18 @@ namespace dials { namespace algorithms {
         if (i < n_restarts / 3) {
           // Small log-scale perturbations
           for (int j = 0; j < n_log; ++j)
-            if (!is_fixed(log_idx[j]))
-              x_try[log_idx[j]] += std::log(0.8 + 0.4 * unit_dist(rng));
+            x_try[log_idx[j]] += std::log(0.8 + 0.4 * unit_dist(rng));
           perturb_position(x_try, 0.1);
         } else if (i < 2 * n_restarts / 3) {
           // Larger uniform log scale
           const double scale = 0.5 + 1.5 * unit_dist(rng);
           for (int j = 0; j < n_log; ++j)
-            if (!is_fixed(log_idx[j])) x_try[log_idx[j]] += std::log(scale);
+            x_try[log_idx[j]] += std::log(scale);
           perturb_position(x_try, 0.3);
         } else {
           // Random within bounds
           for (int j = 0; j < functor->num_params; ++j)
-            if (!is_fixed(j))
-              x_try[j] =
-                min_bounds[j] + unit_dist(rng) * (max_bounds[j] - min_bounds[j]);
+            x_try[j] = min_bounds[j] + unit_dist(rng) * (max_bounds[j] - min_bounds[j]);
         }
         x_try = functor->clamp_params(x_try);
 
@@ -882,8 +830,6 @@ namespace dials { namespace algorithms {
                            SigY_bounds,
                            SigP_bounds,
                            profile_params.n_restarts,
-                           profile_params.optimize_convolution_params,
-                           profile_params.optimize_moderator_params,
                            profile_params.max_drift_factor);
 
     bool profile_success = true;

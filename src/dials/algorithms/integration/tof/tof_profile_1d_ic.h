@@ -39,8 +39,7 @@ namespace dials { namespace algorithms {
     double KConv;            // Gaussian convolution kernel decay rate (per ToF bin^2)
     int n_restarts;          // number of attempts when fitting
     bool optimize_profile;   // If false the profile is generated with input params
-    bool optimize_convolution_params;  // If false, HatWidth and KConv are fixed
-    bool show_profile_failures;        // Prints debugging information
+    bool show_profile_failures;  // Prints debugging information
 
     TOFProfile1DICParams(double A,
                          double A_min,
@@ -55,7 +54,6 @@ namespace dials { namespace algorithms {
                          double KConv,
                          int n_restarts,
                          bool optimize_profile,
-                         bool optimize_convolution_params,
                          bool show_profile_failures)
 
         : A(A),
@@ -71,7 +69,6 @@ namespace dials { namespace algorithms {
           KConv(KConv),
           n_restarts(n_restarts),
           optimize_profile(optimize_profile),
-          optimize_convolution_params(optimize_convolution_params),
           show_profile_failures(show_profile_failures) {}
   };
 
@@ -103,26 +100,17 @@ namespace dials { namespace algorithms {
     scitbx::af::const_ref<double> y_norm;  // Assumed normalized
     std::array<double, 7> min_bounds;      // parameter bounds
     std::array<double, 7> max_bounds;      // parameter bounds
-    double fixed_hat_width, fixed_kconv;
-    bool optimize_convolution_params;
     int num_data_points, num_params;
 
     IC1DProfileFunctor(scitbx::af::const_ref<double> tof_,
                        scitbx::af::const_ref<double> y_norm_,
                        const std::array<double, 7>& minb,
-                       const std::array<double, 7>& maxb,
-                       double hat_width,
-                       double kconv,
-                       bool opt_conv_params)
-        : tof(tof_),
-          y_norm(y_norm_),
-          fixed_hat_width(hat_width),
-          fixed_kconv(kconv),
-          optimize_convolution_params(opt_conv_params) {
+                       const std::array<double, 7>& maxb)
+        : tof(tof_), y_norm(y_norm_) {
       min_bounds = minb;
       max_bounds = maxb;
       num_data_points = tof.size();
-      num_params = opt_conv_params ? 7 : 5;
+      num_params = 7;
     }
 
     int values() const {
@@ -148,8 +136,8 @@ namespace dials { namespace algorithms {
       double B = xc[2];
       double R = xc[3];
       double T0 = xc[4];
-      double HatWidth = optimize_convolution_params ? xc[5] : fixed_hat_width;
-      double KConv = optimize_convolution_params ? xc[6] : fixed_kconv;
+      double HatWidth = xc[5];
+      double KConv = xc[6];
 
       scitbx::af::shared<double> model =
         profile1d_ic_func(tof, Scale, A, B, R, T0, HatWidth, KConv);
@@ -200,7 +188,6 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> y_norm;          // normalized intensities
     double intensity_max;
     int n_restarts;
-    bool optimize_convolution_params;
 
     // params
     double Scale, A, B, R, T0, HatWidth, KConv;
@@ -218,8 +205,7 @@ namespace dials { namespace algorithms {
                    const std::array<double, 2>& A_bounds,
                    const std::array<double, 2>& B_bounds,
                    const std::array<double, 2>& R_bounds,
-                   int n_restarts_,
-                   bool optimize_convolution_params_)
+                   int n_restarts_)
         : tof(tof_),
           intensities(intensities_),
           A(A_),
@@ -227,8 +213,7 @@ namespace dials { namespace algorithms {
           R(R_),
           HatWidth(HatWidth_),
           KConv(KConv_),
-          n_restarts(n_restarts_),
-          optimize_convolution_params(optimize_convolution_params_) {
+          n_restarts(n_restarts_) {
       DIALS_ASSERT(tof.size() > 0);
       DIALS_ASSERT(tof.size() == intensities.size());
 
@@ -317,8 +302,7 @@ namespace dials { namespace algorithms {
              double ftol = 1e-8) {
       /*
        * Least-squares minimization
-       * Updates Scale, A, B, R, T0 (and HatWidth, KConv if
-       * optimize_convolution_params)
+       * Updates Scale, A, B, R, T0, HatWidth, KConv
        * If fitting fails, params are perturbed n_restarts to find a solution
        */
 
@@ -326,13 +310,7 @@ namespace dials { namespace algorithms {
       const int ndata = static_cast<int>(tof.size());
       if (ndata < 5) return false;
 
-      IC1DProfileFunctor functor(tof,
-                                 y_norm.const_ref(),
-                                 min_bounds,
-                                 max_bounds,
-                                 HatWidth,
-                                 KConv,
-                                 optimize_convolution_params);
+      IC1DProfileFunctor functor(tof, y_norm.const_ref(), min_bounds, max_bounds);
       typedef Eigen::LevenbergMarquardt<IC1DProfileFunctor, double> LM;
 
       auto run_single_fit = [&](const Eigen::VectorXd& x_init,
@@ -359,21 +337,15 @@ namespace dials { namespace algorithms {
         B = x[2];
         R = x[3];
         T0 = x[4];
-        if (optimize_convolution_params) {
-          HatWidth = x[5];
-          KConv = x[6];
-        }
+        HatWidth = x[5];
+        KConv = x[6];
 
         return true;
       };
 
       // First fit attempt
       Eigen::VectorXd x0(functor.num_params);
-      if (optimize_convolution_params) {
-        x0 << Scale, A, B, R, T0, HatWidth, KConv;
-      } else {
-        x0 << Scale, A, B, R, T0;
-      }
+      x0 << Scale, A, B, R, T0, HatWidth, KConv;
       double fit_resid = std::numeric_limits<double>::infinity();
       bool success = run_single_fit(x0, fit_resid);
       std::size_t max_profile_index;
@@ -554,8 +526,7 @@ namespace dials { namespace algorithms {
                            A_bounds,
                            B_bounds,
                            R_bounds,
-                           profile_params.n_restarts,
-                           profile_params.optimize_convolution_params);
+                           profile_params.n_restarts);
 
     bool profile_success = true;
     if (profile_params.optimize_profile) {
@@ -567,10 +538,8 @@ namespace dials { namespace algorithms {
         profile_params.A = profile.A;
         profile_params.B = profile.B;
         profile_params.R = profile.R;
-        if (profile_params.optimize_convolution_params) {
-          profile_params.HatWidth = profile.HatWidth;
-          profile_params.KConv = profile.KConv;
-        }
+        profile_params.HatWidth = profile.HatWidth;
+        profile_params.KConv = profile.KConv;
       }
       double I_prf = profile.calc_intensity();
       auto profile_result = profile.result();
