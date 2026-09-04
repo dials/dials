@@ -40,9 +40,9 @@ output {
     log = "dials.countrate.log"
         .type = str
         .help = "Log file for processing"
-    histogram = "pixel_counts.json"
+    results = "countrate.json"
         .type = str
-        .help = "JSON file containing histogram of pixel intensities and detector trusted range"
+        .help = "JSON file containing histogram of pixel intensities, detector trusted range and recommended transmission"
 }
 """,
     process_includes=True,
@@ -65,12 +65,23 @@ def generate_histogram_from_shoeboxes(shoeboxes) -> dict[int, int]:
     return histogram
 
 
-def save_hist_to_json(
-    hist: dict[int, int], max_trusted_value: int, results_path: pathlib.Path
+def save_results_to_json(
+    histogram: dict[int, int],
+    max_trusted_value: int,
+    results_path: pathlib.Path,
+    recommended_transmission: float,
 ):
-    logger.info(f"Saving counts histogram to {str(results_path)}")
+    logger.info(f"Saving results to {str(results_path)}\n")
     with open(results_path, "w") as f:
-        json.dump({"counts": hist, "overload_limit": max_trusted_value}, f, indent=2)
+        json.dump(
+            {
+                "counts": histogram,
+                "trusted_range_upper_limit": max_trusted_value,
+                "recommended_transmission": recommended_transmission,
+            },
+            f,
+            indent=2,
+        )
 
 
 def get_percentile_index(num_pixels: list[int], percentile: float) -> int:
@@ -128,17 +139,15 @@ def run(args: list[str] | None = None, phil=phil_scope):
 
     transmission = experiment.beam.get_transmission()
 
-    hist = generate_histogram_from_shoeboxes(shoeboxes)
+    histogram = generate_histogram_from_shoeboxes(shoeboxes)
     detector = experiment.detector.to_dict()
     max_trusted_counts = detector["panels"][0]["trusted_range"][1]
 
-    save_hist_to_json(hist, max_trusted_counts, params.output.histogram)
-
-    max_pixel_count = max(hist.keys())
+    max_pixel_count = max(histogram.keys())
     max_pixel_percent_of_trusted_range = max_pixel_count * 100 / max_trusted_counts
 
-    num_pixels = list(hist.values())
-    pixel_intensities = list(hist.keys())
+    num_pixels = list(histogram.values())
+    pixel_intensities = list(histogram.keys())
     total_pixels = sum(num_pixels)
 
     percentiles = [99.999, 99.99, 99.9, 99.0, 90.0]
@@ -175,6 +184,10 @@ def run(args: list[str] | None = None, phil=phil_scope):
         f"Recommended max transmission of {recommended_transmission * 100:.2f}% to keep {ref_percentile}% of pixel intensities below {target_countrate_pct}% of detector trusted range\n"
     )
     logger.info("=" * 60)
+
+    save_results_to_json(
+        histogram, max_trusted_counts, params.output.results, recommended_transmission
+    )
 
     duration = time.time() - start_time
 
