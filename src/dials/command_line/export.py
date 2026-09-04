@@ -54,6 +54,14 @@ PETS format exports intensity data and diffraction data in the CIF format
 used by PETS. This is primarily intended to produce files suitable for
 dynamic diffraction refinement using Jana2020, which requires this format.
 
+CIF format exports intensity data along with the unit cell, symmetry and data
+reduction metadata as a small molecule (core) CIF file, ready for structure
+solution in programs such as Olex2. Unlike SHELX format, the intensities are
+not rescaled to fit a fixed-width field. For electron diffraction the relevant
+items of the electron diffraction extension to the core dictionary are written
+too, and metadata that a data reduction cannot know can be added with
+cif.extra.
+
 Examples::
 
   # Export to mtz
@@ -79,12 +87,20 @@ Examples::
   dials.export scaled.expt scaled.refl format=shelx
   dials.export scaled.expt scaled.refl format=shelx shelx.hklout=dials.hkl
   dials.export scaled.expt scaled.refl format=shelx composition=C3H7NO2S
+
+  # Export to CIF
+  dials.export scaled.expt scaled.refl format=cif
+  dials.export scaled.expt scaled.refl format=cif cif.hklout=dials.cif
+  dials.export scaled.expt scaled.refl format=cif chemical_formula=C3H7NO2S
+  dials.export scaled.expt scaled.refl format=cif \\
+      "cif.extra=_diffrn_source_type=LaB6 gun" \\
+      cif.extra=_diffrn_precession_semi_angle=1.0
 """
 
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx pets
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx pets cif
     .type = choice
     .help = "The output file format"
 
@@ -273,6 +289,36 @@ phil_scope = parse(
     scale_range = -9999.0, 9999.0
       .type = floats(size=2, value_min=-999999., value_max=9999999.)
       .help = "minimum or maximum intensity value after scaling."
+
+  }
+
+  cif {
+
+    hklout = dials.cif
+      .type = path
+      .help = "The output CIF file"
+    chemical_formula = None
+      .type = str
+      .help = "The chemical composition of the asymmetric unit, e.g. C3H7NO2S."
+              "Used to write _chemical_formula_sum, _chemical_formula_weight and"
+              "_cell_formula_units_Z, which are omitted if this is not given."
+    scale_group_code = False
+      .type = bool
+      .help = "Write _diffrn_refln_scale_group_code from the experiment"
+              "identifier. Olex2 turns this into the SHELX batch number, so"
+              "leave it off unless you intend to refine per-sweep scale factors."
+    datablock = dials
+      .type = str
+      .help = "The name of the CIF data block"
+    extra = None
+      .type = str
+      .multiple = True
+      .help = "An extra '_data_name=value' pair to write, which overrides any"
+              "value DIALS would write for that data name. Repeat to write"
+              "more than one. Useful for the experimental metadata that a data"
+              "reduction cannot know, such as the electron diffraction items"
+              "_diffrn_source_type, _diffrn_precession_semi_angle or"
+              "_diffrn_radiation_illumination_mode."
 
   }
 
@@ -573,6 +619,29 @@ def export_shelx(params, experiments, reflections):
     export_shelx(reflections[0], experiments, params)
 
 
+def export_cif(params, experiments, reflections):
+    """
+    Export data in small molecule (core) CIF format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    _check_input(experiments, reflections, params=params)
+
+    # check for a single intensity choice, as the reflection loop has a single
+    # intensity_net column
+    if len(params.intensity) > 1:
+        raise ValueError(
+            "Only 1 intensity option can be exported in this format, please choose a single intensity option e.g. intensity=profile"
+        )
+
+    from dials.util.export_cif import export_cif
+
+    export_cif(reflections[0], experiments, params)
+
+
 def export_pets(params, experiments, reflections):
     """
     Export reflections in PETS CIF format
@@ -684,6 +753,7 @@ def run(args=None):
         "json": export_json,
         "shelx": export_shelx,
         "pets": export_pets,
+        "cif": export_cif,
     }.get(params.format)
     if not exporter:
         sys.exit(f"Unknown format: {params.format}")

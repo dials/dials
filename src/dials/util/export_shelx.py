@@ -259,58 +259,74 @@ def _export_as_shelx_hklf2(
         g.write(f"{0:4d}{0:4d}{0:4d}{0.0:8.2f}{0.0:8.2f}{0:4d}{0.0:8.4f}\n")
 
 
+def single_wavelength(experiment_list):
+    """Return the wavelength shared by all experiments.
+
+    Raises ValueError if the experiments do not share a single wavelength."""
+
+    wavelengths = []
+    for exp in experiment_list:
+        wl = exp.beam.get_wavelength()
+        if not any(isclose(wl, w, abs_tol=1e-4) for w in wavelengths):
+            wavelengths.append(wl)
+    if len(wavelengths) > 1:
+        raise ValueError("Experiments have more than one wavelength")
+    return wavelengths[0]
+
+
+def unit_cell_and_esds(experiment_list, best_unit_cell=None):
+    """Determine the unit cell to report for an experiment list, along with its
+    standard uncertainties where these are meaningful.
+
+    A user-supplied best_unit_cell, or a cell determined from experiments that
+    do not share a common cell, has no associated esds. Returns a tuple of the
+    unit cell and either a 6-tuple of esds or None."""
+
+    # if user has supplied best_unit_cell use it
+    if best_unit_cell is not None:
+        return best_unit_cell, None
+
+    unit_cells = [
+        exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
+        for exp in experiment_list
+    ]
+    if len({uc.parameters() for uc in unit_cells}) > 1:
+        # have different cells so no esds
+        return determine_best_unit_cell(experiment_list), None
+
+    # identical (recalculated?) unit cell with esds
+    crystal = experiment_list[0].crystal
+    uc = crystal.get_recalculated_unit_cell() or crystal.get_unit_cell()
+    uc_sd = (
+        crystal.get_recalculated_cell_parameter_sd() or crystal.get_cell_parameter_sd()
+    )
+    return uc, (uc_sd or None)
+
+
+def unit_cell_volume_esd(experiment_list):
+    """Return the standard uncertainty of the unit cell volume of the first
+    experiment, or None if this is not available."""
+
+    crystal = experiment_list[0].crystal
+    for sd in (
+        crystal.get_recalculated_cell_volume_sd(),
+        crystal.get_cell_volume_sd(),
+    ):
+        # unset values are reported as 0.0 or -1.0 depending on the accessor
+        if sd > 0:
+            return sd
+    return None
+
+
 def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
     sg = experiment_list[0].crystal.get_space_group()
-    unit_cells = []
-    wavelengths = []
 
     if experiment_list.all_laue() or experiment_list.all_tof():
         wl = 1.0
     else:
-        # Check for single wavelength
-        for exp in experiment_list:
-            wl = exp.beam.get_wavelength()
-            if not any(isclose(wl, w, abs_tol=1e-4) for w in wavelengths):
-                wavelengths.append(wl)
-        if len(wavelengths) > 1:
-            raise ValueError("Experiments have more than one wavelength")
-        else:
-            wl = wavelengths[0]
+        wl = single_wavelength(experiment_list)
 
-    # if user has supplied best_unit_cell use it
-    if best_unit_cell is not None:
-        uc = best_unit_cell
-        uc_sd = None
-    else:
-        for exp in experiment_list:
-            unit_cells.append(
-                exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
-            )
-
-        if len(unit_cells) > 1:
-            if (
-                len({uc.parameters() for uc in unit_cells}) > 1
-            ):  # have different cells so no esds
-                uc = determine_best_unit_cell(experiment_list)
-                uc_sd = None
-            else:  # identical (recalculated?) unit cell with esds
-                uc = (
-                    experiment_list[0].crystal.get_recalculated_unit_cell()
-                    or experiment_list[0].crystal.get_unit_cell()
-                )
-                uc_sd = (
-                    experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
-                    or experiment_list[0].crystal.get_cell_parameter_sd()
-                )
-        else:  # single unit cell
-            uc = (
-                experiment_list[0].crystal.get_recalculated_unit_cell()
-                or experiment_list[0].crystal.get_unit_cell()
-            )
-            uc_sd = (
-                experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
-                or experiment_list[0].crystal.get_cell_parameter_sd()
-            )
+    uc, uc_sd = unit_cell_and_esds(experiment_list, best_unit_cell)
 
     with open(ins_file, "w") as f:
         f.write(
@@ -331,7 +347,7 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
         logger.info(
             f"Using composition {composition} to write SFAC & UNIT instructions"
         )
-        sorted_composition = _parse_compound(composition)
+        sorted_composition = parse_compound(composition)
         f.write("SFAC %s\n" % " ".join(sorted_composition))
         f.write(
             "UNIT %s\n"
@@ -343,7 +359,11 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
         f.write("END\n")
 
 
-def _parse_compound(composition):
+def parse_compound(composition):
+    """Parse a chemical composition such as C3H7NO2S into an ordered dict of
+    element counts, with C first. A composition given as a bare list of
+    elements results in counts of zero."""
+
     elements = chemical_elements.proper_caps_list()[:94]
     m = re.findall(r"([A-Z][a-z]?)(\d*)", composition)
     if all(e[1] == "" for e in m):
