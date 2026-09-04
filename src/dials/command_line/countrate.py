@@ -19,7 +19,11 @@ from dials.util.version import dials_version
 logger = logging.getLogger("dials.commandline.countrate")
 
 help_message = """
-dials.countrate: Analyse pixel intensities from reflection shoebox data.
+dials.countrate: Analyse pixel intensities from reflection "shoebox" data and recommend a suitable transmission for future experiments.
+
+dials.countrate takes the "shoeboxes" (raw pixel data) from a reflection table (e.g. strong.refl from dials.find_spots) and calculates a histogram of pixel intensities.
+A maximum recommended transmission is then calculated to keep a specified percentile of pixel intensities below a target percentage of the detector trusted range. The idea
+of this is to try and keep most of the pixel intensities in the linear range of the detector and limit reliance on the detector countrate correction.
 
 Usage examples:
     dials.countrate imported.expt strong.refl
@@ -44,8 +48,7 @@ output {
         .type = str
         .help = "JSON file containing histogram of pixel intensities, detector trusted range and recommended transmission"
 }
-""",
-    process_includes=True,
+"""
 )
 
 
