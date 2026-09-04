@@ -10,6 +10,7 @@ import pytest
 
 import iotbx.cif
 from cctbx import sgtbx, uctbx
+from dxtbx.model import Beam
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 from iotbx import mtz
@@ -643,14 +644,15 @@ def test_shelx_ins_composition(dials_data, tmp_path):
                 assert result == sfac_unit[instruction]
 
 
-def _export_cif(dials_data, tmp_path, *args):
+def _export_cif(dials_data, tmp_path, *args, expt=None):
+    data = dials_data("l_cysteine_4_sweeps_scaled")
     result = subprocess.run(
         [
             shutil.which("dials.export"),
             "intensity=scale",
             "format=cif",
-            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.expt",
-            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl",
+            expt or data / "scaled_20_25.expt",
+            data / "scaled_20_25.refl",
             *args,
         ],
         cwd=tmp_path,
@@ -742,6 +744,70 @@ def test_cif_best_unit_cell(dials_data, tmp_path):
     assert block.find_value("_cell_length_a") == "5.0000"
     assert block.find_value("_cell_length_b") == "8.0000"
     assert block.find_value("_cell_length_c") == "12.0000"
+
+
+def test_cif_extra(dials_data, tmp_path):
+    block = _export_cif(
+        dials_data,
+        tmp_path,
+        "cif.extra=_diffrn_source_type=LaB6 gun",
+        "cif.extra=_exptl_crystal_description=nanocrystal",
+        "cif.extra=_exptl_crystal_colour=?",
+        # this one overrides a value DIALS derived for itself
+        "cif.extra=_diffrn_detector_type=ASI Timepix",
+    )
+    assert block.find_value("_diffrn_source_type") == "'LaB6 gun'"
+    assert block.find_value("_exptl_crystal_description") == "nanocrystal"
+    # the CIF special value for "unknown" is only meaningful unquoted
+    assert block.find_value("_exptl_crystal_colour") == "?"
+    assert block.find_value("_diffrn_detector_type") == "'ASI Timepix'"
+
+
+def test_cif_extra_bad_syntax(dials_data, tmp_path):
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "intensity=scale",
+            "format=cif",
+            "cif.extra=no_leading_underscore=1",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert result.returncode
+    assert b"Cannot interpret cif.extra" in result.stdout + result.stderr
+
+
+def test_cif_electron_diffraction(dials_data, tmp_path):
+    # There is no scaled electron diffraction data in dials_data, so relabel an
+    # existing experiment list as if it had been collected with 200 kV electrons
+    expts = ExperimentListFactory.from_json_file(
+        str(dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.expt"),
+        check_format=False,
+    )
+    for expt in expts:
+        expt.beam.set_probe(Beam.get_probe_from_name("electron"))
+        expt.beam.set_wavelength(0.0251)
+    expts.as_file(tmp_path / "electron.expt")
+
+    block = _export_cif(dials_data, tmp_path, expt=tmp_path / "electron.expt")
+
+    assert block.find_value("_diffrn_radiation_probe") == "electron"
+    assert block.find_value("_diffrn_radiation_wavelength") == "0.02510"
+    # the accelerating voltage in kV, derived from the wavelength
+    assert block.find_value("_diffrn_source_voltage") == "200"
+    assert block.find_value("_diffrn_source") == "'electron gun'"
+    assert (
+        block.find_value("_diffrn_measurement_device")
+        == "'transmission electron microscope'"
+    )
+    assert block.find_value("_diffrn_measurement_rotation_mode") == "rotation"
+    assert (
+        block.find_value("_diffrn_measurement_method")
+        == "'continuous rotation 3D electron diffraction'"
+    )
 
 
 def test_export_sum_or_profile_only(dials_data, tmp_path):

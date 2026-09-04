@@ -57,7 +57,10 @@ dynamic diffraction refinement using Jana2020, which requires this format.
 CIF format exports intensity data along with the unit cell, symmetry and data
 reduction metadata as a small molecule (core) CIF file, ready for structure
 solution in programs such as Olex2. Unlike SHELX format, the intensities are
-not rescaled to fit a fixed-width field.
+not rescaled to fit a fixed-width field. For electron diffraction the relevant
+items of the electron diffraction extension to the core dictionary are written
+too, and metadata that a data reduction cannot know can be added with
+cif.extra.
 
 Examples::
 
@@ -89,6 +92,9 @@ Examples::
   dials.export scaled.expt scaled.refl format=cif
   dials.export scaled.expt scaled.refl format=cif cif.hklout=dials.cif
   dials.export scaled.expt scaled.refl format=cif chemical_formula=C3H7NO2S
+  dials.export scaled.expt scaled.refl format=cif \\
+      "cif.extra=_diffrn_source_type=LaB6 gun" \\
+      cif.extra=_diffrn_precession_semi_angle=1.0
 """
 
 phil_scope = parse(
@@ -304,6 +310,15 @@ phil_scope = parse(
     datablock = dials
       .type = str
       .help = "The name of the CIF data block"
+    extra = None
+      .type = str
+      .multiple = True
+      .help = "An extra '_data_name=value' pair to write, which overrides any"
+              "value DIALS would write for that data name. Repeat to write"
+              "more than one. Useful for the experimental metadata that a data"
+              "reduction cannot know, such as the electron diffraction items"
+              "_diffrn_source_type, _diffrn_precession_semi_angle or"
+              "_diffrn_radiation_illumination_mode."
 
   }
 

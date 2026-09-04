@@ -110,6 +110,8 @@ def export_cif(scaled_data, experiment_list, params):
     _write_experiment(block, experiment_list, wavelength)
     _write_reflection_statistics(block, i_obs, scaled_data, wavelength)
     _write_absorption(block, experiment_list, params)
+    # written last, so that a user-supplied value wins over a derived one
+    _write_extra(block, params.cif.extra)
     _write_reflections(block, scaled_data, intensities, sigmas, params)
 
     options = gemmi.cif.WriteOptions()
@@ -242,20 +244,52 @@ def _write_symmetry(block, space_group):
     block.set_pair("_symmetry_Int_Tables_number", str(sg_type.number()))
 
 
+def electron_voltage(wavelength):
+    """The accelerating voltage in volts that gives electrons of this de Broglie
+    wavelength in Angstroms, by relativistic inversion of
+
+        lambda = h / sqrt(2 m0 e V (1 + e V / (2 m0 c^2)))
+    """
+
+    # CODATA 2018 values, SI units
+    h = 6.62607015e-34
+    m0 = 9.1093837015e-31
+    e = 1.602176634e-19
+    c = 299792458.0
+
+    # a quadratic in V, of which only the positive root is physical
+    a = 2 * m0 * e * e / (2 * m0 * c * c)
+    b = 2 * m0 * e
+    d = -((h / (wavelength * 1e-10)) ** 2)
+    return (-b + math.sqrt(b * b - 4 * a * d)) / (2 * a)
+
+
+def _rotation_mode(experiment_list):
+    """Classify the data collection as continuous rotation or stepwise, in the
+    sense of _diffrn_measurement_rotation_mode."""
+
+    for exp in experiment_list:
+        if exp.scan is None or exp.scan.get_oscillation()[1] == 0.0:
+            # stills, or a scan of zero width per image
+            return "stepwise"
+    return "rotation"
+
+
 def _write_experiment(block, experiment_list, wavelength):
-    probe = experiment_list[0].beam.get_probe_name()
-    block.set_pair(
-        "_diffrn_radiation_probe",
-        {
-            "x-ray": "x-ray",
-            "xray": "x-ray",
-            "electron": "electron",
-            "neutron": "neutron",
-        }.get(probe, "x-ray"),
-    )
+    probe = {
+        "x-ray": "x-ray",
+        "xray": "x-ray",
+        "electron": "electron",
+        "neutron": "neutron",
+    }.get(experiment_list[0].beam.get_probe_name(), "x-ray")
+    block.set_pair("_diffrn_radiation_probe", probe)
     block.set_pair("_diffrn_radiation_wavelength", f"{wavelength:.5f}")
-    if all(exp.goniometer is not None for exp in experiment_list):
+
+    if probe == "electron":
+        _write_electron_diffraction(block, experiment_list, wavelength)
+    elif all(exp.goniometer is not None for exp in experiment_list):
         block.set_pair("_diffrn_measurement_method", gemmi.cif.quote("\\w scans"))
+
     block.set_pair("_diffrn_detector", gemmi.cif.quote("area detector"))
     detector_type = experiment_list[0].detector[0].get_type()
     if detector_type:
@@ -272,6 +306,58 @@ def _write_experiment(block, experiment_list, wavelength):
                 block.set_pair(
                     f"_diffrn_orient_matrix_UB_{i + 1}{j + 1}", f"{A[3 * i + j]:.7f}"
                 )
+
+
+def _write_electron_diffraction(block, experiment_list, wavelength):
+    """Write the electron diffraction specific items of the core dictionary.
+
+    Only those that follow from the experimental models are written. The rest
+    of the items described by the electron diffraction extension, such as the
+    precession semi-angle, the illumination mode or the make of the gun, are
+    not knowable from a DIALS data reduction and must be supplied by the user
+    with cif.extra (or added downstream by e.g. Olex2)."""
+
+    rotation_mode = _rotation_mode(experiment_list)
+
+    block.set_pair("_diffrn_source", gemmi.cif.quote("electron gun"))
+    block.set_pair(
+        "_diffrn_source_voltage", f"{electron_voltage(wavelength) / 1e3:.0f}"
+    )
+    block.set_pair(
+        "_diffrn_measurement_device",
+        gemmi.cif.quote("transmission electron microscope"),
+    )
+    block.set_pair("_diffrn_measurement_rotation_mode", rotation_mode)
+    method = (
+        "continuous rotation 3D electron diffraction"
+        if rotation_mode == "rotation"
+        else "stepwise 3D electron diffraction"
+    )
+    block.set_pair("_diffrn_measurement_method", gemmi.cif.quote(method))
+
+
+def _write_extra(block, extra):
+    """Write user-supplied '_data_name=value' pairs, which override anything
+    already written for the same data name."""
+
+    for item in extra:
+        name, sep, value = item.partition("=")
+        name = name.strip()
+        value = value.strip()
+        if not sep or not name.startswith("_"):
+            raise Sorry(
+                f"Cannot interpret cif.extra={item}. Expected a CIF data name "
+                "and value, such as cif.extra=_diffrn_source_type='LaB6 gun'"
+            )
+        # the value may already be quoted, in which case do not quote it again
+        if len(value) > 1 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        if value in ("?", "."):
+            # the CIF special values for unknown and not applicable, which are
+            # only meaningful unquoted
+            block.set_pair(name, value)
+        else:
+            block.set_pair(name, gemmi.cif.quote(value))
 
 
 def _write_reflection_statistics(block, i_obs, reflections, wavelength):

@@ -7,7 +7,11 @@ import pytest
 
 from cctbx import sgtbx, uctbx
 
-from dials.util.export_cif import _constrained_angles, _theta_from_d
+from dials.util.export_cif import (
+    _constrained_angles,
+    _theta_from_d,
+    electron_voltage,
+)
 
 
 @pytest.mark.parametrize(
@@ -23,6 +27,26 @@ from dials.util.export_cif import _constrained_angles, _theta_from_d
 def test_constrained_angles(space_group, cell, expected):
     sg = sgtbx.space_group_info(space_group).group()
     assert _constrained_angles(sg, uctbx.unit_cell(cell)) == expected
+
+
+@pytest.mark.parametrize(
+    "wavelength,kilovolts",
+    [
+        (0.04866, 60),
+        (0.03701, 100),
+        (0.03349, 120),
+        (0.02851, 160),
+        (0.02508, 200),
+        (0.01969, 300),
+        # the rounded values quoted in the literature must still recover the
+        # nominal accelerating voltage
+        (0.0335, 120),
+        (0.0251, 200),
+        (0.0197, 300),
+    ],
+)
+def test_electron_voltage(wavelength, kilovolts):
+    assert round(electron_voltage(wavelength) / 1e3) == kilovolts
 
 
 def test_theta_from_d():
