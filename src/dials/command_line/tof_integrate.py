@@ -264,25 +264,25 @@ profile_3d_ic{
     max_R = 1.0
         .type = float
         .help = "Max fast/slow neutron ratio for optimization"
-    min_SigX = 0.05
+    min_sig_x = 0.05
         .type = float
         .help = "Min bivariate Gaussian sigma X for optimization"
-    max_SigX = 20.0
+    max_sig_x = 20.0
         .type = float
         .help = "Max bivariate Gaussian sigma X for optimization"
-    min_SigY = 0.05
+    min_sig_y = 0.05
         .type = float
         .help = "Min bivariate Gaussian sigma Y for optimization"
-    max_SigY = 20.0
+    max_sig_y = 20.0
         .type = float
         .help = "Max bivariate Gaussian sigma Y for optimization"
-    init_SigP = 0.0
+    init_sig_p = 0.0
         .type = float
         .help = "Initial bivariate Gaussian spatial correlation before optimization"
-    min_SigP = -0.99
+    min_sig_p = -0.99
         .type = float
         .help = "Min bivariate Gaussian spatial correlation for optimization"
-    max_SigP = 0.99
+    max_sig_p = 0.99
         .type = float
         .help = "Max bivariate Gaussian spatial correlation for optimization"
     hat_width = 1.0
@@ -324,25 +324,25 @@ profile_3d_ibix{
     max_sigma = 20.0
         .type = float
         .help = "Max instrument-resolution Gaussian width for optimization"
-    min_SigX = 0.05
+    min_sig_x = 0.05
         .type = float
         .help = "Min bivariate Gaussian sigma X for optimization"
-    max_SigX = 20.0
+    max_sig_x = 20.0
         .type = float
         .help = "Max bivariate Gaussian sigma X for optimization"
-    min_SigY = 0.05
+    min_sig_y = 0.05
         .type = float
         .help = "Min bivariate Gaussian sigma Y for optimization"
-    max_SigY = 20.0
+    max_sig_y = 20.0
         .type = float
         .help = "Max bivariate Gaussian sigma Y for optimization"
-    init_SigP = 0.0
+    init_sig_p = 0.0
         .type = float
         .help = "Initial bivariate Gaussian spatial correlation before optimization"
-    min_SigP = -0.99
+    min_sig_p = -0.99
         .type = float
         .help = "Min bivariate Gaussian spatial correlation for optimization"
-    max_SigP = 0.99
+    max_sig_p = 0.99
         .type = float
         .help = "Max bivariate Gaussian spatial correlation for optimization"
     n_restarts = 100
@@ -585,13 +585,13 @@ def integrate_reflection_table_for_experiment(
                 "R": p.init_R,
                 "R_min": p.min_R,
                 "R_max": p.max_R,
-                "SigX_min": p.min_SigX,
-                "SigX_max": p.max_SigX,
-                "SigY_min": p.min_SigY,
-                "SigY_max": p.max_SigY,
-                "SigP": p.init_SigP,
-                "SigP_min": p.min_SigP,
-                "SigP_max": p.max_SigP,
+                "SigX_min": p.min_sig_x,
+                "SigX_max": p.max_sig_x,
+                "SigY_min": p.min_sig_y,
+                "SigY_max": p.max_sig_y,
+                "SigP": p.init_sig_p,
+                "SigP_min": p.min_sig_p,
+                "SigP_max": p.max_sig_p,
                 "HatWidth": p.hat_width,
                 "KConv": p.kconv,
                 "n_restarts": p.n_restarts,
@@ -613,13 +613,13 @@ def integrate_reflection_table_for_experiment(
                 "beta_max": p.max_beta,
                 "sigma_min": p.min_sigma,
                 "sigma_max": p.max_sigma,
-                "SigX_min": p.min_SigX,
-                "SigX_max": p.max_SigX,
-                "SigY_min": p.min_SigY,
-                "SigY_max": p.max_SigY,
-                "SigP": p.init_SigP,
-                "SigP_min": p.min_SigP,
-                "SigP_max": p.max_SigP,
+                "SigX_min": p.min_sig_x,
+                "SigX_max": p.max_sig_x,
+                "SigY_min": p.min_sig_y,
+                "SigY_max": p.max_sig_y,
+                "SigP": p.init_sig_p,
+                "SigP_min": p.min_sig_p,
+                "SigP_max": p.max_sig_p,
                 "n_restarts": p.n_restarts,
                 "optimize_profile": True,
                 "max_drift_factor": p.max_drift_factor,
