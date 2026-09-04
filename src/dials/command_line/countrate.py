@@ -10,8 +10,6 @@ import time
 from collections import Counter
 from itertools import accumulate
 
-import h5py
-
 import iotbx.phil
 
 from dials.util import log, show_mail_handle_errors
@@ -127,16 +125,8 @@ def run(args: list[str] | None = None, phil=phil_scope):
 
     experiment = experiments[0]
     shoeboxes = reflections[0]["shoebox"]
-    image_template = experiment.imageset.get_template()
-    # Dials does not import experiment transmission from hdf5 files, so need to read it in directly.
-    # TODO Fix this in Dials and then remove this code.
-    if image_template and image_template.endswith((".h5", ".nxs")):
-        with h5py.File(image_template, "r") as f:
-            transmission = f["/entry/instrument/attenuator/attenuator_transmission"][()]
-            logger.debug(f"Read transmission from HDF5 file: {transmission:.2f}")
-    else:
-        transmission = experiment.beam.get_transmission()
-        logger.debug(f"Read transmission from experiment: {transmission:.2f}")
+
+    transmission = experiment.beam.get_transmission()
 
     hist = generate_histogram_from_shoeboxes(shoeboxes)
     detector = experiment.detector.to_dict()
