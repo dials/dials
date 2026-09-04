@@ -1,0 +1,332 @@
+/*
+ * flex_frame_sliced_shoebox.cc
+ *
+ *  Author: David Waterman
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
+#include <scitbx/array_family/boost_python/flex_wrapper.h>
+#include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
+#include <dials/model/data/shoebox.h>
+#include <dials/config.h>
+
+namespace dials { namespace af { namespace boost_python {
+
+  using namespace boost::python;
+  using namespace scitbx::af::boost_python;
+
+  using dials::model::FrameSlicedShoebox;
+  using dials::model::Shoebox;
+
+  /**
+   * Construct an array of frame sliced shoeboxes from an array of shoeboxes.
+   *
+   * The arrays of experimental models cover the whole scan, so that the same
+   * ones serve for every shoebox, whichever frames it spans.
+   *
+   * @param miller_indices The Miller index of each reflection
+   * @param phi_cal The predicted scan rotation angle in radians of each
+   *                reflection, as held by the third part of the xyzcal.mm
+   *                column
+   * @param sigma_phi The standard deviation in radians of the rocking curve of
+   *                  each reflection in the scan rotation angle. For the
+   *                  Gaussian reciprocal space profile model this is
+   *                  sigma_m / |zeta|
+   * @param phi The scan rotation angle in radians at the centre of each frame
+   *            of the scan, as held by FrameOrientations.phi
+   * @param phi_scan_points The scan rotation angle in radians at each scan
+   *                        point of the scan, that is at the boundaries between
+   *                        frames, as held by FrameOrientations.phi_scan_points
+   * @param UB The lattice orientation matrix at the centre of each frame of the
+   *           scan, as held by FrameOrientations.UB
+   * @param s0 The beam vector at the centre of each frame of the scan, as held
+   *           by FrameOrientations.s0
+   * @param first_frame The image number that the first element of phi, UB and
+   *                    s0 refers to, as held by FrameOrientations.images[0]
+   */
+  template <typename FloatType>
+  typename af::flex<FrameSlicedShoebox<FloatType> >::type* from_shoeboxes(
+    const af::const_ref<Shoebox<FloatType> >& shoeboxes,
+    const af::const_ref<cctbx::miller::index<> >& miller_indices,
+    const af::const_ref<double>& phi_cal,
+    const af::const_ref<double>& sigma_phi,
+    const af::const_ref<double>& phi,
+    const af::const_ref<double>& phi_scan_points,
+    const af::const_ref<scitbx::mat3<double> >& UB,
+    const af::const_ref<scitbx::vec3<double> >& s0,
+    int first_frame) {
+    DIALS_ASSERT(miller_indices.size() == shoeboxes.size());
+    DIALS_ASSERT(phi_cal.size() == shoeboxes.size());
+    DIALS_ASSERT(sigma_phi.size() == shoeboxes.size());
+    af::shared<FrameSlicedShoebox<FloatType> > result(shoeboxes.size());
+    for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+      result[i] = FrameSlicedShoebox<FloatType>(shoeboxes[i],
+                                                miller_indices[i],
+                                                phi_cal[i],
+                                                sigma_phi[i],
+                                                phi,
+                                                phi_scan_points,
+                                                UB,
+                                                s0,
+                                                first_frame);
+    }
+    return new typename af::flex<FrameSlicedShoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /**
+   * Get the number of frames of each frame sliced shoebox
+   */
+  template <typename FloatType>
+  af::shared<std::size_t> num_frames(
+    const af::const_ref<FrameSlicedShoebox<FloatType> >& self) {
+    af::shared<std::size_t> result(self.size());
+    for (std::size_t i = 0; i < self.size(); ++i) {
+      result[i] = self[i].size();
+    }
+    return result;
+  }
+
+  /**
+   * Construct an array of frame sliced shoeboxes from the flattened per-frame
+   * arrays, as returned by get_frame_sliced_shoebox_data_arrays.
+   *
+   * @param num_frames The number of frames of each frame sliced shoebox, which
+   *                   gives the lengths of the slices taken from the other
+   *                   arrays
+   */
+  template <typename FloatType>
+  typename af::flex<FrameSlicedShoebox<FloatType> >::type* from_data_arrays(
+    const af::const_ref<std::size_t>& num_frames,
+    const af::const_ref<int>& frames,
+    const af::const_ref<double>& phi,
+    const af::const_ref<double>& excitation_error,
+    const af::const_ref<double>& partiality,
+    const af::const_ref<double>& summation_intensity,
+    const af::const_ref<double>& summation_intensity_variance,
+    const af::const_ref<bool>& summation_intensity_valid) {
+    std::size_t total = 0;
+    for (std::size_t i = 0; i < num_frames.size(); ++i) {
+      total += num_frames[i];
+    }
+    DIALS_ASSERT(frames.size() == total);
+    DIALS_ASSERT(phi.size() == total);
+    DIALS_ASSERT(excitation_error.size() == total);
+    DIALS_ASSERT(partiality.size() == total);
+    DIALS_ASSERT(summation_intensity.size() == total);
+    DIALS_ASSERT(summation_intensity_variance.size() == total);
+    DIALS_ASSERT(summation_intensity_valid.size() == total);
+
+    af::shared<FrameSlicedShoebox<FloatType> > result(num_frames.size());
+    std::size_t k = 0;
+    for (std::size_t i = 0; i < num_frames.size(); ++i) {
+      std::size_t nz = num_frames[i];
+      if (nz == 0) {
+        continue;
+      }
+      result[i] = FrameSlicedShoebox<FloatType>(
+        af::shared<int>(&frames[k], &frames[k] + nz),
+        af::shared<double>(&phi[k], &phi[k] + nz),
+        af::shared<double>(&excitation_error[k], &excitation_error[k] + nz),
+        af::shared<double>(&partiality[k], &partiality[k] + nz),
+        af::shared<double>(&summation_intensity[k], &summation_intensity[k] + nz),
+        af::shared<double>(&summation_intensity_variance[k],
+                           &summation_intensity_variance[k] + nz),
+        af::shared<bool>(&summation_intensity_valid[k],
+                         &summation_intensity_valid[k] + nz));
+      k += nz;
+    }
+    return new typename af::flex<FrameSlicedShoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /**
+   * Append a per-frame array to the flat array collecting it. The source is
+   * taken by value, as the getters of FrameSlicedShoebox return a copy.
+   */
+  template <typename ElementType>
+  void extend_data_array(af::shared<ElementType>& dst,
+                         const af::shared<ElementType> src) {
+    dst.extend(src.begin(), src.end());
+  }
+
+  /**
+   * Get the per-frame arrays of every frame sliced shoebox, each concatenated
+   * into a single flat array. Use num_frames to split them up again.
+   *
+   * @returns A tuple of the frames, rotation angles, excitation errors,
+   *          partialities, summation intensities, their variances and their
+   *          validity
+   */
+  template <typename FloatType>
+  boost::python::tuple get_frame_sliced_shoebox_data_arrays(
+    const af::const_ref<FrameSlicedShoebox<FloatType> >& self) {
+    af::shared<int> frames;
+    af::shared<double> phi;
+    af::shared<double> excitation_error;
+    af::shared<double> partiality;
+    af::shared<double> summation_intensity;
+    af::shared<double> summation_intensity_variance;
+    af::shared<bool> summation_intensity_valid;
+    for (std::size_t i = 0; i < self.size(); ++i) {
+      extend_data_array(frames, self[i].frames());
+      extend_data_array(phi, self[i].phi());
+      extend_data_array(excitation_error, self[i].excitation_error());
+      extend_data_array(partiality, self[i].partiality());
+      extend_data_array(summation_intensity, self[i].summation_intensity());
+      extend_data_array(summation_intensity_variance,
+                        self[i].summation_intensity_variance());
+      extend_data_array(summation_intensity_valid, self[i].summation_intensity_valid());
+    }
+    return boost::python::make_tuple(frames,
+                                     phi,
+                                     excitation_error,
+                                     partiality,
+                                     summation_intensity,
+                                     summation_intensity_variance,
+                                     summation_intensity_valid);
+  }
+
+  /**
+   * A class to convert the frame sliced shoebox class to a string for pickling
+   */
+  template <typename FloatType>
+  struct frame_sliced_shoebox_to_string : pickle_double_buffered::to_string {
+    using pickle_double_buffered::to_string::operator<<;
+
+    typedef FrameSlicedShoebox<FloatType> frame_sliced_shoebox_type;
+
+    /** Initialise with the version for checking */
+    frame_sliced_shoebox_to_string() {
+      unsigned int version = 1;
+      *this << version;
+    }
+
+    /** Convert a single frame sliced shoebox instance to string */
+    frame_sliced_shoebox_to_string& operator<<(const frame_sliced_shoebox_type& val) {
+      // The arrays are all the same length, so only write it once
+      *this << val.size();
+
+      array_to_string(val.frames());
+      array_to_string(val.phi());
+      array_to_string(val.excitation_error());
+      array_to_string(val.partiality());
+      array_to_string(val.summation_intensity());
+      array_to_string(val.summation_intensity_variance());
+      array_to_string(val.summation_intensity_valid());
+
+      return *this;
+    }
+
+    /** Convert a per-frame array to string */
+    template <typename ElementType>
+    void array_to_string(const af::shared<ElementType>& a) {
+      for (std::size_t i = 0; i < a.size(); ++i) {
+        *this << a[i];
+      }
+    }
+  };
+
+  /**
+   * A class to convert a string to a frame sliced shoebox for unpickling
+   */
+  template <typename FloatType>
+  struct frame_sliced_shoebox_from_string : pickle_double_buffered::from_string {
+    using pickle_double_buffered::from_string::operator>>;
+
+    typedef FrameSlicedShoebox<FloatType> frame_sliced_shoebox_type;
+
+    /** Initialise the class with the string. Get the version and check */
+    frame_sliced_shoebox_from_string(const char* str_ptr)
+        : pickle_double_buffered::from_string(str_ptr) {
+      *this >> version;
+      DIALS_ASSERT(version == 1);
+    }
+
+    /** Get a single frame sliced shoebox instance from a string */
+    frame_sliced_shoebox_from_string& operator>>(frame_sliced_shoebox_type& val) {
+      std::size_t nz;
+      *this >> nz;
+
+      // NB the arrays are read into locals first, as the order in which function
+      // arguments are evaluated is not specified
+      af::shared<int> frames = array_from_string<int>(nz);
+      af::shared<double> phi = array_from_string<double>(nz);
+      af::shared<double> excitation_error = array_from_string<double>(nz);
+      af::shared<double> partiality = array_from_string<double>(nz);
+      af::shared<double> summation_intensity = array_from_string<double>(nz);
+      af::shared<double> summation_intensity_variance = array_from_string<double>(nz);
+      af::shared<bool> summation_intensity_valid = array_from_string<bool>(nz);
+
+      val = frame_sliced_shoebox_type(frames,
+                                      phi,
+                                      excitation_error,
+                                      partiality,
+                                      summation_intensity,
+                                      summation_intensity_variance,
+                                      summation_intensity_valid);
+
+      return *this;
+    }
+
+    /** Get a per-frame array from a string */
+    template <typename ElementType>
+    af::shared<ElementType> array_from_string(std::size_t n) {
+      af::shared<ElementType> a(n);
+      for (std::size_t i = 0; i < n; ++i) {
+        *this >> a[i];
+      }
+      return a;
+    }
+
+    unsigned int version;
+  };
+
+  template <typename FloatType>
+  typename scitbx::af::boost_python::
+    flex_wrapper<FrameSlicedShoebox<FloatType>, return_internal_reference<> >::class_f_t
+    flex_frame_sliced_shoebox_wrapper(const char* name) {
+    typedef FrameSlicedShoebox<FloatType> frame_sliced_shoebox_type;
+
+    return scitbx::af::boost_python::
+      flex_wrapper<frame_sliced_shoebox_type, return_internal_reference<> >::plain(name)
+        .def("__init__",
+             make_constructor(from_shoeboxes<FloatType>,
+                              default_call_policies(),
+                              (boost::python::arg("shoeboxes"),
+                               boost::python::arg("miller_indices"),
+                               boost::python::arg("phi_cal"),
+                               boost::python::arg("sigma_phi"),
+                               boost::python::arg("phi"),
+                               boost::python::arg("phi_scan_points"),
+                               boost::python::arg("UB"),
+                               boost::python::arg("s0"),
+                               boost::python::arg("first_frame"))))
+        .def("__init__",
+             make_constructor(from_data_arrays<FloatType>,
+                              default_call_policies(),
+                              (boost::python::arg("num_frames"),
+                               boost::python::arg("frames"),
+                               boost::python::arg("phi"),
+                               boost::python::arg("excitation_error"),
+                               boost::python::arg("partiality"),
+                               boost::python::arg("summation_intensity"),
+                               boost::python::arg("summation_intensity_variance"),
+                               boost::python::arg("summation_intensity_valid"))))
+        .def("num_frames", &num_frames<FloatType>)
+        .def("get_frame_sliced_shoebox_data_arrays",
+             &get_frame_sliced_shoebox_data_arrays<FloatType>)
+        .def_pickle(
+          flex_pickle_double_buffered<frame_sliced_shoebox_type,
+                                      frame_sliced_shoebox_to_string<FloatType>,
+                                      frame_sliced_shoebox_from_string<FloatType> >());
+  }
+
+  void export_flex_frame_sliced_shoebox() {
+    flex_frame_sliced_shoebox_wrapper<ProfileFloatType>("frame_sliced_shoebox");
+  }
+
+}}}  // namespace dials::af::boost_python

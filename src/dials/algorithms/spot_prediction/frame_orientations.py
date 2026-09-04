@@ -8,7 +8,15 @@ from scitbx import matrix
 class FrameOrientations:
     """Hold information about the experimental diffraction orientation
     (goniometer, beam, and crystal) at the centre of each frame of a
-    rotation experiment."""
+    rotation experiment.
+
+    The attributes images, phi, s0, U, B and UB are all lists with one element
+    per frame, where images holds the image numbers and phi the scan rotation
+    angles in radians.
+
+    The attribute phi_scan_points is the exception, holding the scan rotation
+    angles in radians at the scan points, that is at the boundaries between
+    frames, of which there is one more than there are frames."""
 
     def __init__(self, experiment):
 
@@ -44,9 +52,11 @@ class FrameOrientations:
         ]
         start, stop = scan.get_array_range()
         R_mats = []
+        phis = []
         axis = matrix.col(gonio.get_rotation_axis_datum())
         for i in range(start, stop + 1):
             phi = scan.get_angle_from_array_index(i, deg=False)
+            phis.append(phi)
             R = matrix.sqr(axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=False))
             R_mats.append(R)
 
@@ -73,6 +83,12 @@ class FrameOrientations:
         for d1, d2 in pairwise(s0):
             s0_frame = (d1 + d2) / 2
             self.s0.append(s0_frame)
+
+        # Store the rotation angle in radians at the scan points, that is at the
+        # frame boundaries, and at the frame centres, likewise by averaging
+        # between the scan points
+        self.phi_scan_points = phis
+        self.phi = [(p1 + p2) / 2 for p1, p2 in pairwise(phis)]
 
         # Construct full orientation matrix in the lab frame for each scan-point
         SRFU = (S * R * F * U for S, R, F, U in zip(S_mats, R_mats, F_mats, U_mats))
