@@ -436,7 +436,7 @@ class IntegrationJob:
         # Write some output
         logger.info(" Beginning integration job %d", self.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d", frame0, frame1)
+        logger.info(" Images: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
         logger.info("  Partial:     %d", npart)
@@ -451,7 +451,7 @@ class IntegrationJob:
             logger.info(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.info(" to have all or part of their intensity on each frame.")
+            logger.info(" to have all or part of their intensity on each image.")
             logger.info("")
             logger.info(
                 frame_hist(
@@ -882,7 +882,7 @@ class ReferenceCalculatorJob:
         # Write some output
         logger.info(" Beginning integration job %d", self.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d", frame0, frame1)
+        logger.info(" Images: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
         logger.info("  Partial:     %d", npart)
@@ -897,7 +897,7 @@ class ReferenceCalculatorJob:
             logger.info(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.info(" to have all or part of their intensity on each frame.")
+            logger.info(" to have all or part of their intensity on each image.")
             logger.info("")
             logger.info(
                 frame_hist(
