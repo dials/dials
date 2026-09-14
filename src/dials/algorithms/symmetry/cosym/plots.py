@@ -5,10 +5,20 @@ import numpy as np
 from dials.util.plotly_utils import round_for_json
 
 
-def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
-    coord_x = coords[:, dim1]
-    coord_y = coords[:, dim2]
+def plot_coords(coords, labels=None, key="cosym_coordinates", pcs=None):
+    coord_x = coords[:, 0]
+    coord_y = coords[:, 1]
+
+    # coord_x = coords[:, dim1]
+    # coord_y = coords[:, dim2]
     assert coord_x.size == coord_y.size, (coord_x.size, coord_y.size)
+
+    if not pcs:
+        x_label = "Axis 0"
+        y_label = "Axis 1"
+    else:
+        x_label = pcs["0"]
+        y_label = pcs["1"]
 
     if labels is None:
         labels = np.full(coord_x.shape[0], -1, dtype=int)
@@ -50,22 +60,22 @@ def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
         key: {
             "data": data,
             "layout": {
-                "title": "Cosym coordinates",
+                "title": "Cosym Coordinates Rotated by Principal Components",
                 "xaxis": {
-                    "title": f"Axis {dim1}",
+                    "title": x_label,
                     "range": [-1, 1],
                     "constrain": "domain",
                 },
                 "yaxis": {
-                    "title": f"Axis {dim2}",
+                    "title": y_label,
                     "range": [-1, 1],
                     "scaleanchor": "x",
                     "constrain": "domain",
                 },
             },
             "help": """\
-The outcome of the dials.cosym multi-dimensional scaling procedure projected on to two
-dimensions. Each point corresponds to an individual data set, or symmetry copy of a data
+The outcome of the dials.cosym multi-dimensional analysis rotated by the components identified using
+Principal Component Analysis and projected in 2D. Each point corresponds to an individual data set, or symmetry copy of a data
 set. The lengths of the vectors are inversely related to the amount of random error in
 each data set, and can be interpreted as an estimate of the CC* values. The angular
 separation between any pair, or groups, of vectors is a measure of the systematic

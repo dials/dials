@@ -343,11 +343,17 @@ def to_plotly_json(
 
 
 def plot_pca_coords(
-    pca_coords, axes_labels, cluster_labels, dimensions, cluster_list, noise_labels
+    pca_coords,
+    axes_labels,
+    dimensions,
+    cluster_labels=None,
+    cluster_list=None,
+    noise_labels=None,
 ):
-    clusters = []
-    unique_labels = sorted(dict.fromkeys(cluster_labels))
-    n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from matplotlib import pyplot as plt
 
     max_range = max(np.max(pca_coords), 1)
     min_range = min(np.min(pca_coords), -1)
@@ -362,48 +368,78 @@ def plot_pca_coords(
 
     data_range = [min_range, max_range]
 
-    import matplotlib
+    graph_data = []
 
-    matplotlib.use("Agg")
-    from matplotlib import pyplot as plt
+    if cluster_list:
+        clusters = []
+        unique_labels = sorted(dict.fromkeys(cluster_labels))
+        n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
+        colours = plt.cm.nipy_spectral(np.linspace(0.1, 0.9, n_clusters)).tolist()
 
-    colours = plt.cm.nipy_spectral(np.linspace(0.1, 0.9, n_clusters)).tolist()
+        if -1 in unique_labels:
+            colours.insert(0, (0, 0, 0, 1))
 
-    if -1 in unique_labels:
-        colours.insert(0, (0, 0, 0, 1))
+        for i, col in zip(unique_labels, colours):
+            dim_data = []
 
-    for i, col in zip(unique_labels, colours):
+            for j in dimensions:
+                coord_data = []
+                for lab, dat in zip(cluster_labels, pca_coords):
+                    if lab == i:
+                        coord_data.append(dat[j])
+                dim_dict = {
+                    "label": axes_labels[str(j)],
+                    "values": coord_data,
+                    "axis": {"matches": True},
+                }
+                dim_data.append(dim_dict)
+                for cluster in cluster_list:
+                    if cluster.cluster_id == i:
+                        labels = cluster.labels
+                if i == -1:
+                    labels = noise_labels
+            ddict = {
+                "name": "Cluster %i" % i if i >= 0 else "Noise",
+                "type": "splom",
+                "dimensions": dim_data,
+                "diagonal": {"visible": False},
+                "marker": {
+                    "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
+                    "size": 3,
+                },
+                "text": labels,
+                "hovertemplate": "Dataset %{text}",
+            }
+            clusters.append(ddict)
+
+        graph_data = clusters
+
+    else:
         dim_data = []
 
         for j in dimensions:
             coord_data = []
-            for lab, dat in zip(cluster_labels, pca_coords):
-                if lab == i:
-                    coord_data.append(dat[j])
+            for dat in pca_coords:
+                coord_data.append(dat[j])
             dim_dict = {
                 "label": axes_labels[str(j)],
                 "values": coord_data,
                 "axis": {"matches": True},
             }
             dim_data.append(dim_dict)
-            for cluster in cluster_list:
-                if cluster.cluster_id == i:
-                    labels = cluster.labels
-            if i == -1:
-                labels = noise_labels
-        ddict = {
-            "name": "Cluster %i" % i if i >= 0 else "Noise",
-            "type": "splom",
-            "dimensions": dim_data,
-            "diagonal": {"visible": False},
-            "marker": {
-                "color": "rgb({:f},{:f},{:f})".format(*tuple(col[:3])),
-                "size": 3,
-            },
-            "text": labels,
-            "hovertemplate": "Dataset %{text}",
-        }
-        clusters.append(ddict)
+
+        graph_data = [
+            {
+                "name": "Data",
+                "type": "splom",
+                "dimensions": dim_data,
+                "diagonal": {"visible": False},
+                "marker": {
+                    "color": "rgb(0,0,0)",
+                    "size": 3,
+                },
+            }
+        ]
 
     layout = {}
     for i in dimensions:
@@ -415,7 +451,7 @@ def plot_pca_coords(
         layout["hovermode"] = "closest"
 
     d = {
-        "data": clusters,
+        "data": graph_data,
         "layout": layout,
         "help": """\
 Full principal components analysis of the outcome of the cosym multi-dimensional analysis.
