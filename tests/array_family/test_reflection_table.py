@@ -1229,6 +1229,85 @@ def test_to_from_msgpack(tmp_path):
     assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
 
 
+def gen_multi_frame_shoebox(z0, nz):
+    shoebox = Shoebox(0, (0, 4, 0, 3, z0, z0 + nz))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for k in range(nz):
+        for j in range(3):
+            for i in range(4):
+                shoebox.data[k, j, i] = i + j + k + 0.1
+                shoebox.background[k, j, i] = i * j + 0.2
+                shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Foreground
+    return shoebox
+
+
+def table_with_frame_sliced_shoeboxes():
+    """A table whose frame sliced shoeboxes have differing numbers of frames"""
+    shoeboxes = flex.shoebox(
+        [gen_multi_frame_shoebox(z0, nz) for z0, nz in ((0, 1), (5, 3), (10, 2))]
+    )
+    table = flex.reflection_table()
+    table["id"] = flex.int(len(shoeboxes), 0)
+    table["miller_index"] = flex.miller_index([(1, 0, 0), (0, 1, 0), (0, 0, 1)])
+    # Experimental models at the centres of images 1 to 12, for a scan of 0.1
+    # radian oscillations beginning at zero, a stationary crystal with a 10
+    # Angstrom cubic cell and a stationary 1 Angstrom beam along -z
+    phi = flex.double([0.1 * (f - 0.5) for f in range(1, 13)])
+    phi_scan_points = flex.double([0.1 * (f - 1) for f in range(1, 14)])
+    UB = flex.mat3_double([(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1)] * 12)
+    s0 = flex.vec3_double([(0, 0, -1)] * 12)
+    table["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(
+        shoeboxes,
+        table["miller_index"],
+        flex.double([0.05, 0.65, 1.05]),
+        flex.double(len(shoeboxes), 0.1),
+        phi,
+        phi_scan_points,
+        UB,
+        s0,
+        1,
+    )
+    return table
+
+
+def check_frame_sliced_shoeboxes(new_table, table):
+    assert new_table.is_consistent()
+    assert new_table.nrows() == table.nrows()
+    assert new_table.ncols() == table.ncols()
+    new_column = new_table["frame_sliced_shoebox"]
+    column = table["frame_sliced_shoebox"]
+    assert list(new_column.num_frames()) == [1, 3, 2]
+    assert all(a == b for a, b in zip(new_column, column))
+
+
+def test_frame_sliced_shoebox_column_to_from_msgpack(tmp_path):
+    table = table_with_frame_sliced_shoeboxes()
+
+    new_table = flex.reflection_table.from_msgpack(table.as_msgpack())
+    check_frame_sliced_shoeboxes(new_table, table)
+
+    table.as_msgpack_file(tmp_path / "reflections.mpack")
+    new_table = flex.reflection_table.from_msgpack_file(tmp_path / "reflections.mpack")
+    check_frame_sliced_shoeboxes(new_table, table)
+
+
+def test_frame_sliced_shoebox_column_to_from_h5(tmp_path):
+    table = table_with_frame_sliced_shoeboxes()
+
+    table.as_hdf5(tmp_path / "reflections.h5")
+    new_table = flex.reflection_table.from_hdf5(tmp_path / "reflections.h5")
+    check_frame_sliced_shoeboxes(new_table, table)
+
+
+def test_frame_sliced_shoebox_column_to_from_pickle():
+    # Tables are pickled to pass them between subprocesses
+    table = table_with_frame_sliced_shoeboxes()
+
+    new_table = pickle.loads(pickle.dumps(table, protocol=pickle.HIGHEST_PROTOCOL))
+    check_frame_sliced_shoeboxes(new_table, table)
+
+
 def test_experiment_identifiers():
     table = flex.reflection_table()
     table["id"] = flex.int([0, 1, 2, 3])

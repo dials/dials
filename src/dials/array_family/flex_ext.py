@@ -1541,6 +1541,8 @@ class reflection_table_selector:
             raise RuntimeError("Comparison not implemented")
         elif isinstance(data, dials_array_family_flex_ext.shoebox):
             raise RuntimeError("Comparison not implemented")
+        elif isinstance(data, dials_array_family_flex_ext.frame_sliced_shoebox):
+            raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")
         mask2 = self.op(data, value)

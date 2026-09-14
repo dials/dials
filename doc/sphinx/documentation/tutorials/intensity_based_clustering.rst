@@ -88,7 +88,7 @@ Once you are in the same location as your ``data`` folder, import all images int
 
     dials.import data/*gz
     dials.find_spots imported.expt
-    dials.index imported.expt strong.refl joint=False
+    dials.index imported.expt strong.refl joint_indexing=False
     dials.refine indexed.expt indexed.refl
     dials.integrate refined.expt refined.refl
     dials.cosym integrated.expt integrated.refl
