@@ -237,10 +237,10 @@ class _:
         """
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
-        elif os.getenv("DIALS_USE_H5"):
-            self.as_hdf5(filename)
-        else:
+        elif os.getenv("DIALS_USE_MSGPACK"):
             self.as_msgpack_file(filename)
+        else:
+            self.as_hdf5(filename)
 
     @staticmethod
     def from_file(filename):
@@ -248,13 +248,13 @@ class _:
         Read the reflection table from either pickle or msgpack
         """
         try:
-            return dials_array_family_flex_ext.reflection_table.from_msgpack_file(
-                filename
-            )
-        except RuntimeError:
+            return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
+        except OSError:
             try:
-                return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
-            except OSError:
+                return dials_array_family_flex_ext.reflection_table.from_msgpack_file(
+                    filename
+                )
+            except RuntimeError:
                 return dials_array_family_flex_ext.reflection_table.from_pickle(
                     filename
                 )
