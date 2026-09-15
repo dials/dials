@@ -7,7 +7,9 @@ utility functions for symmetry analysis.
 from __future__ import annotations
 
 import collections
+import concurrent
 import copy
+import io
 import logging
 import math
 from io import StringIO
@@ -51,6 +53,7 @@ class symmetry_base:
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
         apply_sigma_correction=True,
+        nproc=None,
     ):
         """Initialise a symmetry_base object.
 
@@ -80,6 +83,10 @@ class symmetry_base:
           apply_sigma_correction (bool): If True, correct SDs by "typical" SD factors.
         """
         self.input_intensities = intensities
+        if nproc:
+            self.nproc = nproc
+        else:
+            self.nproc = 1
 
         uc_params = [flex.double() for i in range(6)]
         for d in self.input_intensities:
@@ -172,30 +179,83 @@ class symmetry_base:
             normalise = self.ml_aniso_normalisation
 
         normalised_intensities = None
-        for i in range(int(flex.max(self.dataset_ids) + 1)):
+        datasets = range(int(flex.max(self.dataset_ids) + 1))
+        results = {}
+        if self.nproc > 1:
+            message = f" in parallel with nproc = {self.nproc}."
+        else:
+            message = "."
+        logger.info(f"Normalising intensities{message}")
+
+        with (
+            concurrent.futures.ProcessPoolExecutor(max_workers=self.nproc) as pool,
+        ):
+            normalisation_futures = {
+                pool.submit(
+                    self._parallel_normalisation,
+                    normalise,
+                    dataset_id,
+                ): dataset_id
+                for dataset_id in datasets
+            }
+            for future in concurrent.futures.as_completed(normalisation_futures):
+                idx = normalisation_futures[future]
+                try:
+                    intensities, log_stream = future.result()
+                except (AttributeError, IndexError, RuntimeError):
+                    logger.warning(
+                        "A problem occurred when trying to normalise the intensities by "
+                        "the %s method.\n"
+                        "There may be too few unique reflections. Resorting to using "
+                        "un-normalised intensities instead.",
+                        method,
+                        exc_info=True,
+                    )
+                else:
+                    results[idx] = (intensities, log_stream)
+
+        for i in datasets:
             logger.info("\n" + "-" * 80 + "\n")
-            logger.info("Normalising intensities for dataset %i\n", i + 1)
-            intensities = self.intensities.select(self.dataset_ids == i)
-            try:
-                intensities = normalise(intensities)
-            # Catch any of the several errors that can occur when there are too few
-            # reflections for the selected normalisation routine.
-            except (AttributeError, IndexError, RuntimeError):
-                logger.warning(
-                    "A problem occurred when trying to normalise the intensities by "
-                    "the %s method.\n"
-                    "There may be too few unique reflections. Resorting to using "
-                    "un-normalised intensities instead.",
-                    method,
-                    exc_info=True,
-                )
+            logger.info("Normalised intensities for dataset %i\n", i + 1)
+            logger.info(results[i][1])
             if not normalised_intensities:
-                normalised_intensities = intensities
+                normalised_intensities = results[i][0]
             else:
-                normalised_intensities = normalised_intensities.concatenate(intensities)
+                normalised_intensities = normalised_intensities.concatenate(
+                    results[i][0]
+                )
+
         self.intensities = normalised_intensities.set_info(
             self.intensities.info()
         ).set_observation_type_xray_intensity()
+
+    def _parallel_normalisation(self, normalise, id):
+
+        intensities = self.intensities.select(self.dataset_ids == id)
+
+        dials_logger = logging.getLogger("dials")
+
+        original_handlers = dials_logger.handlers[:]
+        original_level = dials_logger.level
+        for h in original_handlers:
+            dials_logger.removeHandler(h)
+
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+
+        dials_logger.setLevel(logging.INFO)
+        dials_logger.addHandler(handler)
+
+        try:
+            normalised_intensities = normalise(intensities)
+        finally:
+            dials_logger.removeHandler(handler)
+            handler.close()
+            for h in original_handlers:
+                dials_logger.addHandler(h)
+            dials_logger.setLevel(original_level)
+
+        return normalised_intensities, stream.getvalue()
 
     def _correct_sigmas(self, sd_fac, sd_b, sd_add):
         # sd' = SDfac * Sqrt(sd^2 + SdB * I + (SDadd * I)^2)

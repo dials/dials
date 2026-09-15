@@ -169,6 +169,13 @@ class CosymAnalysis(symmetry_base, Subject):
             )
 
         max_id = len(intensities) - 1
+
+        # nproc is currently only used for parallelising calculations in
+        # the target initialisation and intensity normalisation.
+        if params.nproc is Auto:
+            params.nproc = dials.util.system.CPU_COUNT
+            logger.info(f"Setting nproc={params.nproc}")
+
         super().__init__(
             intensities,
             normalisation=params.normalisation,
@@ -180,6 +187,7 @@ class CosymAnalysis(symmetry_base, Subject):
             absolute_angle_tolerance=None,
             best_monoclinic_beta=params.best_monoclinic_beta,
             apply_sigma_correction=apply_sigma_correction,
+            nproc=params.nproc,
         )
         Subject.__init__(
             self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
@@ -275,11 +283,6 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.intensities, self.params.lattice_group.group()
             )
             self.params.lattice_group = tmp_intensities.space_group_info()
-        # nproc is currently only used for parallelising calculations in
-        # the target initialisation.
-        if self.params.nproc is Auto:
-            self.params.nproc = dials.util.system.CPU_COUNT
-            logger.info(f"Setting nproc={self.params.nproc}")
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
