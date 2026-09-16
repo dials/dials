@@ -61,11 +61,11 @@ def validate_format_return_groups(handle):
     """
     if (
         "file_type" not in handle.attrs
-        or handle.attrs["file_type"] != "DIALSProcessedData"
+        or handle.attrs["file_type"] != "dials_processed_data"
         or "file_version" not in handle.attrs
     ):
         raise ValueError(
-            "h5 file not recognised as DIALS processed data format (requires file_type attribute == DIALSProcessedData) and file_version attribute."
+            "h5 file not recognised as DIALS processed data format (requires file_type attribute == dials_processed_data) and file_version attribute."
         )
     if handle.attrs["file_version"] == 1:
         if "dials" not in handle:
@@ -122,7 +122,7 @@ class ReflectionListEncoder(object):
     ) -> None:
         """Encode each reflection table to data in a hdf5 group."""
 
-        handle.attrs["file_type"] = "DIALSProcessedData"
+        handle.attrs["file_type"] = "dials_processed_data"
         handle.attrs["file_version"] = 1
 
         # Create the reflection data group if it hasn't already been created
