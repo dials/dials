@@ -31,6 +31,7 @@ from dials.algorithms.integration.report import (
 from dials.algorithms.integration.validation import ValidatedMultiExpProfileModeller
 from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
 from dials.algorithms.shoebox import MaskCode
+from dials.algorithms.spot_prediction.frame_orientations import FrameOrientations
 from dials.array_family import flex
 
 # constants
@@ -49,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "Executor",
+    "FrameSlicedIntegratorExecutor",
     "Integrator",
     "Integrator2D",
     "Integrator3D",
@@ -124,6 +126,12 @@ def generate_phil_scope():
       use_dynamic_mask = True
         .type = bool
         .help = "Use dynamic mask if available"
+
+      frame_slice_shoeboxes = False
+        .type = bool
+        .help = "Calculate additional per-frame data for integrated shoeboxes."
+                "This is particularly intended for comparison with simulations"
+                "of 3D ED rotation data."
 
       debug {
 
@@ -380,6 +388,7 @@ class Parameters:
         self.profile = Parameters.Profile()
         self.debug_reference_filename = "reference_profiles.pickle"
         self.debug_reference_output = False
+        self.frame_slice_shoeboxes = False
 
     @staticmethod
     def from_phil(params):
@@ -430,6 +439,9 @@ class Parameters:
 
         result.debug_reference_filename = params.debug.reference.filename
         result.debug_reference_output = params.debug.reference.output
+
+        # Set the frame slicing parameter
+        result.frame_slice_shoeboxes = params.frame_slice_shoeboxes
 
         # Profile parameters
         result.profile.sigma_b_multiplier = params.profile.sigma_b_multiplier
@@ -964,10 +976,144 @@ class IntegratorExecutor(Executor):
         )
 
 
+class FrameSlicedIntegratorExecutor(IntegratorExecutor):
+    """
+    The class to process the integration data, calculating additional per-frame
+    data for the integrated shoeboxes
+    """
+
+    def __init__(
+        self, experiments, profile_fitter=None, valid_foreground_threshold=0.75
+    ):
+        """
+        Initialize the executor
+
+        :param experiments: The experiment list
+        """
+        super().__init__(experiments, profile_fitter, valid_foreground_threshold)
+
+        # Calculate the experimental orientations at the centre of each frame
+        self.frame_orientations = [
+            FrameOrientations(experiment) for experiment in self.experiments
+        ]
+
+        # Cache the models at the frame centres in the form wanted by the frame
+        # slicing, namely flex arrays and the image number they start at
+        self._phi = [flex.double(fo.phi) for fo in self.frame_orientations]
+        self._phi_scan_points = [
+            flex.double(fo.phi_scan_points) for fo in self.frame_orientations
+        ]
+        self._UB = [
+            flex.mat3_double([UB.elems for UB in fo.UB])
+            for fo in self.frame_orientations
+        ]
+        self._s0 = [
+            flex.vec3_double([s0.elems for s0 in fo.s0])
+            for fo in self.frame_orientations
+        ]
+        self._first_frame = [fo.images[0] for fo in self.frame_orientations]
+
+        # Cache the mosaic spread of each experiment, which is a single value
+        # unless the profile model is scan-varying, when it is one per image
+        self._sigma_m = [
+            experiment.profile.sigma_m(deg=False) for experiment in self.experiments
+        ]
+
+    def process(self, frame, reflections):
+        """
+        Process the reflections on a frame, then calculate the additional
+        per-frame data for the shoeboxes
+
+        :param frame: The frame to process
+        :param reflections: The reflections to process
+        """
+        super().process(frame, reflections)
+
+        # An integration job covers a single scan, but that can be shared by more
+        # than one experiment, such as two lattices indexed from the same images.
+        # Each of those has its own crystal, so slice one experiment at a time,
+        # which is still a loop over experiments rather than over reflections
+        ids = reflections["id"]
+        columns = (
+            reflections["shoebox"],
+            reflections["miller_index"],
+            reflections["xyzcal.mm"].parts()[2],
+            reflections["zeta"],
+            reflections["xyzcal.px"].parts()[2],
+        )
+        first_id, last_id = flex.min(ids), flex.max(ids)
+        if first_id == last_id:
+            sliced = self._slice_shoeboxes(*columns, first_id)
+        else:
+            sliced = flex.frame_sliced_shoebox(len(reflections))
+            for expt_id in range(first_id, last_id + 1):
+                sel = ids == expt_id
+                if sel.count(True) == 0:
+                    continue
+                sliced.set_selected(
+                    sel,
+                    self._slice_shoeboxes(
+                        *(column.select(sel) for column in columns), expt_id
+                    ),
+                )
+        reflections["frame_sliced_shoebox"] = sliced
+
+    def _slice_shoeboxes(
+        self, shoeboxes, miller_indices, phi_cal, zeta, z_cal, expt_id
+    ):
+        """
+        Slice a column of shoeboxes that all belong to one experiment
+
+        :param shoeboxes: The shoeboxes to slice
+        :param miller_indices: The Miller index of each shoebox
+        :param phi_cal: The predicted rotation angle in radians of each shoebox
+        :param zeta: The zeta factor of each shoebox
+        :param z_cal: The predicted centroid frame of each shoebox
+        :param expt_id: The experiment the shoeboxes belong to
+        """
+        return flex.frame_sliced_shoebox(
+            shoeboxes,
+            miller_indices,
+            phi_cal,
+            self._sigma_phi(zeta, z_cal, expt_id),
+            self._phi[expt_id],
+            self._phi_scan_points[expt_id],
+            self._UB[expt_id],
+            self._s0[expt_id],
+            self._first_frame[expt_id],
+        )
+
+    def _sigma_phi(self, zeta, z_cal, expt_id):
+        """
+        Calculate the width of the rocking curve of each reflection in the scan
+        rotation angle, that is sigma_m / |zeta|.
+
+        A scan-varying mosaic spread is looked up at the predicted centroid frame
+        of the reflection and used for all of its frames, just as
+        PartialityCalculator3D does, so that the per-frame partialities of a
+        reflection sum to the partiality of the whole reflection.
+
+        :param zeta: The zeta factor of each reflection
+        :param z_cal: The predicted centroid frame of each reflection
+        :param expt_id: The experiment the reflections belong to
+        """
+        sigma_m = self._sigma_m[expt_id]
+        if isinstance(sigma_m, float):
+            sigma_m = flex.double(len(zeta), sigma_m)
+        else:
+            index = flex.floor(z_cal).iround() - (self._first_frame[expt_id] - 1)
+            index.set_selected(index < 0, 0)
+            index.set_selected(index >= len(sigma_m), len(sigma_m) - 1)
+            sigma_m = sigma_m.select(index.as_size_t())
+        return sigma_m / flex.abs(zeta)
+
+
 class Integrator:
     """
     The integrator class
     """
+
+    ExecutorClass = IntegratorExecutor
 
     def __init__(self, experiments, reflections, params):
         """
@@ -1217,7 +1363,12 @@ class Integrator:
         logger.info("")
 
         # Create the data processor
-        executor = IntegratorExecutor(
+        ExecutorClass = (
+            FrameSlicedIntegratorExecutor
+            if self.params.frame_slice_shoeboxes
+            else self.ExecutorClass
+        )
+        executor = ExecutorClass(
             self.experiments,
             profile_fitter,
             self.params.profile.valid_foreground_threshold,
@@ -1670,6 +1821,26 @@ def create_integrator(params, experiments, reflections):
     }.get(params.integration.integrator)
     if not IntegratorClass:
         raise ValueError(f"Unknown integration type {params.integration.integrator}")
+
+    # Frame slicing requires the rotation geometry of a scan
+    if params.integration.frame_slice_shoeboxes and any(
+        experiment.is_still() for experiment in experiments
+    ):
+        raise Sorry(
+            """
+      frame_slice_shoeboxes=True cannot be used with still experiments, as
+      there is no rotation scan from which to calculate per-frame data.
+    """
+        )
+
+    # Frame slicing requires shoeboxes that still have their frames
+    if params.integration.frame_slice_shoeboxes and IntegratorClass is IntegratorFlat3D:
+        raise Sorry(
+            """
+      frame_slice_shoeboxes=True cannot be used with integrator=flat3d, as
+      flattened shoeboxes have had their frames summed together.
+    """
+        )
 
     # Remove scan if stills
     if experiments.all_stills():
