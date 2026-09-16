@@ -1,1 +1,1 @@
-``dials.remove_columns``: add ``dials.remove_columns`` to edit the content of a DIALS reflection file to remove columns e.g. shoebox
+``dials.remove_columns``: new program to remove named columns from a reflection table, for example to reduce the size of a file on disk by discarding data which are no longer needed e.g. ``dials.remove_columns indexed.refl remove=xyzobs.mm.value,xyzobs.mm.variance output=small.refl``. Shell-style wildcards are matched against the columns present.
