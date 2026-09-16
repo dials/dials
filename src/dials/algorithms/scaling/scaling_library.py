@@ -52,7 +52,7 @@ logger = logging.getLogger("dials")
 def set_image_ranges_in_scaling_models(experiments):
     """Set the batch range in scaling models if not already set."""
     for exp in experiments:
-        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
+        if not exp.is_still():
             valid_image_ranges = exp.scan.get_valid_image_ranges(exp.identifier)
             if "valid_image_range" not in exp.scaling_model.configdict:
                 # only set if not currently set i.e. set initial
