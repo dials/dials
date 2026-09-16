@@ -416,7 +416,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
         p_g = np.array(gaps).argmax()
 
-        x_g = x[p_g + p_m]
+        x_g = int(x[p_g + p_m])
 
         logger.info(
             dials.util.tabulate(
@@ -431,7 +431,7 @@ class CosymAnalysis(symmetry_base, Subject):
             )
             self.target.set_dimensions(2)
         else:
-            self.target.set_dimensions(int(x_g))
+            self.target.set_dimensions(x_g)
         logger.info("Using %i dimensions for analysis", self.target.dim)
 
         return dimensions, functional
