@@ -177,6 +177,54 @@ def write_centroids_table(refiner, filename):
             f.write(msg)
 
 
+def _recompute_xyzobs_mm(reflections, experiments):
+    """Recalculate the observed centroids in mm/rad from the observations
+    in pixels/images.
+
+    The mapping from pixel and image number to millimetres and radians depends
+    on the detector and the scan, so the values held in xyzobs.mm.value are
+    only valid for the experimental geometry that was current when they were
+    calculated. Refinement changes that geometry, which invalidates the
+    mapping, so it is redone here from the real observations in
+    xyzobs.px.value.
+
+    Reflections that are not assigned to an experiment (id < 0) are left
+    untouched, as are variances that are already present: the scale factors
+    relating variances in pixels to variances in millimetres do not depend on
+    the refined geometry, and the values may have been set deliberately
+    elsewhere, such as by dials.index with sigma_phi_deg.
+
+    Args:
+        reflections: A reflection table containing observed centroids
+        experiments: The current dxtbx experimental geometry models
+
+    Returns:
+        None. The reflection table is modified in place.
+    """
+
+    if "xyzobs.px.value" not in reflections:
+        # nothing to recalculate from, so the values in mm/rad are all we have
+        return
+
+    unmatched = reflections["id"] < 0
+    previous = {
+        key: reflections[key].deep_copy()
+        for key in ("xyzobs.mm.value", "xyzobs.mm.variance")
+        if key in reflections
+    }
+
+    # map by experiment id: the experiment list is not necessarily one-to-one
+    # with the imagesets referred to by any imageset_id column
+    reflections.centroid_px_to_mm(experiments, use_imageset_id=False)
+
+    if "xyzobs.mm.variance" in previous:
+        reflections["xyzobs.mm.variance"] = previous["xyzobs.mm.variance"]
+    if "xyzobs.mm.value" in previous and unmatched.count(True):
+        reflections["xyzobs.mm.value"].set_selected(
+            unmatched, previous["xyzobs.mm.value"].select(unmatched)
+        )
+
+
 def run_macrocycle(params, reflections, experiments):
     """Run one macrocycle of refinement.
 
@@ -194,6 +242,11 @@ def run_macrocycle(params, reflections, experiments):
         tuple: The Refiner, the reflection table with updated predictions
             and flags, and the refinement history object.
     """
+    # The observed centroids in mm/rad depend on the experimental geometry,
+    # which may have been changed by a previous macrocycle, so recalculate
+    # them from the observations in pixels/images before refining again
+    _recompute_xyzobs_mm(reflections, experiments)
+
     # Get the refiner
     logger.info("Configuring refiner")
     refiner = RefinerFactory.from_parameters_data_experiments(
@@ -588,13 +641,17 @@ def run(args=None, phil=working_phil, usage=usage, epilog=__doc__):
         sys.exit("Only one reflections list can be imported at present")
     reflections = reflections[0]
 
-    # check input is suitable
+    # check input is suitable. The centroids in mm/rad are recalculated from
+    # the observations in pixels/images at the start of every macrocycle, so
+    # those are all that is required. Tables that only contain centroids in
+    # mm/rad, such as those imported from other programs, are still accepted
     msg = (
         "The supplied reflection table does not have the required data " + "column: {0}"
     )
-    for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
-        if key not in reflections:
-            sys.exit(msg.format(key))
+    if "xyzobs.px.value" not in reflections:
+        for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
+            if key not in reflections:
+                sys.exit(msg.format(key))
 
     logger.info(dials_version())
 

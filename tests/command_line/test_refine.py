@@ -18,12 +18,19 @@ import numpy as np
 import pytest
 from annlib_ext import AnnAdaptor
 
-from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer
+from dxtbx.model import (
+    Beam,
+    Crystal,
+    Detector,
+    DetectorFactory,
+    Experiment,
+    Goniometer,
+)
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 
 from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex
-from dials.command_line.refine import _find_disjoint_sets
+from dials.command_line.refine import _find_disjoint_sets, _recompute_xyzobs_mm
 
 
 def test_i04_weak_data(dials_data, tmp_path):
@@ -475,3 +482,109 @@ def test_refinement_of_disjoint_sets(dials_data, tmp_path):
         )
         < 0.01
     )
+
+
+def test_recompute_xyzobs_mm():
+    """The centroids in mm/rad are recalculated from the real observations in
+    pixels/images, using the experiment each reflection is assigned to.
+
+    https://github.com/dials/dials/issues/3272
+    """
+
+    # two experiments with different pixel sizes, so that the pixel to
+    # millimetre mapping differs between them
+    experiments = ExperimentList()
+    for pixel_size in ((0.1, 0.1), (0.2, 0.2)):
+        detector = DetectorFactory.simple(
+            sensor="PAD",
+            distance=100.0,
+            beam_centre=(50.0, 50.0),
+            fast_direction="+x",
+            slow_direction="-y",
+            pixel_size=pixel_size,
+            image_size=(1000, 1000),
+            trusted_range=(0, 1e8),
+        )
+        experiments.append(Experiment(detector=detector))
+
+    refl = flex.reflection_table()
+    refl["id"] = flex.int([0, 1, -1])
+    # all the reflections come from the same imageset, as is the case after
+    # indexing multiple lattices on one scan
+    refl["imageset_id"] = flex.int([0, 0, 0])
+    refl["panel"] = flex.size_t([0, 0, 0])
+    refl["xyzobs.px.value"] = flex.vec3_double([(100.0, 200.0, 0.0)] * 3)
+    refl["xyzobs.px.variance"] = flex.vec3_double([(1.0, 1.0, 1.0)] * 3)
+
+    # stale values, as if calculated with a previous experimental geometry
+    refl["xyzobs.mm.value"] = flex.vec3_double([(1.0, 1.0, 1.0)] * 3)
+    refl["xyzobs.mm.variance"] = flex.vec3_double([(2.0, 2.0, 2.0)] * 3)
+
+    _recompute_xyzobs_mm(refl, experiments)
+
+    # each reflection is mapped with the detector of its own experiment
+    assert refl["xyzobs.mm.value"][0] == pytest.approx((10.0, 20.0, 0.0))
+    assert refl["xyzobs.mm.value"][1] == pytest.approx((20.0, 40.0, 0.0))
+
+    # reflections that belong to no experiment are left alone
+    assert refl["xyzobs.mm.value"][2] == pytest.approx((1.0, 1.0, 1.0))
+
+    # variances that are already present are left alone
+    for i in range(3):
+        assert refl["xyzobs.mm.variance"][i] == pytest.approx((2.0, 2.0, 2.0))
+
+    # if there are no variances in mm/rad then they are calculated
+    del refl["xyzobs.mm.variance"]
+    _recompute_xyzobs_mm(refl, experiments)
+    assert refl["xyzobs.mm.variance"][0] == pytest.approx((0.01, 0.01, 0.0))
+    assert refl["xyzobs.mm.variance"][1] == pytest.approx((0.04, 0.04, 0.0))
+
+
+def test_recompute_xyzobs_mm_without_pixel_observations():
+    """Tables that only contain centroids in mm/rad are left alone."""
+
+    experiments = ExperimentList([Experiment()])
+    refl = flex.reflection_table()
+    refl["id"] = flex.int([0])
+    refl["panel"] = flex.size_t([0])
+    refl["xyzobs.mm.value"] = flex.vec3_double([(1.0, 1.0, 1.0)])
+    refl["xyzobs.mm.variance"] = flex.vec3_double([(2.0, 2.0, 2.0)])
+
+    _recompute_xyzobs_mm(refl, experiments)
+
+    assert refl["xyzobs.mm.value"][0] == pytest.approx((1.0, 1.0, 1.0))
+    assert refl["xyzobs.mm.variance"][0] == pytest.approx((2.0, 2.0, 2.0))
+
+
+def test_refine_without_mm_centroids(dials_data, tmp_path):
+    """dials.refine can work from the observations in pixels/images alone.
+
+    https://github.com/dials/dials/issues/3272
+    """
+
+    location = dials_data("l_cysteine_dials_output")
+    refl = flex.reflection_table.from_file(location / "indexed.refl")
+
+    # the centroids in mm/rad are recalculated by dials.refine, so a table
+    # without them is still acceptable input
+    del refl["xyzobs.mm.value"], refl["xyzobs.mm.variance"]
+    refl_path = tmp_path / "no_mm.refl"
+    refl.as_file(refl_path)
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.refine"),
+            location / "indexed.expt",
+            refl_path,
+            "scan_varying=False",
+            "outlier.algorithm=null",
+            "max_iterations=3",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    refined = flex.reflection_table.from_file(tmp_path / "refined.refl")
+    for key in ("xyzobs.mm.value", "xyzobs.mm.variance"):
+        assert key in refined
