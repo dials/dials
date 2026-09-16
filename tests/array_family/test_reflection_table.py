@@ -8,7 +8,7 @@ import random
 import pytest
 
 from cctbx import sgtbx
-from dxtbx.model import Crystal, Experiment, ExperimentList
+from dxtbx.model import Crystal, DetectorFactory, Experiment, ExperimentList
 from dxtbx.serialize import load
 
 from dials.algorithms.shoebox import MaskCode
@@ -1564,6 +1564,52 @@ def test_map_centroids_to_reciprocal_space(dials_data):
     assert refl1["rlp"][0] == pytest.approx(
         (-0.035321308540942425, 0.6030297672949761, 0.19707031842793443)
     )
+
+
+def test_centroid_px_to_mm_by_experiment_id():
+    """The 'id' column can be used to associate reflections with experiments,
+    which is required where the experiment list is not one-to-one with the
+    imagesets, e.g. after indexing multiple lattices."""
+
+    # two experiments with different pixel sizes, so that the pixel to
+    # millimetre mapping differs between them
+    experiments = ExperimentList()
+    for pixel_size in ((0.1, 0.1), (0.2, 0.2)):
+        detector = DetectorFactory.simple(
+            sensor="PAD",
+            distance=100.0,
+            beam_centre=(50.0, 50.0),
+            fast_direction="+x",
+            slow_direction="-y",
+            pixel_size=pixel_size,
+            image_size=(1000, 1000),
+            trusted_range=(0, 1e8),
+        )
+        experiments.append(Experiment(detector=detector))
+
+    refl = flex.reflection_table()
+    refl["id"] = flex.int([0, 1])
+    # both reflections come from the same imageset
+    refl["imageset_id"] = flex.int([0, 0])
+    refl["panel"] = flex.size_t([0, 0])
+    refl["xyzobs.px.value"] = flex.vec3_double(
+        [(100.0, 200.0, 0.0), (100.0, 200.0, 0.0)]
+    )
+    refl["xyzobs.px.variance"] = flex.vec3_double([(1.0, 1.0, 1.0), (1.0, 1.0, 1.0)])
+
+    # by default the imageset_id column is used, so both reflections are mapped
+    # with the detector of the first experiment
+    refl.centroid_px_to_mm(experiments)
+    assert refl["xyzobs.mm.value"][0] == pytest.approx((10.0, 20.0, 0.0))
+    assert refl["xyzobs.mm.value"][1] == pytest.approx((10.0, 20.0, 0.0))
+
+    # with use_imageset_id=False each reflection is mapped with the detector of
+    # the experiment it is assigned to
+    refl.centroid_px_to_mm(experiments, use_imageset_id=False)
+    assert refl["xyzobs.mm.value"][0] == pytest.approx((10.0, 20.0, 0.0))
+    assert refl["xyzobs.mm.value"][1] == pytest.approx((20.0, 40.0, 0.0))
+    assert refl["xyzobs.mm.variance"][0] == pytest.approx((0.01, 0.01, 0.0))
+    assert refl["xyzobs.mm.variance"][1] == pytest.approx((0.04, 0.04, 0.0))
 
 
 def test_calculate_entering_flags(dials_data):

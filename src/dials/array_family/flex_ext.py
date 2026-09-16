@@ -1262,7 +1262,7 @@ Found {id_values}"""
             self["id"].set_selected(sel_exp, i_exp)
             self.experiment_identifiers()[i_exp] = exp_id
 
-    def centroid_px_to_mm(self, experiments):
+    def centroid_px_to_mm(self, experiments, use_imageset_id=True):
         """
         Map spot centroids from pixel/image number to mm/radian.
 
@@ -1272,6 +1272,12 @@ Found {id_values}"""
 
         Args:
           experiments (dxtbx.model.ExperimentList): A list of experiments.
+          use_imageset_id (bool): If True (the default) and the table contains
+            an 'imageset_id' column, use that to associate reflections with
+            experiments, otherwise use the 'id' column. The 'id' column is the
+            correct choice whenever the experiment list is not one-to-one with
+            the imagesets, such as after indexing, where each experiment
+            corresponds to a crystal rather than to an imageset.
         """
 
         self["xyzobs.mm.value"] = cctbx.array_family.flex.vec3_double(len(self))
@@ -1284,8 +1290,10 @@ Found {id_values}"""
             )
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
 
+        by_imageset_id = use_imageset_id and "imageset_id" in self
+
         for i, expt in enumerate(experiments):
-            if "imageset_id" in self:
+            if by_imageset_id:
                 sel_expt = self["imageset_id"] == i
             else:
                 sel_expt = self["id"] == i
