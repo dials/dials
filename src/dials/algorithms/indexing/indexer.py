@@ -490,17 +490,14 @@ class Indexer:
         )
         return
 
-    def setup_indexing(self):
-        if len(self.reflections) == 0:
-            raise DialsIndexError("No reflections left to index!")
+    def _map_centroids_to_mm(self):
+        """Calculate the observed centroids in mm/rad from the observations in
+        pixels/images, using the current experimental geometry.
 
-        if "imageset_id" not in self.reflections:
-            self.reflections["imageset_id"] = self.reflections["id"]
+        The mapping depends on the detector and the scan, so it has to be
+        redone whenever refinement has changed the experimental models.
+        """
         self.reflections.centroid_px_to_mm(self.experiments)
-        self.reflections.map_centroids_to_reciprocal_space(self.experiments)
-        self.reflections.calculate_entering_flags(self.experiments)
-
-        self.find_max_cell()
 
         if self.params.sigma_phi_deg is not None:
             var_x, var_y, _ = self.reflections["xyzobs.mm.variance"].parts()
@@ -510,6 +507,18 @@ class Indexer:
             self.reflections["xyzobs.mm.variance"] = flex.vec3_double(
                 var_x, var_y, var_phi_rad
             )
+
+    def setup_indexing(self):
+        if len(self.reflections) == 0:
+            raise DialsIndexError("No reflections left to index!")
+
+        if "imageset_id" not in self.reflections:
+            self.reflections["imageset_id"] = self.reflections["id"]
+        self._map_centroids_to_mm()
+        self.reflections.map_centroids_to_reciprocal_space(self.experiments)
+        self.reflections.calculate_entering_flags(self.experiments)
+
+        self.find_max_cell()
 
         if self.params.debug:
             self._debug_write_reciprocal_lattice_points_as_pdb()
@@ -595,6 +604,13 @@ class Indexer:
                     if d_min >= 0:
                         self.d_min = d_min
                         logger.info("Increasing resolution to %.2f Angstrom", d_min)
+
+                # refinement in a previous macrocycle may have changed the
+                # experimental geometry, which invalidates the mapping of the
+                # centroids from pixels/images to mm/rad, so recalculate these
+                # from the real observations before indexing again
+                self._map_centroids_to_mm()
+                self.reflections.map_centroids_to_reciprocal_space(self.experiments)
 
                 # reset reflection lattice flags
                 # the lattice a given reflection belongs to: a value of -1 indicates

@@ -1,1 +1,3 @@
 ``dials.refine``: recalculate the observed centroids in mm/rad from the real observations in pixels/images at the start of every refinement macrocycle, as refining the experimental geometry invalidates the previous mapping. Reflection tables containing only the observations in pixels are now valid input.
+
+``dials.index``: likewise recalculate the observed centroids in mm/rad, and the reciprocal lattice points derived from them, at the start of every refinement macrocycle.
