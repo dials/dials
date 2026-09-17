@@ -1269,8 +1269,8 @@ be passed separately with quotes to avoid confusion (e.g
     parser.add_argument(
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
-        default="3.13",
-        choices=("3.11", "3.12", "3.13"),
+        default="3.14",
+        choices=("3.11", "3.12", "3.13", "3.14"),
     )
     parser.add_argument(
         "--branch",
