@@ -1,0 +1,3 @@
+``dials.stills_process``: call ``gc.freeze()`` before the image processing loop starts.
+Everything instantiated up to that point is mostly imports and the garbage collection
+never examines those objects again.
